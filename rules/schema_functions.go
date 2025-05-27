@@ -7,7 +7,6 @@ import (
 	"math/rand"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
@@ -75,17 +74,6 @@ func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFuncti
 		return NewTcfInScope(params)
 	case Percent:
 		return NewPercent(params)
-	case PrebidKey:
-		return NewPrebidKey(params)
-	case Domain:
-		return NewDomain(params)
-	case DomainIn:
-		return NewDomainIn(params)
-	case Bundle:
-		return NewBundle(params)
-	case DeviceType:
-		return NewDeviceType(params)
-
 	default:
 		return nil, fmt.Errorf("Schema function %s was not created", name)
 	}
@@ -482,279 +470,14 @@ func (p *percent) Name() string {
 }
 
 // ------------prebidKey------------------
-type prebidKey struct {
-	key string
-}
-
-func NewPrebidKey(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	newKey, err := checkArgsString(params, PrebidKey)
-	return &prebidKey{key: newKey}, err
-}
-
-func (p *prebidKey) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	reqExt, err := wrapper.GetRequestExt()
-	if err != nil {
-		return "", err
-	}
-	reqExtPrebid := reqExt.GetPrebid()
-	// reqExtPrebid doesn't have kvps !
-	// expected impl:
-	// return reqExtPrebid.GetKVPs()[p.key], nil
-
-	return reqExtPrebid.Integration, nil //stub
-}
-
-func (p *prebidKey) Name() string {
-	return PrebidKey
-}
-
 // ------------domain------------------
-type domain struct {
-}
-
-func NewDomain(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &domain{}, checkNilArgs(params, Domain)
-}
-
-func (d *domain) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	return getReqDomain(wrapper), nil
-}
-
-func (d *domain) Name() string {
-	return Domain
-}
-
-type domainIn struct {
-	domainDir map[string]struct{}
-}
-
-func NewDomainIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	newdomains, err := checkArgsStringList(params, DomainIn)
-	if err != nil {
-		return nil, err
-	}
-
-	schemaFunc := &domainIn{
-		domainDir: make(map[string]struct{}),
-	}
-
-	for i := 0; i < len(newdomains); i++ {
-		schemaFunc.domainDir[newdomains[i]] = struct{}{}
-	}
-	return schemaFunc, nil
-}
-
-func (d *domainIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	reqDomain := getReqDomain(wrapper)
-	if _, contains := d.domainDir[reqDomain]; contains {
-		return "true", nil
-	}
-	return "false", nil
-}
-
-func (d *domainIn) Name() string {
-	return DomainIn
-}
-
-// TODO: from here
 // ------------bundle--------------------
-type bundle struct {
-}
-
-func NewBundle(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &bundle{}, nil
-}
-
-func (b *bundle) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if bundle := getAppBundle(wrapper); len(bundle) > 0 {
-		return bundle, nil
-	}
-	return "", errors.New("request.app.bundle not found")
-}
-
-func (b *bundle) Name() string {
-	return Bundle
-}
-
 // ------------bundleIn------------------
-type bundleIn struct {
-	bundleDir map[string]struct{}
-}
-
-func NewBundleIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var newBundles []string
-	if err := jsonutil.Unmarshal(params, &newBundles); err != nil {
-		return nil, err
-	}
-
-	schemaFunc := &bundleIn{
-		bundleDir: make(map[string]struct{}),
-	}
-
-	for i := 0; i < len(newBundles); i++ {
-		schemaFunc.bundleDir[newBundles[i]] = struct{}{}
-	}
-
-	return schemaFunc, nil
-}
-
-func (b *bundleIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(b.bundleDir) == 0 {
-		return "", nil
-	}
-
-	if bundle := getAppBundle(wrapper); len(bundle) > 0 {
-		if _, contains := b.bundleDir[wrapper.App.Bundle]; contains {
-			return "true", nil
-		}
-	}
-
-	return "false", nil
-}
-
-func (b *bundleIn) Name() string {
-	return BundleIn
-}
-
 // ------------mediaTypes------------------
-type mediaTypes struct {
-	mediaTypesDir map[openrtb_ext.BidType]struct{}
-}
-
-func NewMediaTypes(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var mediaTypeList []string
-	if err := jsonutil.Unmarshal(params, &mediaTypeList); err != nil {
-		return nil, err
-	}
-
-	schemaFunc := &mediaTypes{
-		mediaTypesDir: make(map[openrtb_ext.BidType]struct{}),
-	}
-
-	for i := 0; i < len(mediaTypeList); i++ {
-		switch mediaTypeList[i] {
-		case string(openrtb_ext.BidTypeBanner):
-			fallthrough
-		case string(openrtb_ext.BidTypeVideo):
-			fallthrough
-		case string(openrtb_ext.BidTypeAudio):
-			fallthrough
-		case string(openrtb_ext.BidTypeNative):
-			schemaFunc.mediaTypesDir[openrtb_ext.BidType(mediaTypeList[i])] = struct{}{}
-		default:
-			continue
-		}
-	}
-
-	return schemaFunc, nil
-}
-
-func (b *mediaTypes) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(b.mediaTypesDir) == 0 {
-		return "false", nil
-	}
-
-	if imps := getImpArray(wrapper); len(imps) > 0 {
-		for i := 0; i < len(imps); i++ {
-			if imps[i].Banner != nil {
-				if _, contains := b.mediaTypesDir[openrtb_ext.BidTypeBanner]; contains {
-					return "true", nil
-				}
-			}
-			if imps[i].Video != nil {
-				if _, contains := b.mediaTypesDir[openrtb_ext.BidTypeVideo]; contains {
-					return "true", nil
-				}
-			}
-			if imps[i].Audio != nil {
-				if _, contains := b.mediaTypesDir[openrtb_ext.BidTypeAudio]; contains {
-					return "true", nil
-				}
-			}
-			if imps[i].Native != nil {
-				if _, contains := b.mediaTypesDir[openrtb_ext.BidTypeNative]; contains {
-					return "true", nil
-				}
-			}
-		}
-	}
-	return "false", nil
-}
-
-func (b *mediaTypes) Name() string {
-	return BundleIn
-}
-
 // ------------adUnitCode------------------
 // ------------deviceType------------------
 // ------------deviceTypeIn----------------
-type deviceTypeIn struct {
-	typesDir map[string]struct{}
-}
-
-func NewDeviceType(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	var deviceTypes []string
-	if err := jsonutil.Unmarshal(params, &deviceTypes); err != nil {
-		return nil, err
-	}
-
-	schemaFunc := &deviceTypeIn{
-		typesDir: make(map[string]struct{}),
-	}
-
-	for i := 0; i < len(deviceTypes); i++ {
-		schemaFunc.typesDir[deviceTypes[i]] = struct{}{}
-	}
-
-	return schemaFunc, nil
-}
-
-func (d *deviceTypeIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(d.typesDir) == 0 {
-		return "", nil
-	}
-
-	deviceType, err := getDeviceType(wrapper)
-	if err != nil {
-		return "", err
-	}
-
-	if _, contains := d.typesDir[deviceType]; contains {
-		return deviceType, nil
-	}
-
-	return "", nil
-}
-
-func (d *deviceTypeIn) Name() string {
-	return DeviceType
-}
-
-// ------------deviceTypeIn----------------
-
 // ----------helper functions---------
-func getImpArray(wrapper *openrtb_ext.RequestWrapper) []openrtb2.Imp {
-	if wrapper != nil && wrapper.BidRequest != nil && len(wrapper.Imp) > 0 {
-		return wrapper.Imp
-	}
-	return nil
-}
-
-func getAppBundle(wrapper *openrtb_ext.RequestWrapper) string {
-	if wrapper != nil && wrapper.BidRequest != nil && wrapper.App != nil && len(wrapper.App.Bundle) > 0 {
-		return wrapper.App.Bundle
-	}
-	return ""
-}
-
-func getDeviceType(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Device != nil {
-		//devTypeInt := wrapper.Device.DeviceType
-		return convertDevTypeToString(wrapper.Device.DeviceType)
-	}
-	return "", errors.New("request.device.devicetype not found")
-}
-
 func getRequestRegs(wrapper *openrtb_ext.RequestWrapper) *openrtb2.Regs {
 	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Regs != nil {
 		return wrapper.Regs
@@ -849,45 +572,8 @@ func checkAppContentDataAndAppExtData(wrapper *openrtb_ext.RequestWrapper) (stri
 	return "false", nil
 }
 
-func getReqDomain(wrapper *openrtb_ext.RequestWrapper) string {
-	reqDomain := ""
-	if wrapper != nil && wrapper.BidRequest != nil {
-		if wrapper.Site != nil {
-			reqDomain = wrapper.Site.Domain
-		} else if wrapper.App != nil {
-			reqDomain = wrapper.App.Domain
-		} else if wrapper.DOOH != nil {
-			reqDomain = wrapper.DOOH.Domain
-		}
-	}
-	return reqDomain
-}
-
 func randRange(min, max int) int {
 	return rand.Intn(max-min) + min
-}
-
-func convertDevTypeToString(typeInt adcom1.DeviceType) (string, error) {
-	switch typeInt {
-	case adcom1.DeviceMobile:
-		return "mobile", nil
-	case adcom1.DevicePC:
-		return "pc", nil
-	case adcom1.DeviceTV:
-		return "tv", nil
-	case adcom1.DevicePhone:
-		return "phone", nil
-	case adcom1.DeviceTablet:
-		return "tablet", nil
-	case adcom1.DeviceConnected:
-		return "connected device", nil
-	case adcom1.DeviceSetTopBox:
-		return "set top box", nil
-	case adcom1.DeviceOOH:
-		return "dooh", nil
-	default:
-		return "", fmt.Errorf("Device type %d was not found", typeInt)
-	}
 }
 
 func checkNilArgs(params json.RawMessage, funcName string) error {
