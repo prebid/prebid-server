@@ -42,6 +42,7 @@ func (tb *treeManager) Run(c cacher) error {
 			}
 
 			if !parsedCfg.Enabled {
+				c.Delete(req.accountID)
 				// TODO: log metric
 				break
 			}
