@@ -1352,9 +1352,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		endpointBuilder = NewEndpoint
 	}
 
-	analyticsPolicyBuilder := fakeAnalyticsPolicy{
-		allow: true,
-	}.Builder
+	analyticsPolicyBuilder := fakeAnalyticsPolicy{allow: true}.Builder
 
 	endpoint, err := endpointBuilder(
 		fakeUUIDGenerator{},
@@ -1475,6 +1473,19 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
 	}
+}
+
+type fakeAnalyticsPolicy struct {
+	allow bool
+	cfg gdpr.TCF2ConfigReader
+}
+func (ap fakeAnalyticsPolicy) Allow(name string) bool {
+	return ap.allow
+}
+func (ap fakeAnalyticsPolicy) SetContext(ctx context.Context) {}
+
+func (ap fakeAnalyticsPolicy) Builder(_ gdpr.TCF2ConfigReader, _ gdpr.Signal, _ string) gdpr.PrivacyPolicy {
+	return ap
 }
 
 type mockPlanBuilder struct {

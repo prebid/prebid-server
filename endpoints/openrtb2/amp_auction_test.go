@@ -2520,17 +2520,3 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 		assert.Equal(t, test.expectedWarnings, response.ORTB2.Ext.Warnings)
 	}
 }
-
-type fakeAnalyticsPolicy struct {
-	allow bool
-	cfg gdpr.TCF2ConfigReader
-}
-func (ap fakeAnalyticsPolicy) Allow(name string) bool {
-	return ap.allow
-}
-func (ap fakeAnalyticsPolicy) SetContext(ctx context.Context) {}
-
-func (ap fakeAnalyticsPolicy) Builder(_ gdpr.TCF2ConfigReader, _ gdpr.Signal, _ string) gdpr.PrivacyPolicy {
-	return ap
-}
-
