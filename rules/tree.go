@@ -2,7 +2,9 @@ package rules
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
+
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 // Node represents a node in the tree structure.
@@ -11,11 +13,6 @@ type Node[T1 any, T2 any] struct {
 	SchemaFunction  SchemaFunction[T1]
 	ResultFunctions []ResultFunction[T1, T2]
 	Children        map[string]*Node[T1, T2]
-}
-
-// isLeaf checks if the node is a leaf node.
-func (n *Node[T1, T2]) isLeaf() bool {
-	return len(n.Children) == 0
 }
 
 // matchingChild checks if the node has a child that matches the given value.
@@ -48,14 +45,19 @@ type Tree[T1 any, T2 any] struct {
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	var matchingValue string
-	currNode := t.Root
+	var currNode *Node[T1, T2]
+
+	if t.Root == nil {
+		return errors.New("tree root is nil")
+	}
+	currNode = t.Root
 
 	resFuncMeta := ResultFunctionMeta{
 		AnalyticsKey: t.AnalyticsKey,
 		ModelVersion: t.ModelVersion,
 	}
 
-	for !currNode.isLeaf() {
+	for len(currNode.Children) > 0 {
 		res, err := currNode.SchemaFunction.Call(payload)
 		if err != nil {
 			return err
@@ -89,48 +91,40 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 // it finds leaves at different depths.
 func (t *Tree[T1, T2]) validate() error {
 	if t.Root == nil {
-        return nil
-    }
+		return nil
+	}
 
-    leafDepths := make(map[int]struct{})
-    maxDepth := -1
-    
-    validateNode(t.Root, 0, leafDepths, &maxDepth)
-    
-    if len(leafDepths) > 1 {
-        return fmt.Errorf("tree is malformed: leaves found at different depths %v", mapKeys(leafDepths))
-    }
-    return nil
+	maxDepth := ptrutil.ToPtr(0)
+	balanced := true
+
+	validateNode(t.Root, 0, maxDepth, &balanced)
+
+	if !balanced {
+		return errors.New("tree is malformed: leaves found at different depths")
+	}
+	return nil
 }
 
 // validateNode is a helper function that traverses the tree recursively recording leaf node depths.
-func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, leafDepths map[int]struct{}, maxDepth *int) {
-    if node == nil {
-        return
-    }
-    
-    // If this is a leaf node, record its depth
-    if node.isLeaf() {
-        leafDepths[depth] = struct{}{}
-        if depth > *maxDepth {
-            *maxDepth = depth
-        }
-        return
-    }
-    
-    // Otherwise, traverse all children
-    for _, child := range node.Children {
-        validateNode(child, depth+1, leafDepths, maxDepth)
-    }
-}
+func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, maxDepth *int, balanced *bool) {
+	if node == nil {
+		return
+	}
 
-// mapKeys extracts the keys from a map[int]struct{} to make the error message more readable
-func mapKeys(m map[int]struct{}) []int {
-    keys := make([]int, 0, len(m))
-    for k := range m {
-        keys = append(keys, k)
-    }
-    return keys
+	if len(node.Children) == 0 {
+		if *maxDepth > 0 {
+			if *maxDepth != depth {
+				*balanced = false
+			}
+		} else {
+			*maxDepth = depth
+		}
+		return
+	}
+
+	for _, child := range node.Children {
+		validateNode(child, depth+1, maxDepth, balanced)
+	}
 }
 
 // treeBuilder is an interface that defines a method for building a tree.
