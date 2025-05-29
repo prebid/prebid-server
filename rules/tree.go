@@ -3,8 +3,6 @@ package rules
 import (
 	"encoding/json"
 	"errors"
-
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 // Node represents a node in the tree structure.
@@ -15,17 +13,22 @@ type Node[T1 any, T2 any] struct {
 	Children        map[string]*Node[T1, T2]
 }
 
+// isLeaf checks if the node is a leaf node.
+func (n *Node[T1, T2]) isLeaf() bool {
+	return len(n.Children) == 0
+}
+
 // matchingChild checks if the node has a child that matches the given value.
 // It first checks for an exact match, and if not found, it checks for a wildcard match returning the child node.
 // If no matching child is found, it returns nil.
-func (n *Node[T1, T2]) matchChild(value string) (*Node[T1, T2], string) {
+func (n *Node[T1, T2]) matchChild(value string) (string, *Node[T1, T2]) {
 	if child, ok := n.Children[value]; ok {
-		return child, value
+		return value, child
 	}
 	if child, ok := n.Children["*"]; ok {
-		return child, "*"
+		return "*", child
 	}
-	return nil, ""
+	return "", nil
 }
 
 // Tree represents the tree structure.
@@ -44,38 +47,43 @@ type Tree[T1 any, T2 any] struct {
 // If the result matches one of the node values on the next level, we move to that node, otherwise we exit.
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
-	var matchingValue string
-	var currNode *Node[T1, T2]
-
 	if t.Root == nil {
 		return errors.New("tree root is nil")
 	}
-	currNode = t.Root
 
+	if len(t.Root.Children) == 0 {
+		return errors.New("At least one child is required so a schema function value can match against it")
+	}
+
+	currNode := t.Root
+	resultFuncs := t.DefaultFunctions
 	resFuncMeta := ResultFunctionMeta{
 		AnalyticsKey: t.AnalyticsKey,
 		ModelVersion: t.ModelVersion,
 	}
+	var nodeKey string
 
-	for len(currNode.Children) > 0 {
+	for currNode != nil && !currNode.isLeaf() {
+		if currNode.SchemaFunction == nil {
+			return errors.New("schema function is nil")
+		}
+
 		res, err := currNode.SchemaFunction.Call(payload)
 		if err != nil {
 			return err
 		}
+
 		resFuncMeta.appendToSchemaFunctionResults(currNode.SchemaFunction.Name(), res)
 
-		currNode, matchingValue = currNode.matchChild(res)
-		if currNode == nil {
-			break
-		}
-		resFuncMeta.appendToRuleFired(matchingValue)
+		nodeKey, currNode = currNode.matchChild(res)
+		resFuncMeta.appendToRuleFired(nodeKey)
 	}
 
-	resultFuncs := t.DefaultFunctions
 	if currNode != nil {
-		resultFuncs = currNode.ResultFunctions
+		if len(currNode.ResultFunctions) > 0 {
+			resultFuncs = currNode.ResultFunctions
+		}
 	}
-
 	for _, rf := range resultFuncs {
 		err := rf.Call(payload, result, resFuncMeta)
 		if err != nil {
@@ -94,10 +102,10 @@ func (t *Tree[T1, T2]) validate() error {
 		return nil
 	}
 
-	maxDepth := ptrutil.ToPtr(0)
+	firstLeafDepth := -1
 	balanced := true
 
-	validateNode(t.Root, 0, maxDepth, &balanced)
+	validateNode(t.Root, 0, &firstLeafDepth, &balanced)
 
 	if !balanced {
 		return errors.New("tree is malformed: leaves found at different depths")
@@ -106,25 +114,26 @@ func (t *Tree[T1, T2]) validate() error {
 }
 
 // validateNode is a helper function that traverses the tree recursively recording leaf node depths.
-func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, maxDepth *int, balanced *bool) {
+func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, firstLeafDepth *int, balanced *bool) bool {
 	if node == nil {
-		return
+		return true
 	}
 
-	if len(node.Children) == 0 {
-		if *maxDepth > 0 {
-			if *maxDepth != depth {
-				*balanced = false
-			}
-		} else {
-			*maxDepth = depth
+	if node.isLeaf() {
+		if *firstLeafDepth > -1 && *firstLeafDepth != depth {
+			*balanced = false
+			return false
 		}
-		return
+		*firstLeafDepth = depth
+		return true
 	}
 
 	for _, child := range node.Children {
-		validateNode(child, depth+1, maxDepth, balanced)
+		if !validateNode(child, depth+1, firstLeafDepth, balanced) {
+			break
+		}
 	}
+	return true
 }
 
 // treeBuilder is an interface that defines a method for building a tree.

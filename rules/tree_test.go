@@ -1,146 +1,106 @@
 package rules
 
-// Create a table driven test for the tree package
 import (
 	"errors"
+	"fmt"
 	"testing"
 
-	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMatchChild(t *testing.T) {
 	tests := []struct {
-		desc          string
-		inNode        *Node[openrtb_ext.RequestWrapper, struct{}]
-		inResult      string
-		expectedNode  *Node[openrtb_ext.RequestWrapper, struct{}]
-		expectedValue string
+		desc            string
+		inNode          *Node[struct{}, struct{}]
+		nodeKey         string
+		expectedNodeKey string
 	}{
 		{
-			desc: "Childless node",
-			inNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{},
+			desc: "nil children map",
+			inNode: &Node[struct{}, struct{}]{
+				Children: nil,
 			},
-			inResult:      "web",
-			expectedNode:  nil,
-			expectedValue: "",
+			nodeKey:         "child-one",
+			expectedNodeKey: "",
+		},
+		{
+			desc: "Childless node",
+			inNode: &Node[struct{}, struct{}]{
+				Children: map[string]*Node[struct{}, struct{}]{},
+			},
+			nodeKey:         "child-one",
+			expectedNodeKey: "",
 		},
 		{
 			desc: "Result doesn't match and no wildcard",
-			inNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-					"amp": &Node[openrtb_ext.RequestWrapper, struct{}]{
-						SchemaFunction: &deviceCountry{},
-					},
+			inNode: &Node[struct{}, struct{}]{
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child-two": &Node[struct{}, struct{}]{},
 				},
 			},
-			inResult:      "web",
-			expectedNode:  nil,
-			expectedValue: "",
+			nodeKey:         "child-one",
+			expectedNodeKey: "",
 		},
 		{
 			desc: "Result doesn't match but node has wildcard",
-			inNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-					"amp": &Node[openrtb_ext.RequestWrapper, struct{}]{
-						SchemaFunction: &deviceCountry{},
-					},
-					"*": &Node[openrtb_ext.RequestWrapper, struct{}]{
-						SchemaFunction: &percent{},
-					},
+			inNode: &Node[struct{}, struct{}]{
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child-two": &Node[struct{}, struct{}]{},
+					"*":         &Node[struct{}, struct{}]{},
 				},
 			},
-			inResult: "web",
-			expectedNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				SchemaFunction: &percent{},
-			},
-			expectedValue: "*",
+			nodeKey:         "child-one",
+			expectedNodeKey: "*",
 		},
 		{
-			desc: "Result doesn't match but node has two wildcards",
-			inNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-					"amp": &Node[openrtb_ext.RequestWrapper, struct{}]{
-						SchemaFunction: &deviceCountry{},
-					},
-					"*": &Node[openrtb_ext.RequestWrapper, struct{}]{
-						SchemaFunction: &percent{},
-					},
+			desc: "Key matches",
+			inNode: &Node[struct{}, struct{}]{
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child-one": &Node[struct{}, struct{}]{},
+					"*":         &Node[struct{}, struct{}]{},
 				},
 			},
-			inResult: "web",
-			expectedNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				SchemaFunction: &percent{},
-			},
-			expectedValue: "*",
-		},
-		{
-			desc: "Result matches",
-			inNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-					"web": &Node[openrtb_ext.RequestWrapper, struct{}]{
-						SchemaFunction: &deviceCountry{},
-					},
-					"*": &Node[openrtb_ext.RequestWrapper, struct{}]{
-						SchemaFunction: &percent{},
-					},
-				},
-			},
-			inResult: "web",
-			expectedNode: &Node[openrtb_ext.RequestWrapper, struct{}]{
-				SchemaFunction: &deviceCountry{},
-			},
-			expectedValue: "web",
+			nodeKey:         "child-one",
+			expectedNodeKey: "child-one",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			resultNode, resultValue := tc.inNode.matchChild(tc.inResult)
+			nodeKey, _ := tc.inNode.matchChild(tc.nodeKey)
 
-			assert.Equal(t, tc.expectedNode, resultNode)
-			assert.Equal(t, tc.expectedValue, resultValue)
+			assert.Equal(t, tc.expectedNodeKey, nodeKey)
 		})
 	}
 }
 
-func TestHasEqualDepth(t *testing.T) {
+func TestTreeValidate(t *testing.T) {
 	testCases := []struct {
 		desc        string
-		inTree      *Tree[openrtb_ext.RequestWrapper, struct{}]
+		inTree      *Tree[struct{}, struct{}]
 		expectedErr error
 	}{
 		{
 			desc:        "nil root",
-			inTree:      &Tree[openrtb_ext.RequestWrapper, struct{}]{},
+			inTree:      &Tree[struct{}, struct{}]{},
 			expectedErr: nil,
 		},
 		{
 			desc: "leaf only",
-			inTree: &Tree[openrtb_ext.RequestWrapper, struct{}]{
-				Root: &Node[openrtb_ext.RequestWrapper, struct{}]{
-					SchemaFunction: &deviceCountry{},
-				},
+			inTree: &Tree[struct{}, struct{}]{
+				Root: &Node[struct{}, struct{}]{},
 			},
 			expectedErr: nil,
 		},
 		{
 			desc: "Unbalanced tree",
-			inTree: &Tree[openrtb_ext.RequestWrapper, struct{}]{
-				Root: &Node[openrtb_ext.RequestWrapper, struct{}]{
-					SchemaFunction: &deviceCountry{},
-					Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-						"amp": &Node[openrtb_ext.RequestWrapper, struct{}]{
-							SchemaFunction: &deviceCountry{},
-						},
-						"web": &Node[openrtb_ext.RequestWrapper, struct{}]{
-							SchemaFunction: &percent{},
-							Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-								"true": &Node[openrtb_ext.RequestWrapper, struct{}]{
-									SchemaFunction: &eidIn{},
-								},
+			inTree: &Tree[struct{}, struct{}]{
+				Root: &Node[struct{}, struct{}]{
+					Children: map[string]*Node[struct{}, struct{}]{
+						"child1": &Node[struct{}, struct{}]{},
+						"child2": &Node[struct{}, struct{}]{
+							Children: map[string]*Node[struct{}, struct{}]{
+								"child2.1": &Node[struct{}, struct{}]{},
 							},
 						},
 					},
@@ -150,24 +110,16 @@ func TestHasEqualDepth(t *testing.T) {
 		},
 		{
 			desc: "Balanced tree",
-			inTree: &Tree[openrtb_ext.RequestWrapper, struct{}]{
-				Root: &Node[openrtb_ext.RequestWrapper, struct{}]{
-					SchemaFunction: &deviceCountry{},
-					Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-						"amp": &Node[openrtb_ext.RequestWrapper, struct{}]{
-							SchemaFunction: &deviceCountry{},
-							Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-								"true": &Node[openrtb_ext.RequestWrapper, struct{}]{
-									SchemaFunction: &channel{},
-								},
-							},
+			inTree: &Tree[struct{}, struct{}]{
+				Root: &Node[struct{}, struct{}]{
+					Children: map[string]*Node[struct{}, struct{}]{
+						"child1": &Node[struct{}, struct{}]{
+							Children: map[string]*Node[struct{}, struct{}]{
+								"child1.1": &Node[struct{}, struct{}]{}},
 						},
-						"web": &Node[openrtb_ext.RequestWrapper, struct{}]{
-							SchemaFunction: &percent{},
-							Children: map[string]*Node[openrtb_ext.RequestWrapper, struct{}]{
-								"true": &Node[openrtb_ext.RequestWrapper, struct{}]{
-									SchemaFunction: &eidIn{},
-								},
+						"child2": &Node[struct{}, struct{}]{
+							Children: map[string]*Node[struct{}, struct{}]{
+								"child2.1": &Node[struct{}, struct{}]{},
 							},
 						},
 					},
@@ -183,45 +135,326 @@ func TestHasEqualDepth(t *testing.T) {
 	}
 }
 
-// write a test for the Run function
 func TestRun(t *testing.T) {
 	tests := []struct {
-		desc        string
-		inTree      *Tree[openrtb_ext.RequestWrapper, struct{}]
-		inPayload   *openrtb_ext.RequestWrapper
-		expectedErr error
+		desc                 string
+		inTree               *Tree[struct{}, string]
+		inModifiableData     string
+		expectedModifiedData string
+		expectedErr          error
 	}{
 		{
-			desc:   "Nil tree.Root",
-			inTree: &Tree[openrtb_ext.RequestWrapper, struct{}]{},
-			inPayload: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Device: &openrtb2.Device{},
-				},
-			},
-			expectedErr: errors.New("tree root is nil"),
+			desc:                 "Nil tree.Root",
+			inTree:               &Tree[struct{}, string]{},
+			inModifiableData:     "str",
+			expectedModifiedData: "str",
+			expectedErr:          errors.New("tree root is nil"),
 		},
 		{
-			desc: "Empty tree",
-			inTree: &Tree[openrtb_ext.RequestWrapper, struct{}]{
-				Root:         &Node[openrtb_ext.RequestWrapper, struct{}]{},
-				AnalyticsKey: "anyAnalyticsKey",
-				ModelVersion: "anyModelVersion",
-			},
-			inPayload: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Device: &openrtb2.Device{},
+			desc: "Single-node tree",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction:  &goodSchemaFunction{},
+					ResultFunctions: []ResultFunction[struct{}, string]{},
 				},
 			},
-			expectedErr: nil,
+			inModifiableData:     "str",
+			expectedModifiedData: "str",
+			expectedErr:          errors.New("At least one child is required so a schema function value can match against it"),
+		},
+		{
+			desc: "Schema function error",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &faultySchemaFunction{},
+					Children: map[string]*Node[struct{}, string]{
+						"leaf": &Node[struct{}, string]{},
+					},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str",
+			expectedErr:          errors.New("faulty schema function error"),
+		},
+		{
+			desc: "Result function error",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					ResultFunctions: []ResultFunction[struct{}, string]{
+						&unexpectedResultFunction{},
+					},
+					Children: map[string]*Node[struct{}, string]{
+						"goodValue": &Node[struct{}, string]{
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&faultyResultFunction{},
+							},
+						},
+					},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str",
+			expectedErr:          errors.New("faulty result function error"),
+		},
+		{
+			desc: "Schema return value not matching any child node",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					ResultFunctions: []ResultFunction[struct{}, string]{
+						&unexpectedResultFunction{},
+					},
+					Children: map[string]*Node[struct{}, string]{
+						"unreachable-child": &Node[struct{}, string]{
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&leafResultFunction{},
+							},
+						},
+					},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str",
+			expectedErr:          nil,
+		},
+		{
+			desc: "Schema return value matches child and correct result function is executed",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					Children: map[string]*Node[struct{}, string]{
+						"goodValue": &Node[struct{}, string]{
+							SchemaFunction: &goodSchemaFunction{},
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&unexpectedResultFunction{},
+							},
+							Children: map[string]*Node[struct{}, string]{
+								"goodValue": &Node[struct{}, string]{
+									ResultFunctions: []ResultFunction[struct{}, string]{
+										&leafResultFunction{},
+									},
+								},
+								"unreachable-leaf": &Node[struct{}, string]{},
+							},
+						},
+						"*": &Node[struct{}, string]{
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&unexpectedResultFunction{},
+							},
+						},
+						"unreachable-child": &Node[struct{}, string]{},
+					},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str-modified-by-leaf-result-function",
+			expectedErr:          nil,
+		},
+		{
+			desc: "Schema return value not found in children, but wildcard exists",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					Children: map[string]*Node[struct{}, string]{
+						"unreachable-child": &Node[struct{}, string]{},
+						"*": &Node[struct{}, string]{
+							SchemaFunction: &faultySchemaFunction{},
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&leafResultFunction{},
+							},
+						},
+					},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str-modified-by-leaf-result-function",
+			expectedErr:          nil,
+		},
+		{
+			desc: "Counldn't reach leaf, no default functions",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					Children: map[string]*Node[struct{}, string]{
+						"goodValue": &Node[struct{}, string]{
+							SchemaFunction: &goodSchemaFunction{},
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&unexpectedResultFunction{},
+							},
+							Children: map[string]*Node[struct{}, string]{
+								"*": &Node[struct{}, string]{
+									SchemaFunction: &goodSchemaFunction{},
+									ResultFunctions: []ResultFunction[struct{}, string]{
+										&unexpectedResultFunction{},
+									},
+									Children: map[string]*Node[struct{}, string]{
+										"unreachable-leaf": &Node[struct{}, string]{
+											ResultFunctions: []ResultFunction[struct{}, string]{
+												&unexpectedResultFunction{},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str",
+			expectedErr:          nil,
+		},
+		{
+			desc: "Counldn't reach leaf, run default functions",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					Children: map[string]*Node[struct{}, string]{
+						"*": &Node[struct{}, string]{
+							SchemaFunction: &goodSchemaFunction{},
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&unexpectedResultFunction{},
+							},
+							Children: map[string]*Node[struct{}, string]{
+								"unreachable-child": &Node[struct{}, string]{
+									SchemaFunction: &goodSchemaFunction{},
+									ResultFunctions: []ResultFunction[struct{}, string]{
+										&leafResultFunction{},
+									},
+								},
+							},
+						},
+					},
+				},
+				DefaultFunctions: []ResultFunction[struct{}, string]{
+					&defaultResultFunction{},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str-modified-by-default-function",
+			expectedErr:          nil,
+		},
+		{
+			desc: "Leaf contains no result functions, run default functions instead",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					Children: map[string]*Node[struct{}, string]{
+						"*": &Node[struct{}, string]{
+							SchemaFunction: &goodSchemaFunction{},
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&unexpectedResultFunction{},
+							},
+							Children: map[string]*Node[struct{}, string]{
+								"goodValue": &Node[struct{}, string]{
+									SchemaFunction:  &goodSchemaFunction{},
+									ResultFunctions: []ResultFunction[struct{}, string]{},
+								},
+							},
+						},
+					},
+				},
+				DefaultFunctions: []ResultFunction[struct{}, string]{
+					&defaultResultFunction{},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str-modified-by-default-function",
+			expectedErr:          nil,
+		},
+		{
+			desc: "Missing schema function in non-root node",
+			inTree: &Tree[struct{}, string]{
+				Root: &Node[struct{}, string]{
+					SchemaFunction: &goodSchemaFunction{},
+					Children: map[string]*Node[struct{}, string]{
+						"*": &Node[struct{}, string]{
+							SchemaFunction: nil, // Missing schema function
+							ResultFunctions: []ResultFunction[struct{}, string]{
+								&unexpectedResultFunction{},
+							},
+							Children: map[string]*Node[struct{}, string]{
+								"goodValue": &Node[struct{}, string]{
+									SchemaFunction: &goodSchemaFunction{},
+									ResultFunctions: []ResultFunction[struct{}, string]{
+										&leafResultFunction{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			inModifiableData:     "str",
+			expectedModifiedData: "str",
+			expectedErr:          errors.New("schema function is nil"),
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := &struct{}{}
-			err := tc.inTree.Run(tc.inPayload, result)
+			anyPayload := struct{}{}
+			err := tc.inTree.Run(&anyPayload, &tc.inModifiableData)
 			assert.Equal(t, tc.expectedErr, err)
+			assert.Equal(t, tc.expectedModifiedData, tc.inModifiableData)
 		})
 	}
+}
+
+type goodSchemaFunction struct{}
+
+func (sf *goodSchemaFunction) Call(param *struct{}) (string, error) {
+	return "goodValue", nil
+}
+func (sf *goodSchemaFunction) Name() string {
+	return "goodSchemaFunction"
+}
+
+type faultySchemaFunction struct{}
+
+func (sf *faultySchemaFunction) Call(param *struct{}) (string, error) {
+	return "", errors.New("faulty schema function error")
+}
+func (sf *faultySchemaFunction) Name() string {
+	return "faultySchemaFunction"
+}
+
+type leafResultFunction struct{}
+
+func (sf *leafResultFunction) Call(param *struct{}, modifiable *string, meta ResultFunctionMeta) error {
+	*modifiable = fmt.Sprintf("%s-modified-by-leaf-result-function", *modifiable)
+	return nil
+}
+func (sf *leafResultFunction) Name() string {
+	return "leafResultFunction"
+}
+
+type defaultResultFunction struct{}
+
+func (sf *defaultResultFunction) Call(param *struct{}, modifiable *string, meta ResultFunctionMeta) error {
+	*modifiable = fmt.Sprintf("%s-modified-by-default-function", *modifiable)
+	return nil
+}
+func (sf *defaultResultFunction) Name() string {
+	return "defaultResultFunction9"
+}
+
+type unexpectedResultFunction struct{}
+
+func (sf *unexpectedResultFunction) Call(param *struct{}, modifiable *string, meta ResultFunctionMeta) error {
+	*modifiable = fmt.Sprintf("%s-wrong-modification", *modifiable)
+	return nil
+}
+func (sf *unexpectedResultFunction) Name() string {
+	return "unexpectedResultFunction"
+}
+
+type faultyResultFunction struct{}
+
+func (sf *faultyResultFunction) Call(param *struct{}, modifiable *string, meta ResultFunctionMeta) error {
+	return errors.New("faulty result function error")
+}
+func (sf *faultyResultFunction) Name() string {
+	return "faultyResultFunction"
 }
