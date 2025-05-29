@@ -103,16 +103,13 @@ func resolveKey(respTargetingData ResponseTargetingData, bidderName string) stri
 
 func truncateTargetingKeys(targetingData map[string]string, truncateTargetAttribute *int) map[string]string {
 	maxLength := MaxKeyLength
-	if truncateTargetAttribute != nil {
+	if truncateTargetAttribute != nil && *truncateTargetAttribute > 0 {
 		maxLength = *truncateTargetAttribute
-		if maxLength <= 0 {
-			maxLength = MaxKeyLength
-		}
 	}
 
 	targetingDataTruncated := make(map[string]string)
 	for key, value := range targetingData {
-		newKey := openrtb_ext.TargetingKey(key).TruncateKey(maxLength)
+		newKey := openrtb_ext.TargetingKey(key).TruncateKey("", maxLength)
 		targetingDataTruncated[newKey] = value
 	}
 	return targetingDataTruncated

@@ -1972,18 +1972,24 @@ func TestGetExtTargetData(t *testing.T) {
 		name                   string
 		givenRequestExtPrebid  *openrtb_ext.ExtRequestPrebid
 		givenCacheInstructions extCacheInstructions
+		givenAccount           config.Account
+		givenWarning           []*errortypes.Warning
 		expectTargetData       *targetData
 	}{
 		{
 			name:                   "nil",
 			givenRequestExtPrebid:  nil,
 			givenCacheInstructions: extCacheInstructions{cacheBids: true, cacheVAST: true},
+			givenAccount:           config.Account{},
+			givenWarning:           nil,
 			expectTargetData:       nil,
 		},
 		{
 			name:                   "nil-targeting",
 			givenRequestExtPrebid:  &openrtb_ext.ExtRequestPrebid{Targeting: nil},
 			givenCacheInstructions: extCacheInstructions{cacheBids: true, cacheVAST: true},
+			givenAccount:           config.Account{},
+			givenWarning:           nil,
 			expectTargetData:       nil,
 		},
 		{
@@ -2006,6 +2012,8 @@ func TestGetExtTargetData(t *testing.T) {
 				cacheBids: true,
 				cacheVAST: true,
 			},
+			givenAccount: config.Account{},
+			givenWarning: nil,
 			expectTargetData: &targetData{
 				alwaysIncludeDeals:        true,
 				includeBidderKeys:         true,
@@ -2019,6 +2027,7 @@ func TestGetExtTargetData(t *testing.T) {
 					Precision: ptrutil.ToPtr(2),
 					Ranges:    []openrtb_ext.GranularityRange{{Min: 0.00, Max: 5.00, Increment: 1.00}},
 				},
+				prefix: DefaultKeyPrefix,
 			},
 		},
 		{
@@ -2038,6 +2047,8 @@ func TestGetExtTargetData(t *testing.T) {
 				cacheBids: true,
 				cacheVAST: true,
 			},
+			givenAccount: config.Account{},
+			givenWarning: nil,
 			expectTargetData: &targetData{
 				alwaysIncludeDeals:        true,
 				includeBidderKeys:         false,
@@ -2048,13 +2059,15 @@ func TestGetExtTargetData(t *testing.T) {
 				mediaTypePriceGranularity: openrtb_ext.MediaTypePriceGranularity{},
 				preferDeals:               true,
 				priceGranularity:          openrtb_ext.PriceGranularity{},
+				prefix:                    DefaultKeyPrefix,
 			},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result := getExtTargetData(test.givenRequestExtPrebid, test.givenCacheInstructions)
+			result, warnings := getExtTargetData(test.givenRequestExtPrebid, test.givenCacheInstructions, test.givenAccount)
+			assert.Equal(t, test.givenWarning, warnings)
 			assert.Equal(t, test.expectTargetData, result)
 		})
 	}
@@ -4115,6 +4128,65 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 	}
 }
 
+func TestGetTargetDataPrefix(t *testing.T) {
+	testCases := []struct {
+		description      string
+		requestPrefix    string
+		account          config.Account
+		expectedResult   string
+		expectedWarnings int
+	}{
+		{
+			description:   "TruncateTargetAttribute set is nil",
+			requestPrefix: "",
+			account: config.Account{
+				TargetingPrefix:         "hb",
+				TruncateTargetAttribute: nil,
+			},
+			expectedResult:   "hb",
+			expectedWarnings: 0,
+		},
+		{
+			description:   "TargetingPrefix set in Account",
+			requestPrefix: "tst",
+			account: config.Account{
+				TargetingPrefix:         "tst",
+				TruncateTargetAttribute: intPtr(15),
+			},
+			expectedResult:   "tst",
+			expectedWarnings: 0,
+		},
+		{
+			description:   "TargetingPrefix is longer than expected",
+			requestPrefix: "test",
+			account: config.Account{
+				TargetingPrefix:         "test",
+				TruncateTargetAttribute: intPtr(15),
+			},
+			expectedResult:   "hb",
+			expectedWarnings: 1,
+		},
+		{
+			description:   "TruncateTargetAttribute is smaller than expected",
+			requestPrefix: "test",
+			account: config.Account{
+				TargetingPrefix:         "test",
+				TruncateTargetAttribute: intPtr(1),
+			},
+			expectedResult:   "hb",
+			expectedWarnings: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			result, warnings := getTargetDataPrefix(tc.requestPrefix, tc.account)
+			assert.Equal(t, tc.expectedResult, result)
+			assert.Len(t, warnings, tc.expectedWarnings)
+		})
+	}
+}
+
 type GPPMockSection struct {
 	sectionID constants.SectionID
 	value     string
@@ -5758,4 +5830,8 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 			assert.Equal(t, test.expectedBuyerUIDs, result)
 		})
 	}
+}
+
+func intPtr(i int) *int {
+	return &i
 }
