@@ -70,7 +70,9 @@ func (m Module) HandleProcessedAuctionHook(
 		m.TreeManager.requests <- bi
 
 		// TODO: return with reject or no reject, possible config option
-		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{}, nil
+		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+			Message: "skipped, loading rules engine account configuration for future requests",
+		}, nil
 	}
 	// cache hit
 	if rebuildTrees(co, &miCtx.AccountConfig) {
@@ -82,7 +84,9 @@ func (m Module) HandleProcessedAuctionHook(
 	}
 
 	if !co.enabled {
-		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{}, nil
+		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+			Message: "skipped, rules engine is disabled for this account",
+		}, nil
 	}
 
 	ruleSets := co.ruleSetsForProcessedAuctionRequestStage

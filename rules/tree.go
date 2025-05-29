@@ -64,6 +64,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 
 		currNode, matchingValue = currNode.matchChild(res)
 		if currNode == nil {
+			resFuncMeta.RuleFired = "default"
 			break
 		}
 		resFuncMeta.appendToRuleFired(matchingValue)
@@ -89,48 +90,48 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 // it finds leaves at different depths.
 func (t *Tree[T1, T2]) validate() error {
 	if t.Root == nil {
-        return nil
-    }
+		return nil
+	}
 
-    leafDepths := make(map[int]struct{})
-    maxDepth := -1
-    
-    validateNode(t.Root, 0, leafDepths, &maxDepth)
-    
-    if len(leafDepths) > 1 {
-        return fmt.Errorf("tree is malformed: leaves found at different depths %v", mapKeys(leafDepths))
-    }
-    return nil
+	leafDepths := make(map[int]struct{})
+	maxDepth := -1
+
+	validateNode(t.Root, 0, leafDepths, &maxDepth)
+
+	if len(leafDepths) > 1 {
+		return fmt.Errorf("tree is malformed: leaves found at different depths %v", mapKeys(leafDepths))
+	}
+	return nil
 }
 
 // validateNode is a helper function that traverses the tree recursively recording leaf node depths.
 func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, leafDepths map[int]struct{}, maxDepth *int) {
-    if node == nil {
-        return
-    }
-    
-    // If this is a leaf node, record its depth
-    if node.isLeaf() {
-        leafDepths[depth] = struct{}{}
-        if depth > *maxDepth {
-            *maxDepth = depth
-        }
-        return
-    }
-    
-    // Otherwise, traverse all children
-    for _, child := range node.Children {
-        validateNode(child, depth+1, leafDepths, maxDepth)
-    }
+	if node == nil {
+		return
+	}
+
+	// If this is a leaf node, record its depth
+	if node.isLeaf() {
+		leafDepths[depth] = struct{}{}
+		if depth > *maxDepth {
+			*maxDepth = depth
+		}
+		return
+	}
+
+	// Otherwise, traverse all children
+	for _, child := range node.Children {
+		validateNode(child, depth+1, leafDepths, maxDepth)
+	}
 }
 
 // mapKeys extracts the keys from a map[int]struct{} to make the error message more readable
 func mapKeys(m map[int]struct{}) []int {
-    keys := make([]int, 0, len(m))
-    for k := range m {
-        keys = append(keys, k)
-    }
-    return keys
+	keys := make([]int, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // treeBuilder is an interface that defines a method for building a tree.
