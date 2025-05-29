@@ -148,7 +148,7 @@ func TestRun(t *testing.T) {
 			inTree:               &Tree[struct{}, string]{},
 			inModifiableData:     "str",
 			expectedModifiedData: "str",
-			expectedErr:          errors.New("tree root is nil"),
+			expectedErr:          nil,
 		},
 		{
 			desc: "Single-node tree",
@@ -160,7 +160,7 @@ func TestRun(t *testing.T) {
 			},
 			inModifiableData:     "str",
 			expectedModifiedData: "str",
-			expectedErr:          errors.New("At least one child is required so a schema function value can match against it"),
+			expectedErr:          nil,
 		},
 		{
 			desc: "Schema function error",
@@ -360,7 +360,7 @@ func TestRun(t *testing.T) {
 				},
 			},
 			inModifiableData:     "str",
-			expectedModifiedData: "str-modified-by-default-function",
+			expectedModifiedData: "str",
 			expectedErr:          nil,
 		},
 		{

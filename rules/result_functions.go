@@ -24,6 +24,10 @@ func (m *ResultFunctionMeta) appendToSchemaFunctionResults(name string, value st
 }
 
 func (m *ResultFunctionMeta) appendToRuleFired(value string) {
+	if len(value) == 0 {
+		return
+	}
+
 	if len(m.RuleFired) == 0 {
 		m.RuleFired = value
 	} else {

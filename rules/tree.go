@@ -47,22 +47,13 @@ type Tree[T1 any, T2 any] struct {
 // If the result matches one of the node values on the next level, we move to that node, otherwise we exit.
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
-	if t.Root == nil {
-		return errors.New("tree root is nil")
-	}
-
-	if len(t.Root.Children) == 0 {
-		return errors.New("At least one child is required so a schema function value can match against it")
-	}
-
 	currNode := t.Root
-	resultFuncs := t.DefaultFunctions
 	resFuncMeta := ResultFunctionMeta{
 		AnalyticsKey: t.AnalyticsKey,
 		ModelVersion: t.ModelVersion,
 	}
-	var nodeKey string
 
+	var nodeKey string
 	for currNode != nil && !currNode.isLeaf() {
 		if currNode.SchemaFunction == nil {
 			return errors.New("schema function is nil")
@@ -79,14 +70,13 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 		resFuncMeta.appendToRuleFired(nodeKey)
 	}
 
+	resultFuncs := t.DefaultFunctions
 	if currNode != nil {
-		if len(currNode.ResultFunctions) > 0 {
-			resultFuncs = currNode.ResultFunctions
-		}
+		resultFuncs = currNode.ResultFunctions
 	}
+
 	for _, rf := range resultFuncs {
-		err := rf.Call(payload, result, resFuncMeta)
-		if err != nil {
+		if err := rf.Call(payload, result, resFuncMeta); err != nil {
 			return err
 		}
 	}
