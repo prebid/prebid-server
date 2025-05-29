@@ -50,3 +50,6 @@ type FakeRandomNumberGenerator struct {
 func (f FakeRandomNumberGenerator) GenerateInt63() int64 {
 	return f.Number
 }
+func (f FakeRandomNumberGenerator) Intn(n int) int {
+	return int(f.Number)
+}

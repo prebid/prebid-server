@@ -41,6 +41,12 @@ func (tb *treeManager) Run(c cacher) error {
 				break
 			}
 
+			if !parsedCfg.Enabled {
+				c.Delete(req.accountID)
+				// TODO: log metric
+				break
+			}
+
 			newCacheObj, err := NewCacheEntry(parsedCfg, req.config)
 			if err != nil {
 				// TODO: log error / metric
