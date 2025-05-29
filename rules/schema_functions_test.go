@@ -11,32 +11,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetDeviceGeoCall(t *testing.T) {
+func TestGetDeviceGeo(t *testing.T) {
 	testCases := []struct {
-		desc          string
-		inWrapper     *openrtb_ext.RequestWrapper
-		expectedGeo   *openrtb2.Geo
-		expectedError error
+		desc        string
+		inWrapper   *openrtb_ext.RequestWrapper
+		expectedGeo *openrtb2.Geo
 	}{
 		{
-			desc:          "nil wrapper",
-			inWrapper:     nil,
-			expectedGeo:   nil,
-			expectedError: errors.New("request.Device.Geo is not present in request"),
+			desc:        "nil wrapper",
+			inWrapper:   nil,
+			expectedGeo: nil,
 		},
 		{
-			desc:          "nil wrapper.bidRequest",
-			inWrapper:     &openrtb_ext.RequestWrapper{},
-			expectedGeo:   nil,
-			expectedError: errors.New("request.Device.Geo is not present in request"),
+			desc:        "nil wrapper.bidRequest",
+			inWrapper:   &openrtb_ext.RequestWrapper{},
+			expectedGeo: nil,
 		},
 		{
 			desc: "nil wrapper.bidRequest.device",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{},
 			},
-			expectedGeo:   nil,
-			expectedError: errors.New("request.Device.Geo is not present in request"),
+			expectedGeo: nil,
 		},
 		{
 			desc: "nil wrapper.bidRequest.device.geo",
@@ -45,8 +41,7 @@ func TestGetDeviceGeoCall(t *testing.T) {
 					Device: &openrtb2.Device{},
 				},
 			},
-			expectedGeo:   nil,
-			expectedError: errors.New("request.Device.Geo is not present in request"),
+			expectedGeo: nil,
 		},
 		{
 			desc: "success",
@@ -59,15 +54,13 @@ func TestGetDeviceGeoCall(t *testing.T) {
 					},
 				},
 			},
-			expectedGeo:   &openrtb2.Geo{Country: "MEX"},
-			expectedError: nil,
+			expectedGeo: &openrtb2.Geo{Country: "MEX"},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			geo, err := getDeviceGeo(tc.inWrapper)
+			geo := getDeviceGeo(tc.inWrapper)
 			assert.Equal(t, tc.expectedGeo, geo)
-			assert.Equal(t, tc.expectedError, err)
 		})
 	}
 }
@@ -85,7 +78,7 @@ func TestGetExtRequestPrebidCall(t *testing.T) {
 				BidRequest: &openrtb2.BidRequest{},
 			},
 			expectedPrebid: nil,
-			expectedError:  errors.New("reqiuest.ext.prebid is not present in request"),
+			expectedError:  nil,
 		},
 		{
 			desc: "malformed request.ext",
@@ -105,7 +98,7 @@ func TestGetExtRequestPrebidCall(t *testing.T) {
 				},
 			},
 			expectedPrebid: nil,
-			expectedError:  errors.New("reqiuest.ext.prebid is not present in request"),
+			expectedError:  nil,
 		},
 		{
 			desc: "success",
@@ -133,13 +126,11 @@ func TestGetUserEIDSCall(t *testing.T) {
 		desc            string
 		inWrapper       *openrtb_ext.RequestWrapper
 		expectedEIDsArr []openrtb2.EID
-		expectedError   error
 	}{
 		{
 			desc:            "nil wrapper",
 			inWrapper:       nil,
 			expectedEIDsArr: nil,
-			expectedError:   errors.New("request.User.EIDs is not present in request"),
 		},
 		{
 			desc: "nil request.User",
@@ -147,7 +138,6 @@ func TestGetUserEIDSCall(t *testing.T) {
 				BidRequest: &openrtb2.BidRequest{},
 			},
 			expectedEIDsArr: nil,
-			expectedError:   errors.New("request.User.EIDs is not present in request"),
 		},
 		{
 			desc: "nil request.User.EIDs",
@@ -157,7 +147,6 @@ func TestGetUserEIDSCall(t *testing.T) {
 				},
 			},
 			expectedEIDsArr: nil,
-			expectedError:   errors.New("request.User.EIDs is not present in request"),
 		},
 		{
 			desc: "empty request.User.EIDs",
@@ -169,7 +158,6 @@ func TestGetUserEIDSCall(t *testing.T) {
 				},
 			},
 			expectedEIDsArr: nil,
-			expectedError:   errors.New("request.User.EIDs is not present in request"),
 		},
 		{
 			desc: "success",
@@ -189,15 +177,13 @@ func TestGetUserEIDSCall(t *testing.T) {
 					Source: "anySource",
 				},
 			},
-			expectedError: nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			eids, err := getUserEIDS(tc.inWrapper)
+			eids := getUserEIDS(tc.inWrapper)
 			assert.Equal(t, tc.expectedEIDsArr, eids)
-			assert.Equal(t, tc.expectedError, err)
 		})
 	}
 }
@@ -259,14 +245,12 @@ func TestDeviceCountryInCall(t *testing.T) {
 		inDeviceCountryIn  deviceCountryIn
 		inRequestWrapper   *openrtb_ext.RequestWrapper
 		expectedStringBool string
-		expectedError      error
 	}{
 		{
 			desc:               "nil wrapper.device.geo",
 			inDeviceCountryIn:  deviceCountryIn{},
 			inRequestWrapper:   nil,
 			expectedStringBool: "false",
-			expectedError:      errors.New("request.Device.Geo is not present in request"),
 		},
 		{
 			desc:              "empty wrapper.device.geo.country",
@@ -281,14 +265,12 @@ func TestDeviceCountryInCall(t *testing.T) {
 				},
 			},
 			expectedStringBool: "false",
-			expectedError:      nil,
 		},
 		{
 			desc:               "empty country list",
 			inDeviceCountryIn:  deviceCountryIn{},
 			inRequestWrapper:   wrapperWithCountryCode,
 			expectedStringBool: "false",
-			expectedError:      nil,
 		},
 		{
 			desc: "wrapper.device.geo.country not found in country list",
@@ -312,14 +294,13 @@ func TestDeviceCountryInCall(t *testing.T) {
 			},
 			inRequestWrapper:   wrapperWithCountryCode,
 			expectedStringBool: "true",
-			expectedError:      nil,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			result, err := tc.inDeviceCountryIn.Call(tc.inRequestWrapper)
 			assert.Equal(t, tc.expectedStringBool, result)
-			assert.Equal(t, tc.expectedError, err)
+			assert.Nil(t, err)
 		})
 	}
 }
@@ -329,7 +310,6 @@ func TestDeviceCountryCall(t *testing.T) {
 		desc            string
 		inWrapper       *openrtb_ext.RequestWrapper
 		expectedCountry string
-		expectedError   error
 	}{
 		{
 			desc: "nil wrapper.bidRequest.device.geo",
@@ -338,7 +318,6 @@ func TestDeviceCountryCall(t *testing.T) {
 					Device: &openrtb2.Device{},
 				},
 			},
-			expectedError: errors.New("request.Device.Geo is not present in request"),
 		},
 		{
 			desc: "empty wrapper.bidRequest.device.geo.country",
@@ -349,7 +328,6 @@ func TestDeviceCountryCall(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("request.Device.Geo.Country is not present in request"),
 		},
 		{
 			desc: "valid wrapper.bidRequest.device.geo.country",
@@ -363,7 +341,6 @@ func TestDeviceCountryCall(t *testing.T) {
 				},
 			},
 			expectedCountry: "MEX",
-			expectedError:   nil,
 		},
 	}
 	for _, tc := range testCases {
@@ -372,17 +349,16 @@ func TestDeviceCountryCall(t *testing.T) {
 
 			country, err := dc.Call(tc.inWrapper)
 			assert.Equal(t, tc.expectedCountry, country)
-			assert.Equal(t, tc.expectedError, err)
+			assert.Nil(t, err)
 		})
 	}
 }
 
-func TestDataCentersCall(t *testing.T) {
+func TestDataCenterCall(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		inWrapper      *openrtb_ext.RequestWrapper
 		expectedRegion string
-		expectedError  error
 	}{
 		{
 			desc: "nil wrapper.bidRequest.device.geo",
@@ -391,7 +367,6 @@ func TestDataCentersCall(t *testing.T) {
 					Device: &openrtb2.Device{},
 				},
 			},
-			expectedError: errors.New("request.Device.Geo is not present in request"),
 		},
 		{
 			desc: "empty wrapper.bidRequest.device.geo.region",
@@ -402,10 +377,9 @@ func TestDataCentersCall(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("request.Device.Geo.Region is not present in request"),
 		},
 		{
-			desc: "valid wrapper.bidRequest.device.geo.country",
+			desc: "valid wrapper.bidRequest.device.geo.region",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Device: &openrtb2.Device{
@@ -416,47 +390,38 @@ func TestDataCentersCall(t *testing.T) {
 				},
 			},
 			expectedRegion: "NorthAmerica",
-			expectedError:  nil,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			dc := &dataCenters{}
+			dc := &dataCenter{}
 
 			region, err := dc.Call(tc.inWrapper)
 			assert.Equal(t, tc.expectedRegion, region)
-			assert.Equal(t, tc.expectedError, err)
+			assert.Nil(t, err)
 		})
 	}
 }
 
-func TestDataCentersInCall(t *testing.T) {
-	wrapperWithRegion := &openrtb_ext.RequestWrapper{
-		BidRequest: &openrtb2.BidRequest{
-			Device: &openrtb2.Device{
-				Geo: &openrtb2.Geo{
-					Region: "NorthAmerica",
-				},
-			},
-		},
-	}
-
+func TestDataCenterInCall(t *testing.T) {
 	testCases := []struct {
-		desc               string
-		inDataCentersIn    dataCentersIn
-		inRequestWrapper   *openrtb_ext.RequestWrapper
-		expectedStringBool string
-		expectedError      error
+		desc             string
+		inDataCenterIn   dataCenterIn
+		inRequestWrapper *openrtb_ext.RequestWrapper
+		expectedResult   string
 	}{
 		{
-			desc:               "nil wrapper.device.geo",
-			inRequestWrapper:   nil,
-			expectedStringBool: "false",
-			expectedError:      errors.New("request.Device.Geo is not present in request"),
+			desc: "nil wrapper.device.geo",
+			inRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{},
+				},
+			},
+			expectedResult: "false",
 		},
 		{
-			desc:            "empty wrapper.device.geo.region",
-			inDataCentersIn: dataCentersIn{},
+			desc:           "empty wrapper.device.geo.region",
+			inDataCenterIn: dataCenterIn{},
 			inRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Device: &openrtb2.Device{
@@ -466,48 +431,68 @@ func TestDataCentersInCall(t *testing.T) {
 					},
 				},
 			},
-			expectedStringBool: "false",
-			expectedError:      errors.New("request.Device.Geo.Region is not present in request"),
+			expectedResult: "false",
 		},
 		{
-			desc:               "empty region dir",
-			inDataCentersIn:    dataCentersIn{},
-			inRequestWrapper:   wrapperWithRegion,
-			expectedStringBool: "false",
-			expectedError:      nil,
+			desc:           "empty region dir",
+			inDataCenterIn: dataCenterIn{},
+			inRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Region: "NorthAmerica",
+						},
+					},
+				},
+			},
+			expectedResult: "false",
 		},
 		{
-			desc: "wrapper.device.geo.region not found",
-			inDataCentersIn: dataCentersIn{
+			desc: "wrapper.device.geo.region not in dir",
+			inDataCenterIn: dataCenterIn{
 				DataCenterDir: map[string]struct{}{
 					"Europe": {},
 					"Africa": {},
 				},
 			},
-			inRequestWrapper:   wrapperWithRegion,
-			expectedStringBool: "false",
-			expectedError:      nil,
+			inRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Region: "NorthAmerica",
+						},
+					},
+				},
+			},
+			expectedResult: "false",
 		},
 		{
 			desc: "success",
-			inDataCentersIn: dataCentersIn{
+			inDataCenterIn: dataCenterIn{
 				DataCenterDir: map[string]struct{}{
 					"Europe":       {},
 					"Africa":       {},
 					"NorthAmerica": {},
 				},
 			},
-			inRequestWrapper:   wrapperWithRegion,
-			expectedStringBool: "true",
-			expectedError:      nil,
+			inRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Region: "NorthAmerica",
+						},
+					},
+				},
+			},
+			expectedResult: "true",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 
-			result, err := tc.inDataCentersIn.Call(tc.inRequestWrapper)
-			assert.Equal(t, tc.expectedStringBool, result)
-			assert.Equal(t, tc.expectedError, err)
+			result, err := tc.inDataCenterIn.Call(tc.inRequestWrapper)
+			assert.Equal(t, tc.expectedResult, result)
+			assert.Nil(t, err)
 		})
 	}
 }
@@ -537,7 +522,7 @@ func TestChannelCall(t *testing.T) {
 				},
 			},
 			expectedChannelName: "",
-			expectedError:       errors.New("reqiuest.ext.prebid is not present in request"),
+			expectedError:       nil,
 		},
 		{
 			desc: "nil request.ext.prebid.channel",
@@ -547,7 +532,7 @@ func TestChannelCall(t *testing.T) {
 				},
 			},
 			expectedChannelName: "",
-			expectedError:       errors.New("reqiuest.ext.prebid or req.ext.prebid.channel is not present in request"),
+			expectedError:       nil,
 		},
 		{
 			desc: "empty request.ext.prebid.name",
@@ -557,10 +542,10 @@ func TestChannelCall(t *testing.T) {
 				},
 			},
 			expectedChannelName: "",
-			expectedError:       errors.New("req.ext.prebid.channel.name is not present in request"),
+			expectedError:       nil,
 		},
 		{
-			desc: "success channel name found",
+			desc: "success channel name retrieved",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"channel":{"name":"anyName"}}}`),
@@ -570,7 +555,7 @@ func TestChannelCall(t *testing.T) {
 			expectedError:       nil,
 		},
 		{
-			desc: "success channel name pbjs",
+			desc: "success channel name is pbjs",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"channel":{"name":"pbjs"}}}`),
@@ -822,7 +807,6 @@ func TestEidInCall(t *testing.T) {
 		inWrapper    *openrtb_ext.RequestWrapper
 		inSchemaFunc *eidIn
 		result       string
-		expectedErr  error
 	}{
 		{
 			desc: "nil request.User.EIDs",
@@ -838,8 +822,7 @@ func TestEidInCall(t *testing.T) {
 					"barSource": {},
 				},
 			},
-			result:      "false",
-			expectedErr: errors.New("request.User.EIDs is not present in request"),
+			result: "false",
 		},
 		{
 			desc: "empty request.User.EIDs",
@@ -858,8 +841,7 @@ func TestEidInCall(t *testing.T) {
 				eidList: []string{},
 				eidDir:  make(map[string]struct{}),
 			},
-			result:      "false",
-			expectedErr: nil,
+			result: "false",
 		},
 		{
 			desc: "request.User.EIDs not found",
@@ -881,8 +863,7 @@ func TestEidInCall(t *testing.T) {
 					"barSource": {},
 				},
 			},
-			result:      "false",
-			expectedErr: nil,
+			result: "false",
 		},
 		{
 			desc: "success",
@@ -905,8 +886,7 @@ func TestEidInCall(t *testing.T) {
 					"anySource": {},
 				},
 			},
-			result:      "true",
-			expectedErr: nil,
+			result: "true",
 		},
 	}
 
@@ -914,7 +894,7 @@ func TestEidInCall(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			found, err := tc.inSchemaFunc.Call(tc.inWrapper)
 			assert.Equal(t, tc.result, found)
-			assert.Equal(t, tc.expectedErr, err)
+			assert.Nil(t, err)
 		})
 	}
 }

@@ -38,10 +38,10 @@ func TestBuildTreeFullConfig(t *testing.T) {
 	assert.Equal(t, 2, len(tree.Root.Children))
 
 	assert.Equal(t, 2, len(tree.Root.Children["true"].Children))
-	assert.Equal(t, rules.DataCentersIn, tree.Root.Children["true"].SchemaFunction.Name())
+	assert.Equal(t, rules.DataCenterIn, tree.Root.Children["true"].SchemaFunction.Name())
 
 	assert.Equal(t, 1, len(tree.Root.Children["false"].Children))
-	assert.Equal(t, rules.DataCentersIn, tree.Root.Children["false"].SchemaFunction.Name())
+	assert.Equal(t, rules.DataCenterIn, tree.Root.Children["false"].SchemaFunction.Name())
 
 	assert.Equal(t, 1, len(tree.Root.Children["true"].Children["true"].Children))
 	assert.Equal(t, rules.Channel, tree.Root.Children["true"].Children["true"].SchemaFunction.Name())

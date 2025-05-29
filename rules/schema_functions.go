@@ -14,26 +14,19 @@ import (
 
 const (
 	AdUnitCode       = "adUnitCode"
-	AdUnitCodeIn     = "adUnitCodeIn"
-	Bundle           = "bundle"
-	BundleIn         = "bundleIn"
 	Channel          = "channel"
-	DataCenters      = "dataCenters"
-	DataCentersIn    = "dataCentersIn"
+	DataCenter       = "dataCenter"
+	DataCenterIn     = "dataCenterIn"
 	DeviceCountry    = "deviceCountry"
 	DeviceCountryIn  = "deviceCountryIn"
-	DeviceType       = "deviceType"
 	DeviceTypeIn     = "deviceTypeIn"
-	Domain           = "domain"
-	DomainIn         = "domainIn"
 	EidAvailable     = "eidAvailable"
-	EidIn            = "eidAIn"
+	EidIn            = "eidIn"
 	FpdAvailable     = "fpdAvailable"
 	GppSidAvailable  = "gppSidAvailable"
 	GppSidIn         = "gppSidIn"
 	MediaTypes       = "mediaTypes"
 	Percent          = "percent"
-	PrebidKey        = "prebidKey"
 	TcfInScope       = "tcfInScope"
 	UserFpdAvailable = "userFpdAvailable"
 )
@@ -52,10 +45,10 @@ func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFuncti
 		return NewDeviceCountry(params)
 	case DeviceCountryIn:
 		return NewDeviceCountryIn(params)
-	case DataCenters:
-		return NewDataCenters(params)
-	case DataCentersIn:
-		return NewDataCentersIn(params)
+	case DataCenter:
+		return NewDataCenter(params)
+	case DataCenterIn:
+		return NewDataCenterIn(params)
 	case Channel:
 		return NewChannel(params)
 	case EidAvailable:
@@ -105,19 +98,13 @@ func NewDeviceCountryIn(params json.RawMessage) (SchemaFunction[openrtb_ext.Requ
 }
 
 func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	deviceGeo, err := getDeviceGeo(wrapper)
-	if err != nil {
-		return "false", err
-	}
-
-	if len(deviceGeo.Country) == 0 {
+	deviceGeo := getDeviceGeo(wrapper)
+	if deviceGeo == nil || len(deviceGeo.Country) == 0 {
 		return "false", nil
 	}
 
-	if _, found := dci.CountryDirectory[deviceGeo.Country]; found {
-		return "true", nil
-	}
-	return "false", nil
+	_, found := dci.CountryDirectory[deviceGeo.Country]
+	return fmt.Sprintf("%t", found), nil
 }
 
 func (dci *deviceCountryIn) Name() string {
@@ -131,16 +118,11 @@ func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.Reques
 }
 
 func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	deviceGeo, err := getDeviceGeo(wrapper)
-	if err != nil {
-		return "", err
+	if deviceGeo := getDeviceGeo(wrapper); deviceGeo != nil && len(deviceGeo.Country) > 0 {
+		return deviceGeo.Country, nil
 	}
+	return "", nil
 
-	if len(deviceGeo.Country) == 0 {
-		return "", errors.New("request.Device.Geo.Country is not present in request")
-	}
-
-	return deviceGeo.Country, nil
 }
 
 func (dci *deviceCountry) Name() string {
@@ -149,41 +131,35 @@ func (dci *deviceCountry) Name() string {
 
 // ------------datacenters------------------
 
-type dataCenters struct{}
+type dataCenter struct{}
 
-func NewDataCenters(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &dataCenters{}, checkNilArgs(params, DataCenters)
+func NewDataCenter(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	return &dataCenter{}, checkNilArgs(params, DataCenter)
 }
 
-func (dc *dataCenters) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-
-	deviceGeo, err := getDeviceGeo(wrapper)
-	if err != nil {
-		return "", err
+func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	if deviceGeo := getDeviceGeo(wrapper); deviceGeo != nil && len(deviceGeo.Region) > 0 {
+		return wrapper.Device.Geo.Region, nil
 	}
+	return "", nil
 
-	if len(deviceGeo.Region) == 0 {
-		return "", errors.New("request.Device.Geo.Region is not present in request")
-	}
-
-	return wrapper.Device.Geo.Region, nil
 }
 
-func (dci *dataCenters) Name() string {
-	return DataCenters
+func (dci *dataCenter) Name() string {
+	return DataCenter
 }
 
-type dataCentersIn struct {
+type dataCenterIn struct {
 	DataCenterDir map[string]struct{}
 }
 
-func NewDataCentersIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	dataCenters, err := checkArgsStringList(params, DataCentersIn)
+func NewDataCenterIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	dataCenters, err := checkArgsStringList(params, DataCenterIn)
 	if err != nil {
 		return nil, err
 	}
 
-	schemaFunc := &dataCentersIn{
+	schemaFunc := &dataCenterIn{
 		DataCenterDir: make(map[string]struct{}),
 	}
 
@@ -194,25 +170,18 @@ func NewDataCentersIn(params json.RawMessage) (SchemaFunction[openrtb_ext.Reques
 	return schemaFunc, nil
 }
 
-func (dc *dataCentersIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	deviceGeo, err := getDeviceGeo(wrapper)
-	if err != nil {
-		return "false", err
+func (dc *dataCenterIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	deviceGeo := getDeviceGeo(wrapper)
+	if deviceGeo == nil || len(deviceGeo.Region) == 0 {
+		return "false", nil
 	}
 
-	if len(deviceGeo.Region) == 0 {
-		return "false", errors.New("request.Device.Geo.Region is not present in request")
-	}
-
-	if _, found := dc.DataCenterDir[deviceGeo.Region]; found {
-		return "true", nil
-	}
-
-	return "false", nil
+	_, found := dc.DataCenterDir[deviceGeo.Region]
+	return fmt.Sprintf("%t", found), nil
 }
 
-func (dci *dataCentersIn) Name() string {
-	return DataCentersIn
+func (dci *dataCenterIn) Name() string {
+	return DataCenterIn
 }
 
 // ------------channel------------------
@@ -220,7 +189,7 @@ type channel struct {
 }
 
 func NewChannel(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &channel{}, checkNilArgs(params, DataCenters)
+	return &channel{}, checkNilArgs(params, DataCenter)
 }
 
 func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -230,11 +199,11 @@ func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	}
 
 	if prebid == nil || prebid.Channel == nil {
-		return "", errors.New("reqiuest.ext.prebid or req.ext.prebid.channel is not present in request")
+		return "", nil
 	}
 
 	if len(prebid.Channel.Name) == 0 {
-		return "", errors.New("req.ext.prebid.channel.name is not present in request")
+		return "", nil
 	}
 
 	chName := prebid.Channel.Name
@@ -278,10 +247,7 @@ func (ei *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "false", nil
 	}
 
-	eids, err := getUserEIDS(wrapper)
-	if err != nil {
-		return "false", err
-	}
+	eids := getUserEIDS(wrapper)
 
 	for i := 0; i < len(eids); i++ {
 		if _, found := ei.eidDir[eids[i].Source]; found {
@@ -303,11 +269,10 @@ func NewEidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.Request
 }
 
 func (ea *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	_, err := getUserEIDS(wrapper)
-	if err != nil {
-		return "false", err
+	if len(getUserEIDS(wrapper)) == 0 {
+		return "true", nil
 	}
-	return "true", nil
+	return "false", nil
 }
 func (ea *eidAvailable) Name() string {
 	return EidAvailable
@@ -650,11 +615,11 @@ func checkArgsString(params json.RawMessage, funcName string) (string, error) {
 	return "", nil
 }
 
-func getDeviceGeo(wrapper *openrtb_ext.RequestWrapper) (*openrtb2.Geo, error) {
-	if wrapper == nil || wrapper.BidRequest == nil || wrapper.Device == nil || wrapper.Device.Geo == nil {
-		return nil, errors.New("request.Device.Geo is not present in request")
+func getDeviceGeo(wrapper *openrtb_ext.RequestWrapper) *openrtb2.Geo {
+	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Device != nil && wrapper.Device.Geo != nil {
+		return wrapper.Device.Geo
 	}
-	return wrapper.Device.Geo, nil
+	return nil
 }
 
 func getExtRequestPrebid(wrapper *openrtb_ext.RequestWrapper) (*openrtb_ext.ExtRequestPrebid, error) {
@@ -663,16 +628,12 @@ func getExtRequestPrebid(wrapper *openrtb_ext.RequestWrapper) (*openrtb_ext.ExtR
 		return nil, err
 	}
 
-	reqExtPrebid := reqExt.GetPrebid()
-	if reqExtPrebid == nil {
-		return nil, errors.New("reqiuest.ext.prebid is not present in request")
-	}
-	return reqExtPrebid, nil
+	return reqExt.GetPrebid(), nil
 }
 
-func getUserEIDS(wrapper *openrtb_ext.RequestWrapper) ([]openrtb2.EID, error) {
-	if wrapper == nil || wrapper.User == nil || len(wrapper.User.EIDs) == 0 {
-		return nil, errors.New("request.User.EIDs is not present in request")
+func getUserEIDS(wrapper *openrtb_ext.RequestWrapper) []openrtb2.EID {
+	if wrapper != nil && wrapper.User != nil && len(wrapper.User.EIDs) > 0 {
+		return wrapper.User.EIDs
 	}
-	return wrapper.User.EIDs, nil
+	return nil
 }
