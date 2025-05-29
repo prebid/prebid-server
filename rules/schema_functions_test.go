@@ -2,7 +2,6 @@ package rules
 
 import (
 	"encoding/json"
-	"errors"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -578,10 +577,9 @@ func TestChannelCall(t *testing.T) {
 
 func TestEidAvailableCall(t *testing.T) {
 	testCases := []struct {
-		desc        string
-		inWrapper   *openrtb_ext.RequestWrapper
-		result      string
-		expectedErr error
+		desc      string
+		inWrapper *openrtb_ext.RequestWrapper
+		result    string
 	}{
 		{
 			desc: "request.User.EIDs not found",
@@ -590,8 +588,7 @@ func TestEidAvailableCall(t *testing.T) {
 					User: &openrtb2.User{},
 				},
 			},
-			result:      "false",
-			expectedErr: errors.New("request.User.EIDs is not present in request"),
+			result: "false",
 		},
 		{
 			desc: "success",
@@ -606,8 +603,7 @@ func TestEidAvailableCall(t *testing.T) {
 					},
 				},
 			},
-			result:      "true",
-			expectedErr: nil,
+			result: "true",
 		},
 	}
 	for _, tc := range testCases {
@@ -616,7 +612,7 @@ func TestEidAvailableCall(t *testing.T) {
 
 			found, err := schemaFunc.Call(tc.inWrapper)
 			assert.Equal(t, tc.result, found)
-			assert.Equal(t, tc.expectedErr, err)
+			assert.Nil(t, err)
 		})
 	}
 }
@@ -905,13 +901,11 @@ func TestGppSidInCall(t *testing.T) {
 		inWrapper    *openrtb_ext.RequestWrapper
 		inSchemaFunc *gppSidIn
 		result       string
-		expectedErr  error
 	}{
 		{
 			desc:         "empty gppSidIn.gppSids",
 			inSchemaFunc: &gppSidIn{},
 			result:       "false",
-			expectedErr:  nil,
 		},
 		{
 			desc: "empty request.Regs.GPPSID",
@@ -927,8 +921,7 @@ func TestGppSidInCall(t *testing.T) {
 					int8(1): {},
 				},
 			},
-			result:      "false",
-			expectedErr: errors.New("request.regs.gppsid not found"),
+			result: "false",
 		},
 		{
 			desc: "no request.Regs.GPPSID element found",
@@ -945,8 +938,7 @@ func TestGppSidInCall(t *testing.T) {
 					int8(2): {},
 				},
 			},
-			result:      "false",
-			expectedErr: nil,
+			result: "false",
 		},
 		{
 			desc: "Success",
@@ -963,8 +955,7 @@ func TestGppSidInCall(t *testing.T) {
 					int8(2): {},
 				},
 			},
-			result:      "true",
-			expectedErr: nil,
+			result: "true",
 		},
 	}
 
@@ -972,7 +963,7 @@ func TestGppSidInCall(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			found, err := tc.inSchemaFunc.Call(tc.inWrapper)
 			assert.Equal(t, tc.result, found)
-			assert.Equal(t, tc.expectedErr, err)
+			assert.Nil(t, err)
 		})
 	}
 }
@@ -1027,14 +1018,14 @@ func TestTcfInScopeCall(t *testing.T) {
 		result    string
 	}{
 		{
-			desc: "wrapper.Regs not found",
+			desc: "nil wrapper.Regs",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{},
 			},
 			result: "false",
 		},
 		{
-			desc: "missing wrapper.Regs.GDPR",
+			desc: "nil wrapper.Regs.GDPR",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{},

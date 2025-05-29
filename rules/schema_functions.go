@@ -269,7 +269,7 @@ func NewEidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.Request
 }
 
 func (ea *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(getUserEIDS(wrapper)) == 0 {
+	if len(getUserEIDS(wrapper)) > 0 {
 		return "true", nil
 	}
 	return "false", nil
@@ -352,7 +352,7 @@ func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	}
 
 	if !hasGPPIDs(wrapper) {
-		return "false", errors.New("request.regs.gppsid not found")
+		return "false", nil
 	}
 
 	for i := 0; i < len(wrapper.Regs.GPPSID); i++ {
@@ -368,6 +368,7 @@ func (sid *gppSidIn) Name() string {
 	return GppSidIn
 }
 
+// ------------gppSidAvailable-------------
 type gppSidAvailable struct {
 }
 
@@ -376,10 +377,7 @@ func NewGppSidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.Requ
 }
 
 func (sid *gppSidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if hasGPPIDs(wrapper) {
-		return "true", nil
-	}
-	return "false", nil
+	return fmt.Sprintf("%t", hasGPPIDs(wrapper)), nil
 }
 
 func (sid *gppSidAvailable) Name() string {
