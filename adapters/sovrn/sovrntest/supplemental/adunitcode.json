@@ -17,14 +17,20 @@
           ]
         },
         "ext": {
-          "bidder": {
+          "gumgum": {
             "tagid": "123456",
+            "adunitcode": "sovrn_auc"
+          },
+          "bidder" : {
+            "zone" : "dc9d6be1"
+          },
+          "prebid": {
             "adunitcode": "sovrn_auc"
           }
         }
       }
     ],
-    "device": { },
+    "device": {},
     "site": {
       "domain": "www.publisher.com",
       "page": "http://www.publisher.com/awesome/site"
@@ -33,7 +39,6 @@
       "buyeruid": "test_reader_id"
     }
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -61,9 +66,11 @@
               },
               "tagid": "123456",
               "ext": {
-                "adunitcode": "sovrn_auc",
-                "bidder": {
+                "gumgum": {
                   "tagid": "123456",
+                  "adunitcode": "sovrn_auc"
+                },
+                "prebid": {
                   "adunitcode": "sovrn_auc"
                 }
               }
@@ -76,9 +83,9 @@
           "user": {
             "buyeruid": "test_reader_id"
           },
-          "device": { }
+          "device": {}
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -90,11 +97,11 @@
                 {
                   "id": "a_449642_554a13d3b9f348fba707cf83f0f63800",
                   "impid": "test-imp-id",
-                  "price": 3.5,
+                  "price": "3.5",
                   "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
                   "adm": "some-test-ad",
-                  "w": 300,
-                  "h": 250
+                  "w": "300",
+                  "h": "250"
                 }
               ]
             }
@@ -103,7 +110,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -112,11 +118,11 @@
           "bid": {
             "id": "a_449642_554a13d3b9f348fba707cf83f0f63800",
             "impid": "test-imp-id",
-            "price": 3.5,
+            "price": "3.5",
             "adm": "some-test-ad",
             "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
-            "w": 300,
-            "h": 250
+            "w": "300",
+            "h": "250"
           },
           "type": "banner"
         }

@@ -22,13 +22,8 @@ type ExtImpGumGumBanner struct {
 	MaxH float64 `json:"maxh,omitempty"`
 }
 
-// ImpExtGumGum defines the full imp.ext structure used in request
-type ImpExtGumGum struct {
-	Prebid PrebidExt     `json:"prebid"`
-	Bidder ExtImpGumGum  `json:"bidder"`
-}
-
-// PrebidExt defines the structure of imp.ext.prebid
-type PrebidExt struct {
-	AdUnitCode string `json:"adunitcode,omitempty"`
+type ExtImpAdUnitCode struct {
+	Prebid struct {
+		AdUnitCode string `json:"adunitcode,omitempty"`
+	} `json:"prebid,omitempty"`
 }
