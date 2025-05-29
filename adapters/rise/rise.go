@@ -113,12 +113,12 @@ func extractBidderParams(openRTBRequest *openrtb2.BidRequest) (*bidderParameters
 	for _, imp := range openRTBRequest.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return bidderParameters, fmt.Errorf("unmarshal bidderExt: %w", err)
+			return nil, fmt.Errorf("unmarshal bidderExt: %w", err)
 		}
 
 		var impExt openrtb_ext.ImpExtRise
 		if err = jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-			return bidderParameters, fmt.Errorf("unmarshal ImpExtRise: %w", err)
+			return nil, fmt.Errorf("unmarshal ImpExtRise: %w", err)
 		}
 		bidderParameters.TestMode = impExt.TestMode
 
@@ -132,7 +132,7 @@ func extractBidderParams(openRTBRequest *openrtb2.BidRequest) (*bidderParameters
 		}
 	}
 
-	return bidderParameters, errors.New("no org or publisher_id supplied")
+	return nil, errors.New("no org or publisher_id supplied")
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
