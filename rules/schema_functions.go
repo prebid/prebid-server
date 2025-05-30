@@ -209,14 +209,9 @@ func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "", err
 	}
 
-	if prebid == nil || prebid.Channel == nil {
+	if prebid == nil || prebid.Channel == nil || len(prebid.Channel.Name) == 0 {
 		return "", nil
 	}
-
-	if len(prebid.Channel.Name) == 0 {
-		return "", nil
-	}
-
 	chName := prebid.Channel.Name
 	if chName == "pbjs" {
 		return "web", nil
@@ -474,32 +469,6 @@ func (p *percent) Name() string {
 // ------------deviceType------------------
 // ------------deviceTypeIn----------------
 // ----------helper functions---------
-func getRequestRegs(wrapper *openrtb_ext.RequestWrapper) *openrtb2.Regs {
-	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Regs != nil {
-		return wrapper.Regs
-	}
-	return nil
-}
-
-func hasGPPIDs(wrapper *openrtb_ext.RequestWrapper) bool {
-	regs := getRequestRegs(wrapper)
-	if regs != nil {
-		for i := 0; i < len(regs.GPPSID); i++ {
-			if regs.GPPSID[i] > int8(0) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func hasUserData(wrapper *openrtb_ext.RequestWrapper) bool {
-	if wrapper == nil || wrapper.BidRequest == nil || wrapper.User == nil {
-		return false
-	}
-	return len(wrapper.User.Data) > 0
-}
-
 func checkUserDataAndUserExtData(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper == nil {
 		return "false", nil
@@ -607,6 +576,32 @@ func getExtRequestPrebid(wrapper *openrtb_ext.RequestWrapper) (*openrtb_ext.ExtR
 func getUserEIDS(wrapper *openrtb_ext.RequestWrapper) []openrtb2.EID {
 	if wrapper != nil && wrapper.User != nil && len(wrapper.User.EIDs) > 0 {
 		return wrapper.User.EIDs
+	}
+	return nil
+}
+
+func hasGPPIDs(wrapper *openrtb_ext.RequestWrapper) bool {
+	regs := getRequestRegs(wrapper)
+	if regs != nil {
+		for i := 0; i < len(regs.GPPSID); i++ {
+			if regs.GPPSID[i] > int8(0) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasUserData(wrapper *openrtb_ext.RequestWrapper) bool {
+	if wrapper == nil || wrapper.BidRequest == nil || wrapper.User == nil {
+		return false
+	}
+	return len(wrapper.User.Data) > 0
+}
+
+func getRequestRegs(wrapper *openrtb_ext.RequestWrapper) *openrtb2.Regs {
+	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Regs != nil {
+		return wrapper.Regs
 	}
 	return nil
 }
