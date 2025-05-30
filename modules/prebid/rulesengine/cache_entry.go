@@ -15,6 +15,7 @@ import (
 type hash = string
 
 type cacheEntry struct {
+	enabled                                 bool
 	timestamp                               time.Time
 	hashedConfig                            hash
 	ruleSetsForProcessedAuctionRequestStage []cacheRuleSet[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]

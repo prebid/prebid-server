@@ -12,6 +12,26 @@ type ResultFunctionMeta struct {
 	ModelVersion          string
 }
 
+func (m *ResultFunctionMeta) appendToSchemaFunctionResults(name string, value string) {
+	if len(m.SchemaFunctionResults) == 0 {
+		m.SchemaFunctionResults = make([]SchemaFunctionStep, 1)
+	}
+	m.SchemaFunctionResults = append(m.SchemaFunctionResults, SchemaFunctionStep{
+		FuncName:   name,
+		FuncResult: value,
+	})
+	return
+}
+
+func (m *ResultFunctionMeta) appendToRuleFired(value string) {
+	if len(m.RuleFired) == 0 {
+		m.RuleFired = value
+	} else {
+		m.RuleFired += "|" + value
+	}
+	return
+}
+
 type SchemaFunctionStep struct {
 	FuncName   string
 	FuncResult string

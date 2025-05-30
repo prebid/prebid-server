@@ -2,19 +2,44 @@ package rules
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
-// Node...
+// Node represents a node in the tree structure.
+// It contains a schema function, a list of result functions, and a map of child nodes.
 type Node[T1 any, T2 any] struct {
 	SchemaFunction  SchemaFunction[T1]
 	ResultFunctions []ResultFunction[T1, T2]
 	Children        map[string]*Node[T1, T2]
 }
 
-// Tree...
+// isLeaf checks if the node is a leaf node.
+func (n *Node[T1, T2]) isLeaf() bool {
+	return len(n.Children) == 0
+}
+
+// matchingChild checks if the node has a child that matches the given value.
+// It first checks for an exact match, and if not found, it checks for a wildcard match returning the child node.
+// If no matching child is found, it returns nil.
+func (n *Node[T1, T2]) matchChild(value string) (*Node[T1, T2], string) {
+	if child, ok := n.Children[value]; ok {
+		return child, value
+	}
+	if child, ok := n.Children["*"]; ok {
+		return child, "*"
+	}
+	return nil, ""
+}
+
+// Tree represents the tree structure.
+// It contains a root node and a list of default result functions.
+// The tree is generic and can work with any types T1 and T2.
+// The tree is used to traverse the nodes based on the schema function results and execute the result functions.
 type Tree[T1 any, T2 any] struct {
 	Root             *Node[T1, T2]
 	DefaultFunctions []ResultFunction[T1, T2]
+	AnalyticsKey     string
+	ModelVersion     string
 }
 
 // Run attempts to walk down the tree from the root to a leaf node. Each node references a schema function
@@ -22,23 +47,26 @@ type Tree[T1 any, T2 any] struct {
 // If the result matches one of the node values on the next level, we move to that node, otherwise we exit.
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
+	var matchingValue string
 	currNode := t.Root
 
-	resFuncMeta := ResultFunctionMeta{SchemaFunctionResults: make([]SchemaFunctionStep, 0)}
+	resFuncMeta := ResultFunctionMeta{
+		AnalyticsKey: t.AnalyticsKey,
+		ModelVersion: t.ModelVersion,
+	}
 
-	for len(currNode.Children) > 0 {
+	for !currNode.isLeaf() {
 		res, err := currNode.SchemaFunction.Call(payload)
 		if err != nil {
 			return err
 		}
+		resFuncMeta.appendToSchemaFunctionResults(currNode.SchemaFunction.Name(), res)
 
-		step := SchemaFunctionStep{FuncName: currNode.SchemaFunction.Name(), FuncResult: res}
-		resFuncMeta.SchemaFunctionResults = append(resFuncMeta.SchemaFunctionResults, step)
-
-		currNode = currNode.Children[res]
+		currNode, matchingValue = currNode.matchChild(res)
 		if currNode == nil {
 			break
 		}
+		resFuncMeta.appendToRuleFired(matchingValue)
 	}
 
 	resultFuncs := t.DefaultFunctions
@@ -56,10 +84,53 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	return nil
 }
 
-// Valid ensures that the tree is well-formed meaning that every leaf is at the same level
+// validate checks if the tree is well-formed which means all leaves are at the same depth.
+// It traverses the tree and collects the depths of all leaf nodes and returns an error if
+// it finds leaves at different depths.
 func (t *Tree[T1, T2]) validate() error {
-	//TODO
-	return nil
+	if t.Root == nil {
+        return nil
+    }
+
+    leafDepths := make(map[int]struct{})
+    maxDepth := -1
+    
+    validateNode(t.Root, 0, leafDepths, &maxDepth)
+    
+    if len(leafDepths) > 1 {
+        return fmt.Errorf("tree is malformed: leaves found at different depths %v", mapKeys(leafDepths))
+    }
+    return nil
+}
+
+// validateNode is a helper function that traverses the tree recursively recording leaf node depths.
+func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, leafDepths map[int]struct{}, maxDepth *int) {
+    if node == nil {
+        return
+    }
+    
+    // If this is a leaf node, record its depth
+    if node.isLeaf() {
+        leafDepths[depth] = struct{}{}
+        if depth > *maxDepth {
+            *maxDepth = depth
+        }
+        return
+    }
+    
+    // Otherwise, traverse all children
+    for _, child := range node.Children {
+        validateNode(child, depth+1, leafDepths, maxDepth)
+    }
+}
+
+// mapKeys extracts the keys from a map[int]struct{} to make the error message more readable
+func mapKeys(m map[int]struct{}) []int {
+    keys := make([]int, 0, len(m))
+    for k := range m {
+        keys = append(keys, k)
+    }
+    return keys
 }
 
 // treeBuilder is an interface that defines a method for building a tree.
