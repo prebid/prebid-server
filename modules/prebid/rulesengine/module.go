@@ -81,6 +81,10 @@ func (m Module) HandleProcessedAuctionHook(
 		m.TreeManager.requests <- bi
 	}
 
+	if !co.enabled {
+		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{}, nil
+	}
+
 	ruleSets := co.ruleSetsForProcessedAuctionRequestStage
 
 	return handleProcessedAuctionHook(ruleSets, payload)
