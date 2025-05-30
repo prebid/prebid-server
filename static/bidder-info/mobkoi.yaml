@@ -1,0 +1,10 @@
+endpoint: "https://pbs.maximus.mobkoi.com/bid"
+maintainer:
+  email: platformteam@mobkoi.com
+gvlVendorID: 898
+openrtb:
+  version: 2.6
+capabilities:
+  site:
+    mediaTypes:
+      - banner

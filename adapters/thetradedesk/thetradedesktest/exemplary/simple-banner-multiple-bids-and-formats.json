@@ -70,8 +70,7 @@
           ],
           "Accept": [
             "application/json"
-          ],
-          "X-Integration-Type": ["1"]
+          ]
         },
         "body": {
           "id": "test-request-id-multiple-bids",

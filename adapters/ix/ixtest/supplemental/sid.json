@@ -63,9 +63,10 @@
         "body": {
           "ext": {
             "ixdiag": {
-              "multipleSiteIds": "569749, 569750"
-            },
-            "prebid": null
+              "multipleSiteIds": "569749, 569750",
+              "pbsp": "go",
+              "pbsv": "unknown"
+            }
           },
           "id": "test-request-id",
           "imp": [

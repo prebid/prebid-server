@@ -1,4 +1,4 @@
-endpoint: "https://backend.pubrise.ai/"
+endpoint: "https://backend.pubrise.ai/pserver"
 maintainer:
   email: "prebid@pubrise.ai"
 capabilities:
