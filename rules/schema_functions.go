@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const (
@@ -19,7 +20,6 @@ const (
 	DataCenterIn     = "dataCenterIn"
 	DeviceCountry    = "deviceCountry"
 	DeviceCountryIn  = "deviceCountryIn"
-	DeviceTypeIn     = "deviceTypeIn"
 	EidAvailable     = "eidAvailable"
 	EidIn            = "eidIn"
 	FpdAvailable     = "fpdAvailable"
@@ -72,8 +72,7 @@ func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFuncti
 	}
 }
 
-// ------------deviceCountry----------------
-
+// ------------deviceCountryIn--------------
 type deviceCountryIn struct {
 	Countries        []string `json:"countries"`
 	CountryDirectory map[string]struct{}
@@ -111,10 +110,14 @@ func (dci *deviceCountryIn) Name() string {
 	return DeviceCountryIn
 }
 
+// ------------deviceCountry----------------
 type deviceCountry struct{}
 
 func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &deviceCountry{}, checkNilArgs(params, DeviceCountry)
+	if err := checkNilArgs(params, DeviceCountry); err != nil {
+		return nil, err
+	}
+	return &deviceCountry{}, nil
 }
 
 func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -129,12 +132,15 @@ func (dci *deviceCountry) Name() string {
 	return DeviceCountry
 }
 
-// ------------datacenters------------------
+// ------------datacenter-------------------
 
 type dataCenter struct{}
 
 func NewDataCenter(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &dataCenter{}, checkNilArgs(params, DataCenter)
+	if err := checkNilArgs(params, DataCenter); err != nil {
+		return nil, err
+	}
+	return &dataCenter{}, nil
 }
 
 func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -149,22 +155,25 @@ func (dci *dataCenter) Name() string {
 	return DataCenter
 }
 
+// ------------dataCenterIn-----------------
 type dataCenterIn struct {
+	DataCenters   []string `json:"datacenters"`
 	DataCenterDir map[string]struct{}
 }
 
 func NewDataCenterIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	dataCenters, err := checkArgsStringList(params, DataCenterIn)
-	if err != nil {
+	schemaFunc := &dataCenterIn{}
+	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
 		return nil, err
 	}
 
-	schemaFunc := &dataCenterIn{
-		DataCenterDir: make(map[string]struct{}),
+	if len(schemaFunc.DataCenters) == 0 {
+		return nil, errors.New("Empty datacenter argument in dataCenterIn schema function")
 	}
 
-	for i := 0; i < len(dataCenters); i++ {
-		schemaFunc.DataCenterDir[dataCenters[i]] = struct{}{}
+	schemaFunc.DataCenterDir = make(map[string]struct{})
+	for i := 0; i < len(schemaFunc.DataCenters); i++ {
+		schemaFunc.DataCenterDir[schemaFunc.DataCenters[i]] = struct{}{}
 	}
 
 	return schemaFunc, nil
@@ -185,11 +194,13 @@ func (dci *dataCenterIn) Name() string {
 }
 
 // ------------channel------------------
-type channel struct {
-}
+type channel struct{}
 
 func NewChannel(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &channel{}, checkNilArgs(params, DataCenter)
+	if err := checkNilArgs(params, Channel); err != nil {
+		return nil, err
+	}
+	return &channel{}, nil
 }
 
 func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -218,54 +229,13 @@ func (c *channel) Name() string {
 }
 
 // ------------eidAvailable------------------
-
-type eidIn struct {
-	eidList []string
-	eidDir  map[string]struct{}
-}
-
-func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	eidsParam, err := checkArgsStringList(params, EidIn)
-	if err != nil {
-		return nil, err
-	}
-
-	schemaFunc := &eidIn{
-		eidList: eidsParam,
-		eidDir:  make(map[string]struct{}),
-	}
-
-	for i := 0; i < len(eidsParam); i++ {
-		schemaFunc.eidDir[eidsParam[i]] = struct{}{}
-	}
-
-	return schemaFunc, nil
-}
-
-func (ei *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(ei.eidDir) == 0 {
-		return "false", nil
-	}
-
-	eids := getUserEIDS(wrapper)
-
-	for i := 0; i < len(eids); i++ {
-		if _, found := ei.eidDir[eids[i].Source]; found {
-			return "true", nil
-		}
-	}
-	return "false", nil
-}
-
-func (ei *eidIn) Name() string {
-	return EidIn
-}
-
-type eidAvailable struct {
-}
+type eidAvailable struct{}
 
 func NewEidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &eidAvailable{}, checkNilArgs(params, EidAvailable)
+	if err := checkNilArgs(params, EidAvailable); err != nil {
+		return nil, err
+	}
+	return &eidAvailable{}, nil
 }
 
 func (ea *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -278,13 +248,57 @@ func (ea *eidAvailable) Name() string {
 	return EidAvailable
 }
 
-// ------------userFpdAvailable------------------
-type userFpdAvailable struct {
-	// no params
+// ------------eidIn-------------------------
+type eidIn struct {
+	EidSources []string `json:"sources"`
+	Eids       map[string]struct{}
 }
 
+func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+	schemaFunc := &eidIn{}
+	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
+		return nil, err
+	}
+
+	if len(schemaFunc.EidSources) == 0 {
+		return nil, errors.New("Empty sources argument in eidIn schema function")
+	}
+
+	schemaFunc.Eids = make(map[string]struct{})
+	for i := 0; i < len(schemaFunc.EidSources); i++ {
+		schemaFunc.Eids[schemaFunc.EidSources[i]] = struct{}{}
+	}
+
+	return schemaFunc, nil
+}
+
+func (ei *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	if len(ei.Eids) == 0 {
+		return "false", nil
+	}
+
+	eids := getUserEIDS(wrapper)
+
+	for i := 0; i < len(eids); i++ {
+		if _, found := ei.Eids[eids[i].Source]; found {
+			return "true", nil
+		}
+	}
+	return "false", nil
+}
+
+func (ei *eidIn) Name() string {
+	return EidIn
+}
+
+// ------------userFpdAvailable------------------
+type userFpdAvailable struct{}
+
 func NewUserFpdAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &userFpdAvailable{}, checkNilArgs(params, UserFpdAvailable)
+	if err := checkNilArgs(params, UserFpdAvailable); err != nil {
+		return nil, err
+	}
+	return &userFpdAvailable{}, nil
 }
 
 func (ufpd *userFpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -296,12 +310,13 @@ func (ufpd *userFpdAvailable) Name() string {
 }
 
 // ------------fpdAvail------------------
-type fpdAvailable struct {
-	// no params
-}
+type fpdAvailable struct{}
 
 func NewFpdAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &fpdAvailable{}, checkNilArgs(params, FpdAvailable)
+	if err := checkNilArgs(params, FpdAvailable); err != nil {
+		return nil, err
+	}
+	return &fpdAvailable{}, nil
 }
 
 func (fpd *fpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -326,28 +341,30 @@ func (fpd *fpdAvailable) Name() string {
 
 // ------------gppSid------------------
 type gppSidIn struct {
-	gppSids map[int8]struct{}
+	SidList []int8 `json:"sids"`
+	GppSids map[int8]struct{}
 }
 
 func NewGppSidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	gppSids, err := checkArgsInt8List(params, GppSidIn)
-	if err != nil {
+	schemaFunc := &gppSidIn{}
+	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
 		return nil, err
 	}
 
-	schemaFunc := &gppSidIn{
-		gppSids: make(map[int8]struct{}),
+	if len(schemaFunc.SidList) == 0 {
+		return nil, errors.New("Empty GPPSIDs list argument in gppSidIn schema function")
 	}
 
-	for i := 0; i < len(gppSids); i++ {
-		schemaFunc.gppSids[gppSids[i]] = struct{}{}
+	schemaFunc.GppSids = make(map[int8]struct{})
+	for i := 0; i < len(schemaFunc.SidList); i++ {
+		schemaFunc.GppSids[schemaFunc.SidList[i]] = struct{}{}
 	}
 
 	return schemaFunc, nil
 }
 
 func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(sid.gppSids) == 0 {
+	if len(sid.GppSids) == 0 {
 		return "false", nil
 	}
 
@@ -356,7 +373,7 @@ func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	}
 
 	for i := 0; i < len(wrapper.Regs.GPPSID); i++ {
-		if _, found := sid.gppSids[wrapper.Regs.GPPSID[i]]; found {
+		if _, found := sid.GppSids[wrapper.Regs.GPPSID[i]]; found {
 			return "true", nil
 		}
 	}
@@ -369,11 +386,13 @@ func (sid *gppSidIn) Name() string {
 }
 
 // ------------gppSidAvailable-------------
-type gppSidAvailable struct {
-}
+type gppSidAvailable struct{}
 
 func NewGppSidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &gppSidAvailable{}, checkNilArgs(params, GppSidAvailable)
+	if err := checkNilArgs(params, GppSidAvailable); err != nil {
+		return nil, err
+	}
+	return &gppSidAvailable{}, nil
 }
 
 func (sid *gppSidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -385,11 +404,13 @@ func (sid *gppSidAvailable) Name() string {
 }
 
 // ------------tcfInScope------------------
-type tcfInScope struct {
-}
+type tcfInScope struct{}
 
 func NewTcfInScope(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	return &tcfInScope{}, checkNilArgs(params, TcfInScope)
+	if err := checkNilArgs(params, TcfInScope); err != nil {
+		return nil, err
+	}
+	return &tcfInScope{}, nil
 }
 
 func (tcf *tcfInScope) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
@@ -405,16 +426,28 @@ func (tcf *tcfInScope) Name() string {
 
 // ------------percent------------------
 type percent struct {
-	value int
+	Percent *int `json:"pct"`
 }
 
 func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	percentValue, err := checkArgsInt(params, Percent)
-	return &percent{value: percentValue}, err
+	schemaFunc := &percent{}
+	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
+		return nil, err
+	}
+	if schemaFunc.Percent == nil {
+		schemaFunc.Percent = ptrutil.ToPtr(5)
+	}
+	if *schemaFunc.Percent < 0 {
+		*schemaFunc.Percent = 0
+	}
+	if *schemaFunc.Percent > 100 {
+		*schemaFunc.Percent = 100
+	}
+	return schemaFunc, nil
 }
 
 func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	pValue := p.value
+	pValue := *p.Percent
 	if pValue <= 0 {
 		return "false", nil
 	}
@@ -541,76 +574,18 @@ func randRange(min, max int) int {
 
 func checkNilArgs(params json.RawMessage, funcName string) error {
 	if params == nil {
-		// no params handling
-		// { "function": "channel"}
 		return nil
 	}
 
-	var args [][]interface{}
-
-	if err := jsonutil.Unmarshal(params, &args); err != nil {
-		return err
-	}
-	if len(args) > 0 {
-		return fmt.Errorf("%s expects 0 arguments", funcName)
-	}
-	return nil
-}
-
-func checkSingleArgList(params json.RawMessage, funcName string) ([]interface{}, error) {
-	var args [][]interface{}
-
-	if err := jsonutil.Unmarshal(params, &args); err != nil {
-		return nil, err
-	}
-	if len(args) != 1 {
-		return nil, fmt.Errorf("%s expects one argument", funcName)
-	}
-	return args[0], nil
-}
-
-func checkArgsStringList(params json.RawMessage, funcName string) ([]string, error) {
-	args, err := checkSingleArgList(params, funcName)
-	if err != nil {
-		return nil, err
+	if len(params) == 0 {
+		return nil
 	}
 
-	values := make([]string, len(args))
-	for i, v := range args {
-		stringValue, ok := v.(string)
-		if !ok {
-			return nil, errors.New("error converting value to string")
-		}
-		values[i] = stringValue
+	if len(params) > 0 && (string(params) == "null" || string(params) == "{}" || string(params) == "[]" || string(params) == "\"\"") {
+		return nil
 	}
 
-	return values, nil
-}
-
-func checkArgsInt8List(params json.RawMessage, funcName string) ([]int8, error) {
-	args, err := checkSingleArgList(params, funcName)
-	if err != nil {
-		return nil, err
-	}
-	values := make([]int8, len(args))
-	for i, v := range args {
-		intValue, ok := v.(int8)
-		if !ok {
-			return nil, errors.New("error converting value to int8")
-		}
-		values[i] = intValue
-	}
-	return values, nil
-}
-
-func checkArgsInt(params json.RawMessage, funcName string) (int, error) {
-	//stub
-	return 0, nil
-}
-
-func checkArgsString(params json.RawMessage, funcName string) (string, error) {
-	//stub
-	return "", nil
+	return fmt.Errorf("%s expects 0 arguments", funcName)
 }
 
 func getDeviceGeo(wrapper *openrtb_ext.RequestWrapper) *openrtb2.Geo {
