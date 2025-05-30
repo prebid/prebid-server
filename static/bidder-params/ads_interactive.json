@@ -13,6 +13,10 @@
       "type": "string",
       "minLength": 1,
       "description": "Endpoint ID"
+    },
+    "adUnit": {
+      "type": "string",
+      "description": "Deprecated, use placementId or endpointId instead"
     }
   },
   "oneOf": [
