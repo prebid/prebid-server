@@ -8,6 +8,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestIsLeaf(t *testing.T) {
+	tests := []struct {
+		desc     string
+		inNode   *Node[struct{}, struct{}]
+		expected bool
+	}{
+		{
+			desc:     "Node with nil children",
+			inNode:   &Node[struct{}, struct{}]{},
+			expected: true,
+		},
+		{
+			desc: "Node with empty children map",
+			inNode: &Node[struct{}, struct{}]{
+				Children: map[string]*Node[struct{}, struct{}]{},
+			},
+			expected: true,
+		},
+		{
+			desc: "Node with children",
+			inNode: &Node[struct{}, struct{}]{
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child": {},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.expected, tc.inNode.isLeaf())
+		})
+	}
+}
+
 func TestMatchChild(t *testing.T) {
 	tests := []struct {
 		desc            string
@@ -35,7 +71,7 @@ func TestMatchChild(t *testing.T) {
 			desc: "Result doesn't match and no wildcard",
 			inNode: &Node[struct{}, struct{}]{
 				Children: map[string]*Node[struct{}, struct{}]{
-					"child-two": &Node[struct{}, struct{}]{},
+					"child-two": {},
 				},
 			},
 			nodeKey:         "child-one",
@@ -45,8 +81,8 @@ func TestMatchChild(t *testing.T) {
 			desc: "Result doesn't match but node has wildcard",
 			inNode: &Node[struct{}, struct{}]{
 				Children: map[string]*Node[struct{}, struct{}]{
-					"child-two": &Node[struct{}, struct{}]{},
-					"*":         &Node[struct{}, struct{}]{},
+					"child-two": {},
+					"*":         {},
 				},
 			},
 			nodeKey:         "child-one",
@@ -56,8 +92,8 @@ func TestMatchChild(t *testing.T) {
 			desc: "Key matches",
 			inNode: &Node[struct{}, struct{}]{
 				Children: map[string]*Node[struct{}, struct{}]{
-					"child-one": &Node[struct{}, struct{}]{},
-					"*":         &Node[struct{}, struct{}]{},
+					"child-one": {},
+					"*":         {},
 				},
 			},
 			nodeKey:         "child-one",
@@ -86,53 +122,138 @@ func TestTreeValidate(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			desc: "leaf only",
+			desc: "root is leaf",
 			inTree: &Tree[struct{}, struct{}]{
 				Root: &Node[struct{}, struct{}]{},
 			},
 			expectedErr: nil,
 		},
 		{
-			desc: "Unbalanced tree",
-			inTree: &Tree[struct{}, struct{}]{
-				Root: &Node[struct{}, struct{}]{
-					Children: map[string]*Node[struct{}, struct{}]{
-						"child1": &Node[struct{}, struct{}]{},
-						"child2": &Node[struct{}, struct{}]{
-							Children: map[string]*Node[struct{}, struct{}]{
-								"child2.1": &Node[struct{}, struct{}]{},
-							},
-						},
-					},
-				},
-			},
+			desc:        "Unbalanced tree",
+			inTree:      unbalancedTree,
 			expectedErr: errors.New("tree is malformed: leaves found at different depths"),
 		},
 		{
-			desc: "Balanced tree",
-			inTree: &Tree[struct{}, struct{}]{
-				Root: &Node[struct{}, struct{}]{
-					Children: map[string]*Node[struct{}, struct{}]{
-						"child1": &Node[struct{}, struct{}]{
-							Children: map[string]*Node[struct{}, struct{}]{
-								"child1.1": &Node[struct{}, struct{}]{}},
-						},
-						"child2": &Node[struct{}, struct{}]{
-							Children: map[string]*Node[struct{}, struct{}]{
-								"child2.1": &Node[struct{}, struct{}]{},
-							},
-						},
-					},
-				},
-			},
+			desc:        "Balanced tree",
+			inTree:      balancedTree,
 			expectedErr: nil,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			assert.Equal(t, tc.expectedErr, tc.inTree.validate())
+			err := tc.inTree.validate()
+			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
+}
+
+var unbalancedTree = &Tree[struct{}, struct{}]{
+	Root: &Node[struct{}, struct{}]{
+		Children: map[string]*Node[struct{}, struct{}]{
+			"child1": {
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child1.1": {
+						Children: map[string]*Node[struct{}, struct{}]{
+							"child1.1.1": {},
+						},
+					},
+				},
+			},
+			"child2": {
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child2.1": {},
+					"child2.2": {},
+				},
+			},
+		},
+	},
+}
+
+var balancedTree = &Tree[struct{}, struct{}]{
+	Root: &Node[struct{}, struct{}]{
+		Children: map[string]*Node[struct{}, struct{}]{
+			"child1": {
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child1.1": {},
+				},
+			},
+			"child2": {
+				Children: map[string]*Node[struct{}, struct{}]{
+					"child2.1": {},
+					"child2.2": {},
+				},
+			},
+		},
+	},
+}
+
+func TestNewTree(t *testing.T) {
+	tests := []struct {
+		desc          string
+		inTreeBuilder treeBuilder[struct{}, struct{}]
+		expectedTree  *Tree[struct{}, struct{}]
+		expectedErr   error
+	}{
+		{
+			desc:          "tree builder error",
+			inTreeBuilder: &faultyTreeBuilder{},
+			expectedTree:  nil,
+			expectedErr:   errors.New("tree builder error"),
+		},
+		{
+			desc:          "No error but built tree is nil",
+			inTreeBuilder: &builderOfNilTrees{},
+			expectedTree:  nil,
+			expectedErr:   nil,
+		},
+		{
+			desc:          "Built tree is invalid",
+			inTreeBuilder: &builderOfUnbalancedTrees{},
+			expectedTree:  nil,
+			expectedErr:   errors.New("tree is malformed: leaves found at different depths"),
+		},
+		{
+			desc:          "Success",
+			inTreeBuilder: &builderOfBalancedTrees{},
+			expectedTree:  balancedTree,
+			expectedErr:   nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			tree, err := NewTree(tc.inTreeBuilder)
+			assert.Equal(t, tc.expectedTree, tree)
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
+}
+
+type faultyTreeBuilder struct{}
+
+func (tb *faultyTreeBuilder) Build(tree **Tree[struct{}, struct{}]) error {
+	return errors.New("tree builder error")
+}
+
+type builderOfNilTrees struct{}
+
+func (tb *builderOfNilTrees) Build(tree **Tree[struct{}, struct{}]) error {
+	*tree = nil
+	return nil
+}
+
+type builderOfUnbalancedTrees struct{}
+
+func (tb *builderOfUnbalancedTrees) Build(tree **Tree[struct{}, struct{}]) error {
+	*tree = unbalancedTree
+	return nil
+}
+
+type builderOfBalancedTrees struct{}
+
+func (tb *builderOfBalancedTrees) Build(tree **Tree[struct{}, struct{}]) error {
+	*tree = balancedTree
+	return nil
 }
 
 func TestRun(t *testing.T) {
@@ -168,7 +289,7 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, string]{
 					SchemaFunction: &faultySchemaFunction{},
 					Children: map[string]*Node[struct{}, string]{
-						"leaf": &Node[struct{}, string]{},
+						"leaf": {},
 					},
 				},
 			},
@@ -185,7 +306,7 @@ func TestRun(t *testing.T) {
 						&unexpectedResultFunction{},
 					},
 					Children: map[string]*Node[struct{}, string]{
-						"goodValue": &Node[struct{}, string]{
+						"goodValue": {
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&faultyResultFunction{},
 							},
@@ -206,7 +327,7 @@ func TestRun(t *testing.T) {
 						&unexpectedResultFunction{},
 					},
 					Children: map[string]*Node[struct{}, string]{
-						"unreachable-child": &Node[struct{}, string]{
+						"unreachable-child": {
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&leafResultFunction{},
 							},
@@ -224,26 +345,26 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, string]{
 					SchemaFunction: &goodSchemaFunction{},
 					Children: map[string]*Node[struct{}, string]{
-						"goodValue": &Node[struct{}, string]{
+						"goodValue": {
 							SchemaFunction: &goodSchemaFunction{},
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&unexpectedResultFunction{},
 							},
 							Children: map[string]*Node[struct{}, string]{
-								"goodValue": &Node[struct{}, string]{
+								"goodValue": {
 									ResultFunctions: []ResultFunction[struct{}, string]{
 										&leafResultFunction{},
 									},
 								},
-								"unreachable-leaf": &Node[struct{}, string]{},
+								"unreachable-leaf": {},
 							},
 						},
-						"*": &Node[struct{}, string]{
+						"*": {
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&unexpectedResultFunction{},
 							},
 						},
-						"unreachable-child": &Node[struct{}, string]{},
+						"unreachable-child": {},
 					},
 				},
 			},
@@ -257,8 +378,8 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, string]{
 					SchemaFunction: &goodSchemaFunction{},
 					Children: map[string]*Node[struct{}, string]{
-						"unreachable-child": &Node[struct{}, string]{},
-						"*": &Node[struct{}, string]{
+						"unreachable-child": {},
+						"*": {
 							SchemaFunction: &faultySchemaFunction{},
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&leafResultFunction{},
@@ -277,19 +398,19 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, string]{
 					SchemaFunction: &goodSchemaFunction{},
 					Children: map[string]*Node[struct{}, string]{
-						"goodValue": &Node[struct{}, string]{
+						"goodValue": {
 							SchemaFunction: &goodSchemaFunction{},
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&unexpectedResultFunction{},
 							},
 							Children: map[string]*Node[struct{}, string]{
-								"*": &Node[struct{}, string]{
+								"*": {
 									SchemaFunction: &goodSchemaFunction{},
 									ResultFunctions: []ResultFunction[struct{}, string]{
 										&unexpectedResultFunction{},
 									},
 									Children: map[string]*Node[struct{}, string]{
-										"unreachable-leaf": &Node[struct{}, string]{
+										"unreachable-leaf": {
 											ResultFunctions: []ResultFunction[struct{}, string]{
 												&unexpectedResultFunction{},
 											},
@@ -311,13 +432,13 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, string]{
 					SchemaFunction: &goodSchemaFunction{},
 					Children: map[string]*Node[struct{}, string]{
-						"*": &Node[struct{}, string]{
+						"*": {
 							SchemaFunction: &goodSchemaFunction{},
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&unexpectedResultFunction{},
 							},
 							Children: map[string]*Node[struct{}, string]{
-								"unreachable-child": &Node[struct{}, string]{
+								"unreachable-child": {
 									SchemaFunction: &goodSchemaFunction{},
 									ResultFunctions: []ResultFunction[struct{}, string]{
 										&leafResultFunction{},
@@ -341,13 +462,13 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, string]{
 					SchemaFunction: &goodSchemaFunction{},
 					Children: map[string]*Node[struct{}, string]{
-						"*": &Node[struct{}, string]{
+						"*": {
 							SchemaFunction: &goodSchemaFunction{},
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&unexpectedResultFunction{},
 							},
 							Children: map[string]*Node[struct{}, string]{
-								"goodValue": &Node[struct{}, string]{
+								"goodValue": {
 									SchemaFunction:  &goodSchemaFunction{},
 									ResultFunctions: []ResultFunction[struct{}, string]{},
 								},
@@ -369,13 +490,13 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, string]{
 					SchemaFunction: &goodSchemaFunction{},
 					Children: map[string]*Node[struct{}, string]{
-						"*": &Node[struct{}, string]{
+						"*": {
 							SchemaFunction: nil, // Missing schema function
 							ResultFunctions: []ResultFunction[struct{}, string]{
 								&unexpectedResultFunction{},
 							},
 							Children: map[string]*Node[struct{}, string]{
-								"goodValue": &Node[struct{}, string]{
+								"goodValue": {
 									SchemaFunction: &goodSchemaFunction{},
 									ResultFunctions: []ResultFunction[struct{}, string]{
 										&leafResultFunction{},

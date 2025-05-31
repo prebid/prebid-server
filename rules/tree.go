@@ -47,13 +47,14 @@ type Tree[T1 any, T2 any] struct {
 // If the result matches one of the node values on the next level, we move to that node, otherwise we exit.
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
+	var nodeKey string
 	currNode := t.Root
+
 	resFuncMeta := ResultFunctionMeta{
 		AnalyticsKey: t.AnalyticsKey,
 		ModelVersion: t.ModelVersion,
 	}
 
-	var nodeKey string
 	for currNode != nil && !currNode.isLeaf() {
 		if currNode.SchemaFunction == nil {
 			return errors.New("schema function is nil")
@@ -63,7 +64,6 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 		if err != nil {
 			return err
 		}
-
 		resFuncMeta.appendToSchemaFunctionResults(currNode.SchemaFunction.Name(), res)
 
 		nodeKey, currNode = currNode.matchChild(res)
@@ -93,34 +93,36 @@ func (t *Tree[T1, T2]) validate() error {
 	}
 
 	firstLeafDepth := -1
-	balanced := true
 
-	validateNode(t.Root, 0, &firstLeafDepth, &balanced)
-
-	if !balanced {
+	if !validateNode(t.Root, 0, &firstLeafDepth) {
 		return errors.New("tree is malformed: leaves found at different depths")
 	}
 	return nil
 }
 
 // validateNode is a helper function that traverses the tree recursively recording leaf node depths.
-func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, firstLeafDepth *int, balanced *bool) bool {
+func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, firstLeafDepth *int) bool {
 	if node == nil {
 		return true
 	}
 
 	if node.isLeaf() {
-		if *firstLeafDepth > -1 && *firstLeafDepth != depth {
-			*balanced = false
+		// If this is the first leaf node we come accross, record
+		// its depth
+		if *firstLeafDepth == -1 {
+			*firstLeafDepth = depth
+			return true
+		}
+		// Else, this is not the first leaf we've visited and depth must
+		// match the first leaf's depth. If unequal, tree is unbalanced
+		if depth != *firstLeafDepth {
 			return false
 		}
-		*firstLeafDepth = depth
-		return true
 	}
 
 	for _, child := range node.Children {
-		if !validateNode(child, depth+1, firstLeafDepth, balanced) {
-			break
+		if !validateNode(child, depth+1, firstLeafDepth) {
+			return false
 		}
 	}
 	return true
@@ -132,15 +134,15 @@ func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, firstLeafDepth 
 // and returns an error if there is an issue with the configuration or if the tree cannot be built successfully.
 // The tree builder is generic and can work with any types T1 and T2.
 type treeBuilder[T1 any, T2 any] interface {
-	Build(*Tree[T1, T2]) error
+	Build(**Tree[T1, T2]) error
 }
 
 // NewTree builds a new tree using the provided tree builder function and validates
 // the generated tree ensuring it is well-formed.
 func NewTree[T1 any, T2 any](builder treeBuilder[T1, T2]) (*Tree[T1, T2], error) {
-	tree := Tree[T1, T2]{Root: &Node[T1, T2]{}}
+	var tree *Tree[T1, T2]
 
-	if err := builder.Build(&tree); err != nil {
+	if err := builder.Build(&tree); err != nil || tree == nil {
 		return nil, err
 	}
 
@@ -148,7 +150,7 @@ func NewTree[T1 any, T2 any](builder treeBuilder[T1, T2]) (*Tree[T1, T2], error)
 		return nil, err
 	}
 
-	return &tree, nil
+	return tree, nil
 }
 
 // SchemaFuncFactory is a function that takes a function name and arguments in JSON format
