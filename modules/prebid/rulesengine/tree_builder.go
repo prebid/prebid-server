@@ -24,15 +24,14 @@ type treeBuilder[T1 any, T2 any] struct {
 // It is expected that T1 and T2 are the types of the request and result payloads respectively.
 // The function uses the provided schema and result function factories to create
 // the appropriate functions for each node in the tree.
-func (tb *treeBuilder[T1, T2]) Build(tree **rules.Tree[T1, T2]) error {
-	*tree = &rules.Tree[T1, T2]{Root: &rules.Node[T1, T2]{}}
-	currNode := (*tree).Root
+func (tb *treeBuilder[T1, T2]) Build(tree *rules.Tree[T1, T2]) error {
+	currNode := tree.Root
 
 	defaultFunctions, err := tb.buildDefaultFunctions()
 	if err != nil {
 		return err
 	}
-	(*tree).DefaultFunctions = defaultFunctions
+	tree.DefaultFunctions = defaultFunctions
 
 	for _, rule := range tb.Config.Rules {
 		for ci, condition := range rule.Conditions {

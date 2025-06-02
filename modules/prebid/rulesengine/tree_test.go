@@ -17,27 +17,27 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 	}
-	err := rules.Run(rw, &result.ChangeSet)
+	err := rules.Run(rw, &result)
 	assert.NoError(t, err, "unexpected error")
 	assert.NotEmptyf(t, result.ChangeSet, "change set is empty")
 	assert.Len(t, result.ChangeSet.Mutations(), 1)
 	assert.Equal(t, hs.MutationUpdate, result.ChangeSet.Mutations()[0].Type())
 }
 
-func BuildTestRules() rules.Tree[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]] {
+func BuildTestRules() rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]] {
 	devCountryFunc, _ := rules.NewDeviceCountryIn(json.RawMessage(`[["USA"]]`))          // handle err
 	resFuncTrue, _ := NewIncludeBidders(json.RawMessage(`[{ "bidders": ["bidderA"]}]`))  //handle err
 	resFuncFalse, _ := NewExcludeBidders(json.RawMessage(`[{ "bidders": ["bidderB"]}]`)) //handle err
 
-	rules := rules.Tree[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
-		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
+	rules := rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 			SchemaFunction: devCountryFunc,
-			Children: map[string]*rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
+			Children: map[string]*rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 				"true": {
-					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{resFuncTrue},
+					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{resFuncTrue},
 				},
 				"false": {
-					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{resFuncFalse},
+					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{resFuncFalse},
 				},
 			},
 		},

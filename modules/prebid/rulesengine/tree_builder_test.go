@@ -18,21 +18,25 @@ func TestBuildTreeFullConfig(t *testing.T) {
 	err := jsonutil.Unmarshal(GetConf(), &modelGroup)
 	assert.NoError(t, err)
 
-	builder := &treeBuilder[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
+	builder := &treeBuilder[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 		Config:            modelGroup,
 		SchemaFuncFactory: rules.NewRequestSchemaFunction,
 		ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
 	}
-	tree := &rules.Tree[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{
-		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{},
+	//tree := &rules.Tree[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]
+	//{
+	//	Root: &rules.Node[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]{},
+	//}
+	var tree *rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]] = &rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
 	}
 
 	err = builder.Build(&tree)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 2, len(tree.DefaultFunctions))
-	assert.Equal(t, LogATagName, tree.DefaultFunctions[0].Name())
-	assert.Equal(t, ExcludeBiddersName, tree.DefaultFunctions[1].Name())
+	assert.Equal(t, 1, len(tree.DefaultFunctions))
+
+	assert.Equal(t, ExcludeBiddersName, tree.DefaultFunctions[0].Name())
 
 	assert.Equal(t, rules.DeviceCountryIn, tree.Root.SchemaFunction.Name())
 	assert.Empty(t, tree.Root.ResultFunctions)
@@ -81,10 +85,6 @@ func GetConf() json.RawMessage {
      }
    ],
     "default": [
-        {
-           "function": "logATag",
-           "args": {"analyticsValue": "default-allow"}
-        },
         {
            "function": "excludeBidders",
            "args": [{

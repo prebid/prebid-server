@@ -201,12 +201,6 @@ func TestNewTree(t *testing.T) {
 			expectedErr:   errors.New("tree builder error"),
 		},
 		{
-			desc:          "No error but built tree is nil",
-			inTreeBuilder: &builderOfNilTrees{},
-			expectedTree:  nil,
-			expectedErr:   nil,
-		},
-		{
 			desc:          "Built tree is invalid",
 			inTreeBuilder: &builderOfUnbalancedTrees{},
 			expectedTree:  nil,
@@ -231,28 +225,21 @@ func TestNewTree(t *testing.T) {
 
 type faultyTreeBuilder struct{}
 
-func (tb *faultyTreeBuilder) Build(tree **Tree[struct{}, struct{}]) error {
+func (tb *faultyTreeBuilder) Build(tree *Tree[struct{}, struct{}]) error {
 	return errors.New("tree builder error")
-}
-
-type builderOfNilTrees struct{}
-
-func (tb *builderOfNilTrees) Build(tree **Tree[struct{}, struct{}]) error {
-	*tree = nil
-	return nil
 }
 
 type builderOfUnbalancedTrees struct{}
 
-func (tb *builderOfUnbalancedTrees) Build(tree **Tree[struct{}, struct{}]) error {
-	*tree = unbalancedTree
+func (tb *builderOfUnbalancedTrees) Build(tree *Tree[struct{}, struct{}]) error {
+	tree.Root = unbalancedTree.Root
 	return nil
 }
 
 type builderOfBalancedTrees struct{}
 
-func (tb *builderOfBalancedTrees) Build(tree **Tree[struct{}, struct{}]) error {
-	*tree = balancedTree
+func (tb *builderOfBalancedTrees) Build(tree *Tree[struct{}, struct{}]) error {
+	tree.Root = balancedTree.Root
 	return nil
 }
 

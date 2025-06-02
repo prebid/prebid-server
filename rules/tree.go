@@ -134,15 +134,15 @@ func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, firstLeafDepth 
 // and returns an error if there is an issue with the configuration or if the tree cannot be built successfully.
 // The tree builder is generic and can work with any types T1 and T2.
 type treeBuilder[T1 any, T2 any] interface {
-	Build(**Tree[T1, T2]) error
+	Build(*Tree[T1, T2]) error
 }
 
 // NewTree builds a new tree using the provided tree builder function and validates
 // the generated tree ensuring it is well-formed.
 func NewTree[T1 any, T2 any](builder treeBuilder[T1, T2]) (*Tree[T1, T2], error) {
-	var tree *Tree[T1, T2]
+	tree := Tree[T1, T2]{Root: &Node[T1, T2]{}}
 
-	if err := builder.Build(&tree); err != nil || tree == nil {
+	if err := builder.Build(&tree); err != nil {
 		return nil, err
 	}
 
@@ -150,7 +150,7 @@ func NewTree[T1 any, T2 any](builder treeBuilder[T1, T2]) (*Tree[T1, T2], error)
 		return nil, err
 	}
 
-	return tree, nil
+	return &tree, nil
 }
 
 // SchemaFuncFactory is a function that takes a function name and arguments in JSON format
