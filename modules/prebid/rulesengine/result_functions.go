@@ -12,12 +12,11 @@ import (
 )
 
 // ProcessedAuctionResultFunc is a type alias for a result function that runs in the processed auction request stage.
-type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrapper, hs.ChangeSet[hs.ProcessedAuctionRequestPayload]]
+type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
 
 const (
 	ExcludeBiddersName = "excludeBidders"
 	IncludeBiddersName = "includeBidders"
-	LogATagName        = "logATag"
 )
 
 // NewProcessedAuctionRequestResultFunction is a factory function that creates a new result function based on the provided name and parameters.
@@ -33,8 +32,6 @@ func NewProcessedAuctionRequestResultFunction(name string, params json.RawMessag
 		return NewExcludeBidders(params)
 	case IncludeBiddersName:
 		return NewIncludeBidders(params)
-	case LogATagName:
-		return NewLogATag(params)
 	default:
 		return nil, fmt.Errorf("result function %s was not created", name)
 	}
@@ -67,7 +64,7 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
@@ -98,7 +95,7 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.Ch
 			return err
 		}
 
-		changeSet.BidderRequest().Bidders().Update(impIdToBidders)
+		result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
 	}
 	return nil
 }
@@ -126,7 +123,7 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
@@ -157,46 +154,13 @@ func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.Ch
 			return err
 		}
 
-		changeSet.BidderRequest().Bidders().Update(impIdToBidders)
+		result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
 	}
 	return nil
 }
 
 func (eb *IncludeBidders) Name() string {
 	return IncludeBiddersName
-}
-
-// LogATagParams is a struct that holds parameters for the LogATag result function.
-type LogATagParams struct {
-	AnalyticsValue string
-}
-
-// NewLogATag is a factory function that creates a new LogATag result function.
-// It takes a JSON raw message as input, unmarshals it into a LogATagParams struct,
-// and returns a LogATag instance.
-// The function returns an error if there is an issue with the unmarshalling process.
-// The LogATag function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
-func NewLogATag(params json.RawMessage) (ProcessedAuctionResultFunc, error) {
-	var logATagParams LogATagParams
-	if err := jsonutil.Unmarshal(params, &logATagParams); err != nil {
-		return nil, err
-	}
-	return &LogATag{Args: logATagParams}, nil
-}
-
-// LogATag is a struct that holds parameters for the LogATag result function.
-type LogATag struct {
-	Args LogATagParams
-}
-
-// Call is a method that applies the changes specified in the LogATag instance to the provided ChangeSet by creating a mutation
-func (lt *LogATag) Call(req *openrtb_ext.RequestWrapper, changeSet *hs.ChangeSet[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
-	//stub
-	return nil
-}
-
-func (lt *LogATag) Name() string {
-	return LogATagName
 }
 
 func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (map[string]map[string]json.RawMessage, error) {
