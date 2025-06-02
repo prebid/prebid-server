@@ -429,8 +429,9 @@ type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
 	RecordTMaxTimeout()
 	RecordConnectionClose(success bool)
-	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
-	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
+	RecordRequest(labels Labels) // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels ImpLabels) // RecordImps across openRTB2 engines that support the 'Native' Imp Type
+	RecordImpsDropped(imps int)
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordOverheadTime(overHead OverheadType, length time.Duration)
 	RecordAdapterRequest(labels AdapterLabels)

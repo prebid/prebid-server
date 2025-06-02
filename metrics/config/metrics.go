@@ -99,6 +99,12 @@ func (me *MultiMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordImpsDropped(imps int) {
+	for _, thisME := range *me {
+		thisME.RecordImpsDropped(imps)
+	}
+}
+
 // RecordRequestTime across all engines
 func (me *MultiMetricsEngine) RecordRequestTime(labels metrics.Labels, length time.Duration) {
 	for _, thisME := range *me {
@@ -393,6 +399,10 @@ func (me *NilMetricsEngine) RecordConnectionClose(success bool) {
 
 // RecordImps as a noop
 func (me *NilMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
+}
+
+// RecordImpsDropped as a noop
+func (me *NilMetricsEngine) RecordImpsDropped(imps int) {
 }
 
 // RecordRequestTime as a noop

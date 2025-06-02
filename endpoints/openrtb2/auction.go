@@ -502,6 +502,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
+	if account.MaxImpressions > 0 && len(impInfo) > account.MaxImpressions {
+		deps.metricsEngine.RecordImpsDropped(len(impInfo))
+		errs = []error{fmt.Errorf("max allowed number of impressions is %d", account.MaxImpressions)}
+		return
+	}
+
 	hookExecutor.SetAccount(account)
 	requestJson, rejectErr = hookExecutor.ExecuteRawAuctionStage(requestJson)
 	if rejectErr != nil {

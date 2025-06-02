@@ -1384,6 +1384,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 			"malformed_acct":             json.RawMessage(`{"disabled":"invalid type"}`),
 			"disabled_acct":              json.RawMessage(`{"disabled":true}`),
 			"alternate_bidder_code_acct": json.RawMessage(`{"disabled":false,"alternatebiddercodes":{"enabled":true,"bidders":{"appnexus":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}`),
+			"acct_imps_limit":            json.RawMessage(`{"max_impressions":1}`),
 		},
 	}
 
