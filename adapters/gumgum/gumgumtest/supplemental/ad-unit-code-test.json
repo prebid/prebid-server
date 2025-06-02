@@ -6,24 +6,21 @@
         "id": "test-imp-id",
         "banner": {
           "format": [
-            {
-              "w": 300,
-              "h": 250
-            },
-            {
-              "w": 300,
-              "h": 300
-            }
-          ]
+            { "w": 300, "h": 250 },
+            { "w": 300, "h": 300 }
+          ],
+          "w": 300,
+          "h": 250
         },
         "ext": {
-          "prebid": {
-            "adunitcode": "test-adunit-code"
-          },
           "bidder": {
             "zone": "dc9d6be1"
+          },
+          "prebid": {
+            "adunitcode": "test-adunit-code"
           }
-        }
+        },
+        "tagid": "test-adunit-code"
       }
     ]
   },
@@ -40,14 +37,8 @@
               "tagid": "test-adunit-code",
               "banner": {
                 "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  },
-                  {
-                    "w": 300,
-                    "h": 300
-                  }
+                  { "w": 300, "h": 250 },
+                  { "w": 300, "h": 300 }
                 ],
                 "w": 300,
                 "h": 250
@@ -55,6 +46,9 @@
               "ext": {
                 "bidder": {
                   "zone": "dc9d6be1"
+                },
+                "prebid": {
+                  "adunitcode": "test-adunit-code"
                 }
               }
             }

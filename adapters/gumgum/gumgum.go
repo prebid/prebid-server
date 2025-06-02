@@ -128,81 +128,6 @@ func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, errs
 }
 
-//func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
-//	var bidderExt adapters.ExtImpBidder
-//	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-//		return nil, &errortypes.BadInput{Message: err.Error()}
-//	}
-//
-//	var gumgumExt openrtb_ext.ExtImpGumGum
-//	if err := jsonutil.Unmarshal(bidderExt.Bidder, &gumgumExt); err != nil {
-//		return nil, &errortypes.BadInput{Message: err.Error()}
-//	}
-//
-//	// Try to extract ImpExtGumGum to get adunitcode and fallback
-//	var impExt openrtb_ext.ImpExtGumGum
-//	if err := json.Unmarshal(imp.Ext, &impExt); err == nil {
-//		if imp.TagID == "" {
-//			if impExt.Prebid.AdUnitCode != "" {
-//				imp.TagID = impExt.Prebid.AdUnitCode
-//			} else if impExt.Bidder.Zone != "" {
-//				imp.TagID = impExt.Bidder.Zone
-//			}
-//		}
-//	}
-//
-//	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
-//		bannerCopy := *imp.Banner
-//		format := bannerCopy.Format[0]
-//		bannerCopy.W = &(format.W)
-//		bannerCopy.H = &(format.H)
-//
-//		if gumgumExt.Slot != 0 {
-//			bannerExt := getBiggerFormat(bannerCopy.Format, gumgumExt.Slot)
-//			bannerExtBytes, err := json.Marshal(&bannerExt)
-//			if err != nil {
-//				return nil, err
-//			}
-//			bannerCopy.Ext = bannerExtBytes
-//		}
-//
-//		imp.Banner = &bannerCopy
-//	}
-//
-//	if imp.Video != nil && gumgumExt.IrisID != "" {
-//		videoCopy := *imp.Video
-//		videoExt := openrtb_ext.ExtImpGumGumVideo{IrisID: gumgumExt.IrisID}
-//		videoExtBytes, err := json.Marshal(&videoExt)
-//		if err != nil {
-//			return nil, err
-//		}
-//		videoCopy.Ext = videoExtBytes
-//		imp.Video = &videoCopy
-//	}
-//
-//	// Add "product" to top-level ext (so PBS logs can see it)
-//	if gumgumExt.Product != "" {
-//		var extMap map[string]json.RawMessage
-//		if err := json.Unmarshal(imp.Ext, &extMap); err != nil {
-//			return nil, &errortypes.BadInput{Message: err.Error()}
-//		}
-//
-//		productBytes, err := json.Marshal(gumgumExt.Product)
-//		if err != nil {
-//			return nil, err
-//		}
-//		extMap["product"] = productBytes
-//
-//		newExt, err := json.Marshal(extMap)
-//		if err != nil {
-//			return nil, err
-//		}
-//		imp.Ext = newExt
-//	}
-//
-//	return &gumgumExt, nil
-//}
-
 func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -218,22 +143,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		}
 		return nil, err
 	}
-
-	// Extract adunitcode from imp.Ext
-	//var adUnitCode string
-	//var extMap map[string]interface{}
-	//if err := json.Unmarshal(imp.Ext, &extMap); err == nil {
-	//	if prebid, ok := extMap["prebid"].(map[string]interface{}); ok {
-	//		if value, ok := prebid["adunitcode"].(string); ok {
-	//			adUnitCode = value
-	//		}
-	//	}
-	//}
-	//
-	//// Set adunitcode to imp.TagID
-	//if adUnitCode != "" {
-	//	imp.TagID = adUnitCode
-	//}
 
 	var ext openrtb_ext.ExtImpAdUnitCode
 	if err := json.Unmarshal(imp.Ext, &ext); err == nil {

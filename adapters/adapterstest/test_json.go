@@ -126,7 +126,7 @@ func loadFile(filename string) (*testSpec, error) {
 // More assertions will almost certainly be added in the future, as bugs come up.
 func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, isAmpTest, isVideoTest bool) {
 	reqInfo := getTestExtraRequestInfo(t, filename, spec, isAmpTest, isVideoTest)
-	requests := testMakeRequestsImpl(t, filename, spec, bidder, reqInfo)
+	requests := testMakeRequestsImpl(t, filename, spec, bidder, reqInfo) // spec - BidRequest - Imp, Banner and Site(site is nil and
 
 	testMakeBidsImpl(t, filename, spec, bidder, requests)
 }
