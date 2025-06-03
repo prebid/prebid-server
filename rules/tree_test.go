@@ -416,7 +416,7 @@ func TestRun(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name: "No_default_functions._Leaf_found_but_contains_no_result_functions",
+			name: "Leaf_found_without_result_functions_do_not_execute_defaults",
 			inTree: &Tree[struct{}, runTestAssertableData]{
 				Root: &Node[struct{}, runTestAssertableData]{
 					SchemaFunction: &nodeSchemaFunction{},
@@ -504,7 +504,7 @@ func TestRun(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name: "Reach leaf multiple levels down",
+			name: "Reach_leaf_multiple_levels_down",
 			inTree: &Tree[struct{}, runTestAssertableData]{
 				DefaultFunctions: []ResultFunction[struct{}, runTestAssertableData]{
 					&defaultResultFunction{},
