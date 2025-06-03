@@ -110,7 +110,7 @@ func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 	return nil
 }
 
-func (eb *IncludeBidders) Name() string {
+func (ib *IncludeBidders) Name() string {
 	return IncludeBiddersName
 }
 
