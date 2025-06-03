@@ -36,7 +36,7 @@ func (tm *treeManager) Run(c cacher) error {
 				break
 			}
 
-			parsedCfg, err := config.NewConfig(*req.config, tb.schemaValidator)
+			parsedCfg, err := config.NewConfig(*req.config, tm.schemaValidator)
 			if err != nil {
 				// TODO: log metric
 				glog.Errorf("Rules engine error parsing config for account %s: %v", req.accountID, err)
