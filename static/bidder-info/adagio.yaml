@@ -5,6 +5,7 @@
 # - For EMEA: ams => (https://mp-ams.4dex.io/pbserver)
 # - For APAC: tyo => (https://mp-tyo.4dex.io/pbserver)
 endpoint: "https://mp-REGION.4dex.io/pbserver"
+disabled: true
 endpointCompression: gzip
 maintainer:
   email: dev@adagio.io
