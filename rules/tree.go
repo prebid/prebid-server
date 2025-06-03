@@ -48,6 +48,9 @@ type Tree[T1 any, T2 any] struct {
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	var nodeKey string
+	if t.Root == nil {
+		return errors.New("tree root is nil")
+	}
 	currNode := t.Root
 
 	resFuncMeta := ResultFunctionMeta{
@@ -55,7 +58,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 		ModelVersion: t.ModelVersion,
 	}
 
-	for currNode != nil && !currNode.isLeaf() {
+	for !currNode.isLeaf() {
 		if currNode.SchemaFunction == nil {
 			return errors.New("schema function is nil")
 		}
@@ -67,6 +70,10 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 		resFuncMeta.appendToSchemaFunctionResults(currNode.SchemaFunction.Name(), res)
 
 		nodeKey, currNode = currNode.matchChild(res)
+		if currNode == nil {
+			resFuncMeta.RuleFired = "default"
+			break
+		}
 		resFuncMeta.appendToRuleFired(nodeKey)
 	}
 
