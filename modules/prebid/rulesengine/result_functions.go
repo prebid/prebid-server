@@ -3,6 +3,7 @@ package rulesengine
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"slices"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -37,21 +38,13 @@ func NewProcessedAuctionRequestResultFunction(name string, params json.RawMessag
 	}
 }
 
-// ResultFuncParams is a struct that holds parameters for result functions and is used in ExcludeBidders and IncludeBidders.
-type ResultFuncParams struct {
-	Bidders        []string
-	SeatNonBid     int
-	AnalyticsValue string
-	IfSyncedId     bool
-}
-
 // NewExcludeBidders is a factory function that creates a new ExcludeBidders result function.
 // It takes a JSON raw message as input, unmarshals it into a slice of ResultFuncParams,
 // and returns an ExcludeBidders instance.
 // The function returns an error if there is an issue with the unmarshalling process.
 // The ExcludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
 func NewExcludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, error) {
-	var excludeBiddersParams ResultFuncParams
+	var excludeBiddersParams config.ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &excludeBiddersParams); err != nil {
 		return nil, err
 	}
@@ -60,7 +53,7 @@ func NewExcludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 
 // ExcludeBidders is a struct that holds parameters for excluding bidders in the rules engine.
 type ExcludeBidders struct {
-	Args ResultFuncParams
+	Args config.ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
@@ -109,7 +102,7 @@ func (eb *ExcludeBidders) Name() string {
 // The function returns an error if there is an issue with the unmarshalling process.
 // The IncludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
 func NewIncludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, error) {
-	var includeBiddersParams ResultFuncParams
+	var includeBiddersParams config.ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &includeBiddersParams); err != nil {
 		return nil, err
 	}
@@ -118,7 +111,7 @@ func NewIncludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 
 // IncludeBidders is a struct that holds parameters for including bidders in the rules engine.
 type IncludeBidders struct {
-	Args ResultFuncParams
+	Args config.ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.

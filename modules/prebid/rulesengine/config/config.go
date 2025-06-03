@@ -51,6 +51,14 @@ type Result struct {
 	Args json.RawMessage `json:"args,omitempty"`
 }
 
+// ResultFuncParams is a struct that holds parameters for result functions and is used in ExcludeBidders and IncludeBidders.
+type ResultFuncParams struct {
+	Bidders        []string `json:"bidders,omitempty"`
+	SeatNonBid     int      `json:"seatnonbid,omitempty"`
+	AnalyticsValue string   `json:"analyticsvalue,omitempty"`
+	IfSyncedId     bool     `json:"ifsyncedid,omitempty"`
+}
+
 func CreateSchemaValidator(jsonSchemaFile string) (*gojsonschema.Schema, error) {
 	jsonSchemaFilePath, err := filepath.Abs(jsonSchemaFile)
 	if err != nil {
