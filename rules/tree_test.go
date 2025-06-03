@@ -272,7 +272,7 @@ func TestRun(t *testing.T) {
 				Root: &Node[struct{}, runTestAssertableData]{
 					SchemaFunction: &nodeSchemaFunction{},
 					Children: map[string]*Node[struct{}, runTestAssertableData]{
-						"nodeSchemaResult": &Node[struct{}, runTestAssertableData]{
+						"nodeSchemaResult": {
 							SchemaFunction: &faultySchemaFunction{},
 							Children: map[string]*Node[struct{}, runTestAssertableData]{
 								"leaf": {},

@@ -63,7 +63,7 @@ func (tb *treeBuilder[T1, T2]) Build(tree *rules.Tree[T1, T2]) error {
 			currNode.ResultFunctions = append(currNode.ResultFunctions, resFunc)
 		}
 
-		currNode = (*tree).Root
+		currNode = tree.Root
 	}
 
 	return nil
