@@ -8,15 +8,16 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/mitchellh/copystructure"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -226,9 +227,10 @@ type expectedBidResponse struct {
 }
 
 type expectedBid struct {
-	Bid  json.RawMessage `json:"bid"`
-	Type string          `json:"type"`
-	Seat string          `json:"seat"`
+	Bid   json.RawMessage `json:"bid"`
+	Type  string          `json:"type"`
+	Seat  string          `json:"seat"`
+	Video json.RawMessage `json:"video,omitempty"`
 }
 
 // ---------------------------------------
@@ -271,6 +273,10 @@ func assertErrorList(t *testing.T, description string, actual []error, expected 
 		} else if expected[i].Comparison == "regex" {
 			if matched, _ := regexp.MatchString(expected[i].Value, actual[i].Error()); !matched {
 				t.Errorf(`%s error[%d] had wrong message. Expected match with regex "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
+			}
+		} else if expected[i].Comparison == "startswith" {
+			if !strings.HasPrefix(actual[i].Error(), expected[i].Value) {
+				t.Errorf(`%s error[%d] had wrong message. Expected to start with "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
 			}
 		} else {
 			t.Fatalf(`invalid comparison type "%s"`, expected[i].Comparison)
@@ -342,6 +348,9 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 	assert.Equal(t, string(expected.Seat), string(actual.Seat), fmt.Sprintf(`%s.seat "%s" does not match expected "%s."`, description, string(actual.Seat), string(expected.Seat)))
 	assert.Equal(t, string(expected.Type), string(actual.BidType), fmt.Sprintf(`%s.type "%s" does not match expected "%s."`, description, string(actual.BidType), string(expected.Type)))
 	assert.NoError(t, diffOrtbBids(fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid))
+	if expected.Video != nil {
+		assert.NoError(t, diffBidVideo(fmt.Sprintf("%s.video", description), actual.BidVideo, expected.Video))
+	}
 }
 
 // diffOrtbBids compares the actual Bid made by the adapter to the expectation from the JSON file.
@@ -356,6 +365,15 @@ func diffOrtbBids(description string, actual *openrtb2.Bid, expected json.RawMes
 	}
 
 	return diffJson(description, actualJson, expected)
+}
+
+func diffBidVideo(description string, actual *openrtb_ext.ExtBidPrebidVideo, expected json.RawMessage) error {
+	actualJson, err := json.Marshal(actual)
+	if err != nil {
+		return fmt.Errorf("%s failed to marshal actual Bid Video into JSON. %v", description, err)
+	}
+
+	return diffJson(description, actualJson, []byte(expected))
 }
 
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either

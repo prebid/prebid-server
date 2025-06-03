@@ -14,9 +14,9 @@ import (
 	"github.com/docker/go-units"
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/vendorconsent"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 type httpSender = func(payload []byte) error
@@ -169,20 +169,20 @@ func (l *AgmaLogger) extractPublisherAndSite(requestWrapper *openrtb_ext.Request
 			publisherId = requestWrapper.App.Publisher.ID
 		}
 		appSiteId = requestWrapper.App.ID
+		if appSiteId == "" {
+			appSiteId = requestWrapper.App.Bundle
+		}
+
 	}
 	return publisherId, appSiteId
 }
 
 func (l *AgmaLogger) shouldTrackEvent(requestWrapper *openrtb_ext.RequestWrapper) (bool, string) {
-	userExt, err := requestWrapper.GetUserExt()
-	if err != nil || userExt == nil {
+	if requestWrapper.User == nil {
 		return false, ""
 	}
-	consent := userExt.GetConsent()
-	if consent == nil {
-		return false, ""
-	}
-	consentStr := *consent
+	consentStr := requestWrapper.User.Consent
+
 	parsedConsent, err := vendorconsent.ParseString(consentStr)
 	if err != nil {
 		return false, ""
@@ -259,6 +259,11 @@ func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 		return
 	}
 	l.bufferCh <- data
+}
+
+func (l *AgmaLogger) Shutdown() {
+	glog.Info("[AgmaAnalytics] Shutdown, trying to flush buffer")
+	l.flush() // mutex safe
 }
 
 func (l *AgmaLogger) LogCookieSyncObject(event *analytics.CookieSyncObject)         {}

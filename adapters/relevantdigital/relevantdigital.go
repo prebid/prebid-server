@@ -10,12 +10,13 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 type adapter struct {
@@ -56,7 +57,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error {
 	var bidRequestExt relevantExt
 	if len(prebidBidRequest.Ext) != 0 {
-		if err := json.Unmarshal(prebidBidRequest.Ext, &bidRequestExt); err != nil {
+		if err := jsonutil.Unmarshal(prebidBidRequest.Ext, &bidRequestExt); err != nil {
 			return &errortypes.FailedToRequestBids{
 				Message: fmt.Sprintf("failed to unmarshal ext, %s", prebidBidRequest.Ext),
 			}
@@ -158,13 +159,13 @@ func createJSONRequest(bidRequest *openrtb2.BidRequest) ([]byte, error) {
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtRelevantDigital, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "imp.ext not provided",
 		}
 	}
 	relevantExt := openrtb_ext.ExtRelevantDigital{PbsBufferMs: default_bufffer_ms}
-	if err := json.Unmarshal(bidderExt.Bidder, &relevantExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &relevantExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
@@ -254,7 +255,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 func getMediaTypeForBidFromExt(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
 			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}
@@ -301,7 +302,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 

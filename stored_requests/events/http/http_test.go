@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 

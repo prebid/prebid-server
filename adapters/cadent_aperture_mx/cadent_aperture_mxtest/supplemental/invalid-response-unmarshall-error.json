@@ -62,8 +62,8 @@
 
     "expectedMakeBidsErrors": [
         {
-            "value": "Unable to unpackage bid response\\. Error: json: cannot unmarshal string into Go struct field (Bid\\.seatbid\\.bid\\.w|Bid\\.w) of type int64",
-            "comparison": "regex"
+            "value": "Unable to unpackage bid response. Error: cannot unmarshal openrtb2.Bid.W: unexpected character",
+            "comparison": "startswith"
         }
     ]
 }

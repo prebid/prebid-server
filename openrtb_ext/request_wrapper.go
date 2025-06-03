@@ -7,8 +7,8 @@ import (
 	"slices"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 // RequestWrapper wraps the OpenRTB request to provide a storage location for unmarshalled ext fields, so they
@@ -61,6 +61,7 @@ const (
 	schainKey                           = "schain"
 	us_privacyKey                       = "us_privacy"
 	cdepKey                             = "cdep"
+	gpcKey                              = "gpc"
 )
 
 // LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
@@ -94,6 +95,12 @@ func (rw *RequestWrapper) GetImp() []*ImpWrapper {
 
 func (rw *RequestWrapper) SetImp(imps []*ImpWrapper) {
 	rw.impWrappers = imps
+	imparr := make([]openrtb2.Imp, len(imps))
+	for i, iw := range imps {
+		imparr[i] = *iw.Imp
+		iw.Imp = &imparr[i]
+	}
+	rw.Imp = imparr
 	rw.impWrappersAccessed = true
 }
 
@@ -238,6 +245,7 @@ func (rw *RequestWrapper) rebuildImp() error {
 			return err
 		}
 		rw.Imp[i] = *rw.impWrappers[i].Imp
+		rw.impWrappers[i].Imp = &rw.Imp[i]
 	}
 
 	return nil
@@ -391,6 +399,8 @@ func (rw *RequestWrapper) rebuildSourceExt() error {
 	return nil
 }
 
+// Clone clones the request wrapper exts and the imp wrappers
+// the cloned imp wrappers are pointing to the bid request imps
 func (rw *RequestWrapper) Clone() *RequestWrapper {
 	if rw == nil {
 		return nil
@@ -401,6 +411,26 @@ func (rw *RequestWrapper) Clone() *RequestWrapper {
 		newImpWrappers[i] = iw.Clone()
 	}
 	clone.impWrappers = newImpWrappers
+	clone.userExt = rw.userExt.Clone()
+	clone.deviceExt = rw.deviceExt.Clone()
+	clone.requestExt = rw.requestExt.Clone()
+	clone.appExt = rw.appExt.Clone()
+	clone.regExt = rw.regExt.Clone()
+	clone.siteExt = rw.siteExt.Clone()
+	clone.doohExt = rw.doohExt.Clone()
+	clone.sourceExt = rw.sourceExt.Clone()
+
+	return &clone
+}
+
+func (rw *RequestWrapper) CloneAndClearImpWrappers() *RequestWrapper {
+	if rw == nil {
+		return nil
+	}
+	rw.impWrappersAccessed = false
+
+	clone := *rw
+	clone.impWrappers = nil
 	clone.userExt = rw.userExt.Clone()
 	clone.deviceExt = rw.deviceExt.Clone()
 	clone.requestExt = rw.requestExt.Clone()
@@ -1201,6 +1231,8 @@ type RegExt struct {
 	dsaDirty       bool
 	gdpr           *int8
 	gdprDirty      bool
+	gpc            *string
+	gpcDirty       bool
 	usPrivacy      string
 	usPrivacyDirty bool
 }
@@ -1242,6 +1274,11 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 		if err := jsonutil.Unmarshal(uspJson, &re.usPrivacy); err != nil {
 			return err
 		}
+	}
+
+	gpcJson, hasGPC := re.ext[gpcKey]
+	if hasGPC && gpcJson != nil {
+		return jsonutil.ParseIntoString(gpcJson, &re.gpc)
 	}
 
 	return nil
@@ -1287,6 +1324,19 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 		re.usPrivacyDirty = false
 	}
 
+	if re.gpcDirty {
+		if re.gpc != nil {
+			rawjson, err := jsonutil.Marshal(re.gpc)
+			if err != nil {
+				return nil, err
+			}
+			re.ext[gpcKey] = rawjson
+		} else {
+			delete(re.ext, gpcKey)
+		}
+		re.gpcDirty = false
+	}
+
 	re.extDirty = false
 	if len(re.ext) == 0 {
 		return nil, nil
@@ -1295,7 +1345,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.dsaDirty || re.gdprDirty || re.usPrivacyDirty
+	return re.extDirty || re.dsaDirty || re.gdprDirty || re.usPrivacyDirty || re.gpcDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
@@ -1335,6 +1385,19 @@ func (re *RegExt) GetGDPR() *int8 {
 func (re *RegExt) SetGDPR(gdpr *int8) {
 	re.gdpr = gdpr
 	re.gdprDirty = true
+}
+
+func (re *RegExt) GetGPC() *string {
+	if re.gpc == nil {
+		return nil
+	}
+	gpc := *re.gpc
+	return &gpc
+}
+
+func (re *RegExt) SetGPC(gpc *string) {
+	re.gpc = gpc
+	re.gpcDirty = true
 }
 
 func (re *RegExt) GetUSPrivacy() string {

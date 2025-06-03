@@ -7,7 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,6 +47,7 @@ endpointCompression: GZIP
 openrtb:
   version: 2.6
   gpp-supported: true
+  multiformat-supported: false
 endpoint: https://endpoint.com
 disabled: false
 extra_info: extra-info
@@ -121,12 +123,15 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 }
 
 func TestProcessBidderInfo(t *testing.T) {
+	falseValue := false
+
 	testCases := []struct {
 		description         string
 		bidderInfos         map[string][]byte
 		expectedBidderInfos BidderInfos
 		expectError         string
 	}{
+
 		{
 			description: "Valid bidder info",
 			bidderInfos: map[string][]byte{
@@ -204,8 +209,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -255,8 +261,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -284,6 +291,9 @@ func TestProcessBidderInfo(t *testing.T) {
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
+
+	trueValue := true
+
 	parentWithSyncerKey := BidderInfo{
 		AppSecret: "app-secret",
 		Capabilities: &CapabilitiesInfo{
@@ -312,8 +322,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: true,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: true,
-			Version:      "2.6",
+			GPPSupported:         true,
+			Version:              "2.6",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "123",
 		Syncer: &Syncer{
@@ -359,8 +370,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: false,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: false,
-			Version:      "2.5",
+			GPPSupported:         false,
+			Version:              "2.5",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "456",
 		Syncer: &Syncer{
@@ -401,6 +413,15 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		Key: "bidderA",
 	}
 
+	parentWithSyncerSupports := parentWithoutSyncerKey
+	parentWithSyncerSupports.Syncer = &Syncer{
+		Supports: []string{"iframe"},
+	}
+
+	aliasWithoutSyncer := parentWithoutSyncerKey
+	aliasWithoutSyncer.AliasOf = "bidderA"
+	aliasWithoutSyncer.Syncer = nil
+
 	testCases := []struct {
 		description         string
 		aliasInfos          map[string]aliasNillableFields
@@ -427,6 +448,26 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			},
 			expectedErr:         nil,
 			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": bidderB},
+		},
+		{
+			description: "inherit all parent info in alias bidder, except for syncer is parent only defines supports",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {
+					Disabled:                nil,
+					ModifyingVastXmlAllowed: nil,
+					Experiment:              nil,
+					XAPI:                    nil,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithSyncerSupports,
+				"bidderB": BidderInfo{
+					AliasOf: "bidderA",
+					// all other fields should be inherited from parent bidder, except for syncer
+				},
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerSupports, "bidderB": aliasWithoutSyncer},
 		},
 		{
 			description: "inherit all parent info in alias bidder, use parent name as syncer alias key",
@@ -1522,6 +1563,77 @@ func TestSyncerEndpointOverride(t *testing.T) {
 	}
 }
 
+func TestSyncerDefined(t *testing.T) {
+	testCases := []struct {
+		name        string
+		givenSyncer *Syncer
+		expected    bool
+	}{
+		{
+			name:        "nil",
+			givenSyncer: nil,
+			expected:    false,
+		},
+		{
+			name:        "empty",
+			givenSyncer: &Syncer{},
+			expected:    false,
+		},
+		{
+			name:        "key-only",
+			givenSyncer: &Syncer{Key: "anyKey"},
+			expected:    true,
+		},
+		{
+			name:        "iframe-only",
+			givenSyncer: &Syncer{IFrame: &SyncerEndpoint{}},
+			expected:    true,
+		},
+		{
+			name:        "redirect-only",
+			givenSyncer: &Syncer{Redirect: &SyncerEndpoint{}},
+			expected:    true,
+		},
+		{
+			name:        "externalurl-only",
+			givenSyncer: &Syncer{ExternalURL: "anyURL"},
+			expected:    true,
+		},
+		{
+			name:        "supportscors-only",
+			givenSyncer: &Syncer{SupportCORS: ptrutil.ToPtr(false)},
+			expected:    true,
+		},
+		{
+			name:        "formatoverride-only",
+			givenSyncer: &Syncer{FormatOverride: "anyFormat"},
+			expected:    true,
+		},
+		{
+			name:        "skipwhen-only",
+			givenSyncer: &Syncer{SkipWhen: &SkipWhen{}},
+			expected:    true,
+		},
+		{
+			name:        "supports-only",
+			givenSyncer: &Syncer{Supports: []string{"anySupports"}},
+			expected:    false,
+		},
+		{
+			name:        "supports-with-other",
+			givenSyncer: &Syncer{Key: "anyKey", Supports: []string{"anySupports"}},
+			expected:    true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.givenSyncer.Defined()
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
 func TestApplyBidderInfoConfigSyncerOverrides(t *testing.T) {
 	var (
 		givenFileSystem = BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}}
@@ -1786,7 +1898,7 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
-
+	falseValue := false
 	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
 	require.NoError(t, err)
 
@@ -1833,8 +1945,9 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			},
 			EndpointCompression: "GZIP",
 			OpenRTB: &OpenRTBInfo{
-				GPPSupported: true,
-				Version:      "2.6",
+				GPPSupported:         true,
+				Version:              "2.6",
+				MultiformatSupported: &falseValue,
 			},
 			Disabled:         false,
 			ExtraAdapterInfo: "extra-info",

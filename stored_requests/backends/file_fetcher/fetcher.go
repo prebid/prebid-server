@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // NewFileFetcher _immediately_ loads stored request data from local files.
@@ -60,6 +60,9 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJS
 		}}
 	}
 
+	if accountDefaultsJSON == nil {
+		return accountJSON, nil
+	}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
 	if err != nil {
 		return nil, []error{err}

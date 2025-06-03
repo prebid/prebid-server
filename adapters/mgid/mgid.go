@@ -7,10 +7,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type MgidAdapter struct {
@@ -74,7 +75,7 @@ func preprocess(request *openrtb2.BidRequest) (path string, err error) {
 		var imp = request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return "", &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -82,7 +83,7 @@ func preprocess(request *openrtb2.BidRequest) (path string, err error) {
 
 		var mgidExt openrtb_ext.ExtImpMgid
 
-		if err := json.Unmarshal(bidderExt.Bidder, &mgidExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &mgidExt); err != nil {
 			return "", &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -143,7 +144,7 @@ func (a *MgidAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Req
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -156,7 +157,7 @@ func (a *MgidAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Req
 			bidType := openrtb_ext.BidTypeBanner
 			if len(sb.Bid[i].Ext) > 0 && bytes.Contains(sb.Bid[i].Ext, []byte("crtype")) {
 				ext := RespBidExt{}
-				if err := json.Unmarshal(sb.Bid[i].Ext, &ext); err == nil && len(ext.CreativeType) > 0 {
+				if err := jsonutil.Unmarshal(sb.Bid[i].Ext, &ext); err == nil && len(ext.CreativeType) > 0 {
 					bidType = ext.CreativeType
 				}
 			}

@@ -45,7 +45,13 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
+                    }
                 },
                 "impIDs":["test-imp-id"]
             },
@@ -59,7 +65,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "JSON parsing error: json: cannot unmarshal number into Go struct field BidResponse.id of type string",
+            "value": "JSON parsing error: cannot unmarshal openrtb2.BidResponse.ID: expects \" or n, but found 1",
             "comparison": "literal"
         }
     ]

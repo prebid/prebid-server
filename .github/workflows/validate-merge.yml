@@ -6,13 +6,13 @@ on:
 
 jobs:
   validate-merge:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     
     steps:
     - name: Install Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.22.3
+        go-version: 1.24.0
 
     - name: Checkout Merged Branch
       uses: actions/checkout@v4

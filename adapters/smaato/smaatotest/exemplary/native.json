@@ -41,7 +41,18 @@
                 "gdpr": 1,
                 "us_privacy": "uspConsentString",
                 "gpp": "gppString",
-                "gpp_sid": [7]
+                "gpp_sid": [7],
+                "dsa": {
+                    "dsarequired": 1,
+                    "pubrender": 1,
+                    "datatopub": 1,
+                    "transparency": [
+                        {
+                            "domain": "testdomain.com",
+                            "dsaparams": [1,3]
+                        }
+                    ]
+                }
             }
         },
         "ext": {
@@ -98,17 +109,31 @@
                             "gdpr": 1,
                             "us_privacy": "uspConsentString",
                             "gpp": "gppString",
-                            "gpp_sid": [7]
+                            "gpp_sid": [7],
+                            "dsa": {
+                                "dsarequired": 1,
+                                "pubrender": 1,
+                                "datatopub": 1,
+                                "transparency": [
+                                    {
+                                        "domain": "testdomain.com",
+                                        "dsaparams": [1,3]
+                                    }
+                                ]
+                            }
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.7"
+                        "client": "prebid_server_1.2"
                     }
                 },
                 "impIDs":["postbid_iframe"]
             },
             "mockResponse": {
                 "status": 200,
+                "headers": {
+                    "X-Smt-Adtype": ["Native"]
+                },
                 "body": {
                     "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
                     "seatbid": [
@@ -129,7 +154,20 @@
                                     "nurl": "https://nurl",
                                     "price": 0.01,
                                     "w": 480,
-                                    "h": 320
+                                    "h": 320,
+                                    "ext": {
+                                        "dsa": {
+                                            "behalf": "Advertiser",
+                                            "paid": "Advertiser",
+                                            "adrender": 1,
+                                            "transparency": [
+                                                {
+                                                    "domain": "dsp1domain.com",
+                                                    "dsaparams": [1,3]
+                                                }
+                                            ]
+                                        }
+                                    }
                                 }
                             ]
                         }
@@ -159,7 +197,20 @@
                         "price": 0.01,
                         "w": 480,
                         "h": 320,
-                        "exp": 300
+                        "exp": 300,
+                        "ext": {
+                            "dsa": {
+                                "behalf": "Advertiser",
+                                "paid": "Advertiser",
+                                "adrender": 1,
+                                "transparency": [
+                                    {
+                                        "domain": "dsp1domain.com",
+                                        "dsaparams": [1,3]
+                                    }
+                                ]
+                            }
+                        }
                     },
                     "type": "native"
                 }

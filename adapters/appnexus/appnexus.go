@@ -13,14 +13,15 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/util/randomutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/randomutil"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const (
@@ -89,7 +90,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		memberId := impExtIncoming.Bidder.Member
+		memberId := string(impExtIncoming.Bidder.Member)
 		if memberId != "" {
 			// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 			// different impressions have different member IDs.
@@ -171,7 +172,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var appnexusResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &appnexusResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &appnexusResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -182,7 +183,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			bid := sb.Bid[i]
 
 			var bidExt bidExt
-			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+			if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
 				continue
 			}
@@ -221,7 +222,7 @@ func getRequestExt(ext json.RawMessage) (map[string]json.RawMessage, error) {
 	extMap := make(map[string]json.RawMessage)
 
 	if len(ext) > 0 {
-		if err := json.Unmarshal(ext, &extMap); err != nil {
+		if err := jsonutil.Unmarshal(ext, &extMap); err != nil {
 			return nil, err
 		}
 	}
@@ -233,7 +234,7 @@ func (a *adapter) getAppnexusExt(extMap map[string]json.RawMessage, isAMP int, i
 	var appnexusExt bidReqExtAppnexus
 
 	if appnexusExtJson, exists := extMap["appnexus"]; exists && len(appnexusExtJson) > 0 {
-		if err := json.Unmarshal(appnexusExtJson, &appnexusExt); err != nil {
+		if err := jsonutil.Unmarshal(appnexusExtJson, &appnexusExt); err != nil {
 			return appnexusExt, err
 		}
 	}
@@ -258,7 +259,7 @@ func (a *adapter) getAppnexusExt(extMap map[string]json.RawMessage, isAMP int, i
 
 func validateAndBuildImpExt(imp *openrtb2.Imp) (impExtIncoming, error) {
 	var ext impExtIncoming
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return impExtIncoming{}, err
 	}
 
@@ -287,7 +288,7 @@ func handleLegacyParams(appnexusExt *openrtb_ext.ExtImpAppnexus) {
 }
 
 func validateAppnexusExt(appnexusExt *openrtb_ext.ExtImpAppnexus) error {
-	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
+	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || string(appnexusExt.Member) == "") {
 		return &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}
@@ -463,7 +464,7 @@ func moveSupplyChain(request *openrtb2.BidRequest, extMap map[string]json.RawMes
 	}
 
 	sourceExtMap := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(request.Source.Ext, &sourceExtMap); err != nil {
+	if err := jsonutil.Unmarshal(request.Source.Ext, &sourceExtMap); err != nil {
 		return err
 	}
 

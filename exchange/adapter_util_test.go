@@ -6,19 +6,26 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/appnexus"
-	"github.com/prebid/prebid-server/v2/adapters/rubicon"
-	"github.com/prebid/prebid-server/v2/config"
-	metrics "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/appnexus"
+	"github.com/prebid/prebid-server/v3/adapters/rubicon"
+	"github.com/prebid/prebid-server/v3/config"
+	metrics "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	infoEnabled  = config.BidderInfo{Disabled: false}
-	infoDisabled = config.BidderInfo{Disabled: true}
+	falseValue          = false
+	infoEnabled         = config.BidderInfo{Disabled: false}
+	infoDisabled        = config.BidderInfo{Disabled: true}
+	multiformatDisabled = config.BidderInfo{
+		Disabled: false,
+		OpenRTB: &config.OpenRTBInfo{
+			MultiformatSupported: &falseValue,
+		},
+	}
 )
 
 func TestBuildAdapters(t *testing.T) {
@@ -36,15 +43,17 @@ func TestBuildAdapters(t *testing.T) {
 	rubiconBidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
 
 	testCases := []struct {
-		description     string
-		bidderInfos     map[string]config.BidderInfo
-		expectedBidders map[openrtb_ext.BidderName]AdaptedBidder
-		expectedErrors  []error
+		description                 string
+		bidderInfos                 map[string]config.BidderInfo
+		expectedBidders             map[openrtb_ext.BidderName]AdaptedBidder
+		expectedSingleFormatBidders map[openrtb_ext.BidderName]struct{}
+		expectedErrors              []error
 	}{
 		{
-			description:     "No Bidders",
-			bidderInfos:     map[string]config.BidderInfo{},
-			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{},
+			description:                 "No Bidders",
+			bidderInfos:                 map[string]config.BidderInfo{},
+			expectedBidders:             map[openrtb_ext.BidderName]AdaptedBidder{},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
 			description: "One Bidder",
@@ -52,6 +61,7 @@ func TestBuildAdapters(t *testing.T) {
 			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 			},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
 			description: "Many Bidders",
@@ -60,6 +70,7 @@ func TestBuildAdapters(t *testing.T) {
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
 			},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{},
 		},
 		{
 			description: "Invalid - Builder Errors",
@@ -67,13 +78,29 @@ func TestBuildAdapters(t *testing.T) {
 			expectedErrors: []error{
 				errors.New("unknown: unknown bidder"),
 			},
+			expectedSingleFormatBidders: nil,
+		},
+		{
+			description: "Bidders with multiformat Support Disabled",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": multiformatDisabled, "rubicon": multiformatDisabled},
+			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
+				openrtb_ext.BidderAppnexus: appnexusValidated,
+				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
+			},
+			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{
+				openrtb_ext.BidderAppnexus: {},
+				openrtb_ext.BidderRubicon:  {},
+			},
 		},
 	}
 
 	cfg := &config.Configuration{}
 	for _, test := range testCases {
-		bidders, errs := BuildAdapters(client, cfg, test.bidderInfos, metricEngine)
+		bidders, singleFormatBidders, errs := BuildAdapters(client, cfg, test.bidderInfos, metricEngine)
 		assert.Equal(t, test.expectedBidders, bidders, test.description+":bidders")
+
+		assert.Equal(t, test.expectedSingleFormatBidders, singleFormatBidders, test.description+":singleFormatBidders")
+
 		assert.ElementsMatch(t, test.expectedErrors, errs, test.description+":errors")
 	}
 }
@@ -152,7 +179,7 @@ func TestBuildBidders(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bidders, errs := buildBidders(test.bidderInfos, test.builders, server)
+		bidders, _, errs := buildBidders(test.bidderInfos, test.builders, server)
 
 		// For Test Setup Convenience
 		if test.expectedBidders == nil {

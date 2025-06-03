@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -195,7 +195,7 @@ func TestBuildIxDiag(t *testing.T) {
 			},
 			expectedRequest: &openrtb2.BidRequest{
 				ID:  "1",
-				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbsv":"1.880","pbjsv":"7.20"}}`),
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbjsv":"7.20","pbsp":"go","pbsv":"1.880"}}`),
 			},
 			expectError: false,
 			pbsVersion:  "1.880-abcdef",
@@ -208,7 +208,7 @@ func TestBuildIxDiag(t *testing.T) {
 			},
 			expectedRequest: &openrtb2.BidRequest{
 				ID:  "1",
-				Ext: json.RawMessage(`{"prebid":{"server":{"externalurl":"http://localhost:8000","gvlid":0,"datacenter":""}},"ixdiag":{"pbsv":"1.880"}}`),
+				Ext: json.RawMessage(`{"prebid":{"server":{"externalurl":"http://localhost:8000","gvlid":0,"datacenter":""}},"ixdiag":{"pbsp":"go","pbsv":"1.880"}}`),
 			},
 			expectError: false,
 			pbsVersion:  "1.880-abcdef",
@@ -220,7 +220,7 @@ func TestBuildIxDiag(t *testing.T) {
 			},
 			expectedRequest: &openrtb2.BidRequest{
 				ID:  "1",
-				Ext: json.RawMessage(`{"prebid":null,"ixdiag":{"pbsv":"1.880"}}`),
+				Ext: json.RawMessage(`{"ixdiag":{"pbsp":"go","pbsv":"1.880"}}`),
 			},
 			expectError: false,
 			pbsVersion:  "1.880-abcdef",
@@ -232,7 +232,7 @@ func TestBuildIxDiag(t *testing.T) {
 			},
 			expectedRequest: &openrtb2.BidRequest{
 				ID:  "1",
-				Ext: json.RawMessage(`{"prebid":null,"ixdiag":{"pbsv":"0.23.1"}}`),
+				Ext: json.RawMessage(`{"ixdiag":{"pbsp":"go","pbsv":"0.23.1"}}`),
 			},
 			expectError: false,
 			pbsVersion:  "0.23.1-3-g4ee257d8",
@@ -245,7 +245,7 @@ func TestBuildIxDiag(t *testing.T) {
 			},
 			expectedRequest: &openrtb2.BidRequest{
 				ID:  "1",
-				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbsv":"1.880","pbjsv":"7.20"}}`),
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbjsv":"7.20","pbsp":"go","pbsv":"1.880"}}`),
 			},
 			expectError: false,
 			pbsVersion:  "1.880",
@@ -258,7 +258,20 @@ func TestBuildIxDiag(t *testing.T) {
 			},
 			expectedRequest: &openrtb2.BidRequest{
 				ID:  "1",
-				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbjsv":"7.20"}}`),
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"pbjsv":"7.20","pbsp":"go","pbsv":"unknown"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "",
+		},
+		{
+			description: "request ixdiag contain other fields that should pass-through along with additional version fields",
+			request: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"msd":2,"msi":1,"nvin":"123"}}`),
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":{"channel":{"name":"web","version":"7.20"}},"ixdiag":{"msd":2,"msi":1,"nvin":"123","pbjsv":"7.20","pbsp":"go","pbsv":"unknown"}}`),
 			},
 			expectError: false,
 			pbsVersion:  "",
@@ -280,8 +293,8 @@ func TestBuildIxDiag(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			ixDiag := &IxDiag{}
-			err := setIxDiagIntoExtRequest(test.request, ixDiag, test.pbsVersion)
+			ixDiagFields := make(map[string]interface{})
+			err := setIxDiagIntoExtRequest(test.request, ixDiagFields, test.pbsVersion)
 			if test.expectError {
 				assert.NotNil(t, err)
 			} else {

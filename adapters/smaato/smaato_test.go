@@ -2,6 +2,7 @@ package smaato
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 
@@ -9,11 +10,11 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -74,9 +75,12 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 		}},
 	}
 	body, _ := json.Marshal(mockedBidResponse)
+	headers := http.Header{}
+	headers.Add("X-Smt-Adtype", "Video")
 	mockedRes := &adapters.ResponseData{
 		StatusCode: 200,
 		Body:       body,
+		Headers:    headers,
 	}
 
 	expectedBidCount := 1

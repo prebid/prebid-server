@@ -14,13 +14,11 @@
           }
         },
         "instl": 1,
+        "rwdd": 1,
         "ext": {
           "bidder": {
             "unit": "539439964",
             "delDomain": "se-demo-d.openx.net"
-          },
-          "prebid": {
-            "is_rewarded_inventory": 1
           }
         }
       }
@@ -46,7 +44,8 @@
                 }
               },
               "tagid": "539439964",
-              "instl": 1
+              "instl": 1,
+              "rwdd": 1
             }
           ],
           "ext": {
@@ -71,7 +70,8 @@
                 "adm": "some-test-ad",
                 "crid": "crid_10",
                 "w": 1024,
-                "h": 576
+                "h": 576,
+                "mtype": 2
               }]
             }
           ]
@@ -93,7 +93,8 @@
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 1024,
-            "h": 576
+            "h": 576,
+            "mtype": 2
           },
           "type": "video"
         }
