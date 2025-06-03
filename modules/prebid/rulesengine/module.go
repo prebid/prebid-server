@@ -25,6 +25,7 @@ func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
 	}
 
 	tm := treeManager{
+		done:            make(chan struct{}),
 		requests:        make(chan buildInstruction),
 		schemaValidator: schemaValidator,
 	}
@@ -92,6 +93,13 @@ func (m Module) HandleProcessedAuctionHook(
 	ruleSets := co.ruleSetsForProcessedAuctionRequestStage
 
 	return handleProcessedAuctionHook(ruleSets, payload)
+}
+
+// Shutdown signals the module to stop processing and waits for the tree manager to finish
+// processing any remaining build instructions in the channel.
+func (m Module) Shutdown() {
+	m.TreeManager.Shutdown()
+	<-m.TreeManager.done
 }
 
 // rebuildTrees returns true if the trees for this account need to be rebuilt; false otherwise

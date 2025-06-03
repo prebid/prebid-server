@@ -3,6 +3,7 @@ package rulesengine
 import (
 	"encoding/json"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -15,46 +16,56 @@ type buildInstruction struct {
 
 // treeManager represents the component that generates trees
 type treeManager struct {
+	done            chan struct{}
 	requests        chan buildInstruction
 	schemaValidator *gojsonschema.Schema
 }
 
 // Run reads build instructions from a channel, and if the trees for the rule sets for a given account
 // need to be rebuilt, it rebuilds them storing them in cache
-func (tb *treeManager) Run(c cacher) error {
+func (tm *treeManager) Run(c cacher) error {
 	for {
 		select {
-		case req := <-tb.requests:
+		case req := <-tm.requests:
 			if req.config == nil {
 				break
 			}
 
 			cacheObj := c.Get(req.accountID)
-
 			if cacheObj != nil && !rebuildTrees(cacheObj, req.config) {
 				break
 			}
 
 			parsedCfg, err := config.NewConfig(*req.config, tb.schemaValidator)
 			if err != nil {
-				// TODO: log error / metric
+				// TODO: log metric
+				glog.Errorf("Rules engine error parsing config for account %s: %v", req.accountID, err)
 				break
 			}
-
 			if !parsedCfg.Enabled {
 				c.Delete(req.accountID)
 				// TODO: log metric
+				glog.Infof("Rules engine disabled for account %s", req.accountID)
 				break
 			}
 
 			newCacheObj, err := NewCacheEntry(parsedCfg, req.config)
 			if err != nil {
-				// TODO: log error / metric
+				// TODO: log metric
+				glog.Errorf("Rules engine error creating cache entry for account %s: %v", req.accountID, err)
 				break
 			}
 
 			c.Set(req.accountID, &newCacheObj)
+
+		case <-tm.done:
+			glog.Info("Rules engine tree manager shutting down")
+			return nil
 		}
-		// case TODO: do we need to handle some shutdown signal?
 	}
+}
+
+// Shutdown signals the tree manager to stop processing
+func (tm *treeManager) Shutdown() {
+	close(tm.done)
 }
