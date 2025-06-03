@@ -51,7 +51,7 @@ type ResultFuncParams struct {
 // The function returns an error if there is an issue with the unmarshalling process.
 // The ExcludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
 func NewExcludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, error) {
-	var excludeBiddersParams []ResultFuncParams
+	var excludeBiddersParams ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &excludeBiddersParams); err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func NewExcludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 
 // ExcludeBidders is a struct that holds parameters for excluding bidders in the rules engine.
 type ExcludeBidders struct {
-	Args []ResultFuncParams
+	Args ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
@@ -84,19 +84,18 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 		//create an analytics tag
 	}*/
 
-	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
-	for _, arg := range eb.Args {
-		if arg.IfSyncedId {
-			// possibly modify args.bidders
-		}
-		// build map[impId] to map [bidder] to bidder params
-		impIdToBidders, err := buildExcludeBidders(req, arg.Bidders)
-		if err != nil {
-			return err
-		}
-
-		result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
+	if eb.Args.IfSyncedId {
+		// possibly modify args.bidders
 	}
+
+	// build map[impId] to map [bidder] to bidder params
+	impIdToBidders, err := buildExcludeBidders(req, eb.Args.Bidders)
+	if err != nil {
+		return err
+	}
+
+	result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
+
 	return nil
 }
 
@@ -110,7 +109,7 @@ func (eb *ExcludeBidders) Name() string {
 // The function returns an error if there is an issue with the unmarshalling process.
 // The IncludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
 func NewIncludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, error) {
-	var includeBiddersParams []ResultFuncParams
+	var includeBiddersParams ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &includeBiddersParams); err != nil {
 		return nil, err
 	}
@@ -119,11 +118,11 @@ func NewIncludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 
 // IncludeBidders is a struct that holds parameters for including bidders in the rules engine.
 type IncludeBidders struct {
-	Args []ResultFuncParams
+	Args ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
@@ -143,19 +142,17 @@ func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 		//create an analytics tag
 	}*/
 
-	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
-	for _, arg := range eb.Args {
-		if arg.IfSyncedId {
-			// possibly modify args.bidders
-		}
-		// build map[impId] to map [bidder] to bidder params
-		impIdToBidders, err := buildIncludeBidders(req, arg.Bidders)
-		if err != nil {
-			return err
-		}
-
-		result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
+	if ib.Args.IfSyncedId {
+		// possibly modify args.bidders
 	}
+	// build map[impId] to map [bidder] to bidder params
+	impIdToBidders, err := buildIncludeBidders(req, ib.Args.Bidders)
+	if err != nil {
+		return err
+	}
+
+	result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
+
 	return nil
 }
 

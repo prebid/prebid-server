@@ -57,8 +57,9 @@ func TestBuildTreeFullConfig(t *testing.T) {
 	assert.Equal(t, 1, len(tree.Root.Children["true"].Children["false"].Children["web"].ResultFunctions))
 	assert.Equal(t, ExcludeBiddersName, tree.Root.Children["true"].Children["false"].Children["web"].ResultFunctions[0].Name())
 
-	assert.Equal(t, 1, len(tree.Root.Children["false"].Children["false"].Children["*"].ResultFunctions))
+	assert.Equal(t, 2, len(tree.Root.Children["false"].Children["false"].Children["*"].ResultFunctions))
 	assert.Equal(t, IncludeBiddersName, tree.Root.Children["false"].Children["false"].Children["*"].ResultFunctions[0].Name())
+	assert.Equal(t, ExcludeBiddersName, tree.Root.Children["false"].Children["false"].Children["*"].ResultFunctions[1].Name())
 }
 
 func GetConf() json.RawMessage {
@@ -68,11 +69,15 @@ func GetConf() json.RawMessage {
      "schema": [
      {
        "function": "deviceCountryIn",
-       "args": [["USA", "UKR"]]
+       "args": {
+         "countries": ["USA", "UKR"]
+       }   
      },
      {
        "function": "dataCenterIn",
-       "args": [["us-east", "us-west"]]
+       "args": {
+         "datacenters": ["us-east", "us-west"]
+       } 
      },
      {
        "function": "channel"
@@ -81,10 +86,10 @@ func GetConf() json.RawMessage {
     "default": [
         {
            "function": "excludeBidders",
-           "args": [{
+           "args": {
                "bidders": ["bidderA"],
 			   "seatNonBid": 111
-           }]
+           }
         }
     ],
 
@@ -94,12 +99,11 @@ func GetConf() json.RawMessage {
        "results": [
          {
            "function": "excludeBidders",
-           "args": [
+           "args": 
              {
                "bidders": ["bidderA"],
 			   "seatNonBid": 111
              }
-           ]
          }
        ]
      },
@@ -108,12 +112,11 @@ func GetConf() json.RawMessage {
        "results": [
          {
            "function": "excludeBidders",
-           "args": [
+           "args": 
              {
                "bidders": ["bidderB"],
                "seatNonBid": 222
              }
-           ]
          }
        ]
      },
@@ -122,12 +125,19 @@ func GetConf() json.RawMessage {
        "results": [
          {
            "function": "includeBidders",
-           "args": [
+           "args":
              {
                "bidders": ["bidderC"],
                "seatNonBid": 333
              }
-           ]
+         },
+		 {
+           "function": "excludeBidders",
+           "args":
+             {
+               "bidders": ["bidderD"],
+               "seatNonBid": 444
+             }
          }
        ]
      }
