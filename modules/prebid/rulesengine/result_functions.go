@@ -61,26 +61,6 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
-	for _, schemaResult := range meta.SchemaFunctionResults {
-		if schemaResult.FuncName == rules.AdUnitCode {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
-		if schemaResult.FuncName == rules.MediaTypes {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
-	}
-	/*if len{analyticsKey} > 0{
-		//create an analytics tag
-	}*/
-
-	if eb.Args.IfSyncedId {
-		// possibly modify args.bidders
-	}
-
 	// build map[impId] to map [bidder] to bidder params
 	impIdToBidders, err := buildExcludeBidders(req, eb.Args.Bidders)
 	if err != nil {
@@ -119,25 +99,6 @@ func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
-	for _, schemaResult := range meta.SchemaFunctionResults {
-		if schemaResult.FuncName == rules.AdUnitCode {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
-		if schemaResult.FuncName == rules.MediaTypes {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
-	}
-	/*if len{analyticsKey} > 0{
-		//create an analytics tag
-	}*/
-
-	if ib.Args.IfSyncedId {
-		// possibly modify args.bidders
-	}
 	// build map[impId] to map [bidder] to bidder params
 	impIdToBidders, err := buildIncludeBidders(req, ib.Args.Bidders)
 	if err != nil {
