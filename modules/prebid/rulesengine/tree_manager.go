@@ -28,6 +28,7 @@ func (tm *treeManager) Run(c cacher) error {
 		select {
 		case req := <-tm.requests:
 			if req.config == nil {
+				glog.Errorln("SOMETHIN")
 				break
 			}
 
