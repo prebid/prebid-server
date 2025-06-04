@@ -70,11 +70,15 @@ func GetConf() json.RawMessage {
      "schema": [
      {
        "function": "deviceCountryIn",
-	   "args": {"countries": ["USA", "UKR"]}
+       "args": {
+         "countries": ["USA", "UKR"]
+       }     
      },
      {
        "function": "dataCenterIn",
-	   "args": {"datacenters": ["us-east", "us-west"]}
+       "args": {
+         "datacenters": ["us-east", "us-west"]
+       } 
      },
      {
        "function": "channel"
