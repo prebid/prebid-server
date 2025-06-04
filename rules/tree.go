@@ -2,7 +2,7 @@ package rules
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 )
 
 // Node represents a node in the tree structure.
@@ -21,14 +21,14 @@ func (n *Node[T1, T2]) isLeaf() bool {
 // matchingChild checks if the node has a child that matches the given value.
 // It first checks for an exact match, and if not found, it checks for a wildcard match returning the child node.
 // If no matching child is found, it returns nil.
-func (n *Node[T1, T2]) matchChild(value string) (*Node[T1, T2], string) {
+func (n *Node[T1, T2]) matchChild(value string) (string, *Node[T1, T2]) {
 	if child, ok := n.Children[value]; ok {
-		return child, value
+		return value, child
 	}
 	if child, ok := n.Children["*"]; ok {
-		return child, "*"
+		return "*", child
 	}
-	return nil, ""
+	return "", nil
 }
 
 // Tree represents the tree structure.
@@ -47,7 +47,10 @@ type Tree[T1 any, T2 any] struct {
 // If the result matches one of the node values on the next level, we move to that node, otherwise we exit.
 // If a leaf node is reached, it's result functions are executed on the provided result payload.
 func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
-	var matchingValue string
+	var nodeKey string
+	if t.Root == nil {
+		return errors.New("tree root is nil")
+	}
 	currNode := t.Root
 
 	resFuncMeta := ResultFunctionMeta{
@@ -56,18 +59,22 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	}
 
 	for !currNode.isLeaf() {
+		if currNode.SchemaFunction == nil {
+			return errors.New("schema function is nil")
+		}
+
 		res, err := currNode.SchemaFunction.Call(payload)
 		if err != nil {
 			return err
 		}
 		resFuncMeta.appendToSchemaFunctionResults(currNode.SchemaFunction.Name(), res)
 
-		currNode, matchingValue = currNode.matchChild(res)
+		nodeKey, currNode = currNode.matchChild(res)
 		if currNode == nil {
 			resFuncMeta.RuleFired = "default"
 			break
 		}
-		resFuncMeta.appendToRuleFired(matchingValue)
+		resFuncMeta.appendToRuleFired(nodeKey)
 	}
 
 	resultFuncs := t.DefaultFunctions
@@ -76,8 +83,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	}
 
 	for _, rf := range resultFuncs {
-		err := rf.Call(payload, result, resFuncMeta)
-		if err != nil {
+		if err := rf.Call(payload, result, resFuncMeta); err != nil {
 			return err
 		}
 	}
@@ -93,45 +99,40 @@ func (t *Tree[T1, T2]) validate() error {
 		return nil
 	}
 
-	leafDepths := make(map[int]struct{})
-	maxDepth := -1
+	firstLeafDepth := -1
 
-	validateNode(t.Root, 0, leafDepths, &maxDepth)
-
-	if len(leafDepths) > 1 {
-		return fmt.Errorf("tree is malformed: leaves found at different depths %v", mapKeys(leafDepths))
+	if !validateNode(t.Root, 0, &firstLeafDepth) {
+		return errors.New("tree is malformed: leaves found at different depths")
 	}
 	return nil
 }
 
 // validateNode is a helper function that traverses the tree recursively recording leaf node depths.
-func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, leafDepths map[int]struct{}, maxDepth *int) {
+func validateNode[T1 any, T2 any](node *Node[T1, T2], depth int, firstLeafDepth *int) bool {
 	if node == nil {
-		return
+		return true
 	}
 
-	// If this is a leaf node, record its depth
 	if node.isLeaf() {
-		leafDepths[depth] = struct{}{}
-		if depth > *maxDepth {
-			*maxDepth = depth
+		// If this is the first leaf node we come accross, record
+		// its depth
+		if *firstLeafDepth == -1 {
+			*firstLeafDepth = depth
+			return true
 		}
-		return
+		// Else, this is not the first leaf we've visited and depth must
+		// match the first leaf's depth. If unequal, tree is unbalanced
+		if depth != *firstLeafDepth {
+			return false
+		}
 	}
 
-	// Otherwise, traverse all children
 	for _, child := range node.Children {
-		validateNode(child, depth+1, leafDepths, maxDepth)
+		if !validateNode(child, depth+1, firstLeafDepth) {
+			return false
+		}
 	}
-}
-
-// mapKeys extracts the keys from a map[int]struct{} to make the error message more readable
-func mapKeys(m map[int]struct{}) []int {
-	keys := make([]int, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
+	return true
 }
 
 // treeBuilder is an interface that defines a method for building a tree.
