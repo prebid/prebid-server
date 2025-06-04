@@ -223,7 +223,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
-	
 
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
 
@@ -260,7 +259,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err := dsaWriter.Write(req); err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
-		return 
+		return
 	}
 
 	// Read Usersyncs/Cookie

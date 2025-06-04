@@ -295,7 +295,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err := dsaWriter.Write(reqWrapper); err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
-		return 
+		return
 	}
 
 	secGPC := r.Header.Get("Sec-GPC")

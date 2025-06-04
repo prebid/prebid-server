@@ -59,7 +59,7 @@ func ParseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, cfgDefault string, eea
 	if cfgDefault == "0" {
 		gdprDefaultValue = gdpr.SignalNo
 	}
-	
+
 	var geo *openrtb2.Geo
 	if r.User != nil && r.User.Geo != nil {
 		geo = r.User.Geo

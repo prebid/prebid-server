@@ -64,15 +64,15 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap               map[openrtb_ext.BidderName]AdaptedBidder
-	bidderInfo               config.BidderInfos
-	bidderToSyncerKey        map[string]string
-	me                       metrics.MetricsEngine
-	cache                    prebid_cache_client.Client
-	cacheTime                time.Duration
-	gdprPermsBuilder         gdpr.PermissionsBuilder
-	currencyConverter        *currency.RateConverter
-	externalURL              string
+	adapterMap        map[openrtb_ext.BidderName]AdaptedBidder
+	bidderInfo        config.BidderInfos
+	bidderToSyncerKey map[string]string
+	me                metrics.MetricsEngine
+	cache             prebid_cache_client.Client
+	cacheTime         time.Duration
+	gdprPermsBuilder  gdpr.PermissionsBuilder
+	currencyConverter *currency.RateConverter
+	externalURL       string
 	// gdprDefaultValue         gdpr.Signal
 	privacyConfig            config.Privacy
 	categoriesFetcher        stored_requests.CategoryFetcher
@@ -158,16 +158,16 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 	}
 
 	return &exchange{
-		adapterMap:               adapters,
-		bidderInfo:               infos,
-		bidderToSyncerKey:        bidderToSyncerKey,
-		cache:                    cache,
-		cacheTime:                time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
-		categoriesFetcher:        categoriesFetcher,
-		currencyConverter:        currencyConverter,
-		externalURL:              cfg.ExternalURL,
-		gdprPermsBuilder:         gdprPermsBuilder,
-		me:                       metricsEngine,
+		adapterMap:        adapters,
+		bidderInfo:        infos,
+		bidderToSyncerKey: bidderToSyncerKey,
+		cache:             cache,
+		cacheTime:         time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
+		categoriesFetcher: categoriesFetcher,
+		currencyConverter: currencyConverter,
+		externalURL:       cfg.ExternalURL,
+		gdprPermsBuilder:  gdprPermsBuilder,
+		me:                metricsEngine,
 		// gdprDefaultValue:         gdprDefaultValue,
 		privacyConfig:            privacyConfig,
 		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},

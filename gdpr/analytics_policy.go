@@ -64,7 +64,7 @@ func (ap *analyticsPolicy) SetContext(ctx context.Context) {
 }
 
 // Allow determines whether analytics are permitted for a given analytics module
-func (ap *analyticsPolicy) Allow(name string) (bool) {
+func (ap *analyticsPolicy) Allow(name string) bool {
 	if ap.gdprSignal != SignalYes {
 		return true
 	}
@@ -119,6 +119,6 @@ func (aaa *AllowAllAnalytics) SetContext(ctx context.Context) {
 }
 
 // Allow satisfies the PrivacyPolicy interface always returning true
-func (aaa *AllowAllAnalytics) Allow(name string) (bool) {
+func (aaa *AllowAllAnalytics) Allow(name string) bool {
 	return true
 }

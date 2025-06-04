@@ -347,7 +347,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if err := dsaWriter.Write(bidReqWrapper); err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
-		return 
+		return
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).

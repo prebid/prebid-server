@@ -1271,9 +1271,11 @@ func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privac
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
-func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {}
+func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
+}
 
-func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {}
+func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
+}
 
 func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 }

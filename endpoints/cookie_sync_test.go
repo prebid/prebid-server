@@ -1474,7 +1474,7 @@ func TestWriteParseRequestErrorMetrics(t *testing.T) {
 
 	privacyPolicy := privacyInfo{
 		gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
-		activityControl: privacy.ActivityControl{},
+		activityControl:     privacy.ActivityControl{},
 	}
 
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
@@ -1702,7 +1702,7 @@ func TestCookieSyncHandleError(t *testing.T) {
 
 	privacyPolicy := privacyInfo{
 		gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
-		activityControl: privacy.ActivityControl{},
+		activityControl:     privacy.ActivityControl{},
 	}
 
 	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
@@ -1936,7 +1936,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 
 		privacyPolicy := privacyInfo{
 			gdprAnalyticsPolicy: &gdpr.AllowAllAnalytics{},
-			activityControl: privacy.ActivityControl{},
+			activityControl:     privacy.ActivityControl{},
 		}
 
 		endpoint.handleResponse(writer, syncTypeFilter, cookie, privacyMacros, test.givenSyncersChosen, bidderEval, privacyPolicy, test.givenDebug)
@@ -2378,8 +2378,9 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 type fakeAnalyticsPolicy struct {
 	allow bool
-	cfg gdpr.TCF2ConfigReader
+	cfg   gdpr.TCF2ConfigReader
 }
+
 func (ap fakeAnalyticsPolicy) Allow(name string) bool {
 	return ap.allow
 }

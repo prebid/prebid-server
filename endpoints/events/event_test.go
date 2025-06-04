@@ -76,7 +76,6 @@ func (e *eventsMockGDPRPrivacyPolicy) Allow(name string) bool {
 	return !e.Fail
 }
 
-
 var mockAccountData = map[string]json.RawMessage{
 	"events_enabled":  json.RawMessage(`{"events": {"enabled":true}}`),
 	"events_disabled": json.RawMessage(`{"events": {"enabled":false}}`),

@@ -1477,8 +1477,9 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 type fakeAnalyticsPolicy struct {
 	allow bool
-	cfg gdpr.TCF2ConfigReader
+	cfg   gdpr.TCF2ConfigReader
 }
+
 func (ap fakeAnalyticsPolicy) Allow(name string) bool {
 	return ap.allow
 }
@@ -1709,4 +1710,3 @@ func (m mockUpdateHook) HandleRawAuctionHook(
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
 }
-

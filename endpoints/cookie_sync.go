@@ -203,12 +203,12 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		Debug: request.Debug,
 		Limit: limit,
 		Privacy: usersyncPrivacy{
-			gdprPermissions:  gdprPerms,
+			gdprPermissions:     gdprPerms,
 			gdprAnalyticsPolicy: gdprAnalyticsPolicy,
-			ccpaParsedPolicy: ccpaParsedPolicy,
-			activityControl:  activityControl,
-			activityRequest:  privacy.NewRequestFromPolicies(privacyPolicies),
-			gdprSignal:       gdprSignal,
+			ccpaParsedPolicy:    ccpaParsedPolicy,
+			activityControl:     activityControl,
+			activityRequest:     privacy.NewRequestFromPolicies(privacyPolicies),
+			gdprSignal:          gdprSignal,
 		},
 		SyncTypeFilter: syncTypeFilter,
 		GPPSID:         request.GPPSID,
@@ -414,7 +414,7 @@ func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpS
 		Errors:       []error{err},
 		BidderStatus: []*analytics.CookieSyncBidder{},
 	},
-	privacyInfo.activityControl, privacyInfo.gdprAnalyticsPolicy)
+		privacyInfo.activityControl, privacyInfo.gdprAnalyticsPolicy)
 }
 
 func combineErrors(errs []error) error {
@@ -632,12 +632,12 @@ type usersyncPrivacyConfig struct {
 }
 
 type usersyncPrivacy struct {
-	gdprPermissions  gdpr.Permissions
-	gdprAnalyticsPolicy gdpr.PrivacyPolicy 
-	ccpaParsedPolicy ccpa.ParsedPolicy
-	activityControl  privacy.ActivityControl
-	activityRequest  privacy.ActivityRequest
-	gdprSignal       gdpr.Signal
+	gdprPermissions     gdpr.Permissions
+	gdprAnalyticsPolicy gdpr.PrivacyPolicy
+	ccpaParsedPolicy    ccpa.ParsedPolicy
+	activityControl     privacy.ActivityControl
+	activityRequest     privacy.ActivityRequest
+	gdprSignal          gdpr.Signal
 }
 
 func (p usersyncPrivacy) GDPRAllowsHostCookie() bool {
