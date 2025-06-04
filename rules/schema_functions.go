@@ -4,17 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/randomutil"
 )
 
 const (
-	AdUnitCode       = "adUnitCode"
 	Channel          = "channel"
 	DataCenter       = "dataCenter"
 	DataCenterIn     = "dataCenterIn"
@@ -25,7 +24,6 @@ const (
 	FpdAvailable     = "fpdAvailable"
 	GppSidAvailable  = "gppSidAvailable"
 	GppSidIn         = "gppSidIn"
-	MediaTypes       = "mediaTypes"
 	Percent          = "percent"
 	TcfInScope       = "tcfInScope"
 	UserFpdAvailable = "userFpdAvailable"
@@ -144,8 +142,8 @@ func NewDataCenter(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWr
 }
 
 func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if deviceGeo := getDeviceGeo(wrapper); deviceGeo != nil && len(deviceGeo.Region) > 0 {
-		return wrapper.Device.Geo.Region, nil
+	if deviceGeo := getDeviceGeo(wrapper); deviceGeo != nil {
+		return deviceGeo.Region, nil
 	}
 	return "", nil
 
@@ -260,7 +258,7 @@ func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper
 	}
 
 	schemaFunc.Eids = make(map[string]struct{})
-	for i := 0; i < len(schemaFunc.EidSources); i++ {
+	for i := range schemaFunc.EidSources {
 		schemaFunc.Eids[schemaFunc.EidSources[i]] = struct{}{}
 	}
 
@@ -274,7 +272,7 @@ func (ei *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 
 	eids := getUserEIDS(wrapper)
 
-	for i := 0; i < len(eids); i++ {
+	for i := range eids {
 		if _, found := ei.Eids[eids[i].Source]; found {
 			return "true", nil
 		}
@@ -319,11 +317,11 @@ func (fpd *fpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, erro
 		return "false", nil
 	}
 
-	if found, _ := checkSiteContentDataAndSiteExtData(wrapper); found == "true" {
+	if found, _ := hasSiteContentDataOrSiteExtData(wrapper); found == "true" {
 		return "true", nil
 	}
 
-	if found, _ := checkAppContentDataAndAppExtData(wrapper); found == "true" {
+	if found, _ := hasAppContentDataOrAppExtData(wrapper); found == "true" {
 		return "true", nil
 	}
 
@@ -351,7 +349,7 @@ func NewGppSidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrap
 	}
 
 	schemaFunc.GppSids = make(map[int8]struct{})
-	for i := 0; i < len(schemaFunc.SidList); i++ {
+	for i := range schemaFunc.SidList {
 		schemaFunc.GppSids[schemaFunc.SidList[i]] = struct{}{}
 	}
 
@@ -363,11 +361,11 @@ func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 		return "false", nil
 	}
 
-	if !hasGPPIDs(wrapper) {
+	if !hasGPPSIDs(wrapper) {
 		return "false", nil
 	}
 
-	for i := 0; i < len(wrapper.Regs.GPPSID); i++ {
+	for i := range wrapper.Regs.GPPSID {
 		if _, found := sid.GppSids[wrapper.Regs.GPPSID[i]]; found {
 			return "true", nil
 		}
@@ -391,7 +389,7 @@ func NewGppSidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.Requ
 }
 
 func (sid *gppSidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	return fmt.Sprintf("%t", hasGPPIDs(wrapper)), nil
+	return fmt.Sprintf("%t", hasGPPSIDs(wrapper)), nil
 }
 
 func (sid *gppSidAvailable) Name() string {
@@ -422,10 +420,13 @@ func (tcf *tcfInScope) Name() string {
 // ------------percent------------------
 type percent struct {
 	Percent *int `json:"pct"`
+	rand    randomutil.RandomGenerator
 }
 
 func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
-	schemaFunc := &percent{}
+	schemaFunc := &percent{
+		rand: randomutil.RandomNumberGenerator{},
+	}
 	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
 		return nil, err
 	}
@@ -449,8 +450,9 @@ func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if pValue >= 100 {
 		return "true", nil
 	}
-	randNum := randRange(0, 100)
-	if randNum < pValue {
+
+	randNum := p.rand.Intn(100)
+	if randNum <= pValue {
 		return "true", nil
 	}
 	return "false", nil
@@ -460,15 +462,6 @@ func (p *percent) Name() string {
 	return Percent
 }
 
-// ------------prebidKey------------------
-// ------------domain------------------
-// ------------bundle--------------------
-// ------------bundleIn------------------
-// ------------mediaTypes------------------
-// ------------adUnitCode------------------
-// ------------deviceType------------------
-// ------------deviceTypeIn----------------
-// ----------helper functions---------
 func checkUserDataAndUserExtData(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper == nil {
 		return "false", nil
@@ -496,12 +489,21 @@ func extDataPresent(ext map[string]json.RawMessage) bool {
 		return false
 	}
 
-	_, err := jsonparser.GetString(val, "[0]", "id")
+	_, dataType, _, err := jsonparser.Get(val)
+	if err != nil || dataType != jsonparser.Array {
+		return false
+	}
 
-	return err == nil
+	hasElements := false
+	jsonparser.ArrayEach(val, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		hasElements = true
+		return
+	})
+
+	return hasElements
 }
 
-func checkSiteContentDataAndSiteExtData(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+func hasSiteContentDataOrSiteExtData(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper != nil && wrapper.BidRequest != nil && wrapper.Site != nil {
 		if wrapper.Site.Content != nil && len(wrapper.Site.Content.Data) > 0 {
 			return "true", nil
@@ -519,7 +521,7 @@ func checkSiteContentDataAndSiteExtData(wrapper *openrtb_ext.RequestWrapper) (st
 	return "false", nil
 }
 
-func checkAppContentDataAndAppExtData(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+func hasAppContentDataOrAppExtData(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	if wrapper != nil && wrapper.BidRequest != nil && wrapper.App != nil {
 		if wrapper.App.Content != nil && len(wrapper.App.Content.Data) > 0 {
 			return "true", nil
@@ -537,20 +539,12 @@ func checkAppContentDataAndAppExtData(wrapper *openrtb_ext.RequestWrapper) (stri
 	return "false", nil
 }
 
-func randRange(min, max int) int {
-	return rand.Intn(max-min) + min
-}
-
 func checkNilArgs(params json.RawMessage, funcName string) error {
-	if params == nil {
-		return nil
-	}
-
 	if len(params) == 0 {
 		return nil
 	}
 
-	if len(params) > 0 && (string(params) == "null" || string(params) == "{}" || string(params) == "[]" || string(params) == "\"\"") {
+	if string(params) == "null" || string(params) == "{}" {
 		return nil
 	}
 
@@ -580,13 +574,14 @@ func getUserEIDS(wrapper *openrtb_ext.RequestWrapper) []openrtb2.EID {
 	return nil
 }
 
-func hasGPPIDs(wrapper *openrtb_ext.RequestWrapper) bool {
+func hasGPPSIDs(wrapper *openrtb_ext.RequestWrapper) bool {
 	regs := getRequestRegs(wrapper)
-	if regs != nil {
-		for i := 0; i < len(regs.GPPSID); i++ {
-			if regs.GPPSID[i] > int8(0) {
-				return true
-			}
+	if regs == nil {
+		return false
+	}
+	for i := range regs.GPPSID {
+		if regs.GPPSID[i] > int8(0) {
+			return true
 		}
 	}
 	return false
