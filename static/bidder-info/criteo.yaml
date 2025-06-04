@@ -4,6 +4,10 @@ geoscope:
 maintainer:
   email: "prebid@criteo.com"
 gvlVendorID: 91
+openrtb:
+  version: 2.6
+  gpp-supported: true
+  multiformat-supported: true
 capabilities:
   app:
     mediaTypes:
