@@ -1636,7 +1636,7 @@ func TestNewDataCenterIn(t *testing.T) {
 			expectedDataCenterIn: &dataCenterIn{
 				DataCenters: []string{"dc1"},
 				DataCenterDir: map[string]struct{}{
-					"dc1": struct{}{},
+					"dc1": {},
 				},
 			},
 			expectedError: nil,
@@ -1677,7 +1677,7 @@ func TestNewEidIn(t *testing.T) {
 			expectedDataCenterIn: &eidIn{
 				EidSources: []string{"pubcid.org"},
 				Eids: map[string]struct{}{
-					"pubcid.org": struct{}{},
+					"pubcid.org": {},
 				},
 			},
 			expectedError: nil,
@@ -1724,8 +1724,8 @@ func TestNewGppSidIn(t *testing.T) {
 			expectedGppSidIn: &gppSidIn{
 				SidList: []int8{1, 5},
 				GppSids: map[int8]struct{}{
-					1: struct{}{},
-					5: struct{}{},
+					1: {},
+					5: {},
 				},
 			},
 			expectedError: nil,
@@ -1976,7 +1976,7 @@ func TestNewRequestSchemaFunction(t *testing.T) {
 			expectedSchemaFunc: &dataCenterIn{
 				DataCenters: []string{"dc1"},
 				DataCenterDir: map[string]struct{}{
-					"dc1": struct{}{},
+					"dc1": {},
 				},
 			},
 		},
@@ -1991,7 +1991,7 @@ func TestNewRequestSchemaFunction(t *testing.T) {
 			expectedSchemaFunc: &deviceCountryIn{
 				Countries: []string{"JPN"},
 				CountryDirectory: map[string]struct{}{
-					"JPN": struct{}{},
+					"JPN": {},
 				},
 			},
 		},
@@ -2006,7 +2006,7 @@ func TestNewRequestSchemaFunction(t *testing.T) {
 			expectedSchemaFunc: &eidIn{
 				EidSources: []string{"pubcid.org"},
 				Eids: map[string]struct{}{
-					"pubcid.org": struct{}{},
+					"pubcid.org": {},
 				},
 			},
 		},
@@ -2026,8 +2026,8 @@ func TestNewRequestSchemaFunction(t *testing.T) {
 			expectedSchemaFunc: &gppSidIn{
 				SidList: []int8{1, 5},
 				GppSids: map[int8]struct{}{
-					1: struct{}{},
-					5: struct{}{},
+					1: {},
+					5: {},
 				},
 			},
 		},
