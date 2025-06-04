@@ -26,9 +26,9 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 }
 
 func BuildTestRules() rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]] {
-	devCountryFunc, _ := rules.NewDeviceCountryIn(json.RawMessage(`{"countries":["USA"]}`)) // handle err
-	resFuncTrue, _ := NewIncludeBidders(json.RawMessage(`[{ "bidders": ["bidderA"]}]`))     //handle err
-	resFuncFalse, _ := NewExcludeBidders(json.RawMessage(`[{ "bidders": ["bidderB"]}]`))    //handle err
+	devCountryFunc, _ := rules.NewDeviceCountryIn(json.RawMessage(`{"countries": ["USA"]}`)) // handle err
+	resFuncTrue, _ := NewIncludeBidders(json.RawMessage(`[{ "bidders": ["bidderA"]}]`))      //handle err
+	resFuncFalse, _ := NewExcludeBidders(json.RawMessage(`[{ "bidders": ["bidderB"]}]`))     //handle err
 
 	rules := rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
