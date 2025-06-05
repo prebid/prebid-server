@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/v3/account"
 	"github.com/prebid/prebid-server/v3/analytics"
@@ -213,7 +213,7 @@ func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheR
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
-		glog.Errorf("Error(s) updating vast: %v", errs)
+		logger.Errorf("Error(s) updating vast: %v", errs)
 		return nil, errs
 	}
 
