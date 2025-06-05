@@ -3,23 +3,6 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-bad",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
-        },
-        "ext": {
-          "bidder": {
-            "seatId": "",
-            "tagId": ""
-          }
-        }
-      },
-      {
         "id": "test-imp-id",
         "banner": {
           "format": [
@@ -42,7 +25,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=advertising",
         "body": {
           "id": "test-request-id",
           "ext": {
@@ -91,12 +74,12 @@
                   }
                 }
               ],
-              "seat": "imds"
+              "seat": "advertising"
             }
           ],
           "ext": {
             "responsetimemillis": {
-              "imds": 339
+              "advertising": 339
             }
           }
         }
@@ -126,12 +109,6 @@
           "type": "banner"
         }
       ]
-    }
-  ],
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "Invalid Impression",
-      "comparison": "literal"
     }
   ]
 }
