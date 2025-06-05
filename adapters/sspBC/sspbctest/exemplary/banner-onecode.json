@@ -13,7 +13,8 @@
                             "h": 250
                         }
                     ]
-                }
+                },
+                "tagid": "ad-test1"
             }
         ],
         "site": {
@@ -36,45 +37,45 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
+                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
                 "body": {
-                    "id": "test-request",
-                    "imp": [
-                        {
-                            "id": "slot",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    }
-                                ]
-                            },
-                            "tagid": "slot",
-                            "secure": 1,
+                    "bidRequest": {
+                        "id": "test-request",
+                        "imp": [
+                            {
+                                "id": "slot",
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 250
+                                        }
+                                    ]
+                                },
+                                "tagid": "ad-test1",
+                                "secure": 1,
+                                "ext": {}
+                            }
+                        ],
+                        "site": {
+                            "domain": "test.page",
+                            "page": "https://test.page/",
+                            "ref": "https://test.referer/"
+                        },
+                        "user": {
                             "ext": {
-                                "data": {
-                                    "pbslot": "slot",
-                                    "pbsize": "300x250"
-                                }
+                                "consent": "test_consent"
+                            },
+                            "buyeruid": "test_user"
+                        },
+                        "regs": {
+                            "ext": {
+                                "gdpr": 1
                             }
                         }
-                    ],
-                    "site": {
-                        "domain": "test.page",
-                        "page": "https://test.page/",
-                        "ref": "https://test.referer/"
                     },
-                    "user": {
-                        "ext": {
-                            "consent": "test_consent"
-                        },
-                        "buyeruid": "test_user"
-                    },
-                    "regs": {
-                        "ext": {
-                            "gdpr": 1
-                        }
+                    "requestInfo": {
+                        "PbsEntryPoint": ""
                     }
                 },
                 "impIDs":["slot"]
@@ -94,17 +95,20 @@
                                     ],
                                     "crid": "1234",
                                     "ext": {
-                                        "adlabel": "Reklama",
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
                                         "pubid": "431",
                                         "siteid": "237503",
                                         "slotid": "005",
-                                        "tagid": "slot"
+                                        "tagid": "ad-test1"
                                     },
                                     "w": 300,
                                     "h": 250,
                                     "id": "response-005",
                                     "impid": "slot",
-                                    "price": 20
+                                    "price": 20,
+                                    "mtype": 1
                                 }
                             ],
                             "seat": "sspbc-test"
@@ -132,12 +136,15 @@
                         "w": 300,
                         "h": 250,
                         "ext": {
-                            "adlabel": "Reklama",
+                            "external": "1",
+                            "platform": "prebidserver",
+                            "pricepl": 0.123,
                             "pubid": "431",
                             "siteid": "237503",
                             "slotid": "005",
-                            "tagid": "slot"
-                        }
+                            "tagid": "ad-test1"
+                        },
+                        "mtype": 1
                     },
                     "type": "banner"
                 }
