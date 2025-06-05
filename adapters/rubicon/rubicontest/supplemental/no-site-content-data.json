@@ -14,8 +14,7 @@
         "val1",
         "val2"
       ],
-      "content": {
-      }
+      "content": {}
     },
     "user": {
       "data": [
@@ -91,8 +90,7 @@
         },
         "ext": {
           "bidder": {
-            "video": {
-            },
+            "video": {},
             "accountId": 1001,
             "siteId": 113932,
             "zoneId": 535510
@@ -121,8 +119,7 @@
               "val1",
               "val2"
             ],
-            "content": {
-            },
+            "content": {},
             "ext": {
               "rp": {
                 "site_id": 113932
@@ -214,8 +211,7 @@
               "video": {
                 "placement": 3,
                 "ext": {
-                  "rp": {
-                  }
+                  "rp": {}
                 },
                 "mimes": [
                   "video/mp4"
@@ -244,7 +240,9 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -268,7 +266,7 @@
                   }
                 }
               ],
-              "seat": "adman"
+              "seat": "rubicon"
             }
           ],
           "cur": "USD"
@@ -291,7 +289,10 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "type": "video"
+                "type": "video",
+                "meta": {
+                  "seat": "rubicon"
+                }
               }
             }
           },
