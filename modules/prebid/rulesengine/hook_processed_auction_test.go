@@ -2,10 +2,112 @@ package rulesengine
 
 import (
 	"fmt"
+	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/rules"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestHandleProcessedAuctionHook(t *testing.T) {
+	tests := []struct {
+		name           string
+		ruleSets       []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
+		payload        hs.ProcessedAuctionRequestPayload
+		expectedError  bool
+		expectedResult hs.HookResult[hs.ProcessedAuctionRequestPayload]
+	}{
+		{
+			name:           "Empty rule sets",
+			ruleSets:       []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+			payload:        hs.ProcessedAuctionRequestPayload{},
+			expectedError:  false,
+			expectedResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{},
+		},
+		{
+			name: "Single rule set with valid model group and empty rule tree",
+			ruleSets: []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				{
+					modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+						{
+							weight: 100,
+							tree:   rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+						},
+					},
+				},
+			},
+			payload:       hs.ProcessedAuctionRequestPayload{},
+			expectedError: false,
+			expectedResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+				Errors: []string{"tree root is nil"},
+			},
+		},
+		{
+			name: "Single rule set with valid model group, valid rule tree",
+			ruleSets: []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				{
+					modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+						{
+							weight: 100,
+							tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+								Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+							},
+						},
+					},
+				},
+			},
+			payload:        hs.ProcessedAuctionRequestPayload{},
+			expectedError:  false,
+			expectedResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{},
+		},
+		{
+			name: "Failed to select model group",
+			ruleSets: []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				{
+					modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+				},
+			},
+			payload:       hs.ProcessedAuctionRequestPayload{},
+			expectedError: false,
+			expectedResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+				Errors: []string{"failed to select model group: no model groups available"},
+			},
+		},
+		{
+			name: "Single rule set with valid model group and valid rule tree",
+			ruleSets: []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				{
+					modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+						{
+							weight: 100,
+							tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+								Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+							},
+						},
+					},
+				},
+			},
+			payload:        hs.ProcessedAuctionRequestPayload{},
+			expectedError:  false,
+			expectedResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := handleProcessedAuctionHook(tt.ruleSets, tt.payload)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
 
 func TestSelectModelGroup(t *testing.T) {
 	tests := []struct {
