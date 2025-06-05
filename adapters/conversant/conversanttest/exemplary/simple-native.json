@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "native-test",
+    "imp": [
+      {
+        "id": "impid-0",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder":  {
+            "site_id": "108060",
+            "bidfloor": 0.01,
+            "tag_id": "mytag",
+            "secure": 1
+          }}
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "",
+        "body": {
+          "id": "native-test",
+          "imp": [
+            {
+              "id": "impid-0",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}",
+                "ver": "1.2"
+              },
+              "tagid": "mytag",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "displaymanager": "prebid-s2s",
+              "displaymanagerver": "2.0.0",
+              "ext": {
+                "bidder": {
+                  "site_id": "108060",
+                  "bidfloor": 0.01,
+                  "tag_id": "mytag",
+                  "secure": 1
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "impid-0"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "native-test",
+          "cur": "USD",
+          "seat": "1",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "impid-0",
+                  "impid": "impid-0",
+                  "price": 0.25,
+                  "adm": "\"native\"{\"assets\": [{\"id\": 1, \"title\": {\"text\": \"Native test (Title)\"}}], \"link\": {\"url\": \"https://www.epsilon.com/\"}, \"imptrackers\":[\"https://iad-usadmm.dotomi.com/event\"],\"jstracker\":\"\"}",
+                  "crid": "2487_760302099",
+                  "cat": ["IAB3"],
+                  "mtype": 4,
+                  "ext": {}
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "impid-0",
+            "impid": "impid-0",
+            "price": 0.25,
+            "adm": "\"native\"{\"assets\": [{\"id\": 1, \"title\": {\"text\": \"Native test (Title)\"}}], \"link\": {\"url\": \"https://www.epsilon.com/\"}, \"imptrackers\":[\"https://iad-usadmm.dotomi.com/event\"],\"jstracker\":\"\"}",
+            "crid": "2487_760302099",
+            "cat": ["IAB3"],
+            "mtype": 4,
+            "ext": {}
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
