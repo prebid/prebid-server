@@ -35,7 +35,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://us-e-node1.gothamads.com/?pass=accountId",
+        "uri": "http://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "imp": [
@@ -64,13 +64,20 @@
           },
           "tmax": 1000
         },
-        "impIDs":["some-impression-id"]
+        "impIDs": [
+          "some-impression-id"
+        ]
       },
       "mockResponse": {
-        "status": 204
+        "status": 306
       }
     }
   ],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": []
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 306. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
 }

@@ -1,4 +1,4 @@
-package gothamads
+package intenze
 
 import (
 	"testing"
@@ -10,18 +10,18 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderGothamads, config.Adapter{
-		Endpoint: "http://us-e-node1.gothamads.com/?pass={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(openrtb_ext.BidderIntenze, config.Adapter{
+		Endpoint: "http://lb-east.intenze.co/?pass={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "gothamadstest", bidder)
+	adapterstest.RunJSONBidderTest(t, "intenzetest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderGothamads, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderIntenze, config.Adapter{
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
