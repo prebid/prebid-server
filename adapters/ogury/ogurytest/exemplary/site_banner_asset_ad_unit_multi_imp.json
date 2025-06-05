@@ -1,9 +1,16 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "filter-imp-without-ogury-params",
+    "site": {
+      "id": "1",
+      "page": "example.com",
+      "publisher": {
+        "id": "pub123"
+      }
+    },
     "imp": [
       {
-        "id": "ad-unit-code-as-imp-id",
+        "id": "test-imp-id",
         "banner": {
           "format": [{"w": 128, "h": 100}]
         },
@@ -12,6 +19,26 @@
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [{"w": 128, "h": 100}]
+        },
+        "ext": {"bidder": {}}
+      },
+      {
+        "id": "test-imp-id-3",
+        "banner": {
+          "format": [{"w": 1, "h": 1}]
+        },
+        "ext": {
+          "gpid": "global position id",
+          "bidder": {
+            "assetKey": "OGY3",
+            "adUnitId": "1234"
           }
         }
       }
@@ -23,11 +50,18 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "test-request-id",
+          "id": "filter-imp-without-ogury-params",
+          "site": {
+            "id": "1",
+            "page": "example.com",
+            "publisher": {
+              "id": "pub123"
+            }
+          },
           "imp": [
             {
-              "id":"ad-unit-code-as-imp-id",
-              "tagid": "ad-unit-code-as-imp-id",
+              "id":"test-imp-id",
+              "tagid": "test-imp-id",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
@@ -36,10 +70,22 @@
                 "assetKey": "OGY",
                 "adUnitId": "123"
               }
+            },
+            {
+              "id":"test-imp-id-3",
+              "tagid": "test-imp-id-3",
+              "banner": {
+                "format": [{"w": 1, "h": 1}]
+              },
+              "ext": {
+                "gpid": "global position id",
+                "assetKey": "OGY3",
+                "adUnitId": "1234"
+              }
             }
           ]
         },
-        "impIDs":["ad-unit-code-as-imp-id"]
+        "impIDs":["test-imp-id", "test-imp-id-3"]
       },
       "mockResponse": {
         "status": 200,
@@ -51,7 +97,7 @@
               "seat": "seat",
               "bid": [{
                 "id": "some-UUID",
-                "impid": "ad-unit-code-as-imp-id",
+                "impid": "test-imp-id",
                 "price": 0.500000,
                 "adm": "adm string",
                 "crid": "crid_10",
@@ -73,7 +119,7 @@
         {
           "bid": {
             "id": "some-UUID",
-            "impid": "ad-unit-code-as-imp-id",
+            "impid": "test-imp-id",
             "price": 0.5,
             "adm": "adm string",
             "crid": "crid_10",
