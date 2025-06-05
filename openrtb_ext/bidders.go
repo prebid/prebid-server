@@ -546,7 +546,7 @@ const (
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
 	BidderPGAMSsp           BidderName = "pgamssp"
-	BidderPinkLion          BidderName = "pinklion"
+	BidderPinkLion          BidderName = "pinkLion"
 	BidderPlaydigo          BidderName = "playdigo"
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubrise           BidderName = "pubrise"
