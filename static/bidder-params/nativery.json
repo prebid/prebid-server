@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Nativery Adapter Params",
+    "description": "A schema which validates params accepted by the Natiery adapter",
+  
+    "type": "object",
+    "properties": {
+      "widgetId": {
+        "type": "string",
+        "description": "An ID which identifies this Nativery widget"
+      }
+    },
+  
+    "required": ["widgetId"]
+  }
