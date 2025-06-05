@@ -12,10 +12,101 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBuildTreeFullConfig(t *testing.T) {
+func TestBuildTree(t *testing.T) {
+
+	tests := []struct {
+		name       string
+		modelGroup config.ModelGroup
+		expectErr  bool
+	}{
+		{
+			name: "Incorrect default function name",
+			modelGroup: config.ModelGroup{
+				Default: []config.Result{
+					{
+						Func: "incorrectFunction",
+						Args: json.RawMessage(`{"bidders":["bidderA"],"seatNonBid":111}`),
+					},
+				},
+				Schema: []config.Schema{},
+				Rules:  []config.Rule{},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Incorrect schema function name",
+			modelGroup: config.ModelGroup{
+				Default: []config.Result{},
+				Schema: []config.Schema{
+					{
+						Func: "incvalidSchemaFunction",
+						Args: json.RawMessage(`{"countries":["USA","UKR"]}`),
+					},
+				},
+				Rules: []config.Rule{
+					{
+						Conditions: []string{"true", "true", "amp"},
+						Results: []config.Result{
+							{
+								Func: "excludeBidders",
+								Args: json.RawMessage(`{"bidders":["bidderA"],"seatNonBid":111}`),
+							},
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Incorrect result function name",
+			modelGroup: config.ModelGroup{
+				Default: []config.Result{},
+				Schema: []config.Schema{
+					{
+						Func: rules.Channel,
+						Args: json.RawMessage(`{}`),
+					},
+				},
+				Rules: []config.Rule{
+					{
+						Conditions: []string{"true"},
+						Results: []config.Result{
+							{
+								Func: "InvalidResultFunction",
+								Args: json.RawMessage(`{"bidders":["bidderA"],"seatNonBid":111}`),
+							},
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			builder := &treeBuilder[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				Config:            tt.modelGroup,
+				SchemaFuncFactory: rules.NewRequestSchemaFunction,
+				ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
+			}
+			tree := rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+			}
+			err := builder.Build(&tree)
+			if tt.expectErr {
+				assert.Error(t, err, "expected an error but got none")
+			} else {
+				assert.NoError(t, err, "expected no error but got one")
+			}
+		})
+	}
+}
+
+func TestBuildTreeFullConfigNoErrors(t *testing.T) {
 
 	var modelGroup config.ModelGroup
-	err := jsonutil.Unmarshal(GetConf(), &modelGroup)
+	err := jsonutil.Unmarshal(GetFullConf(), &modelGroup)
 	assert.NoError(t, err)
 
 	builder := &treeBuilder[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
@@ -64,7 +155,7 @@ func TestBuildTreeFullConfig(t *testing.T) {
 	assert.Equal(t, ExcludeBiddersName, tree.Root.Children["false"].Children["false"].Children["*"].ResultFunctions[1].Name())
 }
 
-func GetConf() json.RawMessage {
+func GetFullConf() json.RawMessage {
 
 	return json.RawMessage(`
  {
