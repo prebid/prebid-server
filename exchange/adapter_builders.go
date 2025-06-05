@@ -104,6 +104,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/flipp"
 	"github.com/prebid/prebid-server/v3/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v3/adapters/frvradn"
+	"github.com/prebid/prebid-server/v3/adapters/fwssp"
 	"github.com/prebid/prebid-server/v3/adapters/gamma"
 	"github.com/prebid/prebid-server/v3/adapters/gamoshi"
 	"github.com/prebid/prebid-server/v3/adapters/globalsun"
@@ -356,6 +357,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderFeedAd:            feedad.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
+		openrtb_ext.BidderFWSSP:             fwssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
 		openrtb_ext.BidderGamma:             gamma.Builder,
 		openrtb_ext.BidderGamoshi:           gamoshi.Builder,
