@@ -8,10 +8,12 @@
     "properties": {
       "tagId": {
         "type": "string",
+        "minLength": 1,
         "description": "TagId"
       },
       "placement": {
         "type": "string",
+        "minLength": 1,
         "description": "Placement"
       }
     },

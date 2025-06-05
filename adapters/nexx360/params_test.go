@@ -47,4 +47,9 @@ var validParams = []string{
 
 var invalidParams = []string{
 	`{"productId": "inview"}`,
+	`{"tagId": "" }`,
+	`{"placement": "" }`,
+	`{"tagId": "testnexx", "placement": "" }`,
+	`{"tagId": "", "placement": "testnexx"}`,
+	`{}`,
 }
