@@ -131,6 +131,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	impTypeLabels.NativeImps = false
 	for i := 0; i < 3; i++ {
 		metricsEngine.RecordImps(impTypeLabels)
+		metricsEngine.RecordImpsDropped(1)
 	}
 
 	metricsEngine.RecordStoredReqCacheResult(metrics.CacheMiss, 1)
@@ -161,6 +162,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 3)
 	VerifyMetrics(t, "ImpsTypeAudio", goEngine.ImpsTypeAudio.Count(), 5)
 	VerifyMetrics(t, "ImpsTypeNative", goEngine.ImpsTypeNative.Count(), 5)
+	VerifyMetrics(t, "ImpsDropped", goEngine.ImpsDropped.Count(), 3)
 
 	VerifyMetrics(t, "RecordPrebidCacheRequestTime", goEngine.PrebidCacheRequestTimerSuccess.Count(), 5)
 
