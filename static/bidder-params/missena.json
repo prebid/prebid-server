@@ -16,6 +16,17 @@
     "test": {
       "type": "string",
       "description": "Test Mode"
+    },
+    "formats": {
+      "type": "array",
+      "description": "An array of formats to request (banner, native, or video)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "An object containing extra settings for the Missena adapter"
     }
   },
   "required": [

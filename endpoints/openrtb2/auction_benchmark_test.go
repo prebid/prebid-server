@@ -76,7 +76,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	nilMetrics := &metricsConfig.NilMetricsEngine{}
 
-	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
+	adapters, singleFormatBidders, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
 	if adaptersErr != nil {
 		b.Fatal("unable to build adapters")
 	}
@@ -99,6 +99,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		singleFormatBidders,
 	)
 
 	endpoint, _ := NewEndpoint(

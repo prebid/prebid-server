@@ -1,0 +1,239 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569749"
+                    }
+                }
+            },
+            {
+                "id": "test-imp-id-2",
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "minduration": 15,
+                    "maxduration": 30,
+                    "protocols": [
+                        2,
+                        3,
+                        5,
+                        6,
+                        7,
+                        8
+                    ],
+                    "w": 940,
+                    "h": 560
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569750"
+                    }
+                }
+            },
+            {
+                "id": "test-imp-id-3",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569751"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "page": "https://www.example.com/"
+        },
+        "ext": {
+            "prebid": {
+                "channel": {
+                    "name": "web",
+                    "version": "7.0.0"
+                }
+            },
+            "ixdiag": {
+                "msd": 2,
+                "msi": 2,
+                "mfu": 0,
+                "ren": false,
+                "version": "6.29.1"
+            }
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://host/endpoint",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id-1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ],
+                                "w": 300,
+                                "h": 250
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "569749"
+                                }
+                            }
+                        },
+                        {
+                            "id": "test-imp-id-2",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "minduration": 15,
+                                "maxduration": 30,
+                                "protocols": [
+                                    2,
+                                    3,
+                                    5,
+                                    6,
+                                    7,
+                                    8
+                                ],
+                                "w": 940,
+                                "h": 560
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "569750"
+                                }
+                            }
+                        },
+                        {
+                            "banner": {
+                              "format": [
+                                {
+                                  "h": 600,
+                                  "w": 300
+                                }
+                              ],
+                              "h": 600,
+                              "w": 300
+                            },
+                            "ext": {
+                              "bidder": {
+                                "siteId": "569751"
+                              }
+                            },
+                            "id": "test-imp-id-3"
+                        }
+                    ],
+                    "site": {
+                        "page": "https://www.example.com/",
+                        "publisher": {
+                        }
+                    },
+                    "ext": {
+                        "ixdiag": {
+                            "mfu": 0,
+                            "msd": 2,
+                            "msi": 2,
+                            "multipleSiteIds": "569749, 569750, 569751",
+                            "pbjsv": "7.0.0",
+                            "pbsp": "go",
+                            "pbsv": "unknown",
+                            "ren": false,
+                            "version": "6.29.1"
+                        },
+                        "prebid": {
+                          "channel": {
+                            "name": "web",
+                            "version": "7.0.0"
+                          }
+                        }
+                    }
+                },
+                "impIDs":["test-imp-id-1","test-imp-id-2","test-imp-id-3"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "958",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id-1",
+                                    "price": 0.5,
+                                    "adid": "29681110",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "https://advertiser.example.com"
+                                    ],
+                                    "cid": "958",
+                                    "crid": "29681110",
+                                    "h": 250,
+                                    "w": 300,
+                                    "ext": {
+                                        "ix": {}
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "7706636740145184841",
+                        "impid": "test-imp-id-1",
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "adid": "29681110",
+                        "adomain": [
+                            "https://advertiser.example.com"
+                        ],
+                        "cid": "958",
+                        "crid": "29681110",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "ix": {}
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}
