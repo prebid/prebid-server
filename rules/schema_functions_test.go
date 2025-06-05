@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/randomutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,7 +68,7 @@ func TestGetDeviceGeo(t *testing.T) {
 	}
 }
 
-func TestGetExtRequestPrebidCall(t *testing.T) {
+func TestGetExtRequestPrebid(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		inWrapper      *openrtb_ext.RequestWrapper
@@ -123,7 +124,7 @@ func TestGetExtRequestPrebidCall(t *testing.T) {
 	}
 }
 
-func TestGetUserEIDSCall(t *testing.T) {
+func TestGetUserEIDS(t *testing.T) {
 	testCases := []struct {
 		desc            string
 		inWrapper       *openrtb_ext.RequestWrapper
@@ -713,6 +714,20 @@ func TestFpdAvailableCall(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			desc:        "nil bid request",
+			inWrapper:   &openrtb_ext.RequestWrapper{BidRequest: nil},
+			result:      "false",
+			expectedErr: nil,
+		},
+		{
+			desc: "nil site app user",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			result:      "false",
+			expectedErr: nil,
+		},
+		{
 			desc: "success found wrapper.Site.Content.Data",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
@@ -834,11 +849,7 @@ func TestEidInCall(t *testing.T) {
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					User: &openrtb2.User{
-						EIDs: []openrtb2.EID{
-							{
-								Source: "anySource",
-							},
-						},
+						EIDs: []openrtb2.EID{},
 					},
 				},
 			},
@@ -1018,9 +1029,6 @@ func TestGppSidAvailableCall(t *testing.T) {
 }
 
 func TestTcfInScopeCall(t *testing.T) {
-	zeroInt8 := int8(0)
-	oneInt8 := int8(1)
-
 	testCases := []struct {
 		desc      string
 		inWrapper *openrtb_ext.RequestWrapper
@@ -1047,7 +1055,7 @@ func TestTcfInScopeCall(t *testing.T) {
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
-						GDPR: &zeroInt8,
+						GDPR: ptrutil.ToPtr(int8(0)),
 					},
 				},
 			},
@@ -1058,7 +1066,7 @@ func TestTcfInScopeCall(t *testing.T) {
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
-						GDPR: &oneInt8,
+						GDPR: ptrutil.ToPtr(int8(1)),
 					},
 				},
 			},
@@ -1083,24 +1091,56 @@ func TestPercentCall(t *testing.T) {
 		result    string
 	}{
 		{
-			desc:      "Negative",
-			inPercent: &percent{Percent: ptrutil.ToPtr(-1)},
-			result:    "false",
+			desc: "negative-percent",
+			inPercent: &percent{
+				Percent: ptrutil.ToPtr(-1),
+			},
+			result: "false",
 		},
 		{
-			desc:      "Zero",
-			inPercent: &percent{Percent: ptrutil.ToPtr(0)},
-			result:    "false",
+			desc: "zero-percent",
+			inPercent: &percent{
+				Percent: ptrutil.ToPtr(0),
+			},
+			result: "false",
 		},
 		{
-			desc:      "> 100",
-			inPercent: &percent{Percent: ptrutil.ToPtr(150)},
-			result:    "true",
+			desc: "in-range-percent-above-random-value",
+			inPercent: &percent{
+				Percent: ptrutil.ToPtr(50),
+				rand:    &mockRandomGenerator{returnValue: 49},
+			},
+			result: "true",
 		},
 		{
-			desc:      "one hundred",
-			inPercent: &percent{Percent: ptrutil.ToPtr(100)},
-			result:    "true",
+			desc: "in-range-percent-equals-random-value",
+			inPercent: &percent{
+				Percent: ptrutil.ToPtr(50),
+				rand:    &mockRandomGenerator{returnValue: 50},
+			},
+			result: "true",
+		},
+		{
+			desc: "in-range-percent-below-random-value",
+			inPercent: &percent{
+				Percent: ptrutil.ToPtr(50),
+				rand:    &mockRandomGenerator{returnValue: 51},
+			},
+			result: "false",
+		},
+		{
+			desc: "greater-than-one-hundred-percent",
+			inPercent: &percent{
+				Percent: ptrutil.ToPtr(150),
+			},
+			result: "true",
+		},
+		{
+			desc: "one-hundred-percent",
+			inPercent: &percent{
+				Percent: ptrutil.ToPtr(100),
+			},
+			result: "true",
 		},
 	}
 	for _, tc := range testCases {
@@ -1111,6 +1151,23 @@ func TestPercentCall(t *testing.T) {
 			assert.Nil(t, err)
 		})
 	}
+}
+
+// mockRandomGenerator implements randomutil.RandomGenerator for testing
+type mockRandomGenerator struct {
+	returnValue int
+}
+
+func (g *mockRandomGenerator) Intn(n int) int {
+	// Ensure return value is within the range [0,n)
+	if g.returnValue >= n {
+		return g.returnValue % n
+	}
+	return g.returnValue
+}
+
+func (g *mockRandomGenerator) GenerateInt63() int64 {
+	return int64(g.returnValue)
 }
 
 func TestCheckUserDataAndUserExtData(t *testing.T) {
@@ -1223,19 +1280,45 @@ func TestHasUserData(t *testing.T) {
 		found     bool
 	}{
 		{
-			desc:      "nil wrapper",
+			desc:      "nil-wrapper",
 			inWrapper: nil,
 			found:     false,
 		},
 		{
-			desc:      "nil wrapper.BidRequest",
-			inWrapper: &openrtb_ext.RequestWrapper{},
-			found:     false,
+			desc: "nil-bid-request",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: nil,
+			},
+			found: false,
 		},
 		{
-			desc: "nil wrapper.User",
+			desc: "nil-user",
 			inWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{},
+				BidRequest: &openrtb2.BidRequest{
+					User: nil,
+				},
+			},
+			found: false,
+		},
+		{
+			desc: "nil-user-data",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Data: nil,
+					},
+				},
+			},
+			found: false,
+		},
+		{
+			desc: "empty-user-data",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Data: []openrtb2.Data{},
+					},
+				},
 			},
 			found: false,
 		},
@@ -1260,7 +1343,7 @@ func TestHasUserData(t *testing.T) {
 	}
 }
 
-func TestHasSiteContentData(t *testing.T) {
+func TestHasSiteContentDataOrSiteExtData(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		inWrapper *openrtb_ext.RequestWrapper
@@ -1268,7 +1351,21 @@ func TestHasSiteContentData(t *testing.T) {
 		err       error
 	}{
 		{
-			desc: "nil Site",
+			desc:      "nil-wrapper",
+			inWrapper: nil,
+			result:    "false",
+			err:       nil,
+		},
+		{
+			desc: "nil-wrapper-bid-request",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: nil,
+			},
+			result: "false",
+			err:    nil,
+		},
+		{
+			desc: "nil-site",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{},
 			},
@@ -1276,10 +1373,24 @@ func TestHasSiteContentData(t *testing.T) {
 			err:    nil,
 		},
 		{
-			desc: "nil wrapper.Site.Content",
+			desc: "nil-wrapper-site-content",
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					Site: &openrtb2.Site{},
+				},
+			},
+			result: "false",
+			err:    nil,
+		},
+		{
+			desc: "nil-wrapper-site-content-data",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{
+						Content: &openrtb2.Content{
+							Data: nil,
+						},
+					},
 				},
 			},
 			result: "false",
@@ -1342,20 +1453,34 @@ func TestHasSiteContentData(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			res, err := checkSiteContentDataAndSiteExtData(tc.inWrapper)
+			res, err := hasSiteContentDataOrSiteExtData(tc.inWrapper)
 			assert.Equal(t, tc.result, res)
 			assert.Equal(t, tc.err, err)
 		})
 	}
 }
 
-func TestHasAppContentData(t *testing.T) {
+func TestHasAppContentDataOrAppExtData(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		inWrapper *openrtb_ext.RequestWrapper
 		result    string
 		err       error
 	}{
+		{
+			desc:      "nil-wrapper",
+			inWrapper: nil,
+			result:    "false",
+			err:       nil,
+		},
+		{
+			desc: "nil-wrapper-bid-request",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: nil,
+			},
+			result: "false",
+			err:    nil,
+		},
 		{
 			desc: "nil App",
 			inWrapper: &openrtb_ext.RequestWrapper{
@@ -1369,6 +1494,20 @@ func TestHasAppContentData(t *testing.T) {
 			inWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					App: &openrtb2.App{},
+				},
+			},
+			result: "false",
+			err:    nil,
+		},
+		{
+			desc: "nil-wrapper-app-content-data",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					App: &openrtb2.App{
+						Content: &openrtb2.Content{
+							Data: nil,
+						},
+					},
 				},
 			},
 			result: "false",
@@ -1431,7 +1570,7 @@ func TestHasAppContentData(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			res, err := checkAppContentDataAndAppExtData(tc.inWrapper)
+			res, err := hasAppContentDataOrAppExtData(tc.inWrapper)
 			assert.Equal(t, tc.result, res)
 			assert.Equal(t, tc.err, err)
 		})
@@ -1462,7 +1601,7 @@ func TestExtDataPresent(t *testing.T) {
 			found: false,
 		},
 		{
-			desc: "zero-lenght data",
+			desc: "zero-length data",
 			inExt: map[string]json.RawMessage{
 				"data": json.RawMessage(``),
 			},
@@ -1476,16 +1615,23 @@ func TestExtDataPresent(t *testing.T) {
 			found: false,
 		},
 		{
-			desc: "non-zero-lenght empty data array",
+			desc: "non-zero-length empty data array",
 			inExt: map[string]json.RawMessage{
 				"data": json.RawMessage(`[]`),
 			},
 			found: false,
 		},
 		{
-			desc: "success",
+			desc: "one element data array",
 			inExt: map[string]json.RawMessage{
-				"data": json.RawMessage(`[{"id": "any-id"}]`),
+				"data": json.RawMessage(`[{}]`),
+			},
+			found: true,
+		},
+		{
+			desc: "multiple elements data array",
+			inExt: map[string]json.RawMessage{
+				"data": json.RawMessage(`[{}, {"id": "any-id"}]`),
 			},
 			found: true,
 		},
@@ -1538,7 +1684,7 @@ func TestGetRequestRegs(t *testing.T) {
 	}
 }
 
-func TestHasGPPIDs(t *testing.T) {
+func TestHasGPPSIDs(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		inWrapper *openrtb_ext.RequestWrapper
@@ -1557,6 +1703,17 @@ func TestHasGPPIDs(t *testing.T) {
 				BidRequest: &openrtb2.BidRequest{
 					Regs: &openrtb2.Regs{
 						GPPSID: []int8{},
+					},
+				},
+			},
+			result: false,
+		},
+		{
+			desc: "nil request.Regs.GPPSID",
+			inWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GPPSID: nil,
 					},
 				},
 			},
@@ -1594,7 +1751,7 @@ func TestHasGPPIDs(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			assert.Equal(t, tc.result, hasGPPIDs(tc.inWrapper))
+			assert.Equal(t, tc.result, hasGPPSIDs(tc.inWrapper))
 		})
 	}
 }
@@ -1654,27 +1811,39 @@ func TestNewDataCenterIn(t *testing.T) {
 
 func TestNewEidIn(t *testing.T) {
 	testCases := []struct {
-		desc                 string
-		inParams             json.RawMessage
-		expectedDataCenterIn SchemaFunction[openrtb_ext.RequestWrapper]
-		expectedError        error
+		desc          string
+		inParams      json.RawMessage
+		expectedEidIn SchemaFunction[openrtb_ext.RequestWrapper]
+		expectedError error
 	}{
 		{
-			desc:                 "empty args.sources",
-			inParams:             json.RawMessage(`{"sources": []}`),
-			expectedDataCenterIn: nil,
-			expectedError:        errors.New("Empty sources argument in eidIn schema function"),
+			desc:          "nil params",
+			inParams:      nil,
+			expectedEidIn: nil,
+			expectedError: &errortypes.FailedToUnmarshal{Message: "expect { or n, but found \x00"},
 		},
 		{
-			desc:                 "args.sources comes with non-string values",
-			inParams:             json.RawMessage(`{"sources": [5.5, "anyDC", 1]}`),
-			expectedDataCenterIn: nil,
-			expectedError:        &errortypes.FailedToUnmarshal{Message: "cannot unmarshal []string: expects \" or n, but found 5"},
+			desc:          "malformed params",
+			inParams:      json.RawMessage(`malformed`),
+			expectedEidIn: nil,
+			expectedError: &errortypes.FailedToUnmarshal{Message: "expect { or n, but found m"},
+		},
+		{
+			desc:          "empty args.sources",
+			inParams:      json.RawMessage(`{"sources": []}`),
+			expectedEidIn: nil,
+			expectedError: errors.New("Empty sources argument in eidIn schema function"),
+		},
+		{
+			desc:          "args.sources comes with non-string values",
+			inParams:      json.RawMessage(`{"sources": [5.5, "anyDC", 1]}`),
+			expectedEidIn: nil,
+			expectedError: &errortypes.FailedToUnmarshal{Message: "cannot unmarshal []string: expects \" or n, but found 5"},
 		},
 		{
 			desc:     "success",
 			inParams: json.RawMessage(`{"sources": ["pubcid.org"]}`),
-			expectedDataCenterIn: &eidIn{
+			expectedEidIn: &eidIn{
 				EidSources: []string{"pubcid.org"},
 				Eids: map[string]struct{}{
 					"pubcid.org": {},
@@ -1687,7 +1856,7 @@ func TestNewEidIn(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc, err := NewEidIn(tc.inParams)
 
-			assert.Equal(t, tc.expectedDataCenterIn, schemaFunc)
+			assert.Equal(t, tc.expectedEidIn, schemaFunc)
 			assert.Equal(t, tc.expectedError, err)
 		})
 	}
@@ -1701,6 +1870,12 @@ func TestNewGppSidIn(t *testing.T) {
 		expectedError    error
 	}{
 		{
+			desc:             "nil params",
+			inParams:         nil,
+			expectedGppSidIn: nil,
+			expectedError:    &errortypes.FailedToUnmarshal{Message: "expect { or n, but found \x00"},
+		},
+		{
 			desc:             "malformed params",
 			inParams:         json.RawMessage(`malformed`),
 			expectedGppSidIn: nil,
@@ -1713,7 +1888,7 @@ func TestNewGppSidIn(t *testing.T) {
 			expectedError:    errors.New("Empty GPPSIDs list argument in gppSidIn schema function"),
 		},
 		{
-			desc:             "params.datacenters comes with non-string values",
+			desc:             "params.datacenters comes with non-int values",
 			inParams:         json.RawMessage(`{"sids": [5.5, "anyDC", 1]}`),
 			expectedGppSidIn: nil,
 			expectedError:    &errortypes.FailedToUnmarshal{Message: "cannot unmarshal []int8: can not decode float as int"},
@@ -1749,6 +1924,12 @@ func TestNewPercent(t *testing.T) {
 		expectedError   error
 	}{
 		{
+			desc:            "nil params",
+			inParams:        nil,
+			expectedPercent: nil,
+			expectedError:   &errortypes.FailedToUnmarshal{Message: "expect { or n, but found \x00"},
+		},
+		{
 			desc:            "malformed params",
 			inParams:        json.RawMessage(`malformed`),
 			expectedPercent: nil,
@@ -1759,6 +1940,7 @@ func TestNewPercent(t *testing.T) {
 			inParams: json.RawMessage(`{"pct": null}`),
 			expectedPercent: &percent{
 				Percent: ptrutil.ToPtr(5),
+				rand:    randomutil.RandomNumberGenerator{},
 			},
 			expectedError: nil,
 		},
@@ -1767,6 +1949,7 @@ func TestNewPercent(t *testing.T) {
 			inParams: json.RawMessage(`{}`),
 			expectedPercent: &percent{
 				Percent: ptrutil.ToPtr(5),
+				rand:    randomutil.RandomNumberGenerator{},
 			},
 			expectedError: nil,
 		},
@@ -1775,6 +1958,7 @@ func TestNewPercent(t *testing.T) {
 			inParams: json.RawMessage(`{"pct": -1}`),
 			expectedPercent: &percent{
 				Percent: ptrutil.ToPtr(0),
+				rand:    randomutil.RandomNumberGenerator{},
 			},
 			expectedError: nil,
 		},
@@ -1783,6 +1967,7 @@ func TestNewPercent(t *testing.T) {
 			inParams: json.RawMessage(`{"pct": 101}`),
 			expectedPercent: &percent{
 				Percent: ptrutil.ToPtr(100),
+				rand:    randomutil.RandomNumberGenerator{},
 			},
 			expectedError: nil,
 		},
@@ -1791,6 +1976,7 @@ func TestNewPercent(t *testing.T) {
 			inParams: json.RawMessage(`{"pct": 80}`),
 			expectedPercent: &percent{
 				Percent: ptrutil.ToPtr(80),
+				rand:    randomutil.RandomNumberGenerator{},
 			},
 			expectedError: nil,
 		},
@@ -2036,6 +2222,7 @@ func TestNewRequestSchemaFunction(t *testing.T) {
 			inParams:       json.RawMessage(`{"pct":33}`),
 			expectedSchemaFunc: &percent{
 				Percent: ptrutil.ToPtr(33),
+				rand:    randomutil.RandomNumberGenerator{},
 			},
 		},
 		{
@@ -2066,71 +2253,56 @@ func TestNewRequestSchemaFunction(t *testing.T) {
 }
 
 func TestCheckNilArgs(t *testing.T) {
-	type uTest struct {
+	testCases := []struct {
 		desc          string
 		inParams      json.RawMessage
 		expectedError error
-	}
-	testGroups := []struct {
-		groupName string
-		testCases []uTest
 	}{
 		{
-			groupName: "error expected",
-			testCases: []uTest{
-				{
-					desc:          "malformed params",
-					inParams:      json.RawMessage(`malformed`),
-					expectedError: errors.New("anyFunctionName expects 0 arguments"),
-				},
-				{
-					desc:          "non-empty json object",
-					inParams:      json.RawMessage(`{"field": "value"}`),
-					expectedError: errors.New("anyFunctionName expects 0 arguments"),
-				},
-			},
+			desc:          "malformed params",
+			inParams:      json.RawMessage(`malformed`),
+			expectedError: errors.New("anyFunctionName expects 0 arguments"),
 		},
 		{
-			groupName: "success",
-			testCases: []uTest{
-				{
-					desc:          "nil params",
-					inParams:      nil,
-					expectedError: nil,
-				},
-				{
-					desc:          "empty params",
-					inParams:      json.RawMessage(``),
-					expectedError: nil,
-				},
-				{
-					desc:          "empty json object",
-					inParams:      json.RawMessage(`{}`),
-					expectedError: nil,
-				},
-				{
-					desc:          "empty json array",
-					inParams:      json.RawMessage(`[]`),
-					expectedError: nil,
-				},
-				{
-					desc:          "empty json string",
-					inParams:      json.RawMessage(`""`),
-					expectedError: nil,
-				},
-				{
-					desc:          "json null",
-					inParams:      json.RawMessage(`null`),
-					expectedError: nil,
-				},
-			},
+			desc:          "non-empty json object",
+			inParams:      json.RawMessage(`{"field": "value"}`),
+			expectedError: errors.New("anyFunctionName expects 0 arguments"),
+		},
+		{
+			desc:          "empty json array",
+			inParams:      json.RawMessage(`[]`),
+			expectedError: errors.New("anyFunctionName expects 0 arguments"),
+		},
+		{
+			desc:          "empty json string",
+			inParams:      json.RawMessage(`""`),
+			expectedError: errors.New("anyFunctionName expects 0 arguments"),
+		},
+		{
+			desc:          "nil params",
+			inParams:      nil,
+			expectedError: nil,
+		},
+		{
+			desc:          "empty params",
+			inParams:      json.RawMessage(``),
+			expectedError: nil,
+		},
+		{
+			desc:          "empty json object",
+			inParams:      json.RawMessage(`{}`),
+			expectedError: nil,
+		},
+		{
+			desc:          "json null",
+			inParams:      json.RawMessage(`null`),
+			expectedError: nil,
 		},
 	}
-	for _, tg := range testGroups {
-		for _, tc := range tg.testCases {
-			t.Run(tg.groupName+"_"+tc.desc, func(t *testing.T) {
-				assert.Equal(t, tc.expectedError, checkNilArgs(tc.inParams, "anyFunctionName"))
-			})
-		}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.expectedError, checkNilArgs(tc.inParams, "anyFunctionName"))
+		})
 	}
 }
