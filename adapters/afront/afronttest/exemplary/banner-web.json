@@ -1,0 +1,191 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "0.0.0.0",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "test-user"
+    },
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "3998392"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id1",
+        "tagid": "ogTAGID",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "clientAccountId": "clientAccountId",
+            "dataSourceId": "dataSourceId"
+          }
+        }
+      },
+      {
+        "id": "some-impression-id2",
+        "tagid": "ogTAGID",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "clientAccountId": "clientAccountId",
+            "dataSourceId": "dataSourceId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "0.0.0.0"
+          ]
+        },
+        "uri": "https://snt1.afront.io/?rsd=dataSourceId&sk=clientAccountId",
+        "body": {
+          "id": "req-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "0.0.0.0",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id1",
+              "tagid": "ogTAGID",
+              "banner": {
+                "w": 320,
+                "h": 50
+              }
+            },
+            {
+              "id": "some-impression-id2",
+              "tagid": "ogTAGID",
+              "banner": {
+                "w": 320,
+                "h": 50
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "3998392"
+            }
+          },
+          "user": {
+            "buyeruid": "test-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs": [
+          "some-impression-id1",
+          "some-impression-id2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id1",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50
+                },
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e162",
+                  "impid": "some-impression-id2",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50
+                }
+              ],
+              "type": "banner",
+              "seat": "afront"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id1",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 320,
+            "h": 50
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e162",
+            "impid": "some-impression-id2",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 320,
+            "h": 50
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

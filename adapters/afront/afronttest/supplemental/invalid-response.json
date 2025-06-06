@@ -1,0 +1,115 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "0.0.0.0",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "test-user"
+    },
+    "app": {
+      "publisher": {
+        "id": "3998392"
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "3998392"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ogTAGID",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "clientAccountId": "clientAccountId",
+            "dataSourceId": "dataSourceId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "0.0.0.0"
+          ]
+        },
+        "uri": "https://snt1.afront.io/?rsd=dataSourceId&sk=clientAccountId",
+        "body": {
+          "id": "req-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "0.0.0.0",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "tagid": "ogTAGID"
+            }
+          ],
+          "app": {
+            "id": "3998392",
+            "name": "Awesome App",
+            "bundle": "com.app.awesome",
+            "domain": "awesomeapp.com",
+            "cat": [
+              "IAB22-1"
+            ],
+            "publisher": {
+              "id": "3998392"
+            }
+          },
+          "user": {
+            "buyeruid": "test-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "invalid response"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bad Server Response",
+      "comparison": "literal"
+    }
+  ]
+}
