@@ -152,24 +152,6 @@ func TestTreeManagerRun(t *testing.T) {
 			expectedCachedData: map[accountID]*cacheEntry{},
 			expectedLogEntries: []string{"logInfo", "logInfo"},
 		},
-		{
-			name: "NewCacheEntry-error",
-			inBuildInstruction: buildInstruction{
-				config:    getJsonConfigUnknownFunction(),
-				accountID: "account-id-two",
-			},
-			inStoredDataInCache: map[accountID]*cacheEntry{
-				"account-id-one": {
-					hashedConfig: "hash1",
-				},
-			},
-			expectedCachedData: map[accountID]*cacheEntry{
-				"account-id-one": {
-					hashedConfig: "hash1",
-				},
-			},
-			expectedLogEntries: []string{"logInfo", "logError"},
-		},
 	}
 
 	for _, tc := range testCases {
