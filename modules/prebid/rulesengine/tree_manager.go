@@ -29,7 +29,6 @@ func (tm *treeManager) Run(c cacher) error {
 		select {
 		case req := <-tm.requests:
 			if req.config == nil {
-				tm.monitor.logError("SOMETHIN")
 				break
 			}
 
@@ -41,13 +40,11 @@ func (tm *treeManager) Run(c cacher) error {
 			parsedCfg, err := config.NewConfig(*req.config, tm.schemaValidator)
 			if err != nil {
 				tm.monitor.logError(fmt.Sprintf("Rules engine error parsing config for account %s: %v", req.accountID, err))
-				//tm.monitor.logError("Rules engine error parsing config for account %s: %v", req.accountID, err)
 				break
 			}
 			if !parsedCfg.Enabled {
 				c.Delete(req.accountID)
 				tm.monitor.logInfo(fmt.Sprintf("Rules engine disabled for account %s", req.accountID))
-				//tm.monitor.logInfo("Rules engine disabled for account %s", req.accountID)
 				break
 			}
 
