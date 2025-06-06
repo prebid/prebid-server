@@ -41,14 +41,14 @@ func TestTreeManagerRun(t *testing.T) {
 	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", schemaFile))
 
 	testCases := []struct {
-		desc                string
+		name                string
 		inBuildInstruction  buildInstruction
 		inStoredDataInCache map[accountID]*cacheEntry
 		expectedCachedData  map[accountID]*cacheEntry
 		expectedLogEntries  []string
 	}{
 		{
-			desc: "nil request.config",
+			name: "nil-request.config",
 			inBuildInstruction: buildInstruction{
 				config: nil,
 			},
@@ -65,7 +65,7 @@ func TestTreeManagerRun(t *testing.T) {
 			expectedLogEntries: []string{"logInfo"},
 		},
 		{
-			desc: "acount-id found but rebuild needed because entry expired",
+			name: "acount-id-found-but-rebuild-needed-because-entry-expired",
 			inBuildInstruction: buildInstruction{
 				config:    getValidJsonConfig(),
 				accountID: "account-id-one",
@@ -84,7 +84,7 @@ func TestTreeManagerRun(t *testing.T) {
 			expectedLogEntries: []string{"logInfo"},
 		},
 		{
-			desc: "acount-id found rebuild not needed",
+			name: "acount-id-found-rebuild-not-needed",
 			inBuildInstruction: buildInstruction{
 				config:    getValidJsonConfig(),
 				accountID: "account-id-one",
@@ -103,7 +103,7 @@ func TestTreeManagerRun(t *testing.T) {
 			expectedLogEntries: []string{"logInfo"},
 		},
 		{
-			desc: "NewConfig error",
+			name: "NewConfig-error",
 			inBuildInstruction: buildInstruction{
 				config:    getMalformedJsonConfig(),
 				accountID: "account-id-two",
@@ -121,7 +121,7 @@ func TestTreeManagerRun(t *testing.T) {
 			expectedLogEntries: []string{"logInfo", "logError"},
 		},
 		{
-			desc: "new account-id disabled config",
+			name: "new-account-id-disabled-config",
 			inBuildInstruction: buildInstruction{
 				config:    getDisabledJsonConfig(),
 				accountID: "account-id-two",
@@ -139,7 +139,7 @@ func TestTreeManagerRun(t *testing.T) {
 			expectedLogEntries: []string{"logInfo", "logInfo"},
 		},
 		{
-			desc: "existing account id needs rebuild but new config is disabled",
+			name: "existing-account-id-needs-rebuild-but-new-config-is-disabled",
 			inBuildInstruction: buildInstruction{
 				config:    getDisabledJsonConfig(),
 				accountID: "account-id-one",
@@ -153,7 +153,7 @@ func TestTreeManagerRun(t *testing.T) {
 			expectedLogEntries: []string{"logInfo", "logInfo"},
 		},
 		{
-			desc: "NewCacheEntry error",
+			name: "NewCacheEntry-error",
 			inBuildInstruction: buildInstruction{
 				config:    getJsonConfigUnknownFunction(),
 				accountID: "account-id-two",
@@ -173,7 +173,7 @@ func TestTreeManagerRun(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			// set test
 			var wg sync.WaitGroup
 			wg.Add(len(tc.expectedLogEntries))
@@ -209,25 +209,16 @@ func TestTreeManagerRun(t *testing.T) {
 			}
 
 			actualCachedData := cache.m.Load().(map[accountID]*cacheEntry)
-			//if assert.Len(t, actualCachedData, len(tc.expectedCachedData)) {
 			if !assert.Len(t, actualCachedData, len(tc.expectedCachedData)) {
 				return
 			}
 			for accountID, expectedEntry := range tc.expectedCachedData {
-				//for accountID, _ := range tc.expectedCachedData {
 				actualEntry, exists := actualCachedData[accountID]
-				//_, exists := actualCachedData[accountID]
 				if !assert.True(t, exists) {
 					continue
 				}
 				assert.Equal(t, expectedEntry.hashedConfig, actualEntry.hashedConfig)
 				assert.ElementsMatch(t, expectedEntry.ruleSetsForProcessedAuctionRequestStage, actualEntry.ruleSetsForProcessedAuctionRequestStage)
-				//if !assert.Len(t, expectedEntry.ruleSetsForProcessedAuctionRequestStage, len(actualEntry.ruleSetsForProcessedAuctionRequestStage)) {
-				//	continue
-				//}
-				//for i, expectedRuleSet := range expectedEntry.ruleSetsForProcessedAuctionRequestStage {
-				//	assert.Equal(t, expectedRuleSet, actualEntry.ruleSetsForProcessedAuctionRequestStage[i])
-				//}
 			}
 		})
 	}
