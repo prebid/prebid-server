@@ -67,7 +67,7 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 		return err
 	}
 
-	result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
+	result.ChangeSet.ProcessedAuctionRequest().Bidders().Update(impIdToBidders)
 
 	return nil
 }
@@ -105,7 +105,7 @@ func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 		return err
 	}
 
-	result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
+	result.ChangeSet.ProcessedAuctionRequest().Bidders().Update(impIdToBidders)
 
 	return nil
 }

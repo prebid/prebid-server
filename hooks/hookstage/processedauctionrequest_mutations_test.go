@@ -76,14 +76,14 @@ func TestUpdatePrebidBidders(t *testing.T) {
 			assert.NoError(t, err)
 
 			impExt.SetPrebid(&tt.extImpPrebid)
-			payload := BidderRequestPayload{Bidder: "appnexus", Request: &brw}
+			payload := ProcessedAuctionRequestPayload{Request: &brw}
 
-			cbr := ChangeSetBidderRequest[BidderRequestPayload]{
-				changeSet: &ChangeSet[BidderRequestPayload]{},
+			cpar := ChangeSetProcessedAuctionRequest[ProcessedAuctionRequestPayload]{
+				changeSet: &ChangeSet[ProcessedAuctionRequestPayload]{},
 			}
-			cbr.Bidders().Update(tt.impIdToBidders)
+			cpar.Bidders().Update(tt.impIdToBidders)
 
-			for _, mut := range cbr.changeSet.Mutations() {
+			for _, mut := range cpar.changeSet.Mutations() {
 				_, err := mut.Apply(payload)
 				assert.NoError(t, err)
 			}
