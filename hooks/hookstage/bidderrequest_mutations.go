@@ -120,7 +120,7 @@ func (c ChangeBidders[T]) Update(impIdToBidders map[string]map[string]json.RawMe
 					impPrebid := impExt.GetPrebid()
 
 					impPrebid.Bidder = impBidders
-
+					impExt.SetPrebid(impPrebid)
 				}
 			}
 		}
