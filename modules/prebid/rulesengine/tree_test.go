@@ -13,7 +13,7 @@ import (
 
 func TestExecuteRulesFullConfig(t *testing.T) {
 	rw := BuildTestRequestWrapper()
-	rules := BuildTestRules()
+	rules := BuildTestRules(t)
 
 	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
@@ -25,10 +25,13 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 	assert.Equal(t, hs.MutationUpdate, result.ChangeSet.Mutations()[0].Type())
 }
 
-func BuildTestRules() rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]] {
-	devCountryFunc, _ := rules.NewDeviceCountryIn(json.RawMessage(`{"countries": ["USA"]}`)) // handle err
-	resFuncTrue, _ := NewIncludeBidders(json.RawMessage(`[{ "bidders": ["bidderA"]}]`))      //handle err
-	resFuncFalse, _ := NewExcludeBidders(json.RawMessage(`[{ "bidders": ["bidderB"]}]`))     //handle err
+func BuildTestRules(t *testing.T) rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]] {
+	devCountryFunc, errDevCountry := rules.NewDeviceCountryIn(json.RawMessage(`{"countries": ["USA"]}`))
+	assert.NoError(t, errDevCountry, "unexpected error in NewDeviceCountryIn")
+	resFuncTrue, errNewIncludeBidders := NewIncludeBidders(json.RawMessage(`{"bidders": ["bidderA"]}`))
+	assert.NoError(t, errNewIncludeBidders, "unexpected error in NewIncludeBidders")
+	resFuncFalse, errNewExcludeBidders := NewExcludeBidders(json.RawMessage(`{"bidders": ["bidderB"]}`))
+	assert.NoError(t, errNewExcludeBidders, "unexpected error in NewExcludeBidders")
 
 	rules := rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{

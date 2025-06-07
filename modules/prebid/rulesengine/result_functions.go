@@ -3,6 +3,7 @@ package rulesengine
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"slices"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -37,21 +38,13 @@ func NewProcessedAuctionRequestResultFunction(name string, params json.RawMessag
 	}
 }
 
-// ResultFuncParams is a struct that holds parameters for result functions and is used in ExcludeBidders and IncludeBidders.
-type ResultFuncParams struct {
-	Bidders        []string
-	SeatNonBid     int
-	AnalyticsValue string
-	IfSyncedId     bool
-}
-
 // NewExcludeBidders is a factory function that creates a new ExcludeBidders result function.
 // It takes a JSON raw message as input, unmarshals it into a slice of ResultFuncParams,
 // and returns an ExcludeBidders instance.
 // The function returns an error if there is an issue with the unmarshalling process.
 // The ExcludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
 func NewExcludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, error) {
-	var excludeBiddersParams []ResultFuncParams
+	var excludeBiddersParams config.ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &excludeBiddersParams); err != nil {
 		return nil, err
 	}
@@ -60,7 +53,7 @@ func NewExcludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 
 // ExcludeBidders is a struct that holds parameters for excluding bidders in the rules engine.
 type ExcludeBidders struct {
-	Args []ResultFuncParams
+	Args config.ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
@@ -68,35 +61,14 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookR
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
-	for _, schemaResult := range meta.SchemaFunctionResults {
-		if schemaResult.FuncName == rules.AdUnitCode {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
-		if schemaResult.FuncName == rules.MediaTypes {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
+	// build map[impId] to map [bidder] to bidder params
+	impIdToBidders, err := buildExcludeBidders(req, eb.Args.Bidders)
+	if err != nil {
+		return err
 	}
-	/*if len{analyticsKey} > 0{
-		//create an analytics tag
-	}*/
 
-	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
-	for _, arg := range eb.Args {
-		if arg.IfSyncedId {
-			// possibly modify args.bidders
-		}
-		// build map[impId] to map [bidder] to bidder params
-		impIdToBidders, err := buildExcludeBidders(req, arg.Bidders)
-		if err != nil {
-			return err
-		}
+	result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
 
-		result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
-	}
 	return nil
 }
 
@@ -110,7 +82,7 @@ func (eb *ExcludeBidders) Name() string {
 // The function returns an error if there is an issue with the unmarshalling process.
 // The IncludeBidders function is used to modify the ProcessedAuctionRequestPayload in the ChangeSet.
 func NewIncludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, error) {
-	var includeBiddersParams []ResultFuncParams
+	var includeBiddersParams config.ResultFuncParams
 	if err := jsonutil.Unmarshal(params, &includeBiddersParams); err != nil {
 		return nil, err
 	}
@@ -119,47 +91,26 @@ func NewIncludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 
 // IncludeBidders is a struct that holds parameters for including bidders in the rules engine.
 type IncludeBidders struct {
-	Args []ResultFuncParams
+	Args config.ResultFuncParams
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
-	for _, schemaResult := range meta.SchemaFunctionResults {
-		if schemaResult.FuncName == rules.AdUnitCode {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
-		if schemaResult.FuncName == rules.MediaTypes {
-			if schemaResult.FuncResult != "*" { // wildcard
-				// add comparison logic
-			}
-		}
+	// build map[impId] to map [bidder] to bidder params
+	impIdToBidders, err := buildIncludeBidders(req, ib.Args.Bidders)
+	if err != nil {
+		return err
 	}
-	/*if len{analyticsKey} > 0{
-		//create an analytics tag
-	}*/
 
-	// maybe merge all args into one to remove for loop - in res funct constructor NewIncludeBidders
-	for _, arg := range eb.Args {
-		if arg.IfSyncedId {
-			// possibly modify args.bidders
-		}
-		// build map[impId] to map [bidder] to bidder params
-		impIdToBidders, err := buildIncludeBidders(req, arg.Bidders)
-		if err != nil {
-			return err
-		}
+	result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
 
-		result.ChangeSet.BidderRequest().Bidders().Update(impIdToBidders)
-	}
 	return nil
 }
 
-func (eb *IncludeBidders) Name() string {
+func (ib *IncludeBidders) Name() string {
 	return IncludeBiddersName
 }
 
