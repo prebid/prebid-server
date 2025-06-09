@@ -2,13 +2,15 @@
   "mockBidRequest": {
     "id": "test-publiser-id",
     "site": {
+      "id": "1",
+      "page": "example.com",
       "publisher": {
         "id": "pub123"
       }
     },
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "imp-ad-unit-code",
         "banner": {
           "format": [{"w": 128, "h": 100}]
         },
@@ -26,14 +28,16 @@
         "body": {
           "id": "test-publiser-id",
           "site": {
+            "id": "1",
+            "page": "example.com",
             "publisher": {
               "id": "pub123"
             }
           },
           "imp": [
             {
-              "id":"test-imp-id",
-              "tagid": "test-imp-id",
+              "id":"imp-ad-unit-code",
+              "tagid": "imp-ad-unit-code",
               "banner": {
                 "format": [{"w": 128, "h": 100}]
               },
@@ -43,7 +47,7 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs":["imp-ad-unit-code"]
       },
       "mockResponse": {
         "status": 200,
@@ -55,7 +59,7 @@
               "seat": "seat",
               "bid": [{
                 "id": "some-UUID",
-                "impid": "test-imp-id",
+                "impid": "imp-ad-unit-code",
                 "price": 0.500000,
                 "adm": "adm string",
                 "crid": "crid_10",
@@ -77,7 +81,7 @@
         {
           "bid": {
             "id": "some-UUID",
-            "impid": "test-imp-id",
+            "impid": "imp-ad-unit-code",
             "price": 0.5,
             "adm": "adm string",
             "crid": "crid_10",

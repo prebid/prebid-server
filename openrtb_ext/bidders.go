@@ -22,6 +22,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAax,
 	BidderAceex,
 	BidderAcuityAds,
+	BidderAdagio,
 	BidderAdelement,
 	BidderAdf,
 	BidderAdgeneration,
@@ -120,6 +121,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderFeedAd,
 	BidderFlipp,
 	BidderFreewheelSSP,
+	BidderFWSSP,
 	BidderFRVRAdNetwork,
 	BidderGamma,
 	BidderGamoshi,
@@ -173,6 +175,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMissena,
 	BidderMobfoxpb,
 	BidderMobileFuse,
+	BidderMobkoi,
 	BidderMotorik,
 	BidderNativo,
 	BidderNextMillennium,
@@ -183,6 +186,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOpenWeb,
 	BidderOpenx,
 	BidderOperaads,
+	BidderOptidigital,
 	BidderOraki,
 	BidderOrbidder,
 	BidderOutbrain,
@@ -225,6 +229,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSovrn,
 	BidderSovrnXsp,
 	BidderSspBC,
+	BidderStartIO,
 	BidderStroeerCore,
 	BidderTaboola,
 	BidderTappx,
@@ -378,6 +383,7 @@ const (
 	BidderAax               BidderName = "aax"
 	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
+	BidderAdagio            BidderName = "adagio"
 	BidderAdelement         BidderName = "adelement"
 	BidderAdf               BidderName = "adf"
 	BidderAdgeneration      BidderName = "adgeneration"
@@ -476,6 +482,7 @@ const (
 	BidderFeedAd            BidderName = "feedad"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
+	BidderFWSSP             BidderName = "fwssp"
 	BidderFRVRAdNetwork     BidderName = "frvradn"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
@@ -529,6 +536,7 @@ const (
 	BidderMissena           BidderName = "missena"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
+	BidderMobkoi            BidderName = "mobkoi"
 	BidderMotorik           BidderName = "motorik"
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
@@ -539,6 +547,7 @@ const (
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
+	BidderOptidigital       BidderName = "optidigital"
 	BidderOraki             BidderName = "oraki"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
@@ -581,6 +590,7 @@ const (
 	BidderSovrn             BidderName = "sovrn"
 	BidderSovrnXsp          BidderName = "sovrnXsp"
 	BidderSspBC             BidderName = "sspBC"
+	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderTaboola           BidderName = "taboola"
 	BidderTappx             BidderName = "tappx"

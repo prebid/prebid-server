@@ -1,7 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "filter-imp-without-ogury-params",
+    "id": "test-request-id",
     "site": {
+      "id": "1",
+      "page": "example.com",
       "publisher": {
         "id": "pub123"
       }
@@ -17,26 +19,9 @@
           "bidder": {
             "assetKey": "OGY",
             "adUnitId": "123"
-          }
-        }
-      },
-      {
-        "id": "test-imp-id-2",
-        "banner": {
-          "format": [{"w": 128, "h": 100}]
-        },
-        "ext": {"bidder": {}}
-      },
-      {
-        "id": "test-imp-id-3",
-        "banner": {
-          "format": [{"w": 1, "h": 1}]
-        },
-        "ext": {
-          "gpid": "global position id",
-          "bidder": {
-            "assetKey": "OGY3",
-            "adUnitId": "1234"
+          },
+          "prebid": {
+            "adunitcode": "ad-unit-code"
           }
         }
       }
@@ -48,8 +33,10 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "filter-imp-without-ogury-params",
+          "id": "test-request-id",
           "site": {
+            "id": "1",
+            "page": "example.com",
             "publisher": {
               "id": "pub123"
             }
@@ -64,24 +51,15 @@
               "ext": {
                 "gpid": "global position id",
                 "assetKey": "OGY",
-                "adUnitId": "123"
-              }
-            },
-            {
-              "id":"test-imp-id-3",
-              "tagid": "test-imp-id-3",
-              "banner": {
-                "format": [{"w": 1, "h": 1}]
-              },
-              "ext": {
-                "gpid": "global position id",
-                "assetKey": "OGY3",
-                "adUnitId": "1234"
+                "adUnitId": "123",
+                "prebid": {
+                  "adunitcode": "ad-unit-code"
+                }
               }
             }
           ]
         },
-        "impIDs":["test-imp-id", "test-imp-id-3"]
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
