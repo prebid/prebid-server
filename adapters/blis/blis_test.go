@@ -13,9 +13,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "https://example.endpoint"},
 		config.Server{ExternalUrl: "http://example.server", GvlID: 1, DataCenter: "2"})
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	require.NoError(t, buildErr)
 
 	adapterstest.RunJSONBidderTest(t, "blistest", bidder)
 }
