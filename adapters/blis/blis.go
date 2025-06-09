@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -75,8 +76,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	var errors []error
-	for seatBid := range iterutil.SlicePointerValues(response.SeatBid) {
-	for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
+	for seatBid := range iterators.SlicePointerValues(response.SeatBid) {
+		for bid := range iterators.SlicePointerValues(seatBid.Bid) {
 			resolveMacros(bid)
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
