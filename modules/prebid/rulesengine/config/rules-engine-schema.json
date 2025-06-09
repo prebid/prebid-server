@@ -20,7 +20,7 @@
         "properties": {
           "stage": {
             "type": "string",
-              "enum": ["entrypoint", "raw-auction", "processed-auction-request", "bidder-request", "raw-bidder-response", "all-processed-bid-responses", "auction-response"]
+              "enum": ["entrypoint", "raw_auction_request", "processed_auction_request", "bidder_request", "raw_bidder_response", "all_processed_bid_responses", "auction_response"]
           },
           "name": {
             "type": "string",

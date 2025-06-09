@@ -14,40 +14,40 @@ func TestNewConfig(t *testing.T) {
 	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", RulesEngineSchemaFile))
 
 	testCases := []struct {
-		desc         string
+		name         string
 		inCfg        json.RawMessage
 		expectedConf *PbRulesEngine
 		expectedErr  error
 	}{
 		{
-			desc:        "nil input config, expect error",
+			name:        "nil-input-config,-expect-error",
 			inCfg:       nil,
 			expectedErr: errors.New("JSON schema validation: EOF"),
 		},
 		{
-			desc:        "malformed input config, expect error",
+			name:        "malformed-input-config,-expect-error",
 			inCfg:       json.RawMessage(`malformed`),
 			expectedErr: errors.New("JSON schema validation: invalid character 'm' looking for beginning of value"),
 		},
 		{
-			desc:        "valid input config fails schema validation",
+			name:        "valid-input-config-fails-schema-validation",
 			inCfg:       json.RawMessage(`{}`),
 			expectedErr: errors.New("JSON schema validation: [(root): enabled is required] [(root): ruleSets is required] "),
 		},
 		{
-			desc:        "valid input config fails rule set validation",
+			name:        "valid-input-config-fails-rule-set-validation",
 			inCfg:       getInvalidRuleSetConfig(),
 			expectedErr: errors.New("Ruleset no 0 is invalid: ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
 		},
 		{
-			desc:         "success",
+			name:         "success",
 			inCfg:        getValidJsonConfig(),
 			expectedConf: getValidConfig(),
 			expectedErr:  nil,
 		},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			actualConf, err := NewConfig(tc.inCfg, validator)
 
 			assert.Equal(t, tc.expectedConf, actualConf)
@@ -131,7 +131,7 @@ func TestValidateConfig(t *testing.T) {
 				},
 				{ //4
 					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"a"}]}`),
-					"[ruleSets.0: name is required] [ruleSets.0: modelGroups is required] [ruleSets.0.stage: ruleSets.0.stage must be one of the following: \"entrypoint\", \"raw-auction\", \"processed-auction-request\", \"bidder-request\", \"raw-bidder-response\", \"all-processed-bid-responses\", \"auction-response\"] ",
+					"[ruleSets.0: name is required] [ruleSets.0: modelGroups is required] [ruleSets.0.stage: ruleSets.0.stage must be one of the following: \"entrypoint\", \"raw_auction_request\", \"processed_auction_request\", \"bidder_request\", \"raw_bidder_response\", \"all_processed_bid_responses\", \"auction_response\"] ",
 				},
 				{ //5
 					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"entrypoint"}]}`),
@@ -446,7 +446,7 @@ func getValidJsonConfig() json.RawMessage {
     "timestamp": "20250131 00:00:00",
     "ruleSets": [
       {
-        "stage": "processed-auction-request",
+        "stage": "processed_auction_request",
         "name": "exclude-in-jpn",
         "version": "1234",
         "modelGroups": [
@@ -536,7 +536,7 @@ func getInvalidRuleSetConfig() json.RawMessage {
     "enabled": true,
     "ruleSets": [
       {
-        "stage": "processed-auction-request",
+        "stage": "processed_auction_request",
         "name": "exclude-in-jpn",
         "modelGroups": [
           {
@@ -587,7 +587,7 @@ func getValidConfig() *PbRulesEngine {
 		Timestamp: "20250131 00:00:00",
 		RuleSets: []RuleSet{
 			{
-				Stage:   "processed-auction-request",
+				Stage:   "processed_auction_request",
 				Name:    "exclude-in-jpn",
 				Version: "1234",
 				ModelGroups: []ModelGroup{

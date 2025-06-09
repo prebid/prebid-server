@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/prebid/prebid-server/v3/hooks"
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -51,7 +52,7 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 	}
 
 	for _, ruleSet := range cfg.RuleSets {
-		if ruleSet.Stage != "processed_auction" {
+		if ruleSet.Stage != hooks.StageProcessedAuctionRequest {
 			// TODO: log error / metric --> stage not supported
 			continue
 		}

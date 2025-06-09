@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/prebid/prebid-server/v3/hooks"
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -62,7 +63,7 @@ func TestNewCacheEntry(t *testing.T) {
 			inCfg: &config.PbRulesEngine{
 				RuleSets: []config.RuleSet{
 					{
-						Stage: "processed_auction",
+						Stage: hooks.StageProcessedAuctionRequest,
 						ModelGroups: []config.ModelGroup{
 							{
 								Default: []config.Result{
@@ -83,7 +84,7 @@ func TestNewCacheEntry(t *testing.T) {
 			inCfg: &config.PbRulesEngine{
 				RuleSets: []config.RuleSet{
 					{
-						Stage: "processed_auction",
+						Stage: hooks.StageProcessedAuctionRequest,
 						ModelGroups: []config.ModelGroup{
 							{
 								Default: []config.Result{
@@ -106,7 +107,7 @@ func TestNewCacheEntry(t *testing.T) {
 				RuleSets: []config.RuleSet{
 					{Stage: "wrong-stage"},
 					{
-						Stage: "processed_auction",
+						Stage: hooks.StageProcessedAuctionRequest,
 						ModelGroups: []config.ModelGroup{
 							{
 								Default: []config.Result{
@@ -128,7 +129,7 @@ func TestNewCacheEntry(t *testing.T) {
 			inCfg: &config.PbRulesEngine{
 				RuleSets: []config.RuleSet{
 					{
-						Stage: "processed_auction",
+						Stage: hooks.StageProcessedAuctionRequest,
 						ModelGroups: []config.ModelGroup{
 							{
 								Default: []config.Result{
@@ -385,7 +386,7 @@ func getValidJsonConfig() *json.RawMessage {
     "timestamp": "20250131 00:00:00",
     "ruleSets": [
       {
-        "stage": "processed-auction-request",
+        "stage": "processed_auction_request",
         "name": "exclude-in-jpn",
         "version": "1234",
         "modelGroups": [
