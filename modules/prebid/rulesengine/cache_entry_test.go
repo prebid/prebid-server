@@ -13,163 +13,199 @@ import (
 )
 
 func TestNewCacheEntry(t *testing.T) {
-	type testInput struct {
-		cfg    *config.PbRulesEngine
-		cfgRaw *json.RawMessage
-	}
-
-	type testOutput struct {
-		emptyRulesetArray bool
-		err               error
-	}
-
 	testCases := []struct {
-		name     string
-		in       testInput
-		expected testOutput
+		name                    string
+		inCfg                   *config.PbRulesEngine
+		inCfgRaw                *json.RawMessage
+		expectEmptyRulesetArray bool
+		expectedErr             error
 	}{
 		{
-			name: "nil ruleset config",
-			in:   testInput{},
-			expected: testOutput{
-				emptyRulesetArray: true,
-				err:               errors.New("no rules engine configuration provided"),
-			},
+			name:                    "nil-ruleset-config",
+			expectEmptyRulesetArray: true,
+			expectedErr:             errors.New("no rules engine configuration provided"),
 		},
 		{
-			name: "nil cfgRaw",
-			in: testInput{
-				cfg: &config.PbRulesEngine{},
-			},
-			expected: testOutput{
-				emptyRulesetArray: true,
-				err:               errors.New("Can't create identifier hash from empty raw json configuration"),
-			},
+			name:                    "nil-cfgRaw",
+			inCfg:                   &config.PbRulesEngine{},
+			expectEmptyRulesetArray: true,
+			expectedErr:             errors.New("Can't create identifier hash from empty raw json configuration"),
 		},
 		{
-			name: "empty ruleset array",
-			in: testInput{
-				cfg:    &config.PbRulesEngine{},
-				cfgRaw: getValidJsonConfig(),
-			},
-			expected: testOutput{
-				emptyRulesetArray: true,
-				err:               nil,
-			},
+			name:                    "nil-ruleset-array",
+			inCfg:                   &config.PbRulesEngine{},
+			inCfgRaw:                getValidJsonConfig(),
+			expectEmptyRulesetArray: true,
+			expectedErr:             nil,
 		},
 		{
-			name: "ruleset with wrong stage",
-			in: testInput{
-				cfg: &config.PbRulesEngine{
-					RuleSets: []config.RuleSet{
-						{Stage: "wrong-stage"},
-					},
+			name: "empty-ruleset-array",
+			inCfg: &config.PbRulesEngine{
+				RuleSets: []config.RuleSet{},
+			},
+			inCfgRaw:                getValidJsonConfig(),
+			expectEmptyRulesetArray: true,
+			expectedErr:             nil,
+		},
+		{
+			name: "ruleset-with-wrong-stage",
+			inCfg: &config.PbRulesEngine{
+				RuleSets: []config.RuleSet{
+					{Stage: "wrong-stage"},
 				},
-				cfgRaw: getValidJsonConfig(),
 			},
-			expected: testOutput{
-				emptyRulesetArray: true,
-			},
+			inCfgRaw:                getValidJsonConfig(),
+			expectEmptyRulesetArray: true,
 		},
 		{
-			name: "createCacheRuleSet() throws error",
-			in: testInput{
-				cfg: &config.PbRulesEngine{
-					RuleSets: []config.RuleSet{
-						{
-							Stage: "processed_auction",
-							ModelGroups: []config.ModelGroup{
-								{
-									Default: []config.Result{
-										{
-											Func: "unknownResultFunction",
-										},
+			name: "createCacheRuleSet-throws-error",
+			inCfg: &config.PbRulesEngine{
+				RuleSets: []config.RuleSet{
+					{
+						Stage: "processed_auction",
+						ModelGroups: []config.ModelGroup{
+							{
+								Default: []config.Result{
+									{
+										Func: "unknownResultFunction",
 									},
 								},
 							},
 						},
 					},
 				},
-				cfgRaw: getValidJsonConfig(),
 			},
-			expected: testOutput{
-				emptyRulesetArray: true,
-			},
+			inCfgRaw:                getValidJsonConfig(),
+			expectEmptyRulesetArray: true,
 		},
 		{
-			name: "Success",
-			in: testInput{
-				cfg: &config.PbRulesEngine{
-					RuleSets: []config.RuleSet{
-						{
-							Stage: "processed_auction",
-							ModelGroups: []config.ModelGroup{
-								{
-									Default: []config.Result{
-										{
-											Func: ExcludeBiddersName,
-											Args: json.RawMessage(`[{"bidders": ["bidderA"], "seatNonBid": 111}]`),
-										},
+			name: "single-ruleset-entry-right-stage",
+			inCfg: &config.PbRulesEngine{
+				RuleSets: []config.RuleSet{
+					{
+						Stage: "processed_auction",
+						ModelGroups: []config.ModelGroup{
+							{
+								Default: []config.Result{
+									{
+										Func: ExcludeBiddersName,
+										Args: json.RawMessage(`{"bidders": ["bidderA"], "seatNonBid": 111}`),
 									},
 								},
 							},
 						},
 					},
 				},
-				cfgRaw: getValidJsonConfig(),
 			},
-			expected: testOutput{
-				emptyRulesetArray: false,
+			inCfgRaw:                getValidJsonConfig(),
+			expectEmptyRulesetArray: false,
+		},
+		{
+			name: "Multiple-ruleset-entries-some-with-the-wrong-stage",
+			inCfg: &config.PbRulesEngine{
+				RuleSets: []config.RuleSet{
+					{Stage: "wrong-stage"},
+					{
+						Stage: "processed_auction",
+						ModelGroups: []config.ModelGroup{
+							{
+								Default: []config.Result{
+									{
+										Func: ExcludeBiddersName,
+										Args: json.RawMessage(`{"bidders": ["bidderA"], "seatNonBid": 111}`),
+									},
+								},
+							},
+						},
+					},
+				},
 			},
+			inCfgRaw:                getValidJsonConfig(),
+			expectEmptyRulesetArray: false,
+		},
+		{
+			name: "Multiple-entries-with-supported-rulesets",
+			inCfg: &config.PbRulesEngine{
+				RuleSets: []config.RuleSet{
+					{
+						Stage: "processed_auction",
+						ModelGroups: []config.ModelGroup{
+							{
+								Default: []config.Result{
+									{
+										Func: IncludeBiddersName,
+										Args: json.RawMessage(`{"bidders": ["bidderFoo"], "seatNonBid": 505}`),
+									},
+								},
+							},
+						},
+					},
+					{
+						Stage: "processed_auction",
+						ModelGroups: []config.ModelGroup{
+							{
+								Default: []config.Result{
+									{
+										Func: ExcludeBiddersName,
+										Args: json.RawMessage(`{"bidders": ["bidderBar"], "seatNonBid": 111}`),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			inCfgRaw:                getValidJsonConfig(),
+			expectEmptyRulesetArray: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			cacheEntry, err := NewCacheEntry(tc.in.cfg, tc.in.cfgRaw)
+			cacheEntry, err := NewCacheEntry(tc.inCfg, tc.inCfgRaw)
 
-			if tc.expected.emptyRulesetArray {
+			if tc.expectEmptyRulesetArray {
 				assert.Empty(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage)
 			} else {
 				assert.NotEmpty(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage)
 			}
 
-			assert.Equal(t, tc.expected.err, err)
+			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
 }
 
 func TestCreateCacheRuleSet(t *testing.T) {
-	type testOutput struct {
-		ruleset cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
-		err     error
-	}
-
 	testCases := []struct {
-		name     string
-		in       *config.RuleSet
-		expected testOutput
+		name            string
+		in              *config.RuleSet
+		expectedRuleSet cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
+		expectedErr     error
 	}{
 		{
-			name: "nil ruleset config",
-			in:   nil,
-			expected: testOutput{
-				ruleset: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
-				err:     errors.New("no rules engine configuration provided"),
-			},
+			name:            "nil-ruleset-config",
+			in:              nil,
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+			expectedErr:     errors.New("no rules engine configuration provided"),
 		},
 		{
-			name: "modelgroup array empty",
+			name: "nil-modelgroup-array",
+			in: &config.RuleSet{
+				ModelGroups: nil,
+			},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedErr:     nil,
+		},
+		{
+			name: "modelgroup-array-empty",
 			in: &config.RuleSet{
 				ModelGroups: []config.ModelGroup{},
 			},
-			expected: testOutput{
-				ruleset: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
-				err:     nil,
-			},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedErr:     nil,
 		},
 		{
-			name: "NewTree() throws error",
+			name: "invalid-model-group",
 			in: &config.RuleSet{
 				ModelGroups: []config.ModelGroup{
 					{
@@ -181,47 +217,117 @@ func TestCreateCacheRuleSet(t *testing.T) {
 					},
 				},
 			},
-			expected: testOutput{
-				ruleset: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
-				err:     errors.New("result function unknownResultFunction was not created"),
-			},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedErr:     errors.New("result function unknownResultFunction was not created"),
 		},
 		{
-			name: "Success",
+			name: "one-valid-modelgroup",
 			in: &config.RuleSet{
 				ModelGroups: []config.ModelGroup{
 					{
 						Default: []config.Result{
 							{
 								Func: ExcludeBiddersName,
-								Args: json.RawMessage(`[{"bidders": ["bidderA"], "seatNonBid": 111}]`),
+								Args: json.RawMessage(`{"bidders": ["bidderA"], "seatNonBid": 111}`),
 							},
 						},
 					},
 				},
 			},
-			expected: testOutput{
-				ruleset: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-					modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-						{
-							tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-								Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
-								DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-									&ExcludeBidders{
-										Args: []ResultFuncParams{
-											{
-												Bidders:    []string{"bidderA"},
-												SeatNonBid: 111,
-											},
-										},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+					{
+						tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+							Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+								&ExcludeBidders{
+									Args: config.ResultFuncParams{
+										Bidders:    []string{"bidderA"},
+										SeatNonBid: 111,
 									},
 								},
 							},
 						},
 					},
 				},
-				err: nil,
 			},
+			expectedErr: nil,
+		},
+		{
+			name: "valid-and-invalid-model-groups",
+			in: &config.RuleSet{
+				ModelGroups: []config.ModelGroup{
+					{
+						Default: []config.Result{
+							{Func: "unknownResultFunction"},
+						},
+					},
+					{
+						Default: []config.Result{
+							{
+								Func: ExcludeBiddersName,
+								Args: json.RawMessage(`{"bidders": ["bidderA"], "seatNonBid": 111}`),
+							},
+						},
+					},
+				},
+			},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedErr:     errors.New("result function unknownResultFunction was not created"),
+		},
+		{
+			name: "multiple-valid-model-groups",
+			in: &config.RuleSet{
+				ModelGroups: []config.ModelGroup{
+					{
+						Default: []config.Result{
+							{
+								Func: ExcludeBiddersName,
+								Args: json.RawMessage(`{"bidders": ["bidderFoo"], "seatNonBid": 111}`),
+							},
+						},
+					},
+					{
+						Default: []config.Result{
+							{
+								Func: IncludeBiddersName,
+								Args: json.RawMessage(`{"bidders": ["bidderBar"], "seatNonBid": 222}`),
+							},
+						},
+					},
+				},
+			},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+					{
+						tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+							Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+								&ExcludeBidders{
+									Args: config.ResultFuncParams{
+										Bidders:    []string{"bidderFoo"},
+										SeatNonBid: 111,
+									},
+								},
+							},
+						},
+					},
+					{
+						tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+							Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+								&IncludeBidders{
+									Args: config.ResultFuncParams{
+										Bidders:    []string{"bidderBar"},
+										SeatNonBid: 222,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: nil,
 		},
 	}
 
@@ -229,8 +335,8 @@ func TestCreateCacheRuleSet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ruleset, err := createCacheRuleSet(tc.in)
 
-			assert.Equal(t, tc.expected.ruleset, ruleset)
-			assert.Equal(t, tc.expected.err, err)
+			assert.Equal(t, tc.expectedRuleSet, ruleset)
+			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
 }
@@ -243,12 +349,12 @@ func TestHashConfig(t *testing.T) {
 		expectEmptyHash bool
 	}{
 		{
-			name:            "Nil input",
+			name:            "Nil-input",
 			in:              nil,
 			expectEmptyHash: true,
 		},
 		{
-			name:            "Empty input",
+			name:            "Empty-input",
 			in:              &emptyJSON,
 			expectEmptyHash: true,
 		},
