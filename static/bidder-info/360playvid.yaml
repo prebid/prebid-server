@@ -1,0 +1,21 @@
+endpoint: "https://ssp.360playvid.com/pserver"
+maintainer:
+  email: "prebid@360playvid.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://cookie.360playvid.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://cookie.360playvid.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"
