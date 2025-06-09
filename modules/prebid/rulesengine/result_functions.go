@@ -2,6 +2,7 @@ package rulesengine
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"slices"
@@ -48,6 +49,10 @@ func NewExcludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 	if err := jsonutil.Unmarshal(params, &excludeBiddersParams); err != nil {
 		return nil, err
 	}
+
+	if len(excludeBiddersParams.Bidders) == 0 {
+		return nil, errors.New("excludeBidders requires at least one bidder to be specified")
+	}
 	return &ExcludeBidders{Args: excludeBiddersParams}, nil
 }
 
@@ -86,6 +91,9 @@ func NewIncludeBidders(params json.RawMessage) (ProcessedAuctionResultFunc, erro
 	if err := jsonutil.Unmarshal(params, &includeBiddersParams); err != nil {
 		return nil, err
 	}
+	if len(includeBiddersParams.Bidders) == 0 {
+		return nil, errors.New("includeBidders requires at least one bidder to be specified")
+	}
 	return &IncludeBidders{Args: includeBiddersParams}, nil
 }
 
@@ -122,6 +130,9 @@ func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (
 			return impIdToBidders, impExtErr
 		}
 		impPrebid := impExt.GetPrebid()
+		if impPrebid == nil {
+			return nil, fmt.Errorf("impExt for imp %s does not contain prebid extension", impWrapper.ID)
+		}
 		impBidders := impPrebid.Bidder
 
 		resultImpBidders := make(map[string]json.RawMessage)
@@ -144,6 +155,9 @@ func buildExcludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (
 			return impIdToBidders, impExtErr
 		}
 		impPrebid := impExt.GetPrebid()
+		if impPrebid == nil {
+			return nil, fmt.Errorf("impExt for imp %s does not contain prebid extension", impWrapper.ID)
+		}
 		impBidders := impPrebid.Bidder
 
 		resultImpBidders := make(map[string]json.RawMessage)
