@@ -43,9 +43,10 @@ func (c ChangeBidders[T]) Update(impIdToBidders map[string]map[string]json.RawMe
 						return p, impExtErr
 					}
 					impPrebid := impExt.GetPrebid()
-
-					impPrebid.Bidder = impBidders
-					impExt.SetPrebid(impPrebid)
+					if impPrebid != nil {
+						impPrebid.Bidder = impBidders
+						impExt.SetPrebid(impPrebid)
+					}
 				}
 			}
 		}

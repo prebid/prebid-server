@@ -10,18 +10,49 @@ import (
 
 func TestUpdatePrebidBidders(t *testing.T) {
 	tests := []struct {
-		name           string
-		bidRequest     openrtb2.BidRequest
-		impIdToBidders map[string]map[string]json.RawMessage
-		extImpPrebid   openrtb_ext.ExtImpPrebid
-		expectErr      bool
-		expectData     openrtb_ext.ExtImpPrebid
+		name                 string
+		bidRequest           *openrtb2.BidRequest
+		impIdToBidders       map[string]map[string]json.RawMessage
+		extImpPrebid         *openrtb_ext.ExtImpPrebid
+		expectErr            bool
+		expectEmptyImps      bool
+		expectEmptyImpPrebid bool
+		expectData           openrtb_ext.ExtImpPrebid
 	}{
+
 		{
-			name:           "One imp with 2 bidders, should be changed to one bidder",
-			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
+			name:           "nil-req-imp",
+			bidRequest:     &openrtb2.BidRequest{Imp: nil},
 			impIdToBidders: map[string]map[string]json.RawMessage{"ImpA": {"bidderA": json.RawMessage(`{"param1": "value1"}`)}},
-			extImpPrebid: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
+				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
+			}},
+			expectErr:       false,
+			expectEmptyImps: true,
+		},
+		{
+			name:           "empty-req-imp",
+			bidRequest:     &openrtb2.BidRequest{Imp: []openrtb2.Imp{}},
+			impIdToBidders: map[string]map[string]json.RawMessage{"ImpA": {"bidderA": json.RawMessage(`{"param1": "value1"}`)}},
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
+				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
+			}},
+			expectErr:       false,
+			expectEmptyImps: true,
+		},
+		{
+			name:                 "nil-req-imp-ext-prebid",
+			impIdToBidders:       map[string]map[string]json.RawMessage{"ImpA": {"bidderA": json.RawMessage(`{"param1": "value1"}`)}},
+			extImpPrebid:         nil,
+			expectEmptyImpPrebid: true,
+			expectErr:            false,
+		},
+		{
+			name:           "one-req-imp-with-multiple-bidders-update-existing-bidder",
+			impIdToBidders: map[string]map[string]json.RawMessage{"ImpA": {"bidderA": json.RawMessage(`{"param1": "value1"}`)}},
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
 				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
 				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
 			}},
@@ -31,10 +62,9 @@ func TestUpdatePrebidBidders(t *testing.T) {
 			}},
 		},
 		{
-			name:           "One imp with 2 bidders, overwrite all bidders in imp",
-			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
+			name:           "one-req-imp-with-multiple-bidders-update-new-bidder",
 			impIdToBidders: map[string]map[string]json.RawMessage{"ImpA": {"bidderC": json.RawMessage(`{"param1": "value1"}`)}},
-			extImpPrebid: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
 				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
 				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
 			}},
@@ -44,10 +74,9 @@ func TestUpdatePrebidBidders(t *testing.T) {
 			}},
 		},
 		{
-			name:           "No bidders in impIdToBidders",
-			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
+			name:           "empty-imp-map",
 			impIdToBidders: map[string]map[string]json.RawMessage{},
-			extImpPrebid: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
 				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
 			}},
 			expectErr: false,
@@ -56,10 +85,9 @@ func TestUpdatePrebidBidders(t *testing.T) {
 			}},
 		},
 		{
-			name:           "One imp with 1 bidder, imp not found",
-			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
+			name:           "one-req-imp-with-one-bidder-imp-not-found",
 			impIdToBidders: map[string]map[string]json.RawMessage{"ImpABC": {"bidderC": json.RawMessage(`{"param1": "value1"}`)}},
-			extImpPrebid: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
 				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
 			}},
 			expectErr: false,
@@ -71,11 +99,19 @@ func TestUpdatePrebidBidders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			brw := openrtb_ext.RequestWrapper{BidRequest: &tt.bidRequest}
-			impExt, err := brw.GetImp()[0].GetImpExt()
-			assert.NoError(t, err)
+			br := &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}}
+			if tt.bidRequest != nil {
+				br = tt.bidRequest
+			}
+			brw := openrtb_ext.RequestWrapper{BidRequest: br}
+			impWrapperArr := brw.GetImp()
 
-			impExt.SetPrebid(&tt.extImpPrebid)
+			if len(impWrapperArr) > 0 {
+				impExt, err := brw.GetImp()[0].GetImpExt()
+				assert.NoError(t, err)
+				impExt.SetPrebid(tt.extImpPrebid)
+			}
+
 			payload := ProcessedAuctionRequestPayload{Request: &brw}
 
 			cpar := ChangeSetProcessedAuctionRequest[ProcessedAuctionRequestPayload]{
@@ -88,8 +124,19 @@ func TestUpdatePrebidBidders(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
+			if tt.expectEmptyImps {
+				assert.Empty(t, payload.Request.GetImp(), "Expected no imps in the request")
+				return
+			}
+
 			impExtRes, err := payload.Request.GetImp()[0].GetImpExt()
 			assert.NoError(t, err)
+
+			if tt.expectEmptyImpPrebid {
+				assert.Nil(t, impExtRes.GetPrebid(), "Expected no prebid data in the imp")
+				return
+			}
+
 			assert.Equal(t, &tt.expectData, impExtRes.GetPrebid(), "Bidder data should match expected")
 
 		})

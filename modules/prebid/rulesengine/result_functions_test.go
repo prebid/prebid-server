@@ -13,32 +13,41 @@ import (
 
 func TestNewProcessedAuctionRequestResultFunction(t *testing.T) {
 	tests := []struct {
-		name      string
-		funcName  string
-		params    json.RawMessage
-		expectErr bool
+		name       string
+		funcName   string
+		params     json.RawMessage
+		expectType ProcessedAuctionResultFunc
+		expectErr  bool
 	}{
 		{
-			name:      "Valid ExcludeBidders",
-			funcName:  ExcludeBiddersName,
-			params:    json.RawMessage(`{"bidders":["bidder1","bidder2"]}`),
-			expectErr: false,
+			name:       "valid_excludeBidders",
+			funcName:   ExcludeBiddersName,
+			params:     json.RawMessage(`{"bidders":["bidder1","bidder2"]}`),
+			expectType: &ExcludeBidders{},
+			expectErr:  false,
 		},
 		{
-			name:      "Valid IncludeBidders",
-			funcName:  IncludeBiddersName,
-			params:    json.RawMessage(`{"bidders":["bidder3","bidder4"]}`),
-			expectErr: false,
+			name:       "valid_includeBidders",
+			funcName:   IncludeBiddersName,
+			params:     json.RawMessage(`{"bidders":["bidder3","bidder4"]}`),
+			expectType: &IncludeBidders{},
+			expectErr:  false,
 		},
 		{
-			name:      "Invalid Function Name",
+			name:      "invalid_function_name",
 			funcName:  "invalidFunction",
 			params:    json.RawMessage(`{}`),
 			expectErr: true,
 		},
 		{
-			name:      "Invalid Params",
+			name:      "invalid-exclude-bidders-params",
 			funcName:  ExcludeBiddersName,
+			params:    json.RawMessage(`invalid-json`),
+			expectErr: true,
+		},
+		{
+			name:      "invalid-include-bidders-params",
+			funcName:  IncludeBiddersName,
 			params:    json.RawMessage(`invalid-json`),
 			expectErr: true,
 		},
@@ -46,15 +55,11 @@ func TestNewProcessedAuctionRequestResultFunction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewProcessedAuctionRequestResultFunction(tt.funcName, tt.params)
+			v, err := NewProcessedAuctionRequestResultFunction(tt.funcName, tt.params)
 			if tt.expectErr {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-				}
+				assert.Error(t, err, "expected error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
+				assert.IsType(t, tt.expectType, v)
 			}
 		})
 	}
@@ -67,18 +72,23 @@ func TestExcludeBiddersCall(t *testing.T) {
 		req        *openrtb_ext.RequestWrapper
 	}{
 		{
-			name:       "Exclude valid bidders",
+			name:       "exclude-one-bidder",
 			argBidders: []string{"bidder1"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 		{
-			name:       "Exclude all bidders",
+			name:       "exclude_all_bidders",
 			argBidders: []string{"bidder1", "bidder2", "bidder3"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 		{
-			name:       "No bidders to exclude",
+			name:       "no_bidders_to_exclude",
 			argBidders: []string{},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+		},
+		{
+			name:       "nil_bidders",
+			argBidders: nil,
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 	}
@@ -120,18 +130,23 @@ func TestIncludeBiddersCall(t *testing.T) {
 		req        *openrtb_ext.RequestWrapper
 	}{
 		{
-			name:       "Include valid bidders",
+			name:       "include_valid_bidders",
 			argBidders: []string{"bidder1", "bidder2"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 		{
-			name:       "Include no bidders",
+			name:       "include_no_bidders",
 			argBidders: []string{},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 		{
-			name:       "Include non-existent bidders",
+			name:       "include_non_existing_bidders",
 			argBidders: []string{"bidder4"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+		},
+		{
+			name:       "nil_bidders",
+			argBidders: nil,
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 	}
@@ -162,7 +177,7 @@ func TestBuildIncludeBidders(t *testing.T) {
 		expectErr  bool
 	}{
 		{
-			name:       "Include valid bidders",
+			name:       "include_valid_bidders",
 			argBidders: []string{"bidder1", "bidder2"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 			expected: map[string]map[string]json.RawMessage{
@@ -174,7 +189,7 @@ func TestBuildIncludeBidders(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name:       "No matching bidders",
+			name:       "no_matching_bidders",
 			argBidders: []string{"bidder4"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 			expected:   map[string]map[string]json.RawMessage{"imp1": {}},
@@ -186,16 +201,10 @@ func TestBuildIncludeBidders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := buildIncludeBidders(tt.req, tt.argBidders)
 			if tt.expectErr {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-				}
+				assert.Error(t, err, "expected error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				if !compareMaps(result, tt.expected) {
-					t.Errorf("expected %v, got %v", tt.expected, result)
-				}
+				assert.NoError(t, err, "unexpected error")
+				assert.True(t, compareMaps(result, tt.expected), "bidders to include do not match")
 			}
 		})
 	}
@@ -210,7 +219,7 @@ func TestBuildExcludeBidders(t *testing.T) {
 		expectErr  bool
 	}{
 		{
-			name:       "Exclude valid bidders",
+			name:       "exclude_valid_bidders",
 			argBidders: []string{"bidder1"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 			expected: map[string]map[string]json.RawMessage{
@@ -222,7 +231,7 @@ func TestBuildExcludeBidders(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name:       "Exclude all bidders",
+			name:       "exclude_all_bidders",
 			argBidders: []string{"bidder1", "bidder2", "bidder3"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 			expected:   map[string]map[string]json.RawMessage{"imp1": {}},
@@ -234,16 +243,10 @@ func TestBuildExcludeBidders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := buildExcludeBidders(tt.req, tt.argBidders)
 			if tt.expectErr {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-				}
+				assert.Error(t, err, "expected error but got nil")
 			} else {
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				if !compareMaps(result, tt.expected) {
-					t.Errorf("expected %v, got %v", tt.expected, result)
-				}
+				assert.NoError(t, err, "unexpected error")
+				assert.True(t, compareMaps(result, tt.expected), "bidders to exclude do not match")
 			}
 		})
 	}
