@@ -29,14 +29,6 @@ const TIDKey = "tid"
 // AuctionEnvironmentKey is the json key under imp[].ext for ExtImp.AuctionEnvironment
 const AuctionEnvironmentKey = string(BidderReservedAE)
 
-// HACK: Support the keys used by the PAAPI (Protected Audience API) module.
-// Without the hack, PBS will reject any requests that contain them. This hack
-// can be removed once the upstream repo supports them. For more info, see:
-// https://docs.prebid.org/dev-docs/modules/paapi.html
-// https://github.com/prebid/prebid-server/issues/3735
-const IGSKey = "igs"
-const PAAPIKey = "paapi"
-
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
