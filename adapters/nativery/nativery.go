@@ -40,7 +40,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var widgetId string
 
 	// attach body request for all the impressions
-	validImps := []openrtb2.Imp{}
+	validImps := make([]openrtb2.Imp, 0, len(request.Imp))
 	for i, imp := range request.Imp {
 		nativeryExt, err := buildNativeryExt(&imp)
 
@@ -55,14 +55,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		reqCopy.Imp = []openrtb2.Imp{imp}
+		reqCopy.Imp[0].Ext, err = jsonutil.Marshal(impExt{Nativery: nativeryExtReqBody{
+			Id:     nativeryExt.WidgetId,
+			Xhr:    2,
+			V:      3,
+			Ref:    reqCopy.Site.Page,
+			RefRef: refRef{Page: reqCopy.Site.Page, Ref: reqCopy.Site.Ref},
+		}})
 
-		if err := buildRequest(reqCopy, nativeryExt); err != nil {
+		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		validImps = append(validImps, reqCopy.Imp...)
-
+		validImps = append(validImps, reqCopy.Imp[0])
 	}
 
 	reqCopy.Imp = validImps
@@ -80,9 +86,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	if err != nil {
 		return nil, append(errs, err)
 	}
-	adapterRequests, errors := splitRequests(reqCopy.Imp, &reqCopy, reqExt, reqExtNativery, a.endpoint)
+	adapterRequests, splitErrors := splitRequests(reqCopy.Imp, &reqCopy, reqExt, reqExtNativery, a.endpoint)
 
-	return adapterRequests, append(errs, errors...)
+	return adapterRequests, append(errs, splitErrors...)
 }
 
 func buildNativeryExt(imp *openrtb2.Imp) (openrtb_ext.ImpExtNativery, error) {
@@ -97,23 +103,6 @@ func buildNativeryExt(imp *openrtb2.Imp) (openrtb_ext.ImpExtNativery, error) {
 	}
 
 	return nativeryExt, nil
-}
-
-// utility function used to build the body for the http request for a single impression
-func buildRequest(reqCopy openrtb2.BidRequest, reqExt openrtb_ext.ImpExtNativery) error {
-
-	impExt := impExt{Nativery: nativeryExtReqBody{
-		Id:     reqExt.WidgetId,
-		Xhr:    2,
-		V:      3,
-		Ref:    reqCopy.Site.Page,
-		RefRef: refRef{Page: reqCopy.Site.Page, Ref: reqCopy.Site.Ref},
-	}}
-
-	var err error
-	reqCopy.Imp[0].Ext, err = jsonutil.Marshal(&impExt)
-
-	return err
 }
 
 // makebids handles the entire bidding process for a single BidRequest.
@@ -200,17 +189,6 @@ func getMediaTypeForBid(bid *bidExt) (openrtb_ext.BidType, error) {
 	default:
 		return "", fmt.Errorf("unrecognized bid_ad_media_type in response from nativery: %s", bid.Nativery.BidType)
 	}
-}
-
-func convertIntToBoolean(num *int) bool {
-	var b bool
-	// Dereferenzia num usando *
-	if num != nil && *num == 1 {
-		b = true
-	} else {
-		b = false
-	}
-	return b
 }
 
 func buildBidMeta(mediaType string, advDomain []string) *openrtb_ext.ExtBidPrebidMeta {
@@ -309,7 +287,7 @@ func getNativeryExt(extMap map[string]jsonutil.RawMessage, isAMP int, widgetId s
 		}
 	}
 
-	nativeryExt.IsAMP = convertIntToBoolean(&isAMP)
+	nativeryExt.IsAMP = isAMP == 1
 	nativeryExt.WidgetId = widgetId
 
 	return nativeryExt, nil

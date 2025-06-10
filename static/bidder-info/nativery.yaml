@@ -2,7 +2,7 @@ endpoint: "https://hb.nativery.com/openrtb2/auction"
 openrtb:
   version: 2.6
 maintainer:
-  email: "andrea.fassina@nativery.com"
+  email: "developer@nativery.com"
 gvlVendorID: 1133
 capabilities:
   site:
