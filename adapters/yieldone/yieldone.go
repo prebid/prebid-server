@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type YieldoneAdapter struct {
@@ -68,7 +69,7 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -105,11 +106,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func preprocess(imp *openrtb2.Imp) error {
 
 	var ext adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
 	var impressionExt openrtb_ext.ExtImpYieldone
-	if err := json.Unmarshal(ext.Bidder, &impressionExt); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &impressionExt); err != nil {
 		return err
 	}
 

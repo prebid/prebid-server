@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -82,6 +82,10 @@ func TestAccountFetcher(t *testing.T) {
 	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "valid")
 	assertErrorCount(t, 0, errs)
 	assert.JSONEq(t, `{"disabled":false, "events_enabled":true, "id":"valid" }`, string(account))
+
+	account, errs = fetcher.FetchAccount(context.Background(), nil, "valid")
+	assertErrorCount(t, 0, errs)
+	assert.JSONEq(t, `{"disabled":false, "id":"valid" }`, string(account))
 
 	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"events_enabled":true}`), "nonexistent")
 	assertErrorCount(t, 1, errs)

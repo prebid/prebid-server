@@ -74,14 +74,10 @@
       }
     ],
     "regs": {
-      "ext": {
-        "gdpr": 1
-      }
+      "gdpr": 1
     },
     "user": {
-      "ext": {
-        "consent": "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
-      }
+      "consent": "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
     },
     "ext": {
       "prebid": {
@@ -104,8 +100,7 @@
             ]
           },
           "includewinners": true,
-          "includebidderkeys": true,
-          "mediatypepricegranularity": {}
+          "includebidderkeys": true
         }
       }
     }

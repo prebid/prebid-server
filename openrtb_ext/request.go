@@ -7,8 +7,8 @@ import (
 	"slices"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -28,14 +28,6 @@ const TIDKey = "tid"
 
 // AuctionEnvironmentKey is the json key under imp[].ext for ExtImp.AuctionEnvironment
 const AuctionEnvironmentKey = string(BidderReservedAE)
-
-// HACK: Support the keys used by the PAAPI (Protected Audience API) module.
-// Without the hack, PBS will reject any requests that contain them. This hack
-// can be removed once the upstream repo supports them. For more info, see:
-// https://docs.prebid.org/dev-docs/modules/paapi.html
-// https://github.com/prebid/prebid-server/issues/3735
-const IGSKey = "igs"
-const PAAPIKey = "paapi"
 
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
@@ -99,6 +91,8 @@ type ExtRequestPrebid struct {
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
+
+	BidderControls map[BidderName]BidderControl `json:"biddercontrols,omitempty"`
 }
 
 type AdServerTarget struct {
@@ -126,10 +120,11 @@ type Config struct {
 	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
 }
 
-type ORTB2 struct { //First party data
-	Site json.RawMessage `json:"site,omitempty"`
-	App  json.RawMessage `json:"app,omitempty"`
-	User json.RawMessage `json:"user,omitempty"`
+type ORTB2 struct { // First party data
+	Site   json.RawMessage `json:"site,omitempty"`
+	App    json.RawMessage `json:"app,omitempty"`
+	User   json.RawMessage `json:"user,omitempty"`
+	Device json.RawMessage `json:"device,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -199,21 +194,21 @@ type Adjustment struct {
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity          *PriceGranularity         `json:"pricegranularity,omitempty"`
-	MediaTypePriceGranularity MediaTypePriceGranularity `json:"mediatypepricegranularity,omitempty"`
-	IncludeWinners            *bool                     `json:"includewinners,omitempty"`
-	IncludeBidderKeys         *bool                     `json:"includebidderkeys,omitempty"`
-	IncludeBrandCategory      *ExtIncludeBrandCategory  `json:"includebrandcategory,omitempty"`
-	IncludeFormat             bool                      `json:"includeformat,omitempty"`
-	DurationRangeSec          []int                     `json:"durationrangesec,omitempty"`
-	PreferDeals               bool                      `json:"preferdeals,omitempty"`
-	AppendBidderNames         bool                      `json:"appendbiddernames,omitempty"`
-	AlwaysIncludeDeals        bool                      `json:"alwaysincludedeals,omitempty"`
+	PriceGranularity          *PriceGranularity          `json:"pricegranularity,omitempty"`
+	MediaTypePriceGranularity *MediaTypePriceGranularity `json:"mediatypepricegranularity,omitempty"`
+	IncludeWinners            *bool                      `json:"includewinners,omitempty"`
+	IncludeBidderKeys         *bool                      `json:"includebidderkeys,omitempty"`
+	IncludeBrandCategory      *ExtIncludeBrandCategory   `json:"includebrandcategory,omitempty"`
+	IncludeFormat             bool                       `json:"includeformat,omitempty"`
+	DurationRangeSec          []int                      `json:"durationrangesec,omitempty"`
+	PreferDeals               bool                       `json:"preferdeals,omitempty"`
+	AppendBidderNames         bool                       `json:"appendbiddernames,omitempty"`
+	AlwaysIncludeDeals        bool                       `json:"alwaysincludedeals,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
-	PrimaryAdServer     int    `json:"primaryadserver"`
-	Publisher           string `json:"publisher"`
+	PrimaryAdServer     int    `json:"primaryadserver,omitempty"`
+	Publisher           string `json:"publisher,omitempty"`
 	WithCategory        bool   `json:"withcategory"`
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
@@ -373,6 +368,10 @@ type ExtMultiBid struct {
 	Bidders                []string `json:"bidders,omitempty"`
 	MaxBids                *int     `json:"maxbids,omitempty"`
 	TargetBidderCodePrefix string   `json:"targetbiddercodeprefix,omitempty"`
+}
+
+type BidderControl struct {
+	PreferredMediaType BidType `json:"prefmtype"`
 }
 
 func (m ExtMultiBid) String() string {

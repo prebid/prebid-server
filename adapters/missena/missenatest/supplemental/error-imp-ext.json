@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.com/url"
+    },
+    "user": {
+      "buyeruid": "1"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": "error"
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing bidderExt object: expect { or n, but found \", input: \"error\"",
+      "comparison": "literal"
+    }
+  ]
+}

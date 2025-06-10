@@ -68,7 +68,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "get gaid from openrtb Device.IFA failed, and get device id failed: Unmarshal openRTBRequest.User.Ext -> extUserDataHuaweiAds. Error: json: cannot unmarshal object into Go struct field ExtUserDataDeviceIdHuaweiAds.data.gaid of type []string",
+      "value": "get gaid from openrtb Device.IFA failed, and get device id failed: Unmarshal openRTBRequest.User.Ext -> extUserDataHuaweiAds. Error: cannot unmarshal openrtb_ext.ExtUserDataDeviceIdHuaweiAds.Gaid: decode slice: expect [ or n, but found {",
       "comparison": "literal"
     }
   ]

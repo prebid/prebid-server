@@ -9,11 +9,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -86,7 +87,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -123,7 +124,7 @@ func resolvePriceMacro(bid *openrtb2.Bid) {
 func getMediaTypeForBid(ext json.RawMessage) (openrtb_ext.BidType, error) {
 	var bidExt openrtb_ext.ExtBid
 
-	if err := json.Unmarshal(ext, &bidExt); err != nil {
+	if err := jsonutil.Unmarshal(ext, &bidExt); err != nil {
 		return "", fmt.Errorf("could not unmarshal openrtb_ext.ExtBid: %w", err)
 	}
 
@@ -149,11 +150,11 @@ func getExtInfo(imp *openrtb2.Imp) (string, error) {
 
 	accountId := "pbs"
 
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return "", fmt.Errorf("could not unmarshal adapters.ExtImpBidder: %w", err)
 	}
 
-	if err := json.Unmarshal(ext.Bidder, &extSA); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &extSA); err != nil {
 		return "", fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
 	}
 

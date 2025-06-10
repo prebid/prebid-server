@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD"
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "impression extensions required",
+      "comparison": "literal"
+    }
+  ]
+}

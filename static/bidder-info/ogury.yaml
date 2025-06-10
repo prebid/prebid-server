@@ -1,0 +1,19 @@
+endpoint: "https://prebids2s.presage.io/api/header-bidding-request"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: deliveryservices@ogury.co
+gvlVendorID: 31
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+  app:
+    mediaTypes:
+      - banner
+userSync:
+  iframe:
+    url: "https://ms-cookie-sync.presage.io/user-sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&source=prebids2s"
+    userMacro: "{{OGURY_UID}}"

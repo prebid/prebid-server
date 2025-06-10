@@ -38,7 +38,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Ignoring imp id=test-imp-id, error while decoding impExt, err: json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpVideoByte",
+      "value": "Ignoring imp id=test-imp-id, error while decoding impExt, err: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

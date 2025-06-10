@@ -8,12 +8,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
@@ -57,14 +58,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 		var operaadsExt openrtb_ext.ImpExtOperaads
-		if err := json.Unmarshal(bidderExt.Bidder, &operaadsExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &operaadsExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -158,7 +159,7 @@ func convertImpression(imp *openrtb2.Imp) error {
 	}
 	if imp.Native != nil && imp.Native.Request != "" {
 		v := make(map[string]interface{})
-		err := json.Unmarshal([]byte(imp.Native.Request), &v)
+		err := jsonutil.Unmarshal([]byte(imp.Native.Request), &v)
 		if err != nil {
 			return err
 		}
@@ -214,7 +215,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var parsedResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &parsedResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &parsedResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}

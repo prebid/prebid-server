@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/cwire.json
@@ -55,6 +55,9 @@ var validParams = []string{
 	`{"placementId":123,"pageId":321,"cwcreative":"3746"}`,
 	`{"placementId":123,"pageId":321}`,
 	`{"placementId":123}`,
+	`{"placementId":123,"domainId":333,"pageId":321,"cwcreative":"3746"}`,
+	`{"placementId":123,"domainId":333,"pageId":321}`,
+	`{"placementId":123},"domainId":333}`,
 	`{}`,
 }
 

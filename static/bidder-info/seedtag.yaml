@@ -1,0 +1,14 @@
+endpoint: "https://s.seedtag.com/c/openrtb?partner=prebidserver"
+endpointCompression: gzip
+maintainer:
+  email: prebid@seedtag.com
+gvlVendorID: 157
+capabilities:
+  site:
+    mediaTypes:
+      - video
+      - banner
+userSync:
+  iframe:
+    url: "https://s.seedtag.com/cs/cookiesync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp_consent={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -7,10 +7,11 @@ import (
 	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
@@ -99,7 +100,7 @@ func GetHeaders(request *openrtb2.BidRequest) *http.Header {
 // Checks the imp[i].ext object and returns a imp.ext object as per ExtImpTelaria format
 func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTelaria, error) {
 	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &bidderExt)
+	err := jsonutil.Unmarshal(imp.Ext, &bidderExt)
 
 	if err != nil {
 		err = &errortypes.BadInput{
@@ -110,7 +111,7 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb2.Imp) (*openrtb_e
 	}
 
 	var telariaExt openrtb_ext.ExtImpTelaria
-	err = json.Unmarshal(bidderExt.Bidder, &telariaExt)
+	err = jsonutil.Unmarshal(bidderExt.Bidder, &telariaExt)
 
 	if err != nil {
 		return nil, err
@@ -271,7 +272,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	responseBody := response.Body
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Telaria: Bad Server Response",
 		}}

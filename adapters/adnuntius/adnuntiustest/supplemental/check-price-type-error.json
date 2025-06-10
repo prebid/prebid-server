@@ -31,7 +31,7 @@
 	"httpCalls": [],
 	"expectedMakeRequestsErrors": [
 		{
-			"value": "Error unmarshalling ExtImpValues: json: cannot unmarshal number into Go struct field ImpExtAdnunitus.bidType of type string",
+			"value": "Error unmarshalling ExtImpValues: cannot unmarshal openrtb_ext.ImpExtAdnunitus.BidType: expects \" or n, but found 1",
 			"comparison": "literal"
 		}
 	]

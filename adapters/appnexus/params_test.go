@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/appnexus.json
@@ -47,6 +47,7 @@ var validParams = []string{
 	`{"placementId":123,"position":"above"}`,
 	`{"placement_id":123,"position":"below"}`,
 	`{"member":"123","inv_code":"456"}`,
+	`{"member":123,"inv_code":"456"}`,
 	`{"placementId":123, "keywords":[{"key":"foo","value":["bar"]}]}`,
 	`{"placement_id":123, "keywords":[{"key":"foo","value":["bar", "baz"]}]}`,
 	`{"placement_id":123, "keywords":[{"key":"foo"}]}`,
@@ -66,9 +67,11 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"placement_id":123, "placementId":123}`,
+	`{"member":123}`,
 	`{"member":"123"}`,
 	`{"member":"123","invCode":45}`,
 	`{"placementId":"123","member":"123","invCode":45}`,
+	`{"placementId":"123","member":"123","invCode":"45"}`,
 	`{"placement_id":123, "position":"left"}`,
 	`{"placement_id":123, "position":"left"}`,
 	`{"placement_id":123, "reserve":"45"}`,

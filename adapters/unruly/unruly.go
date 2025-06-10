@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -55,7 +56,7 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 	for i := 0; i < numRequests; i++ {
 		imp := req.Imp[i]
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("ext data not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -63,7 +64,7 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 			return nil, errors
 		}
 		var unrulyExt openrtb_ext.ExtImpUnruly
-		if err := json.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("siteid not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -107,7 +108,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
 		}}

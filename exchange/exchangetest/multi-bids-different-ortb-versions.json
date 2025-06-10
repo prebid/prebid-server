@@ -1,0 +1,276 @@
+{
+    "requestType": "openrtb2-web",
+    "ortbversion": {
+        "appnexus":"2.6",
+        "rubicon":"2.5"
+    },
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "user": {
+                "id": "my-user-id",
+                "buyeruid": "my-buyer-uid",
+                "geo": {
+                    "lat": 123.456,
+                    "lon": 678.90,
+                    "zip": "90210"
+                },
+                "consent": "AAAA",
+                "eids": [
+                    {
+                        "source": "source",
+                        "uids": [
+                            {
+                                "id": "1",
+                                "atype": 1,
+                                "ext": {}
+                            },
+                            {
+                                "id": "1",
+                                "atype": 1,
+                                "ext": {}
+                            }
+                        ],
+                        "ext": {}
+                    }
+                ],
+                "ext": {}
+            },
+            "imp": [
+                {
+                    "rwdd": 1,
+                    "id": "some-imp-id",
+                    "banner": {
+                        "format": [
+                            {
+                                "w": 600,
+                                "h": 500
+                            },
+                            {
+                                "w": 300,
+                                "h": 600
+                            }
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                },
+                                "rubicon": {
+                                    "accountId": 1,
+                                    "siteId": 2,
+                                    "zoneId": 3
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "source": {
+                "fd": 1,
+                "tid": "abc123",
+                "pchain": "tag_placement",
+                "schain": {
+                    "complete": 1,
+                    "nodes": [
+                        {
+                            "asi": "asi",
+                            "sid": "sid",
+                            "rid": "rid",
+                            "ext": {}
+                        }
+                    ],
+                    "ver": "ver",
+                    "ext": {}
+                },
+                "ext": {}
+            },
+            "regs": {
+                "coppa": 1,
+                "gdpr": 1,
+                "us_privacy": "1YYY",
+                "gpp": "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN",
+                "gppsid": [
+                    6
+                ]
+            }
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "user": {
+                        "geo": {},
+                        "consent": "AAAA",
+                        "eids": [
+                            {
+                                "source": "source",
+                                "uids": [
+                                    {
+                                        "id": "1",
+                                        "atype": 1,
+                                        "ext": {}
+                                    },
+                                    {
+                                        "id": "1",
+                                        "atype": 1,
+                                        "ext": {}
+                                    }
+                                ],
+                                "ext": {}
+                            }
+                        ],
+                        "ext": {}
+                    },
+                    "imp": [
+                        {
+                            "rwdd": 1,
+                            "id": "some-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 600,
+                                        "h": 500
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "placementId": 1
+                                }
+                            }
+                        }
+                    ],
+                    "source": {
+                        "fd": 1,
+                        "tid": "abc123",
+                        "pchain": "tag_placement",
+                        "schain": {
+                            "complete": 1,
+                            "nodes": [
+                                {
+                                    "asi": "asi",
+                                    "sid": "sid",
+                                    "rid": "rid",
+                                    "ext": {}
+                                }
+                            ],
+                            "ver": "ver",
+                            "ext": {}
+                        },
+                        "ext": {}
+                    },
+                    "regs": {
+                        "coppa": 1,
+                        "gdpr": 1,
+                        "us_privacy": "1YYY",
+                        "gpp": "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN"
+                    }
+                }
+            }
+        },
+        "rubicon": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "user": {
+                        "geo": {},
+                        "ext": {
+                            "consent": "AAAA",
+                            "eids": [
+                                {
+                                    "source": "source",
+                                    "uids": [
+                                        {
+                                            "id": "1",
+                                            "atype": 1,
+                                            "ext": {}
+                                        },
+                                        {
+                                            "id": "1",
+                                            "atype": 1,
+                                            "ext": {}
+                                        }
+                                    ],
+                                    "ext": {}
+                                }
+                            ]
+                        }
+                    },
+                    "imp": [
+                        {
+                            "id": "some-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 600,
+                                        "h": 500
+                                    },
+                                    {
+                                        "w": 300,
+                                        "h": 600
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "accountId": 1,
+                                    "siteId": 2,
+                                    "zoneId": 3
+                                },
+                                "prebid": {
+                                    "is_rewarded_inventory":1
+                                }
+                            }
+                        }
+                    ],
+                    "source": {
+                        "fd": 1,
+                        "tid": "abc123",
+                        "pchain": "tag_placement",
+                        "ext": {
+                            "schain": {
+                                "complete": 1,
+                                "nodes": [
+                                    {
+                                        "asi": "asi",
+                                        "sid": "sid",
+                                        "rid": "rid",
+                                        "ext": {}
+                                    }
+                                ],
+                                "ver": "ver",
+                                "ext": {}
+                            }
+                        }
+                    },
+                    "regs": {
+                        "coppa": 1,
+                        "gpp":"DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN",
+                        "ext": {
+                            "gdpr": 1,
+                            "us_privacy": "1YYY"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

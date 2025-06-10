@@ -10,6 +10,8 @@ endpoint: "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids"
 # endpoint: "http://prebidserver-s2s-sin.creativecdn.com/bidder/prebidserver/bids"
 geoscope:
   - global
+openrtb:
+  version: 2.6  
 maintainer:
   email: "prebid@rtbhouse.com"
 endpointCompression: gzip

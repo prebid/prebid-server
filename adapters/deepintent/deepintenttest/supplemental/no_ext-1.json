@@ -22,7 +22,7 @@
     },
     "expectedMakeRequestsErrors": [
       {
-        "value": "Impression id=test-banner-imp-id has an Error: json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+        "value": "Impression id=test-banner-imp-id has an Error: expect { or n, but found \"",
         "comparison": "literal"
       }
     ]

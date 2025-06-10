@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -141,7 +141,7 @@ func TestConnectionMetrics(t *testing.T) {
 func TestRequestMetric(t *testing.T) {
 	m := createMetricsForTesting()
 	requestType := metrics.ReqTypeORTB2Web
-	requestStatus := metrics.RequestStatusBlacklisted
+	requestStatus := metrics.RequestStatusBlockedApp
 
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
@@ -285,7 +285,7 @@ func TestRequestMetricWithoutCookie(t *testing.T) {
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag) {
 		m.RecordRequest(metrics.Labels{
 			RType:         requestType,
-			RequestStatus: metrics.RequestStatusBlacklisted,
+			RequestStatus: metrics.RequestStatusBlockedApp,
 			CookieFlag:    cookieFlag,
 		})
 	}
@@ -337,7 +337,7 @@ func TestAccountMetric(t *testing.T) {
 	performTest := func(m *Metrics, pubID string) {
 		m.RecordRequest(metrics.Labels{
 			RType:         metrics.ReqTypeORTB2Web,
-			RequestStatus: metrics.RequestStatusBlacklisted,
+			RequestStatus: metrics.RequestStatusBlockedApp,
 			PubID:         pubID,
 		})
 	}
@@ -1235,7 +1235,7 @@ func TestRecordSyncerRequestMetric(t *testing.T) {
 			label:  "already_synced",
 		},
 		{
-			status: metrics.SyncerCookieSyncTypeNotSupported,
+			status: metrics.SyncerCookieSyncRejectedByFilter,
 			label:  "type_not_supported",
 		},
 	}

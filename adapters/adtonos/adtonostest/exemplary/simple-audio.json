@@ -1,0 +1,113 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "tmax": 1000,
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "bidfloor": 4.2,
+        "ext": {
+          "bidder": {
+            "supplierId": "777XYZ123"
+          }
+        },
+        "audio": {
+          "mimes": [
+            "audio/mpeg"
+          ]
+        }
+      }
+    ],
+    "test": 1,
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "http://www.example.com",
+      "domain": "www.example.com"
+    },
+    "device": {}
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://exchange.example.com/bid/777XYZ123",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "some-request-id",
+          "tmax": 1000,
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "bidfloor": 4.2,
+              "ext": {
+                "bidder": {
+                  "supplierId": "777XYZ123"
+                }
+              },
+              "audio": {
+                "mimes": [
+                  "audio/mpeg"
+                ]
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "1"
+            },
+            "page": "http://www.example.com",
+            "domain": "www.example.com"
+          },
+          "device": {},
+          "test": 1
+        },
+        "impIDs":["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "some-impression-id",
+                  "crid": "some-creative-id",
+                  "adm": "<VAST>TAG</VAST>",
+                  "price": 6.5
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "some-impression-id",
+            "crid": "some-creative-id",
+            "adm": "<VAST>TAG</VAST>",
+            "price": 6.5
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}

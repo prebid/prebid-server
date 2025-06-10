@@ -1,8 +1,14 @@
 endpoint: "https://{{.Host}}.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}"
 maintainer:
   email: "prebid@algorix.co"
+gvlVendorID: 1176
 capabilities:
   app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
     mediaTypes:
       - banner
       - video

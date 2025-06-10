@@ -57,7 +57,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type grid.GridResponse",
+      "value": "expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

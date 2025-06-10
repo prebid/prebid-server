@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 1920,
+          "h": 1080
+        },
+        "ext": {
+          "bidder": {
+            "company_id": "9876543"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "54321"
+    },
+    "device": {
+      "ip": "1.2.3.4",
+      "ua": "user-agent"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "uri": "https://test.localhost.com?company_id=9876543",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ],
+          "User-Agent": [
+            "user-agent"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 1920,
+                "h": 1080
+              },
+              "ext": {
+                "bidder": {
+                  "company_id": "9876543"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ip": "1.2.3.4",
+            "ua": "user-agent"
+          },
+          "app": {
+            "bundle": "54321"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "invalid response"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bad Server Response",
+      "comparison": "literal"
+    }
+  ]
+}
+

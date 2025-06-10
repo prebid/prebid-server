@@ -21,7 +21,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value":  "error unmarshaling imp.ext: json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+      "value": "error unmarshaling imp.ext: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

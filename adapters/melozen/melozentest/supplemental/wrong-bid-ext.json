@@ -1,0 +1,85 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "w": 900,
+                    "h": 250,
+                    "mimes": [
+                        "video/x-flv",
+                        "video/mp4"
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "pubId": "386276e072"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.com/rtb/v2/bid?publisher_id=386276e072",
+                "headers": {
+                    "Content-Type": ["application/json;charset=utf-8"],
+                    "Accept": ["application/json"]
+                  },
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "video": {
+                                "w": 900,
+                                "h": 250,
+                                "mimes": [
+                                    "video/x-flv",
+                                    "video/mp4"
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "pubId": "386276e072"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs": [
+                    "test-imp-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test-bid-id",
+                                    "impid": "another-imp-id",
+                                    "price": 3.5,
+                                    "w": 900,
+                                    "h": 250,
+                                    "ext": {}
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [{"currency":"USD","bids":[]}],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Failed to parse bid mediatype for impression \"another-imp-id\"",
+            "comparison": "regex"
+        }
+    ]
+}
