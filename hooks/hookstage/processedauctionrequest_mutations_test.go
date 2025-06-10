@@ -10,14 +10,13 @@ import (
 
 func TestUpdatePrebidBidders(t *testing.T) {
 	tests := []struct {
-		name                 string
-		bidRequest           *openrtb2.BidRequest
-		impIdToBidders       map[string]map[string]json.RawMessage
-		extImpPrebid         *openrtb_ext.ExtImpPrebid
-		expectErr            bool
-		expectEmptyImps      bool
-		expectEmptyImpPrebid bool
-		expectData           openrtb_ext.ExtImpPrebid
+		name            string
+		bidRequest      *openrtb2.BidRequest
+		impIdToBidders  map[string]map[string]json.RawMessage
+		extImpPrebid    *openrtb_ext.ExtImpPrebid
+		expectErr       bool
+		expectEmptyImps bool
+		expectData      openrtb_ext.ExtImpPrebid
 	}{
 
 		{
@@ -43,11 +42,14 @@ func TestUpdatePrebidBidders(t *testing.T) {
 			expectEmptyImps: true,
 		},
 		{
-			name:                 "nil-req-imp-ext-prebid",
-			impIdToBidders:       map[string]map[string]json.RawMessage{"ImpA": {"bidderA": json.RawMessage(`{"param1": "value1"}`)}},
-			extImpPrebid:         nil,
-			expectEmptyImpPrebid: true,
-			expectErr:            false,
+			name:           "nil-req-imp-ext-prebid",
+			impIdToBidders: map[string]map[string]json.RawMessage{"ImpA": {"bidderA": json.RawMessage(`{"param1": "value1"}`)}},
+			extImpPrebid:   nil,
+			expectErr:      false,
+			expectData: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"param1": "value1"}`),
+			},
+			},
 		},
 		{
 			name:           "one-req-imp-with-multiple-bidders-update-existing-bidder",
@@ -131,12 +133,6 @@ func TestUpdatePrebidBidders(t *testing.T) {
 
 			impExtRes, err := payload.Request.GetImp()[0].GetImpExt()
 			assert.NoError(t, err)
-
-			if tt.expectEmptyImpPrebid {
-				assert.Nil(t, impExtRes.GetPrebid(), "Expected no prebid data in the imp")
-				return
-			}
-
 			assert.Equal(t, &tt.expectData, impExtRes.GetPrebid(), "Bidder data should match expected")
 
 		})
