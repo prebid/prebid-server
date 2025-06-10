@@ -187,6 +187,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/revcontent"
 	"github.com/prebid/prebid-server/v3/adapters/richaudience"
 	"github.com/prebid/prebid-server/v3/adapters/rise"
+	"github.com/prebid/prebid-server/v3/adapters/rocketlab"
 	"github.com/prebid/prebid-server/v3/adapters/roulax"
 	"github.com/prebid/prebid-server/v3/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/v3/adapters/rubicon"
@@ -443,6 +444,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRise:              rise.Builder,
+		openrtb_ext.BidderRocketlab:         rocketlab.Builder,
 		openrtb_ext.BidderRoulax:            roulax.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
