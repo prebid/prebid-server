@@ -84,19 +84,13 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 			}
 		}
 
-		imp.Ext = impExtJSON
-		imps = append(imps, imp)
+		impCopy := imp
+		impCopy.Ext = impExtJSON
+		imps = append(imps, impCopy)
 		if idx == 0 {
-			var nexx360Ext openrtb_ext.ExtImpNexx360
-			if err := jsonutil.Unmarshal(bidderExt.Bidder, &nexx360Ext); err != nil {
-				return nil, "", "", &errortypes.BadInput{
-					Message: err.Error(),
-				}
-			}
 			tagId = nexx360Ext.TagId
 			placement = nexx360Ext.Placement
 		}
-
 	}
 
 	return imps, tagId, placement, nil
@@ -127,14 +121,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	query := url.Values{}
 
-	const placementKey = "placement"
 	if placement != "" {
-		query[placementKey] = []string{placement}
+		query.Add("placement", placement)
 	}
 
-	const tagIdKey = "tag_id"
 	if tagId != "" {
-		query[tagIdKey] = []string{tagId}
+		query.Add("tag_id", tagId)
 	}
 	urlBuilder.RawQuery = query.Encode()
 
@@ -151,13 +143,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	if err != nil {
 		return nil, []error{err}
 	}
-	fmt.Printf("Nexx360: Request JSON: %s\n", string(reqJSON))
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
 
 	adapter := &adapters.RequestData{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Uri:     uri,
 		Body:    reqJSON,
 		Headers: headers,
