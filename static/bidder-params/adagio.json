@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adagio Adapter Params",
+  "description": "A schema which validates params accepted by the Adagio adapter",
+  "type": "object",
+  "properties": {
+    "organizationId": {
+      "type": "string",
+      "description": "Id of the Organization. Handed out by Adagio."
+    },
+    "placement": {
+      "type": "string",
+      "description": "Refers to the placement of an adunit in a page. Must not contain any information about the type of device.",
+      "maxLength": 30
+    },
+    "pagetype": {
+      "type": "string",
+      "description": "Describes what kind of content will be present in the page.",
+      "maxLength": 30
+    },
+    "category": {
+      "type": "string",
+      "description": "Category of the content displayed in the page.",
+      "maxLength": 30
+    }
+  },
+  "required": ["organizationId", "placement"]
+}
