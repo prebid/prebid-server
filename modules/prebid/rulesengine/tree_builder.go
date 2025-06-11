@@ -24,6 +24,7 @@ type treeBuilder[T1 any, T2 any] struct {
 // It is expected that T1 and T2 are the types of the request and result payloads respectively.
 // The function uses the provided schema and result function factories to create
 // the appropriate functions for each node in the tree.
+// Build function assumes the config is valid and the number of schema functions matches the number of conditions.
 func (tb *treeBuilder[T1, T2]) Build(tree *rules.Tree[T1, T2]) error {
 	currNode := tree.Root
 
@@ -46,13 +47,10 @@ func (tb *treeBuilder[T1, T2]) Build(tree *rules.Tree[T1, T2]) error {
 			}
 
 			_, ok := currNode.Children[condition]
-			if ok {
-				currNode = currNode.Children[condition]
-			} else {
-				nextNode := &rules.Node[T1, T2]{}
-				currNode.Children[condition] = nextNode
-				currNode = nextNode
+			if !ok {
+				currNode.Children[condition] = &rules.Node[T1, T2]{}
 			}
+			currNode = currNode.Children[condition]
 		}
 
 		for _, res := range rule.Results {

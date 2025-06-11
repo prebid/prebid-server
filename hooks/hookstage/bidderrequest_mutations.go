@@ -1,7 +1,6 @@
 package hookstage
 
 import (
-	"encoding/json"
 	"errors"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -31,10 +30,6 @@ func (c ChangeSetBidderRequest[T]) CatTax() ChangeSetCatTax[T] {
 
 func (c ChangeSetBidderRequest[T]) BApp() ChangeSetBApp[T] {
 	return ChangeSetBApp[T]{changeSetBidderRequest: c}
-}
-
-func (c ChangeSetBidderRequest[T]) Bidders() ChangeBidders[T] {
-	return ChangeBidders[T]{changeSetBidderRequest: c}
 }
 
 func (c ChangeSetBidderRequest[T]) castPayload(p T) (*openrtb_ext.RequestWrapper, error) {
@@ -101,29 +96,4 @@ func (c ChangeSetBApp[T]) Update(bapp []string) {
 		}
 		return p, err
 	}, MutationUpdate, "bidrequest", "bapp")
-}
-
-type ChangeBidders[T any] struct {
-	changeSetBidderRequest ChangeSetBidderRequest[T]
-}
-
-func (c ChangeBidders[T]) Update(impIdToBidders map[string]map[string]json.RawMessage) {
-	c.changeSetBidderRequest.changeSet.AddMutation(func(p T) (T, error) {
-		bidRequest, err := c.changeSetBidderRequest.castPayload(p)
-		if err == nil {
-			for _, impWrapper := range bidRequest.GetImp() {
-				if impBidders, ok := impIdToBidders[impWrapper.ID]; ok {
-					impExt, impExtErr := impWrapper.GetImpExt()
-					if err != nil {
-						return p, impExtErr
-					}
-					impPrebid := impExt.GetPrebid()
-
-					impPrebid.Bidder = impBidders
-					impExt.SetPrebid(impPrebid)
-				}
-			}
-		}
-		return p, err
-	}, MutationUpdate, "bidrequest", "imp", "ext", "prebid", "bidders")
 }
