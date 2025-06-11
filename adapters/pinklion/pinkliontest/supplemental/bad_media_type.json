@@ -76,7 +76,7 @@
   }],
   "expectedMakeBidsErrors": [
     {
-      "value": "could not define media type for impression: test-imp-id",
+      "value": "could not define media type for bid: test-imp-id",
       "comparison": "literal"
     }
   ]
