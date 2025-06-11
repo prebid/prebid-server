@@ -4,8 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"time"
 
+	"github.com/prebid/prebid-server/v3/hooks"
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -35,13 +37,22 @@ type cacheModelGroup[T1 any, T2 any] struct {
 // It builds the tree structures for the rule sets for the processed auction request stage
 // and stores them in the cache object
 func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEntry, error) {
+	if cfg == nil {
+		return cacheEntry{}, errors.New("no rules engine configuration provided")
+	}
+
+	idHash := hashConfig(cfgRaw)
+	if idHash == "" {
+		return cacheEntry{}, errors.New("Can't create identifier hash from empty raw json configuration")
+	}
+
 	newCacheObj := cacheEntry{
 		timestamp:    time.Now(),
-		hashedConfig: hashConfig(cfgRaw),
+		hashedConfig: idHash,
 	}
 
 	for _, ruleSet := range cfg.RuleSets {
-		if ruleSet.Stage != "processed_auction" {
+		if ruleSet.Stage != hooks.StageProcessedAuctionRequest {
 			// TODO: log error / metric --> stage not supported
 			continue
 		}
@@ -60,6 +71,10 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 // createCacheRuleSet creates a new cache rule set for the given configuration
 // It builds the tree structures for the model groups and stores them in the cache rule set
 func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]], error) {
+	if cfg == nil {
+		return cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}, errors.New("no rules engine configuration provided")
+	}
+
 	crs := cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 		name:        cfg.Name,
 		modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
@@ -93,7 +108,7 @@ func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWr
 // This is used to determine if the configuration has changed and if the trees need to be rebuilt
 // The hash is a SHA256 hash of the JSON configuration and is stored as a string
 func hashConfig(cfg *json.RawMessage) hash {
-	if cfg == nil {
+	if cfg == nil || len(*cfg) == 0 {
 		return ""
 	}
 	newHash := sha256.Sum256(*cfg)

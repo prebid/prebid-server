@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -20,7 +21,7 @@ type PbRulesEngine struct {
 }
 
 type RuleSet struct {
-	Stage       string       `json:"stage,omitempty"`
+	Stage       hooks.Stage  `json:"stage,omitempty"`
 	Name        string       `json:"name,omitempty"`
 	Version     string       `json:"version,omitempty"`
 	ModelGroups []ModelGroup `json:"modelGroups,omitempty"`
