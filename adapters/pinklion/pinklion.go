@@ -1,4 +1,4 @@
-package pinkLion
+package pinklion
 
 import (
 	"encoding/json"
@@ -63,7 +63,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			impExt.PinkLionBidderExt.Type = "network"
 		}
 
-		finalyImpExt, err := json.Marshal(impExt)
+		finalyImpExt, err := jsonutil.Marshal(impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -84,7 +84,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
@@ -149,5 +149,5 @@ func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeNative, nil
 	}
 
-	return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)
+	return "", fmt.Errorf("could not define media type for bid: %s", bid.ImpID)
 }

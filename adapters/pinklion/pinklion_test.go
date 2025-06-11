@@ -1,4 +1,4 @@
-package pinkLion
+package pinklion
 
 import (
 	"testing"
