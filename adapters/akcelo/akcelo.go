@@ -23,8 +23,8 @@ type extObj struct {
 	Akcelo json.RawMessage `json:"akcelo"`
 }
 
-var NoValidSiteIdError = &errortypes.BadInput{Message: "Cannot find valid siteId"}
-var NoValidImpError = &errortypes.BadInput{Message: "No valid Imp"}
+var noValidSiteIdError = &errortypes.BadInput{Message: "Cannot find valid siteId"}
+var noValidImpError = &errortypes.BadInput{Message: "No valid Imp"}
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	uri, err := url.Parse(config.Endpoint)
@@ -56,7 +56,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 func (a *adapter) prepareBidRequest(bidRequest *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	if len(bidRequest.Imp) == 0 {
-		return nil, []error{NoValidImpError}
+		return nil, []error{noValidImpError}
 	}
 
 	bidRequest = createSitePublisher(bidRequest)
@@ -111,11 +111,11 @@ func createSitePublisher(bidRequest *openrtb2.BidRequest) *openrtb2.BidRequest {
 
 func configureParentAccount(bidRequest *openrtb2.BidRequest) error {
 	if len(bidRequest.Imp) == 0 {
-		return NoValidImpError
+		return noValidImpError
 	}
 	parentAccount, _, _, err := jsonparser.Get(bidRequest.Imp[0].Ext, "akcelo", "siteId")
 	if err != nil {
-		return NoValidSiteIdError
+		return noValidSiteIdError
 	}
 	var publisherExt = openrtb_ext.ExtPublisher{}
 	publisherExt.Prebid = &openrtb_ext.ExtPublisherPrebid{}
