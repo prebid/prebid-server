@@ -47,6 +47,7 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 	}
 
 	newCacheObj := cacheEntry{
+		enabled:      cfg.Enabled,
 		timestamp:    time.Now(),
 		hashedConfig: idHash,
 	}

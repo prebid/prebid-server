@@ -13,18 +13,19 @@ import (
 )
 
 const RulesEngineSchemaFile = "rules-engine-schema.json"
+const RulesEngineSchemaFilePath = "modules/prebid/rulesengine/config/" + RulesEngineSchemaFile
 
 type PbRulesEngine struct {
 	Enabled   bool      `json:"enabled,omitempty"`
 	Timestamp string    `json:"timestamp,omitempty"`
-	RuleSets  []RuleSet `json:"ruleSets,omitempty"`
+	RuleSets  []RuleSet `json:"rulesets,omitempty"`
 }
 
 type RuleSet struct {
 	Stage       hooks.Stage  `json:"stage,omitempty"`
 	Name        string       `json:"name,omitempty"`
 	Version     string       `json:"version,omitempty"`
-	ModelGroups []ModelGroup `json:"modelGroups,omitempty"`
+	ModelGroups []ModelGroup `json:"modelgroups,omitempty"`
 }
 
 type ModelGroup struct {

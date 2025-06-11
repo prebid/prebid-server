@@ -32,7 +32,7 @@ func TestNewConfig(t *testing.T) {
 		{
 			name:        "valid-input-config-fails-schema-validation",
 			inCfg:       json.RawMessage(`{}`),
-			expectedErr: errors.New("JSON schema validation: [(root): enabled is required] [(root): ruleSets is required] "),
+			expectedErr: errors.New("JSON schema validation: [(root): enabled is required] [(root): rulesets is required] "),
 		},
 		{
 			name:        "valid-input-config-fails-rule-set-validation",
@@ -115,45 +115,45 @@ func TestValidateConfig(t *testing.T) {
 			[]testInput{
 				{ //0
 					json.RawMessage(`{}`),
-					"[(root): enabled is required] [(root): ruleSets is required] ",
+					"[(root): enabled is required] [(root): rulesets is required] ",
 				},
 				{ //1
 					json.RawMessage(`{"enabled": true}`),
-					"[(root): ruleSets is required] ",
+					"[(root): rulesets is required] ",
 				},
 				{ //2
-					json.RawMessage(`{"enabled": true, "ruleSets": []}`),
-					"[ruleSets: Array must have at least 1 items] ",
+					json.RawMessage(`{"enabled": true, "rulesets": []}`),
+					"[rulesets: Array must have at least 1 items] ",
 				},
 				{ //3
-					json.RawMessage(`{"enabled": true, "ruleSets": [{}]}`),
-					"[ruleSets.0: stage is required] [ruleSets.0: name is required] [ruleSets.0: modelGroups is required] ",
+					json.RawMessage(`{"enabled": true, "rulesets": [{}]}`),
+					"[rulesets.0: stage is required] [rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
 				},
 				{ //4
-					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"a"}]}`),
-					"[ruleSets.0: name is required] [ruleSets.0: modelGroups is required] [ruleSets.0.stage: ruleSets.0.stage must be one of the following: \"entrypoint\", \"raw_auction_request\", \"processed_auction_request\", \"bidder_request\", \"raw_bidder_response\", \"all_processed_bid_responses\", \"auction_response\"] ",
+					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"a"}]}`),
+					"[rulesets.0: name is required] [rulesets.0: modelgroups is required] [rulesets.0.stage: rulesets.0.stage must be one of the following: \"entrypoint\", \"raw_auction_request\", \"processed_auction_request\", \"bidder_request\", \"raw_bidder_response\", \"all_processed_bid_responses\", \"auction_response\"] ",
 				},
 				{ //5
-					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"entrypoint"}]}`),
-					"[ruleSets.0: name is required] [ruleSets.0: modelGroups is required] ",
+					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint"}]}`),
+					"[rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
 				},
 				{ //6
-					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"entrypoint","name":"n"}]}`),
-					"[ruleSets.0: modelGroups is required] ",
+					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n"}]}`),
+					"[rulesets.0: modelgroups is required] ",
 				},
 				{ //7
-					json.RawMessage(`{"enabled": true, "ruleSets": [{"stage":"entrypoint","name":"n","modelGroups":[]}]}`),
-					"[ruleSets.0.modelGroups: Array must have at least 1 items] ",
+					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n","modelgroups":[]}]}`),
+					"[rulesets.0.modelgroups: Array must have at least 1 items] ",
 				},
 				{ //8
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "n",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
                               "weight": 101,
 							  "schema": [{"function":"channel"}],
@@ -169,17 +169,17 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.weight: Must be less than or equal to 100] ",
+					"[rulesets.0.modelgroups.0.weight: Must be less than or equal to 100] ",
 				},
 				{ //9
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "n",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
                               "weight": -1,
 							  "schema": [{"function":"channel"}],
@@ -195,17 +195,17 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.weight: Must be greater than or equal to 1] ",
+					"[rulesets.0.modelgroups.0.weight: Must be greater than or equal to 1] ",
 				},
 				{ //10
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "n",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
                               "schema": [],
                               "rules": [
@@ -220,17 +220,17 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.schema: Array must have at least 1 items] ",
+					"[rulesets.0.modelgroups.0.schema: Array must have at least 1 items] ",
 				},
 				{ //11
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "n",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
 							  "schema": [{"function":"channel"}],
                               "rules": []
@@ -240,17 +240,17 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.rules: Array must have at least 1 items] ",
+					"[rulesets.0.modelgroups.0.rules: Array must have at least 1 items] ",
 				},
 				{ //12
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "someName",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
 							  "schema": [{"function":"foo"}],
                               "rules": [
@@ -265,17 +265,17 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.schema.0.function: ruleSets.0.modelGroups.0.schema.0.function must be one of the following: \"deviceCountry\", \"dataCenters\", \"channel\", \"eidAvailable\", \"userFpdAvailable\", \"fpdAvail\", \"gppSid\", \"tcfInScope\", \"percent\", \"prebidKey\", \"domain\", \"bundle\", \"deviceType\"] ",
+					"[rulesets.0.modelgroups.0.schema.0.function: rulesets.0.modelgroups.0.schema.0.function must be one of the following: \"channel\", \"dataCenter\", \"dataCenterIn\", \"deviceCountry\", \"deviceCountryIn\", \"eidAvailable\", \"eidIn\", \"fpdAvailable\", \"gppSidAvailable\", \"gppSidIn\", \"percent\", \"tcfInScope\", \"userFpdAvailable\"] ",
 				},
 				{ //13
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "someName",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
 							  "schema": [{"function":"channel"}],
                               "rules": [
@@ -290,17 +290,17 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.rules.0.conditions: Array must have at least 1 items] ",
+					"[rulesets.0.modelgroups.0.rules.0.conditions: Array must have at least 1 items] ",
 				},
 				{ //14
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "someName",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
 							  "schema": [{"function":"channel"}],
                               "rules": [
@@ -315,17 +315,17 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.rules.0.results: Array must have at least 1 items] ",
+					"[rulesets.0.modelgroups.0.rules.0.results: Array must have at least 1 items] ",
 				},
 				{ //15
 					json.RawMessage(`
                     {
                       "enabled": true,
-                      "ruleSets": [
+                      "rulesets": [
                         {
                           "stage": "entrypoint",
                           "name": "someName",
-                          "modelGroups": [
+                          "modelgroups": [
                             {
 							  "schema": [{"function":"channel"}],
                               "rules": [
@@ -340,7 +340,7 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[ruleSets.0.modelGroups.0.rules.0.results.0.function: ruleSets.0.modelGroups.0.rules.0.results.0.function must be one of the following: \"excludeBidders\", \"includeBidders\", \"logATag\"] ",
+					"[rulesets.0.modelgroups.0.rules.0.results.0.function: rulesets.0.modelgroups.0.rules.0.results.0.function must be one of the following: \"excludeBidders\", \"includeBidders\", \"logATag\"] ",
 				},
 			},
 		},
@@ -389,7 +389,7 @@ func TestValidateRuleSet(t *testing.T) {
 				ModelGroups: []ModelGroup{
 					{
 						Schema: []Schema{
-							{Func: "deviceCountry", Args: json.RawMessage(`["USA"]`)},
+							{Func: "deviceCountryIn", Args: json.RawMessage(`{"countries": ["USA"]}`)},
 							{Func: "channel"},
 						},
 						Rules: []Rule{{Conditions: []string{"true", "web"}}},
@@ -444,24 +444,24 @@ func getValidJsonConfig() json.RawMessage {
     "enabled": true,
     "generateRulesFromBidderConfig": true,
     "timestamp": "20250131 00:00:00",
-    "ruleSets": [
+    "rulesets": [
       {
         "stage": "processed_auction_request",
         "name": "exclude-in-jpn",
         "version": "1234",
-        "modelGroups": [
+        "modelgroups": [
           {
             "weight": 100,
             "analyticsKey": "experiment-name",
             "version": "4567",
             "schema": [
               {
-                "function": "deviceCountry",
-                "args": ["USA"]
+                "function": "deviceCountryIn",
+                "args": {"countries": ["USA"]}
               },
               {
-                "function": "dataCenters",
-                "args": ["us-east", "us-west"]
+                "function": "dataCenterIn",
+                "args": {"datacenters": ["us-east", "us-west"]}
               },
               {
                 "function": "channel"
@@ -478,7 +478,7 @@ func getValidJsonConfig() json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderA"], "seatNonBid": 111}]
+                    "args": {"bidders": ["bidderA"], "seatNonBid": 111}
                   }
                 ]
               },
@@ -491,7 +491,7 @@ func getValidJsonConfig() json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderB"], "seatNonBid": 222}]
+                    "args": {"bidders": ["bidderB"], "seatNonBid": 222}
                   }
                 ]
               },
@@ -504,7 +504,7 @@ func getValidJsonConfig() json.RawMessage {
                 "results": [
                   {
                     "function": "includeBidders",
-                    "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]
+                    "args": {"bidders": ["bidderC"], "seatNonBid": 333}
                   }
                 ]
               }
@@ -518,7 +518,7 @@ func getValidJsonConfig() json.RawMessage {
             "rules": [
               {
                 "conditions": ["*"],
-                "results": [{"function": "includeBidders", "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]}]
+                "results": [{"function": "includeBidders", "args": {"bidders": ["bidderC"], "seatNonBid": 333}}]
               }
             ]
           }
@@ -534,11 +534,11 @@ func getInvalidRuleSetConfig() json.RawMessage {
 	return json.RawMessage(`
   {
     "enabled": true,
-    "ruleSets": [
+    "rulesets": [
       {
         "stage": "processed_auction_request",
         "name": "exclude-in-jpn",
-        "modelGroups": [
+        "modelgroups": [
           {
             "weight": 98,
             "schema": [{"function": "channel"}],
@@ -548,7 +548,7 @@ func getInvalidRuleSetConfig() json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderA"], "seatNonBid": 111}]
+                    "args": {"bidders": ["bidderA"], "seatNonBid": 111}
                   }
                 ]
               },
@@ -557,7 +557,7 @@ func getInvalidRuleSetConfig() json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderB"], "seatNonBid": 222}]
+                    "args": {"bidders": ["bidderB"], "seatNonBid": 222}
                   }
                 ]
               }
@@ -569,7 +569,7 @@ func getInvalidRuleSetConfig() json.RawMessage {
             "rules": [
               {
                 "conditions": ["*"],
-                "results": [{"function": "includeBidders", "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]}]
+                "results": [{"function": "includeBidders", "args": {"bidders": ["bidderC"], "seatNonBid": 333}}]
               }
             ]
           }
@@ -596,8 +596,8 @@ func getValidConfig() *PbRulesEngine {
 						AnalyticsKey: "experiment-name",
 						Version:      "4567",
 						Schema: []Schema{
-							{Func: "deviceCountry", Args: json.RawMessage(`["USA"]`)},
-							{Func: "dataCenters", Args: json.RawMessage(`["us-east", "us-west"]`)},
+							{Func: "deviceCountryIn", Args: json.RawMessage(`{"countries": ["USA"]}`)},
+							{Func: "dataCenterIn", Args: json.RawMessage(`{"datacenters": ["us-east", "us-west"]}`)},
 							{Func: "channel"},
 						},
 						Default: []Result{},
@@ -607,7 +607,7 @@ func getValidConfig() *PbRulesEngine {
 								Results: []Result{
 									{
 										Func: "excludeBidders",
-										Args: json.RawMessage(`[{"bidders": ["bidderA"], "seatNonBid": 111}]`),
+										Args: json.RawMessage(`{"bidders": ["bidderA"], "seatNonBid": 111}`),
 									},
 								},
 							},
@@ -616,7 +616,7 @@ func getValidConfig() *PbRulesEngine {
 								Results: []Result{
 									{
 										Func: "excludeBidders",
-										Args: json.RawMessage(`[{"bidders": ["bidderB"], "seatNonBid": 222}]`),
+										Args: json.RawMessage(`{"bidders": ["bidderB"], "seatNonBid": 222}`),
 									},
 								},
 							},
@@ -625,7 +625,7 @@ func getValidConfig() *PbRulesEngine {
 								Results: []Result{
 									{
 										Func: "includeBidders",
-										Args: json.RawMessage(`[{"bidders": ["bidderC"], "seatNonBid": 333}]`),
+										Args: json.RawMessage(`{"bidders": ["bidderC"], "seatNonBid": 333}`),
 									},
 								},
 							},
@@ -644,7 +644,7 @@ func getValidConfig() *PbRulesEngine {
 								Results: []Result{
 									{
 										Func: "includeBidders",
-										Args: json.RawMessage(`[{"bidders": ["bidderC"], "seatNonBid": 333}]`),
+										Args: json.RawMessage(`{"bidders": ["bidderC"], "seatNonBid": 333}`),
 									},
 								},
 							},

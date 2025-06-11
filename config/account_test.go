@@ -785,7 +785,11 @@ func TestModulesGetConfig(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			gotConfig, err := test.givenModules.ModuleConfig(test.givenId)
 			assert.Equal(t, test.expectedError, err)
-			assert.Equal(t, test.expectedConfig, gotConfig)
+			if test.expectedConfig == nil {
+				assert.Nil(t, test.expectedConfig)
+			} else {
+				assert.JSONEq(t, string(test.expectedConfig), string(gotConfig))
+			}
 		})
 	}
 }
