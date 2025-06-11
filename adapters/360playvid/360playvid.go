@@ -53,7 +53,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		impExt := reqBodyExt{playVid360BidderExt: reqBodyExtBidder{}}
+		impExt := reqBodyExt{PlayVid360BidderExt: reqBodyExtBidder{}}
 
 		if playVid360Ext.PlacementID != "" {
 			impExt.PlayVid360BidderExt.PlacementID = playVid360Ext.PlacementID
