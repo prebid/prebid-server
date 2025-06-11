@@ -18,6 +18,7 @@ const (
 	FailedToMarshalErrorCode
 	FailedToUnmarshalErrorCode
 	InvalidImpFirstPartyDataErrorCode
+	BidderTemporarilyTrottledErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

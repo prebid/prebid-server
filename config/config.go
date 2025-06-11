@@ -124,10 +124,13 @@ type PriceFloorFetcher struct {
 const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
-	MaxConnsPerHost     int `mapstructure:"max_connections_per_host"`
-	MaxIdleConns        int `mapstructure:"max_idle_connections"`
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
-	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
+	MaxConnsPerHost           int  `mapstructure:"max_connections_per_host"`
+	MaxIdleConns              int  `mapstructure:"max_idle_connections"`
+	MaxIdleConnsPerHost       int  `mapstructure:"max_idle_connections_per_host"`
+	IdleConnTimeout           int  `mapstructure:"idle_connection_timeout_seconds"`
+	EnableThrottling          bool `mapstructure:"enable_throttling"`
+	LongQueueWaitThresholdMS  int  `mapstructure:"long_queue_wait_threshold_ms"`
+	ShortQueueWaitThresholdMS int  `mapstructure:"short_queue_wait_threshold_ms"`
 }
 
 func (cfg *Configuration) validate(v *viper.Viper) []error {

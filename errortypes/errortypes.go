@@ -178,6 +178,25 @@ func (err *BidderTemporarilyDisabled) Severity() Severity {
 	return SeverityWarning
 }
 
+// BidderThrottled is used when a bidder is temporarily disabled due to throttling.
+// This is a per request throttling, so subsequent requests may be allowed.
+// The initial usecase is to flag bidders that are temporarily disabled due to high error rates or other issues.
+type BidderThrottled struct {
+	Message string
+}
+
+func (err *BidderThrottled) Error() string {
+	return err.Message
+}
+
+func (err *BidderThrottled) Code() int {
+	return BidderTemporarilyTrottledErrorCode
+}
+
+func (err *BidderThrottled) Severity() Severity {
+	return SeverityWarning
+}
+
 // MalformedAcct should be used when the retrieved account config cannot be unmarshaled
 // These errors will be written to http.ResponseWriter before canceling execution
 type MalformedAcct struct {
