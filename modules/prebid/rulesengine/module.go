@@ -19,7 +19,7 @@ const fiveMinutes = time.Duration(300) * time.Second
 // off a go routine that builds tree structures that represent rule sets optimized for finding
 // a rule to applies for a given request.
 func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
-	schemaValidator, err := config.CreateSchemaValidator("modules/prebid/rulesengine/config/" + config.RulesEngineSchemaFile)
+	schemaValidator, err := config.CreateSchemaValidator(config.RulesEngineSchemaFilePath)
 	if err != nil {
 		return nil, err
 	}
