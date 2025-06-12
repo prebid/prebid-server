@@ -255,7 +255,7 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 	}
 
 	// Check for LiveRamp identifiers in priority order:
-	
+
 	// 1. RampID populated by LiveRamp ATS sidecar
 	// RampID is typically stored in user.ext.eids or user.ext.rampid
 	if eids, ok := userExt["eids"].([]interface{}); ok {
