@@ -143,8 +143,8 @@ func (m *Module) HandleProcessedAuctionHook(
 	changeSet := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	changeSet.AddMutation(
 		func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-			// Add segments to request-level targeting for GAM passback
-			// This ensures segments are available in the auction response for JavaScript
+			// Add Scope3 segments as targeting keys for GAM
+			// Format: "gmp_eligible,gmp_plus_eligible" for easy GAM key-value targeting
 			reqWrapper := payload.Request
 			if reqWrapper.BidRequest.Ext == nil {
 				reqWrapper.BidRequest.Ext = json.RawMessage("{}")
@@ -153,15 +153,6 @@ func (m *Module) HandleProcessedAuctionHook(
 			var extMap map[string]interface{}
 			if err := json.Unmarshal(reqWrapper.BidRequest.Ext, &extMap); err != nil {
 				extMap = make(map[string]interface{})
-			}
-
-			// Add Scope3 segments to request-level data for GAM targeting
-			if dataMap, ok := extMap["data"].(map[string]interface{}); ok {
-				dataMap["scope3_segments"] = segments
-			} else {
-				extMap["data"] = map[string]interface{}{
-					"scope3_segments": segments,
-				}
 			}
 
 			// Add targeting keys that will be available to GAM
