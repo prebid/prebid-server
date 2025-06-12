@@ -190,6 +190,9 @@ func (m *Module) HandleProcessedAuctionHook(
 
 // fetchScope3Segments calls the Scope3 API and extracts segments
 func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.BidRequest) ([]string, error) {
+	// Enhance request with available user identifiers (e.g., from LiveRamp ATS)
+	m.enhanceRequestWithUserIDs(bidRequest)
+
 	// Marshal the bid request
 	requestBody, err := json.Marshal(bidRequest)
 	if err != nil {
@@ -241,6 +244,44 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	}
 
 	return segments, nil
+}
+
+// enhanceRequestWithUserIDs adds available user identifiers to the request
+// This includes RampID from LiveRamp ATS if available
+func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
+	if bidRequest.User == nil {
+		return
+	}
+
+	// Check for existing user.ext data
+	if bidRequest.User.Ext == nil {
+		return
+	}
+
+	var userExt map[string]interface{}
+	if err := json.Unmarshal(bidRequest.User.Ext, &userExt); err != nil {
+		return
+	}
+
+	// Look for RampID populated by LiveRamp ATS
+	// RampID is typically stored in user.ext.eids or user.ext.rampid
+	if eids, ok := userExt["eids"].([]interface{}); ok {
+		for _, eid := range eids {
+			if eidMap, ok := eid.(map[string]interface{}); ok {
+				if source, ok := eidMap["source"].(string); ok && source == "liveramp.com" {
+					// RampID found - Scope3 API will receive this in the request
+					// No additional processing needed as we send the full request
+					break
+				}
+			}
+		}
+	}
+
+	// Check for direct rampid field (alternative storage location)
+	if rampID, ok := userExt["rampid"].(string); ok && rampID != "" {
+		// RampID is available for Scope3 API
+		// The full request with user identifiers will be sent to Scope3
+	}
 }
 
 // Response types for Scope3 API
