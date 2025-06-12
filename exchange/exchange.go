@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/privacy"
 	"math/rand"
 	"net/url"
 	"runtime/debug"
@@ -14,11 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
-	uuid "github.com/gofrs/uuid"
-	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adservertargeting"
 	"github.com/prebid/prebid-server/bidadjustment"
@@ -35,11 +31,16 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/maputil"
+
+	"github.com/buger/jsonparser"
+	"github.com/gofrs/uuid"
+	"github.com/golang/glog"
+	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v19/openrtb3"
 )
 
 type extCacheInstructions struct {
@@ -655,86 +656,6 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 	return
 }
 
-func (e *exchange) processBidder(
-	ctx context.Context,
-	bidderRequests []BidderRequest,
-	bidAdjustments map[string]float64,
-	conversions currency.Conversions,
-	accountDebugAllowed bool,
-	globalPrivacyControlHeader string,
-	headerDebugAllowed bool,
-	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
-	experiment *openrtb_ext.Experiment,
-	hookExecutor hookexecution.StageExecutor,
-	bidAdjustmentRules map[string][]openrtb_ext.Adjustment,
-	chBids chan *bidResponseWrapper,
-	bidder BidderRequest) {
-	// Here we actually call the adapters and collect the bids.
-	bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
-		// Passing in aName so a doesn't change out from under the go routine
-		if bidderRequest.BidderLabels.Adapter == "" {
-			glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
-			bidderRequest.BidderLabels.Adapter = bidderRequest.BidderCoreName
-		}
-		brw := new(bidResponseWrapper)
-		brw.bidder = bidderRequest.BidderName
-		brw.adapter = bidderRequest.BidderCoreName
-		// Defer basic metrics to insure we capture them after all the values have been set
-		defer func() {
-			e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
-		}()
-		start := time.Now()
-
-		reqInfo := adapters.NewExtraRequestInfo(conversions)
-		reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
-		reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
-		reqInfo.BidderRequestStartTime = start
-
-		bidReqOptions := bidRequestOptions{
-			accountDebugAllowed: accountDebugAllowed,
-			headerDebugAllowed:  headerDebugAllowed,
-			addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
-			bidAdjustments:      bidAdjustments,
-		}
-
-		seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
-
-		// Add in time reporting
-		elapsed := time.Since(start)
-		brw.adapterSeatBids = seatBids
-		// Structure to record extra tracking data generated during bidding
-		ae := new(seatResponseExtra)
-		ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
-		if len(seatBids) != 0 {
-			ae.HttpCalls = seatBids[0].HttpCalls
-		}
-		// SeatBidsPreparationStartTime is needed to calculate duration for openrtb response preparation time metric
-		//  No metric needs to be logged for requests which error out
-		if err == nil {
-			ae.MakeBidsTimeInfo = reqInfo.MakeBidsTimeInfo
-		}
-		// Timing statistics
-		e.me.RecordAdapterTime(bidderRequest.BidderLabels, elapsed)
-		bidderRequest.BidderLabels.AdapterBids = bidsToMetric(brw.adapterSeatBids)
-		bidderRequest.BidderLabels.AdapterErrors = errorsToMetric(err)
-		// Append any bid validation errors to the error list
-		ae.Errors = errsToBidderErrors(err)
-		ae.Warnings = errsToBidderWarnings(err)
-		brw.adapterExtra = ae
-		for _, seatBid := range seatBids {
-			if seatBid != nil {
-				for _, bid := range seatBid.Bids {
-					var cpm = float64(bid.Bid.Price * 1000)
-					e.me.RecordAdapterPrice(bidderRequest.BidderLabels, cpm)
-					e.me.RecordAdapterBidReceived(bidderRequest.BidderLabels, bid.BidType, bid.Bid.AdM != "")
-				}
-			}
-		}
-		chBids <- brw
-	}, chBids)
-	go bidderRunner(bidder, conversions)
-}
-
 // This piece sends all the requests to the bidder adapters and gathers the results.
 func (e *exchange) getAllBids(
 	ctx context.Context,
@@ -760,30 +681,71 @@ func (e *exchange) getAllBids(
 	bidsFound := false
 
 	e.me.RecordOverheadTime(metrics.MakeBidderRequests, time.Since(pbsRequestStartTime))
-	lastPeekBidderRequests := []BidderRequest{}
-	msbConfig := extractMSBInfoBidders(bidderRequests)
 
 	for _, bidder := range bidderRequests {
-		// save 2nd - nth peek tier bidder requests and process later
-		// if needed add in the future
+		// Here we actually call the adapters and collect the bids.
+		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
+			// Passing in aName so a doesn't change out from under the go routine
+			if bidderRequest.BidderLabels.Adapter == "" {
+				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
+				bidderRequest.BidderLabels.Adapter = bidderRequest.BidderCoreName
+			}
+			brw := new(bidResponseWrapper)
+			brw.bidder = bidderRequest.BidderName
+			brw.adapter = bidderRequest.BidderCoreName
+			// Defer basic metrics to insure we capture them after all the values have been set
+			defer func() {
+				e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
+			}()
+			start := time.Now()
 
-		// save last peek bidder requests and process later
-		bidderName := bidder.BidderName.String()
-		if _, isLastPeekBidder := msbConfig.LastPeek.PeekBidderFloorMultMap[bidderName]; isLastPeekBidder {
-			lastPeekBidderRequests = append(lastPeekBidderRequests, bidder)
-			continue
-		}
-		e.processBidder(ctx, bidderRequests, bidAdjustments, conversions, accountDebugAllowed, globalPrivacyControlHeader, headerDebugAllowed, alternateBidderCodes, experiment, hookExecutor, bidAdjustmentRules, chBids, bidder)
-	}
+			reqInfo := adapters.NewExtraRequestInfo(conversions)
+			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
+			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
+			reqInfo.BidderRequestStartTime = start
 
-	// process msb 2nd - nth peek tier bidder request:
-	// if needed add in the future
+			bidReqOptions := bidRequestOptions{
+				accountDebugAllowed: accountDebugAllowed,
+				headerDebugAllowed:  headerDebugAllowed,
+				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
+				bidAdjustments:      bidAdjustments,
+			}
+			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, conversions, &reqInfo, e.adsCertSigner, bidReqOptions, alternateBidderCodes, hookExecutor, bidAdjustmentRules)
 
-	// process msb last peek bidder requests:
-	if len(lastPeekBidderRequests) > 0 {
-		for _, bidder := range mspUpdateLastPeekBiddersRequest(chBids, lastPeekBidderRequests, msbConfig.LastPeek, len(bidderRequests)-len(lastPeekBidderRequests)) {
-			e.processBidder(ctx, bidderRequests, bidAdjustments, conversions, accountDebugAllowed, globalPrivacyControlHeader, headerDebugAllowed, alternateBidderCodes, experiment, hookExecutor, bidAdjustmentRules, chBids, bidder)
-		}
+			// Add in time reporting
+			elapsed := time.Since(start)
+			brw.adapterSeatBids = seatBids
+			// Structure to record extra tracking data generated during bidding
+			ae := new(seatResponseExtra)
+			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
+			if len(seatBids) != 0 {
+				ae.HttpCalls = seatBids[0].HttpCalls
+			}
+			// SeatBidsPreparationStartTime is needed to calculate duration for openrtb response preparation time metric
+			//  No metric needs to be logged for requests which error out
+			if err == nil {
+				ae.MakeBidsTimeInfo = reqInfo.MakeBidsTimeInfo
+			}
+			// Timing statistics
+			e.me.RecordAdapterTime(bidderRequest.BidderLabels, elapsed)
+			bidderRequest.BidderLabels.AdapterBids = bidsToMetric(brw.adapterSeatBids)
+			bidderRequest.BidderLabels.AdapterErrors = errorsToMetric(err)
+			// Append any bid validation errors to the error list
+			ae.Errors = errsToBidderErrors(err)
+			ae.Warnings = errsToBidderWarnings(err)
+			brw.adapterExtra = ae
+			for _, seatBid := range seatBids {
+				if seatBid != nil {
+					for _, bid := range seatBid.Bids {
+						var cpm = float64(bid.Bid.Price * 1000)
+						e.me.RecordAdapterPrice(bidderRequest.BidderLabels, cpm)
+						e.me.RecordAdapterBidReceived(bidderRequest.BidderLabels, bid.BidType, bid.Bid.AdM != "")
+					}
+				}
+			}
+			chBids <- brw
+		}, chBids)
+		go bidderRunner(bidder, conversions)
 	}
 	var fledge *openrtb_ext.Fledge
 

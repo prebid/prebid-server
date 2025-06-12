@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/privacy"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,8 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/prebid/prebid-server/privacy"
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
@@ -205,13 +204,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ctx := context.Background()
 
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
-
-	// adjust tmax for requests with MSB feature enabled
-	msbConfig := exchange.ExtractMSBInfoReq(req.BidRequest)
-	if msbConfig.LastPeek.PeekStartTimeMilliSeconds > 0 {
-		timeout += time.Duration(msbConfig.LastPeek.PeekStartTimeMilliSeconds) * time.Millisecond
-	}
-
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
