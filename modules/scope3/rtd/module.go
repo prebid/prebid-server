@@ -247,7 +247,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 }
 
 // enhanceRequestWithUserIDs adds available user identifiers to the request
-// This includes RampID from LiveRamp ATS if available
+// This includes RampID from LiveRamp ATS sidecar or ATS envelope if available
 func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 	if bidRequest.User == nil {
 		return
@@ -263,7 +263,9 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 		return
 	}
 
-	// Look for RampID populated by LiveRamp ATS
+	// Check for LiveRamp identifiers in priority order:
+	
+	// 1. RampID populated by LiveRamp ATS sidecar
 	// RampID is typically stored in user.ext.eids or user.ext.rampid
 	if eids, ok := userExt["eids"].([]interface{}); ok {
 		for _, eid := range eids {
@@ -271,16 +273,42 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 				if source, ok := eidMap["source"].(string); ok && source == "liveramp.com" {
 					// RampID found - Scope3 API will receive this in the request
 					// No additional processing needed as we send the full request
-					break
+					return
 				}
 			}
 		}
 	}
 
-	// Check for direct rampid field (alternative storage location)
+	// 2. Direct rampid field (alternative storage location)
 	if rampID, ok := userExt["rampid"].(string); ok && rampID != "" {
 		// RampID is available for Scope3 API
 		// The full request with user identifiers will be sent to Scope3
+		return
+	}
+
+	// 3. ATS envelope - encrypted user signals that can be forwarded to authorized partners
+	// ATS envelope is typically found in user.ext.liveramp_idl or user.ext.ats_envelope
+	if atsEnvelope, ok := userExt["liveramp_idl"].(string); ok && atsEnvelope != "" {
+		// ATS envelope available - Scope3 can decrypt if they're an authorized partner
+		// Forward the envelope in the request for Scope3 to process
+		return
+	}
+
+	// Alternative ATS envelope location
+	if atsEnvelope, ok := userExt["ats_envelope"].(string); ok && atsEnvelope != "" {
+		// ATS envelope available in alternative location
+		return
+	}
+
+	// Check for ATS envelope in top-level request extensions
+	if bidRequest.Ext != nil {
+		var reqExt map[string]interface{}
+		if err := json.Unmarshal(bidRequest.Ext, &reqExt); err == nil {
+			if atsEnvelope, ok := reqExt["liveramp_idl"].(string); ok && atsEnvelope != "" {
+				// ATS envelope found at request level
+				return
+			}
+		}
 	}
 }
 
