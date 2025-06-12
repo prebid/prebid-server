@@ -1,1 +1,1 @@
-web: PBS_PORT=$PORT bin/prebid-server -stderrthreshold=INFO
+web: PBS_PORT=$PORT bin/prebid-server
