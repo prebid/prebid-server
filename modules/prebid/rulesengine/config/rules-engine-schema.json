@@ -12,7 +12,7 @@
       "type": "string",
       "description": "pending"
     },
-    "ruleSets": {
+    "rulesets": {
       "type": "array",
       "minItems": 1,
       "items": {
@@ -20,7 +20,7 @@
         "properties": {
           "stage": {
             "type": "string",
-              "enum": ["entrypoint", "raw-auction", "processed-auction-request", "bidder-request", "raw-bidder-response", "all-processed-bid-responses", "auction-response"]
+              "enum": ["entrypoint", "raw_auction_request", "processed_auction_request", "bidder_request", "raw_bidder_response", "all_processed_bid_responses", "auction_response"]
           },
           "name": {
             "type": "string",
@@ -29,7 +29,7 @@
           "version": {
             "type": "string"
           },
-          "modelGroups": {
+          "modelgroups": {
             "type": "array",
             "minItems": 1,
             "items": {
@@ -54,10 +54,10 @@
                     "properties": {
                       "function": {
                         "type": "string",
-                          "enum": ["deviceCountry", "dataCenters", "channel", "eidAvailable", "userFpdAvailable", "fpdAvail", "gppSid", "tcfInScope", "percent", "prebidKey", "domain", "bundle", "deviceType"]
+                          "enum": ["channel", "dataCenter", "dataCenterIn", "deviceCountry", "deviceCountryIn", "eidAvailable", "eidIn", "fpdAvailable", "gppSidAvailable", "gppSidIn", "percent", "tcfInScope", "userFpdAvailable"]
                       },
                       "args": {
-                        "type": "array"
+                        "type": "object"
                       }
                     },
                     "required": ["function"]
@@ -74,7 +74,7 @@
                         "enum": ["excludeBidders", "includeBidders", "logATag"]
                       },
                       "args": {
-                        "type": "array"
+                        "type": "object"
                       }
                     },
                     "required": ["function"]
@@ -104,7 +104,7 @@
                               "enum": ["excludeBidders", "includeBidders", "logATag"]
                             },
                             "args": {
-                              "type": "array"
+                              "type": "object"
                             }
                           },
                           "required": ["function"]
@@ -119,9 +119,9 @@
             }
           }
         },
-        "required": ["stage", "name", "modelGroups"]
+        "required": ["stage", "name", "modelgroups"]
       }
     }
   },
-  "required": ["enabled", "ruleSets"]
+  "required": ["enabled", "rulesets"]
 }
