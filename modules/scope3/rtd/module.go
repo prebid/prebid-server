@@ -143,40 +143,40 @@ func (m *Module) HandleProcessedAuctionHook(
 	changeSet := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
 	changeSet.AddMutation(
 		func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-			bidRequest := payload.Request.BidRequest
-
-			// Add segments to imp[].ext.data for each impression
-			for i := range bidRequest.Imp {
-				var extMap map[string]interface{}
-				if bidRequest.Imp[i].Ext != nil {
-					json.Unmarshal(bidRequest.Imp[i].Ext, &extMap)
-				} else {
-					extMap = make(map[string]interface{})
-				}
-
-				// Add Scope3 segments to extension
-				if dataMap, ok := extMap["data"].(map[string]interface{}); ok {
-					dataMap["scope3_segments"] = segments
-				} else {
-					extMap["data"] = map[string]interface{}{
-						"scope3_segments": segments,
-					}
-				}
-
-				// Also add as targeting keys
-				if targetingMap, ok := extMap["targeting"].(map[string]interface{}); ok {
-					targetingMap["hb_scope3_segments"] = strings.Join(segments, ",")
-				} else {
-					extMap["targeting"] = map[string]interface{}{
-						"hb_scope3_segments": strings.Join(segments, ","),
-					}
-				}
-
-				bidRequest.Imp[i].Ext, _ = json.Marshal(extMap)
+			// Add segments to request-level targeting for GAM passback
+			// This ensures segments are available in the auction response for JavaScript
+			reqWrapper := payload.Request
+			if reqWrapper.BidRequest.Ext == nil {
+				reqWrapper.BidRequest.Ext = json.RawMessage("{}")
 			}
 
+			var extMap map[string]interface{}
+			if err := json.Unmarshal(reqWrapper.BidRequest.Ext, &extMap); err != nil {
+				extMap = make(map[string]interface{})
+			}
+
+			// Add Scope3 segments to request-level data for GAM targeting
+			if dataMap, ok := extMap["data"].(map[string]interface{}); ok {
+				dataMap["scope3_segments"] = segments
+			} else {
+				extMap["data"] = map[string]interface{}{
+					"scope3_segments": segments,
+				}
+			}
+
+			// Add targeting keys that will be available to GAM
+			if targetingMap, ok := extMap["targeting"].(map[string]interface{}); ok {
+				targetingMap["hb_scope3_segments"] = strings.Join(segments, ",")
+			} else {
+				extMap["targeting"] = map[string]interface{}{
+					"hb_scope3_segments": strings.Join(segments, ","),
+				}
+			}
+
+			reqWrapper.BidRequest.Ext, _ = json.Marshal(extMap)
+
 			// Update the wrapper with the modified bid request
-			payload.Request.BidRequest = bidRequest
+			payload.Request = reqWrapper
 			return payload, nil
 		},
 		hookstage.MutationUpdate,
