@@ -119,8 +119,22 @@ raw_auction_request:
 ```
 
 ## User Identifier Integration
-The module automatically detects and includes user identifiers (such as RampID from LiveRamp ATS) when available in the bid request. User identifiers are typically found in:
-- `user.ext.eids[]` array with `source: "liveramp.com"`
-- `user.ext.rampid` field
+The module automatically detects and includes user identifiers when available in the bid request. This includes support for:
 
-The complete bid request with all available user identifiers is sent to the Scope3 API for enhanced audience segmentation.
+### LiveRamp Integration Options
+1. **ATS Sidecar** (when LiveRamp module runs first):
+   - `user.ext.eids[]` array with `source: "liveramp.com"`
+   - `user.ext.rampid` field
+
+2. **ATS Envelope** (when no sidecar is available):
+   - `user.ext.liveramp_idl` - Primary ATS envelope location
+   - `user.ext.ats_envelope` - Alternative envelope location
+   - `ext.liveramp_idl` - Request-level envelope
+
+### How It Works
+- **With Sidecar**: LiveRamp decrypts the envelope and populates RampID, which Scope3 receives as a resolved identifier
+- **Without Sidecar**: The encrypted ATS envelope is forwarded directly to Scope3 API, allowing Scope3 to decrypt it (if they're an authorized LiveRamp partner)
+
+The complete bid request with all available user identifiers or encrypted envelopes is sent to the Scope3 API for enhanced audience segmentation.
+
+**Note**: For ATS envelope decryption, Scope3 must be an authorized LiveRamp partner with the appropriate decryption keys.
