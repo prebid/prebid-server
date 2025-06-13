@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderFlatads, config.Adapter{
-		Endpoint: "https://bid.rtbshark.com/api/rtbs/adx/rtb?x-net-id={{.PublisherID}}&x-net-token={{.TokenID}}"},
+		Endpoint: "https://test.endpoint.com/api/rtbs/adx/rtb?x-net-id={{.PublisherID}}&x-net-token={{.TokenID}}"},
 		config.Server{})
 
 	if buildErr != nil {

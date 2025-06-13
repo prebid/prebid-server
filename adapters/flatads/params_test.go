@@ -35,22 +35,17 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{	"token": "66668888",
-		"publisherId": "1111",
-		"ext": {
-			"key1": "value1",
-			"key2": "value2"
-		}
+		"publisherId": "1111"
 	}`,
 	`{"token": "66668888", "publisherId": "1111"}`,
 }
 
 var invalidParams = []string{
-	`{"ext": {
-		"key1": "value1",
-		"key2": "value2"
-	}`,
 	`{}`,
 	`{"token": 66668888, "networkId":1111}`,
 	`{"token": "66668888"", "networkId":1111}`,
 	`{"token": 66668888, "networkId":"1111""}`,
+	`{"token": "", "publisherId": "1111"}`,
+	`{"token": "66668888", "publisherId": ""}`,
+	`{"token": "", "publisherId": ""}`,
 }

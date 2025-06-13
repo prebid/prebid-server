@@ -15,7 +15,3 @@ capabilities:
       - banner
       - video
       - native
-userSync:
-  redirect:
-    url: https://api.flowsixteen.com/api/tracker/cms/user_sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
-    userMacro: $UID

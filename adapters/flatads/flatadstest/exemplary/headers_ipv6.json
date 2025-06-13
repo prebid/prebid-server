@@ -44,7 +44,7 @@
               "2607:fb90:f27:4512:d800:cb23:a603:e245"
             ]
           },
-          "uri": "https://bid.rtbshark.com/api/rtbs/adx/rtb?x-net-id=1111&x-net-token=66668888",
+          "uri": "https://test.endpoint.com/api/rtbs/adx/rtb?x-net-id=1111&x-net-token=66668888",
           "body": {
             "id": "test-request-id-banner",
             "device": {
