@@ -59,7 +59,9 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		smartRequest.Site.Publisher = &publisher
 	}
 
-	// We send one serialized "smartRequest" per impression of the original request.
+	var imps []openrtb2.Imp
+
+	// Check impressions one by one and filter out the ones that does not the bidder extensions
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -77,37 +79,34 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 			continue
 		}
 
+		imps = append(imps, imp)
+
 		// Adding publisher id.
 		smartRequest.Site.Publisher.ID = strconv.Itoa(smartadserverExt.NetworkID)
+	}
 
-		// We send one request for each impression.
-		smartRequest.Imp = []openrtb2.Imp{imp}
-
-		var errMarshal error
-		if imp.Ext, errMarshal = json.Marshal(smartadserverExt); errMarshal != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: errMarshal.Error(),
-			})
-			continue
-		}
+	// we only create the request if it has correctly formatted impressions
+	if len(imps) != 0 {
+		smartRequest.Imp = imps
 
 		reqJSON, err := json.Marshal(smartRequest)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Error parsing reqJSON object",
 			})
-			continue
+			return nil, errs
 		}
 
-		url, err := a.BuildEndpointURL(&smartadserverExt)
+		url, err := a.BuildEndpointURL()
 		if url == "" {
 			errs = append(errs, err)
-			continue
+			return nil, errs
 		}
 
 		headers := http.Header{}
 		headers.Add("Content-Type", "application/json;charset=utf-8")
 		headers.Add("Accept", "application/json")
+
 		adapterRequests = append(adapterRequests, &adapters.RequestData{
 			Method:  "POST",
 			Uri:     url,
@@ -116,6 +115,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 			ImpIDs:  openrtb_ext.GetImpIDs(smartRequest.Imp),
 		})
 	}
+
 	return adapterRequests, errs
 }
 
@@ -158,7 +158,7 @@ func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 }
 
 // BuildEndpointURL : Builds endpoint url
-func (a *SmartAdserverAdapter) BuildEndpointURL(params *openrtb_ext.ExtImpSmartadserver) (string, error) {
+func (a *SmartAdserverAdapter) BuildEndpointURL() (string, error) {
 	uri, err := url.Parse(a.host)
 	if err != nil || uri.Scheme == "" || uri.Host == "" {
 		return "", &errortypes.BadInput{
