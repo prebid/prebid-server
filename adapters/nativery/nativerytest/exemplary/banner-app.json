@@ -4,9 +4,13 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "native": {
-          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"type\":3,\"w\":120,\"h\":100}},{\"id\":1,\"required\":1,\"title\":{\"len\":140}},{\"id\":2,\"data\":{\"type\":1}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
-          "ver": "1.2"
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -15,9 +19,11 @@
         }
       }
     ],
-    "site": {
-      "page": "http://example.com",
-      "ref": "http://example.com"
+    "app": {
+      "bundle": "com.app.awesome",
+      "name": "Amesome App",
+      "domain": "awesomeapp.com",
+      "id": "1"
     },
     "device": {
       "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
@@ -40,9 +46,13 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "native": {
-                "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"type\":3,\"w\":120,\"h\":100}},{\"id\":1,\"required\":1,\"title\":{\"len\":140}},{\"id\":2,\"data\":{\"type\":1}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
-                "ver": "1.2"
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
               },
               "ext": {
                 "bidder": {
@@ -51,9 +61,11 @@
               }
             }
           ],
-          "site": {
-            "page": "http://example.com",
-            "ref": "http://example.com"
+          "app": {
+            "bundle": "com.app.awesome",
+            "name": "Amesome App",
+            "domain": "awesomeapp.com",
+            "id": "1"
           },
           "device": {
             "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
@@ -61,7 +73,9 @@
             "w": 1000
           }
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -74,18 +88,23 @@
                   "id": "test-request-id",
                   "impid": "test-imp-id",
                   "price": 1000,
-                  "nurl": "http://example.com/win/1000",
-                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"imptrackers\":[\"http://example.com/impression\"],\"jstracker\":\"\\u003cscript src=\\\"http://example.com/impression\\\"\\u003e\\u003c/script\\u003e\"}",
-                  "adomain": ["example.com"],
+                  "adm": "<div>ad</div>",
+                  "adomain": [
+                    "awesomeapp.com"
+                  ],
                   "cid": "test-cid",
                   "crid": "test-crid",
-                  "cat": ["IAB13-4"],
-                  "mtype": 4,
+                  "cat": [
+                    "IAB13-4"
+                  ],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1,
                   "ext": {
                     "nativery": {
                       "adv_id": "1",
                       "brand_category_id": 1,
-                      "bid_ad_media_type": "native"
+                      "bid_ad_media_type": "display"
                     }
                   }
                 }
@@ -107,22 +126,27 @@
             "id": "test-request-id",
             "impid": "test-imp-id",
             "price": 1000,
-            "nurl": "http://example.com/win/1000",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":3,\"required\":1,\"img\":{\"url\":\"http://example.com/img/url\",\"w\":120,\"h\":100}},{\"id\":0,\"required\":1,\"title\":{\"text\":\"Test title\"}},{\"id\":5,\"data\":{\"value\":\"Test sponsor\"}}],\"link\":{\"url\":\"http://example.com/click/url\"},\"imptrackers\":[\"http://example.com/impression\"],\"jstracker\":\"\\u003cscript src=\\\"http://example.com/impression\\\"\\u003e\\u003c/script\\u003e\"}",
-            "adomain": ["example.com"],
+            "adm": "<div>ad</div>",
+            "adomain": [
+              "awesomeapp.com"
+            ],
             "cid": "test-cid",
             "crid": "test-crid",
-            "cat": ["IAB13-4"],
-            "mtype": 4,
+            "cat": [
+              "IAB13-4"
+            ],
+            "w": 300,
+            "h": 250,
+            "mtype": 1,
             "ext": {
               "nativery": {
                 "adv_id": "1",
                 "brand_category_id": 1,
-                "bid_ad_media_type": "native"
+                "bid_ad_media_type": "display"
               }
             }
           },
-          "type": "native"
+          "type": "banner"
         }
       ]
     }

@@ -53,15 +53,8 @@
                 ]
               },
               "ext": {
-                "nativery": {
-                  "id": "1",
-                  "ref": "http://example.com",
-                  "refref": {
-                    "page": "http://example.com",
-                    "ref": "http://example.com"
-                  },
-                  "v": 3,
-                  "xhr": 2
+                "bidder": {
+                  "widgetId": "1"
                 }
               }
             }
@@ -101,28 +94,7 @@
                     "nativery": {
                       "adv_id": "1",
                       "brand_category_id": 1,
-                      "bid_ad_media_type": "display",
-                      "impression": {
-                        "url": "impressionUrl",
-                        "options": {
-                          "body": {},
-                          "method": "POST"
-                        }
-                      },
-                      "realImpression": {
-                        "url": "impressionUrl",
-                        "options": {
-                          "body": {},
-                          "method": "POST"
-                        }
-                      },
-                      "realImpressionAd": {
-                        "url": "impressionAdUrl",
-                        "options": {
-                          "body": {},
-                          "method": "POST"
-                        }
-                      }
+                      "bid_ad_media_type": "display"
                     }
                   }
                 }
@@ -156,28 +128,7 @@
               "nativery": {
                 "adv_id": "1",
                 "brand_category_id": 1,
-                "bid_ad_media_type": "display",
-                "impression": {
-                  "url": "impressionUrl",
-                  "options": {
-                    "body": {},
-                    "method": "POST"
-                  }
-                },
-                "realImpression": {
-                  "url": "impressionUrl",
-                  "options": {
-                    "body": {},
-                    "method": "POST"
-                  }
-                },
-                "realImpressionAd": {
-                  "url": "impressionAdUrl",
-                  "options": {
-                    "body": {},
-                    "method": "POST"
-                  }
-                }
+                "bid_ad_media_type": "display"
               }
             }
           },

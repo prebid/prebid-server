@@ -57,15 +57,8 @@
               "id": "imp-banner",
               "banner": { "format": [{ "w": 300, "h": 250 }] },
               "ext": {
-                "nativery": {
-                  "id": "1",
-                  "ref": "http://example.com",
-                  "refref": {
-                    "page": "http://example.com",
-                    "ref": "http://example.com"
-                  },
-                  "v": 3,
-                  "xhr": 2
+                "bidder": {
+                  "widgetId": "1"
                 }
               }
             }
@@ -132,15 +125,8 @@
                 "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":100,\"hmin\":100}}],\"context\":1,\"plcmttype\":1}"
               },
               "ext": {
-                "nativery": {
-                  "id": "1",
-                  "ref": "http://example.com",
-                  "refref": {
-                    "page": "http://example.com",
-                    "ref": "http://example.com"
-                  },
-                  "v": 3,
-                  "xhr": 2
+                "bidder": {
+                  "widgetId": "1"
                 }
               }
             }
@@ -206,15 +192,8 @@
                 "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200}}],\"context\":1,\"plcmttype\":1}"
               },
               "ext": {
-                "nativery": {
-                  "id": "1",
-                  "ref": "http://example.com",
-                  "refref": {
-                    "page": "http://example.com",
-                    "ref": "http://example.com"
-                  },
-                  "v": 3,
-                  "xhr": 2
+                "bidder": {
+                  "widgetId": "1"
                 }
               }
             }

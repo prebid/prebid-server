@@ -38,15 +38,8 @@
                 "format": [{ "w": 300, "h": 250 }]
               },
               "ext": {
-                "nativery": {
-                  "id": "1",
-                  "xhr": 2,
-                  "v": 3,
-                  "ref": "http://example.com",
-                  "refref": {
-                    "page": "http://example.com",
-                    "ref": "http://example.com"
-                  }
+                "bidder": {
+                  "widgetId": "1"
                 }
               }
             }

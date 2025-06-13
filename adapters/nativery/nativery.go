@@ -1,7 +1,6 @@
 package nativery
 
 import (
-	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -9,6 +8,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
@@ -18,59 +18,17 @@ type adapter struct {
 	endpoint string
 }
 
-type refRef struct {
-	Page string `json:"page"`
-	Ref  string `json:"ref"`
-}
-
-// request body to send to widget server in ext
-type nativeryExtReqBody struct {
-	Id     string `json:"id"` //the placement/widget id
-	Xhr    int    `json:"xhr"`
-	V      int    `json:"v"`
-	Ref    string `json:"ref"`
-	RefRef refRef `json:"refref"`
-}
-
-type impExt struct {
-	Nativery nativeryExtReqBody `json:"nativery"`
-}
-
 type bidReqExtNativery struct {
 	IsAMP    bool   `json:"isAmp"`
 	WidgetId string `json:"widgetId"`
-}
-
-type ImpressionBody struct {
-	WidgetId     string   `json:"idw"`
-	UrlId        string   `json:"idu"`
-	ImpressionId string   `json:"idi"`
-	AdIds        []string `json:"ida"`
-	IsAMP        bool     `json:"isAmp"`
-	Ref          string   `json:"ref"`
-	RefRef       string   `json:"refref"`
-	SessionId    string   `json:"sid"`
-}
-
-type ImpressionOptions struct {
-	Method string         `json:"method"`
-	Body   ImpressionBody `json:"body"`
-}
-
-type ImpressionData struct {
-	Url     string            `json:"url"`
-	Options ImpressionOptions `json:"options"`
 }
 
 type bidExtNativery struct {
 	BidType       string   `json:"bid_ad_media_type"`
 	BidAdvDomains []string `json:"bid_adv_domains"`
 
-	AdvertiserId     string         `json:"adv_id,omitempty"`
-	BrandCategory    int            `json:"brand_category_id,omitempty"`
-	Impression       ImpressionData `json:"impression"`
-	RealImpression   ImpressionData `json:"realImpression"`
-	RealImpressionAd ImpressionData `json:"realImpressionAd"`
+	AdvertiserId  string `json:"adv_id,omitempty"`
+	BrandCategory int    `json:"brand_category_id,omitempty"`
 }
 
 type bidExt struct {
@@ -117,21 +75,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			widgetId = nativeryExt.WidgetId
 		}
 
-		reqCopy.Imp = []openrtb2.Imp{imp}
-		reqCopy.Imp[0].Ext, err = jsonutil.Marshal(impExt{Nativery: nativeryExtReqBody{
-			Id:     nativeryExt.WidgetId,
-			Xhr:    2,
-			V:      3,
-			Ref:    reqCopy.Site.Page,
-			RefRef: refRef{Page: reqCopy.Site.Page, Ref: reqCopy.Site.Ref},
-		}})
-
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		validImps = append(validImps, reqCopy.Imp[0])
+		validImps = append(validImps, imp)
 	}
 
 	reqCopy.Imp = validImps
@@ -176,15 +120,16 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	// check if the response has no content
 	if adapters.IsResponseStatusCodeNoContent(response) {
 		// Extract nativery no content reason if is present
-		reason := ""
-		if response.Headers != nil {
-			reason = response.Headers.Get("X-Nativery-Error")
+		nativeryError := response.Headers.Get("X-Nativery-Error")
+		if nativeryError != "" {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Nativery Error: %s.", nativeryError),
+			}}
 		}
-		if reason == "" {
-			reason = "No Content"
-		}
-		// Add the reason to errors
-		return nil, []error{errors.New(reason)}
+
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("No Content"),
+		}}
 	}
 
 	// check if the response has errors
