@@ -1,0 +1,29 @@
+{
+    "description": "Request has too many imps",
+    "mockBidRequest": {
+        "id": "req-id",
+        "site": {
+            "id": "some_id",
+            "publisher": {
+                "id": "acct_imps_limit"
+            }
+        },
+        "imp": [{
+            "id": "imp-id-0",
+            "banner": {
+                "w": 2,
+                "h": 1
+            },
+            "ext": {}
+        },{
+            "id": "imp-id-1",
+            "banner": {
+                "w": 2,
+                "h": 1
+            },
+            "ext": {}
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: max allowed number of impressions is 1"
+}
