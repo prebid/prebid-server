@@ -134,8 +134,8 @@ func TestNewHTTPFetcher(t *testing.T) {
 		},
 	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
-		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
-			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
+		if httpFetcher.EndpointURL.String() != "stored-requests.prebid.com" {
+			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com", httpFetcher.EndpointURL)
 		}
 	} else {
 		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", fetcher)
