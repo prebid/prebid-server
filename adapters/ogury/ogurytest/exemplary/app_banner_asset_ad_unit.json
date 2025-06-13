@@ -1,18 +1,23 @@
 {
   "mockBidRequest": {
-    "id": "every-param-in-imp.ext.bidder-is-hoisted-to-imp.ext",
+    "id": "test-request-id",
+    "app": {
+      "id": "1",
+      "bundle": "com.example",
+      "publisher": {
+        "id":  "pub-id"
+      }
+    },
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "imp-id",
         "banner": {
-          "format": [{"w": 128, "h": 100}]
+          "format": [{"w": 320, "h": 50}]
         },
         "ext": {
-          "gpid": "global position id",
           "bidder": {
             "assetKey": "OGY",
-            "adUnitId": "123",
-            "testKey": "test123"
+            "adUnitId": "123"
           }
         }
       }
@@ -24,24 +29,29 @@
       "expectedRequest": {
         "uri": "http://ogury.example.com",
         "body": {
-          "id": "every-param-in-imp.ext.bidder-is-hoisted-to-imp.ext",
+          "app": {
+            "id": "1",
+            "bundle": "com.example",
+            "publisher": {
+              "id":  "pub-id"
+            }
+          },
+          "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
-              "tagid": "test-imp-id",
+              "id":"imp-id",
+              "tagid": "imp-id",
               "banner": {
-                "format": [{"w": 128, "h": 100}]
+                "format": [{"w": 320, "h": 50}]
               },
               "ext": {
-                "gpid": "global position id",
                 "assetKey": "OGY",
-                "adUnitId": "123",
-                "testKey": "test123"
+                "adUnitId": "123"
               }
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs":["imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -53,8 +63,9 @@
               "seat": "seat",
               "bid": [{
                 "id": "some-UUID",
-                "impid": "test-imp-id",
+                "impid": "imp-id",
                 "price": 0.500000,
+                "nurl": "example nurl",
                 "adm": "adm string",
                 "crid": "crid_10",
                 "h": 100,
@@ -75,8 +86,9 @@
         {
           "bid": {
             "id": "some-UUID",
-            "impid": "test-imp-id",
+            "impid": "imp-id",
             "price": 0.5,
+            "nurl": "example nurl",
             "adm": "adm string",
             "crid": "crid_10",
             "h": 100,
