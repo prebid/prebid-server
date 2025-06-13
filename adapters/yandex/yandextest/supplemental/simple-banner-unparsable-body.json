@@ -40,6 +40,9 @@
           "X-Forwarded-For": [
             "127.0.0.1"
           ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ],
           "X-Real-Ip": [
             "127.0.0.1"
           ],
@@ -57,6 +60,8 @@
           "id": "request_id",
           "imp": [
             {
+              "displaymanager": "prebid.go",
+              "displaymanagerver": "1.1",
               "id": "imp_id",
               "banner": {
                 "w": 300,
