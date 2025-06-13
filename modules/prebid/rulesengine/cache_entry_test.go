@@ -384,24 +384,24 @@ func getValidJsonConfig() *json.RawMessage {
     "enabled": true,
     "generateRulesFromBidderConfig": true,
     "timestamp": "20250131 00:00:00",
-    "ruleSets": [
+    "rulesets": [
       {
         "stage": "processed_auction_request",
         "name": "exclude-in-jpn",
         "version": "1234",
-        "modelGroups": [
+        "modelgroups": [
           {
             "weight": 100,
             "analyticsKey": "experiment-name",
             "version": "4567",
             "schema": [
               {
-                "function": "deviceCountry",
-                "args": ["USA"]
+                "function": "deviceCountryIn",
+                "args": {"countries": ["USA"]}
               },
               {
-                "function": "dataCenters",
-                "args": ["us-east", "us-west"]
+                "function": "dataCenterIn",
+                "args": {"datacenters": ["us-east", "us-west"]}
               },
               {
                 "function": "channel"
@@ -418,7 +418,7 @@ func getValidJsonConfig() *json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderA"], "seatNonBid": 111}]
+                    "args": {"bidders": ["bidderA"], "seatNonBid": 111}
                   }
                 ]
               },
@@ -431,7 +431,7 @@ func getValidJsonConfig() *json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderB"], "seatNonBid": 222}]
+                    "args": {"bidders": ["bidderB"], "seatNonBid": 222}
                   }
                 ]
               },
@@ -444,7 +444,7 @@ func getValidJsonConfig() *json.RawMessage {
                 "results": [
                   {
                     "function": "includeBidders",
-                    "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]
+                    "args": {"bidders": ["bidderC"], "seatNonBid": 333}
                   }
                 ]
               }
@@ -458,7 +458,7 @@ func getValidJsonConfig() *json.RawMessage {
             "rules": [
               {
                 "conditions": ["*"],
-                "results": [{"function": "includeBidders", "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]}]
+                "results": [{"function": "includeBidders", "args": {"bidders": ["bidderC"], "seatNonBid": 333}}]
               }
             ]
           }
