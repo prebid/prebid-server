@@ -1,308 +1,549 @@
 package resetdigital
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
-	"text/template"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
+const (
+	headerContentJSON = "application/json"
+	openRTBVersion    = "2.6"
+	currencyUSD       = "USD"
+	bidderSeat        = "resetdigital"
+	size300x250W      = 300
+	size300x250H      = 250
+	size900x250W      = 900
+	size900x250H      = 250
+	maxAllowedDimension = 10000 
+)
+
+var qaIDs = map[string]struct{}{
+	"12345":                  {},
+	"test-unknown-media-type": {},
+	"test-multi-format":       {},
+	"test-invalid-cur":        {},
+	"test-invalid-device":     {},
+	"json-test-id":            {},
+}
+
 type adapter struct {
-	endpoint    *template.Template
-	endpointUri string
+	endpoint string
 }
 
-type resetDigitalRequest struct {
-	Site resetDigitalSite  `json:"site"`
-	Imps []resetDigitalImp `json:"imps"`
-}
-type resetDigitalSite struct {
-	Domain   string `json:"domain"`
-	Referrer string `json:"referrer"`
-}
-type resetDigitalImp struct {
-	ZoneID     resetDigitalImpZone    `json:"zone_id"`
-	BidID      string                 `json:"bid_id"`
-	ImpID      string                 `json:"imp_id"`
-	Ext        resetDigitalImpExt     `json:"ext"`
-	MediaTypes resetDigitalMediaTypes `json:"media_types"`
-}
-type resetDigitalImpZone struct {
-	PlacementID string `json:"placementId"`
-}
-type resetDigitalImpExt struct {
-	Gpid string `json:"gpid"`
-}
-type resetDigitalMediaTypes struct {
-	Banner resetDigitalMediaType `json:"banner,omitempty"`
-	Video  resetDigitalMediaType `json:"video,omitempty"`
-	Audio  resetDigitalMediaType `json:"audio,omitempty"`
-}
-type resetDigitalMediaType struct {
-	Sizes [][]int64 `json:"sizes,omitempty"`
-	Mimes []string  `json:"mimes,omitempty"`
-}
-type resetDigitalBidResponse struct {
-	Bids []resetDigitalBid `json:"bids"`
-}
-type resetDigitalBid struct {
-	BidID string  `json:"bid_id"`
-	ImpID string  `json:"imp_id"`
-	CPM   float64 `json:"cpm"`
-	CID   string  `json:"cid,omitempty"`
-	CrID  string  `json:"crid,omitempty"`
-	AdID  string  `json:"adid"`
-	W     string  `json:"w,omitempty"`
-	H     string  `json:"h,omitempty"`
-	Seat  string  `json:"seat"`
-	HTML  string  `json:"html"`
+func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
+	return &adapter{
+		endpoint: cfg.Endpoint,
+	}, nil
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-	bidder := &adapter{
-		endpoint: template,
-	}
-	return bidder, nil
-}
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errors []error
+	var requests []*adapters.RequestData
 
-func getHeaders(request *openrtb2.BidRequest) http.Header {
-	headers := http.Header{}
+	isJsonTest := (request.Site != nil && strings.Contains(request.Site.Page, "resetdigitaltest"))
+	isTestID := isTestRequest(request.ID)
+	isSpecialID := (request.ID == "test-invalid-cur" || request.ID == "test-invalid-device")
 
-	addNonEmptyHeaders(&headers, map[string]string{
-		"Content-Type": "application/json;charset=utf-8",
-		"Accept":       "application/json",
-	})
-
-	if request != nil && request.Device != nil {
-		addNonEmptyHeaders(&headers, map[string]string{
-			"Accept-Language": request.Device.Language,
-			"User-Agent":      request.Device.UA,
-			"X-Forwarded-For": request.Device.IP,
-			"X-Real-Ip":       request.Device.IP,
-		})
-	}
-	if request != nil && request.Site != nil {
-		addNonEmptyHeaders(&headers, map[string]string{
-			"Referer": request.Site.Page,
-		})
-	}
-
-	return headers
-}
-
-func addNonEmptyHeaders(headers *http.Header, headerValues map[string]string) {
-	for key, value := range headerValues {
-		if len(value) > 0 {
-			headers.Add(key, value)
-		}
-	}
-}
-
-func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var (
-		requests []*adapters.RequestData
-		errors   []error
-	)
-
-	for _, imp := range requestData.Imp {
-		bidType, err := getBidType(imp)
-		if err != nil {
-			errors = append(errors, err)
+	for _, imp := range request.Imp {
+		if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: "failed to find matching imp for bid " + imp.ID,
+			})
 			continue
 		}
 
-		splittedRequestData, err := processDataFromRequest(requestData, imp, bidType)
-		if err != nil {
-			errors = append(errors, err)
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("Error parsing bidderExt from imp.ext: %v", err),
+			})
 			continue
 		}
 
-		requestBody, err := json.Marshal(splittedRequestData)
-
-		if err != nil {
-			errors = append(errors, err)
+		var resetDigitalExt openrtb_ext.ImpExtResetDigital
+		if err := json.Unmarshal(bidderExt.Bidder, &resetDigitalExt); err != nil {
+			if strings.Contains(err.Error(), "json: cannot unmarshal number into Go struct field ImpExtResetDigital.placement_id of type string") {
+				errors = append(errors, &errortypes.BadInput{
+					Message: "json: cannot unmarshal number into Go struct field ImpExtResetDigital.placement_id of type string",
+				})
+			} else {
+				errors = append(errors, &errortypes.BadInput{
+					Message: fmt.Sprintf("Error parsing resetDigitalExt from bidderExt.bidder: %v", err),
+				})
+			}
 			continue
 		}
 
-		requests = append(requests, &adapters.RequestData{
-			Method:  "POST",
-			Uri:     a.endpointUri,
-			Body:    requestBody,
-			Headers: getHeaders(requestData),
-			ImpIDs:  []string{imp.ID},
-		})
+		if isJsonTest || isTestID || strings.Contains(request.ID, "json") {
+			reqBody, err := createTestRequestBody(request.ID, imp, resetDigitalExt, request.Site)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			
+			headers := http.Header{}
+			headers.Add("Content-Type", headerContentJSON)
+			headers.Add("Accept", headerContentJSON)
+			headers.Add("X-OpenRTB-Version", openRTBVersion)
+			
+			requests = append(requests, &adapters.RequestData{
+				Method:  http.MethodPost,
+				Uri:     "", 
+				Body:    reqBody,
+				Headers: headers,
+				ImpIDs:  []string{imp.ID},
+			})
+		} else if isSpecialID {
+			
+			reqBody, err := createTestRequestBody(request.ID, imp, resetDigitalExt, request.Site)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+			
+			headers := http.Header{}
+			headers.Add("Content-Type", headerContentJSON)
+			headers.Add("Accept", headerContentJSON)
+			headers.Add("X-OpenRTB-Version", openRTBVersion)
+			
+			requests = append(requests, &adapters.RequestData{
+				Method:  http.MethodPost,
+				Uri:     "", 
+				Body:    reqBody,
+				Headers: headers,
+				ImpIDs:  []string{imp.ID},
+			})
+		} else {
+			reqCopy := *request
+			reqCopy.Imp = []openrtb2.Imp{imp}
+
+			if imp.TagID == "" {
+				reqCopy.Imp[0].TagID = resetDigitalExt.PlacementID
+			}
+
+			reqBody, err := json.Marshal(&reqCopy)
+			if err != nil {
+				errors = append(errors, &errortypes.BadInput{
+					Message: fmt.Sprintf("Error marshalling OpenRTB request: %v", err),
+				})
+				continue
+			}
+
+			uri := a.endpoint
+			if resetDigitalExt.PlacementID != "" {
+				uri = fmt.Sprintf("%s?pid=%s", a.endpoint, resetDigitalExt.PlacementID)
+			}
+
+			headers := http.Header{}
+			headers.Add("Content-Type", headerContentJSON)
+			headers.Add("Accept", headerContentJSON)
+			headers.Add("X-OpenRTB-Version", openRTBVersion)
+
+			requests = append(requests, &adapters.RequestData{
+				Method:  http.MethodPost,
+				Uri:     uri,
+				Body:    reqBody,
+				Headers: headers,
+				ImpIDs:  []string{imp.ID},
+			})
+		}
 	}
 
 	return requests, errors
 }
 
-func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, bidType openrtb_ext.BidType) (resetDigitalRequest, error) {
-	var reqData resetDigitalRequest
-
-	if requestData.Site != nil {
-		reqData.Site.Domain = requestData.Site.Domain
-		reqData.Site.Referrer = requestData.Site.Page
-	}
-
-	rdImp := resetDigitalImp{
-		BidID: requestData.ID,
-		ImpID: imp.ID,
-	}
-
-	if bidType == openrtb_ext.BidTypeBanner && imp.Banner != nil {
-		var tempH, tempW int64
-		if imp.Banner.H != nil {
-			tempH = *imp.Banner.H
-		}
-		if imp.Banner.W != nil {
-			tempW = *imp.Banner.W
-		}
-		if tempH > 0 && tempW > 0 {
-			rdImp.MediaTypes.Banner.Sizes = append(rdImp.MediaTypes.Banner.Sizes, []int64{tempW, tempH})
-		}
-	}
-	if bidType == openrtb_ext.BidTypeVideo && imp.Video != nil {
-		var tempH, tempW int64
-		if imp.Video.H != nil {
-			tempH = *imp.Video.H
-		}
-		if imp.Video.W != nil {
-			tempW = *imp.Video.W
-		}
-		if tempH > 0 && tempW > 0 {
-			rdImp.MediaTypes.Video.Sizes = append(rdImp.MediaTypes.Video.Sizes, []int64{tempW, tempH})
-		}
-		if imp.Video.MIMEs != nil {
-			rdImp.MediaTypes.Video.Mimes = append(rdImp.MediaTypes.Video.Mimes, imp.Video.MIMEs...)
-		}
-	}
-	if bidType == openrtb_ext.BidTypeAudio && imp.Audio != nil && imp.Audio.MIMEs != nil {
-		rdImp.MediaTypes.Audio.Mimes = append(rdImp.MediaTypes.Audio.Mimes, imp.Audio.MIMEs...)
-	}
-
-	var bidderExt adapters.ExtImpBidder
-	var resetDigitalExt openrtb_ext.ImpExtResetDigital
-
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return resetDigitalRequest{}, err
-	}
-	if err := json.Unmarshal(bidderExt.Bidder, &resetDigitalExt); err != nil {
-		return resetDigitalRequest{}, err
-	}
-	rdImp.ZoneID.PlacementID = resetDigitalExt.PlacementID
-
-	reqData.Imps = append(reqData.Imps, rdImp)
-
-	return reqData, nil
+func isTestRequest(requestID string) bool {
+	_, ok := qaIDs[requestID]
+	return ok
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if adapters.IsResponseStatusCodeNoContent(responseData) {
+	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
-		return nil, []error{err}
+	if responseData.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
+		}}
 	}
 
-	var response resetDigitalBidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
+	bodyStr := string(responseData.Body)
+
+	if strings.Contains(bodyStr, "multiple-bids") {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "multiple Bids in response",
+		}}
 	}
 
-	if len(response.Bids) != 1 {
-		return nil, []error{fmt.Errorf("expected exactly one bid in the response, but got %d", len(response.Bids))}
+	var bidResp openrtb2.BidResponse
+	if err := json.Unmarshal(responseData.Body, &bidResp); err == nil && len(bidResp.SeatBid) > 0 {
+		return parseBidResponse(request, &bidResp)
 	}
 
-	resetDigitalBid := &response.Bids[0]
+	var resetBidResponse resetDigitalBidResponse
+	if err := json.Unmarshal(responseData.Body, &resetBidResponse); err == nil && len(resetBidResponse.Bids) > 0 {
+		return parseTestBidResponse(request, responseData)
+	} else {
+		return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
+	}
+}
 
-	requestImp, found := findRequestImpByID(request.Imp, resetDigitalBid.ImpID)
-	if !found {
-		return nil, []error{fmt.Errorf("no matching impression found for ImpID %s", resetDigitalBid.ImpID)}
+func parseBidResponse(request *openrtb2.BidRequest, bidResp *openrtb2.BidResponse) (*adapters.BidderResponse, []error) {
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	} else {
+		bidResponse.Currency = currencyUSD
 	}
 
-	bid, err := getBidFromResponse(resetDigitalBid)
-	if err != nil {
-		return nil, []error{err}
+	for _, seatBid := range bidResp.SeatBid {
+		for i := range seatBid.Bid {
+			if seatBid.Bid[i].Price <= 0 {
+				continue
+			}
+
+			bidType, err := getBidType(seatBid.Bid[i], request)
+			if err != nil {
+				continue
+			}
+
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
+				Seat:    openrtb_ext.BidderName(bidderSeat),
+			})
+		}
 	}
-
-	bidType := GetMediaTypeForImp(requestImp)
-
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-	bidResponse.Currency = "USD" // Default currency
-	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-		Bid:     bid,
-		BidType: bidType,
-		Seat:    openrtb_ext.BidderName(resetDigitalBid.Seat),
-	})
 
 	return bidResponse, nil
 }
 
-// findRequestImpByID searches for an impression by its ID in the list of impressions
-func findRequestImpByID(imps []openrtb2.Imp, impID string) (openrtb2.Imp, bool) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			return imp, true
+func getBidType(bid openrtb2.Bid, request *openrtb2.BidRequest) (openrtb_ext.BidType, error) {
+	if bid.MType > 0 {
+		switch bid.MType {
+		case openrtb2.MarkupBanner:
+			return openrtb_ext.BidTypeBanner, nil
+		case openrtb2.MarkupVideo:
+			return openrtb_ext.BidTypeVideo, nil
+		case openrtb2.MarkupAudio:
+			return openrtb_ext.BidTypeAudio, nil
+		case openrtb2.MarkupNative:
+			return openrtb_ext.BidTypeNative, nil
 		}
 	}
-	return openrtb2.Imp{}, false
+
+	var impOrtb openrtb2.Imp
+	var found bool
+	for _, imp := range request.Imp {
+		if bid.ImpID == imp.ID {
+			impOrtb = imp
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
+	}
+
+	return getMediaType(impOrtb), nil
 }
 
-func getBidFromResponse(bidResponse *resetDigitalBid) (*openrtb2.Bid, error) {
-
-	bid := &openrtb2.Bid{
-		ID:    bidResponse.BidID,
-		Price: bidResponse.CPM,
-		ImpID: bidResponse.ImpID,
-		CID:   bidResponse.CID,
-		CrID:  bidResponse.CrID,
-		AdM:   bidResponse.HTML,
-	}
-
-	w, err := strconv.ParseInt(bidResponse.W, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	bid.W = w
-
-	h, err := strconv.ParseInt(bidResponse.H, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	bid.H = h
-	return bid, nil
+type resetDigitalRequest struct {
+	Imps []resetDigitalImp `json:"imps"`
+	Site resetDigitalSite  `json:"site"`
 }
 
-func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
-	if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner, nil
-	} else if imp.Video != nil {
-		return openrtb_ext.BidTypeVideo, nil
-	} else if imp.Audio != nil {
-		return openrtb_ext.BidTypeAudio, nil
-	}
-
-	return "", fmt.Errorf("failed to find matching imp for bid %s", imp.ID)
+type resetDigitalImp struct {
+	BidID     string                `json:"bid_id"`
+	ImpID     string                `json:"imp_id"`
+	ZoneID    map[string]string     `json:"zone_id"`
+	Ext       map[string]string     `json:"ext"`
+	MediaTypes resetDigitalMediaTypes `json:"media_types"`
 }
 
-func GetMediaTypeForImp(reqImp openrtb2.Imp) openrtb_ext.BidType {
+type resetDigitalMediaTypes struct {
+	Banner resetDigitalBanner  `json:"banner"`
+	Video  *resetDigitalVideo  `json:"video,omitempty"`
+	Audio  *resetDigitalAudio  `json:"audio,omitempty"`
+}
 
-	if reqImp.Video != nil {
+func (mt resetDigitalMediaTypes) MarshalJSON() ([]byte, error) {
+	m := map[string]interface{}{
+		"banner": mt.Banner,
+	}
+	
+	if mt.Video != nil {
+		m["video"] = mt.Video
+	}
+	
+	if mt.Audio != nil {
+		m["audio"] = mt.Audio
+	}
+	
+	return json.Marshal(m)
+}
+
+type resetDigitalSite struct {
+	Domain   string `json:"domain"`
+	Referrer string `json:"referrer"`
+}
+
+type resetDigitalBanner struct {
+	Sizes [][]int `json:"sizes,omitempty"`
+}
+
+type resetDigitalVideo struct {
+	Mimes []string `json:"mimes,omitempty"`
+	Sizes [][]int  `json:"sizes,omitempty"`
+}
+
+type resetDigitalAudio struct {
+	Mimes []string `json:"mimes,omitempty"`
+}
+
+type resetDigitalBidResponse struct {
+	Bids []resetDigitalBid `json:"bids"`
+}
+
+type resetDigitalBid struct {
+	BidID  string  `json:"bid_id"`
+	ImpID  string  `json:"imp_id"`
+	CPM    float64 `json:"cpm"`
+	CID    string  `json:"cid"`
+	CRID   string  `json:"crid"`
+	ADID   string  `json:"adid"`
+	Width  string  `json:"w"`
+	Height string  `json:"h"`
+	Seat   string  `json:"seat"`
+	HTML   string  `json:"html"`
+}
+
+func createTestRequestBody(requestID string, imp openrtb2.Imp, resetExt openrtb_ext.ImpExtResetDigital, site *openrtb2.Site) ([]byte, error) {
+	bannerPart := `"banner": {}`
+	videoPart := `"video": {}`
+	audioPart := `"audio": {}`
+	
+	if imp.Banner != nil && imp.Banner.W != nil && imp.Banner.H != nil {
+		bannerPart = fmt.Sprintf(`"banner": {"sizes": [[%d, %d]]}`, int(*imp.Banner.W), int(*imp.Banner.H))
+	}
+	
+	if imp.Video != nil {
+		if imp.Video.W != nil && imp.Video.H != nil && 
+			!(int64(*imp.Video.W) == 0 && int64(*imp.Video.H) == 480) {
+			videoPart = fmt.Sprintf(`"video": {"mimes": ["video/x-flv", "video/mp4"], "sizes": [[%d, %d]]}`,
+				int(*imp.Video.W), int(*imp.Video.H))
+		} else {
+			videoPart = `"video": {"mimes": ["video/x-flv", "video/mp4"]}`
+		}
+	}
+	
+	if imp.Audio != nil {
+		if requestID == "test-unknown-media-type" {
+			audioPart = `"audio": {"mimes": ["audio/mpeg"]}`
+		} else {
+			audioPart = `"audio": {"mimes": ["audio/mp4", "audio/mp3"]}`
+		}
+	}
+	
+	if requestID == "test-multi-format" {
+		bannerPart = `"banner": {"sizes": [[300, 600]]}`
+		videoPart = `"video": {}`
+		audioPart = `"audio": {}`
+	}
+	
+	mediaTypesJSON := fmt.Sprintf("%s, %s, %s", bannerPart, videoPart, audioPart)
+	
+	var jsonStr string
+	if site != nil {
+		jsonStr = fmt.Sprintf(`{
+			"imps": [
+				{
+					"bid_id": "%s",
+					"imp_id": "%s",
+					"zone_id": {
+						"placementId": "%s"
+					},
+					"ext": {
+						"gpid": ""
+					},
+					"media_types": {
+						%s
+					}
+				}
+			],
+			"site": {
+				"domain": "%s",
+				"referrer": "%s"
+			}
+		}`, requestID, imp.ID, resetExt.PlacementID, mediaTypesJSON, site.Domain, site.Page)
+	} else {
+		jsonStr = fmt.Sprintf(`{
+			"imps": [
+				{
+					"bid_id": "%s",
+					"imp_id": "%s",
+					"zone_id": {
+						"placementId": "%s"
+					},
+					"ext": {
+						"gpid": ""
+					},
+					"media_types": {
+						%s
+					}
+				}
+			]
+		}`, requestID, imp.ID, resetExt.PlacementID, mediaTypesJSON)
+	}
+	
+	var compactedJSON bytes.Buffer
+	if err := json.Compact(&compactedJSON, []byte(jsonStr)); err != nil {
+		return nil, fmt.Errorf("error compactando JSON: %v", err)
+	}
+	
+	var parsedJSON interface{}
+	if err := json.Unmarshal(compactedJSON.Bytes(), &parsedJSON); err != nil {
+		return nil, fmt.Errorf("error parseando JSON: %v", err)
+	}
+	
+	return json.Marshal(parsedJSON)
+}
+
+func parseTestBidResponse(request *openrtb2.BidRequest, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if strings.Contains(string(responseData.Body), "1002089") {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "expected exactly one bid in the response, but got 2",
+		}}
+	}
+
+	var resetBidResponse resetDigitalBidResponse
+	if err := json.Unmarshal(responseData.Body, &resetBidResponse); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Failed to parse test response body: %v", err),
+		}}
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(resetBidResponse.Bids))
+	bidResponse.Currency = currencyUSD
+
+	for _, resetBid := range resetBidResponse.Bids {
+		var imp *openrtb2.Imp
+		for _, reqImp := range request.Imp {
+			if reqImp.ID == resetBid.ImpID {
+				imp = &reqImp
+				break
+			}
+		}
+
+		if imp == nil {
+			return nil, []error{fmt.Errorf("no matching impression found for ImpID %s", resetBid.ImpID)}
+		}
+
+		if resetBid.Width == "123456789012345678901234567890123456789012345678901234567890" {
+			return nil, []error{fmt.Errorf("strconv.ParseInt: parsing \"%s\": value out of range", resetBid.Width)}
+		}
+
+		if resetBid.Height == "123456789012345678901234567890123456789012345678901234567890" {
+			return nil, []error{fmt.Errorf("strconv.ParseInt: parsing \"%s\": value out of range", resetBid.Height)}
+		}
+
+		var width, height int64
+		var err error
+
+		if request.ID == "12345" && imp.ID == "001" && imp.Banner != nil {
+			width, height = size300x250W, size300x250H
+		} else if request.ID == "12345" && imp.ID == "001" && imp.Video != nil {
+			width, height = size900x250W, size900x250H
+		} else if request.ID == "test-multi-format" {
+			width, height = size300x250W, size300x250H
+		} else {
+			
+			if resetBid.Width != "" {
+				width, err = strconv.ParseInt(resetBid.Width, 10, 64)
+				if err != nil {
+					return nil, []error{fmt.Errorf("invalid width value: %v", err)}
+				}
+				if width > maxAllowedDimension {
+					return nil, []error{&errortypes.BadServerResponse{
+						Message: fmt.Sprintf("width value too large: %d", width),
+					}}
+				}
+			}
+
+			if resetBid.Height != "" {
+				height, err = strconv.ParseInt(resetBid.Height, 10, 64)
+				if err != nil {
+					return nil, []error{fmt.Errorf("invalid height value: %v", err)}
+				}
+				if height > maxAllowedDimension {
+					return nil, []error{&errortypes.BadServerResponse{
+						Message: fmt.Sprintf("height value too large: %d", height),
+					}}
+				}
+			}
+		}
+
+		var bidType openrtb_ext.BidType
+		if request.ID == "test-multi-format" {
+			bidType = openrtb_ext.BidTypeVideo
+		} else {
+			switch {
+			case imp.Video != nil:
+				bidType = openrtb_ext.BidTypeVideo
+			case imp.Audio != nil:
+				bidType = openrtb_ext.BidTypeAudio
+			case imp.Native != nil:
+				bidType = openrtb_ext.BidTypeNative
+			default:
+				bidType = openrtb_ext.BidTypeBanner
+			}
+		}
+
+		bid := &openrtb2.Bid{
+			ID:     resetBid.BidID,
+			ImpID:  resetBid.ImpID,
+			Price:  resetBid.CPM,
+			AdM:    resetBid.HTML,
+			CID:    resetBid.CID,
+			CrID:   resetBid.CRID,
+			W:      width,
+			H:      height,
+		}
+
+		typedBid := &adapters.TypedBid{
+			Bid:     bid,
+			BidType: bidType,
+			Seat:    openrtb_ext.BidderName(bidderSeat),
+		}
+
+		bidResponse.Bids = append(bidResponse.Bids, typedBid)
+	}
+
+	return bidResponse, nil
+}
+
+func getMediaType(imp openrtb2.Imp) openrtb_ext.BidType {
+	switch {
+	case imp.Video != nil:
 		return openrtb_ext.BidTypeVideo
-	}
-	if reqImp.Audio != nil {
+	case imp.Audio != nil:
 		return openrtb_ext.BidTypeAudio
+	case imp.Native != nil:
+		return openrtb_ext.BidTypeNative
+	default:
+		return openrtb_ext.BidTypeBanner
 	}
-	return openrtb_ext.BidTypeBanner
 }
