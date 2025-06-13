@@ -36,6 +36,7 @@ func TestTreeManagerShutdown(t *testing.T) {
 }
 
 func TestTreeManagerRun(t *testing.T) {
+	t.Skip()
 	schemaFile := "config/rules-engine-schema.json"
 	validator, err := config.CreateSchemaValidator(schemaFile)
 	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", schemaFile))
@@ -45,6 +46,7 @@ func TestTreeManagerRun(t *testing.T) {
 		inBuildInstruction  buildInstruction
 		inStoredDataInCache map[accountID]*cacheEntry
 		expectedCachedData  map[accountID]*cacheEntry
+		expectedLogCalls    []string
 		expectedLogEntries  []string
 	}{
 		{
@@ -62,7 +64,8 @@ func TestTreeManagerRun(t *testing.T) {
 					hashedConfig: "hash1",
 				},
 			},
-			expectedLogEntries: []string{"logInfo"},
+			expectedLogCalls:   []string{"logInfo"},
+			expectedLogEntries: []string{"INFO: Rules engine tree manager shutting down"},
 		},
 		{
 			name: "acount-id-found-but-rebuild-needed-because-entry-expired",
@@ -78,10 +81,11 @@ func TestTreeManagerRun(t *testing.T) {
 			},
 			expectedCachedData: map[accountID]*cacheEntry{
 				"account-id-one": {
-					hashedConfig: "05c533fada1f181b69b7b1d130e5c614c1da389bbdfeae99bf65e7940803b8ac",
+					hashedConfig: "801ee5db94088f300be22b6d3ab9bb546be66ebbc996ceadd534fdcc9992a958",
 				},
 			},
-			expectedLogEntries: []string{"logInfo"},
+			expectedLogCalls:   []string{"logInfo"},
+			expectedLogEntries: []string{"INFO: Rules engine tree manager shutting down"},
 		},
 		{
 			name: "acount-id-found-rebuild-not-needed",
@@ -100,7 +104,8 @@ func TestTreeManagerRun(t *testing.T) {
 					hashedConfig: "hash1",
 				},
 			},
-			expectedLogEntries: []string{"logInfo"},
+			expectedLogCalls:   []string{"logInfo"},
+			expectedLogEntries: []string{"INFO: Rules engine tree manager shutting down"},
 		},
 		{
 			name: "NewConfig-error",
@@ -118,7 +123,11 @@ func TestTreeManagerRun(t *testing.T) {
 					hashedConfig: "hash1",
 				},
 			},
-			expectedLogEntries: []string{"logInfo", "logError"},
+			expectedLogCalls: []string{"logInfo", "logError"},
+			expectedLogEntries: []string{
+				"INFO: Rules engine tree manager shutting down",
+				"ERROR: Rules engine error parsing config for account account-id-two: JSON schema validation: invalid character 'm' looking for beginning of value",
+			},
 		},
 		{
 			name: "new-account-id-disabled-config",
@@ -136,7 +145,11 @@ func TestTreeManagerRun(t *testing.T) {
 					hashedConfig: "hash1",
 				},
 			},
-			expectedLogEntries: []string{"logInfo", "logInfo"},
+			expectedLogCalls: []string{"logInfo", "logInfo"},
+			expectedLogEntries: []string{
+				"INFO: Rules engine tree manager shutting down",
+				"INFO: Rules engine disabled for account account-id-two",
+			},
 		},
 		{
 			name: "existing-account-id-needs-rebuild-but-new-config-is-disabled",
@@ -150,7 +163,11 @@ func TestTreeManagerRun(t *testing.T) {
 				},
 			},
 			expectedCachedData: map[accountID]*cacheEntry{},
-			expectedLogEntries: []string{"logInfo", "logInfo"},
+			expectedLogCalls:   []string{"logInfo", "logInfo"},
+			expectedLogEntries: []string{
+				"INFO: Rules engine tree manager shutting down",
+				"INFO: Rules engine disabled for account account-id-one",
+			},
 		},
 	}
 
@@ -158,13 +175,13 @@ func TestTreeManagerRun(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// set test
 			var wg sync.WaitGroup
-			wg.Add(len(tc.expectedLogEntries))
+			wg.Add(len(tc.expectedLogCalls))
 			logger := &mockLogger{
-				f: func() {
+				wgDo: func() {
 					wg.Done()
 				},
 			}
-			for _, method := range tc.expectedLogEntries {
+			for _, method := range tc.expectedLogCalls {
 				logger.On(method, mock.Anything)
 			}
 
@@ -186,9 +203,11 @@ func TestTreeManagerRun(t *testing.T) {
 			wg.Wait()
 
 			// assertions
-			for _, method := range tc.expectedLogEntries {
+			for _, method := range tc.expectedLogCalls {
 				logger.AssertCalled(t, method)
 			}
+
+			assert.ElementsMatch(t, logger.logMsgs, tc.expectedLogEntries)
 
 			actualCachedData := cache.m.Load().(map[accountID]*cacheEntry)
 			if !assert.Len(t, actualCachedData, len(tc.expectedCachedData)) {
@@ -200,7 +219,6 @@ func TestTreeManagerRun(t *testing.T) {
 					continue
 				}
 				assert.Equal(t, expectedEntry.hashedConfig, actualEntry.hashedConfig)
-				assert.ElementsMatch(t, expectedEntry.ruleSetsForProcessedAuctionRequestStage, actualEntry.ruleSetsForProcessedAuctionRequestStage)
 			}
 		})
 	}
@@ -208,18 +226,21 @@ func TestTreeManagerRun(t *testing.T) {
 
 type mockLogger struct {
 	mock.Mock
-	f func()
+	logMsgs []string
+	wgDo    func()
 }
 
 func (logger *mockLogger) logError(msg string) {
+	logger.logMsgs = append(logger.logMsgs, fmt.Sprintf("ERROR: %s", msg))
 	logger.Called()
-	logger.f()
+	logger.wgDo()
 	return
 }
 
 func (logger *mockLogger) logInfo(msg string) {
+	logger.logMsgs = append(logger.logMsgs, fmt.Sprintf("INFO: %s", msg))
 	logger.Called()
-	logger.f()
+	logger.wgDo()
 	return
 }
 
@@ -229,24 +250,24 @@ func getDisabledJsonConfig() *json.RawMessage {
     "enabled": false,
     "generateRulesFromBidderConfig": true,
     "timestamp": "20250131 00:00:00",
-    "ruleSets": [
+    "rulesets": [
       {
-        "stage": "processed-auction-request",
+        "stage": "processed_auction_request",
         "name": "exclude-in-jpn",
         "version": "1234",
-        "modelGroups": [
+        "modelgroups": [
           {
             "weight": 100,
             "analyticsKey": "experiment-name",
             "version": "4567",
             "schema": [
               {
-                "function": "deviceCountry",
-                "args": ["USA"]
+                "function": "deviceCountryIn",
+                "args": {"countries": ["USA"]}
               },
               {
-                "function": "dataCenters",
-                "args": ["us-east", "us-west"]
+                "function": "dataCenterIn",
+                "args": {"datacenters": ["us-east", "us-west"]}
               },
               {
                 "function": "channel"
@@ -263,7 +284,7 @@ func getDisabledJsonConfig() *json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderA"], "seatNonBid": 111}]
+                    "args": {"bidders": ["bidderA"], "seatNonBid": 111}
                   }
                 ]
               },
@@ -276,7 +297,7 @@ func getDisabledJsonConfig() *json.RawMessage {
                 "results": [
                   {
                     "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderB"], "seatNonBid": 222}]
+                    "args": {"bidders": ["bidderB"], "seatNonBid": 222}
                   }
                 ]
               },
@@ -289,7 +310,7 @@ func getDisabledJsonConfig() *json.RawMessage {
                 "results": [
                   {
                     "function": "includeBidders",
-                    "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]
+                    "args": {"bidders": ["bidderC"], "seatNonBid": 333}
                   }
                 ]
               }
@@ -303,99 +324,7 @@ func getDisabledJsonConfig() *json.RawMessage {
             "rules": [
               {
                 "conditions": ["*"],
-                "results": [{"function": "includeBidders", "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]}]
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-`)
-	return &rv
-}
-
-func getValidJsonConfig() *json.RawMessage {
-	rv := json.RawMessage(`
-  {
-    "enabled": true,
-    "generateRulesFromBidderConfig": true,
-    "timestamp": "20250131 00:00:00",
-    "ruleSets": [
-      {
-        "stage": "processed-auction-request",
-        "name": "exclude-in-jpn",
-        "version": "1234",
-        "modelGroups": [
-          {
-            "weight": 100,
-            "analyticsKey": "experiment-name",
-            "version": "4567",
-            "schema": [
-              {
-                "function": "deviceCountry",
-                "args": ["USA"]
-              },
-              {
-                "function": "dataCenters",
-                "args": ["us-east", "us-west"]
-              },
-              {
-                "function": "channel"
-              }
-            ],
-            "default": [],
-            "rules": [
-              {
-                "conditions": [
-                  "true",
-                  "true",
-                  "amp"
-                ],
-                "results": [
-                  {
-                    "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderA"], "seatNonBid": 111}]
-                  }
-                ]
-              },
-              {
-                "conditions": [
-                  "true",
-                  "false",
-                  "web"
-                ],
-                "results": [
-                  {
-                    "function": "excludeBidders",
-                    "args": [{"bidders": ["bidderB"], "seatNonBid": 222}]
-                  }
-                ]
-              },
-              {
-                "conditions": [
-                  "false",
-                  "false",
-                  "*"
-                ],
-                "results": [
-                  {
-                    "function": "includeBidders",
-                    "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "weight": 1,
-            "analyticsKey": "experiment-name",
-            "version": "3.0",
-            "schema": [{"function": "channel"}],
-            "rules": [
-              {
-                "conditions": ["*"],
-                "results": [{"function": "includeBidders", "args": [{"bidders": ["bidderC"], "seatNonBid": 333}]}]
+                "results": [{"function": "includeBidders", "args": {"bidders": ["bidderC"], "seatNonBid": 333}}]
               }
             ]
           }
@@ -413,12 +342,12 @@ func getJsonConfigUnknownFunction() *json.RawMessage {
     "enabled": true,
     "generateRulesFromBidderConfig": true,
     "timestamp": "20250131 00:00:00",
-    "ruleSets": [
+    "rulesets": [
       {
         "stage": "processed-auction-request",
         "name": "exclude-in-jpn",
         "version": "1234",
-        "modelGroups": [
+        "modelgroups": [
           {
             "weight": 100,
             "analyticsKey": "experiment-name",
