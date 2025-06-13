@@ -32,7 +32,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "extractOrg: no org or publisher_id supplied",
+      "value": "extractBidderParams: no org or publisher_id supplied",
       "comparison": "literal"
     }
   ]

@@ -28,7 +28,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "extractOrg: unmarshal ImpExtRise: expect { or n, but found",
+      "value": "extractBidderParams: unmarshal ImpExtRise: expect { or n, but found",
       "comparison": "startswith"
     }
   ]
