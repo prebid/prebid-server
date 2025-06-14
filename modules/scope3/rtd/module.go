@@ -4,6 +4,8 @@ package scope3
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,26 +31,66 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 		cfg.Endpoint = "https://rtdp.scope3.com/amazonaps/rtii"
 	}
 	if cfg.Timeout == 0 {
-		cfg.Timeout = 10 // 10ms default
+		cfg.Timeout = 1000 // 1000ms default
+	}
+	if cfg.CacheTTL == 0 {
+		cfg.CacheTTL = 60 // 60 seconds default
 	}
 
 	return &Module{
 		cfg:        cfg,
 		httpClient: &http.Client{Timeout: time.Duration(cfg.Timeout) * time.Millisecond},
+		cache:      &segmentCache{data: make(map[string]cacheEntry)},
 	}, nil
 }
 
 // Config holds module configuration
 type Config struct {
-	Endpoint string `json:"endpoint"`
-	AuthKey  string `json:"auth_key"`
-	Timeout  int    `json:"timeout_ms"`
+	Endpoint    string `json:"endpoint"`
+	AuthKey     string `json:"auth_key"`
+	Timeout     int    `json:"timeout_ms"`
+	CacheTTL    int    `json:"cache_ttl_seconds"` // Cache segments for this many seconds
+	BidMetaData bool   `json:"bid_meta_data"`     // Include segments in bid.meta
+}
+
+// cacheEntry represents a cached segment response
+type cacheEntry struct {
+	segments  []string
+	timestamp time.Time
+}
+
+// segmentCache provides thread-safe caching of segment data
+type segmentCache struct {
+	mu   sync.RWMutex
+	data map[string]cacheEntry
+}
+
+func (c *segmentCache) get(key string, ttl time.Duration) ([]string, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	entry, exists := c.data[key]
+	if !exists || time.Since(entry.timestamp) > ttl {
+		return nil, false
+	}
+	return entry.segments, true
+}
+
+func (c *segmentCache) set(key string, segments []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.data[key] = cacheEntry{
+		segments:  segments,
+		timestamp: time.Now(),
+	}
 }
 
 // Module implements the Scope3 RTD module
 type Module struct {
 	cfg        Config
 	httpClient *http.Client
+	cache      *segmentCache
 }
 
 // HandleEntrypointHook initializes the module context with a sync.Map for storing segments
@@ -181,7 +223,15 @@ func (m *Module) HandleProcessedAuctionHook(
 
 // fetchScope3Segments calls the Scope3 API and extracts segments
 func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.BidRequest) ([]string, error) {
-	// Enhance request with available user identifiers (e.g., from LiveRamp ATS)
+	// Create cache key based on relevant user identifiers and site context
+	cacheKey := m.createCacheKey(bidRequest)
+
+	// Check cache first
+	if segments, found := m.cache.get(cacheKey, time.Duration(m.cfg.CacheTTL)*time.Second); found {
+		return segments, nil
+	}
+
+	// Enhance request with available user identifiers
 	m.enhanceRequestWithUserIDs(bidRequest)
 
 	// Marshal the bid request
@@ -234,11 +284,66 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 		segments = append(segments, segment)
 	}
 
+	// Cache the result
+	m.cache.set(cacheKey, segments)
+
 	return segments, nil
 }
 
+// createCacheKey generates a cache key based on user identifiers and site context
+func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
+	hasher := md5.New()
+
+	// Include site/app information
+	if bidRequest.Site != nil {
+		hasher.Write([]byte(bidRequest.Site.Domain))
+		hasher.Write([]byte(bidRequest.Site.Page))
+	}
+	if bidRequest.App != nil {
+		hasher.Write([]byte(bidRequest.App.Bundle))
+	}
+
+	// Include user identifiers if available
+	if bidRequest.User != nil && bidRequest.User.Ext != nil {
+		var userExt map[string]interface{}
+		if err := json.Unmarshal(bidRequest.User.Ext, &userExt); err == nil {
+			// Include LiveRamp identifiers
+			if eids, ok := userExt["eids"].([]interface{}); ok {
+				for _, eid := range eids {
+					if eidMap, ok := eid.(map[string]interface{}); ok {
+						if source, ok := eidMap["source"].(string); ok && source == "liveramp.com" {
+							if uidsArray, ok := eidMap["uids"].([]interface{}); ok && len(uidsArray) > 0 {
+								if uidMap, ok := uidsArray[0].(map[string]interface{}); ok {
+									if id, ok := uidMap["id"].(string); ok {
+										hasher.Write([]byte("rampid:" + id))
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Include other identifier types
+			if rampID, ok := userExt["rampid"].(string); ok {
+				hasher.Write([]byte("rampid:" + rampID))
+			}
+			if atsEnvelope, ok := userExt["liveramp_idl"].(string); ok {
+				hasher.Write([]byte("ats:" + atsEnvelope))
+			}
+		}
+
+		// Include user ID if available
+		if bidRequest.User.ID != "" {
+			hasher.Write([]byte("userid:" + bidRequest.User.ID))
+		}
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
 // enhanceRequestWithUserIDs adds available user identifiers to the request
-// This includes RampID from LiveRamp ATS sidecar or ATS envelope if available
+// This function checks for various user identifiers that may be available
 func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 	if bidRequest.User == nil {
 		return
@@ -254,53 +359,53 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 		return
 	}
 
-	// Check for LiveRamp identifiers in priority order:
+	// Check for LiveRamp identifiers:
+	// Note: LiveRamp identifiers may be present from various sources including
+	// publisher implementations, other RTD modules, or identity providers
 
-	// 1. RampID populated by LiveRamp ATS sidecar
-	// RampID is typically stored in user.ext.eids or user.ext.rampid
+	// 1. Check for LiveRamp EID in the standard eids array
 	if eids, ok := userExt["eids"].([]interface{}); ok {
 		for _, eid := range eids {
 			if eidMap, ok := eid.(map[string]interface{}); ok {
 				if source, ok := eidMap["source"].(string); ok && source == "liveramp.com" {
-					// RampID found - Scope3 API will receive this in the request
-					// No additional processing needed as we send the full request
+					// LiveRamp EID found - will be included in the API request
 					return
 				}
 			}
 		}
 	}
 
-	// 2. Direct rampid field (alternative storage location)
+	// 2. Check for direct rampid field (alternative location used by some publishers)
 	if rampID, ok := userExt["rampid"].(string); ok && rampID != "" {
-		// RampID is available for Scope3 API
-		// The full request with user identifiers will be sent to Scope3
+		// RampID found in alternative location
 		return
 	}
 
-	// 3. ATS envelope - encrypted user signals that can be forwarded to authorized partners
-	// ATS envelope is typically found in user.ext.liveramp_idl or user.ext.ats_envelope
-	if atsEnvelope, ok := userExt["liveramp_idl"].(string); ok && atsEnvelope != "" {
-		// ATS envelope available - Scope3 can decrypt if they're an authorized partner
-		// Forward the envelope in the request for Scope3 to process
-		return
+	// 3. Check for ATS envelope in various possible locations
+	// Publishers may store ATS envelopes in different extension fields
+	atsLocations := []string{"liveramp_idl", "ats_envelope", "rampId_envelope"}
+	for _, location := range atsLocations {
+		if atsEnvelope, ok := userExt[location].(string); ok && atsEnvelope != "" {
+			// ATS envelope found - will be forwarded in the request
+			return
+		}
 	}
 
-	// Alternative ATS envelope location
-	if atsEnvelope, ok := userExt["ats_envelope"].(string); ok && atsEnvelope != "" {
-		// ATS envelope available in alternative location
-		return
-	}
-
-	// Check for ATS envelope in top-level request extensions
+	// 4. Check for ATS envelope in top-level request extensions
 	if bidRequest.Ext != nil {
 		var reqExt map[string]interface{}
 		if err := json.Unmarshal(bidRequest.Ext, &reqExt); err == nil {
-			if atsEnvelope, ok := reqExt["liveramp_idl"].(string); ok && atsEnvelope != "" {
-				// ATS envelope found at request level
-				return
+			for _, location := range atsLocations {
+				if atsEnvelope, ok := reqExt[location].(string); ok && atsEnvelope != "" {
+					// ATS envelope found at request level
+					return
+				}
 			}
 		}
 	}
+
+	// No specific LiveRamp identifiers found, but other user identifiers
+	// (like user.id, device.ifa, etc.) will still be included in the request
 }
 
 // Response types for Scope3 API
