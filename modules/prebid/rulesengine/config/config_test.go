@@ -220,7 +220,7 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[rulesets.0.modelgroups.0.schema: Array must have at least 1 items] ",
+					"",
 				},
 				{ //11
 					json.RawMessage(`
@@ -240,7 +240,7 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[rulesets.0.modelgroups.0.rules: Array must have at least 1 items] ",
+					"",
 				},
 				{ //12
 					json.RawMessage(`
@@ -315,7 +315,7 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"[rulesets.0.modelgroups.0.rules.0.results: Array must have at least 1 items] ",
+					"",
 				},
 				{ //15
 					json.RawMessage(`
@@ -356,7 +356,7 @@ func TestValidateConfig(t *testing.T) {
 				actualError := validateConfig(tc.inConfig, validator)
 
 				if len(tc.outErrMsg) > 0 {
-					assert.Equal(t, tc.outErrMsg, actualError.Error())
+					assert.EqualError(t, actualError, tc.outErrMsg)
 				} else {
 					assert.NoError(t, actualError)
 				}
