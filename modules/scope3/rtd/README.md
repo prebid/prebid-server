@@ -20,7 +20,7 @@ hooks:
         endpoint: https://rtdp.scope3.com/amazonaps/rtii
         timeout_ms: 1000
         cache_ttl_seconds: 60   # Cache segments for 60 seconds (default)
-        bid_meta_data: false    # Set to true to include segments in bid.meta (future enhancement)
+        add_to_targeting: false # Set to true to add segments as individual targeting keys for GAM
 
   host_execution_plan:
     endpoints:
@@ -38,12 +38,12 @@ hooks:
                 hook_sequence:
                   - module_code: "scope3.rtd"
                     hook_impl_code: "HandleRawAuctionHook"
-          processed_auction_request:
+          auction_response:
             groups:
               - timeout: 5
                 hook_sequence:
                   - module_code: "scope3.rtd"
-                    hook_impl_code: "HandleProcessedAuctionHook"
+                    hook_impl_code: "HandleAuctionResponseHook"
 ```
 
 ### JSON Configuration
@@ -85,58 +85,14 @@ This module implements intelligent caching to handle scenarios with hundreds of 
 - **Memory Efficiency**: Stores only segment arrays, not full API responses
 - **Frequency Cap Compatibility**: Short 60-second default ensures frequency-capped segments are refreshed quickly
 
-## Dependencies
-This module can integrate with various user identity systems. It automatically detects and forwards available user identifiers including:
+## User Identity Integration
+This module automatically detects and forwards available user identifiers from the bid request including:
 
-- LiveRamp identifiers (when available from other sources)
+- LiveRamp identifiers (when available from publisher implementations or identity providers)
 - Publisher first-party user IDs
-- Device identifiers
+- Device identifiers 
 - Encrypted identity envelopes
 
-### Integration with LiveRamp ATS
-When using both LiveRamp ATS and Scope3 RTD modules, configure execution order so LiveRamp runs first:
-
-```yaml
-host_execution_plan:
-  endpoints:
-    /openrtb2/auction:
-      stages:
-        raw_auction_request:
-          groups:
-            # Group 1: LiveRamp ATS runs first to populate RampID
-            - timeout: 1000
-              hook_sequence:
-                - module_code: "liveramp.ats"
-                  hook_impl_code: "liveramp-fetch"
-            # Group 2: Scope3 runs after LiveRamp, can use RampID
-            - timeout: 2000
-              hook_sequence:
-                - module_code: "scope3.rtd"
-                  hook_impl_code: "scope3-fetch"
-        processed_auction_request:
-          groups:
-            - timeout: 5
-              hook_sequence:
-                - module_code: "scope3.rtd"
-                  hook_impl_code: "scope3-targeting"
-```
-
-Alternative configuration (same group, sequential execution):
-```yaml
-raw_auction_request:
-  groups:
-    - timeout: 3000
-      hook_sequence:
-        # LiveRamp runs first
-        - module_code: "liveramp.ats"
-          hook_impl_code: "liveramp-fetch"
-        # Scope3 runs second, can access RampID
-        - module_code: "scope3.rtd"
-          hook_impl_code: "scope3-fetch"
-```
-
-## User Identifier Integration
-The module automatically detects and includes user identifiers when available in the bid request. This includes support for:
 
 ### Supported Identifier Types
 1. **LiveRamp Identifiers** (when available):
@@ -161,30 +117,47 @@ The module forwards the complete bid request with all available user identifiers
 
 ## Data Output & Integration
 
-### Targeting Data Approach
-The module adds audience segments as targeting data in the bid request, making them available to:
+### Auction Response Data
+The module adds audience segments to the auction response, giving publishers full control over how to use them:
 
-1. **Google Ad Manager (GAM)**: Segments appear as `hb_scope3_segments` targeting key
-2. **Bidders**: Segments are available in the request context for bid decisioning
-3. **Analytics**: Targeting data is logged for reporting purposes
+1. **Publisher Flexibility**: Segments are always returned in `ext.scope3.segments` for the publisher to decide where to send
+2. **Google Ad Manager (GAM)**: Individual targeting keys are added when `add_to_targeting: true` (e.g., `gmp_eligible=true`)
+3. **Other Ad Servers**: Publisher can forward segments to any ad server or system
+4. **Analytics**: Segment data is available for reporting and analysis
 
-### Targeting vs Bid.Meta
-This implementation uses **targeting data** rather than **bid.meta** for the following reasons:
+### Response Format Options
+The module provides segments in two formats:
 
-- **RTD Module Pattern**: Prebid Server RTD modules typically operate on requests, not responses
-- **Universal Availability**: Targeting data is available to all bidders and ad servers
-- **Performance**: No need to process individual bid responses
-- **Flexibility**: Publishers can choose where to send the targeting data
-
-The current hook architecture processes auction requests rather than individual bid responses, making targeting data the appropriate integration method for RTD modules.
-
-### Example Targeting Output
+**Always available:**
 ```json
 {
   "ext": {
-    "targeting": {
-      "hb_scope3_segments": "gmp_eligible,gmp_plus_eligible"
+    "scope3": {
+      "segments": ["gmp_eligible", "gmp_plus_eligible"]
     }
   }
 }
 ```
+
+**When `add_to_targeting: true`:**
+```json
+{
+  "ext": {
+    "prebid": {
+      "targeting": {
+        "gmp_eligible": "true",
+        "gmp_plus_eligible": "true"
+      }
+    },
+    "scope3": {
+      "segments": ["gmp_eligible", "gmp_plus_eligible"]
+    }
+  }
+}
+```
+
+This approach gives publishers maximum flexibility to:
+- Send segments to GAM via targeting keys
+- Forward to other ad servers or systems
+- Use for analytics and reporting
+- Control which segments go where based on their business logic
