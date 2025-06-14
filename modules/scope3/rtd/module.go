@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -46,11 +45,11 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 
 // Config holds module configuration
 type Config struct {
-	Endpoint    string `json:"endpoint"`
-	AuthKey     string `json:"auth_key"`
-	Timeout     int    `json:"timeout_ms"`
-	CacheTTL    int    `json:"cache_ttl_seconds"` // Cache segments for this many seconds
-	BidMetaData bool   `json:"bid_meta_data"`     // Include segments in bid.meta
+	Endpoint       string `json:"endpoint"`
+	AuthKey        string `json:"auth_key"`
+	Timeout        int    `json:"timeout_ms"`
+	CacheTTL       int    `json:"cache_ttl_seconds"` // Cache segments for this many seconds
+	AddToTargeting bool   `json:"add_to_targeting"`  // Add segments as individual targeting keys
 }
 
 // cacheEntry represents a cached segment response
@@ -163,12 +162,12 @@ func (m *Module) HandleRawAuctionHook(
 	}, nil
 }
 
-// HandleProcessedAuctionHook adds targeting keys to the response
-func (m *Module) HandleProcessedAuctionHook(
+// HandleAuctionResponseHook adds targeting data to the auction response
+func (m *Module) HandleAuctionResponseHook(
 	ctx context.Context,
 	miCtx hookstage.ModuleInvocationContext,
-	payload hookstage.ProcessedAuctionRequestPayload,
-) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	payload hookstage.AuctionResponsePayload,
+) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 	// Retrieve segments from module context
 	var segments []string
 	if segmentStore, ok := miCtx.ModuleContext["segments"].(*sync.Map); ok {
@@ -178,45 +177,64 @@ func (m *Module) HandleProcessedAuctionHook(
 	}
 
 	if len(segments) == 0 {
-		return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{}, nil
+		return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
 	}
 
-	// Add targeting keys to the request
-	changeSet := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
+	// Add segments to the auction response
+	changeSet := hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
 	changeSet.AddMutation(
-		func(payload hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
-			// Add Scope3 segments as targeting keys for GAM
-			// Format: "gmp_eligible,gmp_plus_eligible" for easy GAM key-value targeting
-			reqWrapper := payload.Request
-			if reqWrapper.BidRequest.Ext == nil {
-				reqWrapper.BidRequest.Ext = json.RawMessage("{}")
+		func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
+			// Add Scope3 segments to the response ext so publisher can use them
+			if payload.BidResponse.Ext == nil {
+				payload.BidResponse.Ext = json.RawMessage("{}")
 			}
 
 			var extMap map[string]interface{}
-			if err := json.Unmarshal(reqWrapper.BidRequest.Ext, &extMap); err != nil {
+			if err := json.Unmarshal(payload.BidResponse.Ext, &extMap); err != nil {
 				extMap = make(map[string]interface{})
 			}
 
-			// Add targeting keys that will be available to GAM
-			if targetingMap, ok := extMap["targeting"].(map[string]interface{}); ok {
-				targetingMap["hb_scope3_segments"] = strings.Join(segments, ",")
-			} else {
-				extMap["targeting"] = map[string]interface{}{
-					"hb_scope3_segments": strings.Join(segments, ","),
+			// Add segments as individual targeting keys for GAM integration
+			if m.cfg.AddToTargeting {
+				if prebidMap, ok := extMap["prebid"].(map[string]interface{}); ok {
+					if targetingMap, ok := prebidMap["targeting"].(map[string]interface{}); ok {
+						// Add each segment as individual targeting key
+						for _, segment := range segments {
+							targetingMap[segment] = "true"
+						}
+					} else {
+						// Create targeting map with individual segment keys
+						newTargeting := make(map[string]interface{})
+						for _, segment := range segments {
+							newTargeting[segment] = "true"
+						}
+						prebidMap["targeting"] = newTargeting
+					}
+				} else {
+					// Create prebid map with targeting
+					newTargeting := make(map[string]interface{})
+					for _, segment := range segments {
+						newTargeting[segment] = "true"
+					}
+					extMap["prebid"] = map[string]interface{}{
+						"targeting": newTargeting,
+					}
 				}
 			}
 
-			reqWrapper.BidRequest.Ext, _ = json.Marshal(extMap)
+			// Always add to a dedicated scope3 section for publisher flexibility
+			extMap["scope3"] = map[string]interface{}{
+				"segments": segments,
+			}
 
-			// Update the wrapper with the modified bid request
-			payload.Request = reqWrapper
+			payload.BidResponse.Ext, _ = json.Marshal(extMap)
 			return payload, nil
 		},
 		hookstage.MutationUpdate,
-		"imp", "ext",
+		"ext",
 	)
 
-	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{
 		ChangeSet: changeSet,
 	}, nil
 }
@@ -266,9 +284,10 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 		return nil, err
 	}
 
-	// Extract unique segments
+	// Extract unique segments (exclude destination)
 	segmentMap := make(map[string]bool)
 	for _, data := range scope3Resp.Data {
+		// Extract actual segments from impression-level data
 		for _, imp := range data.Imp {
 			if imp.Ext != nil && imp.Ext.Scope3 != nil {
 				for _, segment := range imp.Ext.Scope3.Segments {
