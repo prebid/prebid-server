@@ -19,6 +19,8 @@ hooks:
         auth_key: ${SCOPE3_API_KEY}  # Set SCOPE3_API_KEY environment variable
         endpoint: https://rtdp.scope3.com/amazonaps/rtii
         timeout_ms: 1000
+        cache_ttl_seconds: 60   # Cache segments for 60 seconds (default)
+        bid_meta_data: false    # Set to true to include segments in bid.meta (future enhancement)
 
   host_execution_plan:
     endpoints:
@@ -29,19 +31,19 @@ hooks:
               - timeout: 5
                 hook_sequence:
                   - module_code: "scope3.rtd"
-                    hook_impl_code: "scope3-entrypoint"
+                    hook_impl_code: "HandleEntrypointHook"
           raw_auction_request:
             groups:
               - timeout: 2000
                 hook_sequence:
                   - module_code: "scope3.rtd"
-                    hook_impl_code: "scope3-fetch"
+                    hook_impl_code: "HandleRawAuctionHook"
           processed_auction_request:
             groups:
               - timeout: 5
                 hook_sequence:
                   - module_code: "scope3.rtd"
-                    hook_impl_code: "scope3-targeting"
+                    hook_impl_code: "HandleProcessedAuctionHook"
 ```
 
 ### JSON Configuration
@@ -68,13 +70,28 @@ hooks:
 ## Features
 - Fetches real-time audience segments from Scope3
 - Adds segments to bid request targeting data
-- Thread-safe segment storage during auction
-- Configurable timeout and endpoint
-- Graceful error handling (doesn't fail auctions on API errors)
-- Integration with LiveRamp ATS for enhanced targeting
+- Thread-safe segment caching to handle repeated requests
+- Configurable timeout, endpoint, and cache TTL
+- Graceful error handling (doesn't fail auctions on API errors)  
+- Integration with various user identity systems (LiveRamp, publisher IDs, etc.)
+- Efficient caching strategy for high-traffic scenarios
+
+## Performance & Caching
+This module implements intelligent caching to handle scenarios with hundreds of identical requests per user session:
+
+- **Cache Key**: Generated from user identifiers, site domain, and page URL
+- **Cache Duration**: Configurable via `cache_ttl_seconds` (default: 60 seconds)
+- **Thread Safety**: Uses read-write mutexes for concurrent access
+- **Memory Efficiency**: Stores only segment arrays, not full API responses
+- **Frequency Cap Compatibility**: Short 60-second default ensures frequency-capped segments are refreshed quickly
 
 ## Dependencies
-This module can work with LiveRamp ATS to enhance targeting with RampID data. If you're using LiveRamp ATS, ensure it runs before the Scope3 module in your execution plan to populate user identifiers.
+This module can integrate with various user identity systems. It automatically detects and forwards available user identifiers including:
+
+- LiveRamp identifiers (when available from other sources)
+- Publisher first-party user IDs
+- Device identifiers
+- Encrypted identity envelopes
 
 ### Integration with LiveRamp ATS
 When using both LiveRamp ATS and Scope3 RTD modules, configure execution order so LiveRamp runs first:
@@ -121,20 +138,53 @@ raw_auction_request:
 ## User Identifier Integration
 The module automatically detects and includes user identifiers when available in the bid request. This includes support for:
 
-### LiveRamp Integration Options
-1. **ATS Sidecar** (when LiveRamp module runs first):
+### Supported Identifier Types
+1. **LiveRamp Identifiers** (when available):
    - `user.ext.eids[]` array with `source: "liveramp.com"`
-   - `user.ext.rampid` field
+   - `user.ext.rampid` field (alternative location)
 
-2. **ATS Envelope** (when no sidecar is available):
-   - `user.ext.liveramp_idl` - Primary ATS envelope location
-   - `user.ext.ats_envelope` - Alternative envelope location
+2. **Encrypted Identity Envelopes**:
+   - `user.ext.liveramp_idl` - ATS envelope location
+   - `user.ext.ats_envelope` - Alternative envelope location  
+   - `user.ext.rampId_envelope` - Additional envelope location
    - `ext.liveramp_idl` - Request-level envelope
 
+3. **Standard Identifiers**:
+   - `user.id` - Publisher user ID
+   - `device.ifa` - Device identifier
+   - Other standard OpenRTB identifiers
+
 ### How It Works
-- **With Sidecar**: LiveRamp decrypts the envelope and populates RampID, which Scope3 receives as a resolved identifier
-- **Without Sidecar**: The encrypted ATS envelope is forwarded directly to Scope3 API, allowing Scope3 to decrypt it (if they're an authorized LiveRamp partner)
+The module forwards the complete bid request with all available user identifiers to the Scope3 API. Scope3's system can then utilize whatever identifiers are available for audience segmentation, whether they are resolved identifiers or encrypted envelopes that Scope3 may be able to process.
 
-The complete bid request with all available user identifiers or encrypted envelopes is sent to the Scope3 API for enhanced audience segmentation.
+**Note**: The effectiveness of different identifier types depends on Scope3's integration capabilities and partnerships.
 
-**Note**: For ATS envelope decryption, Scope3 must be an authorized LiveRamp partner with the appropriate decryption keys.
+## Data Output & Integration
+
+### Targeting Data Approach
+The module adds audience segments as targeting data in the bid request, making them available to:
+
+1. **Google Ad Manager (GAM)**: Segments appear as `hb_scope3_segments` targeting key
+2. **Bidders**: Segments are available in the request context for bid decisioning
+3. **Analytics**: Targeting data is logged for reporting purposes
+
+### Targeting vs Bid.Meta
+This implementation uses **targeting data** rather than **bid.meta** for the following reasons:
+
+- **RTD Module Pattern**: Prebid Server RTD modules typically operate on requests, not responses
+- **Universal Availability**: Targeting data is available to all bidders and ad servers
+- **Performance**: No need to process individual bid responses
+- **Flexibility**: Publishers can choose where to send the targeting data
+
+The current hook architecture processes auction requests rather than individual bid responses, making targeting data the appropriate integration method for RTD modules.
+
+### Example Targeting Output
+```json
+{
+  "ext": {
+    "targeting": {
+      "hb_scope3_segments": "gmp_eligible,gmp_plus_eligible"
+    }
+  }
+}
+```
