@@ -85,7 +85,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		smartRequest.Site.Publisher.ID = strconv.Itoa(smartadserverExt.NetworkID)
 	}
 
-	// we only create the request if it has at least one correctly formatted impressions
+	// Only create the request if it has at least one correctly formatted impression
 	if len(imps) != 0 {
 		smartRequest.Imp = imps
 
