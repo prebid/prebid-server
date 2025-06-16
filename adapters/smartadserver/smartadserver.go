@@ -61,7 +61,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 
 	var imps []openrtb2.Imp
 
-	// Check impressions one by one and filter out the ones that does not the bidder extensions
+	// Filter out impressions that do not have the proper bidder extensions
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
