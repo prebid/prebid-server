@@ -48,7 +48,6 @@
                 },
                 "schema": {
                   "type": "array",
-                  "minItems": 1,
                   "items": {
                     "type": "object",
                     "properties": {
@@ -82,7 +81,6 @@
                 },
                 "rules": {
                   "type": "array",
-                  "minItems": 1,
                   "items": {
                     "type": "object",
                     "properties": {
@@ -95,7 +93,6 @@
                       },
                       "results": {
                         "type": "array",
-                        "minItems": 1,
                         "items": {
                           "type": "object",
                           "properties": {
@@ -114,8 +111,7 @@
                     "required": ["conditions", "results"]
                   }
                 }
-              },
-              "required": ["schema", "rules"]
+              }
             }
           }
         },
