@@ -711,6 +711,17 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
 			connWaitTime := time.Since(connStart)
+			if info.Reused {
+				// If the connection was reused, this is the time we waited in the pool
+				if connWaitTime > bidder.config.ThrottleConfig.longQueueWaitThreshold {
+					bidder.logHealthCheck(false) // Mark as unhealthy if wait was too long
+				} else if connWaitTime < bidder.config.ThrottleConfig.shortQueueWaitThreshold {
+					bidder.logHealthCheck(true) // Mark as healthy if wait was short
+					// Note if there is a short wait time for the pool, but the auction times out,
+					// we would mark the bidder as healthy once and unhealthy once, pushing the
+					// health to 0.5
+				}
+			}
 
 			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
 		},
