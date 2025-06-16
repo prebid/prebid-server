@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "exco-video-test",
+    "id": "site-single-imp-video",
     "site": {
       "page": "example.com",
       "publisher": {
@@ -9,7 +9,7 @@
     },
     "imp": [
       {
-        "id": "imp-video-1",
+        "id": "site-single-imp-video_imp",
         "video": {
           "mimes": ["video/mp4", "video/webm"],
           "w": 640,
@@ -34,7 +34,7 @@
       "expectedRequest": {
         "uri": "https://testjsonsample.com",
         "body": {
-          "id": "exco-video-test",
+          "id": "site-single-imp-video",
           "site": {
             "page": "example.com",
             "publisher": {
@@ -42,7 +42,7 @@
             }
           },
           "imp": [{
-            "id": "imp-video-1",
+            "id": "site-single-imp-video_imp",
             "video": {
               "mimes": ["video/mp4", "video/webm"],
               "w": 640,
@@ -63,21 +63,21 @@
         },
         "headers": {
           "Content-Type": [
-            "application/json;charset=utf-8"
+            "application/jsonutil;charset=utf-8"
           ]
         },
-        "impIDs": ["imp-video-1"]
+        "impIDs": ["site-single-imp-video_imp"]
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "exco-video-test",
+          "id": "site-single-imp-video",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "12345_exco-video-test_1",
-                  "impid": "imp-video-1",
+                  "id": "site-single-imp-video_imp",
+                  "impid": "site-single-imp-video_imp",
                   "price": 2.5,
                   "adid": "9999",
                   "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='3.0'></VAST>",
@@ -89,7 +89,7 @@
               "seat": "exco"
             }
           ],
-          "bidid": "exco-video-test",
+          "bidid": "site-single-imp-video",
           "cur": "USD"
         }
       }
@@ -102,8 +102,8 @@
       "bids": [
         {
           "bid": {
-            "id": "12345_exco-video-test_1",
-            "impid": "imp-video-1",
+            "id": "site-single-imp-video_imp",
+            "impid": "site-single-imp-video_imp",
             "price": 2.5,
             "adid": "9999",
             "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='3.0'></VAST>",

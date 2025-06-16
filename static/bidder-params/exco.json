@@ -6,14 +6,17 @@
   "properties": {
     "accountId": {
       "type": "string",
+      "minLength": 1,
       "description": "A unique account identifier provided by EX.CO."
     },
     "publisherId": {
       "type": "string",
+      "minLength": 1,
       "description": "Publisher ID provided by EX.CO."
     },
     "tagId": {
       "type": "string",
+      "minLength": 1,
       "description": "A unique Tag ID (supply id) identifier provided by EX.CO."
     }
   },

@@ -9,7 +9,7 @@
     },
     "imp": [
       {
-        "id": "imp-1",
+        "id": "204-bid-response_imp",
         "video": {
           "mimes": ["video/mp4"],
           "w": 300,
@@ -39,7 +39,7 @@
             }
           },
           "imp": [{
-            "id": "imp-1",
+            "id": "204-bid-response_imp",
             "video": {
               "mimes": ["video/mp4"],
               "w": 300,
@@ -57,10 +57,10 @@
         },
         "headers": {
           "Content-Type": [
-            "application/json;charset=utf-8"
+            "application/jsonutil;charset=utf-8"
           ]
         },
-        "impIDs":["imp-1"]
+        "impIDs": ["204-bid-response_imp"]
       },
       "mockResponse": {
         "status": 204,

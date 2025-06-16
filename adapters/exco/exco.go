@@ -1,7 +1,6 @@
 package exco
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -39,19 +39,19 @@ func (a *adapter) MakeRequests(
 	}
 
 	// Create the request to the Exco endpoint
-	reqJSON, err := json.Marshal(adjustedReq)
+	reqjsonutil, err := jsonutil.Marshal(adjustedReq)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
 
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Content-Type", "application/jsonutil;charset=utf-8")
 
 	reqData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
-		Body:    reqJSON,
+		Body:    reqjsonutil,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
@@ -73,7 +73,7 @@ func (a *adapter) MakeBids(
 	}
 
 	var bidResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResponse); err != nil {
 		return nil, []error{err}
 	}
 
@@ -116,18 +116,16 @@ func adjustRequest(
 ) (*openrtb2.BidRequest, error) {
 	var publisherId string
 
-	for i := range request.Imp {
-		imp := &request.Imp[i]
-
+	for i := 0; i < len(request.Imp); i++ {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
 			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Information: %s", i, err.Error()),
 			}
 		}
 
 		var impExt openrtb_ext.ImpExtExco
-		if err := json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, err.Error()),
 			}
@@ -145,21 +143,39 @@ func adjustRequest(
 			}
 		}
 
+		if impExt.AccountId == "" {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, "Missing accountId"),
+			}
+		}
+
 		publisherId = impExt.PublisherId
-		imp.TagID = impExt.TagId
+		request.Imp[i].TagID = impExt.TagId
 	}
 
 	if request.App != nil {
+		appCopy := *request.App
+		request.App = &appCopy
+
 		if request.App.Publisher == nil {
 			request.App.Publisher = &openrtb2.Publisher{}
+		} else {
+			publisherCopy := *request.App.Publisher
+			request.App.Publisher = &publisherCopy
 		}
 
 		request.App.Publisher.ID = publisherId
 	}
 
 	if request.Site != nil {
+		siteCopy := *request.Site
+		request.Site = &siteCopy
+
 		if request.Site.Publisher == nil {
 			request.Site.Publisher = &openrtb2.Publisher{}
+		} else {
+			publisherCopy := *request.Site.Publisher
+			request.Site.Publisher = &publisherCopy
 		}
 
 		request.Site.Publisher.ID = publisherId

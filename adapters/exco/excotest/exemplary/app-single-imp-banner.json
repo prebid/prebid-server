@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "exco-banner-test",
+    "id": "app-single-imp-banner",
     "app": {
       "publisher": {
         "id": "exco-publisherId"
@@ -8,7 +8,7 @@
     },
     "imp": [
       {
-        "id": "imp-banner-1",
+        "id": "app-single-imp-banner_imp",
         "banner": {
           "format": [
             { "w": 300, "h": 250 },
@@ -31,7 +31,7 @@
       "expectedRequest": {
         "uri": "https://testjsonsample.com",
         "body": {
-          "id": "exco-banner-test",
+          "id": "app-single-imp-banner",
           "app": {
             "publisher": {
               "id": "exco-publisherId"
@@ -39,7 +39,7 @@
           },
           "imp": [
             {
-              "id": "imp-banner-1",
+              "id": "app-single-imp-banner_imp",
               "banner": {
                 "format": [
                   { "w": 300, "h": 250 },
@@ -59,21 +59,21 @@
         },
         "headers": {
           "Content-Type": [
-            "application/json;charset=utf-8"
+            "application/jsonutil;charset=utf-8"
           ]
         },
-        "impIDs": ["imp-banner-1"]
+        "impIDs": ["app-single-imp-banner_imp"]
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "exco-banner-test",
+          "id": "app-single-imp-banner",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "12345_exco-banner-test_1",
-                  "impid": "imp-banner-1",
+                  "id": "app-single-imp-banner",
+                  "impid": "app-single-imp-banner_imp",
                   "price": 1.5,
                   "adid": "8888",
                   "adm": "<html><body><div>Banner Ad</div></body></html>",
@@ -85,7 +85,7 @@
               "seat": "exco"
             }
           ],
-          "bidid": "exco-banner-test",
+          "bidid": "app-single-imp-banner",
           "cur": "USD"
         }
       }
@@ -98,8 +98,8 @@
       "bids": [
         {
           "bid": {
-            "id": "12345_exco-banner-test_1",
-            "impid": "imp-banner-1",
+            "id": "app-single-imp-banner",
+            "impid": "app-single-imp-banner_imp",
             "price": 1.5,
             "adid": "8888",
             "adm": "<html><body><div>Banner Ad</div></body></html>",
