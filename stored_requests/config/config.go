@@ -166,7 +166,7 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 	}
 	if cfg.HTTP.Endpoint != "" {
 		glog.Infof("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType(), cfg.HTTP.Endpoint)
-		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint))
+		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint, cfg.HTTP.UseRfcCompliantBuilder))
 	}
 
 	fetcher = consolidate(cfg.DataType(), idList)
