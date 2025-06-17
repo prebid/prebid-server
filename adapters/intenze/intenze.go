@@ -1,4 +1,4 @@
-package gothamads
+package intenze
 
 import (
 	"encoding/json"
@@ -81,24 +81,24 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *ada
 	}}, nil
 }
 
-func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtGothamAds, error) {
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtIntenze, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	var gothamadsExt openrtb_ext.ExtGothamAds
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &gothamadsExt); err != nil {
+	var intenzeExt openrtb_ext.ExtIntenze
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &intenzeExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	return &gothamadsExt, nil
+	return &intenzeExt, nil
 }
 
-func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtGothamAds) (string, error) {
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtIntenze) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
