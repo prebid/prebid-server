@@ -1,0 +1,21 @@
+endpoint: "http://rtb.adipolo.live?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+maintainer:
+  email: "smart@adipolo.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  iframe:
+    url: "https://sync.pmbmonetize.live/static/adisync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    userMacro: $UID
+  redirect:
+    url: "https://sync.pmbmonetize.live/psync?t=s&e=0&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    userMacro: "$UID"
