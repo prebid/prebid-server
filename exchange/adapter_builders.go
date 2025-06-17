@@ -3,6 +3,7 @@ package exchange
 import (
 	"github.com/prebid/prebid-server/v3/adapters"
 	ttx "github.com/prebid/prebid-server/v3/adapters/33across"
+	playvid360 "github.com/prebid/prebid-server/v3/adapters/360playvid"
 	"github.com/prebid/prebid-server/v3/adapters/aax"
 	"github.com/prebid/prebid-server/v3/adapters/aceex"
 	"github.com/prebid/prebid-server/v3/adapters/acuityads"
@@ -256,6 +257,7 @@ import (
 func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
 		openrtb_ext.Bidder33Across:          ttx.Builder,
+		openrtb_ext.Bidder360PlayVid:        playvid360.Builder,
 		openrtb_ext.BidderAax:               aax.Builder,
 		openrtb_ext.BidderAceex:             aceex.Builder,
 		openrtb_ext.BidderAcuityAds:         acuityads.Builder,
