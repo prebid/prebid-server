@@ -73,7 +73,7 @@ func TestGetGDPR(t *testing.T) {
 					Regs: tt.giveRegs,
 				},
 			}
-			result, err := getGDPR(&req)
+			result, err := GetGDPR(&req)
 			assert.Equal(t, tt.wantGDPR, result)
 
 			if tt.wantError {
@@ -136,7 +136,7 @@ func TestGetConsent(t *testing.T) {
 				},
 			}
 
-			result, err := getConsent(&req, tt.giveGPP)
+			result, err := GetConsent(&req, tt.giveGPP)
 			assert.Equal(t, tt.wantConsent, result, tt.description)
 
 			if tt.wantError {
@@ -201,7 +201,7 @@ func TestSelectEEACountries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			result := selectEEACountries(tt.hostEEACountries, tt.accountEEACountries)
+			result := SelectEEACountries(tt.hostEEACountries, tt.accountEEACountries)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
