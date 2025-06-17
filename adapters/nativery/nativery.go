@@ -128,7 +128,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}
 
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("No Content"),
+			Message: "No Content",
 		}}
 	}
 
