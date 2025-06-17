@@ -116,13 +116,14 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 		return uuidsToReturn, errs
 	}
 	defer anResp.Body.Close()
-	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
 	responseBody, err := io.ReadAll(anResp.Body)
-	if anResp.StatusCode != 200 {
+	if anResp.StatusCode != 200 || err != nil {
+		c.metrics.RecordPrebidCacheRequestTime(false, elapsedTime)
 		logError(&errs, "Prebid Cache call to %s returned %d: %s", c.putUrl, anResp.StatusCode, responseBody)
 		return uuidsToReturn, errs
 	}
+	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
 	currentIndex := 0
 	processResponse := func(uuidObj []byte, _ jsonparser.ValueType, _ int, err error) {
