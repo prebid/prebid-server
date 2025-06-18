@@ -25,17 +25,17 @@ var baseHeaders = http.Header{
 	"X-OpenRTB-Version": []string{openRTBVersion},
 }
 
-type Adapter struct {
+type adapter struct {
 	endpoint string
 }
 
 func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
-	return &Adapter{
+	return &adapter{
 		endpoint: cfg.Endpoint,
 	}, nil
 }
 
-func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	_ = reqInfo
 	
 	if len(request.Imp) != 1 {
@@ -124,7 +124,7 @@ func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return reqs, errs
 }
 
-func (a *Adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
