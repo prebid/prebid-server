@@ -1,0 +1,34 @@
+{
+  "currency": "USD",
+  "bids": [
+    {
+      "bid": {
+        "id": "test-banner-bid-id",
+        "impid": "test-imp-banner-id",
+        "price": 2.25,
+        "adm": "<div>test banner ad</div>",
+        "crid": "test-banner-creative-id",
+        "w": 300,
+        "h": 250,
+        "adomain": ["example.com"]
+      },
+      "type": "banner",
+      "seat": "resetdigital"
+    },
+    {
+      "bid": {
+        "id": "test-video-bid-id",
+        "impid": "test-imp-video-id",
+        "price": 4.50,
+        "adm": "<VAST version=\"3.0\"><Ad id=\"123\"></Ad></VAST>",
+        "crid": "test-video-creative-id",
+        "w": 640,
+        "h": 480,
+        "adomain": ["example.com"],
+        "mtype": 2
+      },
+      "type": "video",
+      "seat": "resetdigital"
+    }
+  ]
+}

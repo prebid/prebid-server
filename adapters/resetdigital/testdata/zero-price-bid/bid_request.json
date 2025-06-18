@@ -1,0 +1,25 @@
+{
+  "id": "test-zero-price-request-id",
+  "imp": [
+    {
+      "id": "test-zero-price-imp-id",
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          }
+        ]
+      },
+      "ext": {
+        "bidder": {
+          "placement_id": "test-zero-price-placement"
+        }
+      }
+    }
+  ],
+  "site": {
+    "page": "https://example.com/zero-price",
+    "domain": "example.com"
+  }
+}
