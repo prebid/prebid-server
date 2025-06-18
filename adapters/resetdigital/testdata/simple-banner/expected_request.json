@@ -1,0 +1,40 @@
+{
+  "uri": "https://example.com?pid=test-placement",
+  "body": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "tagid": "test-placement",
+        "ext": {
+          "bidder": {
+            "placement_id": "test-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com"
+    }
+  },
+  "headers": {
+    "Content-Type": [
+      "application/json"
+    ],
+    "Accept": [
+      "application/json"
+    ],
+    "X-OpenRTB-Version": [
+      "2.6"
+    ]
+  }
+}
