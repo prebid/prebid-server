@@ -77,13 +77,14 @@ hooks:
 - Efficient caching strategy for high-traffic scenarios
 
 ## Performance & Caching
-This module implements intelligent caching to handle scenarios with hundreds of identical requests per user session:
+This module implements intelligent caching and HTTP optimizations to handle high-frequency API requests:
 
 - **Cache Key**: Generated from user identifiers, site domain, and page URL
 - **Cache Duration**: Configurable via `cache_ttl_seconds` (default: 60 seconds)
 - **Thread Safety**: Uses read-write mutexes for concurrent access
 - **Memory Efficiency**: Stores only segment arrays, not full API responses
 - **Frequency Cap Compatibility**: Short 60-second default ensures frequency-capped segments are refreshed quickly
+- **HTTP Optimization**: Custom transport with connection pooling, HTTP/2, and compression for better performance
 
 ## User Identity Integration
 This module automatically detects and forwards available user identifiers from the bid request including:

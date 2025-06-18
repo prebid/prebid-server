@@ -36,10 +36,22 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 		cfg.CacheTTL = 60 // 60 seconds default
 	}
 
+	// Create HTTP client with optimized transport for high-frequency API calls
+	transport := &http.Transport{
+		MaxIdleConns:        100,              // Allow more idle connections for connection reuse
+		MaxIdleConnsPerHost: 10,               // Allow multiple connections per host
+		IdleConnTimeout:     90 * time.Second, // Keep connections alive longer
+		DisableCompression:  false,            // Enable compression to reduce bandwidth
+		ForceAttemptHTTP2:   true,             // Use HTTP/2 when possible for better performance
+	}
+
 	return &Module{
-		cfg:        cfg,
-		httpClient: &http.Client{Timeout: time.Duration(cfg.Timeout) * time.Millisecond},
-		cache:      &segmentCache{data: make(map[string]cacheEntry)},
+		cfg: cfg,
+		httpClient: &http.Client{
+			Timeout:   time.Duration(cfg.Timeout) * time.Millisecond,
+			Transport: transport,
+		},
+		cache: &segmentCache{data: make(map[string]cacheEntry)},
 	}, nil
 }
 
