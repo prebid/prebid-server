@@ -97,6 +97,34 @@ func TestBuilderDefaults(t *testing.T) {
 	assert.Equal(t, false, m.cfg.AddToTargeting)
 }
 
+func TestHTTPTransportOptimization(t *testing.T) {
+	config := json.RawMessage(`{
+		"enabled": true,
+		"auth_key": "test-key",
+		"timeout_ms": 2000
+	}`)
+
+	deps := moduledeps.ModuleDeps{}
+	module, err := Builder(config, deps)
+
+	assert.NoError(t, err)
+	m := module.(*Module)
+	
+	// Verify HTTP client configuration
+	assert.NotNil(t, m.httpClient)
+	assert.Equal(t, 2000*time.Millisecond, m.httpClient.Timeout)
+	
+	// Verify transport is configured for high-frequency requests
+	transport, ok := m.httpClient.Transport.(*http.Transport)
+	require.True(t, ok, "Expected custom HTTP transport")
+	
+	assert.Equal(t, 100, transport.MaxIdleConns)
+	assert.Equal(t, 10, transport.MaxIdleConnsPerHost)
+	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
+	assert.Equal(t, false, transport.DisableCompression)
+	assert.Equal(t, true, transport.ForceAttemptHTTP2)
+}
+
 func TestCacheOperations(t *testing.T) {
 	cache := &segmentCache{data: make(map[string]cacheEntry)}
 
