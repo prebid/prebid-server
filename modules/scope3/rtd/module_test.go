@@ -109,15 +109,15 @@ func TestHTTPTransportOptimization(t *testing.T) {
 
 	assert.NoError(t, err)
 	m := module.(*Module)
-	
+
 	// Verify HTTP client configuration
 	assert.NotNil(t, m.httpClient)
 	assert.Equal(t, 2000*time.Millisecond, m.httpClient.Timeout)
-	
+
 	// Verify transport is configured for high-frequency requests
 	transport, ok := m.httpClient.Transport.(*http.Transport)
 	require.True(t, ok, "Expected custom HTTP transport")
-	
+
 	assert.Equal(t, 100, transport.MaxIdleConns)
 	assert.Equal(t, 10, transport.MaxIdleConnsPerHost)
 	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
