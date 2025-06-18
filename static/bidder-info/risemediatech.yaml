@@ -1,0 +1,14 @@
+enabled: true
+endpoint: http://localhost:8082/ads/rtb/prebid/server
+endpointCompression: gzip
+maintainer:
+  email: prebid@risemediatech.io
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

@@ -1,0 +1,25 @@
+{
+  "title": "RiseMediaTech",
+  "description": "Prebid Server adapter for RiseMediaTech",
+  "type": "object",
+  "properties": {
+    "bidfloor": {
+      "type": "number",
+      "description": "Bid Floor Price"
+    },
+    "mimes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "minduration": { "type": "integer" },
+    "maxduration": { "type": "integer" },
+    "startdelay": { "type": "integer" },
+    "maxseq": { "type": "integer" },
+    "poddur": { "type": "integer" },
+    "protocols": {
+      "type": "array",
+      "items": { "type": "integer" }
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,59 @@
+{
+  "mockRequest": {
+    "id": "test-request",
+    "imp": [{
+      "id": "imp-1",
+      "video": {
+        "w": 640,
+        "h": 480
+      },
+      "ext": {
+        "bidder": {
+          "bidfloor": 1.5,
+          "mimes": ["video/mp4"],
+          "minduration": 5,
+          "maxduration": 30,
+          "startdelay": 0,
+          "maxseq": 1,
+          "poddur": 60,
+          "protocols": [2, 3]
+        }
+      }
+    }]
+  },
+  "expectedRequest": {
+    "uri": "https://example-bidder-endpoint.com/bid",
+    "method": "POST"
+  },
+  "mockResponse": {
+    "id": "test-request",
+    "seatbid": [{
+      "bid": [{
+        "id": "bid-1",
+        "impid": "imp-1",
+        "price": 2.0,
+        "adm": "<vast xml>",
+        "crid": "creative-1",
+        "w": 640,
+        "h": 480,
+        "mtype": 2
+      }]
+    }],
+    "cur": "USD"
+  },
+  "expectedResponse": {
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "bid-1",
+        "impid": "imp-1",
+        "price": 2.0,
+        "adm": "<vast xml>",
+        "crid": "creative-1",
+        "w": 640,
+        "h": 480
+      },
+      "type": "video"
+    }]
+  }
+}
