@@ -1,0 +1,21 @@
+{
+  "id": "test-zero-price-request-id",
+  "seatbid": [
+    {
+      "bid": [
+        {
+          "id": "test-zero-price-bid-id",
+          "impid": "test-zero-price-imp-id",
+          "price": 0.0,
+          "adm": "<div>test zero price ad</div>",
+          "crid": "test-zero-price-creative-id",
+          "w": 300,
+          "h": 250,
+          "adomain": ["example.com"]
+        }
+      ],
+      "seat": "resetdigital"
+    }
+  ],
+  "cur": "USD"
+}

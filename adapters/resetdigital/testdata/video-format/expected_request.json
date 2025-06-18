@@ -1,0 +1,40 @@
+{
+  "uri": "https://example.com?pid=test-video-placement",
+  "body": {
+    "id": "test-video-request-id",
+    "imp": [
+      {
+        "id": "test-video-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 3, 5, 6],
+          "w": 640,
+          "h": 480,
+          "linearity": 1,
+          "maxduration": 30
+        },
+        "tagid": "test-video-placement",
+        "ext": {
+          "bidder": {
+            "placement_id": "test-video-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/video",
+      "domain": "example.com"
+    }
+  },
+  "headers": {
+    "Content-Type": [
+      "application/json"
+    ],
+    "Accept": [
+      "application/json"
+    ],
+    "X-OpenRTB-Version": [
+      "2.6"
+    ]
+  }
+}
