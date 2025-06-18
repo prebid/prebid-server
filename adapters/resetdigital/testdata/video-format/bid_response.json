@@ -1,0 +1,22 @@
+{
+  "id": "test-video-request-id",
+  "seatbid": [
+    {
+      "bid": [
+        {
+          "id": "test-video-bid-id",
+          "impid": "test-video-imp-id",
+          "price": 5.01,
+          "adm": "<VAST version=\"3.0\"><Ad id=\"123\"></Ad></VAST>",
+          "crid": "test-video-creative-id",
+          "w": 640,
+          "h": 480,
+          "adomain": ["example.com"],
+          "mtype": 2
+        }
+      ],
+      "seat": "resetdigital"
+    }
+  ],
+  "cur": "USD"
+}
