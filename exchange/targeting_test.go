@@ -650,23 +650,23 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
-							"prefix_bidder_appnexus": "appnexus",
+							"prefix_bidder_appnex": "appnexus",
 							"prefix_pb_appnexus":     "1.20",
-							"prefix_cache_id_appnex": "55555",
-							"prefix_cache_host_appn": "cache.prebid.com",
-							"prefix_cache_path_appn": "cache",
+							"prefix_cache_id_appn": "55555",
+							"prefix_cache_host_ap": "cache.prebid.com",
+							"prefix_cache_path_ap": "cache",
 						},
 					},
 				},
 				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
-							"prefix_bidder_rubicon":  "rubicon",
+							"prefix_bidder_rubico":  "rubicon",
 							"prefix_pb_rubicon":      "1.10",
-							"prefix_cache_id_rubico": "cacheme",
+							"prefix_cache_id_rubi": "cacheme",
 							"prefix_deal_rubicon":    "mydeal",
-							"prefix_cache_host_rubi": "cache.prebid.com",
-							"prefix_cache_path_rubi": "cache",
+							"prefix_cache_host_ru": "cache.prebid.com",
+							"prefix_cache_path_ru": "cache",
 						},
 					},
 				},
