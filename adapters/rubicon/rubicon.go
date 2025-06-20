@@ -1081,12 +1081,8 @@ func updateBidExtWithMeta(bid rubiconBid, buyer int, seat string) json.RawMessag
 	if bidExt != nil {
 		if bidExt.Prebid != nil {
 			if bidExt.Prebid.Meta != nil {
-				if buyer > 0 {
-					bidExt.Prebid.Meta.NetworkID = buyer
-				}
-				if seat != "" {
-					bidExt.Prebid.Meta.Seat = seat
-				}
+				bidExt.Prebid.Meta.NetworkID = buyer
+				bidExt.Prebid.Meta.Seat = seat
 			} else {
 				bidExt.Prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat}
 			}
