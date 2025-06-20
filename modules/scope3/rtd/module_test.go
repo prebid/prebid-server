@@ -91,7 +91,7 @@ func TestBuilderDefaults(t *testing.T) {
 
 	assert.NoError(t, err)
 	m := module.(*Module)
-	assert.Equal(t, "https://rtdp.scope3.com/amazonaps/rtii", m.cfg.Endpoint)
+	assert.Equal(t, "https://rtdp.scope3.com/prebid/rtii", m.cfg.Endpoint)
 	assert.Equal(t, 1000, m.cfg.Timeout)
 	assert.Equal(t, 60, m.cfg.CacheTTL)
 	assert.Equal(t, false, m.cfg.AddToTargeting)
