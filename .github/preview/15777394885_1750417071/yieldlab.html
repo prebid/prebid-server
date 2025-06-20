@@ -1,0 +1,730 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>yieldlab: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/yieldlab/types.go (0.0%)</option>
+				
+				<option value="file1">github.com/prebid/prebid-server/v3/adapters/yieldlab/yieldlab.go (93.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package yieldlab
+
+import (
+        "strconv"
+        "time"
+
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+)
+
+type bidResponse struct {
+        ID         uint64       `json:"id"`
+        Price      uint         `json:"price"`
+        Advertiser string       `json:"advertiser"`
+        Adsize     string       `json:"adsize"`
+        Pid        uint64       `json:"pid"`
+        Did        uint64       `json:"did"`
+        Pvid       string       `json:"pvid"`
+        DSA        *dsaResponse `json:"dsa,omitempty"`
+}
+
+// dsaResponse defines Digital Service Act (DSA) parameters from Yieldlab yieldprobe response.
+type dsaResponse struct {
+        Behalf       string            `json:"behalf,omitempty"`
+        Paid         string            `json:"paid,omitempty"`
+        Adrender     *int              `json:"adrender,omitempty"`
+        Transparency []dsaTransparency `json:"transparency,omitempty"`
+}
+
+// openRTBExtRegsWithDSA defines the contract for bidrequest.regs.ext with the missing DSA property.
+//
+// The openrtb_ext.ExtRegs needs to be extended on yieldlab adapter level until DSA has been implemented
+// by the prebid server team (https://github.com/prebid/prebid-server/issues/3424).
+type openRTBExtRegsWithDSA struct {
+        openrtb_ext.ExtRegs
+        DSA *dsaRequest `json:"dsa,omitempty"`
+}
+
+// responseExtWithDSA defines seatbid.bid.ext with the DSA object.
+type responseExtWithDSA struct {
+        DSA dsaResponse `json:"dsa"`
+}
+
+// dsaRequest defines Digital Service Act (DSA) parameter
+// as specified by the OpenRTB 2.X DSA Transparency community extension.
+//
+// Should rather come from openrtb_ext package but will be defined here until DSA has been
+// implemented by the prebid server team (https://github.com/prebid/prebid-server/issues/3424).
+type dsaRequest struct {
+        Required     *int              `json:"dsarequired"`
+        PubRender    *int              `json:"pubrender"`
+        DataToPub    *int              `json:"datatopub"`
+        Transparency []dsaTransparency `json:"transparency"`
+}
+
+// dsaTransparency Digital Service Act (DSA) transparency object
+type dsaTransparency struct {
+        Domain string `json:"domain,omitempty"`
+        Params []int  `json:"dsaparams,omitempty"`
+}
+
+type cacheBuster func() string
+
+type weekGenerator func() string
+
+var defaultCacheBuster cacheBuster = func() string <span class="cov0" title="0">{
+        return strconv.FormatInt(time.Now().Unix(), 10)
+}</span>
+
+var defaultWeekGenerator weekGenerator = func() string <span class="cov0" title="0">{
+        _, week := time.Now().ISOWeek()
+        return strconv.Itoa(week)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package yieldlab
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "path"
+        "strconv"
+        "strings"
+
+        "golang.org/x/text/currency"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+        "github.com/prebid/prebid-server/v3/util/ptrutil"
+)
+
+// YieldlabAdapter connects the Yieldlab API to prebid server
+type YieldlabAdapter struct {
+        endpoint    string
+        cacheBuster cacheBuster
+        getWeek     weekGenerator
+}
+
+// Builder builds a new instance of the Yieldlab adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;YieldlabAdapter{
+                endpoint:    config.Endpoint,
+                cacheBuster: defaultCacheBuster,
+                getWeek:     defaultWeekGenerator,
+        }
+        return bidder, nil
+}</span>
+
+// makeEndpointURL builds endpoint url based on adapter-specific pub settings from imp.ext
+func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *openrtb_ext.ExtImpYieldlab) (string, error) <span class="cov8" title="1">{
+        uri, err := url.Parse(a.endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("failed to parse yieldlab endpoint: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">uri.Path = path.Join(uri.Path, params.AdslotID)
+        q := uri.Query()
+        q.Set("content", "json")
+        q.Set("pvid", "true")
+        q.Set("ts", a.cacheBuster())
+        q.Set("t", a.makeTargetingValues(params))
+
+        if hasFormats, formats := a.makeFormats(req); hasFormats </span><span class="cov8" title="1">{
+                q.Set("sizes", formats)
+        }</span>
+
+        <span class="cov8" title="1">if req.User != nil &amp;&amp; req.User.BuyerUID != "" </span><span class="cov8" title="1">{
+                q.Set("ids", "ylid:"+req.User.BuyerUID)
+        }</span>
+
+        <span class="cov8" title="1">if req.Device != nil </span><span class="cov8" title="1">{
+                q.Set("yl_rtb_ifa", req.Device.IFA)
+                q.Set("yl_rtb_devicetype", fmt.Sprintf("%v", req.Device.DeviceType))
+
+                if req.Device.ConnectionType != nil </span><span class="cov8" title="1">{
+                        q.Set("yl_rtb_connectiontype", fmt.Sprintf("%v", req.Device.ConnectionType.Val()))
+                }</span>
+
+                <span class="cov8" title="1">if req.Device.Geo != nil </span><span class="cov8" title="1">{
+                        q.Set("lat", fmt.Sprintf("%v", ptrutil.ValueOrDefault(req.Device.Geo.Lat)))
+                        q.Set("lon", fmt.Sprintf("%v", ptrutil.ValueOrDefault(req.Device.Geo.Lon)))
+                }</span>
+        }
+
+        <span class="cov8" title="1">if req.App != nil </span><span class="cov8" title="1">{
+                q.Set("pubappname", req.App.Name)
+                q.Set("pubbundlename", req.App.Bundle)
+        }</span>
+
+        <span class="cov8" title="1">gdpr, consent, err := a.getGDPR(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov8" title="1">if gdpr != "" </span><span class="cov8" title="1">{
+                q.Set("gdpr", gdpr)
+        }</span>
+        <span class="cov8" title="1">if consent != "" </span><span class="cov8" title="1">{
+                q.Set("gdpr_consent", consent)
+        }</span>
+
+        <span class="cov8" title="1">if req.Source != nil &amp;&amp; req.Source.Ext != nil </span><span class="cov8" title="1">{
+                if openRtbSchain := unmarshalSupplyChain(req); openRtbSchain != nil </span><span class="cov8" title="1">{
+                        if schainValue := makeSupplyChain(*openRtbSchain); schainValue != "" </span><span class="cov8" title="1">{
+                                q.Set("schain", schainValue)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">dsa, err := getDSA(req)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", err
+        }</span>
+        <span class="cov8" title="1">if dsa != nil </span><span class="cov8" title="1">{
+                if dsa.Required != nil </span><span class="cov8" title="1">{
+                        q.Set("dsarequired", strconv.Itoa(*dsa.Required))
+                }</span>
+                <span class="cov8" title="1">if dsa.PubRender != nil </span><span class="cov8" title="1">{
+                        q.Set("dsapubrender", strconv.Itoa(*dsa.PubRender))
+                }</span>
+                <span class="cov8" title="1">if dsa.DataToPub != nil </span><span class="cov8" title="1">{
+                        q.Set("dsadatatopub", strconv.Itoa(*dsa.DataToPub))
+                }</span>
+                <span class="cov8" title="1">if len(dsa.Transparency) != 0 </span><span class="cov8" title="1">{
+                        transparencyParam := makeDSATransparencyURLParam(dsa.Transparency)
+                        if len(transparencyParam) != 0 </span><span class="cov8" title="1">{
+                                q.Set("dsatransparency", transparencyParam)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">uri.RawQuery = q.Encode()
+
+        return uri.String(), nil</span>
+}
+
+// getDSA extracts the Digital Service Act (DSA) properties from the request.
+func getDSA(req *openrtb2.BidRequest) (*dsaRequest, error) <span class="cov8" title="1">{
+        if req.Regs == nil || req.Regs.Ext == nil </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">var extRegs openRTBExtRegsWithDSA
+        err := jsonutil.Unmarshal(req.Regs.Ext, &amp;extRegs)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to parse Regs.Ext object from Yieldlab response: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return extRegs.DSA, nil</span>
+}
+
+// makeDSATransparencyURLParam creates the transparency url parameter
+// as specified by the OpenRTB 2.X DSA Transparency community extension.
+//
+// Example result: platform1domain.com~1~~SSP2domain.com~1_2
+func makeDSATransparencyURLParam(transparencyObjects []dsaTransparency) string <span class="cov8" title="1">{
+        valueSeparator, itemSeparator, objectSeparator := "_", "~", "~~"
+
+        var b strings.Builder
+
+        concatParams := func(params []int) </span><span class="cov8" title="1">{
+                b.WriteString(strconv.Itoa(params[0]))
+                for _, param := range params[1:] </span><span class="cov8" title="1">{
+                        b.WriteString(valueSeparator)
+                        b.WriteString(strconv.Itoa(param))
+                }</span>
+        }
+
+        <span class="cov8" title="1">concatTransparency := func(object dsaTransparency) </span><span class="cov8" title="1">{
+                if len(object.Domain) == 0 </span><span class="cov8" title="1">{
+                        return
+                }</span>
+
+                <span class="cov8" title="1">b.WriteString(object.Domain)
+                if len(object.Params) != 0 </span><span class="cov8" title="1">{
+                        b.WriteString(itemSeparator)
+                        concatParams(object.Params)
+                }</span>
+        }
+
+        <span class="cov8" title="1">concatTransparencies := func(objects []dsaTransparency) </span><span class="cov8" title="1">{
+                if len(objects) == 0 </span><span class="cov8" title="1">{
+                        return
+                }</span>
+
+                <span class="cov8" title="1">concatTransparency(objects[0])
+                for _, obj := range objects[1:] </span><span class="cov8" title="1">{
+                        b.WriteString(objectSeparator)
+                        concatTransparency(obj)
+                }</span>
+        }
+
+        <span class="cov8" title="1">concatTransparencies(transparencyObjects)
+
+        return b.String()</span>
+}
+
+func (a *YieldlabAdapter) makeFormats(req *openrtb2.BidRequest) (bool, string) <span class="cov8" title="1">{
+        var formats []string
+        const sizesSeparator, adslotSizesSeparator = "|", ","
+        for _, impression := range req.Imp </span><span class="cov8" title="1">{
+                if !impIsTypeBannerOnly(impression) </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">var formatsPerAdslot []string
+                for _, format := range impression.Banner.Format </span><span class="cov8" title="1">{
+                        formatsPerAdslot = append(formatsPerAdslot, fmt.Sprintf("%dx%d", format.W, format.H))
+                }</span>
+                <span class="cov8" title="1">adslotID := a.extractAdslotID(impression)
+                sizesForAdslot := strings.Join(formatsPerAdslot, sizesSeparator)
+                formats = append(formats, fmt.Sprintf("%s:%s", adslotID, sizesForAdslot))</span>
+        }
+        <span class="cov8" title="1">return len(formats) != 0, strings.Join(formats, adslotSizesSeparator)</span>
+}
+
+func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string, error) <span class="cov8" title="1">{
+        consent := ""
+        if request.User != nil &amp;&amp; request.User.Ext != nil </span><span class="cov8" title="1">{
+                var extUser openrtb_ext.ExtUser
+                if err := jsonutil.Unmarshal(request.User.Ext, &amp;extUser); err != nil </span><span class="cov0" title="0">{
+                        return "", "", fmt.Errorf("failed to parse ExtUser in Yieldlab GDPR check: %v", err)
+                }</span>
+                <span class="cov8" title="1">consent = extUser.Consent</span>
+        }
+
+        <span class="cov8" title="1">gdpr := ""
+        var extRegs openrtb_ext.ExtRegs
+        if request.Regs != nil </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(request.Regs.Ext, &amp;extRegs); err == nil </span><span class="cov8" title="1">{
+                        if extRegs.GDPR != nil &amp;&amp; (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) </span><span class="cov8" title="1">{
+                                gdpr = strconv.Itoa(int(*extRegs.GDPR))
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">return gdpr, consent, nil</span>
+}
+
+func (a *YieldlabAdapter) makeTargetingValues(params *openrtb_ext.ExtImpYieldlab) string <span class="cov8" title="1">{
+        values := url.Values{}
+        for k, v := range params.Targeting </span><span class="cov8" title="1">{
+                values.Set(k, v)
+        }</span>
+        <span class="cov8" title="1">return values.Encode()</span>
+}
+
+func (a *YieldlabAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if len(request.Imp) == 0 </span><span class="cov0" title="0">{
+                return nil, []error{fmt.Errorf("invalid request %+v, no Impressions given", request)}
+        }</span>
+
+        <span class="cov8" title="1">bidURL, err := a.makeEndpointURL(request, a.mergeParams(a.parseRequest(request)))
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Accept", "application/json")
+        if request.Site != nil </span><span class="cov8" title="1">{
+                headers.Add("Referer", request.Site.Page)
+        }</span>
+        <span class="cov8" title="1">if request.Device != nil </span><span class="cov8" title="1">{
+                headers.Add("User-Agent", request.Device.UA)
+                headers.Add("X-Forwarded-For", request.Device.IP)
+        }</span>
+        <span class="cov8" title="1">if request.User != nil </span><span class="cov8" title="1">{
+                headers.Add("Cookie", "id="+request.User.BuyerUID)
+        }</span>
+
+        <span class="cov8" title="1">return []*adapters.RequestData{{
+                Method:  "GET",
+                Uri:     bidURL,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }}, nil</span>
+}
+
+// parseRequest extracts the Yieldlab request information from the request
+func (a *YieldlabAdapter) parseRequest(request *openrtb2.BidRequest) []*openrtb_ext.ExtImpYieldlab <span class="cov8" title="1">{
+        params := make([]*openrtb_ext.ExtImpYieldlab, 0)
+
+        for i := 0; i &lt; len(request.Imp); i++ </span><span class="cov8" title="1">{
+                bidderExt := new(adapters.ExtImpBidder)
+                if err := jsonutil.Unmarshal(request.Imp[i].Ext, bidderExt); err != nil </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">yieldlabExt := new(openrtb_ext.ExtImpYieldlab)
+                if err := jsonutil.Unmarshal(bidderExt.Bidder, yieldlabExt); err != nil </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">params = append(params, yieldlabExt)</span>
+        }
+
+        <span class="cov8" title="1">return params</span>
+}
+
+func (a *YieldlabAdapter) mergeParams(params []*openrtb_ext.ExtImpYieldlab) *openrtb_ext.ExtImpYieldlab <span class="cov8" title="1">{
+        var adSlotIds []string
+        targeting := make(map[string]string)
+
+        for _, p := range params </span><span class="cov8" title="1">{
+                adSlotIds = append(adSlotIds, p.AdslotID)
+                for k, v := range p.Targeting </span><span class="cov8" title="1">{
+                        targeting[k] = v
+                }</span>
+        }
+
+        <span class="cov8" title="1">return &amp;openrtb_ext.ExtImpYieldlab{
+                AdslotID:  strings.Join(adSlotIds, adSlotIdSeparator),
+                Targeting: targeting,
+        }</span>
+}
+
+// MakeBids make the bids for the bid response.
+func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode != 200 </span><span class="cov0" title="0">{
+                return nil, []error{
+                        &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("failed to resolve bids from yieldlab response: Unexpected response code %v", response.StatusCode),
+                        },
+                }
+        }</span>
+
+        <span class="cov8" title="1">bids := make([]*bidResponse, 0)
+        if err := jsonutil.Unmarshal(response.Body, &amp;bids); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{
+                        &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("failed to parse bids response from yieldlab: %v", err),
+                        },
+                }
+        }</span>
+
+        <span class="cov8" title="1">params := a.parseRequest(internalRequest)
+
+        bidderResponse := &amp;adapters.BidderResponse{
+                Currency: currency.EUR.String(),
+                Bids:     []*adapters.TypedBid{},
+        }
+
+        adslotToImpMap := make(map[string]*openrtb2.Imp)
+        for i := 0; i &lt; len(internalRequest.Imp); i++ </span><span class="cov8" title="1">{
+                adslotID := a.extractAdslotID(internalRequest.Imp[i])
+                if internalRequest.Imp[i].Video != nil || internalRequest.Imp[i].Banner != nil </span><span class="cov8" title="1">{
+                        adslotToImpMap[adslotID] = &amp;internalRequest.Imp[i]
+                }</span>
+        }
+
+        <span class="cov8" title="1">var bidErrors []error
+        for _, bid := range bids </span><span class="cov8" title="1">{
+                width, height, err := splitSize(bid.Adsize)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, []error{err}
+                }</span>
+
+                <span class="cov8" title="1">req := a.findBidReq(bid.ID, params)
+                if req == nil </span><span class="cov0" title="0">{
+                        return nil, []error{
+                                fmt.Errorf("failed to find yieldlab request for adslotID %v. This is most likely a programming issue", bid.ID),
+                        }
+                }</span>
+
+                <span class="cov8" title="1">if imp, exists := adslotToImpMap[strconv.FormatUint(bid.ID, 10)]; !exists </span><span class="cov0" title="0">{
+                        continue</span>
+                } else<span class="cov8" title="1"> {
+                        extJson, err := makeResponseExt(bid)
+                        if err != nil </span><span class="cov0" title="0">{
+                                bidErrors = append(bidErrors, err)
+                                // skip as bids with missing ext.dsa will be discarded anyway
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">responseBid := &amp;openrtb2.Bid{
+                                ID:      strconv.FormatUint(bid.ID, 10),
+                                Price:   float64(bid.Price) / 100,
+                                ImpID:   imp.ID,
+                                CrID:    a.makeCreativeID(req, bid),
+                                DealID:  strconv.FormatUint(bid.Pid, 10),
+                                W:       int64(width),
+                                H:       int64(height),
+                                ADomain: []string{bid.Advertiser},
+                                Ext:     extJson,
+                        }
+
+                        var bidType openrtb_ext.BidType
+                        if imp.Video != nil </span><span class="cov8" title="1">{
+                                bidType = openrtb_ext.BidTypeVideo
+                                responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
+                                responseBid.AdM = a.makeVast(internalRequest, req, bid)
+                        }</span> else<span class="cov8" title="1"> if imp.Banner != nil </span><span class="cov8" title="1">{
+                                bidType = openrtb_ext.BidTypeBanner
+                                responseBid.AdM = a.makeBannerAdSource(internalRequest, req, bid)
+                        }</span> else<span class="cov0" title="0"> {
+                                // Yieldlab adapter currently doesn't support Audio and Native ads
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                BidType: bidType,
+                                Bid:     responseBid,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidderResponse, bidErrors</span>
+}
+
+func makeResponseExt(bid *bidResponse) (json.RawMessage, error) <span class="cov8" title="1">{
+        if bid.DSA != nil </span><span class="cov8" title="1">{
+                extJson, err := json.Marshal(responseExtWithDSA{*bid.DSA})
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to make JSON for seatbid.bid.ext for adslotID %v. This is most likely a programming issue", bid.ID)
+                }</span>
+                <span class="cov8" title="1">return extJson, nil</span>
+        }
+        <span class="cov8" title="1">return nil, nil</span>
+}
+
+func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtImpYieldlab) *openrtb_ext.ExtImpYieldlab <span class="cov8" title="1">{
+        slotIdStr := strconv.FormatUint(adslotID, 10)
+
+        for _, p := range params </span><span class="cov8" title="1">{
+                if p.AdslotID == slotIdStr </span><span class="cov8" title="1">{
+                        return p
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (a *YieldlabAdapter) extractAdslotID(internalRequestImp openrtb2.Imp) string <span class="cov8" title="1">{
+        bidderExt := new(adapters.ExtImpBidder)
+        jsonutil.Unmarshal(internalRequestImp.Ext, bidderExt)
+        yieldlabExt := new(openrtb_ext.ExtImpYieldlab)
+        jsonutil.Unmarshal(bidderExt.Bidder, yieldlabExt)
+        return yieldlabExt.AdslotID
+}</span>
+
+func (a *YieldlabAdapter) makeBannerAdSource(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string <span class="cov8" title="1">{
+        return fmt.Sprintf(adSourceBanner, a.makeAdSourceURL(req, ext, res))
+}</span>
+
+func (a *YieldlabAdapter) makeVast(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string <span class="cov8" title="1">{
+        return fmt.Sprintf(vastMarkup, ext.AdslotID, a.makeAdSourceURL(req, ext, res))
+}</span>
+
+func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string <span class="cov8" title="1">{
+        val := url.Values{}
+        val.Set("ts", a.cacheBuster())
+        val.Set("id", ext.ExtId)
+        val.Set("pvid", res.Pvid)
+
+        if req.User != nil </span><span class="cov8" title="1">{
+                val.Set("ids", "ylid:"+req.User.BuyerUID)
+        }</span>
+
+        <span class="cov8" title="1">gdpr, consent, err := a.getGDPR(req)
+        if err == nil &amp;&amp; gdpr != "" &amp;&amp; consent != "" </span><span class="cov8" title="1">{
+                val.Set("gdpr", gdpr)
+                val.Set("gdpr_consent", consent)
+        }</span>
+
+        <span class="cov8" title="1">return fmt.Sprintf(adSourceURL, ext.AdslotID, ext.SupplyID, res.Adsize, val.Encode())</span>
+}
+
+func (a *YieldlabAdapter) makeCreativeID(req *openrtb_ext.ExtImpYieldlab, bid *bidResponse) string <span class="cov8" title="1">{
+        return fmt.Sprintf(creativeID, req.AdslotID, bid.Pid, a.getWeek())
+}</span>
+
+// unmarshalSupplyChain makes the value for the schain URL parameter from the openRTB schain object.
+func unmarshalSupplyChain(req *openrtb2.BidRequest) *openrtb2.SupplyChain <span class="cov8" title="1">{
+        var extSChain openrtb_ext.ExtRequestPrebidSChain
+        err := jsonutil.Unmarshal(req.Source.Ext, &amp;extSChain)
+        if err != nil </span><span class="cov0" title="0">{
+                // req.Source.Ext could be anything so don't handle any errors
+                return nil
+        }</span>
+        <span class="cov8" title="1">return &amp;extSChain.SChain</span>
+}
+
+// makeNodeValue makes the value for the schain URL parameter from the openRTB schain object.
+func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string <span class="cov8" title="1">{
+        if len(openRtbSchain.Nodes) == 0 </span><span class="cov8" title="1">{
+                return ""
+        }</span>
+
+        <span class="cov8" title="1">const schainPrefixFmt = "%s,%d"
+        const schainNodeFmt = "!%s,%s,%s,%s,%s,%s,%s"
+        schainPrefix := fmt.Sprintf(schainPrefixFmt, openRtbSchain.Ver, openRtbSchain.Complete)
+        var sb strings.Builder
+        sb.WriteString(schainPrefix)
+        for _, node := range openRtbSchain.Nodes </span><span class="cov8" title="1">{
+                // has to be in order: asi,sid,hp,rid,name,domain,ext
+                schainNode := fmt.Sprintf(
+                        schainNodeFmt,
+                        makeNodeValue(node.ASI),
+                        makeNodeValue(node.SID),
+                        makeNodeValue(node.HP),
+                        makeNodeValue(node.RID),
+                        makeNodeValue(node.Name),
+                        makeNodeValue(node.Domain),
+                        makeNodeValue(node.Ext),
+                )
+                sb.WriteString(schainNode)
+        }</span>
+        <span class="cov8" title="1">return sb.String()</span>
+}
+
+// makeNodeValue converts any known value type from a schain node to a string and does URL encoding if necessary.
+func makeNodeValue(nodeParam any) string <span class="cov8" title="1">{
+        switch nodeParam := nodeParam.(type) </span>{
+        case string:<span class="cov8" title="1">
+                return url.QueryEscape(nodeParam)</span>
+        case *int8:<span class="cov8" title="1">
+                pointer := nodeParam
+                if pointer == nil </span><span class="cov8" title="1">{
+                        return ""
+                }</span>
+                <span class="cov8" title="1">return makeNodeValue(int(*pointer))</span>
+        case int:<span class="cov8" title="1">
+                return strconv.Itoa(nodeParam)</span>
+        case json.RawMessage:<span class="cov8" title="1">
+                if nodeParam != nil </span><span class="cov8" title="1">{
+                        freeFormJson, err := json.Marshal(nodeParam)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return ""
+                        }</span>
+                        <span class="cov8" title="1">return makeNodeValue(string(freeFormJson))</span>
+                }
+                <span class="cov8" title="1">return ""</span>
+        default:<span class="cov8" title="1">
+                return ""</span>
+        }
+}
+
+func splitSize(size string) (uint64, uint64, error) <span class="cov8" title="1">{
+        sizeParts := strings.Split(size, adsizeSeparator)
+        if len(sizeParts) != 2 </span><span class="cov8" title="1">{
+                return 0, 0, nil
+        }</span>
+
+        <span class="cov8" title="1">width, err := strconv.ParseUint(sizeParts[0], 10, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                return 0, 0, fmt.Errorf("failed to parse yieldlab adsize: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">height, err := strconv.ParseUint(sizeParts[1], 10, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                return 0, 0, fmt.Errorf("failed to parse yieldlab adsize: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return width, height, nil</span>
+
+}
+
+// impIsTypeBannerOnly returns true if impression is only from type banner. Mixed typed with banner would also result in false.
+func impIsTypeBannerOnly(impression openrtb2.Imp) bool <span class="cov8" title="1">{
+        return impression.Banner != nil &amp;&amp; impression.Audio == nil &amp;&amp; impression.Video == nil &amp;&amp; impression.Native == nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
