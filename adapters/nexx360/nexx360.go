@@ -66,13 +66,6 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 			}
 		}
 
-		var nexx360Ext openrtb_ext.ExtImpNexx360
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &nexx360Ext); err != nil {
-			return nil, "", "", &errortypes.BadInput{
-				Message: err.Error(),
-			}
-		}
-
 		impExt := Ext{
 			Nexx360: bidderExt.Bidder,
 		}
@@ -88,6 +81,12 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 		impCopy.Ext = impExtJSON
 		imps = append(imps, impCopy)
 		if idx == 0 {
+			var nexx360Ext openrtb_ext.ExtImpNexx360
+			if err := jsonutil.Unmarshal(bidderExt.Bidder, &nexx360Ext); err != nil {
+				return nil, "", "", &errortypes.BadInput{
+					Message: err.Error(),
+				}
+			}
 			tagId = nexx360Ext.TagId
 			placement = nexx360Ext.Placement
 		}
