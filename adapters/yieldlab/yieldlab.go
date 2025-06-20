@@ -363,14 +363,15 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			}
 
 			responseBid := &openrtb2.Bid{
-				ID:     strconv.FormatUint(bid.ID, 10),
-				Price:  float64(bid.Price) / 100,
-				ImpID:  imp.ID,
-				CrID:   a.makeCreativeID(req, bid),
-				DealID: strconv.FormatUint(bid.Pid, 10),
-				W:      int64(width),
-				H:      int64(height),
-				Ext:    extJson,
+				ID:      strconv.FormatUint(bid.ID, 10),
+				Price:   float64(bid.Price) / 100,
+				ImpID:   imp.ID,
+				CrID:    a.makeCreativeID(req, bid),
+				DealID:  strconv.FormatUint(bid.Pid, 10),
+				W:       int64(width),
+				H:       int64(height),
+				ADomain: []string{bid.Advertiser},
+				Ext:     extJson,
 			}
 
 			var bidType openrtb_ext.BidType
