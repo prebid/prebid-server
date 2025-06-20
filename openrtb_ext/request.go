@@ -204,6 +204,7 @@ type ExtRequestTargeting struct {
 	PreferDeals               bool                       `json:"preferdeals,omitempty"`
 	AppendBidderNames         bool                       `json:"appendbiddernames,omitempty"`
 	AlwaysIncludeDeals        bool                       `json:"alwaysincludedeals,omitempty"`
+	Prefix                    string                     `json:"prefix,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -493,6 +494,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			DurationRangeSec:  slices.Clone(erp.Targeting.DurationRangeSec),
 			PreferDeals:       erp.Targeting.PreferDeals,
 			AppendBidderNames: erp.Targeting.AppendBidderNames,
+			Prefix:            erp.Targeting.Prefix,
 		}
 		if erp.Targeting.PriceGranularity != nil {
 			newPriceGranularity := &PriceGranularity{
