@@ -27,7 +27,7 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 	}
 
 	if cfg.Endpoint == "" {
-		cfg.Endpoint = "https://rtdp.scope3.com/amazonaps/rtii"
+		cfg.Endpoint = "https://rtdp.scope3.com/prebid/rtii"
 	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 1000 // 1000ms default
