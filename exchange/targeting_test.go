@@ -625,7 +625,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 			cacheHost:         "cache.prebid.com",
 			cachePath:         "cache",
-			prefix:            "blah",
+			prefix:            "prefix",
 		},
 		Auction: auction{
 			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
@@ -650,23 +650,23 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
-							"blah_bidder_appnexus": "appnexus",
-							"blah_pb_appnexus":     "1.20",
-							"blah_cache_id_appnex": "55555",
-							"blah_cache_host_appn": "cache.prebid.com",
-							"blah_cache_path_appn": "cache",
+							"prefix_bidder_appnexus": "appnexus",
+							"prefix_pb_appnexus":     "1.20",
+							"prefix_cache_id_appnex": "55555",
+							"prefix_cache_host_appn": "cache.prebid.com",
+							"prefix_cache_path_appn": "cache",
 						},
 					},
 				},
 				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
-							"blah_bidder_rubicon":  "rubicon",
-							"blah_pb_rubicon":      "1.10",
-							"blah_cache_id_rubico": "cacheme",
-							"blah_deal_rubicon":    "mydeal",
-							"blah_cache_host_rubi": "cache.prebid.com",
-							"blah_cache_path_rubi": "cache",
+							"prefix_bidder_rubicon":  "rubicon",
+							"prefix_pb_rubicon":      "1.10",
+							"prefix_cache_id_rubico": "cacheme",
+							"prefix_deal_rubicon":    "mydeal",
+							"prefix_cache_host_rubi": "cache.prebid.com",
+							"prefix_cache_path_rubi": "cache",
 						},
 					},
 				},
