@@ -651,7 +651,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 					{
 						BidTargets: map[string]string{
 							"prefix_bidder_appnex": "appnexus",
-							"prefix_pb_appnexus":     "1.20",
+							"prefix_pb_appnexus":   "1.20",
 							"prefix_cache_id_appn": "55555",
 							"prefix_cache_host_ap": "cache.prebid.com",
 							"prefix_cache_path_ap": "cache",
@@ -661,10 +661,10 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
-							"prefix_bidder_rubico":  "rubicon",
-							"prefix_pb_rubicon":      "1.10",
+							"prefix_bidder_rubico": "rubicon",
+							"prefix_pb_rubicon":    "1.10",
 							"prefix_cache_id_rubi": "cacheme",
-							"prefix_deal_rubicon":    "mydeal",
+							"prefix_deal_rubicon":  "mydeal",
 							"prefix_cache_host_ru": "cache.prebid.com",
 							"prefix_cache_path_ru": "cache",
 						},
