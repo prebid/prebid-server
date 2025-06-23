@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type adapter struct {
@@ -37,7 +38,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		requestJSON, err := json.Marshal(&requestCopy)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("marshal bidRequest: %w", err))
-			continue
+			return nil, errors
 		}
 
 		cId, err := extractCid(&imp)
@@ -50,8 +51,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		headers.Add("Content-Type", "application/json;charset=utf-8")
 
 		requestData := &adapters.RequestData{
-			Method:  "POST",
-			Uri:     fmt.Sprintf("%s%s", a.endpoint, url.QueryEscape(cId)),
+			Method:  http.MethodPost,
+			Uri:     fmt.Sprintf("%s/%s", strings.TrimRight(a.endpoint, "/"), url.QueryEscape(cId)),
 			Body:    requestJSON,
 			Headers: headers,
 			ImpIDs:  []string{imp.ID},
@@ -71,15 +72,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
-		}}
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bad server response: %d. ", err),
+			Message: fmt.Sprintf("bad server response: %v. ", err),
 		}}
 	}
 
@@ -90,8 +89,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	for _, seatBid := range response.SeatBid {
-		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(bid)
+		for i, _ := range seatBid.Bid {
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 				continue

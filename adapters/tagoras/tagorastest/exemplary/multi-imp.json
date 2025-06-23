@@ -39,7 +39,7 @@
         }
       },
       {
-        "id": "some-impression-id",
+        "id": "some-impression-id_2",
         "banner": {
           "w": 240,
           "h": 400
@@ -145,7 +145,7 @@
           },
           "imp": [
             {
-              "id": "some-impression-id",
+              "id": "some-impression-id_2",
               "banner": {
                 "w": 240,
                 "h": 400
@@ -160,7 +160,7 @@
           "tmax": 5000
         },
         "impIDs": [
-          "some-impression-id"
+          "some-impression-id_2"
         ]
       },
       "mockResponse": {
@@ -180,7 +180,7 @@
                   "lurl": "",
                   "nurl": "",
                   "id": "some-bid-id",
-                  "impid": "some-impression-id",
+                  "impid": "some-impression-id_2",
                   "h": 400,
                   "w": 240,
                   "price": 1,
@@ -239,7 +239,7 @@
         {
           "bid": {
             "id": "some-bid-id",
-            "impid": "some-impression-id",
+            "impid": "some-impression-id_2",
             "price": 1,
             "adm": "<div>Some creative</div>",
             "adid": "some-ad-id",
