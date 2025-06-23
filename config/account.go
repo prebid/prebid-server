@@ -332,7 +332,17 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 
 	vendor := ns[0]
 	module := ns[1]
-	data := m[vendor][module]
+
+	accModules, found := m[vendor]
+	if !found {
+		return nil, nil
+	}
+
+	data, found := accModules[module]
+	if !found {
+		return nil, nil
+	}
+
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal module config for %s: %w", id, err)

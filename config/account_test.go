@@ -722,11 +722,11 @@ func TestPurposeOneTreatmentAccessAllowed(t *testing.T) {
 func TestModulesGetConfig(t *testing.T) {
 	modules := AccountModules{
 		"acme": {
-			"foo":     json.RawMessage(`{"foo": "bar"}`),
-			"foo.bar": json.RawMessage(`{"foo": "bar"}`),
+			"foo":     json.RawMessage(`{"first": "value"}`),
+			"foo.bar": json.RawMessage(`{"second": "value"}`),
 		},
 		"acme.foo": {
-			"baz": json.RawMessage(`{"foo": "bar"}`),
+			"baz": json.RawMessage(`{"third": "value"}`),
 		},
 	}
 
@@ -738,42 +738,42 @@ func TestModulesGetConfig(t *testing.T) {
 		expectedError  error
 	}{
 		{
-			description:    "Returns module config if found by ID",
+			description:    "Returns-module-config-if-found-by-ID",
 			givenId:        "acme.foo",
 			givenModules:   modules,
-			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedConfig: json.RawMessage(`{"first": "value"}`),
 			expectedError:  nil,
 		},
 		{
-			description:    "Returns module config if found by ID",
+			description:    "Returns-module-config-if-found-by-ID",
 			givenId:        "acme.foo.bar",
 			givenModules:   modules,
-			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedConfig: json.RawMessage(`{"second": "value"}`),
 			expectedError:  nil,
 		},
 		{
-			description:    "Returns nil config if wrong ID provided",
+			description:    "Returns-nil-config-if-wrong-ID-provided",
 			givenId:        "invalid_id",
 			givenModules:   modules,
 			expectedConfig: nil,
 			expectedError:  errors.New("ID must consist of vendor and module names separated by dot, got: invalid_id"),
 		},
 		{
-			description:    "Returns nil config if no matching module exists",
+			description:    "Returns-nil-config-if-no-matching-module-exists",
 			givenId:        "acme.bar",
 			givenModules:   modules,
 			expectedConfig: nil,
 			expectedError:  nil,
 		},
 		{
-			description:    "Returns nil config if no matching module exists",
+			description:    "Returns-nil-config-if-no-matching-module-exists",
 			givenId:        "acme.foo.baz",
 			givenModules:   modules,
 			expectedConfig: nil,
 			expectedError:  nil,
 		},
 		{
-			description:    "Returns nil config if no module configs defined in account",
+			description:    "Returns-nil-config-if-no-module-configs-defined-in-account",
 			givenId:        "acme.foo",
 			givenModules:   nil,
 			expectedConfig: nil,
@@ -786,7 +786,7 @@ func TestModulesGetConfig(t *testing.T) {
 			gotConfig, err := test.givenModules.ModuleConfig(test.givenId)
 			assert.Equal(t, test.expectedError, err)
 			if test.expectedConfig == nil {
-				assert.Nil(t, test.expectedConfig)
+				assert.Nil(t, gotConfig)
 			} else {
 				assert.JSONEq(t, string(test.expectedConfig), string(gotConfig))
 			}
