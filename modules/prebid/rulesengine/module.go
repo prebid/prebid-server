@@ -28,6 +28,7 @@ func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
 		done:            make(chan struct{}),
 		requests:        make(chan buildInstruction),
 		schemaValidator: schemaValidator,
+		monitor:		 &treeManagerLogger{},
 	}
 	c := NewCache()
 
