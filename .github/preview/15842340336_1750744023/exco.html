@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>exco: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/exco/exco.go (88.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package exco
+
+import (
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+// Builder initializes the Exco adapter with the given configuration.
+// Parameters:
+// - bidderName: The name of the bidder.
+// - config: Adapter configuration containing endpoint details.
+// - server: Server configuration.
+// Returns:
+// - An instance of the Exco adapter.
+func Builder(
+        bidderName openrtb_ext.BidderName,
+        config config.Adapter,
+        server config.Server,
+) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{
+                endpoint: config.Endpoint,
+        }, nil
+}</span>
+
+// MakeRequests creates HTTP requests to the Exco endpoint based on the OpenRTB bid request.
+// Parameters:
+// - request: The OpenRTB bid request.
+// - reqInfo: Additional request information.
+// Returns:
+// - A slice of RequestData containing the HTTP request details.
+// - A slice of errors encountered during request creation.
+func (a *adapter) MakeRequests(
+        request *openrtb2.BidRequest,
+        reqInfo *adapters.ExtraRequestInfo,
+) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+
+        adjustedReq, err := adjustRequest(request)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+
+        // Create the request to the Exco endpoint
+        <span class="cov8" title="1">payload, err := jsonutil.Marshal(adjustedReq)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+
+        reqData := &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     a.endpoint,
+                Body:    payload,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }
+
+        return []*adapters.RequestData{reqData}, errs</span>
+}
+
+// MakeBids processes the HTTP response from the Exco endpoint and extracts bid information.
+// Parameters:
+// - internalRequest: The original OpenRTB bid request.
+// - externalRequest: The HTTP request sent to the Exco endpoint.
+// - response: The HTTP response received from the Exco endpoint.
+// Returns:
+// - A BidderResponse containing the extracted bids.
+// - A slice of errors encountered during bid processing.
+func (a *adapter) MakeBids(
+        internalRequest *openrtb2.BidRequest,
+        externalRequest *adapters.RequestData,
+        response *adapters.ResponseData,
+) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(response) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var bidResponse openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResponse); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var errs []error
+        bidderResponse := adapters.NewBidderResponse()
+        for _, seatBid := range bidResponse.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := &amp;seatBid.Bid[i]
+
+                        bidType, err := getMediaTypeForBid(bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     bid,
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidderResponse, errs</span>
+}
+
+// getMediaTypeForBid determines the media type of a bid based on its MType.
+// Parameters:
+// - bid: The bid object.
+// Returns:
+// - The media type of the bid (e.g., banner, video).
+// - An error if the media type is unrecognized.
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case 1:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case 2:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        default:<span class="cov8" title="1">
+                return "", fmt.Errorf("unrecognized bid_ad_type in response from exco: %d", bid.MType)</span>
+        }
+}
+
+// adjustRequest modifies the OpenRTB bid request to include Exco-specific parameters.
+// Parameters:
+// - request: The original OpenRTB bid request.
+// Returns:
+// - A modified bid request with Exco-specific parameters.
+// - An error if the request modification fails.
+func adjustRequest(
+        request *openrtb2.BidRequest,
+) (*openrtb2.BidRequest, error) <span class="cov8" title="1">{
+        var publisherId string
+
+        // Extracts the publisher ID and tag ID from the impression extension.
+        // Updates the impression's TagID with the extracted value.
+        for i := 0; i &lt; len(request.Imp); i++ </span><span class="cov8" title="1">{
+                var bidderExt adapters.ExtImpBidder
+                if err := jsonutil.Unmarshal(request.Imp[i].Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                        // Handles invalid impression extension by returning a BadInput error.
+                        return nil, &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Information: %s", i, err.Error()),
+                        }
+                }</span>
+
+                <span class="cov8" title="1">var impExt openrtb_ext.ImpExtExco
+                if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;impExt); err != nil </span><span class="cov0" title="0">{
+                        // Handles invalid bidder extension by returning a BadInput error.
+                        return nil, &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, err.Error()),
+                        }
+                }</span>
+
+                <span class="cov8" title="1">publisherId = impExt.PublisherId
+                request.Imp[i].TagID = impExt.TagId</span>
+        }
+
+        // Creates a deep copy of the App object to avoid modifying the original request.
+        <span class="cov8" title="1">if request.App != nil </span><span class="cov8" title="1">{
+                appCopy := *request.App
+                request.App = &amp;appCopy
+
+                if request.App.Publisher == nil </span><span class="cov8" title="1">{
+                        // Initializes the Publisher object if it is nil.
+                        request.App.Publisher = &amp;openrtb2.Publisher{}
+                }</span> else<span class="cov8" title="1"> {
+                        // Creates a deep copy of the Publisher object.
+                        publisherCopy := *request.App.Publisher
+                        request.App.Publisher = &amp;publisherCopy
+                }</span>
+
+                // Sets the Publisher ID to the extracted publisher ID.
+                <span class="cov8" title="1">request.App.Publisher.ID = publisherId</span>
+        }
+
+        // Creates a deep copy of the Site object to avoid modifying the original request.
+        <span class="cov8" title="1">if request.Site != nil </span><span class="cov8" title="1">{
+                siteCopy := *request.Site
+                request.Site = &amp;siteCopy
+
+                if request.Site.Publisher == nil </span><span class="cov8" title="1">{
+                        // Initializes the Publisher object if it is nil.
+                        request.Site.Publisher = &amp;openrtb2.Publisher{}
+                }</span> else<span class="cov8" title="1"> {
+                        // Creates a deep copy of the Publisher object.
+                        publisherCopy := *request.Site.Publisher
+                        request.Site.Publisher = &amp;publisherCopy
+                }</span>
+
+                // Sets the Publisher ID to the extracted publisher ID.
+                <span class="cov8" title="1">request.Site.Publisher.ID = publisherId</span>
+        }
+
+        <span class="cov8" title="1">return request, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
