@@ -372,12 +372,51 @@ func TestValidateRuleSet(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "Error is expected. Unequal number of schema and result functions",
+			desc: "Schema functions but no rules",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{
+						Schema: []Schema{{Func: "channel"}},
+						Rules:  []Rule{},
+					},
+				},
+			},
+			expectedErr: errors.New("ModelGroup 0 has schema functions but no rules"),
+		},
+		{
+			desc: "No schema functions, at least one rule",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{
+						Schema: []Schema{},
+						Rules:  []Rule{{Conditions: []string{"web"}}},
+					},
+				},
+			},
+			expectedErr: errors.New("ModelGroup 0 has no schema functions to test its rules against"),
+		},
+		{
+			desc: "More rules than schema functions",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
 						Schema: []Schema{{Func: "channel"}},
 						Rules:  []Rule{{Conditions: []string{"amp", "web"}}},
+					},
+				},
+			},
+			expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
+		},
+		{
+			desc: "More schema functions than rule conditions",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{
+						Schema: []Schema{
+							{Func: "channel"},
+							{Func: "deviceCountry"},
+						},
+						Rules: []Rule{{Conditions: []string{"web"}}},
 					},
 				},
 			},
