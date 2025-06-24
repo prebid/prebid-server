@@ -54,6 +54,7 @@ func SelectEEACountries(hostEEACountries []string, accountEEACountries []string)
 	return hostEEACountries
 }
 
+// ParseGDPRDefaultValue determines the default GDPR signal based on the request, configuration, and EEA countries.
 func ParseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, cfgDefault string, eeaCountries []string) gdpr.Signal {
 	gdprDefaultValue := gdpr.SignalYes
 	if cfgDefault == "0" {
@@ -80,7 +81,7 @@ func ParseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, cfgDefault string, eea
 	return gdprDefaultValue
 }
 
-// TODO: isEEACountry...
+// isEEACountry checks if the given country is part of the EEA countries list.
 func isEEACountry(country string, eeaCountries []string) bool {
 	if len(eeaCountries) == 0 {
 		return false
