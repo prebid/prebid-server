@@ -12,13 +12,17 @@
         },
         "ext": {
           "bidder": {
-            "tagId": "test-tag-id",
-            "publisherId": "test-publisher-id"
+            "tagId": "test-tag-id"
           }
         }
       }
     ]
   },
   "httpCalls": [],
-  "expectedMakeRequestsErrors": []
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Publisher ID is required in the request. Please provide a valid Publisher ID.",
+      "comparison": "literal"
+    }
+  ]
 }

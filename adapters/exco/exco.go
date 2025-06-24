@@ -172,6 +172,13 @@ func adjustRequest(
 		request.Imp[i].TagID = impExt.TagId
 	}
 
+	if publisherId == "" {
+		// If no publisher ID is found, return a BadInput error.
+		return nil, &errortypes.BadInput{
+			Message: "Publisher ID is required in the request. Please provide a valid Publisher ID.",
+		}
+	}
+
 	// Creates a deep copy of the App object to avoid modifying the original request.
 	if request.App != nil {
 		appCopy := *request.App

@@ -13,8 +13,8 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid imp.ext for impression index 0. Error Information: ...",
-      "comparison": "contains"
+      "value": "Invalid imp.ext.bidder for impression index 0. Error Information: expect { or n, but found \"",
+      "comparison": "literal"
     }
   ]
 }
