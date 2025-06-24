@@ -372,7 +372,7 @@ func TestValidateRuleSet(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "Success.-zero-schema-functions,-zero-rules",
+			desc: "no-schema-functions-and-no-rules",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
@@ -408,7 +408,7 @@ func TestValidateRuleSet(t *testing.T) {
 			expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
 		},
 		{
-			desc: "No schema functions, at least one rule",
+			desc: "no-schema-functions-and-at-least-one-rule",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
@@ -447,7 +447,7 @@ func TestValidateRuleSet(t *testing.T) {
 			expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
 		},
 		{
-			desc: "Success.-Equal-number-of-schema-functions-and-result-functions",
+			desc: "equal-number-of-schema-functions-and-result-functions",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
