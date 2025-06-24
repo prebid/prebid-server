@@ -333,12 +333,7 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 	vendor := ns[0]
 	module := ns[1]
 
-	accModules, found := m[vendor]
-	if !found {
-		return nil, nil
-	}
-
-	data, found := accModules[module]
+	data, found := m[vendor][module]
 	if !found {
 		return nil, nil
 	}
