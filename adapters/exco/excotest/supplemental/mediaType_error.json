@@ -64,7 +64,7 @@
         },
         "headers": {
           "Content-Type": [
-            "application/jsonutil;charset=utf-8"
+            "application/json;charset=utf-8"
           ]
         },
         "impIDs": ["mediaType_error_imp"]

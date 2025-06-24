@@ -16,6 +16,13 @@ type adapter struct {
 	endpoint string
 }
 
+// Builder initializes the Exco adapter with the given configuration.
+// Parameters:
+// - bidderName: The name of the bidder.
+// - config: Adapter configuration containing endpoint details.
+// - server: Server configuration.
+// Returns:
+// - An instance of the Exco adapter.
 func Builder(
 	bidderName openrtb_ext.BidderName,
 	config config.Adapter,
@@ -26,6 +33,13 @@ func Builder(
 	}, nil
 }
 
+// MakeRequests creates HTTP requests to the Exco endpoint based on the OpenRTB bid request.
+// Parameters:
+// - request: The OpenRTB bid request.
+// - reqInfo: Additional request information.
+// Returns:
+// - A slice of RequestData containing the HTTP request details.
+// - A slice of errors encountered during request creation.
 func (a *adapter) MakeRequests(
 	request *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
@@ -39,19 +53,19 @@ func (a *adapter) MakeRequests(
 	}
 
 	// Create the request to the Exco endpoint
-	reqjsonutil, err := jsonutil.Marshal(adjustedReq)
+	payload, err := jsonutil.Marshal(adjustedReq)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
 
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/jsonutil;charset=utf-8")
+	headers.Add("Content-Type", "application/json;charset=utf-8")
 
 	reqData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
-		Body:    reqjsonutil,
+		Body:    payload,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
@@ -59,6 +73,14 @@ func (a *adapter) MakeRequests(
 	return []*adapters.RequestData{reqData}, errs
 }
 
+// MakeBids processes the HTTP response from the Exco endpoint and extracts bid information.
+// Parameters:
+// - internalRequest: The original OpenRTB bid request.
+// - externalRequest: The HTTP request sent to the Exco endpoint.
+// - response: The HTTP response received from the Exco endpoint.
+// Returns:
+// - A BidderResponse containing the extracted bids.
+// - A slice of errors encountered during bid processing.
 func (a *adapter) MakeBids(
 	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
@@ -99,7 +121,12 @@ func (a *adapter) MakeBids(
 	return bidderResponse, errs
 }
 
-// getMediaTypeForBid determines which type of bid.
+// getMediaTypeForBid determines the media type of a bid based on its MType.
+// Parameters:
+// - bid: The bid object.
+// Returns:
+// - The media type of the bid (e.g., banner, video).
+// - An error if the media type is unrecognized.
 func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case 1:
@@ -111,14 +138,23 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
+// adjustRequest modifies the OpenRTB bid request to include Exco-specific parameters.
+// Parameters:
+// - request: The original OpenRTB bid request.
+// Returns:
+// - A modified bid request with Exco-specific parameters.
+// - An error if the request modification fails.
 func adjustRequest(
 	request *openrtb2.BidRequest,
 ) (*openrtb2.BidRequest, error) {
 	var publisherId string
 
+	// Extracts the publisher ID and tag ID from the impression extension.
+	// Updates the impression's TagID with the extracted value.
 	for i := 0; i < len(request.Imp); i++ {
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
+			// Handles invalid impression extension by returning a BadInput error.
 			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Information: %s", i, err.Error()),
 			}
@@ -126,26 +162,9 @@ func adjustRequest(
 
 		var impExt openrtb_ext.ImpExtExco
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+			// Handles invalid bidder extension by returning a BadInput error.
 			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, err.Error()),
-			}
-		}
-
-		if impExt.PublisherId == "" {
-			return nil, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, "Missing publisherId"),
-			}
-		}
-
-		if impExt.TagId == "" {
-			return nil, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, "Missing tagId"),
-			}
-		}
-
-		if impExt.AccountId == "" {
-			return nil, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %s", i, "Missing accountId"),
 			}
 		}
 
@@ -153,31 +172,39 @@ func adjustRequest(
 		request.Imp[i].TagID = impExt.TagId
 	}
 
+	// Creates a deep copy of the App object to avoid modifying the original request.
 	if request.App != nil {
 		appCopy := *request.App
 		request.App = &appCopy
 
 		if request.App.Publisher == nil {
+			// Initializes the Publisher object if it is nil.
 			request.App.Publisher = &openrtb2.Publisher{}
 		} else {
+			// Creates a deep copy of the Publisher object.
 			publisherCopy := *request.App.Publisher
 			request.App.Publisher = &publisherCopy
 		}
 
+		// Sets the Publisher ID to the extracted publisher ID.
 		request.App.Publisher.ID = publisherId
 	}
 
+	// Creates a deep copy of the Site object to avoid modifying the original request.
 	if request.Site != nil {
 		siteCopy := *request.Site
 		request.Site = &siteCopy
 
 		if request.Site.Publisher == nil {
+			// Initializes the Publisher object if it is nil.
 			request.Site.Publisher = &openrtb2.Publisher{}
 		} else {
+			// Creates a deep copy of the Publisher object.
 			publisherCopy := *request.Site.Publisher
 			request.Site.Publisher = &publisherCopy
 		}
 
+		// Sets the Publisher ID to the extracted publisher ID.
 		request.Site.Publisher.ID = publisherId
 	}
 

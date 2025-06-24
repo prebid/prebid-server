@@ -12,5 +12,7 @@ capabilities:
       - banner
       - video
 userSync:
-  iframe:
-    url: "https://cdn.ex.co/sync/e15e216-l/cookie_sync.html?network=368531133&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+  key: "exco"
+  redirect:
+    url: "https://sync.ex.co/v1/user_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[UID]"
