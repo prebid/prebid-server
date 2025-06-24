@@ -725,9 +725,6 @@ func TestModulesGetConfig(t *testing.T) {
 			"foo":     json.RawMessage(`{"first":"value"}`),
 			"foo.bar": json.RawMessage(`{"second":"value"}`),
 		},
-		"acme.foo": {
-			"unreachable": json.RawMessage(`{"third":"value"}`),
-		},
 	}
 
 	testCases := []struct {
@@ -752,8 +749,8 @@ func TestModulesGetConfig(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
-			description:    "returns-nil-config-for-unreachable-vendor-module",
-			givenId:        "acme.foo.unreachable",
+			description:    "returns-nil-config-if-no-matching-vendor-exists",
+			givenId:        "unreachable.foo",
 			givenModules:   modules,
 			expectedConfig: nil,
 			expectedError:  nil,
