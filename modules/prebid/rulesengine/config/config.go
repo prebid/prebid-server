@@ -94,6 +94,14 @@ func validateRuleSet(r *RuleSet) error {
 			r.ModelGroups[i].Weight = 100
 		}
 
+		if len(r.ModelGroups[i].Schema) > 0 && len(r.ModelGroups[i].Rules) == 0 {
+			return fmt.Errorf("ModelGroup %d has schema functions but no rules", i)
+		}
+
+		if len(r.ModelGroups[i].Schema) == 0 && len(r.ModelGroups[i].Rules) > 0 {
+			return fmt.Errorf("ModelGroup %d has no schema functions to test its rules against", i)
+		}
+
 		for j := 0; j < len(r.ModelGroups[i].Rules); j++ {
 			if len(r.ModelGroups[i].Schema) != len(r.ModelGroups[i].Rules[j].Conditions) {
 				return fmt.Errorf("ModelGroup %d number of schema functions differ from number of conditions of rule %d", i, j)
