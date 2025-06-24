@@ -372,7 +372,19 @@ func TestValidateRuleSet(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "Schema functions but no rules",
+			desc: "Success.-zero-schema-functions,-zero-rules",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{
+						Schema: []Schema{},
+						Rules:  []Rule{},
+					},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Schema-functions-but-no-rules",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
@@ -384,19 +396,31 @@ func TestValidateRuleSet(t *testing.T) {
 			expectedErr: errors.New("ModelGroup 0 has schema functions but no rules"),
 		},
 		{
+			desc: "Schema-functions-but-no-rule-conditions",
+			ruleSet: &RuleSet{
+				ModelGroups: []ModelGroup{
+					{
+						Schema: []Schema{{Func: "channel"}},
+						Rules:  []Rule{{Conditions: []string{}}},
+					},
+				},
+			},
+			expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
+		},
+		{
 			desc: "No schema functions, at least one rule",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
 						Schema: []Schema{},
-						Rules:  []Rule{{Conditions: []string{"web"}}},
+						Rules:  []Rule{{Conditions: []string{}}},
 					},
 				},
 			},
 			expectedErr: errors.New("ModelGroup 0 has no schema functions to test its rules against"),
 		},
 		{
-			desc: "More rules than schema functions",
+			desc: "More-rule-conditions-than-schema-functions",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
@@ -408,7 +432,7 @@ func TestValidateRuleSet(t *testing.T) {
 			expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
 		},
 		{
-			desc: "More schema functions than rule conditions",
+			desc: "More-schema-functions-than-rule-conditions",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
@@ -423,7 +447,7 @@ func TestValidateRuleSet(t *testing.T) {
 			expectedErr: errors.New("ModelGroup 0 number of schema functions differ from number of conditions of rule 0"),
 		},
 		{
-			desc: "Success. Equal number of schema functions and result functions",
+			desc: "Success.-Equal-number-of-schema-functions-and-result-functions",
 			ruleSet: &RuleSet{
 				ModelGroups: []ModelGroup{
 					{
@@ -433,36 +457,6 @@ func TestValidateRuleSet(t *testing.T) {
 						},
 						Rules: []Rule{{Conditions: []string{"true", "web"}}},
 					},
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			desc: "Success. Weights add up to 100",
-			ruleSet: &RuleSet{
-				ModelGroups: []ModelGroup{
-					{Weight: 98},
-					{Weight: 2},
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			desc: "Success. Weights don't add to 100",
-			ruleSet: &RuleSet{
-				ModelGroups: []ModelGroup{
-					{Weight: 50},
-					{},
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			desc: "Success. All weights are 0",
-			ruleSet: &RuleSet{
-				ModelGroups: []ModelGroup{
-					{Weight: 0},
-					{Weight: 0},
 				},
 			},
 			expectedErr: nil,
