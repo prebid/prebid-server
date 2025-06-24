@@ -11,6 +11,7 @@ func mspBidderNames() []BidderName {
 		BidderMspFbBeta,
 		BidderMspFbGamma,
 		BidderMspMoloco,
+		BidderMspMolocoNative,
 	}
 }
 

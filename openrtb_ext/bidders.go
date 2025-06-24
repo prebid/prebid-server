@@ -283,15 +283,16 @@ const (
 	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
 
 	// For MSP extension only
-	BidderMspGoogle    BidderName = "msp_google"
-	BidderMspNova      BidderName = "msp_nova"
-	BidderMspNovaAlpha BidderName = "msp_nova_alpha"
-	BidderMspNovaBeta  BidderName = "msp_nova_beta"
-	BidderMspNovaGamma BidderName = "msp_nova_gamma"
-	BidderMspFbAlpha   BidderName = "msp_fb_alpha"
-	BidderMspFbBeta    BidderName = "msp_fb_beta"
-	BidderMspFbGamma   BidderName = "msp_fb_gamma"
-	BidderMspMoloco    BidderName = "msp_moloco"
+	BidderMspGoogle       BidderName = "msp_google"
+	BidderMspNova         BidderName = "msp_nova"
+	BidderMspNovaAlpha    BidderName = "msp_nova_alpha"
+	BidderMspNovaBeta     BidderName = "msp_nova_beta"
+	BidderMspNovaGamma    BidderName = "msp_nova_gamma"
+	BidderMspFbAlpha      BidderName = "msp_fb_alpha"
+	BidderMspFbBeta       BidderName = "msp_fb_beta"
+	BidderMspFbGamma      BidderName = "msp_fb_gamma"
+	BidderMspMoloco       BidderName = "msp_moloco"
+	BidderMspMolocoNative BidderName = "msp_moloco_native"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
