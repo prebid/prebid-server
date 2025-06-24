@@ -9,7 +9,26 @@
     "tmax": 250,
     "imp": [
       {
-        "id": "test-imp-id"
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 360,
+          "linearity": 1,
+          "skip": 1,
+          "sequence": 1,
+          "boxingallowed": 1,
+          "placement": 1
+        },
+        "tagid": "27208-0",
+        "bidfloor": 0.35,
+        "secure": 1
       }
     ],
     "app": {
@@ -51,7 +70,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g",
+        "uri": "http://localhost/bid?sspuid=prebid",
         "body": {
           "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
           "at": 2,
@@ -62,7 +81,26 @@
           "tmax": 250,
           "imp": [
             {
-              "id": "test-imp-id"
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3
+                ],
+                "w": 640,
+                "h": 360,
+                "linearity": 1,
+                "skip": 1,
+                "sequence": 1,
+                "boxingallowed": 1,
+                "placement": 1
+              },
+              "tagid": "27208-0",
+              "bidfloor": 0.35,
+              "secure": 1
             }
           ],
           "app": {
@@ -104,15 +142,61 @@
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 400
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "43",
+                  "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
+                  "price": 150,
+                  "nurl": "some-test-nurl",
+                  "burl": "some-test-burl",
+                  "adm": "some-test-adm",
+                  "adid": "43",
+                  "adomain": [
+                    "app.apple.com"
+                  ],
+                  "crid": "43",
+                  "w": 1280,
+                  "h": 720,
+                  "mtype": 2
+                }
+              ],
+              "seat": "boldwin"
+            }
+          ],
+          "cur": "USD"
+        }
       }
     }
   ],
-  "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "43",
+            "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
+            "price": 150,
+            "nurl": "some-test-nurl",
+            "burl": "some-test-burl",
+            "adm": "some-test-adm",
+            "adid": "43",
+            "adomain": [
+              "app.apple.com"
+            ],
+            "crid": "43",
+            "w": 1280,
+            "h": 720,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }

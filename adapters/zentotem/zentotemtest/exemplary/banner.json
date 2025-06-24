@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
+    "id": "test-imp-id",
     "at": 2,
     "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
     "cur": [
@@ -10,25 +10,26 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "video": {
+        "bidfloor": 10,
+        "bidfloorcur": "RUB",
+        "tagid": "65f0c2a2feb788d7",
+        "displaymanager": "Fyber",
+        "displaymanagerver": "10.1.1",
+        "banner": {
+          "w": 320,
+          "h": 50,
+          "api": [
+            5
+          ],
           "mimes": [
-            "video/mp4"
-          ],
-          "protocols": [
-            2,
-            3
-          ],
-          "w": 640,
-          "h": 360,
-          "linearity": 1,
-          "skip": 1,
-          "sequence": 1,
-          "boxingallowed": 1,
-          "placement": 1
-        },
-        "tagid": "27208-0",
-        "bidfloor": 0.35,
-        "secure": 1
+            "application/javascript",
+            "text/html",
+            "text/javascript",
+            "image/png",
+            "image/jpeg",
+            "image/gif"
+          ]
+        }
       }
     ],
     "app": {
@@ -70,9 +71,9 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g",
+        "uri": "http://localhost/bid?sspuid=prebid",
         "body": {
-          "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
+          "id": "test-imp-id",
           "at": 2,
           "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
           "cur": [
@@ -82,25 +83,26 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "video": {
+              "bidfloor": 10,
+              "bidfloorcur": "RUB",
+              "tagid": "65f0c2a2feb788d7",
+              "displaymanager": "Fyber",
+              "displaymanagerver": "10.1.1",
+              "banner": {
+                "w": 320,
+                "h": 50,
+                "api": [
+                  5
+                ],
                 "mimes": [
-                  "video/mp4"
-                ],
-                "protocols": [
-                  2,
-                  3
-                ],
-                "w": 640,
-                "h": 360,
-                "linearity": 1,
-                "skip": 1,
-                "sequence": 1,
-                "boxingallowed": 1,
-                "placement": 1
-              },
-              "tagid": "27208-0",
-              "bidfloor": 0.35,
-              "secure": 1
+                  "application/javascript",
+                  "text/html",
+                  "text/javascript",
+                  "image/png",
+                  "image/jpeg",
+                  "image/gif"
+                ]
+              }
             }
           ],
           "app": {
@@ -149,20 +151,20 @@
             {
               "bid": [
                 {
-                  "id": "43",
-                  "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
+                  "id": "40",
+                  "impid": "1",
                   "price": 150,
                   "nurl": "some-test-nurl",
                   "burl": "some-test-burl",
                   "adm": "some-test-adm",
-                  "adid": "43",
+                  "adid": "40",
                   "adomain": [
                     "app.apple.com"
                   ],
-                  "crid": "43",
-                  "w": 1280,
-                  "h": 720,
-                  "mtype": 2
+                  "crid": "40",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
                 }
               ],
               "seat": "boldwin"
@@ -179,22 +181,22 @@
       "bids": [
         {
           "bid": {
-            "id": "43",
-            "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
+            "id": "40",
+            "impid": "1",
             "price": 150,
             "nurl": "some-test-nurl",
             "burl": "some-test-burl",
             "adm": "some-test-adm",
-            "adid": "43",
+            "adid": "40",
             "adomain": [
               "app.apple.com"
             ],
-            "crid": "43",
-            "w": 1280,
-            "h": 720,
-            "mtype": 2
+            "crid": "40",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
           },
-          "type": "video"
+          "type": "banner"
         }
       ]
     }

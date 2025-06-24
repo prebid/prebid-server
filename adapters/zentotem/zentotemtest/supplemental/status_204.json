@@ -16,8 +16,6 @@
         "displaymanager": "Fyber",
         "displaymanagerver": "10.1.1",
         "banner": {
-          "w": 0,
-          "h": 50,
           "api": [
             5
           ],
@@ -71,7 +69,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g",
+        "uri": "http://localhost/bid?sspuid=prebid",
         "body": {
           "id": "test-imp-id",
           "at": 2,
@@ -89,8 +87,6 @@
               "displaymanager": "Fyber",
               "displaymanagerver": "10.1.1",
               "banner": {
-                "w": 0,
-                "h": 50,
                 "api": [
                   5
                 ],

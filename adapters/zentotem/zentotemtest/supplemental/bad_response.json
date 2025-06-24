@@ -17,7 +17,7 @@
         "displaymanagerver": "10.1.1",
         "banner": {
           "api": [
-            4,5
+            4, 5
           ],
           "mimes": [
             "application/javascript",
@@ -27,8 +27,7 @@
             "image/jpeg",
             "image/gif"
           ]
-        },
-        "instl": 1
+        }
       }
     ],
     "app": {
@@ -70,7 +69,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g",
+        "uri": "http://localhost/bid?sspuid=prebid",
         "body": {
           "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
           "at": 2,
@@ -89,7 +88,7 @@
               "displaymanagerver": "10.1.1",
               "banner": {
                 "api": [
-                  4,5
+                  4, 5
                 ],
                 "mimes": [
                   "application/javascript",
@@ -99,8 +98,7 @@
                   "image/jpeg",
                   "image/gif"
                 ]
-              },
-              "instl": 1
+              }
             }
           ],
           "app": {
@@ -143,56 +141,14 @@
       },
       "mockResponse": {
         "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "36",
-                  "impid": "1",
-                  "price": 150,
-                  "nurl": "some-test-nurl",
-                  "burl": "some-test-burl",
-                  "adm": "some-test-adm",
-                  "adid": "36",
-                  "adomain": [
-                    "app.apple.com"
-                  ],
-                  "crid": "36",
-                  "mtype": 1
-                }
-              ],
-              "seat": "boldwin"
-            }
-          ],
-          "cur": "USD"
-        }
+        "body": "{\"id\"data.lost"
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "36",
-            "impid": "1",
-            "price": 150,
-            "nurl": "some-test-nurl",
-            "burl": "some-test-burl",
-            "adm": "some-test-adm",
-            "adid": "36",
-            "adomain": [
-              "app.apple.com"
-            ],
-            "crid": "36",
-            "mtype": 1
-          },
-          "type": "banner"
-        }
-      ]
+      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "comparison": "literal"
     }
   ]
 }

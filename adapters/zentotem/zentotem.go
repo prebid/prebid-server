@@ -9,19 +9,19 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-type ZentotemAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the {bidder} adapter for the given bidder with the given config.
+// Builder builds a new instance of the Zentotem adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	bidder := &ZentotemAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *ZentotemAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	requests := make([]*adapters.RequestData, 0, len(request.Imp))
 	var errors []error
 
@@ -59,7 +59,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)
 }
 
-func (a *ZentotemAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}

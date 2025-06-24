@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderZentotem, config.Adapter{
-		Endpoint: "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "http://localhost/bid?sspuid=prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -28,7 +28,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "get bid native type",
+			name: "get_bid_native_type",
 			bid: openrtb2.Bid{
 				MType: 4,
 			},
@@ -36,7 +36,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name: "get bid banner type",
+			name: "get_bid_banner_type",
 			bid: openrtb2.Bid{
 				MType: 1,
 			},
@@ -44,7 +44,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name: "get bid video type",
+			name: "get_bid_video_type",
 			bid: openrtb2.Bid{
 				MType: 2,
 			},

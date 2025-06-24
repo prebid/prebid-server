@@ -52,7 +52,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.zentotem.net/bid?sspuid=cqlnvfk00bhs0b6rci6g",
+        "uri": "http://localhost/bid?sspuid=prebid",
         "body": {
           "id": "o37934lssd34fgd",
           "cur": [
