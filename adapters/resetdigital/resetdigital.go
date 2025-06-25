@@ -37,7 +37,7 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	_ = reqInfo
-	
+
 	if len(request.Imp) != 1 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ResetDigital adapter supports only one impression per request",
@@ -216,13 +216,13 @@ func getBidType(bid openrtb2.Bid, request *openrtb2.BidRequest) (openrtb_ext.Bid
 		}
 		return getMediaType(request.Imp[0]), nil
 	}
-	
+
 	for _, imp := range request.Imp {
 		if bid.ImpID == imp.ID {
 			return getMediaType(imp), nil
 		}
 	}
-	
+
 	return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
 }
 
