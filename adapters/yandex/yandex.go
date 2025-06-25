@@ -19,13 +19,14 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-const BIDDER_VERSION = "1.1"
-const BIDDER_NAME = "prebid.go"
-
 const (
+	bidderVersion    = "1.1"
+	bidderName       = "prebid.go"
 	refererQueryKey  = "target-ref"
 	currencyQueryKey = "ssp-cur"
 	impIdQueryKey    = "imp-id"
+	videoMinDuration = 1
+	videoMaxDuration = 120
 )
 
 // Composite id of an ad placement
@@ -190,8 +191,8 @@ func mapExtToPlacementID(yandexExt openrtb_ext.ExtImpYandex) (*yandexPlacementID
 }
 
 func modifyImp(imp *openrtb2.Imp) error {
-	imp.DisplayManager = BIDDER_NAME
-	imp.DisplayManagerVer = BIDDER_VERSION
+	imp.DisplayManager = bidderName
+	imp.DisplayManagerVer = bidderVersion
 
 	if imp.Banner != nil {
 		banner, err := modifyBanner(*imp.Banner)
@@ -244,10 +245,10 @@ func modifyVideo(video openrtb2.Video) (*openrtb2.Video, error) {
 	}
 
 	if video.MinDuration == 0 {
-		video.MinDuration = 1
+		video.MinDuration = videoMinDuration
 	}
 	if video.MaxDuration == 0 {
-		video.MaxDuration = 120
+		video.MaxDuration = videoMaxDuration
 	}
 	if len(video.MIMEs) == 0 {
 		video.MIMEs = []string{"video/mp4"}
