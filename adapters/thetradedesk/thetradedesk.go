@@ -37,12 +37,25 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		if imp.Banner != nil {
 			if len(imp.Banner.Format) > 0 {
-				firstFormat := imp.Banner.Format[0]
-				bannerCopy := *imp.Banner
-				bannerCopy.H = &firstFormat.H
-				bannerCopy.W = &firstFormat.W
-				imp.Banner = &bannerCopy
-
+				if supplySourceId == "directtqmrw45y" {
+					bannerCopy := *imp.Banner
+					bannerCopy.Format = []openrtb2.Format{
+						{
+							H: 480,
+							W: 320,
+						},
+					}
+					firstFormat := bannerCopy.Format[0]
+					bannerCopy.H = &firstFormat.H
+					bannerCopy.W = &firstFormat.W
+					imp.Banner = &bannerCopy
+				} else {
+					firstFormat := imp.Banner.Format[0]
+					bannerCopy := *imp.Banner
+					bannerCopy.H = &firstFormat.H
+					bannerCopy.W = &firstFormat.W
+					imp.Banner = &bannerCopy
+				}
 			}
 		}
 
