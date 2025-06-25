@@ -149,8 +149,7 @@
                 "deal_channel": 1,
                 "prebiddealpriority": 1
               }
-            },
-            "type": "banner"
+            }
           }
         ]
       }

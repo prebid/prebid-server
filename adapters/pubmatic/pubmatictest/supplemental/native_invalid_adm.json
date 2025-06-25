@@ -108,8 +108,7 @@
                         "deal_channel": 1,
                         "bidtype": 2
                     }
-                },
-                "type": "native"
+                }
               }
           ]
       }

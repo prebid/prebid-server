@@ -30,7 +30,6 @@ type PubmaticAdapter struct {
 }
 
 type pubmaticBidExt struct {
-	BidType            *int                 `json:"BidType,omitempty"`
 	VideoCreativeInfo  *pubmaticBidExtVideo `json:"video,omitempty"`
 	Marketplace        string               `json:"marketplace,omitempty"`
 	PrebidDealPriority int                  `json:"prebiddealpriority,omitempty"`
@@ -470,7 +469,6 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 			typedBid := &adapters.TypedBid{
 				Bid:      &bid,
-				BidType:  mType,
 				BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
 			}
 
@@ -495,7 +493,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				}
 			}
 
-			if typedBid.BidType == openrtb_ext.BidTypeNative {
+			if mType == openrtb_ext.BidTypeNative {
 				bid.AdM, err = getNativeAdm(bid.AdM)
 				if err != nil {
 					errs = append(errs, err)
@@ -665,7 +663,7 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 			mType = openrtb_ext.BidTypeNative
 		default:
 			return "", &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("failed to parse bid mtype (%d) for impression id  %s", bid.MType, bid.ImpID),
+				Message: fmt.Sprintf("failed to parse bid mtype (%d) for impression id %s", bid.MType, bid.ImpID),
 			}
 		}
 	}
