@@ -111,8 +111,8 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 func resolveMacros(bid *openrtb2.Bid) {
 	if bid != nil {
 		price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
-		bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
-		bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
-		bid.BURL = strings.Replace(bid.BURL, "${AUCTION_PRICE}", price, -1)
+		bid.NURL = strings.ReplaceAll(bid.NURL, "${AUCTION_PRICE}", price)
+		bid.AdM = strings.ReplaceAll(bid.AdM, "${AUCTION_PRICE}", price)
+		bid.BURL = strings.ReplaceAll(bid.BURL, "${AUCTION_PRICE}", price)
 	}
 }
