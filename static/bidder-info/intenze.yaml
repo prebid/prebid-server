@@ -1,6 +1,6 @@
-endpoint: "http://us-e-node1.gothamads.com/?pass={{.AccountID}}"
+endpoint: "http://lb-east.intenze.co/?pass={{.AccountID}}"
 maintainer:
-  email: "support@gothamads.com"
+  email: "connect@intenze.co"
 capabilities:
   app:
     mediaTypes:
