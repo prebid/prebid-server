@@ -70,6 +70,7 @@ type ExtBidPrebidMeta struct {
 	RendererData         json.RawMessage `json:"rendererData,omitempty"`
 	RendererUrl          string          `json:"rendererUrl,omitempty"`
 	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
+	Seat                 string          `json:"seat,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
