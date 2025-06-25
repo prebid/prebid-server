@@ -141,7 +141,7 @@ func TestGetBidType(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			bidType, err := getBidType(test.bid, test.request)
-			
+
 			if test.hasError {
 				assert.Error(t, err)
 			} else {
@@ -172,7 +172,7 @@ func TestBuildRequest(t *testing.T) {
 	}
 
 	request := &openrtb2.BidRequest{
-		ID: "test-request-id",
+		ID:  "test-request-id",
 		Imp: []openrtb2.Imp{imp},
 		Site: &openrtb2.Site{
 			Page:   "https://example.com/page",
@@ -181,7 +181,7 @@ func TestBuildRequest(t *testing.T) {
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
-	
+
 	assert.Empty(t, errs)
 	assert.Len(t, reqs, 1)
 	assert.Equal(t, "https://example.com?pid=test-placement", reqs[0].Uri)
@@ -285,20 +285,20 @@ func TestMakeRequestsEdgeCases(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			reqs, errs := bidder.MakeRequests(test.request, &adapters.ExtraRequestInfo{})
-			
+
 			if test.expectNil {
 				assert.Nil(t, reqs)
 			} else {
 				assert.NotNil(t, reqs)
 			}
-			
+
 			assert.Len(t, errs, test.expectErrs)
-			
+
 			if test.expectErrs > 0 {
 				assert.IsType(t, test.errType, errs[0])
 				assert.Contains(t, errs[0].Error(), test.errMsg)
 			}
-			
+
 			if test.name == "Empty currency" {
 				reqBody := reqs[0].Body
 				var reqParsed openrtb2.BidRequest
@@ -306,7 +306,7 @@ func TestMakeRequestsEdgeCases(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, []string{"USD"}, reqParsed.Cur)
 			}
-			
+
 			if test.name == "TagID not overwritten when present" {
 				reqBody := reqs[0].Body
 				var reqParsed openrtb2.BidRequest
@@ -348,7 +348,7 @@ func TestMultipleImpressions(t *testing.T) {
 	}
 
 	request := &openrtb2.BidRequest{
-		ID: "test-request-id",
+		ID:  "test-request-id",
 		Imp: []openrtb2.Imp{imp1, imp2},
 		Site: &openrtb2.Site{
 			Page:   "https://example.com/page",
@@ -357,11 +357,11 @@ func TestMultipleImpressions(t *testing.T) {
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
-	
+
 	assert.Nil(t, reqs)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Error(), "ResetDigital adapter supports only one impression per request")
-	
+
 	_, ok := errs[0].(*errortypes.BadInput)
 	assert.True(t, ok, "Error should be of type BadInput")
 }
@@ -390,7 +390,7 @@ func TestParseBidResponse(t *testing.T) {
 	}
 
 	requestData := &adapters.RequestData{}
-	
+
 	responseData := &adapters.ResponseData{
 		StatusCode: http.StatusOK,
 		Body: []byte(`{
@@ -416,7 +416,7 @@ func TestParseBidResponse(t *testing.T) {
 	}
 
 	bidResponse, errs := bidder.MakeBids(request, requestData, responseData)
-	
+
 	assert.Empty(t, errs)
 	assert.NotNil(t, bidResponse)
 	assert.Equal(t, "USD", bidResponse.Currency)
@@ -441,7 +441,7 @@ func TestMakeBidsStatus204(t *testing.T) {
 	}
 
 	bidResponse, errs := bidder.MakeBids(request, &adapters.RequestData{}, responseData)
-	
+
 	assert.Nil(t, bidResponse)
 	assert.Nil(t, errs)
 }
@@ -462,12 +462,12 @@ func TestMakeBidsStatus500(t *testing.T) {
 	}
 
 	bidResponse, errs := bidder.MakeBids(request, &adapters.RequestData{}, responseData)
-	
+
 	assert.Nil(t, bidResponse)
 	assert.NotNil(t, errs)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Error(), "Unexpected status code")
-	
+
 	_, ok := errs[0].(*errortypes.BadServerResponse)
 	assert.True(t, ok, "Error should be of type BadServerResponse")
 }
@@ -488,12 +488,12 @@ func TestMakeBidsStatus400(t *testing.T) {
 	}
 
 	bidResponse, errs := bidder.MakeBids(request, &adapters.RequestData{}, responseData)
-	
+
 	assert.Nil(t, bidResponse)
 	assert.NotNil(t, errs)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Error(), "Unexpected status code")
-	
+
 	_, ok := errs[0].(*errortypes.BadInput)
 	assert.True(t, ok, "Error should be of type BadInput")
 }
@@ -514,7 +514,7 @@ func TestMakeBidsEmptySeatBid(t *testing.T) {
 	}
 
 	bidResponse, errs := bidder.MakeBids(request, &adapters.RequestData{}, responseData)
-	
+
 	assert.Nil(t, bidResponse)
 	assert.Nil(t, errs)
 }
@@ -535,12 +535,12 @@ func TestMakeBidsInvalidJson(t *testing.T) {
 	}
 
 	bidResponse, errs := bidder.MakeBids(request, &adapters.RequestData{}, responseData)
-	
+
 	assert.Nil(t, bidResponse)
 	assert.NotNil(t, errs)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Error(), "Bad server response")
-	
+
 	_, ok := errs[0].(*errortypes.BadServerResponse)
 	assert.True(t, ok, "Error should be of type BadServerResponse")
 }
@@ -561,12 +561,12 @@ func TestMakeBidsStatusRedirect(t *testing.T) {
 	}
 
 	bidResponse, errs := bidder.MakeBids(request, &adapters.RequestData{}, responseData)
-	
+
 	assert.Nil(t, bidResponse)
 	assert.NotNil(t, errs)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs[0].Error(), "Unexpected status code")
-	
+
 	_, ok := errs[0].(*errortypes.BadServerResponse)
 	assert.True(t, ok, "Error should be of type BadServerResponse")
 }
@@ -639,9 +639,9 @@ func TestGetBidTypeMultipleImps(t *testing.T) {
 			},
 		},
 	}
-	
+
 	bidType, err := getBidType(bid, request)
-	
+
 	assert.NoError(t, err)
 	assert.Equal(t, openrtb_ext.BidTypeVideo, bidType)
 }
