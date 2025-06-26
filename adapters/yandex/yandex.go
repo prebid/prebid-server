@@ -194,29 +194,41 @@ func modifyImp(imp *openrtb2.Imp) error {
 	imp.DisplayManager = bidderName
 	imp.DisplayManagerVer = bidderVersion
 
+	var hasSupportedType bool
+
 	if imp.Banner != nil {
 		banner, err := modifyBanner(*imp.Banner)
+		if err != nil {
+			return err
+		}
 		if banner != nil {
 			imp.Banner = banner
 		}
-		return err
+		hasSupportedType = true
 	}
 
 	if imp.Video != nil {
 		video, err := modifyVideo(*imp.Video)
+		if err != nil {
+			return err
+		}
 		if video != nil {
 			imp.Video = video
 		}
-		return err
+		hasSupportedType = true
 	}
 
 	if imp.Native != nil {
-		return nil
+		hasSupportedType = true
 	}
 
-	return &errortypes.BadInput{
-		Message: fmt.Sprintf("Unsupported format. Yandex only supports banner, video, and native types. Ignoring imp id #%s", imp.ID),
+	if !hasSupportedType {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Unsupported format. Yandex only supports banner, video, and native types. Ignoring imp id #%s", imp.ID),
+		}
 	}
+
+	return nil
 }
 
 func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
@@ -367,16 +379,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 }
 
 func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
+	if imp.Video != nil {
+		return openrtb_ext.BidTypeVideo, nil
+	}
+
 	if imp.Native != nil {
 		return openrtb_ext.BidTypeNative, nil
 	}
 
 	if imp.Banner != nil {
 		return openrtb_ext.BidTypeBanner, nil
-	}
-
-	if imp.Video != nil {
-		return openrtb_ext.BidTypeVideo, nil
 	}
 
 	return "", &errortypes.BadInput{
