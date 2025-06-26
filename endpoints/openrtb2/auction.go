@@ -251,16 +251,16 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
 		analyticsPolicy.SetContext(ctx)
 	}
-	dsaWriter := dsa.Writer{
-		Config:      account.Privacy.DSA,
-		GDPRInScope: gdprEnforced,
-	}
+	// dsaWriter := dsa.Writer{
+	// 	Config:      account.Privacy.DSA,
+	// 	GDPRInScope: gdprEnforced,
+	// }
 	errL = append(errL, gdprErrs...)
-	if err := dsaWriter.Write(req); err != nil {
-		errL = append(errL, err)
-		writeError(errL, w, &labels)
-		return
-	}
+	// if err := dsaWriter.Write(req); err != nil {
+	// 	errL = append(errL, err)
+	// 	writeError(errL, w, &labels)
+	// 	return
+	// }
 
 	// Read Usersyncs/Cookie
 	decoder := usersync.Base64Decoder{}

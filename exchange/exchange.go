@@ -324,14 +324,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	// }
 	// channelEnabled := r.TCF2Config.ChannelEnabled(channelTypeMap[r.LegacyLabels.RType])
 	// gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
-	// dsaWriter := dsa.Writer{
-	// 	Config:      r.Account.Privacy.DSA,
-	// 	// GDPRInScope: gdprEnforced,
-	// 	GDPRInScope: true, //TODO
-	// }
-	// if err := dsaWriter.Write(r.BidRequestWrapper); err != nil {
-	// 	return nil, err
-	// }
+	dsaWriter := dsa.Writer{
+		Config:      r.Account.Privacy.DSA,
+		GDPRInScope: r.GDPREnforced,
+	}
+	if err := dsaWriter.Write(r.BidRequestWrapper); err != nil {
+		return nil, err
+	}
 
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {

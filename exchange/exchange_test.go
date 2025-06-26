@@ -2121,10 +2121,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	var gdprDefaultValue string
+	var gdprSignal gdpr.Signal
 	if spec.AssumeGDPRApplies {
 		gdprDefaultValue = "1"
+		gdprSignal = gdpr.SignalYes
 	} else {
 		gdprDefaultValue = "0"
+		gdprSignal = gdpr.SignalNo
 	}
 
 	privacyConfig := config.Privacy{
@@ -2135,13 +2138,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enforce: spec.EnforceLMT,
 		},
 		GDPR: config.GDPR{
-			Enabled:         spec.GDPREnabled,
+			// Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
 			EEACountries:    eeac,
 			EEACountriesMap: eeacMap,
-			TCF2: config.TCF2{
-				Enabled: spec.GDPREnabled,
-			},
+			// TCF2: config.TCF2{
+			// 	Enabled: spec.GDPREnabled,
+			// },
 		},
 	}
 	bidIdGenerator := &fakeBidIDGenerator{}
@@ -2201,6 +2204,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		HookExecutor:  &hookexecution.EmptyHookExecutor{},
 		TCF2Config:    gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, config.AccountGDPR{}),
 		Activities:    activityControl,
+		GDPRSignal:    gdprSignal,
+		GDPREnforced:  spec.GDPREnforced,
 	}
 
 	if spec.MultiBid != nil {
@@ -5491,7 +5496,7 @@ func (ms *MockSigner) Sign(destinationURL string, body []byte) (string, error) {
 }
 
 type exchangeSpec struct {
-	GDPREnabled                bool                   `json:"gdpr_enabled"`
+	GDPREnforced               bool                   `json:"gdpr_enforced"`
 	FloorsEnabled              bool                   `json:"floors_enabled"`
 	IncomingRequest            exchangeRequest        `json:"incomingRequest"`
 	OutgoingRequests           map[string]*bidderSpec `json:"outgoingRequests"`
