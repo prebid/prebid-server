@@ -138,7 +138,8 @@
                   "cid": "cid",
                   "crid": "crid",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype": 100
                 }
               ],
               "seat": "seat"

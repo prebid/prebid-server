@@ -84,7 +84,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		requestJSON, err := json.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
-			continue
+			return nil, errs
 		}
 
 		request := &adapters.RequestData{
@@ -92,7 +92,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Body:    requestJSON,
 			Uri:     endpoint,
 			Headers: headers,
-			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
+			ImpIDs:  []string{imp.ID},
 		}
 
 		requests = append(requests, request)
@@ -135,8 +135,8 @@ func prepareBidResponse(seats []openrtb2.SeatBid) (*adapters.BidderResponse, []e
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seats))
 
 	for _, seatBid := range seats {
-		for bidId, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(bid)
+		for bidId := range seatBid.Bid {
+			bidType, err := getMediaTypeForBid(seatBid.Bid[bidId])
 			if err != nil {
 				errs = append(errs, err)
 				continue
