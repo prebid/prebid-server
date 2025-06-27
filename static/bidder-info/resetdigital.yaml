@@ -1,7 +1,7 @@
 maintainer:
   email: biddersupport@resetdigital.co
 
-gvlVendorID: 0   # actualiza cuando obtengan su ID en la GVL
+gvlVendorID: 1162
 
 capabilities:
   site:
