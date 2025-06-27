@@ -24,15 +24,16 @@ type response struct {
 }
 
 type bidResponse struct {
-	ID     string          `json:"id"`
-	BidID  string          `json:"bidId"`
-	CPM    float64         `json:"cpm"`
-	Width  int64           `json:"width"`
-	Height int64           `json:"height"`
-	Ad     string          `json:"ad"`
-	CrID   string          `json:"crid"`
-	Mtype  string          `json:"mtype"`
-	DSA    json.RawMessage `json:"dsa"`
+	ID      string          `json:"id"`
+	BidID   string          `json:"bidId"`
+	CPM     float64         `json:"cpm"`
+	Width   int64           `json:"width"`
+	Height  int64           `json:"height"`
+	Ad      string          `json:"ad"`
+	CrID    string          `json:"crid"`
+	Mtype   string          `json:"mtype"`
+	DSA     json.RawMessage `json:"dsa"`
+	ADomain []string        `json:"adomain,omitempty"`
 }
 
 type bidExt struct {
@@ -78,14 +79,15 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 		}
 
 		openRtbBid := openrtb2.Bid{
-			ID:    bid.ID,
-			ImpID: bid.BidID,
-			W:     bid.Width,
-			H:     bid.Height,
-			Price: bid.CPM,
-			AdM:   bid.Ad,
-			CrID:  bid.CrID,
-			MType: markupType,
+			ID:      bid.ID,
+			ImpID:   bid.BidID,
+			W:       bid.Width,
+			H:       bid.Height,
+			Price:   bid.CPM,
+			AdM:     bid.Ad,
+			CrID:    bid.CrID,
+			MType:   markupType,
+			ADomain: bid.ADomain,
 		}
 
 		if bid.DSA != nil {
