@@ -4,8 +4,17 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "native": {
-          "request": ""
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -20,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=imds",
+        "uri": "http://pbs.technoratimedia.com/openrtb/bids/prebid?src=pbs-go%2F1.0.0&adapter=advertising",
         "body": {
           "id": "test-request-id",
           "ext": {
@@ -30,8 +39,11 @@
             {
               "id":"test-imp-id",
               "tagid": "demo1",
-              "native": {
-                "request": ""
+              "banner": {
+                "format": [
+                  {"w":300,"h":250},
+                  {"w":300,"h":600}
+                ]
               },
               "ext": {
                 "bidder": {
@@ -45,25 +57,15 @@
         "impIDs":["test-imp-id"]
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "1",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "native-request-id",
-                  "impid": "test-imp-id"
-                }
-              ]
-            }
-          ]
-        }
+        "status": 400,
+        "body": {}
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
     }
   ]
 }
