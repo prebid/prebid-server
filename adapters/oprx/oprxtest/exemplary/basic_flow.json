@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    «OpenRTB 2.x Bid Request»
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "«Bidding Server Endpoint»",
+      "headers": {
+        "«Name»": ["«Value»"],
+      },
+      "body": {
+         «Bidding Server Request Body»
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "headers": {
+        "«Name»": ["«Value»"],
+      },
+      "body": {
+         «Bidding Server Response Body»
+      },
+    },
+  }],
+  "expectedBidResponses": [{
+    "bids": [{
+       «Prebid Server Bid Response»
+    }]
+  }]
+}
