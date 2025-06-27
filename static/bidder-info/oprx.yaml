@@ -1,0 +1,27 @@
+endpoint: "https://pb.optimizerx.com/pb"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - CAN
+maintainer:
+  email: adsupport@optimizerx.com
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner      
+      - native
+  dooh:
+    mediaTypes:
+      - banner    
+      - native
+# userSync:
+#   redirect:
+#     url: https://foo.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+#     userMacro: $UID
