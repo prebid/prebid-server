@@ -5,23 +5,30 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
-	endpoint string
+	endpointTemplate *template.Template
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpointTemplate: endpointTemplate,
 	}
 	return bidder, nil
 }
@@ -40,6 +47,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}}
 	}
 
+	endpoint, err := a.buildEndpointURL(&impExtBidder)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	headers := http.Header{}
 	headers.Add("X-Supply-Partner-Id", impExtBidder.SupplyPartnerID)
 
@@ -50,13 +62,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     endpoint,
 		Headers: headers,
 		Body:    requestJSON,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, nil
+}
+
+func (a *adapter) buildEndpointURL(impExtBidder *openrtb_ext.ImpExtBlis) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{SupplyId: impExtBidder.SupplyPartnerID}
+	return macros.ResolveMacros(a.endpointTemplate, endpointParams)
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {

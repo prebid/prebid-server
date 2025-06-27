@@ -1,4 +1,4 @@
-endpoint: "https://prebid.lb.infinity.blismedia.com/rtb/213"
+endpoint: "https://prebid.lb.infinity.blismedia.com/rtb/213/{{.SupplyId}}"
 endpointCompression: gzip
 geoscope:
   - global
