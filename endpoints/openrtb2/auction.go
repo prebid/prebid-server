@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
+	"github.com/prebid/prebid-server/v3/dsa"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
@@ -92,6 +93,7 @@ func NewEndpoint(
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
 	analyticsRunner analytics.Runner,
+	gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -120,6 +122,7 @@ func NewEndpoint(
 		cfg,
 		metricsEngine,
 		analyticsRunner,
+		gdprAnalyticsPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -143,6 +146,7 @@ type endpointDeps struct {
 	cfg                       *config.Configuration
 	metricsEngine             metrics.MetricsEngine
 	analytics                 analytics.Runner
+	gdprPrivacyPolicyBuilder  gdpr.PrivacyPolicyBuilder
 	disabledBidders           map[string]string
 	defaultRequest            bool
 	defReqJSON                []byte
@@ -165,6 +169,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// to compute the auction timeout.
 	start := time.Now()
 
+	// create an allow all analytics policy object
+	var analyticsPolicy gdpr.PrivacyPolicy
+	analyticsPolicy = &gdpr.AllowAllAnalytics{}
+
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 	ao := analytics.AuctionObject{
@@ -185,7 +193,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao, activityControl)
+		deps.analytics.LogAuctionObject(&ao, activityControl, analyticsPolicy)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -202,8 +210,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
@@ -217,6 +223,44 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
+
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
+
+	var gdprErrs []error
+	var gpp gpplib.GppContainer
+	if req.Regs != nil && len(req.Regs.GPP) > 0 {
+		gpp, gdprErrs = gpplib.Parse(req.Regs.GPP)
+	}
+
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
+
+	// Make our best guess if GDPR applies
+	gdprDefaultValue := exchange.ParseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := exchange.GetGDPR(req)
+	if err != nil {
+		gdprErrs = append(gdprErrs, err)
+	}
+	consent, err := exchange.GetConsent(req, gpp)
+	if err != nil {
+		gdprErrs = append(gdprErrs, err)
+	}
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType])
+	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	if gdprEnforced {
+		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
+		analyticsPolicy.SetContext(ctx)
+	}
+	// dsaWriter := dsa.Writer{
+	// 	Config:      account.Privacy.DSA,
+	// 	GDPRInScope: gdprEnforced,
+	// }
+	errL = append(errL, gdprErrs...)
+	// if err := dsaWriter.Write(req); err != nil {
+	// 	errL = append(errL, err)
+	// 	writeError(errL, w, &labels)
+	// 	return
+	// }
 
 	// Read Usersyncs/Cookie
 	decoder := usersync.Base64Decoder{}
@@ -232,7 +276,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	// Set Integration Information
-	err := deps.setIntegrationType(req, account)
+	err = deps.setIntegrationType(req, account)
 	if err != nil {
 		errL = append(errL, err)
 		writeError(errL, w, &labels)
@@ -260,6 +304,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	defer func() {
