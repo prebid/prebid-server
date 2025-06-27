@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "missing-publisher-site",
+    "site": {
+      "page": "example.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "tagId": "test-tag-id"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Publisher ID is required in the request. Please provide a valid Publisher ID.",
+      "comparison": "literal"
+    }
+  ]
+}
