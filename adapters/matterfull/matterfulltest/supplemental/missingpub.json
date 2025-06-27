@@ -1,0 +1,34 @@
+{
+    "mockBidRequest": {
+      "id": "testid",
+      "imp": [
+        {
+          "id": "testimpid",
+          "banner": {
+            "format": [
+              {
+                "w": 320,
+                "h": 250
+              },
+              {
+                "w": 320,
+                "h": 300
+              }
+            ],
+            "w": 320,
+            "h": 250
+          },
+          "ext": {
+            "bidder": {
+              "pid": ""
+            }
+          }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      {
+          "value": "No pid value provided",
+          "comparison": "literal"
+      }]
+  }
