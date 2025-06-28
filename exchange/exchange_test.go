@@ -19,9 +19,6 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/go-gdpr/vendorconsent"
-	gpplib "github.com/prebid/go-gpp"
-	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
@@ -87,7 +84,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			if biddersInfo[string(bidderName)].IsEnabled() {
@@ -137,7 +134,7 @@ func TestCharacterEscape(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	//liveAdapters []openrtb_ext.BidderName,
@@ -1240,7 +1237,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, pbc, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, pbc, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -1599,7 +1596,7 @@ func TestBidResponseCurrency(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1747,7 +1744,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1841,7 +1838,7 @@ func TestRaceIntegration(t *testing.T) {
 		},
 	}.Builder
 
-	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, &nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -1939,7 +1936,7 @@ func TestPanicRecovery(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(bidderRequest BidderRequest, conversions currency.Conversions) {
@@ -2009,7 +2006,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e := NewExchange(adapters, &mockCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, &mockCache{}, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, categoriesFetcher, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 
 	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
 	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
@@ -4587,7 +4584,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		},
 	}.Builder
 
-	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
+	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, currencyConverter, nilCategoryFetcher{}, &signer, macros.NewStringIndexBasedReplacer(), nil, nil, nil).(*exchange)
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -6577,521 +6574,4 @@ type mockRequestValidator struct {
 
 func (mrv *mockRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ortb.ValidationConfig, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
 	return mrv.errors
-}
-
-func TestParseGDPRDefaultValue(t *testing.T) {
-	var (
-		boolTrue  = true
-		boolFalse = false
-	)
-
-	tests := []struct {
-		name          string
-		defaultValue  gdpr.Signal
-		privacyConfig config.Privacy
-		req           *openrtb2.BidRequest
-		eeaCountries  []string
-		account       config.Account
-		consent       string
-		output        gdpr.Signal
-	}{
-		{
-			"Exchange default value is SignalYes, no other settings",
-			gdpr.SignalYes,
-			config.Privacy{},
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{},
-			"",
-			gdpr.SignalYes,
-		},
-		{
-			"Exchange default value is SignalNo, no other settings",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{},
-			"",
-			gdpr.SignalNo,
-		},
-		{
-			"Exchange default value is SignalNo, User is in EEA, Device is not in EEA",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
-				User:   &openrtb2.User{Geo: &openrtb2.Geo{Country: "ALA"}},
-			},
-			[]string{"ALA"},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: nil,
-				},
-			},
-			"",
-			gdpr.SignalYes,
-		},
-		{
-			"Exchange default value is SignalNo, User is not in EEA, Device is not in EEA",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
-				User:   &openrtb2.User{Geo: &openrtb2.Geo{Country: "USA"}},
-			},
-			[]string{"ALA"},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: nil,
-				},
-			},
-			"",
-			gdpr.SignalNo,
-		},
-		{
-			"Exchange default value is SignalNo, Device is in EEA",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "ALA"}},
-			},
-			[]string{"ALA"},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: nil,
-				},
-			},
-			"",
-			gdpr.SignalYes,
-		},
-		{
-			"Exchange default value is SignalNo, Device is not in EEA",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
-			},
-			[]string{"ALA"},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: nil,
-				},
-			},
-			"",
-			gdpr.SignalNo,
-		},
-		{
-			"Exchange default value is SignalNo, with consent, and means in scope",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: &boolTrue,
-				},
-			},
-			"CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-			gdpr.SignalYes,
-		},
-		{
-			"Exchange default value is SignalNo, with consent, and not means in scope",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: &boolFalse,
-				},
-			},
-			"CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-			gdpr.SignalNo,
-		},
-		{
-			"Exchange default value is SignalNo, without consent, and means in scope",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: &boolTrue,
-				},
-			},
-			"",
-			gdpr.SignalNo,
-		},
-		{
-			"Exchange default value is SignalNo, with invalid consent, and means in scope",
-			gdpr.SignalNo,
-			config.Privacy{},
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: &boolTrue,
-				},
-			},
-			"invalid consent",
-			gdpr.SignalNo,
-		},
-		{
-			"Exchange default value is SignalNo, with consent, default means in scope",
-			gdpr.SignalNo,
-			config.Privacy{
-				GDPR: config.GDPR{
-					ConsentStringMeansInScope: true,
-				},
-			},
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{
-				GDPR: config.AccountGDPR{
-					ConsentStringMeansInScope: nil,
-				},
-			},
-			"CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-			gdpr.SignalYes,
-		},
-		{
-			"Exchange default value is SignalNo, with consent, and means in scope, in EEA",
-			gdpr.SignalNo,
-			config.Privacy{
-				GDPR: config.GDPR{
-					ConsentStringMeansInScope: true,
-				},
-			},
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
-			},
-			[]string{"ALA"},
-			config.Account{},
-			"CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-			gdpr.SignalNo,
-		},
-		{
-			"Exchange default value is SignalNo, with consent, and means in scope, in EEA unknown",
-			gdpr.SignalNo,
-			config.Privacy{
-				GDPR: config.GDPR{
-					ConsentStringMeansInScope: true,
-				},
-			},
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: ""}},
-			},
-			[]string{"ALA"},
-			config.Account{},
-			"CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-			gdpr.SignalYes,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			e := new(exchange)
-			e.gdprDefaultValue = test.defaultValue
-			e.privacyConfig = test.privacyConfig
-			req := &openrtb_ext.RequestWrapper{BidRequest: test.req}
-			parsedConsent, _ := vendorconsent.ParseString(test.consent)
-
-			assert.Equal(t, test.output, e.parseGDPRDefaultValue(req, test.eeaCountries, test.account, parsedConsent))
-		})
-	}
-}
-
-func TestExtractRequestPrivacyGDPR(t *testing.T) {
-	var (
-		SignalNo      int8 = 0
-		SignalYes     int8 = 1
-		SignalInvalid int8 = 9
-		BoolTrue           = true
-	)
-
-	tests := []struct {
-		name           string
-		req            *openrtb2.BidRequest
-		eeaCountries   []string
-		account        config.Account
-		tcf2config     gdpr.TCF2ConfigReader
-		legacyLabels   metrics.Labels
-		requestPrivacy *RequestPrivacy
-		errsCount      int
-		errsHaveFatal  bool
-	}{
-		{
-			"Request without consent, default no, signal ambiguous, channel disabled",
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: false}, config.AccountGDPR{}),
-			metrics.Labels{},
-			&RequestPrivacy{
-				Consent:            "",
-				GDPRDefaultValue:   gdpr.SignalNo,
-				GDPRSignal:         gdpr.SignalAmbiguous,
-				GDPRChannelEnabled: false,
-				GDPREnforced:       false,
-			},
-			0,
-			false,
-		},
-		{
-			"Request without consent, default no, signal ambiguous, channel enabled",
-			&openrtb2.BidRequest{},
-			[]string{},
-			config.Account{},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
-			metrics.Labels{},
-			&RequestPrivacy{
-				Consent:            "",
-				GDPRDefaultValue:   gdpr.SignalNo,
-				GDPRSignal:         gdpr.SignalAmbiguous,
-				GDPRChannelEnabled: true,
-				GDPREnforced:       false,
-			},
-			0,
-			false,
-		},
-		{
-			"Request with consent, default no, signal yes",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GDPR: &SignalYes},
-				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
-			},
-			[]string{},
-			config.Account{},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
-			metrics.Labels{},
-			&RequestPrivacy{
-				Consent:            "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-				GDPRDefaultValue:   gdpr.SignalNo,
-				GDPRSignal:         gdpr.SignalYes,
-				GDPRChannelEnabled: true,
-				GDPREnforced:       true,
-			},
-			0,
-			false,
-		},
-		{
-			"Request with consent, default no, signal no",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GDPR: &SignalNo},
-				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
-			},
-			[]string{},
-			config.Account{},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
-			metrics.Labels{},
-			&RequestPrivacy{
-				Consent:            "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-				GDPRDefaultValue:   gdpr.SignalNo,
-				GDPRSignal:         gdpr.SignalNo,
-				GDPRChannelEnabled: true,
-				GDPREnforced:       false,
-			},
-			0,
-			false,
-		},
-		{
-			"Request with consent, default yes, signal yes",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GDPR: &SignalYes},
-				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
-			},
-			[]string{},
-			config.Account{GDPR: config.AccountGDPR{ConsentStringMeansInScope: &BoolTrue}},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
-			metrics.Labels{},
-			&RequestPrivacy{
-				Consent:            "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA",
-				GDPRDefaultValue:   gdpr.SignalYes,
-				GDPRSignal:         gdpr.SignalYes,
-				GDPRChannelEnabled: true,
-				GDPREnforced:       true,
-			},
-			0,
-			false,
-		},
-		{
-			"Request with consent, default no, signal invalid, should return fatal error",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GDPR: &SignalInvalid},
-				User: &openrtb2.User{Consent: "CPuKGCPPuKGCPNEAAAENCZCAAAAAAAAAAAAAAAAAAAAA"},
-			},
-			[]string{},
-			config.Account{},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
-			metrics.Labels{},
-			nil,
-			1,
-			true,
-		},
-		{
-			"Request without consent, default no, signal no, but gpp exists",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN", GPPSID: []int8{2, 6}},
-				User: &openrtb2.User{},
-			},
-			[]string{},
-			config.Account{},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
-			metrics.Labels{},
-			&RequestPrivacy{
-				Consent:            "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				GDPRDefaultValue:   gdpr.SignalNo,
-				GDPRSignal:         gdpr.SignalYes,
-				GDPRChannelEnabled: true,
-				GDPREnforced:       true,
-			},
-			0,
-			false,
-		},
-		{
-			"Request without consent, default no, signal no, but invalid gpp exists",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{GPP: "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN", GPPSID: []int8{2, 6}},
-				User: &openrtb2.User{},
-			},
-			[]string{},
-			config.Account{},
-			gdpr.NewTCF2Config(config.TCF2{Enabled: true}, config.AccountGDPR{}),
-			metrics.Labels{},
-			&RequestPrivacy{
-				Consent:            "",
-				GDPRDefaultValue:   gdpr.SignalNo,
-				GDPRSignal:         gdpr.SignalYes,
-				GDPRChannelEnabled: true,
-				GDPREnforced:       true,
-			},
-			1,
-			false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			req := test.req
-			if req.User != nil && test.requestPrivacy != nil {
-				test.requestPrivacy.ParsedConsent, _ = vendorconsent.ParseString(req.User.Consent)
-			}
-
-			if req.Regs != nil && req.Regs.GPP != "" && test.requestPrivacy != nil {
-				test.requestPrivacy.ParsedGPP, _ = gpplib.Parse(req.Regs.GPP)
-				for _, section := range test.requestPrivacy.ParsedGPP.Sections {
-					if section.GetID() == gppConstants.SectionTCFEU2 {
-						test.requestPrivacy.ParsedConsent, _ = vendorconsent.ParseString(section.GetValue())
-					}
-				}
-			}
-
-			e := new(exchange)
-			auctionRequest := new(AuctionRequest)
-			auctionRequest.BidRequestWrapper = &openrtb_ext.RequestWrapper{BidRequest: req}
-			auctionRequest.Account = test.account
-			auctionRequest.TCF2Config = test.tcf2config
-			auctionRequest.LegacyLabels = test.legacyLabels
-
-			output, errs := e.extractRequestPrivacy(auctionRequest, test.eeaCountries)
-			assert.True(t, reflect.DeepEqual(test.requestPrivacy, output), "expected output to match. Expected: %+v, Got: %+v", test.requestPrivacy, output)
-			assert.Equal(t, test.errsCount, len(errs))
-			if test.errsHaveFatal {
-				assert.True(t, errortypes.FirstFatalError(errs) != nil)
-			}
-		})
-	}
-}
-
-func TestExtractRequestPrivacyLMT(t *testing.T) {
-	var (
-		Lmt0 int8 = 0
-		Lmt1 int8 = 1
-	)
-	tests := []struct {
-		name          string
-		req           *openrtb2.BidRequest
-		privacyConfig config.Privacy
-		expected      bool
-	}{
-		{
-			"Request device lmt is 0",
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Lmt: &Lmt0},
-			},
-			config.Privacy{
-				LMT: config.LMT{Enforce: true},
-			},
-			false,
-		},
-		{
-			"Request device lmt is 1",
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Lmt: &Lmt1},
-			},
-			config.Privacy{
-				LMT: config.LMT{Enforce: true},
-			},
-			true,
-		},
-		{
-			"Request device lmt is nil",
-			&openrtb2.BidRequest{
-				Device: &openrtb2.Device{Lmt: nil},
-			},
-			config.Privacy{
-				LMT: config.LMT{Enforce: true},
-			},
-			false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			e := new(exchange)
-			e.privacyConfig = test.privacyConfig
-			auctionRequest := new(AuctionRequest)
-			auctionRequest.BidRequestWrapper = &openrtb_ext.RequestWrapper{BidRequest: test.req}
-			auctionRequest.TCF2Config = gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
-
-			output, _ := e.extractRequestPrivacy(auctionRequest, []string{})
-			assert.Equal(t, test.expected, output.LMTEnforced)
-		})
-	}
-}
-
-func TestExtractRequestPrivacyCOPPA(t *testing.T) {
-	tests := []struct {
-		name     string
-		req      *openrtb2.BidRequest
-		expected bool
-	}{
-		{
-			"Request COPPA is 0",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{COPPA: 0},
-			},
-			false,
-		},
-		{
-			"Request COPPA is 1",
-			&openrtb2.BidRequest{
-				Regs: &openrtb2.Regs{COPPA: 1},
-			},
-			true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			e := new(exchange)
-			auctionRequest := new(AuctionRequest)
-			auctionRequest.BidRequestWrapper = &openrtb_ext.RequestWrapper{BidRequest: test.req}
-			auctionRequest.TCF2Config = gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
-
-			output, _ := e.extractRequestPrivacy(auctionRequest, []string{})
-			assert.Equal(t, test.expected, output.COPPAEnforced)
-		})
-	}
 }

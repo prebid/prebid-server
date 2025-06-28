@@ -254,9 +254,8 @@ type GDPR struct {
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
 	// to DefaultValue
-	EEACountries              []string `mapstructure:"eea_countries"`
-	EEACountriesMap           map[string]struct{}
-	ConsentStringMeansInScope bool `mapstructure:"consent_string_means_in_scope"`
+	EEACountries    []string `mapstructure:"eea_countries"`
+	EEACountriesMap map[string]struct{}
 }
 
 func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
@@ -668,10 +667,10 @@ type GeoLocation struct {
 }
 
 type GeoLocationMaxmind struct {
-	RemoteFileSyncer MaxmindRemoteFileSyncer `mapstructure:"remote_file_syncer"`
+	RemoteFileSyncer RemoteFileSyncer `mapstructure:"remote_file_syncer"`
 }
 
-type MaxmindRemoteFileSyncer struct {
+type RemoteFileSyncer struct {
 	HttpClient           HTTPClient `mapstructure:"http_client"`
 	DownloadURL          string     `mapstructure:"download_url"`
 	SaveFilePath         string     `mapstructure:"save_filepath"`
@@ -1164,7 +1163,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
 		"LIE", "LTU", "LUX", "MLT", "MTQ", "MYT", "NLD", "NOR", "POL", "PRT", "REU", "ROU", "BLM", "MAF", "SPM",
 		"SVK", "SVN", "ESP", "SWE", "GBR"})
-	v.SetDefault("gdpr.consent_string_means_in_scope", false)
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")

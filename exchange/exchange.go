@@ -42,9 +42,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
-	gdprAPI "github.com/prebid/go-gdpr/api"
-	"github.com/prebid/go-gdpr/vendorconsent"
-	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
 )
@@ -232,46 +229,6 @@ type AuctionRequest struct {
 	TmaxAdjustments         *TmaxAdjustmentsPreprocessed
 }
 
-// RequestPrivacy holds privacies of request
-type RequestPrivacy struct {
-	// GDPR
-	Consent            string
-	ParsedConsent      gdprAPI.VendorConsents
-	GDPRDefaultValue   gdpr.Signal
-	GDPRSignal         gdpr.Signal
-	GDPRChannelEnabled bool
-	GDPREnforced       bool
-
-	// LMT
-	LMTEnforced bool
-
-	// CCPA
-	CCPAProvided bool
-	CCPAEnforced bool
-
-	// COPPA
-	COPPAEnforced bool
-
-	// GPP
-	ParsedGPP gpplib.GppContainer
-}
-
-func (p *RequestPrivacy) MakePrivacyLabels() (labels metrics.PrivacyLabels) {
-	if p == nil {
-		return
-	}
-	labels.CCPAProvided = p.CCPAProvided
-	labels.CCPAEnforced = p.CCPAEnforced
-	labels.COPPAEnforced = p.COPPAEnforced
-	labels.LMTEnforced = p.LMTEnforced
-	labels.GDPREnforced = p.GDPREnforced
-	if p.GDPREnforced && p.ParsedConsent != nil {
-		version := int(p.ParsedConsent.Version())
-		labels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
-	}
-	return
-}
-
 // BidderRequest holds the bidder specific request and all other
 // information needed to process that bidder request.
 type BidderRequest struct {
@@ -289,8 +246,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		return nil, nil
 	}
 
-	errs := EnrichGeoLocation(ctx, r.BidRequestWrapper, r.Account, e.geoLocationResolver)
-
 	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper)
 	if err != nil {
 		return nil, err
@@ -299,6 +254,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
 	if err != nil {
 		return nil, err
+	}
+
+	if e.geoLocationEnabled {
+		_ = EnrichGeoLocation(ctx, r.BidRequestWrapper, r.Account, e.geoLocationResolver)
 	}
 
 	// ensure prebid object always exists
@@ -322,17 +281,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
-	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := selectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
-
-	requestPrivacy, privacyErrs := e.extractRequestPrivacy(r, eeaCountries)
-	if errf := errortypes.FirstFatalError(privacyErrs); errf != nil {
-		return nil, errf
-	}
-	errs = append(errs, privacyErrs...)
-
-	geoPrivacyErrs := EnrichGeoLocationWithPrivacy(ctx, r.BidRequestWrapper, r.Account, e.geoLocationResolver, requestPrivacy, r.TCF2Config)
-	errs = append(errs, geoPrivacyErrs...)
 	for _, w := range warning {
 		r.Warnings = append(r.Warnings, w)
 	}
@@ -343,7 +291,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	var floorErrs []error
 	if e.priceFloorEnabled {
 		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
-		errs = append(errs, floorErrs...)
 	}
 
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.Test, requestExtPrebid, r.Account.DebugAllow, debugLog)
@@ -382,9 +329,20 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := selectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
+
+	// Make our best guess if GDPR applies
+	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
+	gdprSignal, err := getGDPR(r.BidRequestWrapper)
+	if err != nil {
+		return nil, err
+	}
+	channelEnabled := r.TCF2Config.ChannelEnabled(channelTypeMap[r.LegacyLabels.RType])
+	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	dsaWriter := dsa.Writer{
 		Config:      r.Account.Privacy.DSA,
-		GDPRInScope: requestPrivacy.GDPREnforced,
+		GDPRInScope: gdprEnforced,
 	}
 	if err := dsaWriter.Write(r.BidRequestWrapper); err != nil {
 		return nil, err
@@ -400,13 +358,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		Prebid: *requestExtPrebid,
 		SChain: requestExt.GetSChain(),
 	}
-	bidderRequests, cleanErrs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, requestPrivacy, bidAdjustmentFactors)
-	for _, err := range cleanErrs {
+	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprSignal, gdprEnforced, bidAdjustmentFactors)
+	for _, err := range errs {
 		if errortypes.ReadCode(err) == errortypes.InvalidImpFirstPartyDataErrorCode {
 			return nil, err
 		}
 	}
-	errs = append(errs, cleanErrs...)
+	errs = append(errs, floorErrs...)
 
 	mergedBidAdj, err := bidadjustment.Merge(r.BidRequestWrapper, r.Account.BidAdjustments)
 	if err != nil {
@@ -417,7 +375,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 	bidAdjustmentRules := bidadjustment.BuildRules(mergedBidAdj)
 
-	e.me.RecordRequestPrivacy(requestPrivacy.MakePrivacyLabels())
+	e.me.RecordRequestPrivacy(privacyLabels)
 
 	if len(r.StoredAuctionResponses) > 0 || len(r.StoredBidResponses) > 0 {
 		e.me.RecordStoredResponse(r.PubID)
@@ -667,19 +625,8 @@ func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_e
 	return multiBidMap
 }
 
-func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCountries []string, account config.Account, parsedConsent gdprAPI.VendorConsents) gdpr.Signal {
+func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCountries []string) gdpr.Signal {
 	gdprDefaultValue := e.gdprDefaultValue
-
-	// requests may have consent without gdpr signal. check if setting is enabled to assume gdpr applies
-	if parsedConsent != nil && parsedConsent.Version() > 0 {
-		if account.GDPR.ConsentStringMeansInScope != nil {
-			if *account.GDPR.ConsentStringMeansInScope {
-				gdprDefaultValue = gdpr.SignalYes
-			}
-		} else if e.privacyConfig.GDPR.ConsentStringMeansInScope {
-			gdprDefaultValue = gdpr.SignalYes
-		}
-	}
 
 	var geo *openrtb2.Geo
 	if r.User != nil && r.User.Geo != nil {
@@ -699,52 +646,6 @@ func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCount
 	}
 
 	return gdprDefaultValue
-}
-
-func (e *exchange) extractRequestPrivacy(r *AuctionRequest, eeaCountries []string) (p *RequestPrivacy, errs []error) {
-	req := r.BidRequestWrapper
-
-	var gpp gpplib.GppContainer
-	if req.BidRequest.Regs != nil && len(req.BidRequest.Regs.GPP) > 0 {
-		var gppErrs []error
-		gpp, gppErrs = gpplib.Parse(req.BidRequest.Regs.GPP)
-		if len(gppErrs) > 0 {
-			errs = append(errs, gppErrs[0])
-		}
-	}
-
-	consent, err := getConsent(req, gpp)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	parsedConsent, err := vendorconsent.ParseString(consent)
-	if err != nil {
-		parsedConsent = nil
-	}
-
-	gdprDefaultValue := e.parseGDPRDefaultValue(req, eeaCountries, r.Account, parsedConsent)
-	gdprSignal, err := getGDPR(req)
-	if err != nil {
-		errs = append(errs, err)
-		return
-	}
-	channelEnabled := r.TCF2Config.ChannelEnabled(channelTypeMap[r.LegacyLabels.RType])
-	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
-
-	lmtEnforcer := extractLMT(req.BidRequest, e.privacyConfig)
-
-	p = &RequestPrivacy{
-		Consent:            consent,
-		ParsedConsent:      parsedConsent,
-		GDPRDefaultValue:   gdprDefaultValue,
-		GDPRSignal:         gdprSignal,
-		GDPRChannelEnabled: channelEnabled,
-		GDPREnforced:       gdprEnforced,
-		COPPAEnforced:      req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1,
-		LMTEnforced:        lmtEnforcer.ShouldEnforce(unknownBidder),
-		ParsedGPP:          gpp,
-	}
-	return
 }
 
 func recordImpMetrics(r *openrtb_ext.RequestWrapper, metricsEngine metrics.MetricsEngine) {

@@ -2028,32 +2028,3 @@ func TestRecordModuleMetrics(t *testing.T) {
 		}
 	}
 }
-
-func TestRecordGeoLocationRequestMetric(t *testing.T) {
-	testCases := []struct {
-		description                  string
-		requestSuccess               bool
-		expectedSuccessRequestsCount float64
-		expectedFailedRequestsCount  float64
-	}{
-		{
-			description:                  "Record failed request, expected success request count is 0 and failed request count is 1",
-			requestSuccess:               false,
-			expectedSuccessRequestsCount: 0,
-			expectedFailedRequestsCount:  1,
-		},
-		{
-			description:                  "Record successful request, expected success request count is 1 and failed request count is 0",
-			requestSuccess:               true,
-			expectedSuccessRequestsCount: 1,
-			expectedFailedRequestsCount:  0,
-		},
-	}
-
-	for _, test := range testCases {
-		m := createMetricsForTesting()
-		m.RecordGeoLocationRequest(test.requestSuccess)
-		assertCounterVecValue(t, test.description, "successfully geolocation requests", m.geoLocationRequests, test.expectedSuccessRequestsCount, prometheus.Labels{successLabel: requestSuccessful})
-		assertCounterVecValue(t, test.description, "unsuccessfully geolocation requests", m.geoLocationRequests, test.expectedFailedRequestsCount, prometheus.Labels{successLabel: requestFailed})
-	}
-}

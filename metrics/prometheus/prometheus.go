@@ -58,7 +58,6 @@ type Metrics struct {
 	adsCertRequests              *prometheus.CounterVec
 	adsCertSignTimer             prometheus.Histogram
 	bidderServerResponseTimer    prometheus.Histogram
-	geoLocationRequests          *prometheus.CounterVec
 
 	// Adapter Metrics
 	adapterBids                           *prometheus.CounterVec
@@ -507,11 +506,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		[]string{successLabel})
 
 	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
-
-	metrics.geoLocationRequests = newCounter(cfg, reg,
-		"geolocation_requests",
-		"Count of GeoLocation request, and if they were successfully sent.",
-		[]string{successLabel})
 
 	metrics.Gatherer = reg
 
@@ -1094,16 +1088,4 @@ func (m *Metrics) RecordModuleTimeout(labels metrics.ModuleLabels) {
 	m.moduleTimeouts[labels.Module].With(prometheus.Labels{
 		stageLabel: labels.Stage,
 	}).Inc()
-}
-
-func (m *Metrics) RecordGeoLocationRequest(success bool) {
-	if success {
-		m.geoLocationRequests.With(prometheus.Labels{
-			successLabel: requestSuccessful,
-		}).Inc()
-	} else {
-		m.geoLocationRequests.With(prometheus.Labels{
-			successLabel: requestFailed,
-		}).Inc()
-	}
 }

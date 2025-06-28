@@ -267,7 +267,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 			return nil, fmt.Errorf("Unknown geolocation type: %s", cfg.GeoLocation.Type)
 		}
 	}
-	geolocationResolver := exchange.NewGeoLocationResolver(geolocationService, r.MetricsEngine)
+	geolocationResolver := exchange.NewGeoLocationResolver(geolocationService)
 
 	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)

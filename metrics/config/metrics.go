@@ -371,12 +371,6 @@ func (me *MultiMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 	}
 }
 
-func (me *MultiMetricsEngine) RecordGeoLocationRequest(success bool) {
-	for _, thisME := range *me {
-		thisME.RecordGeoLocationRequest(success)
-	}
-}
-
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -551,7 +545,4 @@ func (me *NilMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLabe
 }
 
 func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
-}
-
-func (me *NilMetricsEngine) RecordGeoLocationRequest(success bool) {
 }

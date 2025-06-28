@@ -28,39 +28,44 @@ func TestGeoLocationNoReader(t *testing.T) {
 func TestGeoLocationSetDataPath(t *testing.T) {
 	geo := &GeoLocation{}
 	tests := []struct {
-		name   string
-		path   string
-		failed bool
+		name string
+		path string
+		ok   bool
 	}{
 		{
-			"File not exists",
-			"no_file",
-			true,
+			name: "File exists",
+			path: "./test-data/GeoLite2-City.tar.gz",
+			ok:   true,
 		},
 		{
-			"File is not a tar.gz archive",
-			"./test-data/nothing.mmdb",
-			true,
+			name: "File not exists",
+			path: "no_file",
+			ok:   false,
 		},
 		{
-			"Archive does not contain GeoLite2-City.mmdb",
-			"./test-data/nothing.tar.gz",
-			true,
+			name: "File is not a tar.gz archive",
+			path: "./test-data/nothing.mmdb",
+			ok:   false,
 		},
 		{
-			"Archive contains GeoLite2-City.mmdb, but GeoLite2-City.mmdb has bad data",
-			"./test-data/GeoLite2-City-Bad-Data.tar.gz",
-			true,
+			name: "Archive does not contain GeoLite2-City.mmdb",
+			path: "./test-data/nothing.tar.gz",
+			ok:   false,
+		},
+		{
+			name: "Archive contains GeoLite2-City.mmdb, but GeoLite2-City.mmdb has bad data",
+			path: "./test-data/GeoLite2-City-Bad-Data.tar.gz",
+			ok:   false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			err := geo.SetDataPath(test.path)
-			if test.failed {
-				assert.Error(t, err, "data path %s should return error", test.path)
-			} else {
+			if test.ok {
 				assert.NoError(t, err, "data path %s should not return error", test.path)
+			} else {
+				assert.Error(t, err, "data path %s should return error", test.path)
 			}
 		})
 	}
@@ -75,24 +80,24 @@ func TestGeoLocationLookup(t *testing.T) {
 		name     string
 		ip       string
 		expected *geolocation.GeoInfo
-		failed   bool
+		ok       bool
 	}{
 		{
-			"Lookup empty IP",
-			"",
-			nil,
-			true,
+			name:     "Lookup empty IP",
+			ip:       "",
+			expected: nil,
+			ok:       false,
 		},
 		{
-			"Lookup incorrect IP",
-			"bad ip",
-			nil,
-			true,
+			name:     "Lookup incorrect IP",
+			ip:       "bad ip",
+			expected: nil,
+			ok:       false,
 		},
 		{
-			"Lookup valid IPv4",
-			testIP,
-			&geolocation.GeoInfo{
+			name: "Lookup valid IPv4",
+			ip:   testIP,
+			expected: &geolocation.GeoInfo{
 				Vendor:     Vendor,
 				Continent:  "EU",
 				Country:    "GB",
@@ -104,12 +109,12 @@ func TestGeoLocationLookup(t *testing.T) {
 				Lon:        -1.25,
 				TimeZone:   "Europe/London",
 			},
-			false,
+			ok: true,
 		},
 		{
-			"Lookup valid IPv6",
-			testIPv6,
-			&geolocation.GeoInfo{
+			name: "Lookup valid IPv6",
+			ip:   testIPv6,
+			expected: &geolocation.GeoInfo{
 				Vendor:     Vendor,
 				Continent:  "NA",
 				Country:    "US",
@@ -121,18 +126,18 @@ func TestGeoLocationLookup(t *testing.T) {
 				Lon:        -117.1552,
 				TimeZone:   "America/Los_Angeles",
 			},
-			false,
+			ok: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			geoInfo, err := geo.Lookup(context.Background(), test.ip)
-			if test.failed {
-				assert.Error(t, err, "geolocation lookup should return error. IP: %s", test.ip)
-			} else {
+			if test.ok {
 				assert.NoError(t, err, "geolocation lookup should not return error. IP: %s", test.ip)
 				assert.Equal(t, test.expected, geoInfo, "geolocation should be equal. IP: %s", test.ip)
+			} else {
+				assert.Error(t, err, "geolocation lookup should return error. IP: %s", test.ip)
 			}
 		})
 	}

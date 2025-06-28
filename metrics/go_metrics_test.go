@@ -91,9 +91,6 @@ func TestNewMetrics(t *testing.T) {
 			ensureContainsModuleMetrics(t, registry, fmt.Sprintf("modules.module.%s.stage.%s", module, stage), m.ModuleMetrics[module][stage])
 		}
 	}
-
-	ensureContains(t, registry, "geolocation_requests.ok", m.GeoLocationRequestsSuccess)
-	ensureContains(t, registry, "geolocation_requests.failed", m.GeoLocationRequestsFailure)
 }
 
 func TestRecordBidType(t *testing.T) {
@@ -1313,37 +1310,5 @@ func TestRecordAdapterRequest(t *testing.T) {
 				})
 			}
 		})
-	}
-}
-
-func TestRecordGeoLocationRequestMetric(t *testing.T) {
-	testCases := []struct {
-		description                  string
-		requestSuccess               bool
-		expectedSuccessRequestsCount int64
-		expectedFailedRequestsCount  int64
-	}{
-		{
-			description:                  "Record GeoLocation failed request, expected success request count is 0 and failed request count is 1",
-			requestSuccess:               false,
-			expectedSuccessRequestsCount: 0,
-			expectedFailedRequestsCount:  1,
-		},
-		{
-			description:                  "Record GeoLocation successful request, expected success request count is 1 and failed request count is 0",
-			requestSuccess:               true,
-			expectedSuccessRequestsCount: 1,
-			expectedFailedRequestsCount:  0,
-		},
-	}
-
-	for _, test := range testCases {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName("AnyName")}, config.DisabledMetrics{}, nil, nil)
-
-		m.RecordGeoLocationRequest(test.requestSuccess)
-
-		assert.Equal(t, test.expectedSuccessRequestsCount, m.GeoLocationRequestsSuccess.Count(), test.description)
-		assert.Equal(t, test.expectedFailedRequestsCount, m.GeoLocationRequestsFailure.Count(), test.description)
 	}
 }

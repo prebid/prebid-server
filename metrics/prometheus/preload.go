@@ -172,10 +172,6 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		successLabel: boolValues,
 	})
 
-	preloadLabelValuesForCounter(m.geoLocationRequests, map[string][]string{
-		successLabel: boolValues,
-	})
-
 	if !m.metricsDisabled.AdapterConnectionMetrics {
 		preloadLabelValuesForCounter(m.adapterCreatedConnections, map[string][]string{
 			adapterLabel: adapterValues,

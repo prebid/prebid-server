@@ -82,10 +82,6 @@ type Metrics struct {
 	// Module metrics
 	ModuleMetrics map[string]map[string]*ModuleMetrics
 
-	// GeoLocation metrics
-	GeoLocationRequestsSuccess metrics.Meter
-	GeoLocationRequestsFailure metrics.Meter
-
 	OverheadTimer map[OverheadType]metrics.Timer
 }
 
@@ -209,9 +205,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		adsCertSignTimer:       blankTimer,
 
 		ModuleMetrics: make(map[string]map[string]*ModuleMetrics),
-
-		GeoLocationRequestsSuccess: blankMeter,
-		GeoLocationRequestsFailure: blankMeter,
 
 		exchanges: exchanges,
 		modules:   getModuleNames(moduleStageNames),
@@ -382,9 +375,6 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	for module, stages := range moduleStageNames {
 		registerModuleMetrics(registry, module, stages, newMetrics.ModuleMetrics[module])
 	}
-
-	newMetrics.GeoLocationRequestsSuccess = metrics.GetOrRegisterMeter("geolocation_requests.ok", registry)
-	newMetrics.GeoLocationRequestsFailure = metrics.GetOrRegisterMeter("geolocation_requests.failed", registry)
 
 	return newMetrics
 }
@@ -1173,12 +1163,4 @@ func (me *Metrics) getModuleMetric(labels ModuleLabels) (*ModuleMetrics, error) 
 	}
 
 	return mm, nil
-}
-
-func (me *Metrics) RecordGeoLocationRequest(success bool) {
-	if success {
-		me.GeoLocationRequestsSuccess.Mark(1)
-	} else {
-		me.GeoLocationRequestsFailure.Mark(1)
-	}
 }

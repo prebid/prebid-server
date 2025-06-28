@@ -245,8 +245,6 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
-	cmpBools(t, "gdpr.consent_string_means_in_scope", false, cfg.GDPR.ConsentStringMeansInScope)
-
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	cmpBools(t, "analytics.agma.enabled", false, cfg.Analytics.Agma.Enabled)
 	cmpStrings(t, "analytics.agma.endpoint.timeout", "2s", cfg.Analytics.Agma.Endpoint.Timeout)
@@ -370,7 +368,6 @@ gdpr:
   default_value: "1"
   non_standard_publishers: ["pub1", "pub2"]
   eea_countries: ["eea1", "eea2"]
-  consent_string_means_in_scope: false
   tcf2:
     purpose1:
       enforce_vendors: false
@@ -674,7 +671,6 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", 3, cfg.CacheClient.IdleConnTimeout)
 	cmpInts(t, "gdpr.host_vendor_id", 15, cfg.GDPR.HostVendorID)
 	cmpStrings(t, "gdpr.default_value", "1", cfg.GDPR.DefaultValue)
-	cmpBools(t, "gdpr.consent_string_means_in_scope", false, cfg.GDPR.ConsentStringMeansInScope)
 	cmpStrings(t, "host_schain_node.asi", "pbshostcompany.com", cfg.HostSChainNode.ASI)
 	cmpStrings(t, "host_schain_node.sid", "00001", cfg.HostSChainNode.SID)
 	cmpStrings(t, "host_schain_node.rid", "BidRequest", cfg.HostSChainNode.RID)
