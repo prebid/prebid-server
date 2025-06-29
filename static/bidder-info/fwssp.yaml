@@ -1,0 +1,15 @@
+endpoint: "https://prebid.v.fwmrm.net/ortb/ssp"
+endpointCompression: gzip
+maintainer:
+  email: prebid-maintainer@freewheel.com
+gvlVendorID: 285
+modifyingVastXmlAllowed: true
+openrtb:
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video

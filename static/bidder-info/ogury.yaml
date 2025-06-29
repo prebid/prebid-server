@@ -1,4 +1,4 @@
-endpoint: "http://prebids2s.presage.io/api/header-bidding-request"
+endpoint: "https://prebids2s.presage.io/api/header-bidding-request"
 endpointCompression: gzip
 geoscope:
   - global
@@ -8,6 +8,9 @@ gvlVendorID: 31
 modifyingVastXmlAllowed: true
 capabilities:
   site:
+    mediaTypes:
+      - banner
+  app:
     mediaTypes:
       - banner
 userSync:

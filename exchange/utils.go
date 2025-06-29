@@ -894,8 +894,9 @@ func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) ext
 	return cacheInstructions
 }
 
-func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
+func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions, account config.Account) (*targetData, []*errortypes.Warning) {
 	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
+		prefix, warning := getTargetDataPrefix(requestExtPrebid.Targeting.Prefix, account)
 		return &targetData{
 			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
 			includeBidderKeys:         ptrutil.ValueOrDefault(requestExtPrebid.Targeting.IncludeBidderKeys),
@@ -906,10 +907,49 @@ func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstr
 			mediaTypePriceGranularity: ptrutil.ValueOrDefault(requestExtPrebid.Targeting.MediaTypePriceGranularity),
 			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
 			priceGranularity:          ptrutil.ValueOrDefault(requestExtPrebid.Targeting.PriceGranularity),
+			prefix:                    prefix,
+		}, warning
+	}
+
+	return nil, nil
+}
+
+func getTargetDataPrefix(requestPrefix string, account config.Account) (string, []*errortypes.Warning) {
+	var warnings []*errortypes.Warning
+
+	maxLength := MaxKeyLength
+	if account.TruncateTargetAttribute != nil {
+		if *account.TruncateTargetAttribute > MinKeyLength {
+			maxLength = *account.TruncateTargetAttribute
+		}
+
+		if *account.TruncateTargetAttribute < MinKeyLength {
+			warnings = append(warnings, &errortypes.Warning{
+				WarningCode: errortypes.TooShortTargetingPrefixWarningCode,
+				Message:     "targeting prefix is shorter than 'MinKeyLength' value: increase prefix length",
+			})
+			return DefaultKeyPrefix, warnings
 		}
 	}
 
-	return nil
+	maxLength -= MinKeyLength
+	result := DefaultKeyPrefix
+
+	if requestPrefix != "" {
+		result = requestPrefix
+	} else if account.TargetingPrefix != "" {
+		result = account.TargetingPrefix
+	}
+
+	if len(result) > maxLength {
+		warnings = append(warnings, &errortypes.Warning{
+			WarningCode: errortypes.TooLongTargetingPrefixWarningCode,
+			Message:     "targeting prefix combined with key attribute is longer than 'settings.targeting.truncate-attr-chars' value: decrease prefix length or increase truncate-attr-chars",
+		})
+		return DefaultKeyPrefix, warnings
+	}
+
+	return result, warnings
 }
 
 // getDebugInfo returns the boolean flags that allow for debug information in bidResponse.Ext, the SeatBid.httpcalls slice, and
@@ -976,6 +1016,10 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 
 	if fpdToApply.App != nil {
 		reqWrapper.App = fpdToApply.App
+	}
+
+	if fpdToApply.Device != nil {
+		reqWrapper.Device = fpdToApply.Device
 	}
 
 	if fpdToApply.User != nil {

@@ -42,6 +42,8 @@ type Account struct {
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
+	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
+	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
 	GeoLocation             AccountGeoLocation                          `mapstructure:"geolocation" json:"geolocation"`
 }
 
@@ -320,7 +322,7 @@ type AccountHooks struct {
 
 // AccountModules mapping provides account-level module configuration
 // format: map[vendor_name]map[module_name]json.RawMessage
-type AccountModules map[string]map[string]json.RawMessage
+type AccountModules map[string]map[string]interface{}
 
 // ModuleConfig returns the account-level module config.
 // The id argument must be passed in the form "vendor.module_name",
@@ -333,7 +335,18 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 
 	vendor := ns[0]
 	module := ns[1]
-	return m[vendor][module], nil
+
+	data, found := m[vendor][module]
+	if !found {
+		return nil, nil
+	}
+
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal module config for %s: %w", id, err)
+	}
+
+	return json.RawMessage(bytes), nil
 }
 
 type AccountPrivacy struct {

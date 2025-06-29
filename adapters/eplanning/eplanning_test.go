@@ -1,12 +1,11 @@
 package eplanning
 
 import (
-	"testing"
-
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {

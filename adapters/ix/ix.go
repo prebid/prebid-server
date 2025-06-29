@@ -25,15 +25,9 @@ type IxAdapter struct {
 }
 
 type ExtRequest struct {
-	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid"`
+	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid,omitempty"`
 	SChain *openrtb2.SupplyChain         `json:"schain,omitempty"`
-	IxDiag *IxDiag                       `json:"ixdiag,omitempty"`
-}
-
-type IxDiag struct {
-	PbsV            string `json:"pbsv,omitempty"`
-	PbjsV           string `json:"pbjsv,omitempty"`
-	MultipleSiteIds string `json:"multipleSiteIds,omitempty"`
+	IxDiag json.RawMessage               `json:"ixdiag,omitempty"`
 }
 
 type auctionConfig struct {
@@ -57,7 +51,7 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	filteredImps := make([]openrtb2.Imp, 0, len(request.Imp))
 	requestCopy := *request
 
-	ixDiag := &IxDiag{}
+	ixDiagFields := make(map[string]interface{})
 
 	for _, imp := range requestCopy.Imp {
 		var err error
@@ -94,9 +88,9 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	}
 	requestCopy.Imp = filteredImps
 
-	setPublisherId(&requestCopy, uniqueSiteIDs, ixDiag)
+	setPublisherId(&requestCopy, uniqueSiteIDs, ixDiagFields)
 
-	err := setIxDiagIntoExtRequest(&requestCopy, ixDiag, version.Ver)
+	err := setIxDiagIntoExtRequest(&requestCopy, ixDiagFields, version.Ver)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -112,7 +106,7 @@ func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	return requests, errs
 }
 
-func setPublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]struct{}, ixDiag *IxDiag) {
+func setPublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]struct{}, ixDiagFields map[string]interface{}) {
 	siteIDs := make([]string, 0, len(uniqueSiteIDs))
 	for key := range uniqueSiteIDs {
 		siteIDs = append(siteIDs, key)
@@ -150,7 +144,7 @@ func setPublisherId(requestCopy *openrtb2.BidRequest, uniqueSiteIDs map[string]s
 		// Sorting siteIDs for predictable output as Go maps don't guarantee order
 		sort.Strings(siteIDs)
 		multipleSiteIDs := strings.Join(siteIDs, ", ")
-		ixDiag.MultipleSiteIds = multipleSiteIDs
+		ixDiagFields["multipleSiteIds"] = multipleSiteIDs
 	}
 }
 
@@ -403,8 +397,8 @@ func extractVersionWithoutCommitHash(ver string) string {
 	return ver // if no hyphen, return the original string
 }
 
-func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiag *IxDiag, ver string) error {
-	extRequest := &ExtRequest{}
+func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiagAdditionalFields map[string]interface{}, ver string) error {
+	var extRequest ExtRequest
 	if request.Ext != nil {
 		if err := jsonutil.Unmarshal(request.Ext, &extRequest); err != nil {
 			return err
@@ -412,28 +406,42 @@ func setIxDiagIntoExtRequest(request *openrtb2.BidRequest, ixDiag *IxDiag, ver s
 	}
 
 	if extRequest.Prebid != nil && extRequest.Prebid.Channel != nil {
-		ixDiag.PbjsV = extRequest.Prebid.Channel.Version
+		ixDiagAdditionalFields["pbjsv"] = extRequest.Prebid.Channel.Version
 	}
 	// Slice commit hash out of version
+	prebidServerVersion := "unknown" // Default value when the version cannot be determined
 	if ver != "" {
-		ixDiag.PbsV = extractVersionWithoutCommitHash(ver)
+		prebidServerVersion = extractVersionWithoutCommitHash(ver)
 	}
+	ixDiagAdditionalFields["pbsv"] = prebidServerVersion
+	ixDiagAdditionalFields["pbsp"] = "go" // indicate prebid server implementation use Go version
 
-	// Only set request.ext if ixDiag is not empty
-	if *ixDiag != (IxDiag{}) {
-		extRequest := &ExtRequest{}
-		if request.Ext != nil {
-			if err := jsonutil.Unmarshal(request.Ext, &extRequest); err != nil {
-				return err
-			}
-		}
-		extRequest.IxDiag = ixDiag
-		extRequestJson, err := json.Marshal(extRequest)
-		if err != nil {
+	var ixDiagMap map[string]interface{}
+	if extRequest.IxDiag != nil && len(extRequest.IxDiag) > 0 {
+		if err := jsonutil.Unmarshal(extRequest.IxDiag, &ixDiagMap); err != nil {
 			return err
 		}
-		request.Ext = extRequestJson
+	} else {
+		ixDiagMap = make(map[string]interface{})
 	}
+
+	for k, v := range ixDiagAdditionalFields {
+		ixDiagMap[k] = v
+	}
+
+	ixDiagJSON, err := json.Marshal(ixDiagMap)
+	if err != nil {
+		return err
+	}
+
+	extRequest.IxDiag = ixDiagJSON
+
+	extRequestJSON, err := json.Marshal(extRequest)
+	if err != nil {
+		return err
+	}
+
+	request.Ext = extRequestJSON
 	return nil
 }
 

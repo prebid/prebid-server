@@ -41,7 +41,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/iputil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/uuidutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // In this file we define:
@@ -93,12 +93,27 @@ type testConfigValues struct {
 	MockBidders         []mockBidderHandler            `json:"mockBidders"`
 	RealParamsValidator bool                           `json:"realParamsValidator"`
 	BidderInfos         map[string]bidderInfoOverrides `json:"bidderInfoOverrides"`
+	PreferredMediaType  openrtb_ext.PreferredMediaType `json:"preferredmediatype"`
 }
 type bidderInfoOverrides struct {
-	OpenRTB *OpenRTBInfo `json:"openrtb"`
+	OpenRTB      *OpenRTBInfo      `json:"openrtb"`
+	Capabilities *CapabilitiesInfo `json:"capabilities"`
 }
 type OpenRTBInfo struct {
-	Version string `json:"version"`
+	Version              string `json:"version"`
+	MultiformatSupported *bool  `json:"multiformat-supported"`
+}
+
+// CapabilitiesInfo specifies the supported platforms for a bidder.
+type CapabilitiesInfo struct {
+	App  *PlatformInfo `json:"app" mapstructure:"app"`
+	Site *PlatformInfo `json:"site" mapstructure:"site"`
+	DOOH *PlatformInfo `json:"dooh" mapstructure:"dooh"`
+}
+
+// PlatformInfo specifies the supported media types for a bidder.
+type PlatformInfo struct {
+	MediaTypes []openrtb_ext.BidType `yaml:"mediaTypes" mapstructure:"mediaTypes"`
 }
 
 type brokenExchange struct{}
@@ -1224,13 +1239,20 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}
+	singleFormatBidders := make(map[openrtb_ext.BidderName]struct{})
 	for _, mockBidder := range testCfg.MockBidders {
 		bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
-		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL, seat: mockBidder.Seat}
+		bidderAdapter := &mockAdapter{mockServerURL: bidServer.URL, seat: mockBidder.Seat}
 		bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
 
-		adapterMap[bidderName] = exchange.AdaptBidder(&bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil, "")
+		infoAwareBidderAdapter := adapters.BuildInfoAwareBidder(bidderAdapter, bidderInfos[string(bidderName)])
+
+		adapterMap[bidderName] = exchange.AdaptBidder(infoAwareBidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil, "")
 		mockBidServersArray = append(mockBidServersArray, bidServer)
+
+		if bidderInfo := bidderInfos[string(bidderName)]; bidderInfo.OpenRTB != nil && bidderInfo.OpenRTB.MultiformatSupported != nil && !*bidderInfo.OpenRTB.MultiformatSupported {
+			singleFormatBidders[bidderName] = struct{}{}
+		}
 	}
 
 	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
@@ -1241,7 +1263,6 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	}.Builder
 
 	testExchange := exchange.NewExchange(adapterMap,
-
 		&wellBehavedCache{},
 		cfg,
 		requestValidator,
@@ -1254,6 +1275,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		singleFormatBidders,
 		&exchange.NilGeoLocationResolver{},
 	)
 
@@ -1285,11 +1307,38 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	bidderInfos, _ := config.LoadBidderInfoFromDisk("../../static/bidder-info")
 	for bidder, overrides := range test.Config.BidderInfos {
 		if bi, ok := bidderInfos[bidder]; ok {
-			if overrides.OpenRTB != nil && len(overrides.OpenRTB.Version) > 0 {
+			if overrides.OpenRTB != nil || overrides.Capabilities != nil {
 				if bi.OpenRTB == nil {
 					bi.OpenRTB = &config.OpenRTBInfo{}
 				}
-				bi.OpenRTB.Version = overrides.OpenRTB.Version
+				if overrides.OpenRTB != nil {
+					if len(overrides.OpenRTB.Version) > 0 {
+						bi.OpenRTB.Version = overrides.OpenRTB.Version
+					}
+					if overrides.OpenRTB.MultiformatSupported != nil {
+						bi.OpenRTB.MultiformatSupported = overrides.OpenRTB.MultiformatSupported
+					}
+				}
+				if overrides.Capabilities != nil {
+					if bi.Capabilities == nil {
+						bi.Capabilities = &config.CapabilitiesInfo{}
+					}
+
+					if overrides.Capabilities.Site != nil {
+						bi.Capabilities.Site = &config.PlatformInfo{}
+						bi.Capabilities.Site.MediaTypes = overrides.Capabilities.Site.MediaTypes
+					}
+
+					if overrides.Capabilities.App != nil {
+						bi.Capabilities.App = &config.PlatformInfo{}
+						bi.Capabilities.App.MediaTypes = overrides.Capabilities.App.MediaTypes
+					}
+
+					if overrides.Capabilities.DOOH != nil {
+						bi.Capabilities.DOOH = &config.PlatformInfo{}
+						bi.Capabilities.DOOH.MediaTypes = overrides.Capabilities.DOOH.MediaTypes
+					}
+				}
 				bidderInfos[bidder] = bi
 			}
 		}

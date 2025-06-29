@@ -1,0 +1,32 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Nexx360 Adapter Params",
+    "description": "A schema which validates params accepted by the Nexx360 adapter",
+  
+    "type": "object",
+    "properties": {
+      "tagId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "TagId"
+      },
+      "placement": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Placement"
+      }
+    },
+   "anyOf": [
+      {
+        "required": [
+          "tagId"
+        ]
+      },
+      {
+        "required": [
+          "placement"
+        ]
+      }
+    ]
+  }
