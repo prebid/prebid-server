@@ -159,11 +159,10 @@ type AccountGDPR struct {
 	Purpose9                   AccountGDPRPurpose `mapstructure:"purpose9" json:"purpose9"`
 	Purpose10                  AccountGDPRPurpose `mapstructure:"purpose10" json:"purpose10"`
 	// Hash table of purpose configs for convenient purpose config lookup
-	PurposeConfigs            map[consentconstants.Purpose]*AccountGDPRPurpose
-	PurposeOneTreatment       AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
-	SpecialFeature1           AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
-	EEACountries              []string                       `mapstructure:"eea_countries" json:"eea_countries"`
-	ConsentStringMeansInScope *bool                          `mapstructure:"consent_string_means_in_scope" json:"consent_string_means_in_scope"`
+	PurposeConfigs      map[consentconstants.Purpose]*AccountGDPRPurpose
+	PurposeOneTreatment AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
+	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
+	EEACountries        []string                       `mapstructure:"eea_countries" json:"eea_countries"`
 }
 
 // EnabledForChannelType indicates whether GDPR is turned on at the account level for the specified channel type

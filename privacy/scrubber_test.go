@@ -409,7 +409,7 @@ func TestScrubIP(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.IP, func(t *testing.T) {
 			// bits: ipv6 - 128, ipv4 - 32
-			result := ScrubIP(test.IP, test.maskBits, test.bits)
+			result := scrubIP(test.IP, test.maskBits, test.bits)
 			assert.Equal(t, test.cleanedIP, result)
 		})
 	}

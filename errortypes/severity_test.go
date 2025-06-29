@@ -56,49 +56,6 @@ func TestContainsFatalError(t *testing.T) {
 	}
 }
 
-func TestFirstFatalErrors(t *testing.T) {
-	fatalError := &stubError{severity: SeverityFatal}
-	notFatalError := &stubError{severity: SeverityWarning}
-	unknownSeverityError := errors.New("anyError")
-
-	testCases := []struct {
-		description   string
-		errors        []error
-		shouldBeError error
-	}{
-		{
-			description:   "None",
-			errors:        []error{},
-			shouldBeError: nil,
-		},
-		{
-			description:   "One - Fatal",
-			errors:        []error{fatalError},
-			shouldBeError: fatalError,
-		},
-		{
-			description:   "One - Not Fatal",
-			errors:        []error{notFatalError},
-			shouldBeError: nil,
-		},
-		{
-			description:   "Mixed - Skip Not Fatal",
-			errors:        []error{notFatalError, fatalError},
-			shouldBeError: fatalError,
-		},
-		{
-			description:   "Mixed",
-			errors:        []error{unknownSeverityError, fatalError, notFatalError},
-			shouldBeError: unknownSeverityError,
-		},
-	}
-
-	for _, tc := range testCases {
-		result := FirstFatalError(tc.errors)
-		assert.Equal(t, tc.shouldBeError, result)
-	}
-}
-
 func TestFatalOnly(t *testing.T) {
 	fatalError := &stubError{severity: SeverityFatal}
 	notFatalError := &stubError{severity: SeverityWarning}

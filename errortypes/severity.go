@@ -39,16 +39,6 @@ func ContainsFatalError(errors []error) bool {
 	return false
 }
 
-// FirstFatalError returns the first Fatal error found
-func FirstFatalError(errors []error) error {
-	for _, err := range errors {
-		if isFatal(err) {
-			return err
-		}
-	}
-	return nil
-}
-
 // FatalOnly returns a new error list with only the fatal severity errors.
 func FatalOnly(errs []error) []error {
 	errsFatal := make([]error, 0, len(errs))

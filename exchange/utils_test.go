@@ -3643,7 +3643,7 @@ func TestCleanOpenRTBRequestsBuyerUID(t *testing.T) {
 				},
 			}
 
-			results, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo, false, map[string]float64{})
+			results, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo, false, nil)
 
 			assert.Empty(t, errs)
 			for _, v := range results {

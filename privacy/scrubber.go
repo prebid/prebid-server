@@ -110,8 +110,8 @@ func scrubGeoFull(reqWrapper *openrtb_ext.RequestWrapper) {
 
 func scrubDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
 	if reqWrapper.Device != nil {
-		reqWrapper.Device.IP = ScrubIP(reqWrapper.Device.IP, ipConf.IPV4.AnonKeepBits, iputil.IPv4BitSize)
-		reqWrapper.Device.IPv6 = ScrubIP(reqWrapper.Device.IPv6, ipConf.IPV6.AnonKeepBits, iputil.IPv6BitSize)
+		reqWrapper.Device.IP = scrubIP(reqWrapper.Device.IP, ipConf.IPV4.AnonKeepBits, iputil.IPv4BitSize)
+		reqWrapper.Device.IPv6 = scrubIP(reqWrapper.Device.IPv6, ipConf.IPV6.AnonKeepBits, iputil.IPv6BitSize)
 	}
 }
 
@@ -146,7 +146,7 @@ func ScrubGeoAndDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) 
 	scrubGEO(reqWrapper)
 }
 
-func ScrubIP(ip string, ones, bits int) string {
+func scrubIP(ip string, ones, bits int) string {
 	if ip == "" {
 		return ""
 	}
