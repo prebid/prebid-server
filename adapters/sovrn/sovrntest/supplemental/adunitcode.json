@@ -21,7 +21,8 @@
             "tagid": "123456",
             "adunitcode": "sovrn_auc"
           },
-          "gpid": "test-gpid"
+          "gpid": "test-gpid",
+          "adunitcode": "sovrn_auc"
         }
       }
     ],
