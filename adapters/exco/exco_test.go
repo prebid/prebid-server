@@ -9,17 +9,15 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(
-		openrtb_ext.BidderExco,
-		config.Adapter{
-			Endpoint: "https://testjsonsample.com",
-		},
-		config.Server{
-			ExternalUrl: "http://hosturl.com",
-			GvlID:       1,
-			DataCenter:  "2",
-		},
-	)
+	adapterConfig := config.Adapter{
+		Endpoint: "https://testjsonsample.com",
+	}
+	serverConfig := config.Server{
+		ExternalUrl: "http://hosturl.com",
+		GvlID:       1,
+		DataCenter:  "2",
+	}
+	bidder, buildErr := Builder(openrtb_ext.BidderExco, adapterConfig, serverConfig)
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

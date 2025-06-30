@@ -16,48 +16,30 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder initializes the Exco adapter with the given configuration.
-// Parameters:
-// - bidderName: The name of the bidder.
-// - config: Adapter configuration containing endpoint details.
-// - server: Server configuration.
-// Returns:
-// - An instance of the Exco adapter.
-func Builder(
-	bidderName openrtb_ext.BidderName,
-	config config.Adapter,
-	server config.Server,
-) (adapters.Bidder, error) {
-	return &adapter{
+// Builder initializes the EXCO adapter with the given configuration.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{
 		endpoint: config.Endpoint,
-	}, nil
+	}
+	return bidder, nil
 }
 
-// MakeRequests creates HTTP requests to the Exco endpoint based on the OpenRTB bid request.
+// MakeRequests creates HTTP requests to the EXCO endpoint based on the OpenRTB bid request.
 // Parameters:
 // - request: The OpenRTB bid request.
 // - reqInfo: Additional request information.
 // Returns:
 // - A slice of RequestData containing the HTTP request details.
 // - A slice of errors encountered during request creation.
-func (a *adapter) MakeRequests(
-	request *openrtb2.BidRequest,
-	reqInfo *adapters.ExtraRequestInfo,
-) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	adjustedReq, err := adjustRequest(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, append(errs, err)
 	}
 
-	// Create the request to the Exco endpoint
-	payload, err := jsonutil.Marshal(adjustedReq)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
+	payload, _ := jsonutil.Marshal(adjustedReq)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -73,19 +55,15 @@ func (a *adapter) MakeRequests(
 	return []*adapters.RequestData{reqData}, errs
 }
 
-// MakeBids processes the HTTP response from the Exco endpoint and extracts bid information.
+// MakeBids processes the HTTP response from the EXCO endpoint and extracts bid information.
 // Parameters:
 // - internalRequest: The original OpenRTB bid request.
-// - externalRequest: The HTTP request sent to the Exco endpoint.
-// - response: The HTTP response received from the Exco endpoint.
+// - externalRequest: The HTTP request sent to the EXCO endpoint.
+// - response: The HTTP response received from the EXCO endpoint.
 // Returns:
 // - A BidderResponse containing the extracted bids.
 // - A slice of errors encountered during bid processing.
-func (a *adapter) MakeBids(
-	internalRequest *openrtb2.BidRequest,
-	externalRequest *adapters.RequestData,
-	response *adapters.ResponseData,
-) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
@@ -129,24 +107,22 @@ func (a *adapter) MakeBids(
 // - An error if the media type is unrecognized.
 func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
-	case 1:
+	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
-	case 2:
+	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
 	default:
 		return "", fmt.Errorf("unrecognized bid_ad_type in response from exco: %d", bid.MType)
 	}
 }
 
-// adjustRequest modifies the OpenRTB bid request to include Exco-specific parameters.
+// adjustRequest modifies the OpenRTB bid request to include EXCO-specific parameters.
 // Parameters:
 // - request: The original OpenRTB bid request.
 // Returns:
-// - A modified bid request with Exco-specific parameters.
+// - A modified bid request with EXCO-specific parameters.
 // - An error if the request modification fails.
-func adjustRequest(
-	request *openrtb2.BidRequest,
-) (*openrtb2.BidRequest, error) {
+func adjustRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
 	var publisherId string
 
 	// Extracts the publisher ID and tag ID from the impression extension.

@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "tagId": "test-tag-id"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "test-app-id",
+      "bundle": "test-app.com"
+    }
+  },
+
+  "httpCalls": [],
+
+  "expectedBidResponses": [],
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Publisher ID is required in the request. Please provide a valid Publisher ID.",
+      "comparison": "literal"
+    }
+  ]
+}
