@@ -70,6 +70,7 @@ type ExtBidPrebidMeta struct {
 	RendererData         json.RawMessage `json:"rendererData,omitempty"`
 	RendererUrl          string          `json:"rendererUrl,omitempty"`
 	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
+	Seat                 string          `json:"seat,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
@@ -138,40 +139,40 @@ func ParseBidType(bidType string) (BidType, error) {
 type TargetingKey string
 
 const (
-	HbpbConstantKey TargetingKey = "hb_pb"
+	PbKey TargetingKey = "_pb"
 
-	// HbEnvKey exists to support the Prebid Universal Creative. If it exists, the only legal value is mobile-app.
+	// EnvKey exists to support the Prebid Universal Creative. If it exists, the only legal value is mobile-app.
 	// It will exist only if the incoming bidRequest defined request.app instead of request.site.
-	HbEnvKey TargetingKey = "hb_env"
+	EnvKey TargetingKey = "_env"
 
-	// HbCacheHost and HbCachePath exist to supply cache host and path as targeting parameters
-	HbConstantCacheHostKey TargetingKey = "hb_cache_host"
-	HbConstantCachePathKey TargetingKey = "hb_cache_path"
+	// CacheHostKey and CachePathKey exist to supply cache host and path as targeting parameters
+	CacheHostKey TargetingKey = "_cache_host"
+	CachePathKey TargetingKey = "_cache_path"
 
-	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
-	HbBidderConstantKey TargetingKey = "hb_bidder"
-	HbSizeConstantKey   TargetingKey = "hb_size"
-	HbDealIDConstantKey TargetingKey = "hb_deal"
+	// BidderKey is the name of the Bidder. For example, "appnexus" or "rubicon".
+	BidderKey TargetingKey = "_bidder"
+	SizeKey   TargetingKey = "_size"
+	DealKey   TargetingKey = "_deal"
 
-	// HbFormatKey is the format of the bid. For example, "video", "banner"
-	HbFormatKey TargetingKey = "hb_format"
+	// FormatKey is the format of the bid. For example, "video", "banner"
+	FormatKey TargetingKey = "_format"
 
-	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
+	// CacheKey and VastCacheKey store UUIDs which can be used to fetch things from prebid cache.
 	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.
 	//
-	// HbVastCacheKey's UUID will fetch the entire bid JSON, while HbVastCacheKey will fetch just the VAST XML.
-	// HbVastCacheKey will only ever exist for Video bids.
-	HbCacheKey     TargetingKey = "hb_cache_id"
-	HbVastCacheKey TargetingKey = "hb_uuid"
+	// VastCacheKey's UUID will fetch the entire bid JSON, while VastCacheKey will fetch just the VAST XML.
+	// VastCacheKey will only ever exist for Video bids.
+	CacheKey     TargetingKey = "_cache_id"
+	VastCacheKey TargetingKey = "_uuid"
 
-	// This is not a key, but values used by the HbEnvKey
-	HbEnvKeyApp string = "mobile-app"
+	// EnvAppValue used as a value for EnvKey
+	EnvAppValue string = "mobile-app"
 
-	HbCategoryDurationKey TargetingKey = "hb_pb_cat_dur"
+	CategoryDurationKey TargetingKey = "_pb_cat_dur"
 )
 
-func (key TargetingKey) BidderKey(bidder BidderName, maxLength int) string {
-	s := string(key) + "_" + string(bidder)
+func (key TargetingKey) BidderKey(prefix string, bidder BidderName, maxLength int) string {
+	s := prefix + string(key) + "_" + string(bidder)
 	if maxLength != 0 {
 		return s[:min(len(s), maxLength)]
 	}
@@ -185,11 +186,12 @@ func min(x, y int) int {
 	return y
 }
 
-func (key TargetingKey) TruncateKey(maxLength int) string {
+func (key TargetingKey) TruncateKey(prefix string, maxLength int) string {
+	result := prefix + string(key)
 	if maxLength > 0 {
-		return string(key)[:min(len(string(key)), maxLength)]
+		return result[:min(len(result), maxLength)]
 	}
-	return string(key)
+	return result
 }
 
 const (

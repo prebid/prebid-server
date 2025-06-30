@@ -21,6 +21,8 @@ type HookResult[T any] struct {
 
 // ModuleInvocationContext holds data passed to the module hook during invocation.
 type ModuleInvocationContext struct {
+	// AccountID holds the account ID
+	AccountID string
 	// AccountConfig represents module config rewritten at the account-level.
 	AccountConfig json.RawMessage
 	// Endpoint represents the path of the current endpoint.

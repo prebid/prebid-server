@@ -119,6 +119,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEVolution,
 	BidderExco,
 	BidderFeedAd,
+	BidderFlatads,
 	BidderFlipp,
 	BidderFreewheelSSP,
 	BidderFWSSP,
@@ -179,6 +180,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMotorik,
 	BidderNativo,
 	BidderNextMillennium,
+	BidderNexx360,
 	BidderNoBid,
 	BidderOgury,
 	BidderOms,
@@ -228,6 +230,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSonobi,
 	BidderSovrn,
 	BidderSovrnXsp,
+	BidderSparteo,
 	BidderSspBC,
 	BidderStartIO,
 	BidderStroeerCore,
@@ -480,6 +483,7 @@ const (
 	BidderExco              BidderName = "exco"
 	BidderEVolution         BidderName = "e_volution"
 	BidderFeedAd            BidderName = "feedad"
+	BidderFlatads           BidderName = "flatads"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFWSSP             BidderName = "fwssp"
@@ -540,6 +544,7 @@ const (
 	BidderMotorik           BidderName = "motorik"
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
+	BidderNexx360           BidderName = "nexx360"
 	BidderNoBid             BidderName = "nobid"
 	BidderOgury             BidderName = "ogury"
 	BidderOms               BidderName = "oms"
@@ -589,6 +594,7 @@ const (
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
 	BidderSovrnXsp          BidderName = "sovrnXsp"
+	BidderSparteo           BidderName = "sparteo"
 	BidderSspBC             BidderName = "sspBC"
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"

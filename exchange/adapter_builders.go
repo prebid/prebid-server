@@ -102,6 +102,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/escalax"
 	"github.com/prebid/prebid-server/v3/adapters/exco"
 	"github.com/prebid/prebid-server/v3/adapters/feedad"
+	"github.com/prebid/prebid-server/v3/adapters/flatads"
 	"github.com/prebid/prebid-server/v3/adapters/flipp"
 	"github.com/prebid/prebid-server/v3/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v3/adapters/frvradn"
@@ -161,6 +162,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/motorik"
 	"github.com/prebid/prebid-server/v3/adapters/nativo"
 	"github.com/prebid/prebid-server/v3/adapters/nextmillennium"
+	"github.com/prebid/prebid-server/v3/adapters/nexx360"
 	"github.com/prebid/prebid-server/v3/adapters/nobid"
 	"github.com/prebid/prebid-server/v3/adapters/ogury"
 	"github.com/prebid/prebid-server/v3/adapters/oms"
@@ -210,6 +212,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/sonobi"
 	"github.com/prebid/prebid-server/v3/adapters/sovrn"
 	"github.com/prebid/prebid-server/v3/adapters/sovrnXsp"
+	"github.com/prebid/prebid-server/v3/adapters/sparteo"
 	"github.com/prebid/prebid-server/v3/adapters/sspBC"
 	"github.com/prebid/prebid-server/v3/adapters/startio"
 	"github.com/prebid/prebid-server/v3/adapters/stroeerCore"
@@ -357,6 +360,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderExco:              exco.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderFeedAd:            feedad.Builder,
+		openrtb_ext.BidderFlatads:           flatads.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
 		openrtb_ext.BidderFWSSP:             fwssp.Builder,
@@ -418,6 +422,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMotorik:           motorik.Builder,
 		openrtb_ext.BidderNativo:            nativo.Builder,
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
+		openrtb_ext.BidderNexx360:           nexx360.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
 		openrtb_ext.BidderOgury:             ogury.Builder,
 		openrtb_ext.BidderOms:               oms.Builder,
@@ -467,6 +472,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSovrnXsp:          sovrnXsp.Builder,
+		openrtb_ext.BidderSparteo:           sparteo.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
