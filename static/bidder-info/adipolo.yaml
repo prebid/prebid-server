@@ -14,8 +14,8 @@ capabilities:
       - native
 userSync:
   iframe:
-    url: "https://sync.pmbmonetize.live/static/adisync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    url: "https://sync.adipolo.live/static/adisync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
     userMacro: $UID
   redirect:
-    url: "https://sync.pmbmonetize.live/psync?t=s&e=0&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    url: "https://sync.adipolo.live/psync?t=s&e=0&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
     userMacro: "$UID"
