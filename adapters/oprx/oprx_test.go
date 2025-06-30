@@ -1,21 +1,21 @@
 package oprx
 
 import (
-  "testing"
+	"testing"
 
-  "github.com/prebid/prebid-server/v3/adapters/adapterstest"
-  "github.com/prebid/prebid-server/v3/config"
-  "github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-  bidder, buildErr := Builder(openrtb_ext.BidderOprx, config.Adapter{
-    Endpoint: "http://any.url"},
-    config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(openrtb_ext.BidderOprx, config.Adapter{
+		Endpoint: "http://localhost:8080"},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
-  if buildErr != nil {
-    t.Fatalf("Builder returned unexpected error %v", buildErr)
-  }
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
-  adapterstest.RunJSONBidderTest(t, "oprxtest", bidder)
+	adapterstest.RunJSONBidderTest(t, "oprxtest", bidder)
 }

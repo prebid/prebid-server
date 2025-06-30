@@ -32,8 +32,12 @@
     "ndc": {
       "type": "string",
       "description": "NDC"
+    },
+    "type": {
+      "type": "string",
+      "description": "Type of Bid/Impression"
     }
   },
 
-  "required": ["key", "placement_id"]
+  "required": ["key", "placement_id", "type"]
 }

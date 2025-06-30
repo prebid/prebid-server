@@ -1,4 +1,4 @@
-endpoint: "https://pb.optimizerx.com/pb"
+endpoint: "http://localhost:8080"
 endpointCompression: gzip
 geoscope:
   - USA
