@@ -1,7 +1,6 @@
 package matterfull
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"text/template"
@@ -21,11 +20,8 @@ type adapter struct {
 
 // MakeRequests prepares request information for prebid-server core
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
-	if len(request.Imp) == 0 {
-		errs = append(errs, &errortypes.BadInput{Message: "No impression in the bid request"})
-		return nil, errs
-	}
+	var errs []error
+
 	pub2impressions, imps, err := getImpressionsInfo(request.Imp)
 	if len(imps) == 0 {
 		return nil, err
@@ -51,7 +47,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 
 // getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
 func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp, []openrtb2.Imp, []error) {
-	errors := make([]error, 0, len(imps))
+	var errors []error
 	resImps := make([]openrtb2.Imp, 0, len(imps))
 	res := make(map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp)
 
@@ -61,30 +57,17 @@ func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][
 			errors = append(errors, err)
 			continue
 		}
-		if err := validateImpression(impExt); err != nil {
-			errors = append(errors, err)
-			continue
-		}
 		//dispatchImpressions
 		//Group impressions by Matterfull-specific parameters `pid
 		if err := compatImpression(&imp); err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		if res[*impExt] == nil {
-			res[*impExt] = make([]openrtb2.Imp, 0)
-		}
-		res[*impExt] = append(res[*impExt], imp)
+
+		res[impExt] = append(res[impExt], imp)
 		resImps = append(resImps, imp)
 	}
 	return res, resImps, errors
-}
-
-func validateImpression(impExt *openrtb_ext.ExtImpMatterfull) error {
-	if impExt.PublisherID == "" {
-		return &errortypes.BadInput{Message: "No pid value provided"}
-	}
-	return nil
 }
 
 // Alter impression info to comply with Matterfull platform requirements
@@ -115,25 +98,25 @@ func compatBannerImpression(imp *openrtb2.Imp) error {
 	return nil
 }
 
-func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMatterfull, error) {
+func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfull, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return openrtb_ext.ExtImpMatterfull{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 	var MatterfullExt openrtb_ext.ExtImpMatterfull
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &MatterfullExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return openrtb_ext.ExtImpMatterfull{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	return &MatterfullExt, nil
+	return MatterfullExt, nil
 }
 
 func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
-	reqJSON, err := json.Marshal(newBidRequest)
+	reqJSON, err := jsonutil.Marshal(newBidRequest)
 	if err != nil {
 		return nil, err
 	}
