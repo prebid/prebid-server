@@ -25,12 +25,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 // MakeRequests creates HTTP requests to the EXCO endpoint based on the OpenRTB bid request.
-// Parameters:
-// - request: The OpenRTB bid request.
-// - reqInfo: Additional request information.
-// Returns:
-// - A slice of RequestData containing the HTTP request details.
-// - A slice of errors encountered during request creation.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
@@ -56,13 +50,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 // MakeBids processes the HTTP response from the EXCO endpoint and extracts bid information.
-// Parameters:
-// - internalRequest: The original OpenRTB bid request.
-// - externalRequest: The HTTP request sent to the EXCO endpoint.
-// - response: The HTTP response received from the EXCO endpoint.
-// Returns:
-// - A BidderResponse containing the extracted bids.
-// - A slice of errors encountered during bid processing.
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
@@ -100,11 +87,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 // getMediaTypeForBid determines the media type of a bid based on its MType.
-// Parameters:
-// - bid: The bid object.
-// Returns:
-// - The media type of the bid (e.g., banner, video).
-// - An error if the media type is unrecognized.
 func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
@@ -117,11 +99,6 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 }
 
 // adjustRequest modifies the OpenRTB bid request to include EXCO-specific parameters.
-// Parameters:
-// - request: The original OpenRTB bid request.
-// Returns:
-// - A modified bid request with EXCO-specific parameters.
-// - An error if the request modification fails.
 func adjustRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
 	var publisherId string
 
