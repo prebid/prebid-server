@@ -1078,7 +1078,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			},
 		},
 	},
-		{
+	{
 		Description: "Empty targeting environment test",
 		TargetData: targetData{
 			priceGranularity: lookupPriceGranularity("med"),

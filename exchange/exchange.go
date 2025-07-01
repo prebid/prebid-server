@@ -501,7 +501,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			if len(cacheErrs) > 0 {
 				errs = append(errs, cacheErrs...)
 			}
-			
+
 			env := ""
 			if r.BidRequestWrapper.BidRequest.App != nil {
 				env = openrtb_ext.HbEnvKeyApp
