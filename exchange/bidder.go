@@ -105,7 +105,7 @@ const (
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
 func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo, endpointCompression string) AdaptedBidder {
-	return &BidderAdapter{
+	ba := &BidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
 		Client:     client,
@@ -116,12 +116,30 @@ func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 			DebugInfo:           config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
 			EndpointCompression: endpointCompression,
 			ThrottleConfig: bidderAdapterThrottleConfig{
-				enabled:                 cfg.Client.EnableThrottling,
-				longQueueWaitThreshold:  time.Duration(cfg.Client.LongQueueWaitThresholdMS) * time.Millisecond,
-				shortQueueWaitThreshold: time.Duration(cfg.Client.ShortQueueWaitThresholdMS) * time.Millisecond,
+				enabled:                 cfg.Client.Throttle.EnableThrottling,
+				simulateOnly:            cfg.Client.Throttle.SimulateThrottlingOnly,
+				longQueueWaitThreshold:  time.Duration(cfg.Client.Throttle.LongQueueWaitThresholdMS) * time.Millisecond,
+				shortQueueWaitThreshold: time.Duration(cfg.Client.Throttle.ShortQueueWaitThresholdMS) * time.Millisecond,
+				throttleWindow:          cfg.Client.Throttle.ThrottleWindow,
 			},
 		},
 	}
+	if ba.config.ThrottleConfig.throttleWindow <= 0 {
+		ba.config.ThrottleConfig.throttleWindow = 100
+	}
+	// Precalculate bulk and delta values for health updates.
+	ba.config.ThrottleConfig.deltaValue = 1.0 / float64(ba.config.ThrottleConfig.throttleWindow)
+	ba.config.ThrottleConfig.bulkValue = 1.0 - ba.config.ThrottleConfig.deltaValue
+
+	return ba
+}
+
+// getThrottleWindow returns the throttle window value, enforcing a default of 100 if not set or set to zero.
+func getThrottleWindow(tw int) int {
+	if tw <= 0 {
+		return 100 // Default to 100 if the configured throttle window is less than or equal to zero
+	}
+	return tw
 }
 
 func parseDebugInfo(info *config.DebugInfo) bool {
@@ -152,10 +170,16 @@ type bidderAdapterConfig struct {
 type bidderAdapterThrottleConfig struct {
 	// Enables bidder throttling
 	enabled bool
+	// If enabled, we will only log that the bidder was to be throttled, but not actually throttle it.
+	simulateOnly bool
 	// Queue wait time that is considered unhealthy
 	longQueueWaitThreshold time.Duration
 	// Queue wait time that is short enough to be considered a healthy signal
 	shortQueueWaitThreshold time.Duration
+	// throttleWindow controls the speed that the throttling logic will react to changes in the health of the bidder.
+	throttleWindow int
+	bulkValue      float64
+	deltaValue     float64
 }
 
 func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
@@ -713,9 +737,9 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 			connWaitTime := time.Since(connStart)
 			if info.Reused {
 				// If the connection was reused, this is the time we waited in the pool
-				if connWaitTime > bidder.config.ThrottleConfig.longQueueWaitThreshold {
+				if bidder.config.ThrottleConfig.longQueueWaitThreshold > 0 && connWaitTime > bidder.config.ThrottleConfig.longQueueWaitThreshold {
 					bidder.logHealthCheck(false) // Mark as unhealthy if wait was too long
-				} else if connWaitTime < bidder.config.ThrottleConfig.shortQueueWaitThreshold {
+				} else if bidder.config.ThrottleConfig.shortQueueWaitThreshold > 0 && connWaitTime < bidder.config.ThrottleConfig.shortQueueWaitThreshold {
 					bidder.logHealthCheck(true) // Mark as healthy if wait was short
 					// Note if there is a short wait time for the pool, but the auction times out,
 					// we would mark the bidder as healthy once and unhealthy once, pushing the
@@ -836,14 +860,17 @@ func (bidder *BidderAdapter) getHealth() float64 {
 
 // logHealthCheck registers a health check for the bidder. True for a healthy result, false for an unhealthy result.
 func (bidder *BidderAdapter) logHealthCheck(success bool) {
+	if !bidder.config.ThrottleConfig.enabled {
+		return
+	}
 	for {
 		oldBits := atomic.LoadUint64(&bidder.healthBits)
 		old := math.Float64frombits(oldBits)
 		var newVal float64
 		if success {
-			newVal = 0.99 * old
+			newVal = bidder.config.ThrottleConfig.bulkValue * old
 		} else {
-			newVal = 0.99*old + 0.01
+			newVal = bidder.config.ThrottleConfig.bulkValue*old + bidder.config.ThrottleConfig.deltaValue
 		}
 		newBits := math.Float64bits(newVal)
 		if atomic.CompareAndSwapUint64(&bidder.healthBits, oldBits, newBits) {
@@ -853,6 +880,9 @@ func (bidder *BidderAdapter) logHealthCheck(success bool) {
 }
 
 func (bidder *BidderAdapter) shouldRequest() bool {
+	if !bidder.config.ThrottleConfig.enabled {
+		return true
+	}
 	health := bidder.getHealth()
 	if health < 0.2 {
 		return true
@@ -861,7 +891,8 @@ func (bidder *BidderAdapter) shouldRequest() bool {
 	// Linear interpolation: p = (health - 0.2) / 0.8 * 0.9
 	p := ((health - 0.2) / 0.8) * 0.9
 	if rand.Float64() < p {
-		return false
+		bidder.me.RecordAdapterThrottled(bidder.BidderName)
+		return bidder.config.ThrottleConfig.simulateOnly
 	}
 	return true
 }
