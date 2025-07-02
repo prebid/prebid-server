@@ -504,10 +504,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 			env := ""
 			if r.BidRequestWrapper.BidRequest.App != nil {
-				env = openrtb_ext.HbEnvKeyApp
+				env = openrtb_ext.EnvAppValue
 			}
 			if r.RequestType == "amp" {
-				env = openrtb_ext.HbEnvKeyAmp
+				env = openrtb_ext.EnvAmpValue
 			}
 
 			if targData.includeWinners || targData.includeBidderKeys || targData.includeFormat {

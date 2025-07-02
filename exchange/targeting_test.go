@@ -1083,6 +1083,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		TargetData: targetData{
 			priceGranularity: lookupPriceGranularity("med"),
 			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
 		},
 		AppEnv: "",
 		Auction: auction{
@@ -1114,8 +1115,9 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		TargetData: targetData{
 			priceGranularity: lookupPriceGranularity("med"),
 			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
 		},
-		AppEnv: openrtb_ext.HbEnvKeyAmp,
+		AppEnv: openrtb_ext.EnvAmpValue,
 		Auction: auction{
 			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
@@ -1146,8 +1148,9 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		TargetData: targetData{
 			priceGranularity: lookupPriceGranularity("med"),
 			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
 		},
-		AppEnv: openrtb_ext.HbEnvKeyApp,
+		AppEnv: openrtb_ext.EnvAppValue,
 		Auction: auction{
 			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
 				"ImpId-1": {
@@ -1178,6 +1181,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		TargetData: targetData{
 			priceGranularity: lookupPriceGranularity("med"),
 			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
 		},
 		AppEnv: "custom-targeting",
 		Auction: auction{

@@ -168,7 +168,7 @@ const (
 
 	// EnvAppValue used as a value for EnvKey
 	EnvAppValue string = "mobile-app"
-	HbEnvKeyAmp string = "amp"
+	EnvAmpValue string = "amp"
 
 	CategoryDurationKey TargetingKey = "_pb_cat_dur"
 )
