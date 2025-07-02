@@ -29,6 +29,18 @@ const (
 	videoMaxDuration = 120
 )
 
+// HTTP header constants
+const (
+	headerReferer        = "Referer"
+	headerAcceptLanguage = "Accept-Language"
+	headerUserAgent      = "User-Agent"
+	headerXForwardedFor  = "X-Forwarded-For"
+	headerXRealIP        = "X-Real-Ip"
+	headerContentType    = "Content-Type"
+	headerAccept         = "Accept"
+	headerXOpenRTVersion = "X-OpenRTB-Version"
+)
+
 // Composite id of an ad placement
 type yandexPlacementID struct {
 	PageID string
@@ -106,14 +118,14 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 
 	if request.Device != nil && request.Site != nil {
 		addNonEmptyHeaders(&headers, map[string]string{
-			"Referer":           request.Site.Page,
-			"Accept-Language":   request.Device.Language,
-			"User-Agent":        request.Device.UA,
-			"X-Forwarded-For":   request.Device.IP,
-			"X-Real-Ip":         request.Device.IP,
-			"Content-Type":      "application/json;charset=utf-8",
-			"Accept":            "application/json",
-			"X-OpenRTB-Version": "2.5",
+			headerReferer:        request.Site.Page,
+			headerAcceptLanguage: request.Device.Language,
+			headerUserAgent:      request.Device.UA,
+			headerXForwardedFor:  request.Device.IP,
+			headerXRealIP:        request.Device.IP,
+			headerContentType:    "application/json;charset=utf-8",
+			headerAccept:         "application/json",
+			headerXOpenRTVersion: "2.5",
 		})
 	}
 
@@ -201,9 +213,7 @@ func modifyImp(imp *openrtb2.Imp) error {
 		if err != nil {
 			return err
 		}
-		if banner != nil {
-			imp.Banner = banner
-		}
+		imp.Banner = banner
 		hasSupportedType = true
 	}
 
@@ -212,9 +222,7 @@ func modifyImp(imp *openrtb2.Imp) error {
 		if err != nil {
 			return err
 		}
-		if video != nil {
-			imp.Video = video
-		}
+		imp.Video = video
 		hasSupportedType = true
 	}
 
