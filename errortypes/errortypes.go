@@ -190,7 +190,7 @@ func (err *BidderThrottled) Error() string {
 }
 
 func (err *BidderThrottled) Code() int {
-	return BidderTemporarilyTrottledErrorCode
+	return BidderTemporarilyThrottledErrorCode
 }
 
 func (err *BidderThrottled) Severity() Severity {

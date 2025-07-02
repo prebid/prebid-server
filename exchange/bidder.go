@@ -125,7 +125,7 @@ func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		},
 	}
 	if ba.config.ThrottleConfig.throttleWindow <= 0 {
-		ba.config.ThrottleConfig.throttleWindow = 100
+		ba.config.ThrottleConfig.throttleWindow = 1000
 	}
 	// Precalculate bulk and delta values for health updates.
 	ba.config.ThrottleConfig.deltaValue = 1.0 / float64(ba.config.ThrottleConfig.throttleWindow)
@@ -861,6 +861,7 @@ func (bidder *BidderAdapter) getHealth() float64 {
 // logHealthCheck registers a health check for the bidder. True for a healthy result, false for an unhealthy result.
 func (bidder *BidderAdapter) logHealthCheck(success bool) {
 	if !bidder.config.ThrottleConfig.enabled {
+		// Don't update health if throttling is not enabled
 		return
 	}
 	for {
