@@ -470,6 +470,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			typedBid := &adapters.TypedBid{
 				Bid:      &bid,
 				BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+				BidType:  mType,
 			}
 
 			var bidExt *pubmaticBidExt
