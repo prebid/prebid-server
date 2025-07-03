@@ -133,7 +133,8 @@
               "h": 250,
               "mtype": 1,
               "dealid":"test deal"
-            }
+            },
+             "type": "banner"
           }
         ]
       }

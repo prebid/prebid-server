@@ -437,6 +437,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": 1}`),
 						},
 						DealPriority: 1,
+						BidType:      openrtb_ext.BidTypeBanner,
 						BidVideo:     &openrtb_ext.ExtBidPrebidVideo{},
 						BidMeta: &openrtb_ext.ExtBidPrebidMeta{
 							MediaType: "banner",
@@ -472,6 +473,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 							MType:   1,
 							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}`),
 						},
+						BidType:  openrtb_ext.BidTypeBanner,
 						BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
 						BidMeta: &openrtb_ext.ExtBidPrebidMeta{
 							MediaType: "banner",
@@ -507,6 +509,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 							MType:   1,
 							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1, "ibv": true}`),
 						},
+						BidType:  openrtb_ext.BidTypeBanner,
 						BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
 						BidMeta: &openrtb_ext.ExtBidPrebidMeta{
 							MediaType: "video",
