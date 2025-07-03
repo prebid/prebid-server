@@ -61,6 +61,7 @@
               },
               "tagid": "123456",
               "ext": {
+                "AdUnitCode": "sovrn_auc",
                 "bidder": {
                   "tagid": "123456"
                 }
