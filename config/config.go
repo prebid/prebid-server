@@ -75,7 +75,8 @@ type Configuration struct {
 	AccountRequired bool `mapstructure:"account_required"`
 	// AccountDefaults defines default settings for valid accounts that are partially defined
 	// and provides a way to set global settings that can be overridden at account level.
-	AccountDefaults Account `mapstructure:"account_defaults"`
+	HostAccountDefaults HostAccount `mapstructure:"account_defaults"`
+	AccountDefaults     Account
 	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
 	accountDefaultsJSON json.RawMessage
 	// Local private file containing SSL certificates
@@ -104,6 +105,43 @@ type Configuration struct {
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
 }
+
+// HostAccount is a copy of Account but with the HostAccountHooks field instead of AccountHooks.
+// This is a temporary solution to work around a limitation in viper which does not support unmarshalling
+// to map[string]map[string]json.RawMessage.
+type HostAccount struct {
+	ID                      string                               `mapstructure:"id" json:"id"`
+	Disabled                bool                                 `mapstructure:"disabled" json:"disabled"`
+	CacheTTL                DefaultTTLs                          `mapstructure:"cache_ttl" json:"cache_ttl"`
+	CCPA                    AccountCCPA                          `mapstructure:"ccpa" json:"ccpa"`
+	GDPR                    AccountGDPR                          `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow              bool                                 `mapstructure:"debug_allow" json:"debug_allow"`
+	DefaultIntegration      string                               `mapstructure:"default_integration" json:"default_integration"`
+	CookieSync              CookieSync                           `mapstructure:"cookie_sync" json:"cookie_sync"`
+	Events                  Events                               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
+	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
+	// HostHooks provides a way to specify hook execution plan for specific endpoints and stages
+	HostHooks          HostAccountHooks                            `mapstructure:"hooks" json:"hooks"`
+	PriceFloors        AccountPriceFloors                          `mapstructure:"price_floors" json:"price_floors"`
+	Validations        Validations                                 `mapstructure:"validations" json:"validations"`
+	DefaultBidLimit    int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
+	BidAdjustments     *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
+	Privacy            AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
+	PreferredMediaType openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
+	TargetingPrefix    string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
+}
+
+// type HostAccount struct {
+// 	BaseAccount
+// 	HostHooks          HostAccountHooks                            `mapstructure:"hooks" json:"hooks"`
+// }
+
+type HostAccountHooks struct {
+	Modules       HostAccountModules `mapstructure:"modules" json:"modules"`
+	ExecutionPlan HookExecutionPlan  `mapstructure:"execution_plan" json:"execution_plan"`
+}
+type HostAccountModules map[string]map[string]interface{}
 
 type Admin struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -719,6 +757,10 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
+	// Temporary solution until fetchers 2.0 are implemented
+	if err := c.MapHostAccountDefaultsToAccountDefaults(); err != nil {
+		return nil, err
+	}
 
 	if err := c.RequestValidation.Parse(); err != nil {
 		return nil, err
@@ -861,6 +903,19 @@ func (cfg *Configuration) MarshalAccountDefaults() error {
 		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
+}
+
+// MapHostAccountDefaultsToAccountDefaults maps the host-specific account defaults to the account defaults
+func (cfg *Configuration) MapHostAccountDefaultsToAccountDefaults() error {
+	bytes, err := jsonutil.Marshal(cfg.HostAccountDefaults)
+	if err != nil {
+		return fmt.Errorf("failed to marshal host account defaults: %w", err)
+	}
+	err = jsonutil.Unmarshal(bytes, &cfg.AccountDefaults)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal host account defaults: %w", err)
+	}
+	return nil
 }
 
 // UnpackDSADefault validates the JSON DSA default object string by unmarshaling and maps it to a struct
