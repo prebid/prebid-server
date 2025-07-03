@@ -29,17 +29,26 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var requests []*adapters.RequestData
 	var errors []error
 
+	if len(request.Imp) == 0 {
+		errors = append(errors, &errortypes.BadInput{Message: "No valid impressions for grid"})
+		return nil, errors
+	}
 	// Unmarshal imp.ext
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		errors = append(errors, &errortypes.BadInput{Message: fmt.Sprintf("invalid imp.ext: %s", err)})
-
+		return nil, errors
 	}
 
 	var revxExt openrtb_ext.ExtImpRevX
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &revxExt); err != nil {
-		errors = append(errors, &errortypes.BadInput{Message: "bad revx bidder ext"})
+		errors = append(errors, &errortypes.BadInput{Message: "Publisher name missing"})
+		return nil, errors
+	}
 
+	// Check if publisher name is present
+	if len(revxExt.PubName) == 0 {
+		return nil, []error{&errortypes.BadInput{Message: "Publisher name missing"}}
 	}
 
 	if len(requests) == 0 && len(errors) > 0 {
