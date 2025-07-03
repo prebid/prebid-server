@@ -5,4 +5,5 @@ type ImpExtRise struct {
 	PublisherID string `json:"publisher_id"`
 	Org         string `json:"org"`
 	PlacementID string `json:"placementId"`
+	TestMode    bool   `json:"testMode"`
 }
