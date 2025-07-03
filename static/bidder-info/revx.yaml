@@ -1,6 +1,6 @@
 # static/bidder-info/revx.yaml
 
-endpoint:  "prebid-use.atomex.net?ag=%s"
+endpoint:  "https://prebid-use.atomex.net"
 
 maintainer:
   email: prebidsupport@revx.io

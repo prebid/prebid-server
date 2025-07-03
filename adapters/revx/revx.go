@@ -29,11 +29,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var requests []*adapters.RequestData
 	var errors []error
 
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No valid impressions for grid",
-		}}
-	}
 	// Unmarshal imp.ext
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
@@ -47,10 +42,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	}
 
-	// Check if publisher name is present
-	if len(revxExt.PubName) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "Publisher name missing"}}
-	}
 	if len(requests) == 0 && len(errors) > 0 {
 		return nil, errors
 	}
@@ -68,7 +59,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	return []*adapters.RequestData{{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Uri:     a.endPoint,
 		Body:    reqJson,
 		Headers: headers,
@@ -82,15 +73,13 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, nil
 	}
 
-	// Treat 204 and 400 as no-bid without error
-	if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusBadRequest {
-		return nil, nil
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected http status code: %d", response.StatusCode),
-		}}
+	// Check HTTP status before parsing response body
+	if err := CheckResponseStatusCodeForErrors(response); err != nil {
+		// Treat 204 and 400 as no-bid without logging error
+		if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusBadRequest {
+			return nil, nil
+		}
+		return nil, []error{err}
 	}
 
 	var serverBidResponse openrtb2.BidResponse
@@ -98,9 +87,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{err}
 	}
 
-	// Initialize a slice to hold valid bids
 	var typedBids []*adapters.TypedBid
-
 	for _, sb := range serverBidResponse.SeatBid {
 		for i := range sb.Bid {
 			mediaType, err := getMediaTypeForImp(sb.Bid[i])
@@ -115,27 +102,18 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}
 	}
 
-	// If no valid bids, return nil, nil
 	if len(typedBids) == 0 {
 		return nil, nil
 	}
 
-	// Create and populate the BidderResponse only if there are valid bids
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(typedBids))
 	bidResponse.Bids = typedBids
 	bidResponse.Currency = serverBidResponse.Cur
 
-	// Return the response with valid bids
 	return bidResponse, nil
 }
 
 func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	// Check if MType is 0 (invalid or missing media type)
-	if bid.MType == 0 {
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unsupported mtype %d for bid %s", bid.MType, bid.ID),
-		}
-	}
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -148,4 +126,21 @@ func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 			Message: fmt.Sprintf("Unsupported mtype %d for bid %s", bid.MType, bid.ID),
 		}
 	}
+}
+
+// CheckResponseStatusCodeForErrors checks the HTTP response status code for errors.
+func CheckResponseStatusCodeForErrors(response *adapters.ResponseData) error {
+	if response.StatusCode == http.StatusBadRequest {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}
+	}
+
+	return nil
 }

@@ -23,10 +23,5 @@ func TestJsonSamples(t *testing.T) {
 		t.Logf("RevX Builder created successfully: %+v", bidder)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "revxtest", bidder) // Call it directly
-
-	t.Logf("--- Finished TestJsonSamples for revxtest/exemplary/simple-app-banner.json ---")
-
 	adapterstest.RunJSONBidderTest(t, "revxtest", bidder)
-
 }
