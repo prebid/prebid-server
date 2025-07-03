@@ -101,6 +101,7 @@ type AdapterMetrics struct {
 	ConnWaitTime       metrics.Timer
 	BuyerUIDScrubbed   metrics.Meter
 	GDPRRequestBlocked metrics.Meter
+	ThrottledMeter     metrics.Meter
 
 	BidValidationCreativeSizeErrorMeter metrics.Meter
 	BidValidationCreativeSizeWarnMeter  metrics.Meter
@@ -401,6 +402,7 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+		ThrottledMeter:    blankMeter,
 	}
 	if !disabledMetrics.AdapterConnectionMetrics {
 		newAdapter.ConnCreated = metrics.NilCounter{}
@@ -490,6 +492,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
 	am.BuyerUIDScrubbed = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.buyeruid_scrubbed", adapterOrAccount, exchange), registry)
 	am.GDPRRequestBlocked = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.gdpr_request_blocked", adapterOrAccount, exchange), registry)
+	am.ThrottledMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.throttled", adapterOrAccount, exchange), registry)
 
 	am.BidValidationCreativeSizeErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.size.err", adapterOrAccount, exchange), registry)
 	am.BidValidationCreativeSizeWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.size.warn", adapterOrAccount, exchange), registry)
@@ -1163,4 +1166,15 @@ func (me *Metrics) getModuleMetric(labels ModuleLabels) (*ModuleMetrics, error) 
 	}
 
 	return mm, nil
+}
+
+func (me *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
+	adapterStr := adapterName.String()
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
+	if !ok {
+		glog.Errorf("Trying to log adapter throttled metric for %s: adapter not found", adapterStr)
+		return
+	}
+
+	am.ThrottledMeter.Mark(1)
 }
