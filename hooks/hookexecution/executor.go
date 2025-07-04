@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/usersync"
 )
 
 const (
@@ -34,7 +35,7 @@ const (
 type StageExecutor interface {
 	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
 	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
-	ExecuteProcessedAuctionStage(req *openrtb_ext.RequestWrapper) error
+	ExecuteProcessedAuctionStage(req *openrtb_ext.RequestWrapper, userSync *usersync.Cookie) error
 	ExecuteBidderRequestStage(req *openrtb_ext.RequestWrapper, bidder string) *RejectError
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
 	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid)
@@ -146,7 +147,7 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 	return payload, reject
 }
 
-func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.RequestWrapper) error {
+func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.RequestWrapper, userSync *usersync.Cookie) error {
 	plan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
 	if len(plan) == 0 {
 		return nil
@@ -167,7 +168,7 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.Request
 
 	stageName := hooks.StageProcessedAuctionRequest.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.ProcessedAuctionRequestPayload{Request: request}
+	payload := hookstage.ProcessedAuctionRequestPayload{Request: request, Usersyncs: userSync}
 
 	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityAuctionRequest
@@ -338,7 +339,7 @@ func (executor EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *
 	return body, nil
 }
 
-func (executor EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb_ext.RequestWrapper) error {
+func (executor EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb_ext.RequestWrapper, _ *usersync.Cookie) error {
 	return nil
 }
 
