@@ -3,6 +3,7 @@ package hookexecution
 import (
 	"bytes"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/usersync"
 	"net/http"
 	"net/url"
 	"testing"
@@ -37,7 +38,7 @@ func TestEmptyHookExecutor(t *testing.T) {
 
 	entrypointBody, entrypointRejectErr := executor.ExecuteEntrypointStage(req, body)
 	rawAuctionBody, rawAuctionRejectErr := executor.ExecuteRawAuctionStage(body)
-	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
+	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}, &usersync.Cookie{})
 	bidderRequestRejectErr := executor.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: bidderRequest}, "bidder-name")
 	executor.ExecuteAuctionResponseStage(&openrtb2.BidResponse{})
 
@@ -891,7 +892,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 
-			err := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
+			err := exec.ExecuteProcessedAuctionStage(&test.givenRequest, nil)
 
 			assert.Equal(ti, test.expectedErr, err, "Unexpected stage reject.")
 			assert.Equal(ti, test.expectedRequest, *test.givenRequest.BidRequest, "Incorrect request update.")
@@ -1992,7 +1993,7 @@ func TestInterStageContextCommunication(t *testing.T) {
 	}}, exec.moduleContexts, "Wrong module contexts after executing raw-auction hook.")
 
 	// test that context added at the processed-auction stage merged with existing module contexts
-	err = exec.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
+	err = exec.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}, nil)
 	assert.Nil(t, err, "Unexpected reject from processed-auction stage.")
 	assert.Equal(t, &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
 		"module-1": {

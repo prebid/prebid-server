@@ -14,7 +14,7 @@ import (
 )
 
 // ProcessedAuctionResultFunc is a type alias for a result function that runs in the processed auction request stage.
-type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
+type ProcessedAuctionResultFunc = rules.ResultFunction[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
 
 const (
 	ExcludeBiddersName = "excludeBidders"
@@ -62,12 +62,12 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (eb *ExcludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
 	// build map[impId] to map [bidder] to bidder params
-	impIdToBidders, err := buildExcludeBidders(req, eb.Args.Bidders)
+	impIdToBidders, err := buildExcludeBidders(payload, eb.Args.Bidders)
 	if err != nil {
 		return err
 	}
@@ -103,12 +103,12 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (ib *IncludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
 	// build map[impId] to map [bidder] to bidder params
-	impIdToBidders, err := buildIncludeBidders(req, ib.Args.Bidders)
+	impIdToBidders, err := buildIncludeBidders(payload.GetBidderRequestPayload(), ib.Args.Bidders)
 	if err != nil {
 		return err
 	}
@@ -147,8 +147,9 @@ func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (
 	return impIdToBidders, nil
 }
 
-func buildExcludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (map[string]map[string]json.RawMessage, error) {
+func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, argBidders []string) (map[string]map[string]json.RawMessage, error) {
 	impIdToBidders := make(map[string]map[string]json.RawMessage)
+	req := payload.GetBidderRequestPayload()
 	for _, impWrapper := range req.GetImp() {
 		impExt, impExtErr := impWrapper.GetImpExt()
 		if impExtErr != nil {

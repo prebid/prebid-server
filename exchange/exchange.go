@@ -242,7 +242,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		return nil, nil
 	}
 
-	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper)
+	cookieSync, ok := r.UserSyncs.(*usersync.Cookie)
+	if !ok {
+		return nil, errors.New("UserSyncs must be a usersync.Cookie")
+	}
+	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper, cookieSync)
 	if err != nil {
 		return nil, err
 	}

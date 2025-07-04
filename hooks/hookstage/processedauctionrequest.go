@@ -2,8 +2,8 @@ package hookstage
 
 import (
 	"context"
-
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/usersync"
 )
 
 // ProcessedAuctionRequest hooks are invoked after the request is parsed
@@ -26,7 +26,8 @@ type ProcessedAuctionRequest interface {
 // ProcessedAuctionRequestPayload consists of the openrtb_ext.RequestWrapper object.
 // Hooks are allowed to modify openrtb_ext.RequestWrapper using mutations.
 type ProcessedAuctionRequestPayload struct {
-	Request *openrtb_ext.RequestWrapper
+	Request   *openrtb_ext.RequestWrapper
+	Usersyncs *usersync.Cookie
 }
 
 func (parp *ProcessedAuctionRequestPayload) GetBidderRequestPayload() *openrtb_ext.RequestWrapper {
