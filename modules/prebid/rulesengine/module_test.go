@@ -32,7 +32,7 @@ func TestExpired(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := expired(tc.inTime, tc.inTimestamp)
+			res := expired(tc.inTime, tc.inTimestamp, 5)
 			assert.Equal(t, tc.expectedResult, res)
 		})
 	}
@@ -45,6 +45,7 @@ func (mt mockTimeUtil) Now() time.Time {
 }
 
 var sampleJsonConfig json.RawMessage = json.RawMessage(`{"enabled": true, "ruleSets": []}`)
+var sampleJsonConfigWithUpdateFrequency json.RawMessage = json.RawMessage(`{"enabled": true, "updatetreefrequencyminutes": 1, "ruleSets": []}`)
 
 func TestConfigChanged(t *testing.T) {
 
@@ -94,6 +95,7 @@ func TestRebuildTrees(t *testing.T) {
 			inCacheEntry: &cacheEntry{
 				timestamp: time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
+			inJsonConfig:   &sampleJsonConfigWithUpdateFrequency,
 			expectedResult: false,
 		},
 		{
@@ -111,14 +113,15 @@ func TestRebuildTrees(t *testing.T) {
 				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 				hashedConfig: "oldHash",
 			},
-			inJsonConfig:   &sampleJsonConfig,
+			inJsonConfig:   &sampleJsonConfigWithUpdateFrequency,
 			expectedResult: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig)
+			res, err := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig)
+			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedResult, res)
 		})
 	}

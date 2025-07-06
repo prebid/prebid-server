@@ -33,8 +33,15 @@ func (tm *treeManager) Run(c cacher) error {
 			}
 
 			cacheObj := c.Get(req.accountID)
-			if cacheObj != nil && !rebuildTrees(cacheObj, req.config) {
-				break
+			if cacheObj != nil {
+				confChanged, rebuildTreeErr := rebuildTrees(cacheObj, req.config)
+				if rebuildTreeErr != nil {
+					tm.monitor.logError(fmt.Sprintf("Rules engine tree update error for account %s: %v", req.accountID, rebuildTreeErr))
+					break
+				}
+				if !confChanged {
+					break
+				}
 			}
 
 			parsedCfg, err := config.NewConfig(*req.config, tm.schemaValidator)

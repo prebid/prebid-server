@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/buger/jsonparser"
 	"time"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -12,8 +13,6 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
-
-const fiveMinutes = time.Duration(300) * time.Second
 
 // Builder configures the rules engine module initiating an in-memory cache and kicking
 // off a go routine that builds tree structures that represent rule sets optimized for finding
@@ -77,7 +76,13 @@ func (m Module) HandleProcessedAuctionHook(
 		}, nil
 	}
 	// cache hit
-	if rebuildTrees(co, &miCtx.AccountConfig) {
+	confChanged, err := rebuildTrees(co, &miCtx.AccountConfig)
+	if err != nil {
+		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+			Message: "rules engine tree update error",
+		}, nil
+	}
+	if confChanged {
 		bi := buildInstruction{
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
@@ -104,19 +109,31 @@ func (m Module) Shutdown() {
 }
 
 // rebuildTrees returns true if the trees for this account need to be rebuilt; false otherwise
-func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage) bool {
-	if !expired(&timeutil.RealTime{}, co.timestamp) {
-		return false
+func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage) (bool, error) {
+	updateFrequency, err := jsonparser.GetInt(*jsonConfig, "updatetreefrequencyminutes")
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return false, err
+	} else if err != nil && err == jsonparser.KeyPathNotFoundError {
+		updateFrequency = 0
 	}
-	return configChanged(co.hashedConfig, jsonConfig)
+
+	if updateFrequency <= 0 {
+		return false, nil
+	}
+
+	if !expired(&timeutil.RealTime{}, co.timestamp, updateFrequency) {
+		return false, nil
+	}
+	return configChanged(co.hashedConfig, jsonConfig), nil
 }
 
 // expired returns true if the refresh time has expired; false otherwise
-func expired(t timeutil.Time, ts time.Time) bool {
+func expired(t timeutil.Time, ts time.Time, updateFrequency int64) bool {
 	currentTime := t.Now().UTC()
 
 	delta := currentTime.Sub(ts.UTC())
-	if delta.Seconds() > fiveMinutes.Seconds() {
+	freq := time.Duration(updateFrequency) * time.Minute
+	if delta.Seconds() > freq.Seconds() {
 		return true
 	}
 	return false
