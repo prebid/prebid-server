@@ -67,7 +67,7 @@ func (eb *ExcludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, resul
 	// this function should NOT perform any modifications to the request
 
 	// build map[impId] to map [bidder] to bidder params
-	impIdToBidders, err := buildExcludeBidders(payload, eb.Args.Bidders)
+	impIdToBidders, err := buildExcludeBidders(payload, eb.Args)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (
 	return impIdToBidders, nil
 }
 
-func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, argBidders []string) (map[string]map[string]json.RawMessage, error) {
+func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config.ResultFuncParams) (map[string]map[string]json.RawMessage, error) {
 	impIdToBidders := make(map[string]map[string]json.RawMessage)
 	req := payload.GetBidderRequestPayload()
 	for _, impWrapper := range req.GetImp() {
@@ -164,8 +164,23 @@ func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, argBidders 
 		resultImpBidders := make(map[string]json.RawMessage)
 
 		for bidderName, bidderData := range impBidders {
-			// do not add bidders from argBidders
-			if contains := slices.Contains(argBidders, bidderName); !contains {
+			addSynced := true
+			if args.IfSyncedId != nil {
+				uid, found, active := payload.Usersyncs.GetUID(bidderName)
+				if found {
+					syncValid := found && active && uid != ""
+					ifSynced := *args.IfSyncedId
+
+					// syncValid  ifSynced  Not Exlude Bidder (A XOR B)
+					// F          F         F
+					// F          T         T
+					// T          F         T
+					// T          T         F
+					addSynced = syncValid != ifSynced // XOR
+				}
+			}
+			// do not add bidders from argBidders if sync status matches ifSyncedId
+			if contains := slices.Contains(args.Bidders, bidderName); !contains && addSynced {
 				resultImpBidders[bidderName] = bidderData
 			}
 		}
