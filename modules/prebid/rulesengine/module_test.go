@@ -99,7 +99,7 @@ func TestRebuildTrees(t *testing.T) {
 			expectedResult: false,
 		},
 		{
-			name: "expired_entry_but_same_config_so_no_rebuild",
+			name: "expired_entry_but_same_config_and_no_update_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
 				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 				hashedConfig: "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
