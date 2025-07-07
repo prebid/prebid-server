@@ -1,4 +1,4 @@
-endpoint: "http://mfx.mobilefuse.com/openrtb?pub_id={{.PublisherID}}"
+endpoint: "http://mfx.mobilefuse.com/openrtb"
 # This bidder does not operate globally. Please consider setting "disabled: true" outside of the following regions:
 geoscope:
   - USA
@@ -16,3 +16,10 @@ endpointCompression: "GZIP"
 openrtb:
   version: 2.6
   gpp-supported: true
+userSync:
+  iframe:
+    url: "https://mfx.mobilefuse.com/usync?us_privacy={{.USPrivacy}}&pxurl={{.RedirectURL}}"
+    userMacro: "$UID"
+  redirect:
+    url: "https://mfx.mobilefuse.com/getuid?us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "$UID"

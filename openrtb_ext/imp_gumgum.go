@@ -21,3 +21,9 @@ type ExtImpGumGumBanner struct {
 	MaxW float64 `json:"maxw,omitempty"`
 	MaxH float64 `json:"maxh,omitempty"`
 }
+
+type ExtImpAdUnitCode struct {
+	Prebid struct {
+		AdUnitCode string `json:"adunitcode,omitempty"`
+	} `json:"prebid,omitempty"`
+}

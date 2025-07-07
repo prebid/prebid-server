@@ -43,6 +43,7 @@ type Account struct {
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
+	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

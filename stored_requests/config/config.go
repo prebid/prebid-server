@@ -2,12 +2,12 @@ package config
 
 import (
 	"context"
-	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/metrics"
-
+	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/stored_requests"
@@ -166,7 +166,7 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 	}
 	if cfg.HTTP.Endpoint != "" {
 		logger.Infof("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType(), cfg.HTTP.Endpoint)
-		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint))
+		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint, cfg.HTTP.UseRfcCompliantBuilder))
 	}
 
 	fetcher = consolidate(cfg.DataType(), idList)

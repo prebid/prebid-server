@@ -2,8 +2,8 @@ endpoint: "https://bidsmind.pbsadverxo.com/auction?id={{.AdUnit}}&auth={{.TokenI
 aliasOf: "adverxo"
 userSync:
   iframe:
-    url: https://bidsmind.pbsadverxo.com/usync?type=iframe&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://taetee.com/usync?type=iframe&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID
   redirect:
-    url: https://bidsmind.pbsadverxo.com/usync?type=image&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://taetee.com/usync?type=image&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID

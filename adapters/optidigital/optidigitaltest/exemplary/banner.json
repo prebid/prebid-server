@@ -1,0 +1,107 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "p123",
+            "placementId": "my-placement-id"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.optidigital.com/bidder/openrtb2",
+        "body": {
+          "id": "request-id",
+          "imp": [
+            {
+              "id": "imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "p123",
+                  "placementId": "my-placement-id"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
+                  "id": "bid-id",
+                  "impid": "imp-id",
+                  "price": 0.5,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": [
+                    "foo.com"
+                  ],
+                  "crid": "29681110",
+                  "h": 250,
+                  "w": 300,
+                  "dealid": "test deal"
+                }
+              ]
+            }
+          ],
+          "bidid": "request-id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-id",
+            "impid": "imp-id",
+            "price": 0.5,
+            "adid": "29681110",
+            "adm": "some-test-ad",
+            "adomain": [
+              "foo.com"
+            ],
+            "crid": "29681110",
+            "w": 300,
+            "h": 250,
+            "dealid": "test deal"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
