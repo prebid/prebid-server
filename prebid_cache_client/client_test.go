@@ -49,7 +49,7 @@ func TestBadResponse(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &metrics.MetricsEngineMock{}
-	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
+	metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),
