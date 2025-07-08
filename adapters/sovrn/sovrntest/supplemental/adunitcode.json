@@ -20,7 +20,9 @@
           "bidder": {
             "tagid": "123456",
             "adunitcode": "sovrn_auc"
-          }
+          },
+          "gpid": "test-gpid",
+          "adunitcode": "sovrn_auc"
         }
       }
     ],
@@ -65,7 +67,8 @@
                 "bidder": {
                   "tagid": "123456",
                   "adunitcode": "sovrn_auc"
-                }
+                },
+                "gpid": "test-gpid"
               }
             }
           ],
