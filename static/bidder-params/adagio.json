@@ -13,6 +13,11 @@
       "description": "Refers to the placement of an adunit in a page. Must not contain any information about the type of device.",
       "maxLength": 30
     },
+    "site": {
+      "type": "string",
+      "description": "Name of the site. Handed out by Adagio.",
+      "maxLength": 50
+    },
     "pagetype": {
       "type": "string",
       "description": "Describes what kind of content will be present in the page.",
