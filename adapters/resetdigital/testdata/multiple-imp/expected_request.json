@@ -1,0 +1,84 @@
+{
+  "expectedMultipleRequests": [
+    {
+      "uri": "https://example.com?pid=test-banner-placement",
+      "body": {
+        "id": "test-multi-request-id",
+        "imp": [
+          {
+            "id": "test-imp-banner-id",
+            "banner": {
+              "format": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            },
+            "tagid": "test-banner-placement",
+            "ext": {
+              "bidder": {
+                "placement_id": "test-banner-placement"
+              }
+            }
+          }
+        ],
+        "site": {
+          "page": "https://example.com/multi",
+          "domain": "example.com"
+        }
+      },
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ],
+        "Accept": [
+          "application/json"
+        ],
+        "X-OpenRTB-Version": [
+          "2.6"
+        ]
+      }
+    },
+    {
+      "uri": "https://example.com?pid=test-video-placement",
+      "body": {
+        "id": "test-multi-request-id",
+        "imp": [
+          {
+            "id": "test-imp-video-id",
+            "video": {
+              "mimes": ["video/mp4"],
+              "protocols": [2, 3, 5, 6],
+              "w": 640,
+              "h": 480,
+              "linearity": 1,
+              "maxduration": 30
+            },
+            "tagid": "test-video-placement",
+            "ext": {
+              "bidder": {
+                "placement_id": "test-video-placement"
+              }
+            }
+          }
+        ],
+        "site": {
+          "page": "https://example.com/multi",
+          "domain": "example.com"
+        }
+      },
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ],
+        "Accept": [
+          "application/json"
+        ],
+        "X-OpenRTB-Version": [
+          "2.6"
+        ]
+      }
+    }
+  ]
+}
