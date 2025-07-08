@@ -958,6 +958,11 @@ func TestGetAdUnitCode(t *testing.T) {
 			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{}},
 			want: "*",
 		},
+		{
+			name: "empty_imp.ext.prebid.storedrequest.id",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid": {"custom":{"id":"123"}}}`)}},
+			want: "*",
+		},
 	}
 
 	for _, tt := range tests {
