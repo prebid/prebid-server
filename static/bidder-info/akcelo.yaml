@@ -1,0 +1,9 @@
+endpoint: "https://s2s.sportslocalmedia.com/openrtb2/auction"
+maintainer:
+  email: "tech@akcelo.io"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
