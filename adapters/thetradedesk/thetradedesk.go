@@ -17,8 +17,6 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
-//const PREBID_INTEGRATION_TYPE = "1"
-
 type adapter struct {
 	bidderEndpointTemplate string
 	defaultEndpoint        string
@@ -93,7 +91,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	//headers.Add("x-integration-type", PREBID_INTEGRATION_TYPE) this will be parsed and added conditionally later
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     bidderEndpoint,
@@ -105,6 +102,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 func (a *adapter) buildEndpointURL(supplySourceId string) (string, error) {
 	if supplySourceId == "" {
+		if a.defaultEndpoint == "" {
+			return "", errors.New("Either supplySourceId or a default endpoint must be provided")
+		}
 		return a.defaultEndpoint, nil
 	}
 
