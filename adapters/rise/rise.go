@@ -22,8 +22,7 @@ type adapter struct {
 }
 
 type bidderParameters struct {
-	Org      string
-	TestMode bool
+	Org string
 }
 
 const (
@@ -55,7 +54,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
 	endpoint := a.endpointURL
-	if bidderParams.TestMode {
+	if openRTBRequest.Test == 1 {
 		endpoint = a.testEndpointURL
 	}
 
@@ -120,7 +119,6 @@ func extractBidderParams(openRTBRequest *openrtb2.BidRequest) (*bidderParameters
 		if err = jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 			return nil, fmt.Errorf("unmarshal ImpExtRise: %w", err)
 		}
-		bidderParameters.TestMode = impExt.TestMode
 
 		if impExt.Org != "" {
 			bidderParameters.Org = strings.TrimSpace(impExt.Org)

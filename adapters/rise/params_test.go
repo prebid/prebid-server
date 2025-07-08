@@ -21,6 +21,6 @@ func TestValidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{ "org": "123", "testMode": true }`,
-	`{ "org": "123", "testMode": false }`,
+	`{ "org": "123" }`,
+	`{ "org": "456" }`,
 }
