@@ -15,10 +15,6 @@
     "placementId": {
       "type": "string",
       "description": "Placement ID."
-    },
-    "testMode": {
-      "type": "boolean",
-      "description": "Test mode"
     }
   },
   "oneOf": [
