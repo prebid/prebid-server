@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/xeipuuv/gojsonschema"
@@ -16,10 +17,10 @@ const RulesEngineSchemaFile = "rules-engine-schema.json"
 const RulesEngineSchemaFilePath = "modules/prebid/rulesengine/config/" + RulesEngineSchemaFile
 
 type PbRulesEngine struct {
-	Enabled                    bool      `json:"enabled,omitempty"`
-	Timestamp                  string    `json:"timestamp,omitempty"`
-	UpdateTreeFrequencyMinutes int       `json:"updatetreefrequencyminutes,omitempty"`
-	RuleSets                   []RuleSet `json:"rulesets,omitempty"`
+	Enabled            bool      `json:"enabled,omitempty"`
+	Timestamp          string    `json:"timestamp,omitempty"`
+	RefreshRateSeconds int       `json:"refreshrateseconds,omitempty"`
+	RuleSets           []RuleSet `json:"rulesets,omitempty"`
 }
 
 type RuleSet struct {
@@ -129,6 +130,13 @@ func NewConfig(jsonCfg json.RawMessage, validator *gojsonschema.Schema) (*PbRule
 			return nil, fmt.Errorf("Ruleset no %d is invalid: %s", i, err.Error())
 		}
 	}
+	updateFrequency, err := jsonparser.GetInt(jsonCfg, "refreshrateseconds")
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return nil, err
+	} else if err != nil && err == jsonparser.KeyPathNotFoundError {
+		updateFrequency = 0
+	}
+	cfg.RefreshRateSeconds = int(updateFrequency)
 
 	return cfg, nil
 }

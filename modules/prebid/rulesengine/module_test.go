@@ -32,7 +32,8 @@ func TestExpired(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := expired(tc.inTime, tc.inTimestamp, 5)
+			ce := cacheEntry{timestamp: tc.inTimestamp, refreshRateSeconds: 5} // Create a cacheEntry to use the expired function
+			res := expired(tc.inTime, &ce)
 			assert.Equal(t, tc.expectedResult, res)
 		})
 	}
@@ -45,9 +46,6 @@ func (mt mockTimeUtil) Now() time.Time {
 }
 
 var sampleJsonConfig json.RawMessage = json.RawMessage(`{"enabled": true, "ruleSets": []}`)
-var incorrectJsonConfig json.RawMessage = json.RawMessage(`{"enabled": true, "updatetreefrequencyminutes": [[]], "ruleSets": []}`)
-var sampleJsonConfigWithUpdateFrequency1 json.RawMessage = json.RawMessage(`{"enabled": true, "updatetreefrequencyminutes": 1, "ruleSets": []}`)
-var sampleJsonConfigWithUpdateFrequency0 json.RawMessage = json.RawMessage(`{"enabled": true, "updatetreefrequencyminutes": 0, "ruleSets": []}`)
 
 func TestConfigChanged(t *testing.T) {
 
@@ -96,16 +94,18 @@ func TestRebuildTrees(t *testing.T) {
 		{
 			name: "non_expired_cache_entry_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp: time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC),
+				timestamp:          time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC),
+				refreshRateSeconds: 1,
 			},
-			inJsonConfig:   &sampleJsonConfigWithUpdateFrequency1,
+			inJsonConfig:   &sampleJsonConfig,
 			expectedResult: false,
 		},
 		{
 			name: "expired_entry_but_same_config_and_default_no_update_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				hashedConfig: "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
+				timestamp:          time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				hashedConfig:       "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
+				refreshRateSeconds: 1,
 			},
 			inJsonConfig:   &sampleJsonConfig,
 			expectedResult: false,
@@ -113,30 +113,22 @@ func TestRebuildTrees(t *testing.T) {
 		{
 			name: "expired_entry_but_same_config_and_zero_minutes_update_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				hashedConfig: "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
+				timestamp:          time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				hashedConfig:       "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
+				refreshRateSeconds: 0,
 			},
-			inJsonConfig:   &sampleJsonConfigWithUpdateFrequency0,
+			inJsonConfig:   &sampleJsonConfig,
 			expectedResult: false,
 		},
 		{
 			name: "expired_entry_and_different_config_so_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				hashedConfig: "oldHash",
+				timestamp:          time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				hashedConfig:       "oldHash",
+				refreshRateSeconds: 1,
 			},
-			inJsonConfig:   &sampleJsonConfigWithUpdateFrequency1,
+			inJsonConfig:   &sampleJsonConfig,
 			expectedResult: true,
-		},
-		{
-			name: "incorrect_json_config_should_return_error",
-			inCacheEntry: &cacheEntry{
-				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				hashedConfig: "oldHash",
-			},
-			inJsonConfig:   &incorrectJsonConfig,
-			expectedResult: false,
-			expectErr:      true,
 		},
 	}
 

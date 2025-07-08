@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/buger/jsonparser"
 	"time"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -110,29 +109,22 @@ func (m Module) Shutdown() {
 
 // rebuildTrees returns true if the trees for this account need to be rebuilt; false otherwise
 func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage) (bool, error) {
-	updateFrequency, err := jsonparser.GetInt(*jsonConfig, "updatetreefrequencyminutes")
-	if err != nil && err != jsonparser.KeyPathNotFoundError {
-		return false, err
-	} else if err != nil && err == jsonparser.KeyPathNotFoundError {
-		updateFrequency = 0
-	}
-
-	if updateFrequency <= 0 {
+	if co.refreshRateSeconds <= 0 {
 		return false, nil
 	}
 
-	if !expired(&timeutil.RealTime{}, co.timestamp, updateFrequency) {
+	if !expired(&timeutil.RealTime{}, co) {
 		return false, nil
 	}
 	return configChanged(co.hashedConfig, jsonConfig), nil
 }
 
 // expired returns true if the refresh time has expired; false otherwise
-func expired(t timeutil.Time, ts time.Time, updateFrequency int64) bool {
+func expired(t timeutil.Time, co *cacheEntry) bool {
 	currentTime := t.Now().UTC()
 
-	delta := currentTime.Sub(ts.UTC())
-	freq := time.Duration(updateFrequency) * time.Minute
+	delta := currentTime.Sub(co.timestamp.UTC())
+	freq := time.Duration(co.refreshRateSeconds) * time.Second
 	if delta.Seconds() > freq.Seconds() {
 		return true
 	}

@@ -20,6 +20,7 @@ type cacheEntry struct {
 	enabled                                 bool
 	timestamp                               time.Time
 	hashedConfig                            hash
+	refreshRateSeconds                      int
 	ruleSetsForProcessedAuctionRequestStage []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
 }
 type cacheRuleSet[T1 any, T2 any] struct {
@@ -47,9 +48,10 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 	}
 
 	newCacheObj := cacheEntry{
-		enabled:      cfg.Enabled,
-		timestamp:    time.Now(),
-		hashedConfig: idHash,
+		enabled:            cfg.Enabled,
+		timestamp:          time.Now(),
+		hashedConfig:       idHash,
+		refreshRateSeconds: cfg.RefreshRateSeconds,
 	}
 
 	for _, ruleSet := range cfg.RuleSets {
