@@ -1618,6 +1618,9 @@ func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.Me
 	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
+	analyticsPolicyBuilder := fakeAnalyticsPolicy{
+		allow: true,
+	}.Builder
 
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
@@ -1639,7 +1642,7 @@ func doRequest(req *http.Request, analytics analytics.Runner, metrics metrics.Me
 		"valid_acct_with_invalid_activities":                 json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 	}}
 
-	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)
+	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, analyticsPolicyBuilder, fakeAccountsFetcher, metrics)
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response
