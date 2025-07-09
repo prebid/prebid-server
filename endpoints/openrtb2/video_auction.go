@@ -265,7 +265,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := ortb.SetDefaults(bidReqWrapper); err != nil {
+	if err := ortb.SetDefaults(bidReqWrapper, deps.cfg.TmaxDefault); err != nil {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
