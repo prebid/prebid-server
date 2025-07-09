@@ -75,13 +75,7 @@ func (m Module) HandleProcessedAuctionHook(
 		}, nil
 	}
 	// cache hit
-	confChanged, err := rebuildTrees(co, &miCtx.AccountConfig)
-	if err != nil {
-		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{
-			Message: "rules engine tree update error",
-		}, nil
-	}
-	if confChanged {
+	if rebuildTrees(co, &miCtx.AccountConfig) {
 		bi := buildInstruction{
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
@@ -108,15 +102,15 @@ func (m Module) Shutdown() {
 }
 
 // rebuildTrees returns true if the trees for this account need to be rebuilt; false otherwise
-func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage) (bool, error) {
+func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage) bool {
 	if co.refreshRateSeconds <= 0 {
-		return false, nil
+		return false
 	}
 
 	if !expired(&timeutil.RealTime{}, co) {
-		return false, nil
+		return false
 	}
-	return configChanged(co.hashedConfig, jsonConfig), nil
+	return configChanged(co.hashedConfig, jsonConfig)
 }
 
 // expired returns true if the refresh time has expired; false otherwise
@@ -125,10 +119,7 @@ func expired(t timeutil.Time, co *cacheEntry) bool {
 
 	delta := currentTime.Sub(co.timestamp.UTC())
 	freq := time.Duration(co.refreshRateSeconds) * time.Second
-	if delta.Seconds() > freq.Seconds() {
-		return true
-	}
-	return false
+	return delta.Seconds() > freq.Seconds()
 }
 
 // configChanged hashes the raw JSON config comparing it with the old hash returning

@@ -89,7 +89,6 @@ func TestRebuildTrees(t *testing.T) {
 		inCacheEntry   *cacheEntry
 		inJsonConfig   *json.RawMessage
 		expectedResult bool
-		expectErr      bool
 	}{
 		{
 			name: "non_expired_cache_entry_so_no_rebuild",
@@ -134,13 +133,8 @@ func TestRebuildTrees(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig)
+			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig)
 			assert.Equal(t, tc.expectedResult, res)
-			if tc.expectErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
 		})
 	}
 }

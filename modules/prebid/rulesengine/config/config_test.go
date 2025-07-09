@@ -352,7 +352,7 @@ func TestValidateConfig(t *testing.T) {
 					json.RawMessage(`
                     {
                       "enabled": true,
-					  "refreshrateseconds": [true],
+					  "refreshrateseconds": -10,
                       "rulesets": [
                         {
                           "stage": "entrypoint",
@@ -372,7 +372,7 @@ func TestValidateConfig(t *testing.T) {
                       ]
                     }
 					`),
-					"",
+					"[refreshrateseconds: Must be greater than or equal to 0] ",
 				},
 			},
 		},
