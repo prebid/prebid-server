@@ -120,10 +120,11 @@ type Config struct {
 	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
 }
 
-type ORTB2 struct { //First party data
-	Site json.RawMessage `json:"site,omitempty"`
-	App  json.RawMessage `json:"app,omitempty"`
-	User json.RawMessage `json:"user,omitempty"`
+type ORTB2 struct { // First party data
+	Site   json.RawMessage `json:"site,omitempty"`
+	App    json.RawMessage `json:"app,omitempty"`
+	User   json.RawMessage `json:"user,omitempty"`
+	Device json.RawMessage `json:"device,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -203,6 +204,7 @@ type ExtRequestTargeting struct {
 	PreferDeals               bool                       `json:"preferdeals,omitempty"`
 	AppendBidderNames         bool                       `json:"appendbiddernames,omitempty"`
 	AlwaysIncludeDeals        bool                       `json:"alwaysincludedeals,omitempty"`
+	Prefix                    string                     `json:"prefix,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -492,6 +494,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			DurationRangeSec:  slices.Clone(erp.Targeting.DurationRangeSec),
 			PreferDeals:       erp.Targeting.PreferDeals,
 			AppendBidderNames: erp.Targeting.AppendBidderNames,
+			Prefix:            erp.Targeting.Prefix,
 		}
 		if erp.Targeting.PriceGranularity != nil {
 			newPriceGranularity := &PriceGranularity{

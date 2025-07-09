@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "id": "1",
+      "page": "example.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 128, "h": 100}]
+        },
+        "ext": {
+          "gpid": "global position id",
+          "bidder": {}
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [{
+    "value": "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
+    "comparison": "literal"
+  }]
+}

@@ -716,7 +716,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 // New uses viper to get our server configurations.
 func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
-	if err := v.Unmarshal(&c); err != nil {
+	if err := v.Unmarshal(&c, viper.DecodeHook(AccountModulesHookFunc())); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 
@@ -994,6 +994,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
+	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", false)
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
 	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)

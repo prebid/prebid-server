@@ -1,0 +1,20 @@
+maintainer: 
+  email: "prebid@sparteo.com"
+enabled: true
+gvlVendorID: 1028
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+endpoint: "https://bid.sparteo.com/s2s-auction"
+userSync:
+  iframe:
+    url: "https://sync.sparteo.com/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect_url={{.RedirectURL}}"
+    supportCors: true
