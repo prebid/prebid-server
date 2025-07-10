@@ -33,6 +33,7 @@ func (ctx executionContext) getModuleContext(moduleName string) hookstage.Module
 			logger.Warningf("Failed to get account config for %s module: %s", moduleName, err)
 		}
 
+		moduleInvocationCtx.AccountID = ctx.accountID
 		moduleInvocationCtx.AccountConfig = cfg
 	}
 

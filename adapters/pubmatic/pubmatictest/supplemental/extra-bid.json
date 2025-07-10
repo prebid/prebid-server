@@ -182,7 +182,8 @@
                 "dspid": 6,
                 "deal_channel": 1
               }
-            }
+            },
+            "type": "banner"
           },
           {
             "bid": {
@@ -203,6 +204,7 @@
                 "marketplace": "groupm"
               }
             },
+            "type": "banner",
             "seat": "groupm"
           }
         ]

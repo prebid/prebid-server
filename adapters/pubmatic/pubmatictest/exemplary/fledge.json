@@ -126,7 +126,8 @@
             "h": 90,
             "mtype": 1,
             "ext": {}
-          }
+          },
+           "type": "banner"
         }
       ],
       "fledgeauctionconfigs": [

@@ -320,7 +320,7 @@ type AccountHooks struct {
 
 // AccountModules mapping provides account-level module configuration
 // format: map[vendor_name]map[module_name]json.RawMessage
-type AccountModules map[string]map[string]json.RawMessage
+type AccountModules map[string]map[string]interface{}
 
 // ModuleConfig returns the account-level module config.
 // The id argument must be passed in the form "vendor.module_name",
@@ -333,7 +333,18 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 
 	vendor := ns[0]
 	module := ns[1]
-	return m[vendor][module], nil
+
+	data, found := m[vendor][module]
+	if !found {
+		return nil, nil
+	}
+
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal module config for %s: %w", id, err)
+	}
+
+	return json.RawMessage(bytes), nil
 }
 
 type AccountPrivacy struct {
