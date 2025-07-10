@@ -1,0 +1,110 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "iPad"
+    },
+    "app": {
+      "id": "1",
+      "bundle": "com.risemediatech.sampleapp"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "tagid": "test-tag",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 },
+            { "w": 728, "h": 90 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 1.2,
+            "testMode": 1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dev-ads.risemediatech.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "test-tag",
+              "banner": {
+                "format": [
+                  { "w": 300, "h": 250 },
+                  { "w": 728, "h": 90 }
+                ]
+              },
+              "bidfloor": 1.2
+            }
+          ],
+          "app": {
+            "id": "1",
+            "bundle": "com.risemediatech.sampleapp"
+          },
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "iPad"
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "risemediatech",
+              "bid": [
+                {
+                  "id": "test_bid_id",
+                  "impid": "test-imp-id",
+                  "price": 0.65,
+                  "adm": "<div>Sample Ad Markup</div>",
+                  "crid": "creative-123",
+                  "cid": "campaign-456",
+                  "dealid": "deal-789",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "test_bid_id",
+            "impid": "test-imp-id",
+            "price": 0.65,
+            "adm": "<div>Sample Ad Markup</div>",
+            "crid": "creative-123",
+            "cid": "campaign-456",
+            "dealid": "deal-789",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

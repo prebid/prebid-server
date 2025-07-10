@@ -5,21 +5,15 @@
   "properties": {
     "bidfloor": {
       "type": "number",
+      "minimum": 0,
       "description": "Bid Floor Price"
     },
-    "mimes": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "minduration": { "type": "integer" },
-    "maxduration": { "type": "integer" },
-    "startdelay": { "type": "integer" },
-    "maxseq": { "type": "integer" },
-    "poddur": { "type": "integer" },
-    "protocols": {
-      "type": "array",
-      "items": { "type": "integer" }
+    "testMode": {
+      "type": "integer",
+      "enum": [0, 1],
+      "description": "Test Mode parameter to indicate test request"
     }
   },
+  "additionalProperties": false,
   "required": []
 }

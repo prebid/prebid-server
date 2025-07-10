@@ -17,13 +17,14 @@ type adapter struct {
 	endpoint string
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &adapter{endpoint: config.Endpoint}, nil
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
+	return &adapter{endpoint: cfg.Endpoint}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var adapterRequests []*adapters.RequestData
+	var validImps []openrtb2.Imp
+	var setTestMode bool
 
 	for _, imp := range request.Imp {
 		impExt, err := parseImpExt(imp.Ext)
@@ -32,69 +33,66 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		//Validate banner fields if this is a banner impression
+		// Validate banner
 		if imp.Banner != nil {
-			if imp.Banner.W == nil || imp.Banner.H == nil {
-				errs = append(errs, fmt.Errorf("impID %s: missing banner w or h", imp.ID))
-				continue
-			}
-			if *imp.Banner.W == 0 || *imp.Banner.H == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: banner w or h cannot be zero", imp.ID))
+			if imp.Banner.W == nil || imp.Banner.H == nil || *imp.Banner.W == 0 || *imp.Banner.H == 0 {
+				errs = append(errs, fmt.Errorf("impID %s: invalid banner dimensions", imp.ID))
 				continue
 			}
 		}
 
-		// Validate additional video fields if this is a video impression
+		// Validate video
 		if imp.Video != nil {
-			if impExt.MinDuration == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: missing minDuration", imp.ID))
+			if len(imp.Video.MIMEs) == 0 {
+				errs = append(errs, fmt.Errorf("impID %s: missing or empty video.mimes", imp.ID))
 				continue
 			}
-			if impExt.MaxDuration == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: missing maxDuration", imp.ID))
-				continue
-			}
-			if impExt.StartDelay == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: missing startDelay", imp.ID))
-				continue
-			}
-			if len(impExt.Protocols) == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: missing protocols", imp.ID))
+			if imp.Video.W == nil || imp.Video.H == nil || *imp.Video.W == 0 || *imp.Video.H == 0 {
+				errs = append(errs, fmt.Errorf("impID %s: missing or invalid video width/height", imp.ID))
 				continue
 			}
 		}
 
-		// Prepare sanitized request for each impression
-		newImp := imp
-		newImp.Ext = nil // Remove bidder extension
-
-		// Create individual bid request with single imp
-		modifiedRequest := *request
-		modifiedRequest.Imp = []openrtb2.Imp{newImp}
-
-		reqJSON, err := json.Marshal(modifiedRequest)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+		// Setting bid floor if present
+		if impExt.BidFloor != nil && *impExt.BidFloor > 0 {
+			imp.BidFloor = *impExt.BidFloor
 		}
 
-		headers := http.Header{}
-		headers.Add("Content-Type", "application/json;charset=utf-8")
-		headers.Add("Accept", "application/json")
+		// Check test mode
+		if impExt.TestMode != nil && *impExt.TestMode == 1 {
+			setTestMode = true
+		}
 
-		adapterRequests = append(adapterRequests, &adapters.RequestData{
-			Method:  "POST",
-			Uri:     a.endpoint,
-			Body:    reqJSON,
-			Headers: headers,
-			ImpIDs:  []string{imp.ID},
-		})
+		validImps = append(validImps, imp)
 	}
 
-	if len(adapterRequests) == 0 {
+	if len(validImps) == 0 {
 		return nil, append(errs, errors.New("no valid impressions"))
 	}
-	return adapterRequests, errs
+
+	modifiedRequest := *request
+	modifiedRequest.Imp = validImps
+	if setTestMode {
+		modifiedRequest.Test = 1
+	}
+
+	reqJSON, err := json.Marshal(modifiedRequest)
+	if err != nil {
+		return nil, append(errs, err)
+	}
+
+	headers := http.Header{}
+	headers.Set("Content-Type", "application/json;charset=utf-8")
+	headers.Set("Accept", "application/json")
+	headers.Set("User-Agent", "prebid-server")
+	headers.Set("X-Prebid", "true")
+
+	return []*adapters.RequestData{{
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    reqJSON,
+		Headers: headers,
+	}}, errs
 }
 
 func parseImpExt(ext json.RawMessage) (*openrtb_ext.ExtImpRiseMediaTech, error) {
@@ -136,10 +134,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.Reque
 				return nil, []error{err}
 			}
 
-			br.Bids = append(br.Bids, &adapters.TypedBid{
+			typedBid := &adapters.TypedBid{
 				Bid:     bid,
 				BidType: bidType,
-			})
+			}
+
+			br.Bids = append(br.Bids, typedBid)
 		}
 	}
 	return br, nil
@@ -151,8 +151,6 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", fmt.Errorf("unknown bid type mtype=%d", bid.MType)
 	}

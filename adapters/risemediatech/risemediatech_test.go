@@ -9,11 +9,20 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderRiseMediaTech, config.Adapter{
-		Endpoint: "https://example.risemediatech.com/bid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(
+		openrtb_ext.BidderRiseMediaTech,
+		config.Adapter{
+			Endpoint: "https://dev-ads.risemediatech.com/ads/rtb/prebid/server",
+		},
+		config.Server{
+			ExternalUrl: "http://hosturl.com",
+			GvlID:       0,
+			DataCenter:  "2",
+		},
+	)
 
 	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
+		t.Fatalf("Builder returned unexpected error: %v", buildErr)
 	}
 
 	adapterstest.RunJSONBidderTest(t, "risemediatechtest", bidder)
