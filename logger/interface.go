@@ -6,7 +6,6 @@ type Logger interface {
 
 	Warning(args ...any)
 	Warningf(format string, args ...any)
-	Warningln(args ...any)
 
 	Error(args ...any)
 	Errorf(format string, args ...any)

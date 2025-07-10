@@ -94,12 +94,11 @@ Prebid Server is not currently intended to be imported by other projects. Go Mod
 
 ## Swapping Global Dependencies
 
-Logger is a global side-effectful dependency that sometimes needs to be swapped in order to modify the behavior.  
+Logger is a global side-effectful dependency that sometimes needs to be swapped to modify the behavior.  
 This can be done compile-time in the `logger` package.
-It contains `Logger` interface definition and `default` and `alternative` implementation.
+It contains `Logger` interface definition and `default` implementation.
 The `default` logger implementation based on `github.com/golang/glog` package.
-The `alternative` logger implementation based on `log/slog` package.
-By default we use the `default` logger implementation.
+By default is using the `default` logger implementation.
 
 Notice: that the alternative logger is compiled only if the config `logger.type` will setup with `alternative` value.  You can replace the `alternative.go` with your logger implementation, but please adhere to the interface and expose a `ProvideLogger()` function that is called by `logger/interface.go` to set your dependency to be used globally. 
 This is not a dependency injection per se, but this mechanism can be extended to other similar side-effectful global dependencies besides logger.

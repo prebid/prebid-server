@@ -9,12 +9,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v5"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // NewFetcher returns a Fetcher which uses the Client to pull data from the endpoint.

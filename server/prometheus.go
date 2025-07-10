@@ -30,5 +30,5 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 type loggerForPrometheus struct{}
 
 func (loggerForPrometheus) Println(v ...interface{}) {
-	logger.Warningln(v...)
+	logger.Warning(v...)
 }

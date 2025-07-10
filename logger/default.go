@@ -24,10 +24,6 @@ func (logger *GlogLogger) Warningf(format string, args ...any) {
 	glog.WarningDepthf(logger.depth, format, args...)
 }
 
-func (logger *GlogLogger) Warningln(args ...any) {
-	glog.WarningDepth(logger.depth, args...)
-}
-
 func (logger *GlogLogger) Error(args ...any) {
 	glog.ErrorDepth(logger.depth, args...)
 }
@@ -48,7 +44,7 @@ func (logger *GlogLogger) Fatalf(format string, args ...any) {
 	glog.FatalDepthf(logger.depth, format, args...)
 }
 
-func ProvideDefaultLogger(depth int) Logger {
+func NewDefaultLogger(depth int) Logger {
 	return &GlogLogger{
 		depth: depth,
 	}

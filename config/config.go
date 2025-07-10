@@ -732,7 +732,9 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 		return nil, err
 	}
 
-	logger.New(c.Logger.Type, c.Logger.Depth)
+	if err := logger.New(c.Logger.Type, c.Logger.Depth); err != nil {
+		return nil, err
+	}
 
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
 		logger.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
