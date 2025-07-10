@@ -11,6 +11,7 @@ type LoggerManager struct {
 	mu      sync.RWMutex
 }
 
+// manager is an instance of LoggerManager used to manage and synchronize access to multiple logger instances.
 var manager = &LoggerManager{
 	loggers: make(map[string]Logger),
 }

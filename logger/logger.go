@@ -10,7 +10,6 @@ var logger Logger = NewDefaultLogger(defaultDepth)
 type LoggerType string
 
 const (
-	LoggerTypeEmpty   LoggerType = ""
 	LoggerTypeDefault LoggerType = "default"
 	LoggerTypeCustom  LoggerType = "custom"
 )
@@ -21,9 +20,9 @@ type LoggerConfig struct {
 	Depth        *int
 	CustomLogger Logger // For custom logger instances
 	CustomName   string // For registered custom loggers
-
 }
 
+// New initializes a logger configuration with the specified type and depth, and applies it using NewWithConfig.
 func New(loggerType string, depth *int) error {
 	config := &LoggerConfig{
 		Type:  LoggerType(loggerType),
@@ -33,15 +32,17 @@ func New(loggerType string, depth *int) error {
 	return NewWithConfig(config)
 }
 
+// NewWithConfig initializes a logger based on the provided LoggerConfig and sets it as the active logger.
+// Returns an error if the configuration is invalid or logger initialization fails.
 func NewWithConfig(config *LoggerConfig) error {
-	if config.Depth == nil || (*config.Depth < 0 || *config.Depth > 10) {
+	if config.Depth == nil {
 		config.Depth = &defaultDepth
 	}
 
 	var newLogger Logger
 
 	switch config.Type {
-	case LoggerTypeDefault, LoggerTypeEmpty:
+	case LoggerTypeDefault:
 		newLogger = NewDefaultLogger(*config.Depth)
 	case LoggerTypeCustom:
 		if config.CustomLogger != nil {
