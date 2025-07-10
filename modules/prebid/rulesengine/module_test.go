@@ -123,3 +123,48 @@ func TestRebuildTrees(t *testing.T) {
 		})
 	}
 }
+
+func TestIsConfigEnabled(t *testing.T) {
+	malformedJson := json.RawMessage(`malformed`)
+	missingField := json.RawMessage(`{"rulesets": [{"name": "no enabled field"}]}`)
+	enabledFalse := json.RawMessage(`{"enabled": false}`)
+	enabledTrue := json.RawMessage(`{"enabled": true}`)
+
+	testCases := []struct {
+		name     string
+		inConfig *json.RawMessage
+		expected bool
+	}{
+		{
+			name:     "nil-config",
+			inConfig: nil,
+			expected: false,
+		},
+		{
+			name:     "malformed-json",
+			inConfig: &malformedJson,
+			expected: false,
+		},
+		{
+			name:     "missing-enabled-field",
+			inConfig: &missingField,
+			expected: false,
+		},
+		{
+			name:     "enabled-set-to-false",
+			inConfig: &enabledFalse,
+			expected: false,
+		},
+		{
+			name:     "enabled-set-to-true",
+			inConfig: &enabledTrue,
+			expected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, isConfigEnabled(tc.inConfig))
+		})
+	}
+}

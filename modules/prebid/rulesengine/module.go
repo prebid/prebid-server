@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/buger/jsonparser"
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
@@ -65,6 +66,12 @@ func (m Module) HandleProcessedAuctionHook(
 
 	// cache miss
 	if co == nil {
+		if !isConfigEnabled(&miCtx.AccountConfig) {
+			return hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+				Message: "skipped, rules engine is disabled for this account",
+			}, nil
+		}
+
 		bi := buildInstruction{
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
@@ -94,6 +101,16 @@ func (m Module) HandleProcessedAuctionHook(
 	ruleSets := co.ruleSetsForProcessedAuctionRequestStage
 
 	return handleProcessedAuctionHook(ruleSets, payload)
+}
+
+// isConfigEnabled returns the enabled field value without unmarshalling the entire config.
+func isConfigEnabled(jsonCfg *json.RawMessage) bool {
+	if jsonCfg == nil {
+		return false
+	}
+
+	enabled, err := jsonparser.GetBoolean([]byte(*jsonCfg), "enabled")
+	return err == nil && enabled
 }
 
 // Shutdown signals the module to stop processing and waits for the tree manager to finish
