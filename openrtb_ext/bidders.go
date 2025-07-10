@@ -268,6 +268,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
 	BidderZmaticoo,
+	BidderRevX,
 }
 
 func GetAliasBidderToParent() map[BidderName]BidderName {
@@ -568,6 +569,7 @@ const (
 	BidderRelevantDigital   BidderName = "relevantdigital"
 	BidderResetDigital      BidderName = "resetdigital"
 	BidderRevcontent        BidderName = "revcontent"
+	BidderRevX              BidderName = "revx"
 	BidderRichaudience      BidderName = "richaudience"
 	BidderRise              BidderName = "rise"
 	BidderRoulax            BidderName = "roulax"
