@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/usersync"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -195,7 +197,7 @@ func TestNewDeviceCountryIn(t *testing.T) {
 	testCases := []struct {
 		desc               string
 		inParams           json.RawMessage
-		outDeviceCountryIn SchemaFunction[openrtb_ext.RequestWrapper]
+		outDeviceCountryIn SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 		outErr             error
 	}{
 		{
@@ -307,7 +309,8 @@ func TestDeviceCountryInCall(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result, err := tc.inDeviceCountryIn.Call(tc.inRequestWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inRequestWrapper, Usersyncs: &usersync.Cookie{}}
+			result, err := tc.inDeviceCountryIn.Call(&payload)
 			assert.Equal(t, tc.expectedStringBool, result)
 			assert.Nil(t, err)
 		})
@@ -355,8 +358,8 @@ func TestDeviceCountryCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			dc := &deviceCountry{}
-
-			country, err := dc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			country, err := dc.Call(&payload)
 			assert.Equal(t, tc.expectedCountry, country)
 			assert.Nil(t, err)
 		})
@@ -404,8 +407,8 @@ func TestDataCenterCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			dc := &dataCenter{}
-
-			region, err := dc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			region, err := dc.Call(&payload)
 			assert.Equal(t, tc.expectedRegion, region)
 			assert.Nil(t, err)
 		})
@@ -498,8 +501,8 @@ func TestDataCenterInCall(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-
-			result, err := tc.inDataCenterIn.Call(tc.inRequestWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inRequestWrapper, Usersyncs: &usersync.Cookie{}}
+			result, err := tc.inDataCenterIn.Call(&payload)
 			assert.Equal(t, tc.expectedResult, result)
 			assert.Nil(t, err)
 		})
@@ -577,8 +580,8 @@ func TestChannelCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			c := &channel{}
-
-			name, err := c.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			name, err := c.Call(&payload)
 			assert.Equal(t, tc.expectedChannelName, name)
 			assert.Equal(t, tc.expectedError, err)
 		})
@@ -619,8 +622,8 @@ func TestEidAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &eidAvailable{}
-
-			found, err := schemaFunc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			found, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Nil(t, err)
 		})
@@ -692,8 +695,8 @@ func TestUserFpdAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &userFpdAvailable{}
-
-			found, err := schemaFunc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			found, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Equal(t, tc.expectedErr, err)
 		})
@@ -813,8 +816,8 @@ func TestFpdAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &fpdAvailable{}
-
-			found, err := schemaFunc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			found, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Equal(t, tc.expectedErr, err)
 		})
@@ -908,7 +911,8 @@ func TestEidInCall(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			found, err := tc.inSchemaFunc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			found, err := tc.inSchemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Nil(t, err)
 		})
@@ -981,7 +985,8 @@ func TestGppSidInCall(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			found, err := tc.inSchemaFunc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			found, err := tc.inSchemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Nil(t, err)
 		})
@@ -1020,8 +1025,8 @@ func TestGppSidAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &gppSidAvailable{}
-
-			result, err := schemaFunc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			result, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, result)
 			assert.Nil(t, err)
 		})
@@ -1076,8 +1081,8 @@ func TestTcfInScopeCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &tcfInScope{}
-
-			result, err := schemaFunc.Call(tc.inWrapper)
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			result, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, result)
 			assert.Nil(t, err)
 		})
@@ -1760,7 +1765,7 @@ func TestNewDataCenterIn(t *testing.T) {
 	testCases := []struct {
 		desc                 string
 		inParams             json.RawMessage
-		expectedDataCenterIn SchemaFunction[openrtb_ext.RequestWrapper]
+		expectedDataCenterIn SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 		expectedError        error
 	}{
 		{
@@ -1813,7 +1818,7 @@ func TestNewEidIn(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		inParams      json.RawMessage
-		expectedEidIn SchemaFunction[openrtb_ext.RequestWrapper]
+		expectedEidIn SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 		expectedError error
 	}{
 		{
@@ -1866,7 +1871,7 @@ func TestNewGppSidIn(t *testing.T) {
 	testCases := []struct {
 		desc             string
 		inParams         json.RawMessage
-		expectedGppSidIn SchemaFunction[openrtb_ext.RequestWrapper]
+		expectedGppSidIn SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 		expectedError    error
 	}{
 		{
@@ -1920,7 +1925,7 @@ func TestNewPercent(t *testing.T) {
 	testCases := []struct {
 		desc            string
 		inParams        json.RawMessage
-		expectedPercent SchemaFunction[openrtb_ext.RequestWrapper]
+		expectedPercent SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 		expectedError   error
 	}{
 		{
@@ -2011,8 +2016,8 @@ func TestConstructorsOfParamLessSchemaFunctions(t *testing.T) {
 
 	testCases := []struct {
 		schemaFuncName     string
-		constructorFunc    func(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error)
-		expectedSchemaFunc SchemaFunction[openrtb_ext.RequestWrapper]
+		constructorFunc    func(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error)
+		expectedSchemaFunc SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 	}{
 		{
 			schemaFuncName:     DeviceCountry,
@@ -2076,7 +2081,7 @@ func TestConstructorsOfParamLessSchemaFunctions(t *testing.T) {
 func TestSchemaFunctionsName(t *testing.T) {
 	testCases := []struct {
 		expectedSchemaFuncName string
-		inSchemaFunc           SchemaFunction[openrtb_ext.RequestWrapper]
+		inSchemaFunc           SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 	}{
 		{
 			expectedSchemaFuncName: Channel,
@@ -2143,7 +2148,7 @@ func TestNewRequestSchemaFunction(t *testing.T) {
 	testCases := []struct {
 		inFunctionName     string
 		inParams           json.RawMessage
-		expectedSchemaFunc SchemaFunction[openrtb_ext.RequestWrapper]
+		expectedSchemaFunc SchemaFunction[hookstage.ProcessedAuctionRequestPayload]
 		expectedError      error
 	}{
 		{

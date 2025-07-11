@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v3/usersync"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -111,8 +112,8 @@ func TestExcludeBiddersCall(t *testing.T) {
 			result := &hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
-
-			err := eb.Call(tt.req, result, rules.ResultFunctionMeta{})
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &usersync.Cookie{}}
+			err := eb.Call(&payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
 			assert.NotEmptyf(t, result.ChangeSet, "change set is empty")
@@ -170,7 +171,8 @@ func TestIncludeBiddersCall(t *testing.T) {
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
 
-			err := ib.Call(tt.req, result, rules.ResultFunctionMeta{})
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &usersync.Cookie{}}
+			err := ib.Call(&payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
 			assert.NotEmptyf(t, result.ChangeSet, "change set is empty")
@@ -425,7 +427,9 @@ func TestBuildExcludeBidders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := buildExcludeBidders(tt.req, tt.argBidders)
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &usersync.Cookie{}}
+			args := config.ResultFuncParams{Bidders: tt.argBidders}
+			result, err := buildExcludeBidders(&payload, args)
 			if tt.expectErr {
 				assert.Error(t, err, "expected error but got nil")
 			} else {

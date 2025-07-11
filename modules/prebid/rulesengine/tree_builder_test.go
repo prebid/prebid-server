@@ -6,7 +6,6 @@ import (
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
@@ -85,13 +84,13 @@ func TestBuildTree(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			builder := &treeBuilder[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+			builder := &treeBuilder[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 				Config:            tt.modelGroup,
 				SchemaFuncFactory: rules.NewRequestSchemaFunction,
 				ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
 			}
-			tree := rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-				Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+			tree := rules.Tree[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+				Root: &rules.Node[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
 			}
 			err := builder.Build(&tree)
 			if tt.expectErr {
@@ -109,13 +108,13 @@ func TestBuildTreeFullConfigNoErrors(t *testing.T) {
 	err := jsonutil.Unmarshal(GetFullConf(), &modelGroup)
 	assert.NoError(t, err)
 
-	builder := &treeBuilder[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+	builder := &treeBuilder[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
 		Config:            modelGroup,
 		SchemaFuncFactory: rules.NewRequestSchemaFunction,
 		ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
 	}
-	tree := rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+	tree := rules.Tree[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+		Root: &rules.Node[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
 	}
 
 	err = builder.Build(&tree)

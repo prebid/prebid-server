@@ -16,9 +16,10 @@ const RulesEngineSchemaFile = "rules-engine-schema.json"
 const RulesEngineSchemaFilePath = "modules/prebid/rulesengine/config/" + RulesEngineSchemaFile
 
 type PbRulesEngine struct {
-	Enabled   bool      `json:"enabled,omitempty"`
-	Timestamp string    `json:"timestamp,omitempty"`
-	RuleSets  []RuleSet `json:"rulesets,omitempty"`
+	Enabled                    bool      `json:"enabled,omitempty"`
+	Timestamp                  string    `json:"timestamp,omitempty"`
+	UpdateTreeFrequencyMinutes int       `json:"updateTreeFrequencyMinutes,omitempty"`
+	RuleSets                   []RuleSet `json:"rulesets,omitempty"`
 }
 
 type RuleSet struct {
@@ -58,7 +59,7 @@ type ResultFuncParams struct {
 	Bidders        []string `json:"bidders,omitempty"`
 	SeatNonBid     int      `json:"seatnonbid,omitempty"`
 	AnalyticsValue string   `json:"analyticsvalue,omitempty"`
-	IfSyncedId     bool     `json:"ifsyncedid,omitempty"`
+	IfSyncedId     *bool    `json:"ifsyncedid,omitempty"`
 }
 
 func CreateSchemaValidator(jsonSchemaFile string) (*gojsonschema.Schema, error) {

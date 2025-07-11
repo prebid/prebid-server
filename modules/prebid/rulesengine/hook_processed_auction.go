@@ -4,16 +4,14 @@ import (
 	"fmt"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/randomutil"
 )
 
-type RequestWrapper = openrtb_ext.RequestWrapper
 type ProcessedAuctionHookResult = hs.HookResult[hs.ProcessedAuctionRequestPayload]
-type ModelGroup = cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]
+type ModelGroup = cacheModelGroup[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]
 
 func handleProcessedAuctionHook(
-	ruleSets []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]],
+	ruleSets []cacheRuleSet[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]],
 	payload hs.ProcessedAuctionRequestPayload) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
 
 	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
@@ -27,7 +25,7 @@ func handleProcessedAuctionHook(
 			continue
 		}
 
-		if err := selectedGroup.tree.Run(payload.Request, &result); err != nil {
+		if err := selectedGroup.tree.Run(&payload, &result); err != nil {
 			//TODO: classify errors as warnings or errors
 			result.Errors = append(result.Errors, err.Error())
 		}

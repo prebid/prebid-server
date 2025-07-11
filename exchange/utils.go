@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/util"
 	"math/rand"
 	"strings"
 
@@ -760,7 +761,7 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 // prepareUser changes req.User so that it's ready for the given bidder.
 // In this function, "givenBidder" may or may not be an alias. "coreBidder" must *not* be an alias.
 // It returns true if a Cookie User Sync existed, and false otherwise.
-func prepareUser(req *openrtb_ext.RequestWrapper, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
+func prepareUser(req *openrtb_ext.RequestWrapper, givenBidder, syncerKey string, explicitBuyerUIDs map[string]string, usersyncs util.IdFetcher) bool {
 	cookieId, hadCookie, _ := usersyncs.GetUID(syncerKey)
 
 	if id, ok := explicitBuyerUIDs[strings.ToLower(givenBidder)]; ok {
