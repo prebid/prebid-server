@@ -166,7 +166,8 @@ func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config
 		for bidderName, bidderData := range impBidders {
 			addSynced := true
 			if args.IfSyncedId != nil {
-				uid, found, active := payload.Usersyncs.GetUID(bidderName)
+				userSync := *payload.Usersyncs
+				uid, found, active := userSync.GetUID(bidderName)
 				if found {
 					syncValid := found && active && uid != ""
 					ifSynced := *args.IfSyncedId
