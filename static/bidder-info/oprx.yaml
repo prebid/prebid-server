@@ -12,16 +12,9 @@ capabilities:
   app:
     mediaTypes:
       - banner
-      - native
   site:
     mediaTypes:
       - banner      
-      - native
   dooh:
     mediaTypes:
-      - banner    
-      - native
-# userSync:
-#   redirect:
-#     url: https://foo.com/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
-#     userMacro: $UID
+      - banner
