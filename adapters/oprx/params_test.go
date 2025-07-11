@@ -54,12 +54,3 @@ var invalidParams = []string{
 	`{"key": "some key", "placement_id": 1234567890, "type": "banner", "npi": 1223456`,
 	`{"key": "some key", "placement_id": 1234567890, "type": "banner", "ndc": 876543}`,
 }
-
-// Key         string  `json:"key"`
-// 	PlacementID int     `json:"placement_id"`
-// 	Width       int     `json:"width"`
-// 	Height      int     `json:"height"`
-// 	BidFloor    float64 `json:"bid_floor"`
-// 	Npi         string  `json:"npi"`
-// 	Ndc         string  `json:"ndc"`
-// 	Type        string  `json:"type"`
