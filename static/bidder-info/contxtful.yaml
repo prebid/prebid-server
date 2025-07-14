@@ -1,0 +1,33 @@
+maintainer:
+  email: "contact@contxtful.com"
+disabled: false
+#endpoint: "http://localhost:6789/v1/prebid/{{.AccountID}}/bid"  # Development endpoint
+endpoint: "https://prebid.receptivity.dev/v1/prebid/{{.AccountID}}/bid"
+#endpoint: "https://prebid.receptivity.io/v1/prebid/{{.AccountID}}/bid"
+#extra_info: '{"monitoringEndpoint": "http://localhost:6789"}'
+extra_info: '{"monitoringEndpoint": "https://monitoring.receptivity.dev"}'  # Event tracking endpoint for NURL/BURL
+#extra_info: '{"monitoringEndpoint": "https://monitoring.receptivity.io"}'  # Production monitoring endpoint
+
+platform_id: "5"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  key: "contxtful"
+  default: iframe
+  iframe:
+#    url: "http://localhost:6789/v1/prebid/public/pbs-sync/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    url: "https://prebid.receptivity.dev/v1/prebid/public/pbs-sync/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+  redirect:
+#    url: "http://localhost:6789/v1/prebid/public/pbs-sync/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    url: "https://prebid.receptivity.dev/v1/prebid/public/pbs-sync/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
