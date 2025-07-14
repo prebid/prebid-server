@@ -2,7 +2,6 @@ package hookexecution
 
 import (
 	"context"
-	"github.com/prebid/prebid-server/v3/util"
 	"net/http"
 	"sync"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/util"
 )
 
 const (

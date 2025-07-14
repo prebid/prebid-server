@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/util"
 	"math/rand"
 	"net/url"
 	"runtime/debug"
@@ -37,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/prebid/prebid-server/v3/stored_responses"
 	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/maputil"
 

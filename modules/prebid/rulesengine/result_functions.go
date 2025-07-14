@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"slices"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"

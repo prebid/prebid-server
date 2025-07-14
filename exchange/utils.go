@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/util"
 	"math/rand"
 	"strings"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/prebid/prebid-server/v3/privacy/lmt"
 	"github.com/prebid/prebid-server/v3/schain"
 	"github.com/prebid/prebid-server/v3/stored_responses"
+	"github.com/prebid/prebid-server/v3/util"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
