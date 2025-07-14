@@ -242,15 +242,16 @@ type ContxtfulRelayResponse struct {
 }
 
 type ContxtfulBid struct {
-	ImpID      string  `json:"impid"`
-	Price      float64 `json:"price"`
-	AdMarkup   string  `json:"adm"`
-	Width      int     `json:"w"`
-	Height     int     `json:"h"`
-	CreativeID string  `json:"crid,omitempty"`
-	NURL       string  `json:"nurl,omitempty"`
-	BURL       string  `json:"burl,omitempty"`
-	BidderCode string  `json:"bidderCode,omitempty"`
+	ImpID      string       `json:"impid"`
+	Price      float64      `json:"price"`
+	AdMarkup   string       `json:"adm"`
+	Width      int          `json:"w"`
+	Height     int          `json:"h"`
+	CreativeID string       `json:"crid,omitempty"`
+	NURL       string       `json:"nurl,omitempty"`
+	BURL       string       `json:"burl,omitempty"`
+	BidderCode string       `json:"bidderCode,omitempty"`
+	Ext        ContxtfulExt `json:"ext,omitempty"`
 }
 
 type ContxtfulExt struct {
@@ -309,7 +310,7 @@ func (a *adapter) processRelayBids(relayResponses []ContxtfulRelayResponse, ctx 
 				contxtfulBid.ImpID, contxtfulBid.CreativeID, contxtfulBid.AdMarkup,
 				contxtfulBid.Price, contxtfulBid.Width, contxtfulBid.Height,
 				relayResp.TraceId, fmt.Sprintf("%.6f", relayResp.Random),
-				"USD", ctx, customerId, contxtfulBid.BidderCode, "", contxtfulBid.NURL, contxtfulBid.BURL,
+				"USD", ctx, customerId, contxtfulBid.Ext.Reseller, "", contxtfulBid.NURL, contxtfulBid.BURL,
 			)
 		}
 		a.handleUserSyncs(relayResp.Syncs, ctx)
@@ -349,7 +350,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return ctx.bidderResponse, ctx.errors
 	}
 
-	return nil, []error{fmt.Errorf("failed to parse response as Contxtful relay or Prebid.js format")}
+	return nil, []error{fmt.Errorf("failed to parse response")}
 }
 
 // Simplified bid creation with fewer parameters
