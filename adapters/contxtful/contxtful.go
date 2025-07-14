@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"text/template"
 
@@ -386,9 +385,9 @@ func (a *adapter) createBid(
 		W:     int64(width),
 		H:     int64(height),
 		CrID:  creativeID,
+		NURL: responseNURL,
+		BURL: responseBURL,
 	}
-
-	bid.NURL, bid.BURL = a.generateEventURLs(ctx, ctx.version, customerId, bid.ID, bid.ImpID, bid.Price, traceID, random, width, height, responseNURL, responseBURL, bidderCode, currency, placementId, creativeID)
 
 	if bidExtJSON, err := createBidExtensions(price, currency, string(bidType), width, height); err == nil {
 		bid.Ext = bidExtJSON
@@ -602,26 +601,4 @@ func extractUserIDForCookie(request *openrtb2.BidRequest) string {
 	}
 
 	return ""
-}
-
-// Direct event URL generation without config struct
-func (a *adapter) generateEventURLs(ctx *bidProcessingContext, version string, customerID string, bidID string, impID string, price float64, traceID string, random string, width, height int, responseNURL string, responseBURL string, bidderCode string, currency string, placementId string, creativeId string) (nurl string, burl string) {
-	baseURL := strings.TrimSuffix(a.monitoringEndpoint, "/") + fmt.Sprintf("/%s/prebid/%s/", version, customerID)
-
-	// Common query parameters
-	commonParams := fmt.Sprintf("?b=%s&a=%s&%s=%s&impId=%s&price=%.2f&traceId=%s&random=%s&domain=%s&adRequestId=%s&w=%d&h=%d&f=b&cur=%s&pId=%s&crId=%s",
-		bidID, customerID, FieldBidder, bidderCode, impID, price, traceID, random, ctx.domain, ctx.adRequestID, width, height, currency, url.QueryEscape(placementId), url.QueryEscape(creativeId))
-
-	nurl = baseURL + "pbs-impression" + commonParams
-	burl = baseURL + "pbs-billing" + commonParams
-
-	// Add response NURL/BURL as 'r' parameter if present
-	if responseNURL != "" {
-		nurl += "&r=" + url.QueryEscape(responseNURL)
-	}
-	if responseBURL != "" {
-		burl += "&r=" + url.QueryEscape(responseBURL)
-	}
-
-	return nurl, burl
 }
