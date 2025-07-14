@@ -1,0 +1,164 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-banner",
+    "imp": [
+      {
+        "id": "test-imp-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "DEMO123",
+            "placementId": "banner-placement-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "domain": "example.com",
+      "page": "https://example.com/demo",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "ip": "192.0.2.1",
+      "language": "en",
+      "dnt": 0
+    },
+    "user": {
+      "id": "demo-user"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/prebid/DEMO123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-banner",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "banner-placement-1"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "DEMO123",
+              "version": "v1"
+            }
+          },
+          
+          "ortb2": {
+            "device": {
+              "dnt": 0,
+              "ip": "192.0.2.1",
+              "language": "en",
+              "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            "id": "test-request-banner",
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 250,
+                      "w": 300
+                    }
+                  ]
+                },
+                "ext": {},
+                "id": "test-imp-banner"
+              }
+            ],
+            "site": {
+              "domain": "example.com",
+              "id": "demo-site",
+              "page": "https://example.com/demo",
+              "publisher": {
+                "id": "demo-publisher"
+              }
+            },
+            "user": {
+              "id": "demo-user"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-banner"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "cpm": 2.50,
+            "width": 300,
+            "height": 250,
+            "currency": "USD",
+            "requestId": "test-imp-banner",
+            "ad": "<div style=\"width:300px;height:250px;background:#f0f0f0;text-align:center;line-height:250px;\">Contxtful Demo Ad</div>",
+            "ttl": 300,
+            "creativeId": "demo-creative-123",
+            "netRevenue": true,
+            "mediaType": "banner"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "contxtful-test-imp-banner",
+            "impid": "test-imp-banner",
+            "price": 2.50,
+            "adm": "<div style=\"width:300px;height:250px;background:#f0f0f0;text-align:center;line-height:250px;\">Contxtful Demo Ad</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "demo-creative-123",
+            "nurl": "https://monitoring.receptivity.io/v1/prebid/DEMO123/pbs-event?t=win&b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/prebid/DEMO123/pbs-event?t=billing&b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
+            "ext": {
+              "origbidcpm": 2.50,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "contxtful"
+                },
+                "targeting": {
+                  "hb_bidder": "contxtful",
+                  "hb_pb": "2.50",
+                  "hb_size": "300x250"
+                },
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+} 

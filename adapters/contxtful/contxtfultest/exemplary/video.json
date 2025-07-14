@@ -1,0 +1,172 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-video",
+    "imp": [
+      {
+        "id": "test-imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3, 5, 6],
+          "w": 640,
+          "h": 480,
+          "startdelay": 0,
+          "placement": 1,
+          "linearity": 1,
+          "skip": 0,
+          "playbackmethod": [1, 3],
+          "delivery": [1],
+          "api": [1, 2]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "DEMO123",
+            "placementId": "video-placement-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-video-site",
+      "domain": "video.example.com",
+      "page": "https://video.example.com/player",
+      "publisher": {
+        "id": "video-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      "ip": "192.0.2.2",
+      "language": "en",
+      "dnt": 0
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/prebid/DEMO123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-video",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "video-placement-1"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "DEMO123",
+              "version": "v1"
+            }
+          },
+          
+          "ortb2": {
+            "device": {
+              "dnt": 0,
+              "ip": "192.0.2.2",
+              "language": "en",
+              "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+            },
+            "id": "test-request-video",
+            "imp": [
+              {
+                "ext": {},
+                "id": "test-imp-video",
+                "video": {
+                  "api": [1, 2],
+                  "delivery": [1],
+                  "h": 480,
+                  "linearity": 1,
+                  "maxduration": 30,
+                  "mimes": ["video/mp4"],
+                  "minduration": 5,
+                  "placement": 1,
+                  "playbackmethod": [1, 3],
+                  "protocols": [2, 3, 5, 6],
+                  "skip": 0,
+                  "startdelay": 0,
+                  "w": 640
+                }
+              }
+            ],
+            "site": {
+              "domain": "video.example.com",
+              "id": "demo-video-site",
+              "page": "https://video.example.com/player",
+              "publisher": {
+                "id": "video-publisher"
+              }
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "cpm": 4.75,
+            "width": 640,
+            "height": 480,
+            "currency": "USD",
+            "requestId": "test-imp-video",
+            "ad": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\"><Ad id=\"demo-video-ad\"><InLine><AdSystem>Contxtful</AdSystem><AdTitle>Demo Video Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\">https://demo.contxtful.com/video.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "ttl": 300,
+            "creativeId": "demo-video-creative-456",
+            "netRevenue": true,
+            "mediaType": "video"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "contxtful-test-imp-video",
+            "impid": "test-imp-video",
+            "price": 4.75,
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\"><Ad id=\"demo-video-ad\"><InLine><AdSystem>Contxtful</AdSystem><AdTitle>Demo Video Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\">https://demo.contxtful.com/video.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "w": 640,
+            "h": 480,
+            "crid": "demo-video-creative-456",
+            "nurl": "https://monitoring.receptivity.io/v1/prebid/DEMO123/pbs-event?t=win&b=contxtful-test-imp-video&a=DEMO123&bidder=contxtful&impId=test-imp-video&price=4.75&traceId=&random=0.000000&domain=video.example.com&adRequestId=test-request-video&w=640&h=480&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/prebid/DEMO123/pbs-event?t=billing&b=contxtful-test-imp-video&a=DEMO123&bidder=contxtful&impId=test-imp-video&price=4.75&traceId=&random=0.000000&domain=video.example.com&adRequestId=test-request-video&w=640&h=480&f=b",
+            "ext": {
+              "origbidcpm": 4.75,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "contxtful"
+                },
+                "targeting": {
+                  "hb_bidder": "contxtful",
+                  "hb_pb": "4.75",
+                  "hb_size": "640x480"
+                },
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+} 
