@@ -2118,7 +2118,9 @@ func TestCustomerIDFromURIExtraction(t *testing.T) {
 			"adm": "<div>URI Extraction Test Ad</div>",
 			"w": 728,
 			"h": 90,
-			"crid": "uri-extraction-creative"
+			"crid": "uri-extraction-creative",
+			"nurl": "https://nurl/v1/prebid/URITEST123/pbs-impression?traceId=uri-extraction-test-123",
+			"burl": "https://burl/v1/prebid/URITEST123/pbs-billing"
 		}]
 	}]`
 
@@ -2197,10 +2199,4 @@ func TestCustomerIDFromURIExtraction(t *testing.T) {
 			t.Error("BURL should contain customer ID extracted from URI (URITEST123)")
 		}
 	}
-
-	t.Logf("✅ Customer ID from URI extraction test passed")
-	t.Logf("   - Customer ID correctly extracted from request URI: URITEST123")
-	t.Logf("   - Event URLs generated successfully: %s", bid.Bid.NURL)
-	t.Logf("   - Win tracking preserved even when bid request data is cleaned up")
-	t.Logf("   - This ensures reliable event tracking in all scenarios")
 }
