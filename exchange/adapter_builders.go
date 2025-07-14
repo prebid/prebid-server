@@ -80,6 +80,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/connatix"
 	"github.com/prebid/prebid-server/v3/adapters/connectad"
 	"github.com/prebid/prebid-server/v3/adapters/consumable"
+	"github.com/prebid/prebid-server/v3/adapters/contxtful"
 	"github.com/prebid/prebid-server/v3/adapters/conversant"
 	"github.com/prebid/prebid-server/v3/adapters/copper6ssp"
 	"github.com/prebid/prebid-server/v3/adapters/cpmstar"
@@ -336,6 +337,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConnatix:          connatix.Builder,
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
 		openrtb_ext.BidderConsumable:        consumable.Builder,
+		openrtb_ext.BidderContxtful:         contxtful.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
 		openrtb_ext.BidderCopper6ssp:        copper6ssp.Builder,
 		openrtb_ext.BidderCpmstar:           cpmstar.Builder,
