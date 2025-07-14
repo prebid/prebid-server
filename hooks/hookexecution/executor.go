@@ -387,6 +387,6 @@ func (executor EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[ope
 func (executor EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {
 }
 
-func (executor EmptyHookExecutor) ExecuteExitpointStage(_ any, _ http.ResponseWriter) any {
-	return nil
+func (executor EmptyHookExecutor) ExecuteExitpointStage(response any, _ http.ResponseWriter) any {
+	return response
 }

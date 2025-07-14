@@ -5,15 +5,15 @@ import (
 	"net/http"
 )
 
-// Exitpoint hooks are invoked when response about to return.
-// This hook can completely alter the response according to the implementation by module.
-// The hooks are invoked when there is no 4XX/5XX erros while request processing.
+// Exitpoint hooks are invoked just before the response is returned.
+// These hooks can fully modify the response based on the module’s implementation.
+// They are only triggered if there are no 4XX or 5XX errors during request processing.
 //
-// At this stage, account config is available,
-// so it can be configured at the account-level execution plan,
-// the account-level module config is passed to hooks.
+// At this stage, the account configuration is available,
+// allowing hooks to be controlled through the account-level execution plan.
+// The account-level module configuration is also passed to the hooks.
 //
-// Rejection has no effect and is completely ignored at this stage.
+// Any rejection at this stage is ignored and has no effect.
 type Exitpoint interface {
 	HandleExitpointHook(
 		context.Context,
@@ -22,10 +22,10 @@ type Exitpoint interface {
 	) (HookResult[ExitpointPaylaod], error)
 }
 
-// ExitpointPaylaod consists of Response of any type and a response writter.
-// The type which passed to Response is *openrtb2.BidResponse which can be modified
-// according to module implementation.
-// Module can add headers of its own according to its response type.
+// ExitpointPayload contains a response of any type and a ResponseWriter.
+// The response is typically of type *openrtb2.BidResponse and can be modified
+// based on the module’s implementation.
+// Modules can also add custom headers depending on their response type.
 type ExitpointPaylaod struct {
 	Response any
 	W        http.ResponseWriter
