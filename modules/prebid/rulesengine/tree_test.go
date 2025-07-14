@@ -2,13 +2,14 @@ package rulesengine
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/v3/usersync"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +20,9 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 	}
-	payload := hs.ProcessedAuctionRequestPayload{Request: rw, Usersyncs: &usersync.Cookie{}}
+	var userSyncs util.IdFetcher
+	userSyncs = &usersync.Cookie{}
+	payload := hs.ProcessedAuctionRequestPayload{Request: rw, Usersyncs: &userSyncs}
 	err := rules.Run(&payload, &result)
 	assert.NoError(t, err, "unexpected error")
 	assert.NotEmptyf(t, result.ChangeSet, "change set is empty")

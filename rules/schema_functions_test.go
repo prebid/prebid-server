@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -309,7 +310,9 @@ func TestDeviceCountryInCall(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inRequestWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inRequestWrapper, Usersyncs: &userSyncs}
 			result, err := tc.inDeviceCountryIn.Call(&payload)
 			assert.Equal(t, tc.expectedStringBool, result)
 			assert.Nil(t, err)
@@ -358,7 +361,9 @@ func TestDeviceCountryCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			dc := &deviceCountry{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			country, err := dc.Call(&payload)
 			assert.Equal(t, tc.expectedCountry, country)
 			assert.Nil(t, err)
@@ -407,7 +412,9 @@ func TestDataCenterCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			dc := &dataCenter{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			region, err := dc.Call(&payload)
 			assert.Equal(t, tc.expectedRegion, region)
 			assert.Nil(t, err)
@@ -501,7 +508,9 @@ func TestDataCenterInCall(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inRequestWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inRequestWrapper, Usersyncs: &userSyncs}
 			result, err := tc.inDataCenterIn.Call(&payload)
 			assert.Equal(t, tc.expectedResult, result)
 			assert.Nil(t, err)
@@ -580,7 +589,9 @@ func TestChannelCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			c := &channel{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			name, err := c.Call(&payload)
 			assert.Equal(t, tc.expectedChannelName, name)
 			assert.Equal(t, tc.expectedError, err)
@@ -622,7 +633,9 @@ func TestEidAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &eidAvailable{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			found, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Nil(t, err)
@@ -695,7 +708,9 @@ func TestUserFpdAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &userFpdAvailable{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			found, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Equal(t, tc.expectedErr, err)
@@ -816,7 +831,9 @@ func TestFpdAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &fpdAvailable{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			found, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Equal(t, tc.expectedErr, err)
@@ -911,7 +928,9 @@ func TestEidInCall(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			found, err := tc.inSchemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Nil(t, err)
@@ -985,7 +1004,9 @@ func TestGppSidInCall(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			found, err := tc.inSchemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, found)
 			assert.Nil(t, err)
@@ -1025,7 +1046,9 @@ func TestGppSidAvailableCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &gppSidAvailable{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			result, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, result)
 			assert.Nil(t, err)
@@ -1081,7 +1104,9 @@ func TestTcfInScopeCall(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			schemaFunc := &tcfInScope{}
-			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hookstage.ProcessedAuctionRequestPayload{Request: tc.inWrapper, Usersyncs: &userSyncs}
 			result, err := schemaFunc.Call(&payload)
 			assert.Equal(t, tc.result, result)
 			assert.Nil(t, err)

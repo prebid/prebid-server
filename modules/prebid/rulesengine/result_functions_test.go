@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -112,7 +113,9 @@ func TestExcludeBiddersCall(t *testing.T) {
 			result := &hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
-			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &userSyncs}
 			err := eb.Call(&payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
@@ -171,7 +174,9 @@ func TestIncludeBiddersCall(t *testing.T) {
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
 
-			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &userSyncs}
 			err := ib.Call(&payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
@@ -427,7 +432,9 @@ func TestBuildExcludeBidders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &usersync.Cookie{}}
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &userSyncs}
 			args := config.ResultFuncParams{Bidders: tt.argBidders}
 			result, err := buildExcludeBidders(&payload, args)
 			if tt.expectErr {
