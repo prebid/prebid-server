@@ -500,6 +500,20 @@ func TestBuildExcludeBidders(t *testing.T) {
 			},
 			expectErr: false,
 		},
+		{
+			name:       "multiple-bidders-not-present-in-cookies-valid-user-sync-true-not-in-args",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			userSyncs:  map[string]string{"bidder3": "111"},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected: map[string]map[string]json.RawMessage{
+				"imp1": {
+					"bidder2": json.RawMessage(`{}`),
+					"bidder3": json.RawMessage(`{}`),
+				},
+			},
+			expectErr: false,
+		},
 	}
 
 	for _, tt := range tests { //!!!
