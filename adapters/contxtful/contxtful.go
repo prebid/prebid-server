@@ -257,26 +257,6 @@ type ContxtfulExt struct {
 	Reseller string `json:"reseller,omitempty"`
 }
 
-type PrebidJSBid struct {
-	RequestID   string       `json:"requestId"`
-	CPM         float64      `json:"cpm"`
-	Currency    string       `json:"currency"`
-	Width       int          `json:"width"`
-	Height      int          `json:"height"`
-	CreativeID  string       `json:"creativeId"`
-	Ad          string       `json:"ad"`
-	TTL         int          `json:"ttl"`
-	NetRevenue  bool         `json:"netRevenue"`
-	MediaType   string       `json:"mediaType"`
-	BidderCode  string       `json:"bidderCode"`
-	PlacementID string       `json:"placementId"`
-	TraceId     string       `json:"traceId,omitempty"`
-	Random      float64      `json:"random,omitempty"`
-	NURL        string       `json:"nurl,omitempty"`
-	BURL        string       `json:"burl,omitempty"`
-	Ext         ContxtfulExt `json:"ext,omitempty"`
-}
-
 type bidProcessingContext struct {
 	request          *openrtb2.BidRequest
 	requestData      *adapters.RequestData
@@ -304,13 +284,6 @@ func (a *adapter) processResponse(responseBody []byte, ctx *bidProcessingContext
 	ctx.version = config.Version
 	customerId := config.CustomerID
 
-	// Try PrebidJS format first
-	var prebidBids []PrebidJSBid
-	if err := json.Unmarshal(responseBody, &prebidBids); err == nil && len(prebidBids) > 0 &&
-		prebidBids[0].CPM > 0 && prebidBids[0].RequestID != "" && prebidBids[0].Ad != "" {
-		return a.processPrebidJSBids(prebidBids, ctx, customerId)
-	}
-
 	// Try Relay format
 	var relayResponses []ContxtfulRelayResponse
 	if err := json.Unmarshal(responseBody, &relayResponses); err == nil && len(relayResponses) > 0 &&
@@ -327,31 +300,6 @@ func (a *adapter) processResponse(responseBody []byte, ctx *bidProcessingContext
 	}
 
 	return false
-}
-
-func (a *adapter) processPrebidJSBids(prebidBids []PrebidJSBid, ctx *bidProcessingContext, customerId string) bool {
-	for _, prebidBid := range prebidBids {
-		if prebidBid.CPM == 0 || prebidBid.RequestID == "" {
-			continue
-		}
-
-		currency := prebidBid.Currency
-		if currency == "" {
-			currency = "USD"
-		}
-
-		a.createBid(
-			prebidBid.RequestID, prebidBid.CreativeID, prebidBid.Ad,
-			prebidBid.CPM, prebidBid.Width, prebidBid.Height,
-			prebidBid.TraceId, fmt.Sprintf("%.6f", prebidBid.Random),
-			currency, ctx, customerId, prebidBid.Ext.Reseller, prebidBid.PlacementID, prebidBid.NURL, prebidBid.BURL,
-		)
-
-		if prebidBid.Currency != "" {
-			ctx.bidderResponse.Currency = prebidBid.Currency
-		}
-	}
-	return true
 }
 
 func (a *adapter) processRelayBids(relayResponses []ContxtfulRelayResponse, ctx *bidProcessingContext, customerId string) bool {
