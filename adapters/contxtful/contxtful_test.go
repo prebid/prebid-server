@@ -1054,8 +1054,8 @@ func TestEventTrackingURLGeneration(t *testing.T) {
 		t.Logf("NURL: %s", bid.Bid.NURL)
 
 		// Verify NURL contains all critical logging parameters
-		if !contains(bid.Bid.NURL, "t=win") {
-			t.Error("NURL should contain t=win parameter")
+		if !contains(bid.Bid.NURL, "/pbs-impression") {
+			t.Error("NURL should contain win parameter")
 		}
 		if !contains(bid.Bid.NURL, "a=EVNT123") {
 			t.Error("NURL should contain customer parameter (a=EVNT123)")
@@ -1096,8 +1096,8 @@ func TestEventTrackingURLGeneration(t *testing.T) {
 		t.Logf("BURL: %s", bid.Bid.BURL)
 
 		// Verify BURL contains all critical logging parameters
-		if !contains(bid.Bid.BURL, "t=billing") {
-			t.Error("BURL should contain t=billing parameter")
+		if !contains(bid.Bid.BURL, "/pbs-billing") {
+			t.Error("BURL should contain billing parameter")
 		}
 		if !contains(bid.Bid.BURL, "a=EVNT123") {
 			t.Error("BURL should contain customer parameter (a=EVNT123)")
@@ -3391,7 +3391,7 @@ func TestCustomerIDFromURIExtraction(t *testing.T) {
 		t.Logf("NURL: %s", bid.Bid.NURL)
 
 		// Should contain customer ID from URI
-		if !contains(bid.Bid.NURL, "/v1/prebid/URITEST123/pbs-event") {
+		if !contains(bid.Bid.NURL, "/v1/prebid/URITEST123/pbs-impression") {
 			t.Error("NURL should contain customer ID extracted from URI (URITEST123)")
 		}
 
@@ -3406,7 +3406,7 @@ func TestCustomerIDFromURIExtraction(t *testing.T) {
 		t.Error("BURL should be generated when customer ID is available from URI")
 	} else {
 		// Should contain customer ID from URI
-		if !contains(bid.Bid.BURL, "/v1/prebid/URITEST123/pbs-event") {
+		if !contains(bid.Bid.BURL, "/v1/prebid/URITEST123/pbs-billing") {
 			t.Error("BURL should contain customer ID extracted from URI (URITEST123)")
 		}
 	}
@@ -3525,22 +3525,22 @@ func TestEventURLGenerationNoDoubleSlash(t *testing.T) {
 			bid := bids.Bids[0]
 
 			// Critical test: Verify NO double slashes anywhere in URLs
-			if contains(bid.Bid.NURL, "//pbs-event") {
+			if contains(bid.Bid.NURL, "//pbs-impression") {
 				t.Errorf("NURL contains double slash: %s", bid.Bid.NURL)
 			}
 
-			if contains(bid.Bid.BURL, "//pbs-event") {
+			if contains(bid.Bid.BURL, "//pbs-billing") {
 				t.Errorf("BURL contains double slash: %s", bid.Bid.BURL)
 			}
 
 			// Verify correct customer ID is used in URLs
-			expectedNURLPattern := fmt.Sprintf("/v1/prebid/%s/pbs-event", tc.expectedCustomer)
+			expectedNURLPattern := fmt.Sprintf("%s/v1/prebid/%s/pbs-impression", strings.TrimSuffix(tc.monitoringEndpoint, "/"), tc.expectedCustomer)
 			if !contains(bid.Bid.NURL, expectedNURLPattern) {
 				t.Errorf("NURL should contain %s, got: %s", expectedNURLPattern, bid.Bid.NURL)
 			}
-
-			if !contains(bid.Bid.BURL, expectedNURLPattern) {
-				t.Errorf("BURL should contain %s, got: %s", expectedNURLPattern, bid.Bid.BURL)
+			expectedBURLPattern := fmt.Sprintf("%s/v1/prebid/%s/pbs-billing", strings.TrimSuffix(tc.monitoringEndpoint, "/"), tc.expectedCustomer)
+			if !contains(bid.Bid.BURL, expectedBURLPattern) {
+				t.Errorf("BURL should contain %s, got: %s", expectedBURLPattern, bid.Bid.BURL)
 			}
 
 			// Verify customer parameter is correct
@@ -3650,11 +3650,11 @@ func TestNURLBURLFromPrebidJSResponse(t *testing.T) {
 	}
 
 	// Verify base URLs are still correct
-	if !strings.Contains(bid.NURL, "t=win") {
-		t.Error("NURL should contain t=win parameter")
+	if !strings.Contains(bid.NURL, "pbs-impression") {
+		t.Errorf("NURL should contain t=win parameter")
 	}
-	if !strings.Contains(bid.BURL, "t=billing") {
-		t.Error("BURL should contain t=billing parameter")
+	if !strings.Contains(bid.BURL, "pbs-billing") {
+		t.Errorf("BURL should contain t=billing parameter")
 	}
 }
 
