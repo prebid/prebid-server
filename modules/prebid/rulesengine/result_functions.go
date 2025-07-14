@@ -164,7 +164,7 @@ func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config
 		resultImpBidders := make(map[string]json.RawMessage)
 
 		for bidderName, bidderData := range impBidders {
-			addSynced := true
+			addSynced := false
 			if args.IfSyncedId != nil {
 				userSync := *payload.Usersyncs
 				uid, found, active := userSync.GetUID(bidderName)
@@ -172,7 +172,7 @@ func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config
 					syncValid := found && active && uid != ""
 					ifSynced := *args.IfSyncedId
 
-					// syncValid  ifSynced  Not Exlude Bidder (A XOR B)
+					// syncValid  ifSynced  Not Exclude Bidder (A XOR B)
 					// F          F         F
 					// F          T         T
 					// T          F         T
@@ -181,7 +181,7 @@ func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config
 				}
 			}
 			// do not add bidders from argBidders if sync status matches ifSyncedId
-			if contains := slices.Contains(args.Bidders, bidderName); !contains && addSynced {
+			if contains := slices.Contains(args.Bidders, bidderName); !contains || addSynced {
 				resultImpBidders[bidderName] = bidderData
 			}
 		}

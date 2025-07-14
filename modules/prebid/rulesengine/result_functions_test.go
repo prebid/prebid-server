@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/usersync"
 	"github.com/prebid/prebid-server/v3/util"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -318,6 +319,8 @@ func TestBuildExcludeBidders(t *testing.T) {
 		name       string
 		argBidders []string
 		req        *openrtb_ext.RequestWrapper
+		userSyncs  map[string]string
+		ifSyncedId *bool
 		expected   map[string]map[string]json.RawMessage
 		expectErr  bool
 	}{
@@ -428,14 +431,92 @@ func TestBuildExcludeBidders(t *testing.T) {
 			},
 			expectErr: false,
 		},
+		//userSyncs tests
+		{
+			name:       "multiple-bidders-exclude-one-bidder-valid-user-sync-true",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": "111"},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected: map[string]map[string]json.RawMessage{
+				"imp1": {
+					"bidder2": json.RawMessage(`{}`),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "multiple-bidders-not-exclude-one-bidder-valid-user-sync-false",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": "111"},
+			ifSyncedId: ptrutil.ToPtr(false),
+			expected: map[string]map[string]json.RawMessage{
+				"imp1": {
+					"bidder1": json.RawMessage(`{}`),
+					"bidder2": json.RawMessage(`{}`),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "multiple-bidders-include-one-bidder-invalid-user-sync-true",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": ""},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected: map[string]map[string]json.RawMessage{
+				"imp1": {
+					"bidder1": json.RawMessage(`{}`),
+					"bidder2": json.RawMessage(`{}`),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "multiple-bidders-not-exclude-one-bidder-invalid-user-sync-false",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": ""},
+			ifSyncedId: ptrutil.ToPtr(false),
+			expected: map[string]map[string]json.RawMessage{
+				"imp1": {
+					"bidder2": json.RawMessage(`{}`),
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "multiple-bidders-not-present-in-cookies-valid-user-sync-true",
+			argBidders: []string{"bidder3"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder3": "111"},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected: map[string]map[string]json.RawMessage{
+				"imp1": {
+					"bidder1": json.RawMessage(`{}`),
+					"bidder2": json.RawMessage(`{}`),
+				},
+			},
+			expectErr: false,
+		},
 	}
 
-	for _, tt := range tests {
+	for _, tt := range tests { //!!!
 		t.Run(tt.name, func(t *testing.T) {
+
 			var userSyncs util.IdFetcher
 			userSyncs = &usersync.Cookie{}
+			if len(tt.userSyncs) > 0 {
+				cookie := usersync.NewCookie()
+				for key, val := range tt.userSyncs {
+					cookie.Sync(key, val)
+				}
+				userSyncs = cookie
+			}
+
 			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &userSyncs}
-			args := config.ResultFuncParams{Bidders: tt.argBidders}
+			args := config.ResultFuncParams{Bidders: tt.argBidders, IfSyncedId: tt.ifSyncedId}
 			result, err := buildExcludeBidders(&payload, args)
 			if tt.expectErr {
 				assert.Error(t, err, "expected error but got nil")
