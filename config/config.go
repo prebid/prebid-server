@@ -1211,7 +1211,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("tmax_adjustments.bidder_network_latency_buffer_ms", 0)
 	v.SetDefault("tmax_adjustments.pbs_response_preparation_duration_ms", 0)
 
-	v.SetDefault("tmax_default", 500)
+	v.SetDefault("tmax_default", 0)
 
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16

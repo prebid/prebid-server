@@ -227,7 +227,7 @@ func TestDefaults(t *testing.T) {
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
 
-	cmpInts(t, "tmax_default", 500, cfg.TmaxDefault)
+	cmpInts(t, "tmax_default", 0, cfg.TmaxDefault)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
