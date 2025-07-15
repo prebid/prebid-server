@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Programmaticx Adapter Params",
-  "description": "A schema which validates params accepted by the Programmaticx adapter",
+  "title": "PX Adapter Params",
+  "description": "A schema which validates params accepted by the PX adapter",
   "type": "object",
   "properties": {
     "cId": {

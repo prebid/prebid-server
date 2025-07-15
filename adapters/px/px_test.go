@@ -1,4 +1,4 @@
-package programmaticxortb
+package px
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderProgrammaticxOrtb, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderPx, config.Adapter{
 		Endpoint: "https://programmaticx.ai/",
 	},
 		config.Server{
@@ -20,5 +20,5 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "programmaticxortbtest", bidder)
+	adapterstest.RunJSONBidderTest(t, "pxtest", bidder)
 }

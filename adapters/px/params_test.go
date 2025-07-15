@@ -1,4 +1,4 @@
-package programmaticxortb
+package px
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderProgrammaticxOrtb, json.RawMessage(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderPx, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", validParam)
 		}
 	}
@@ -27,7 +27,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderProgrammaticxOrtb, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderPx, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}

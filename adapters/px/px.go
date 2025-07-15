@@ -1,4 +1,4 @@
-package programmaticxortb
+package px
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the programmaticx for the given bidder with the given config.
+// Builder builds a new instance of the px for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -111,9 +111,9 @@ func extractCid(imp *openrtb2.Imp) (string, error) {
 		return "", fmt.Errorf("unmarshal bidderExt: %w", err)
 	}
 
-	var impExt openrtb_ext.ImpExtProgrammaticxOrtb
+	var impExt openrtb_ext.ImpExtPx
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-		return "", fmt.Errorf("unmarshal ImpExtProgrammaticxOrtb: %w", err)
+		return "", fmt.Errorf("unmarshal ImpExtPx: %w", err)
 	}
 	return impExt.ConnectionId, nil
 }
