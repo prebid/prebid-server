@@ -75,15 +75,24 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, nil
 	}
 
-	// Check HTTP status before parsing response body
+	// Handle specific status codes first
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		// ✅ Return error to log 400 metrics
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Received 400 Bad Request from endpoint: %s", a.endPoint),
+		}}
+	}
+
+	// For all other status codes
 	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
-		// Treat 204 and 400 as no-bid without logging error
-		if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusBadRequest {
-			return nil, nil
-		}
 		return nil, []error{err}
 	}
 
+	// Proceed with normal parsing
 	var serverBidResponse openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(response.Body, &serverBidResponse); err != nil {
 		return nil, []error{err}

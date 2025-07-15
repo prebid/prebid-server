@@ -61,5 +61,11 @@
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Received 400 Bad Request from endpoint",
+      "comparison": "startswith"
+    }
+  ]
 }
