@@ -54,6 +54,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdyoulike,
 	BidderAidem,
 	BidderAJA,
+	BidderAkcelo,
 	BidderAlgorix,
 	BidderAlkimi,
 	BidderAMX,
@@ -203,6 +204,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderPWBid,
 	BidderQT,
 	BidderReadpeak,
+	BidderRediads,
 	BidderRelevantDigital,
 	BidderResetDigital,
 	BidderRevcontent,
@@ -266,6 +268,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderYieldlab,
 	BidderYieldmo,
 	BidderYieldone,
+	BidderZentotem,
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
 	BidderZmaticoo,
@@ -418,6 +421,7 @@ const (
 	BidderAdyoulike         BidderName = "adyoulike"
 	BidderAidem             BidderName = "aidem"
 	BidderAJA               BidderName = "aja"
+	BidderAkcelo            BidderName = "akcelo"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAlkimi            BidderName = "alkimi"
 	BidderAMX               BidderName = "amx"
@@ -567,6 +571,7 @@ const (
 	BidderPWBid             BidderName = "pwbid"
 	BidderQT                BidderName = "qt"
 	BidderReadpeak          BidderName = "readpeak"
+	BidderRediads           BidderName = "rediads"
 	BidderRelevantDigital   BidderName = "relevantdigital"
 	BidderResetDigital      BidderName = "resetdigital"
 	BidderRevcontent        BidderName = "revcontent"
@@ -630,6 +635,7 @@ const (
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
+	BidderZentotem          BidderName = "zentotem"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 	BidderZetaGlobalSsp     BidderName = "zeta_global_ssp"
 	BidderZmaticoo          BidderName = "zmaticoo"

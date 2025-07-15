@@ -21,25 +21,18 @@ type adapter struct {
 }
 
 type MissenaAdRequest struct {
-	Adunit           string                `json:"adunit,omitempty"`
-	BuyerUID         string                `json:"buyeruid,omitempty"`
-	COPPA            int8                  `json:"coppa,omitempty"`
-	Currency         string                `json:"currency,omitempty"`
-	EIDs             []openrtb2.EID        `json:"userEids,omitempty"`
-	Floor            float64               `json:"floor,omitempty"`
-	FloorCurrency    string                `json:"floor_currency,omitempty"`
-	GDPR             bool                  `json:"consent_required,omitempty"`
-	GDPRConsent      string                `json:"consent_string,omitempty"`
-	IdempotencyKey   string                `json:"ik,omitempty"`
-	Referer          string                `json:"referer,omitempty"`
-	RefererCanonical string                `json:"referer_canonical,omitempty"`
-	RequestID        string                `json:"request_id,omitempty"`
-	SChain           *openrtb2.SupplyChain `json:"schain,omitempty"`
-	Timeout          int64                 `json:"timeout,omitempty"`
-	URL              string                `json:"url,omitempty"`
-	UserParams       UserParams            `json:"params"`
-	USPrivacy        string                `json:"us_privacy,omitempty"`
-	Version          string                `json:"version,omitempty"`
+	Adunit         string               `json:"adunit,omitempty"`
+	BuyerUID       string               `json:"buyeruid,omitempty"`
+	Currency       string               `json:"currency,omitempty"`
+	EIDs           []openrtb2.EID       `json:"userEids,omitempty"`
+	Floor          float64              `json:"floor,omitempty"`
+	FloorCurrency  string               `json:"floor_currency,omitempty"`
+	IdempotencyKey string               `json:"ik,omitempty"`
+	RequestID      string               `json:"request_id,omitempty"`
+	Timeout        int64                `json:"timeout,omitempty"`
+	UserParams     UserParams           `json:"params"`
+	ORTB2          *openrtb2.BidRequest `json:"ortb2"`
+	Version        string               `json:"version,omitempty"`
 }
 
 type BidServerResponse struct {
@@ -121,46 +114,15 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		}
 	}
 
-	var schain *openrtb2.SupplyChain
-	if request.Source != nil {
-		schain = request.Source.SChain
-	}
-
-	var buyerUID string
-	var eids []openrtb2.EID
-	var coppa int8
-	var referer, refererCanonical string
-
-	if request.User != nil {
-		buyerUID = request.User.BuyerUID
-		eids = request.User.EIDs
-	}
-
-	if request.Regs != nil {
-		coppa = request.Regs.COPPA
-	}
-
-	if request.Site != nil {
-		referer = request.Site.Page
-		refererCanonical = request.Site.Domain
-	}
-
 	missenaRequest := MissenaAdRequest{
-		Adunit:           imp.ID,
-		BuyerUID:         buyerUID,
-		COPPA:            coppa,
-		Currency:         cur,
-		EIDs:             eids,
-		Floor:            floor,
-		FloorCurrency:    floorCur,
-		GDPR:             gdprApplies,
-		GDPRConsent:      consentString,
-		IdempotencyKey:   request.ID,
-		Referer:          referer,
-		RefererCanonical: refererCanonical,
-		RequestID:        request.ID,
-		SChain:           schain,
-		Timeout:          request.TMax,
+		Adunit:         imp.ID,
+		Currency:       cur,
+		Floor:          floor,
+		FloorCurrency:  floorCur,
+		IdempotencyKey: request.ID,
+		ORTB2:          request,
+		RequestID:      request.ID,
+		Timeout:        request.TMax,
 		UserParams: UserParams{
 			Formats:   params.Formats,
 			Placement: params.Placement,
