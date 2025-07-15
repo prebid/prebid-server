@@ -12,16 +12,17 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "tagid": "test-tag",
+        "tagid": "test-banner-slot",
         "banner": {
           "format": [
-            { "w": 300, "h": 250 },
-            { "w": 728, "h": 90 }
-          ]
+            { "w": 300, "h": 250 }
+          ],
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
-            "bidfloor": 1.2,
+            "bidfloor": 0.5,
             "testMode": 1
           }
         }
@@ -37,14 +38,21 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "tagid": "test-tag",
+              "tagid": "test-banner-slot",
               "banner": {
                 "format": [
-                  { "w": 300, "h": 250 },
-                  { "w": 728, "h": 90 }
-                ]
+                  { "w": 300, "h": 250 }
+                ],
+                "w": 300,
+                "h": 250
               },
-              "bidfloor": 1.2
+              "bidfloor": 0.5,
+              "ext": {
+                "bidder": {
+                  "bidfloor": 0.5,
+                  "testMode": 1
+                }
+              }
             }
           ],
           "app": {
@@ -54,7 +62,8 @@
           "device": {
             "ip": "123.123.123.123",
             "ua": "iPad"
-          }
+          },
+          "test": 1
         },
         "impIDs": ["test-imp-id"]
       },
@@ -69,11 +78,11 @@
                 {
                   "id": "test_bid_id",
                   "impid": "test-imp-id",
-                  "price": 0.65,
-                  "adm": "<div>Sample Ad Markup</div>",
-                  "crid": "creative-123",
-                  "cid": "campaign-456",
-                  "dealid": "deal-789",
+                  "price": 0.85,
+                  "adm": "<div>Sample Banner Ad</div>",
+                  "crid": "banner-creative-001",
+                  "cid": "banner-campaign-abc",
+                  "dealid": "deal-123",
                   "w": 300,
                   "h": 250,
                   "mtype": 1
@@ -93,11 +102,11 @@
           "bid": {
             "id": "test_bid_id",
             "impid": "test-imp-id",
-            "price": 0.65,
-            "adm": "<div>Sample Ad Markup</div>",
-            "crid": "creative-123",
-            "cid": "campaign-456",
-            "dealid": "deal-789",
+            "price": 0.85,
+            "adm": "<div>Sample Banner Ad</div>",
+            "crid": "banner-creative-001",
+            "cid": "banner-campaign-abc",
+            "dealid": "deal-123",
             "w": 300,
             "h": 250,
             "mtype": 1

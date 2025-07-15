@@ -52,9 +52,16 @@
                 "w": 1024,
                 "h": 576
               },
-              "bidfloor": 0.75
+              "bidfloor": 0.75,
+              "ext": {
+                "bidder": {
+                  "bidfloor": 0.75,
+                  "testMode": 1
+                }
+              }
             }
-          ]
+          ],
+          "test": 1
         },
         "impIDs": ["test-imp-id"]
       },

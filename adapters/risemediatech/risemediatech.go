@@ -87,12 +87,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers.Set("User-Agent", "prebid-server")
 	headers.Set("X-Prebid", "true")
 
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     a.endpoint,
-		Body:    reqJSON,
-		Headers: headers,
-	}}, errs
+	return []*adapters.RequestData{
+		{
+			Method:  "POST",
+			Uri:     a.endpoint,
+			Body:    reqJSON,
+			Headers: headers,
+			ImpIDs:  extractImpIDs(validImps),
+		},
+	}, errs
+}
+
+func extractImpIDs(imps []openrtb2.Imp) []string {
+	ids := make([]string, 0, len(imps))
+	for _, imp := range imps {
+		ids = append(ids, imp.ID)
+	}
+	return ids
 }
 
 func parseImpExt(ext json.RawMessage) (*openrtb_ext.ExtImpRiseMediaTech, error) {
