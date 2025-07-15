@@ -118,10 +118,10 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse media type of impression ID \"%s\"", bid.ImpID),
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Failed to parse media type of impression ID \"%s\"", bid.ImpID),
+		}
 	}
 }
 
