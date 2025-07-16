@@ -1,7 +1,6 @@
 package afront
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"text/template"
@@ -66,7 +65,18 @@ func (a *adapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
+	if len(openRTBRequest.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "imp not provided",
+		}}
+	}
+
 	afrontExt, err := a.getImpressionExt(&openRTBRequest.Imp[0])
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	url, err := a.buildEndpointURL(afrontExt)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -74,12 +84,8 @@ func (a *adapter) MakeRequests(
 	for idx := range openRTBRequest.Imp {
 		openRTBRequest.Imp[idx].Ext = nil
 	}
-	url, err := a.buildEndpointURL(afrontExt)
-	if err != nil {
-		return nil, []error{err}
-	}
 
-	reqJSON, err := json.Marshal(openRTBRequest)
+	reqJSON, err := jsonutil.Marshal(openRTBRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -118,34 +124,6 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtAfront) (string, error
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusBadRequest {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
-		}
-	}
-
-	if response.StatusCode == http.StatusServiceUnavailable {
-		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf(
-				"Something went wrong, please contact your Account Manager. Status Code: [ %d ] ",
-				response.StatusCode,
-			),
-		}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf(
-				"Unexpected status code: [ %d ]. Run with request.debug = 1 for more info",
-				response.StatusCode,
-			),
-		}
-	}
-
-	return nil
-}
-
 func (a *adapter) MakeBids(
 	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
@@ -154,18 +132,16 @@ func (a *adapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
-	if bidderRawResponse.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
 
-	httpStatusError := a.checkResponseStatusCodes(bidderRawResponse)
-	if httpStatusError != nil {
-		return nil, []error{httpStatusError}
+	if err := adapters.CheckResponseStatusCodeForErrors(bidderRawResponse); err != nil {
+		return nil, []error{err}
 	}
 
-	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}
@@ -178,12 +154,11 @@ func (a *adapter) MakeBids(
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-	sb := bidResp.SeatBid[0]
 	var bidsArray []*adapters.TypedBid
 
-	for idx, bid := range sb.Bid {
+	for idx, bid := range bidResp.SeatBid[0].Bid {
 		bidsArray = append(bidsArray, &adapters.TypedBid{
-			Bid:     &sb.Bid[idx],
+			Bid:     &bidResp.SeatBid[0].Bid[idx],
 			BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
 		})
 	}

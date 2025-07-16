@@ -77,7 +77,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: [ 306 ]. Run with request.debug = 1 for more info",
+      "value": "Unexpected status code: 306. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

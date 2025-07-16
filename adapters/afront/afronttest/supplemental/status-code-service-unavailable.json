@@ -77,7 +77,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Something went wrong, please contact your Account Manager. Status Code: [ 503 ] ",
+      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]
