@@ -3,6 +3,8 @@ package hookstage
 import (
 	"encoding/json"
 	"errors"
+	"slices"
+
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -32,7 +34,7 @@ func (c ChangeSetProcessedAuctionRequest[T]) castPayload(p T) (*openrtb_ext.Requ
 	return nil, errors.New("failed to cast ProcessedAuctionRequestPayload")
 }
 
-func (c ChangeBidders[T]) Update(impIdToBidders map[string]map[string]json.RawMessage) {
+func (c ChangeBidders[T]) Add(impIdToBidders map[string]map[string]json.RawMessage) {
 	c.changeSetProcessedAuctionRequest.changeSet.AddMutation(func(p T) (T, error) {
 		bidRequest, err := c.changeSetProcessedAuctionRequest.castPayload(p)
 		if err == nil {
@@ -47,10 +49,44 @@ func (c ChangeBidders[T]) Update(impIdToBidders map[string]map[string]json.RawMe
 						impPrebid = &openrtb_ext.ExtImpPrebid{}
 					}
 					impPrebid.Bidder = impBidders
+					//for k, v := range impBidders {
+					//		impPrebid.Bidder[k] = v
+					//}
 					impExt.SetPrebid(impPrebid)
 				}
 			}
 		}
 		return p, err
-	}, MutationUpdate, "bidrequest", "imp", "ext", "prebid", "bidders")
+	}, MutationAdd, "bidrequest", "imp", "ext", "prebid", "bidders")
+}
+
+func (c ChangeBidders[T]) Delete(biddersToDelete []string) {
+	c.changeSetProcessedAuctionRequest.changeSet.AddMutation(func(p T) (T, error) {
+		bidRequest, err := c.changeSetProcessedAuctionRequest.castPayload(p)
+		if err == nil {
+			for _, impWrapper := range bidRequest.GetImp() {
+				impExt, impExtErr := impWrapper.GetImpExt()
+				if err != nil {
+					return p, impExtErr
+				}
+				impPrebid := impExt.GetPrebid()
+				if impPrebid == nil {
+					return p, nil
+				}
+
+				newImpBidders := make(map[string]json.RawMessage)
+
+				for bidderName, bidderData := range impPrebid.Bidder {
+					if contains := slices.Contains(biddersToDelete, bidderName); !contains {
+						newImpBidders[bidderName] = bidderData
+					}
+				}
+
+				impPrebid.Bidder = newImpBidders
+				impExt.SetPrebid(impPrebid)
+
+			}
+		}
+		return p, err
+	}, MutationDelete, "bidrequest", "imp", "ext", "prebid", "bidders")
 }

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
-
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -72,7 +70,7 @@ func (eb *ExcludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, resul
 		return err
 	}
 
-	result.ChangeSet.ProcessedAuctionRequest().Bidders().Update(impIdToBidders)
+	result.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(impIdToBidders)
 
 	return nil
 }
@@ -113,7 +111,7 @@ func (ib *IncludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, resul
 		return err
 	}
 
-	result.ChangeSet.ProcessedAuctionRequest().Bidders().Update(impIdToBidders)
+	result.ChangeSet.ProcessedAuctionRequest().Bidders().Add(impIdToBidders)
 
 	return nil
 }
@@ -147,46 +145,24 @@ func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (
 	return impIdToBidders, nil
 }
 
-func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config.ResultFuncParams) (map[string]map[string]json.RawMessage, error) {
-	impIdToBidders := make(map[string]map[string]json.RawMessage)
-	req := payload.GetBidderRequestPayload()
-	for _, impWrapper := range req.GetImp() {
-		impExt, impExtErr := impWrapper.GetImpExt()
-		if impExtErr != nil {
-			return impIdToBidders, impExtErr
-		}
-		impPrebid := impExt.GetPrebid()
-		if impPrebid == nil {
-			return nil, fmt.Errorf("impExt for imp %s does not contain prebid extension", impWrapper.ID)
-		}
-		impBidders := impPrebid.Bidder
+func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config.ResultFuncParams) ([]string, error) {
+	biddersToDelete := make([]string, 0)
 
-		resultImpBidders := make(map[string]json.RawMessage)
-
-		for bidderName, bidderData := range impBidders {
-			addSynced := false
-			if args.IfSyncedId != nil {
-				userSync := *payload.Usersyncs
-				uid, found, active := userSync.GetUID(bidderName)
-				if found {
-					syncValid := found && active && uid != ""
-					ifSynced := *args.IfSyncedId
-
-					// syncValid  ifSynced  Not Exclude Bidder (A XOR B)
-					// F          F         F
-					// F          T         T
-					// T          F         T
-					// T          T         F
-					addSynced = syncValid != ifSynced // XOR
+	for _, bidderName := range args.Bidders {
+		if args.IfSyncedId != nil {
+			userSync := *payload.Usersyncs
+			uid, found, active := userSync.GetUID(bidderName)
+			if found {
+				syncValid := found && active && uid != ""
+				ifSynced := *args.IfSyncedId
+				if syncValid == ifSynced {
+					biddersToDelete = append(biddersToDelete, bidderName)
 				}
 			}
-			// do not add bidders from argBidders if sync status matches ifSyncedId
-			if contains := slices.Contains(args.Bidders, bidderName); !contains || addSynced {
-				resultImpBidders[bidderName] = bidderData
-			}
+		} else {
+			biddersToDelete = append(biddersToDelete, bidderName)
 		}
-
-		impIdToBidders[impWrapper.ID] = resultImpBidders
 	}
-	return impIdToBidders, nil
+
+	return biddersToDelete, nil
 }
