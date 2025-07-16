@@ -27,7 +27,7 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 	assert.NoError(t, err, "unexpected error")
 	assert.NotEmptyf(t, result.ChangeSet, "change set is empty")
 	assert.Len(t, result.ChangeSet.Mutations(), 1)
-	assert.Equal(t, hs.MutationUpdate, result.ChangeSet.Mutations()[0].Type())
+	assert.Equal(t, hs.MutationAdd, result.ChangeSet.Mutations()[0].Type())
 }
 
 func BuildTestRules(t *testing.T) rules.Tree[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]] {

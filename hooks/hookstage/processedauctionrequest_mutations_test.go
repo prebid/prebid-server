@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestUpdatePrebidBidders(t *testing.T) {
+func TestAddPrebidBidders(t *testing.T) {
 	tests := []struct {
 		name            string
 		bidRequest      *openrtb2.BidRequest
@@ -119,7 +119,7 @@ func TestUpdatePrebidBidders(t *testing.T) {
 			cpar := ChangeSetProcessedAuctionRequest[ProcessedAuctionRequestPayload]{
 				changeSet: &ChangeSet[ProcessedAuctionRequestPayload]{},
 			}
-			cpar.Bidders().Update(tt.impIdToBidders)
+			cpar.Bidders().Add(tt.impIdToBidders)
 
 			for _, mut := range cpar.changeSet.Mutations() {
 				_, err := mut.Apply(payload)
@@ -134,8 +134,122 @@ func TestUpdatePrebidBidders(t *testing.T) {
 			impExtRes, err := payload.Request.GetImp()[0].GetImpExt()
 			assert.NoError(t, err)
 			assert.Equal(t, &tt.expectData, impExtRes.GetPrebid(), "Bidder data should match expected")
-
 		})
 	}
+}
 
+func TestDeletePrebidBidders(t *testing.T) {
+	tests := []struct {
+		name            string
+		bidRequest      *openrtb2.BidRequest
+		biddersToDelete [][]string //list of lists to control a number of mutations
+		extImpPrebid    *openrtb_ext.ExtImpPrebid
+		expectErr       bool
+		expectEmptyImps bool
+		expectData      openrtb_ext.ExtImpPrebid
+	}{
+		{
+			name:            "one-imp-with-three-bidders-three-to-delete-in-one-mutations",
+			biddersToDelete: [][]string{{"bidderA", "bidderB", "bidderC"}}, // one mutation
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
+				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
+				"bidderC": json.RawMessage(`{"paramC": "valueC"}`),
+			}},
+			expectErr:  false,
+			expectData: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{}},
+		},
+		{
+			name:            "one-imp-with-three-bidders-two-to-delete-in-one-mutations",
+			biddersToDelete: [][]string{{"bidderA", "bidderB"}}, // one mutation
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
+				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
+				"bidderC": json.RawMessage(`{"paramC": "valueC"}`),
+			}},
+			expectErr: false,
+			expectData: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderC": json.RawMessage(`{"paramC": "valueC"}`),
+			}},
+		},
+		{
+			name:            "one-imp-with-three-bidders-three-to-delete-in-two-mutations",
+			biddersToDelete: [][]string{{"bidderA"}, {"bidderB", "bidderC"}}, // two mutations
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
+				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
+				"bidderC": json.RawMessage(`{"paramC": "valueC"}`),
+			}},
+			expectErr:  false,
+			expectData: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{}},
+		},
+		{
+			name:            "one-imp-with-three-bidders-two-to-delete-in-two-mutations",
+			biddersToDelete: [][]string{{"bidderA"}, {"bidderB"}}, // two mutations
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
+				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
+				"bidderC": json.RawMessage(`{"paramC": "valueC"}`),
+			}},
+			expectErr: false,
+			expectData: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderC": json.RawMessage(`{"paramC": "valueC"}`),
+			}},
+		},
+		{
+			name:            "one-imp-with-three-bidders-two-to-delete-in-two-mutations-one-with-multiple-bidders",
+			biddersToDelete: [][]string{{"bidderA"}, {"bidderB", "bidderC"}}, // two mutations
+			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
+				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
+				"bidderC": json.RawMessage(`{"paramC": "valueC"}`),
+				"bidderD": json.RawMessage(`{"paramD": "valueD"}`),
+			}},
+			expectErr: false,
+			expectData: openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderD": json.RawMessage(`{"paramD": "valueD"}`),
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			br := &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}}
+			if tt.bidRequest != nil {
+				br = tt.bidRequest
+			}
+			brw := openrtb_ext.RequestWrapper{BidRequest: br}
+			impWrapperArr := brw.GetImp()
+
+			if len(impWrapperArr) > 0 {
+				impExt, err := brw.GetImp()[0].GetImpExt()
+				assert.NoError(t, err)
+				impExt.SetPrebid(tt.extImpPrebid)
+			}
+
+			payload := ProcessedAuctionRequestPayload{Request: &brw}
+
+			cpar := ChangeSetProcessedAuctionRequest[ProcessedAuctionRequestPayload]{
+				changeSet: &ChangeSet[ProcessedAuctionRequestPayload]{},
+			}
+
+			for _, biddersTodeleteSingleMutation := range tt.biddersToDelete {
+				cpar.Bidders().Delete(biddersTodeleteSingleMutation)
+			}
+
+			for _, mut := range cpar.changeSet.Mutations() {
+				_, err := mut.Apply(payload)
+				assert.NoError(t, err)
+			}
+
+			if tt.expectEmptyImps {
+				assert.Empty(t, payload.Request.GetImp(), "Expected no imps in the request")
+				return
+			}
+
+			impExtRes, err := payload.Request.GetImp()[0].GetImpExt()
+			assert.NoError(t, err)
+			assert.Equal(t, &tt.expectData, impExtRes.GetPrebid(), "Bidder data should match expected")
+		})
+	}
 }
