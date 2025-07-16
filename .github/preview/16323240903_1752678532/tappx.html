@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>tappx: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/tappx/tappx.go (90.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package tappx
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "regexp"
+        "strconv"
+        "text/template"
+        "time"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/macros"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+const TAPPX_BIDDER_VERSION = "1.6"
+const TYPE_CNN = "prebid"
+
+type TappxAdapter struct {
+        endpointTemplate *template.Template
+}
+
+type Bidder struct {
+        Tappxkey string   `json:"tappxkey"`
+        Mktag    string   `json:"mktag,omitempty"`
+        Bcid     []string `json:"bcid,omitempty"`
+        Bcrid    []string `json:"bcrid,omitempty"`
+}
+
+type Ext struct {
+        Bidder `json:"bidder"`
+        GPID   string `json:"gpid,omitempty"`
+}
+
+// Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">bidder := &amp;TappxAdapter{
+                endpointTemplate: template,
+        }
+        return bidder, nil</span>
+}
+
+func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "No impression in the bid request",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(request.Imp[0].Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "Error parsing bidderExt object",
+                }}
+        }</span>
+        <span class="cov8" title="1">var tappxExt openrtb_ext.ExtImpTappx
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;tappxExt); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "Error parsing tappxExt parameters",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">ext := Ext{
+                Bidder: Bidder{
+                        Tappxkey: tappxExt.TappxKey,
+                        Mktag:    tappxExt.Mktag,
+                        Bcid:     tappxExt.Bcid,
+                        Bcrid:    tappxExt.Bcrid,
+                },
+        }
+
+        if jsonext, err := json.Marshal(ext); err == nil </span><span class="cov8" title="1">{
+                request.Ext = jsonext
+        }</span> else<span class="cov0" title="0"> {
+                return nil, []error{&amp;errortypes.FailedToRequestBids{
+                        Message: "Error marshaling tappxExt parameters",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">test := int(request.Test)
+
+        url, err := a.buildEndpointURL(&amp;tappxExt, test)
+        if url == "" </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">if tappxExt.BidFloor &gt; 0 </span><span class="cov8" title="1">{
+                request.Imp[0].BidFloor = tappxExt.BidFloor
+        }</span>
+
+        <span class="cov8" title="1">reqJSON, err := json.Marshal(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "Error parsing reqJSON object",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     url,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }}, []error{}</span>
+}
+
+// Builds enpoint url based on adapter-specific pub settings from imp.ext
+func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) <span class="cov8" title="1">{
+
+        if params.Endpoint == "" </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Tappx endpoint undefined",
+                }
+        }</span>
+
+        <span class="cov8" title="1">if params.TappxKey == "" </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Tappx key undefined",
+                }
+        }</span>
+
+        <span class="cov8" title="1">isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
+        if err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Unable to match params.Endpoint " + string(params.Endpoint) + "): " + err.Error(),
+                }
+        }</span>
+        <span class="cov8" title="1">var tappxHost string
+        if isNewEndpoint </span><span class="cov8" title="1">{
+                tappxHost = params.Endpoint + ".pub.tappx.com/rtb/"
+        }</span> else<span class="cov8" title="1"> {
+                tappxHost = "ssp.api.tappx.com/rtb/v2/"
+        }</span>
+
+        <span class="cov8" title="1">endpointParams := macros.EndpointTemplateParams{Host: tappxHost}
+        host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Unable to parse endpoint url template: " + err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">thisURI, err := url.Parse(host)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: "Malformed URL: " + err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if !isNewEndpoint </span><span class="cov8" title="1">{
+                thisURI.Path += params.Endpoint
+        }</span>
+
+        <span class="cov8" title="1">queryParams := url.Values{}
+
+        queryParams.Add("tappxkey", params.TappxKey)
+
+        if test == 0 </span><span class="cov8" title="1">{
+                t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+                queryParams.Add("ts", strconv.Itoa(int(t)))
+        }</span>
+
+        <span class="cov8" title="1">queryParams.Add("v", TAPPX_BIDDER_VERSION)
+
+        queryParams.Add("type_cnn", TYPE_CNN)
+
+        thisURI.RawQuery = queryParams.Encode()
+
+        return thisURI.String(), nil</span>
+}
+
+func (a *TappxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := 0; i &lt; len(sb.Bid); i++ </span><span class="cov8" title="1">{
+                        bid := sb.Bid[i]
+                        bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bid,
+                                BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+                        })
+
+                }</span>
+        }
+        <span class="cov8" title="1">return bidResponse, []error{}</span>
+}
+
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType <span class="cov8" title="1">{
+        mediaType := openrtb_ext.BidTypeBanner
+        for _, imp := range imps </span><span class="cov8" title="1">{
+                if imp.ID == impId </span><span class="cov8" title="1">{
+                        if imp.Video != nil </span><span class="cov8" title="1">{
+                                mediaType = openrtb_ext.BidTypeVideo
+                        }</span>
+                        <span class="cov8" title="1">return mediaType</span>
+                }
+        }
+        <span class="cov0" title="0">return mediaType</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
