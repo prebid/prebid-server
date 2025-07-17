@@ -99,7 +99,7 @@ func createTestOpenRTBRequest(t *testing.T) *openrtb2.BidRequest {
 				"domain": "receptivity.io",
 				"id": "1"
 			},
-			"page": "https://prometheus.receptivity.io/view?link=f88f2d5a_6a55_4c2e_9e67_2f2a43417745&filename=prebid_ssp.html&title=prebid_ssp.html&token=2915962548",
+			"page": "https://example.receptivity.io/",
 			"ext": {
 				"data": {
 					"documentLang": "en",
