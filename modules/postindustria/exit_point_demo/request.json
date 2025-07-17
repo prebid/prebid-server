@@ -1,0 +1,715 @@
+{
+  "test": 1,
+  "imp": [
+    {
+      "ext": {
+        "data": {
+          "adserver": {
+            "name": "gam",
+            "adslot": "/22247219933/TPS_leftbar_organic"
+          },
+          "pbadslot": "/22247219933/TPS_leftbar_organic",
+          "gpid": "/22247219933/TPS_leftbar_organic"
+        },
+        "gpid": "/22247219933/TPS_leftbar_organic",
+        "prebid": {
+          "bidder": {
+            "33across": {
+              "siteId": "dslLtIIeWr7kuOrkHcnnVW",
+              "productId": "siab"
+            },
+            "adtelligent": {
+              "aid": 876850
+            },
+            "amx": {
+              "tagId": "cHVibWF4LmNvbQ",
+              "adUnitId": "TPS_leftbar_organic"
+            },
+            "appnexus": {
+              "placementId": 32576019
+            },
+            "grid": {
+              "uid": 358102
+            },
+            "improvedigital": {
+              "publisherId": 1914,
+              "placementId": 22666288
+            },
+            "ix": {
+              "siteId": "830902",
+              "size": [
+                160,
+                600
+              ]
+            },
+            "mediafuse": {
+              "placementId": 30540588
+            },
+            "medianet": {
+              "cid": "8CU92U75D",
+              "crid": "621936156"
+            },
+            "minutemedia": {
+              "org": "01hq33rzc2my",
+              "currency": "USD",
+              "placementId": "TPS_leftbar_organic"
+            },
+            "onetag": {
+              "pubId": "642455ab8f71fec",
+              "ext": {
+                "adunit": "TPS_leftbar_organic"
+              },
+              "overwriteAdUnitCode": "TPS_leftbar_organic"
+            },
+            "openx": {
+              "unit": "556659153",
+              "delDomain": "digikulture-d.openx.net"
+            },
+            "pubmatic": {
+              "publisherId": "164752",
+              "adSlot": "TPS_leftbar_organic"
+            },
+            "richaudience": {
+              "pid": "pNCSJWp1bS",
+              "supplyType": "site"
+            },
+            "rubicon": {
+              "accountId": "26420",
+              "siteId": "551114",
+              "zoneId": "3446426"
+            },
+            "sharethrough": {
+              "pkey": "OUbFsjObhHCnrrpFXt8boLSA"
+            },
+            "smilewanted": {
+              "zoneId": "adapex.io_hb_display"
+            },
+            "sovrn": {
+              "tagid": "1242237"
+            },
+            "unruly": {
+              "siteId": 274705
+            },
+            "vidazoo": {
+              "cId": "65e72be7ac9e99bd5338904e",
+              "pId": "59ac17c192832d0011283fe3",
+              "subDomain": "exchange"
+            },
+            "yieldmo": {
+              "placementId": "2946663258737549417"
+            }
+          },
+          "adunitcode": "3e13968d-6020-4b06-97b6-42d172df415b",
+          "floors": {
+            "floorMin": 0.0091
+          }
+        }
+      },
+      "banner": {
+        "topframe": 1,
+        "format": [
+          {
+            "w": 120,
+            "h": 600
+          },
+          {
+            "w": 160,
+            "h": 600
+          }
+        ],
+        "pos": 1
+      },
+      "id": "3e13968d-6020-4b06-97b6-42d172df415b",
+      "secure": 1,
+      "bidfloor": 0.0091,
+      "bidfloorcur": "USD"
+    },
+    {
+      "ext": {
+        "data": {
+          "adserver": {
+            "name": "gam",
+            "adslot": "/22247219933/TPS_Rightbar_organic"
+          },
+          "pbadslot": "/22247219933/TPS_Rightbar_organic",
+          "gpid": "/22247219933/TPS_Rightbar_organic"
+        },
+        "gpid": "/22247219933/TPS_Rightbar_organic",
+        "prebid": {
+          "bidder": {
+            "33across": {
+              "siteId": "dIiFC8IeWr7kuOrkHcnnVW",
+              "productId": "siab"
+            },
+            "adtelligent": {
+              "aid": 876850
+            },
+            "adyoulike": {
+              "placement": "b1bd21839a876a90643b987d1826b63c"
+            },
+            "amx": {
+              "tagId": "cHVibWF4LmNvbQ",
+              "adUnitId": "TPS_Rightbar_organic"
+            },
+            "appnexus": {
+              "placementId": 32576022
+            },
+            "grid": {
+              "uid": 358105
+            },
+            "improvedigital": {
+              "publisherId": 1914,
+              "placementId": 22666291
+            },
+            "ix": {
+              "siteId": "830905",
+              "size": [
+                336,
+                280
+              ]
+            },
+            "mediafuse": {
+              "placementId": 30540588
+            },
+            "medianet": {
+              "cid": "8CU92U75D",
+              "crid": "621936156"
+            },
+            "minutemedia": {
+              "org": "01hq33rzc2my",
+              "currency": "USD",
+              "placementId": "TPS_Rightbar_organic"
+            },
+            "onetag": {
+              "pubId": "642455ab8f71fec",
+              "ext": {
+                "adunit": "TPS_Rightbar_organic"
+              },
+              "overwriteAdUnitCode": "TPS_Rightbar_organic"
+            },
+            "openx": {
+              "unit": "556659162",
+              "delDomain": "digikulture-d.openx.net"
+            },
+            "pubmatic": {
+              "publisherId": "164752",
+              "adSlot": "TPS_Rightbar_organic"
+            },
+            "richaudience": {
+              "pid": "sq5iHAWoIa",
+              "supplyType": "site"
+            },
+            "rubicon": {
+              "accountId": "26420",
+              "siteId": "551114",
+              "zoneId": "3446426"
+            },
+            "sharethrough": {
+              "pkey": "OUbFsjObhHCnrrpFXt8boLSA"
+            },
+            "smilewanted": {
+              "zoneId": "adapex.io_hb_display"
+            },
+            "sovrn": {
+              "tagid": "1242243"
+            },
+            "unruly": {
+              "siteId": 274705
+            },
+            "vidazoo": {
+              "cId": "65e72be7ac9e99bd5338904e",
+              "pId": "59ac17c192832d0011283fe3",
+              "subDomain": "exchange"
+            },
+            "yieldmo": {
+              "placementId": "2946663259635130476"
+            }
+          },
+          "adunitcode": "e17728cd-9c4a-4f9d-8d30-b0413d3191c9",
+          "floors": {
+            "floorMin": 0.0091
+          }
+        }
+      },
+      "banner": {
+        "topframe": 1,
+        "format": [
+          {
+            "w": 120,
+            "h": 600
+          },
+          {
+            "w": 160,
+            "h": 600
+          },
+          {
+            "w": 300,
+            "h": 600
+          },
+          {
+            "w": 120,
+            "h": 240
+          },
+          {
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 336,
+            "h": 280
+          }
+        ],
+        "pos": 1
+      },
+      "id": "e17728cd-9c4a-4f9d-8d30-b0413d3191c9",
+      "secure": 1,
+      "bidfloor": 0.0091,
+      "bidfloorcur": "USD"
+    },
+    {
+      "ext": {
+        "data": {
+          "adserver": {
+            "name": "gam",
+            "adslot": "/22247219933/TPS_Anchor_bottom_organic"
+          },
+          "pbadslot": "/22247219933/TPS_Anchor_bottom_organic",
+          "gpid": "/22247219933/TPS_Anchor_bottom_organic"
+        },
+        "gpid": "/22247219933/TPS_Anchor_bottom_organic",
+        "prebid": {
+          "bidder": {
+            "33across": {
+              "siteId": "dZ55wuIeWr7kuOrkHcnnVW",
+              "productId": "siab"
+            },
+            "adtelligent": {
+              "aid": 876850
+            },
+            "adyoulike": {
+              "placement": "1185ae1676b57daff24590bd22f9df29"
+            },
+            "amx": {
+              "tagId": "cHVibWF4LmNvbQ",
+              "adUnitId": "TPS_Anchor_bottom_organic"
+            },
+            "appnexus": {
+              "placementId": 32576010
+            },
+            "grid": {
+              "uid": 358108
+            },
+            "gumgum": {
+              "zone": "fopl360q"
+            },
+            "improvedigital": {
+              "publisherId": 1914,
+              "placementId": 22666294
+            },
+            "ix": {
+              "siteId": "830908",
+              "size": [
+                728,
+                90
+              ]
+            },
+            "mediafuse": {
+              "placementId": 30540588
+            },
+            "medianet": {
+              "cid": "8CU92U75D",
+              "crid": "621936156"
+            },
+            "minutemedia": {
+              "org": "01hq33rzc2my",
+              "currency": "USD",
+              "placementId": "TPS_Anchor_bottom_organic"
+            },
+            "onetag": {
+              "pubId": "642455ab8f71fec",
+              "ext": {
+                "adunit": "TPS_Anchor_bottom_organic"
+              },
+              "overwriteAdUnitCode": "TPS_Anchor_bottom_organic"
+            },
+            "openx": {
+              "unit": "556659165",
+              "delDomain": "digikulture-d.openx.net"
+            },
+            "pubmatic": {
+              "publisherId": "164752",
+              "adSlot": "TPS_Anchor_bottom_organic"
+            },
+            "richaudience": {
+              "pid": "H7hV5sDAKQ",
+              "supplyType": "site"
+            },
+            "rubicon": {
+              "accountId": "26420",
+              "siteId": "551114",
+              "zoneId": "3446426"
+            },
+            "sharethrough": {
+              "pkey": "OUbFsjObhHCnrrpFXt8boLSA"
+            },
+            "smilewanted": {
+              "zoneId": "adapex.io_hb_display"
+            },
+            "sovrn": {
+              "tagid": "1242215"
+            },
+            "unruly": {
+              "siteId": 274705
+            },
+            "vidazoo": {
+              "cId": "65e72be7ac9e99bd5338904e",
+              "pId": "59ac17c192832d0011283fe3",
+              "subDomain": "exchange"
+            },
+            "yieldmo": {
+              "placementId": "2946663260490768495"
+            }
+          },
+          "adunitcode": "499ccda0-6ff7-4453-9b71-3bb4f9580605",
+          "floors": {
+            "floorMin": 0.0091
+          }
+        }
+      },
+      "banner": {
+        "topframe": 1,
+        "format": [
+          {
+            "w": 970,
+            "h": 90
+          },
+          {
+            "w": 728,
+            "h": 90
+          }
+        ],
+        "pos": 1
+      },
+      "id": "499ccda0-6ff7-4453-9b71-3bb4f9580605",
+      "secure": 1,
+      "bidfloor": 0.0091,
+      "bidfloorcur": "USD"
+    }
+  ],
+  "device": {
+    "w": 1920,
+    "h": 1080,
+    "dnt": 1,
+    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+    "language": "en",
+    "ext": {
+      "vpw": 1517,
+      "vph": 878
+    },
+    "ip": "208.107.230.122",
+    "sua": {
+      "source": 2,
+      "platform": {
+        "brand": "Windows",
+        "version": [
+          "10",
+          "0",
+          "0"
+        ]
+      },
+      "browsers": [
+        {
+          "brand": "Microsoft Edge",
+          "version": [
+            "131",
+            "0",
+            "2903",
+            "146"
+          ]
+        },
+        {
+          "brand": "Chromium",
+          "version": [
+            "131",
+            "0",
+            "6778",
+            "265"
+          ]
+        },
+        {
+          "brand": "Not_A Brand",
+          "version": [
+            "24",
+            "0",
+            "0",
+            "0"
+          ]
+        }
+      ],
+      "mobile": 0,
+      "model": "",
+      "architecture": "x86"
+    }
+  },
+  "regs": {
+    "ext": {
+      "gdpr": 0
+    }
+  },
+  "user": {
+    "ext": {
+      "eids": [
+        {
+          "source": "growthcode.io",
+          "uids": [
+            {
+              "atype": 1,
+              "id": "92541bfa-1df4-4abb-9967-02473f56d9ca"
+            }
+          ]
+        },
+        {
+          "source": "crwdcntrl.net",
+          "uids": [
+            {
+              "atype": 1,
+              "id": "f3df10483f69a3f845c7a233cfb84945a7027e37184a1607b2d3a948c39f044a"
+            }
+          ]
+        },
+        {
+          "source": "id5-sync.com",
+          "uids": [
+            {
+              "atype": 1,
+              "id": "%7B%22created_at%22%3A%222025-01-13T22%3A25%3A51.427311308Z%22%2C%22id5_consent%22%3Afalse%2C%22original_uid%22%3A%220%22%2C%22universal_uid%22%3A%220%22%2C%22link_type%22%3A0%2C%22cascade_needed%22%3Afalse%2C%22privacy%22%3A%7B%22jurisdiction%22%3A%22other%22%2C%22id5_consent%22%3Afalse%7D%2C%22ext%22%3A%7B%22linkType%22%3A0%2C%22pba%22%3A%220QfwHXifHMaGuaVsEmzs%2BQ%3D%3D%22%7D%2C%22ids%22%3A%7B%22id5id%22%3A%7B%22eid%22%3A%7B%22source%22%3A%22id5-sync.com%22%2C%22uids%22%3A%5B%7B%22id%22%3A%220%22%2C%22atype%22%3A1%2C%22ext%22%3A%7B%22linkType%22%3A0%2C%22pba%22%3A%220QfwHXifHMaGuaVsEmzs%2BQ%3D%3D%22%7D%7D%5D%7D%7D%7D%7D"
+            }
+          ]
+        },
+        {
+          "source": "amxdt.net",
+          "uids": [
+            {
+              "atype": 1,
+              "id": "amx*3*07b4ab0c-036c-4245-ad52-ff25b8f907ce*1667ce7c5c1edfb2bf72c69f894e596e"
+            }
+          ]
+        },
+        {
+          "source": "audigent.com",
+          "uids": [
+            {
+              "atype": 1,
+              "id": "060kje9j2g5gke77879gc7c699i8aj89hcdywm6wsqyqym22426qi2i066u4ew46s"
+            }
+          ]
+        },
+        {
+          "source": "pubcid.org",
+          "uids": [
+            {
+              "id": "3e415bdc-bfec-4f1b-9a6c-10944d45e89c",
+              "atype": 1
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "ext": {
+    "prebid": {
+      "auctiontimestamp": 1736950565863,
+      "targeting": {
+        "includewinners": true,
+        "includebidderkeys": false
+      },
+      "adServerCurrency": "USD",
+      "cache": {
+        "bids": {
+          "returnCreative": true
+        },
+        "vastxml": {
+          "returnCreative": true
+        }
+      },
+      "bidderconfig": [
+        {
+          "bidders": [
+            "unruly"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "vidazoo"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "amx"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "sovrn"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "appnexus"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "rise"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "minutemedia"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "richaudience"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "rubicon"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "medianet"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "adtelligent"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        },
+        {
+          "bidders": [
+            "pubmatic"
+          ],
+          "config": {
+            "ortb2": {}
+          }
+        }
+      ],
+      "schains": [
+        {
+          "bidders": [
+            "33across",
+            "grid",
+            "improvedigital",
+            "ix",
+            "mediafuse",
+            "onetag",
+            "openx",
+            "sharethrough",
+            "smilewanted",
+            "yieldmo",
+            "adyoulike",
+            "gumgum"
+          ],
+          "schain": {
+            "ver": "1.0",
+            "complete": 1,
+            "nodes": [
+              {
+                "asi": "adapex.io",
+                "sid": "s1605",
+                "hp": 1
+              }
+            ]
+          }
+        },
+        {
+          "bidders": [
+            "adtelligent",
+            "amx",
+            "appnexus",
+            "medianet",
+            "minutemedia",
+            "pubmatic",
+            "richaudience",
+            "rubicon",
+            "sovrn",
+            "unruly",
+            "vidazoo"
+          ],
+          "schain": {
+            "ver": "1.0",
+            "complete": 1,
+            "nodes": [
+              {
+                "asi": "pubmax.com",
+                "sid": "23045",
+                "hp": 1
+              }
+            ]
+          }
+        }
+      ],
+      "channel": {
+        "name": "pbjs",
+        "version": "v9.24.0"
+      },
+      "floors": {
+        "enabled": false,
+        "floorMin": 0.0091,
+        "floorMinCur": "USD"
+      },
+      "createtids": false
+    },
+    "tmaxmax": 2000
+  },
+  "site": {
+    "domain": "truepeoplesearch.com",
+    "publisher": {
+      "domain": "truepeoplesearch.com",
+      "id": "p-bid-account-y9eg0fEH"
+    },
+    "page": "https://www.truepeoplesearch.com/find/person/p26648nnu8249690n0lu",
+    "ref": "https://www.truepeoplesearch.com/results?name=Tonia%20Reinhart%20&citystatezip=mcville,%20nd"
+  },
+  "id": "a315272a-8478-463a-a936-d4e55717f83f",
+  "cur": [
+    "USD"
+  ],
+  "tmax": 1500
+}

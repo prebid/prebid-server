@@ -1,0 +1,51 @@
+external_url: https://prebid.postindustria.com
+port: 8080
+admin_port: 8081
+
+generate_bid_id: true
+
+gdpr:
+  default_value: '0'
+
+cache:
+  hide_error_logs: true
+
+external_cache:
+  scheme: https
+  host: cache.prebid.postindustria.com
+  path: /cache
+
+stored_requests:
+  filesystem:
+    enabled: true
+    directorypath: .
+
+stored_responses:
+  filesystem:
+    enabled: true
+    directorypath: .
+
+accounts:
+  filesystem:
+    enabled: true
+    directorypath: .
+account_defaults:
+  events:
+    enabled: true
+
+hooks:
+  enabled: true
+  modules:
+    postindustria:
+      exit_point_demo:
+        enabled: true
+  host_execution_plan:
+    endpoints:
+      "/openrtb2/auction":
+        stages:
+          exit_point:
+            groups:
+              - timeout: 10
+                hook_sequence:
+                  - module_code: postindustria.exit_point_demo
+                    hook_impl_code: postindustria-exit_point_demo-exit_point

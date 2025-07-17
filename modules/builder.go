@@ -2,7 +2,7 @@ package modules
 
 import (
 	fiftyonedegreesDevicedetection "github.com/prebid/prebid-server/v3/modules/fiftyonedegrees/devicedetection"
-	"github.com/prebid/prebid-server/v3/modules/postindustria/test_exit_point_hook"
+	"github.com/prebid/prebid-server/v3/modules/postindustria/exit_point_demo"
 	prebidOrtb2blocking "github.com/prebid/prebid-server/v3/modules/prebid/ortb2blocking"
 	prebidRulesengine "github.com/prebid/prebid-server/v3/modules/prebid/rulesengine"
 )
@@ -19,7 +19,7 @@ func builders() ModuleBuilders {
 			"rulesengine":   prebidRulesengine.Builder,
 		},
 		"postindustria": {
-			"test_exit_point_hook": test_exit_point_hook.Builder,
+			"exit_point_demo": exit_point_demo.Builder,
 		},
 	}
 }
