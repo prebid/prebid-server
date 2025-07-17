@@ -53,7 +53,7 @@
           },
           "ext": {
             "bidder": {
-              "organizationId": "1002",
+              "organizationId": "1000",
               "placement": "some-placement",
               "pagetype": "some-pagetype",
               "category": "some-category"
@@ -135,7 +135,7 @@
                 },
                 "ext": {
                   "bidder": {
-                    "organizationId": "1002",
+                    "organizationId": "1000",
                     "placement": "some-placement",
                     "pagetype": "some-pagetype",
                     "category": "some-category"

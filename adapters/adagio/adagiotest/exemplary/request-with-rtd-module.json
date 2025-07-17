@@ -1,0 +1,235 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "site": {
+      "domain": "test.com",
+      "page": "test.com/some-page.html",
+      "publisher": {
+        "id": "123456789",
+        "domain": "test.com"
+      },
+      "ext": {
+        "data": {
+          "pagetype": "my-pagetype-from-ortb2-site-ext-data",
+          "category": "my-category-from-ortb2-site-ext-data",
+          "adg_rtd": {
+            "uid": "some-uid",
+            "pageviewId": "some-pageviewId",
+            "features": {
+              "page_dimensions": "1512x371",
+              "viewport_dimensions": "1512x371",
+              "user_timestamp": "1742463886",
+              "dom_loading": "23"
+            },
+            "session": {
+              "rnd": 0.9089453747025482,
+              "pages": 4,
+              "new": false,
+              "vwSmplg": 0.1,
+              "vwSmplgNxt": 0.1,
+              "expiry": 1742462010772,
+              "lastActivityTime": 1742460286113,
+              "id": "some-id",
+              "testName": "some-name",
+              "testVersion": "some-version"
+            }
+          }
+        }
+      }
+    },
+    "source": {
+      "tid": "some-tid"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "organizationId": "1000",
+            "placement": "some-placement",
+            "site": "test-com",
+            "pagetype": "some-pagetype",
+            "category": "some-category"
+          },
+          "data": {
+            "divId": "divId-from-ortb2Imp-ext-data",
+            "placement": "my-placement-from-ortb2Imp-ext-data",
+            "adg_rtd": {
+              "adunit_position": "8x138"
+            }
+          },
+          "gpid": "gpid#123"
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "uri": "https://mp-ams.4dex.io/pbserver",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "tmax": 1000,
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "site": {
+            "domain": "test.com",
+            "page": "test.com/some-page.html",
+            "publisher": {
+              "id": "123456789",
+              "domain": "test.com"
+            },
+            "ext": {
+              "data": {
+                "pagetype": "my-pagetype-from-ortb2-site-ext-data",
+                "category": "my-category-from-ortb2-site-ext-data",
+                "adg_rtd": {
+                  "uid": "some-uid",
+                  "pageviewId": "some-pageviewId",
+                  "features": {
+                    "page_dimensions": "1512x371",
+                    "viewport_dimensions": "1512x371",
+                    "user_timestamp": "1742463886",
+                    "dom_loading": "23"
+                  },
+                  "session": {
+                    "rnd": 0.9089453747025482,
+                    "pages": 4,
+                    "new": false,
+                    "vwSmplg": 0.1,
+                    "vwSmplgNxt": 0.1,
+                    "expiry": 1742462010772,
+                    "lastActivityTime": 1742460286113,
+                    "id": "some-id",
+                    "testName": "some-name",
+                    "testVersion": "some-version"
+                  }
+                }
+              }
+            }
+          },
+          "source": {
+            "tid": "some-tid"
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "organizationId": "1000",
+                  "placement": "some-placement",
+                  "site": "test-com",
+                  "pagetype": "some-pagetype",
+                  "category": "some-category"
+                },
+                "data": {
+                  "divId": "divId-from-ortb2Imp-ext-data",
+                  "placement": "my-placement-from-ortb2Imp-ext-data",
+                  "adg_rtd": {
+                    "adunit_position": "8x138"
+                  }
+                },
+                "gpid": "gpid#123"
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ],
+              "type": "banner",
+              "seat": "adagio"
+            }
+          ],
+          "cur": "USD",
+          "ext": {
+            "responsetimemillis": {
+              "adagio": 154
+            },
+            "tmaxrequest": 1000
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "seat": "adagio",
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
