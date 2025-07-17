@@ -2765,11 +2765,7 @@ func TestS2SBidderConfigExtraction(t *testing.T) {
 													"score": "90",
 													"gptP": [
 														{
-															"p": {"x": 8, "y": 152},
-															"v": true,
-															"a": "/19968336/header-bid-tag-0",
-															"s": "/19968336/header-bid-tag-0",
-															"t": "div"
+															"gpt": 1
 														}
 													],
 													"rand": 66.70383102561092
