@@ -41,6 +41,14 @@ func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRe
 	return seatBids, extraBidderRespInfo, errs
 }
 
+func (v *validatedBidder) logHealthCheck(success bool) {
+	v.bidder.logHealthCheck(success)
+}
+
+func (v *validatedBidder) shouldRequest() bool {
+	return v.bidder.shouldRequest()
+}
+
 // validateBids will run some validation checks on the returned bids and excise any invalid bids
 func removeInvalidBids(request *openrtb2.BidRequest, seatBid *entities.PbsOrtbSeatBid, debug bool) []error {
 	// Exit early if there is nothing to do.
