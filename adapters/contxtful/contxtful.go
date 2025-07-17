@@ -22,7 +22,7 @@ const (
 	BidderName     = "contxtful"
 	DefaultVersion = "v1"
 	FieldBidder    = "bidder"
-	PbsPath     = "/pbs/"
+	PbsPath        = "/pbs/"
 )
 
 // Helper to safely extract bidder parameters from impression extension
@@ -40,7 +40,7 @@ func extractBidderParams(impExt json.RawMessage) (*openrtb_ext.ExtImpContxtful, 
 	return &contxtfulParams, nil
 }
 
-type Adapter struct {
+type adapter struct {
 	endpointTemplate *template.Template
 }
 
@@ -57,7 +57,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	return &Adapter{
+	return &adapter{
 		endpointTemplate: endpointTemplate,
 	}, nil
 }
@@ -93,7 +93,7 @@ func validateImpressions(request *openrtb2.BidRequest) ([]string, string, []erro
 	return validPlacements, customerId, errors
 }
 
-func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 
 	// Build headers efficiently
@@ -256,7 +256,7 @@ type BidProcessingContext struct {
 
 // Response format handlers
 // Direct response processing without over-engineered handler pattern
-func (a *Adapter) processResponse(responseBody []byte, ctx *BidProcessingContext) bool {
+func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext) bool {
 	// Extract configuration from various sources with priority
 	config, err := extractRequestConfig(ctx.requestData, ctx.request, ctx.bidderCustomerId)
 	if err != nil {
@@ -286,7 +286,7 @@ func (a *Adapter) processResponse(responseBody []byte, ctx *BidProcessingContext
 	return false
 }
 
-func (a *Adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *BidProcessingContext, customerId string) bool {
+func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *BidProcessingContext, customerId string) bool {
 	for _, prebidBid := range prebidBids {
 		if prebidBid.CPM == 0 || prebidBid.RequestID == "" {
 			continue
@@ -311,7 +311,7 @@ func (a *Adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *Bi
 	return true
 }
 
-func (a *Adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
@@ -347,7 +347,7 @@ func (a *Adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 // Simplified bid creation with fewer parameters
-func (a *Adapter) createBid(
+func (a *adapter) createBid(
 	impID, creativeID, adMarkup string,
 	price float64,
 	width, height int,
@@ -395,7 +395,7 @@ func (a *Adapter) createBid(
 	ctx.bidderResponse.Bids = append(ctx.bidderResponse.Bids, typedBid)
 }
 
-func (a *Adapter) handleUserSyncs(syncs []string, ctx *BidProcessingContext) {
+func (a *adapter) handleUserSyncs(syncs []string, ctx *BidProcessingContext) {
 	if len(syncs) == 0 || len(ctx.bidderResponse.Bids) == 0 {
 		return
 	}
