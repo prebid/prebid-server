@@ -1,0 +1,25 @@
+{
+  "id": "test-request-id",
+  "imp": [
+    {
+      "id": "test-imp-id",
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          }
+        ]
+      },
+      "ext": {
+        "bidder": {
+          "placement_id": "test-placement"
+        }
+      }
+    }
+  ],
+  "site": {
+    "page": "https://example.com",
+    "domain": "example.com"
+  }
+}
