@@ -163,22 +163,6 @@ func createTestOpenRTBRequest(t *testing.T) *openrtb2.BidRequest {
 				"bidderconfig": [{
 					"bidders": ["pubmatic"],
 					"config": {
-						"ortb2": {
-							"user": {
-								"data": [{
-									"name": "contxtful",
-									"ext": {
-										"events": "eyJ1aSI6eyJwb3NpdGlvbiI6eyJ4Ijo3Ny43OTY4NzUsInkiOjkyLjI5Mjk2ODc1LCJ0aW1lc3RhbXBNcyI6NDQ3MDQuMzAwMDAwMDExOTJ9LCJzY3JlZW4iOnsidG9wTGVmdCI6eyJ4IjowLCJ5IjowfSwid2lkdGgiOjIwMzQsImhlaWdodCI6MzQ0LCJ0aW1lc3RhbXBNcyI6NDUwNzMuMjAwMDAwMDE3ODh9fX0=",
-										"pos": "eyIvMTk5NjgzMzYvaGVhZGVyLWJpZC10YWctMCI6eyJwIjp7IngiOjgsInkiOjE1MX0sInYiOnRydWUsInQiOiJkaXYifSwiLzE5OTY4MzM2L2hlYWRlci1iaWQtdGFnLTEiOnsicCI6eyJ4Ijo4LCJ5Ijo0NzB9LCJ2Ijp0cnVlLCJ0IjoiZGl2In19",
-										"sm": "a68e8343-fdcb-4b51-84d6-d4ac8c9b04b8",
-										"params": {
-											"ev": "v1",
-											"ci": "1Pw320rMi1BNmV0C8TEX7LlYD"
-										}
-									}
-								}]
-							}
-						}
 					}
 				}],
 				"debug": true,
