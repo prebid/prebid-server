@@ -858,8 +858,6 @@ func TestEventTrackingConfiguration(t *testing.T) {
 	if hasVideo && video == nil {
 		t.Error("Video object should be preserved for relay processing")
 	}
-
-	t.Log("Event tracking configuration test passed - adapter preserves media types and builds proper requests for relay processing")
 }
 
 // TestCookieSyncEndpointGeneration tests cookie sync URL generation
@@ -875,8 +873,6 @@ func TestCookieSyncEndpointGeneration(t *testing.T) {
 	// Note: User sync configuration is handled through PBS bidder-info files
 	// not through adapter config. This test verifies the adapter can be built
 	// successfully for sync scenarios.
-
-	t.Log("Cookie sync endpoint configuration test passed - adapter builds successfully")
 }
 
 // TestBiddingProcessWithDifferentFormats tests bidding with various response formats
@@ -1105,8 +1101,6 @@ func TestUserSyncWithBuyerUID(t *testing.T) {
 	if buyerUID != "contxtful-v1-eyJjdXN0b21lciI6IlNZTkMxMjMiLCJ0aW1lc3RhbXAiOjE3MzQ1Njc4OTAwMDAsInBhcnRuZXJzIjp7ImFteCI6ImFteC10ZXN0In0sInZlcnNpb24iOiJ2MSJ9" {
 		t.Errorf("Expected BuyerUID 'contxtful-v1-eyJjdXN0b21lciI6IlNZTkMxMjMiLCJ0aW1lc3RhbXAiOjE3MzQ1Njc4OTAwMDAsInBhcnRuZXJzIjp7ImFteCI6ImFteC10ZXN0In0sInZlcnNpb24iOiJ2MSJ9', got '%s'", buyerUID)
 	}
-
-	t.Logf("BuyerUID correctly preserved: %s", buyerUID)
 }
 
 // TestBuyerUIDFromPrebidMap tests reading UID from request.user.ext.prebid.buyeruids.contxtful and writing to ortb2.user.buyeruid
@@ -1192,8 +1186,6 @@ func TestBuyerUIDFromPrebidMap(t *testing.T) {
 	if buyerUID != testUID {
 		t.Errorf("Expected UID from prebid buyeruids map '%s' to be written to ortb2.user.buyeruid, got '%s'", testUID, buyerUID)
 	}
-
-	t.Logf("✅ Successfully read UID from request.user.ext.prebid.buyeruids.contxtful and wrote to ortb2.user.buyeruid: %s", buyerUID)
 }
 
 // TestNoCookieHeaders tests that cookie headers are never set (we only use ortb2.user.buyeruid)
@@ -1273,8 +1265,6 @@ func TestNoCookieHeaders(t *testing.T) {
 			if cookieHeader != "" {
 				t.Errorf("Expected no Cookie header, got %s", cookieHeader)
 			}
-
-			t.Logf("✅ %s: %s", tc.name, tc.description)
 		})
 	}
 }
@@ -1444,8 +1434,6 @@ func TestBase64PartnerUIDHandling(t *testing.T) {
 	if requests[0].Uri != expectedURL {
 		t.Errorf("Expected URL %s, got %s", expectedURL, requests[0].Uri)
 	}
-
-	t.Logf("Base64 Partner UID test passed - UID: %s", encodedUID)
 }
 
 // TestBase64UIDVersioning tests different versions of Base64 encoded UIDs
@@ -1558,8 +1546,6 @@ func TestBase64UIDVersioning(t *testing.T) {
 			if !ok || buyerUID != tc.encodedUID {
 				t.Errorf("Expected UID %s to be preserved, got %s", tc.encodedUID, buyerUID)
 			}
-
-			t.Logf("%s test passed - UID preserved: %s", tc.name, buyerUID)
 		})
 	}
 }
@@ -1630,8 +1616,6 @@ func TestMultiPartnerUIDSize(t *testing.T) {
 	if !ok || buyerUID != largeUID {
 		t.Error("Large UID should be preserved in ortb2.user.buyeruid")
 	}
-
-	t.Logf("Large UID test passed - Size: %d bytes, Under limit: %t", len(largeUID), len(largeUID) <= 4096)
 }
 
 // TestPrebidJSEventTrackingURLGeneration tests NURL and BURL event tracking URL generation for Prebid.js format responses
@@ -1709,8 +1693,6 @@ func TestPrebidJSEventTrackingURLGeneration(t *testing.T) {
 	if bid.Bid.NURL == "" {
 		t.Error("NURL should be set for Prebid.js response event tracking")
 	} else {
-		t.Logf("Prebid.js NURL: %s", bid.Bid.NURL)
-
 		// Verify NURL contains all critical logging parameters
 		if !contains(bid.Bid.NURL, "pbs-impression") {
 			t.Error("NURL should contain t=win parameter")
@@ -1751,8 +1733,6 @@ func TestPrebidJSEventTrackingURLGeneration(t *testing.T) {
 	if bid.Bid.BURL == "" {
 		t.Error("BURL should be set for Prebid.js response event tracking")
 	} else {
-		t.Logf("Prebid.js BURL: %s", bid.Bid.BURL)
-
 		// Verify BURL contains all critical logging parameters
 		if !contains(bid.Bid.BURL, "pbs-billing") {
 			t.Error("BURL should contain t=billing parameter")
@@ -1862,8 +1842,6 @@ func TestPrebidJSHybridEventTrackingURLGeneration(t *testing.T) {
 	if bid.Bid.NURL == "" {
 		t.Error("NURL should be set for hybrid PrebidJS response event tracking")
 	} else {
-		t.Logf("Hybrid NURL: %s", bid.Bid.NURL)
-
 		// Verify NURL contains REAL tracking values (not fallbacks)
 		if !contains(bid.Bid.NURL, "traceId=hybrid-abc-456-def") {
 			t.Error("NURL should contain REAL traceId=hybrid-abc-456-def (not fallback 'unknown')")
@@ -1889,8 +1867,6 @@ func TestPrebidJSHybridEventTrackingURLGeneration(t *testing.T) {
 	if bid.Bid.BURL == "" {
 		t.Error("BURL should be set for hybrid PrebidJS response event tracking")
 	} else {
-		t.Logf("Hybrid BURL: %s", bid.Bid.BURL)
-
 		// Verify BURL contains REAL tracking values (not fallbacks)
 		if !contains(bid.Bid.BURL, "traceId=hybrid-abc-456-def") {
 			t.Error("BURL should contain REAL traceId=hybrid-abc-456-def (not fallback 'unknown')")
@@ -1911,8 +1887,6 @@ func TestPrebidJSHybridEventTrackingURLGeneration(t *testing.T) {
 			t.Error("BURL should contain price=3.25 parameter")
 		}
 	}
-
-	t.Logf("✅ Hybrid format test passed - Real tracking values used: traceId=hybrid-abc-456-def, random=0.987654")
 }
 
 // TestResponseFormatDetectionPriority tests the priority and accuracy of response format detection
@@ -2112,8 +2086,6 @@ func TestResponseFormatDetectionPriority(t *testing.T) {
 			if tc.validateContent != nil && bids != nil {
 				tc.validateContent(t, bids)
 			}
-
-			t.Logf("✅ %s: Format=%s, Bids=%d, Errors=%d", tc.name, tc.expectedFormat, actualBids, len(errs))
 		})
 	}
 }
@@ -2271,8 +2243,6 @@ func TestTrackingValuePropagation(t *testing.T) {
 			if !contains(bid.Bid.BURL, "pbs-billing") {
 				t.Error("BURL should contain t=billing")
 			}
-
-			t.Logf("✅ %s: All tracking values correctly propagated", tc.name)
 		})
 	}
 }
@@ -2429,7 +2399,6 @@ func TestResponseFormatEdgeCases(t *testing.T) {
 				t.Errorf("Expected %d bids, got %d", tc.expectedBids, actualBids)
 			}
 
-			t.Logf("✅ %s: %s", tc.name, tc.description)
 		})
 	}
 }
@@ -2538,10 +2507,6 @@ func TestEventURLGeneration(t *testing.T) {
 			t.Errorf("BURL missing parameter: %s\nActual BURL: %s", param, bid.Bid.BURL)
 		}
 	}
-
-	t.Logf("✅ Event URL generation test passed - All required parameters included")
-	t.Logf("   NURL: %s", bid.Bid.NURL)
-	t.Logf("   BURL: %s", bid.Bid.BURL)
 }
 
 // TestCookieFormatValidation tests various cookie format scenarios
@@ -2619,8 +2584,6 @@ func TestCookieFormatValidation(t *testing.T) {
 			if tc.expectValid && customer != tc.expectedCustomer {
 				t.Errorf("Expected customer=%s, got customer=%s", tc.expectedCustomer, customer)
 			}
-
-			t.Logf("✅ %s: %s", tc.name, tc.description)
 		})
 	}
 }
@@ -2739,8 +2702,6 @@ func TestBidRejectionScenarios(t *testing.T) {
 			if len(errs) != tc.expectedErrors {
 				t.Errorf("Expected %d errors, got %d: %v", tc.expectedErrors, len(errs), errs)
 			}
-
-			t.Logf("✅ %s: %s", tc.name, tc.description)
 		})
 	}
 }
@@ -2843,13 +2804,6 @@ func TestBidExtensionsRegression(t *testing.T) {
 	assert.NotEmpty(t, bid.BURL, "BURL should be generated for event tracking")
 	assert.Contains(t, bid.NURL, "pbs-impression", "NURL should contain win tracking parameter")
 	assert.Contains(t, bid.BURL, "pbs-billing", "BURL should contain billing tracking parameter")
-
-	t.Logf("✅ Bid extensions regression test passed")
-	t.Logf("   - Essential PBS fields present: origbidcpm, origbidcur")
-	t.Logf("   - Critical targeting fields present: hb_bidder, hb_pb, hb_size")
-	t.Logf("   - Production-ready extensions (contxtfulDebug removed)")
-	t.Logf("   - Event tracking URLs generated: NURL=%s", bid.NURL)
-	t.Logf("   - This test prevents future regression of bid extension logic")
 }
 
 // TestS2SBidderConfigExtraction tests extraction of rich bidder config data from S2S payloads
@@ -3066,14 +3020,6 @@ func TestS2SBidderConfigExtraction(t *testing.T) {
 
 	// The relay will extract rich Contxtful data from bidderconfig directly
 	// We don't need to merge it - simpler and more like other bidders
-
-	t.Logf("✅ S2S Bidder Config Extraction test passed (SIMPLIFIED APPROACH)")
-	t.Logf("   - Bidder config version: %v (priority over default)", contxtfulConfig["version"])
-	t.Logf("   - Bidder config customer: %v (priority over impression params)", contxtfulConfig["customer"])
-	t.Logf("   - Endpoint URL: %s (uses bidder config customer)", requests[0].Uri)
-	t.Logf("   - Original ortb2 data preserved as-is (no complex merging)")
-	t.Logf("   - Rich bidder config data available in ext.prebid.bidderconfig for relay processing")
-	t.Logf("   - Simple passthrough approach like other bidders - relay handles data extraction")
 }
 
 // TestMissingCustomerIDHandling tests that MakeBids fails fast when customer ID is missing
@@ -3138,8 +3084,6 @@ func TestMissingCustomerIDHandling(t *testing.T) {
 	if len(errs) == 0 {
 		t.Error("Expected error when customer ID is missing, but got none")
 	} else {
-		t.Logf("Correctly returned error: %v", errs[0])
-
 		// Verify it's the right type of error
 		expectedError := "No customer ID found in request URI, bidder config, or impression parameters"
 		if !contains(errs[0].Error(), expectedError) {
@@ -3152,10 +3096,6 @@ func TestMissingCustomerIDHandling(t *testing.T) {
 		t.Errorf("Expected no bids when customer ID missing, got %d bids", len(bids.Bids))
 	}
 
-	t.Logf("✅ Missing customer ID handling test passed")
-	t.Logf("   - MakeBids fails fast when no customer ID found")
-	t.Logf("   - No invalid endpoints like '/v1/pbs/unknown' or '/v1/pbs//pbs-event'")
-	t.Logf("   - Proper error handling prevents malformed requests")
 }
 
 // TestCustomerIDFromURIExtraction tests that customer ID is correctly extracted from request URI
@@ -3239,8 +3179,6 @@ func TestCustomerIDFromURIExtraction(t *testing.T) {
 	if bid.Bid.NURL == "" {
 		t.Error("NURL should be generated when customer ID is available from URI")
 	} else {
-		t.Logf("NURL: %s", bid.Bid.NURL)
-
 		// Should contain customer ID from URI
 		if !contains(bid.Bid.NURL, "/v1/pbs/URITEST123/pbs-impression") {
 			t.Error("NURL should contain customer ID extracted from URI (URITEST123)")
@@ -3261,12 +3199,6 @@ func TestCustomerIDFromURIExtraction(t *testing.T) {
 			t.Error("BURL should contain customer ID extracted from URI (URITEST123)")
 		}
 	}
-
-	t.Logf("✅ Customer ID from URI extraction test passed")
-	t.Logf("   - Customer ID correctly extracted from request URI: URITEST123")
-	t.Logf("   - Event URLs generated successfully: %s", bid.Bid.NURL)
-	t.Logf("   - Win tracking preserved even when bid request data is cleaned up")
-	t.Logf("   - This ensures reliable event tracking in all scenarios")
 }
 
 // TestEventURLGenerationNoDoubleSlash tests that event URLs never have double slashes with URI extraction
@@ -3394,15 +3326,8 @@ func TestEventURLGenerationNoDoubleSlash(t *testing.T) {
 			if !contains(bid.Bid.NURL, expectedCustomerParam) {
 				t.Errorf("NURL should contain %s", expectedCustomerParam)
 			}
-
-			t.Logf("✅ %s: No double slashes - %s", tc.name, bid.Bid.NURL)
 		})
 	}
-
-	t.Logf("✅ Event URL generation without double slash test passed")
-	t.Logf("   - All URLs properly formatted with single slashes")
-	t.Logf("   - Customer ID correctly extracted from request URI in all scenarios")
-	t.Logf("   - Win tracking URLs generated reliably regardless of endpoint configuration")
 }
 
 // TestNURLBURLFromPrebidJSResponse tests NURL/BURL extraction from PrebidJS format responses
@@ -4107,6 +4032,4 @@ func TestPBSVersionInPayload(t *testing.T) {
 	if pbsVersion != testVersion {
 		t.Errorf("Expected PBS version '%s', got '%s'", testVersion, pbsVersion)
 	}
-
-	t.Logf("PBS version correctly included at top level: %s", pbsVersion)
 }
