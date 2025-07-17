@@ -11,10 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	relayTestEndpoint = "https://test-prebid-my-bidder.contxtful.workers.dev"
-)
-
 // TestContxtfulRelay tests that the adapter correctly transforms input OpenRTB requests
 // to the expected format for the Contxtful relay endpoint
 func TestContxtfulRelay(t *testing.T) {
