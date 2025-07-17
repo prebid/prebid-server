@@ -13,8 +13,6 @@ import (
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
-const fiveMinutes = time.Duration(300) * time.Second
-
 // Builder configures the rules engine module initiating an in-memory cache and kicking
 // off a go routine that builds tree structures that represent rule sets optimized for finding
 // a rule to applies for a given request.
@@ -105,21 +103,23 @@ func (m Module) Shutdown() {
 
 // rebuildTrees returns true if the trees for this account need to be rebuilt; false otherwise
 func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage) bool {
-	if !expired(&timeutil.RealTime{}, co.timestamp) {
+	if co.refreshRateSeconds <= 0 {
+		return false
+	}
+
+	if !expired(&timeutil.RealTime{}, co) {
 		return false
 	}
 	return configChanged(co.hashedConfig, jsonConfig)
 }
 
 // expired returns true if the refresh time has expired; false otherwise
-func expired(t timeutil.Time, ts time.Time) bool {
+func expired(t timeutil.Time, co *cacheEntry) bool {
 	currentTime := t.Now().UTC()
 
-	delta := currentTime.Sub(ts.UTC())
-	if delta.Seconds() > fiveMinutes.Seconds() {
-		return true
-	}
-	return false
+	delta := currentTime.Sub(co.timestamp.UTC())
+	freq := time.Duration(co.refreshRateSeconds) * time.Second
+	return delta.Seconds() > freq.Seconds()
 }
 
 // configChanged hashes the raw JSON config comparing it with the old hash returning
