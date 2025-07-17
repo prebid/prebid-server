@@ -1,0 +1,13 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": []
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No valid impressions for grid",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls":[]
+}
