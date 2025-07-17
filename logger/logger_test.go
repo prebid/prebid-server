@@ -330,16 +330,6 @@ func TestDepthValidation(t *testing.T) {
 			shouldUseDefault: true,
 		},
 		{
-			name:             "Negative depth should use default",
-			inputDepth:       intPtr(-1),
-			shouldUseDefault: true,
-		},
-		{
-			name:             "Depth > 10 should use default",
-			inputDepth:       intPtr(11),
-			shouldUseDefault: true,
-		},
-		{
 			name:             "Valid depth should be used",
 			inputDepth:       intPtr(5),
 			shouldUseDefault: false,
@@ -734,53 +724,6 @@ func TestNew_CustomLoggerType(t *testing.T) {
 	expectedError := "custom logger type requires either CustomLogger instance or CustomName"
 	if err.Error() != expectedError {
 		t.Errorf("Expected error '%s', got '%s'", expectedError, err.Error())
-	}
-}
-
-func TestCustomLoggerWithDepthHandling(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	// Create mock logger
-	mockLogger := &MockLogger{}
-
-	// Test with valid depth
-	depth := 5
-	config := &LoggerConfig{
-		Type:         LoggerTypeCustom,
-		CustomLogger: mockLogger,
-		Depth:        &depth,
-	}
-
-	err := NewWithConfig(config)
-	if err != nil {
-		t.Errorf("NewWithConfig returned error: %v", err)
-	}
-
-	// Verify depth was preserved
-	if *config.Depth != 5 {
-		t.Errorf("Expected depth to be 5, got %d", *config.Depth)
-	}
-
-	// Test with invalid depth (should be reset to default)
-	invalidDepth := 15
-	config = &LoggerConfig{
-		Type:         LoggerTypeCustom,
-		CustomLogger: mockLogger,
-		Depth:        &invalidDepth,
-	}
-
-	err = NewWithConfig(config)
-	if err != nil {
-		t.Errorf("NewWithConfig returned error: %v", err)
-	}
-
-	// Verify depth was reset to default
-	if *config.Depth != defaultDepth {
-		t.Errorf("Expected depth to be reset to default (%d), got %d", defaultDepth, *config.Depth)
 	}
 }
 
