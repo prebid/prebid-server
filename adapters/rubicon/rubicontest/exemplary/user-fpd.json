@@ -18,60 +18,6 @@
         "lon": -122.346200
       },
       "gender": "f",
-      "data": [
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "someValue"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "4"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": [
-              4
-            ]
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied3"
-            }
-          ]
-        }
-      ],
       "keywords": "someKeywords",
       "ext": {
         "rp": {
@@ -157,60 +103,6 @@
             }
           },
           "user": {
-            "data": [
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "someValue"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "4"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": [
-                    4
-                  ]
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied3"
-                  }
-                ]
-              }
-            ],
             "ext": {
               "rp": {
                 "target": {
@@ -224,10 +116,6 @@
                   ],
                   "dataKey3": [
                     "true"
-                  ],
-                  "iab": [
-                    "idToCopy",
-                    "idToCopy2"
                   ]
                 }
               }
