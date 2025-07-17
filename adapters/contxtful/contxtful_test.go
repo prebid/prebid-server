@@ -1629,8 +1629,8 @@ func TestPrebidJSEventTrackingURLGeneration(t *testing.T) {
 	}
 
 	// Test with Prebid.js format response (with tracking fields from relay)
-	nurl := "https://monitoring.receptivity.dev/v1/pbs/PJSEVNT123/pbs-impression?b=contxtful-test-prebidjs-events&a=PJSEVNT123&bidder=contxtful&impId=test-prebidjs-events&price=2.75&traceId=prebidjs-trace-abc-789&random=0.654321&domain=prebidjs.example.com&adRequestId=prebidjs-req-456&w=300&h=250&f=b"
-	burl := "https://monitoring.receptivity.dev/v1/pbs/PJSEVNT123/pbs-billing?b=contxtful-test-prebidjs-events&a=PJSEVNT123&bidder=contxtful&impId=test-prebidjs-events&price=2.75&traceId=prebidjs-trace-abc-789&random=0.654321&domain=prebidjs.example.com&adRequestId=prebidjs-req-456&w=300&h=250&f=b"
+	nurl := "https://monitoring.receptivity.io/v1/pbs/PJSEVNT123/pbs-impression?b=contxtful-test-prebidjs-events&a=PJSEVNT123&bidder=contxtful&impId=test-prebidjs-events&price=2.75&traceId=prebidjs-trace-abc-789&random=0.654321&domain=prebidjs.example.com&adRequestId=prebidjs-req-456&w=300&h=250&f=b"
+	burl := "https://monitoring.receptivity.io/v1/pbs/PJSEVNT123/pbs-billing?b=contxtful-test-prebidjs-events&a=PJSEVNT123&bidder=contxtful&impId=test-prebidjs-events&price=2.75&traceId=prebidjs-trace-abc-789&random=0.654321&domain=prebidjs.example.com&adRequestId=prebidjs-req-456&w=300&h=250&f=b"
 
 	responseJSON := fmt.Sprintf(`[{
 		"cpm": 2.75,
@@ -1795,8 +1795,8 @@ func TestPrebidJSHybridEventTrackingURLGeneration(t *testing.T) {
 		"bidderCode": "contxtful",
 		"traceId": "hybrid-abc-456-def",
 		"random": 0.9876543,
-		"nurl": "https://monitoring.receptivity.dev/v1/pbs/HYBEVNT123/pbs-impression?b=contxtful-test-hybrid-events&a=HYBEVNT123&bidder=contxtful&impId=test-hybrid-events&price=3.25&traceId=hybrid-abc-456-def&random=0.987654&domain=hybrid.example.com&adRequestId=hybrid-req-789&w=728&h=90&f=b",
-		"burl": "https://monitoring.receptivity.dev/v1/pbs/HYBEVNT123/pbs-billing?b=contxtful-test-hybrid-events&a=HYBEVNT123&bidder=contxtful&impId=test-hybrid-events&price=3.25&traceId=hybrid-abc-456-def&random=0.987654&domain=hybrid.example.com&adRequestId=hybrid-req-789&w=728&h=90&f=b"
+		"nurl": "https://monitoring.receptivity.io/v1/pbs/HYBEVNT123/pbs-impression?b=contxtful-test-hybrid-events&a=HYBEVNT123&bidder=contxtful&impId=test-hybrid-events&price=3.25&traceId=hybrid-abc-456-def&random=0.987654&domain=hybrid.example.com&adRequestId=hybrid-req-789&w=728&h=90&f=b",
+		"burl": "https://monitoring.receptivity.io/v1/pbs/HYBEVNT123/pbs-billing?b=contxtful-test-hybrid-events&a=HYBEVNT123&bidder=contxtful&impId=test-hybrid-events&price=3.25&traceId=hybrid-abc-456-def&random=0.987654&domain=hybrid.example.com&adRequestId=hybrid-req-789&w=728&h=90&f=b"
 	}]`
 
 	response := &adapters.ResponseData{
@@ -1936,8 +1936,8 @@ func TestResponseFormatDetectionPriority(t *testing.T) {
 				"netRevenue": true,
 				"traceId": "pure-detection-trace-xyz",
 				"random": 0.333777,
-				"nurl": "https://monitoring.receptivity.dev/v1/pbs/FMTTEST/pbs-impression?b=contxtful-test-prebidjs-pure&a=FMTTEST&bidder=contxtful&impId=test-prebidjs-pure&price=2.50&traceId=pure-detection-trace-xyz&random=0.333777&domain=&adRequestId=format-detection-test&w=300&h=250&f=b",
-				"burl": "https://monitoring.receptivity.dev/v1/pbs/FMTTEST/pbs-billing?b=contxtful-test-prebidjs-pure&a=FMTTEST&bidder=contxtful&impId=test-prebidjs-pure&price=2.50&traceId=pure-detection-trace-xyz&random=0.333777&domain=&adRequestId=format-detection-test&w=300&h=250&f=b"
+				"nurl": "https://monitoring.receptivity.io/v1/pbs/FMTTEST/pbs-impression?b=contxtful-test-prebidjs-pure&a=FMTTEST&bidder=contxtful&impId=test-prebidjs-pure&price=2.50&traceId=pure-detection-trace-xyz&random=0.333777&domain=&adRequestId=format-detection-test&w=300&h=250&f=b",
+				"burl": "https://monitoring.receptivity.io/v1/pbs/FMTTEST/pbs-billing?b=contxtful-test-prebidjs-pure&a=FMTTEST&bidder=contxtful&impId=test-prebidjs-pure&price=2.50&traceId=pure-detection-trace-xyz&random=0.333777&domain=&adRequestId=format-detection-test&w=300&h=250&f=b"
 			}]`,
 			expectedFormat: "PrebidJS",
 			expectedBids:   1,
@@ -1971,8 +1971,8 @@ func TestResponseFormatDetectionPriority(t *testing.T) {
 				"netRevenue": true,
 				"traceId": "hybrid-trace-123-abc",
 				"random": 0.8765432,
-				"nurl": "https://monitoring.receptivity.dev/v1/pbs/FMTTEST/pbs-impression?b=contxtful-test-hybrid-format&a=FMTTEST&bidder=contxtful&impId=test-hybrid-format&price=3.75&traceId=hybrid-trace-123-abc&random=0.876543&domain=&adRequestId=format-detection-test&w=728&h=90&f=b",
-				"burl": "https://monitoring.receptivity.dev/v1/pbs/FMTTEST/pbs-billing?b=contxtful-test-hybrid-format&a=FMTTEST&bidder=contxtful&impId=test-hybrid-format&price=3.75&traceId=hybrid-trace-123-abc&random=0.876543&domain=&adRequestId=format-detection-test&w=728&h=90&f=b"
+				"nurl": "https://monitoring.receptivity.io/v1/pbs/FMTTEST/pbs-impression?b=contxtful-test-hybrid-format&a=FMTTEST&bidder=contxtful&impId=test-hybrid-format&price=3.75&traceId=hybrid-trace-123-abc&random=0.876543&domain=&adRequestId=format-detection-test&w=728&h=90&f=b",
+				"burl": "https://monitoring.receptivity.io/v1/pbs/FMTTEST/pbs-billing?b=contxtful-test-hybrid-format&a=FMTTEST&bidder=contxtful&impId=test-hybrid-format&price=3.75&traceId=hybrid-trace-123-abc&random=0.876543&domain=&adRequestId=format-detection-test&w=728&h=90&f=b"
 			}]`,
 			expectedFormat: "PrebidJS",
 			expectedBids:   1,
@@ -2123,8 +2123,8 @@ func TestTrackingValuePropagation(t *testing.T) {
 				"netRevenue": true,
 				"traceId": "hybrid-trace-def-456",
 				"random": 0.123456789,
-				"nurl": "https://monitoring.receptivity.dev/v1/pbs/HYBRID123/pbs-impression?b=contxtful-tracking-imp-2&a=HYBRID123&bidder=contxtful&impId=tracking-imp-2&price=3.25&traceId=hybrid-trace-def-456&random=0.123457&domain=hybrid.tracking.com&adRequestId=hybrid-tracking-request-456&w=300&h=250&f=b",
-				"burl": "https://monitoring.receptivity.dev/v1/pbs/HYBRID123/pbs-billing?b=contxtful-tracking-imp-2&a=HYBRID123&bidder=contxtful&impId=tracking-imp-2&price=3.25&traceId=hybrid-trace-def-456&random=0.123457&domain=hybrid.tracking.com&adRequestId=hybrid-tracking-request-456&w=300&h=250&f=b"
+				"nurl": "https://monitoring.receptivity.io/v1/pbs/HYBRID123/pbs-impression?b=contxtful-tracking-imp-2&a=HYBRID123&bidder=contxtful&impId=tracking-imp-2&price=3.25&traceId=hybrid-trace-def-456&random=0.123457&domain=hybrid.tracking.com&adRequestId=hybrid-tracking-request-456&w=300&h=250&f=b",
+				"burl": "https://monitoring.receptivity.io/v1/pbs/HYBRID123/pbs-billing?b=contxtful-tracking-imp-2&a=HYBRID123&bidder=contxtful&impId=tracking-imp-2&price=3.25&traceId=hybrid-trace-def-456&random=0.123457&domain=hybrid.tracking.com&adRequestId=hybrid-tracking-request-456&w=300&h=250&f=b"
 			}]`,
 			requestID: "hybrid-tracking-request-456",
 			domain:    "hybrid.tracking.com",
@@ -2155,8 +2155,8 @@ func TestTrackingValuePropagation(t *testing.T) {
 				"netRevenue": true,
 				"traceId": "pure-trace-ghi-789",
 				"random": 0.444555,
-				"nurl": "https://monitoring.receptivity.dev/v1/pbs/PURE123/pbs-impression?b=contxtful-tracking-imp-3&a=PURE123&bidder=contxtful&impId=tracking-imp-3&price=1.85&traceId=pure-trace-ghi-789&random=0.444555&domain=pure.tracking.com&adRequestId=pure-tracking-request-789&w=320&h=50&f=b",
-				"burl": "https://monitoring.receptivity.dev/v1/pbs/PURE123/pbs-billing?b=contxtful-tracking-imp-3&a=PURE123&bidder=contxtful&impId=tracking-imp-3&price=1.85&traceId=pure-trace-ghi-789&random=0.444555&domain=pure.tracking.com&adRequestId=pure-tracking-request-789&w=320&h=50&f=b"
+				"nurl": "https://monitoring.receptivity.io/v1/pbs/PURE123/pbs-impression?b=contxtful-tracking-imp-3&a=PURE123&bidder=contxtful&impId=tracking-imp-3&price=1.85&traceId=pure-trace-ghi-789&random=0.444555&domain=pure.tracking.com&adRequestId=pure-tracking-request-789&w=320&h=50&f=b",
+				"burl": "https://monitoring.receptivity.io/v1/pbs/PURE123/pbs-billing?b=contxtful-tracking-imp-3&a=PURE123&bidder=contxtful&impId=tracking-imp-3&price=1.85&traceId=pure-trace-ghi-789&random=0.444555&domain=pure.tracking.com&adRequestId=pure-tracking-request-789&w=320&h=50&f=b"
 			}]`,
 			requestID: "pure-tracking-request-789",
 			domain:    "pure.tracking.com",
@@ -2455,8 +2455,8 @@ func TestEventURLGeneration(t *testing.T) {
 		"bidderCode": "contxtful",
 		"traceId": "event-trace-789",
 		"random": 0.123456789,
-		"nurl": "https://monitoring.receptivity.dev/v1/pbs/EVNTTEST123/pbs-impression?b=contxtful-test-imp-event&a=EVNTTEST123&bidder=contxtful&impId=test-imp-event&price=1.25&traceId=event-trace-789&random=0.123457&domain=example.com&adRequestId=event-url-test&w=300&h=250&f=b",
-		"burl": "https://monitoring.receptivity.dev/v1/pbs/EVNTTEST123/pbs-billing?b=contxtful-test-imp-event&a=EVNTTEST123&bidder=contxtful&impId=test-imp-event&price=1.25&traceId=event-trace-789&random=0.123457&domain=example.com&adRequestId=event-url-test&w=300&h=250&f=b"
+		"nurl": "https://monitoring.receptivity.io/v1/pbs/EVNTTEST123/pbs-impression?b=contxtful-test-imp-event&a=EVNTTEST123&bidder=contxtful&impId=test-imp-event&price=1.25&traceId=event-trace-789&random=0.123457&domain=example.com&adRequestId=event-url-test&w=300&h=250&f=b",
+		"burl": "https://monitoring.receptivity.io/v1/pbs/EVNTTEST123/pbs-billing?b=contxtful-test-imp-event&a=EVNTTEST123&bidder=contxtful&impId=test-imp-event&price=1.25&traceId=event-trace-789&random=0.123457&domain=example.com&adRequestId=event-url-test&w=300&h=250&f=b"
 	}]`
 
 	response := &adapters.ResponseData{
@@ -2749,8 +2749,8 @@ func TestBidExtensionsRegression(t *testing.T) {
 		"currency": "USD",
 		"mediaType": "banner",
 		"bidderCode": "contxtful",
-		"nurl": "https://monitoring.receptivity.dev/v1/pbs/EXTTEST123/pbs-impression?b=contxtful-test-imp-extensions&a=EXTTEST123&bidder=contxtful&impId=test-imp-extensions&price=2.85&traceId=extension-test-trace-123&random=0.789123&domain=extensions.example.com&adRequestId=extension-test-request&w=300&h=250&f=b",
-		"burl": "https://monitoring.receptivity.dev/v1/pbs/EXTTEST123/pbs-billing?b=contxtful-test-imp-extensions&a=EXTTEST123&bidder=contxtful&impId=test-imp-extensions&price=2.85&traceId=extension-test-trace-123&random=0.789123&domain=extensions.example.com&adRequestId=extension-test-request&w=300&h=250&f=b"
+		"nurl": "https://monitoring.receptivity.io/v1/pbs/EXTTEST123/pbs-impression?b=contxtful-test-imp-extensions&a=EXTTEST123&bidder=contxtful&impId=test-imp-extensions&price=2.85&traceId=extension-test-trace-123&random=0.789123&domain=extensions.example.com&adRequestId=extension-test-request&w=300&h=250&f=b",
+		"burl": "https://monitoring.receptivity.io/v1/pbs/EXTTEST123/pbs-billing?b=contxtful-test-imp-extensions&a=EXTTEST123&bidder=contxtful&impId=test-imp-extensions&price=2.85&traceId=extension-test-trace-123&random=0.789123&domain=extensions.example.com&adRequestId=extension-test-request&w=300&h=250&f=b"
 	}]`
 
 	responseData := &adapters.ResponseData{
