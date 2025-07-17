@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"encoding/base64"
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -391,12 +390,10 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 				{
 					"name": "contxtful",
 					"ext": {
-						"events": "eyJ1aSI6eyJwb3NpdGlvbiI6eyJ4IjoyMTYuODk0NTMxMjUsInkiOjMyMy4xNDg0Mzc1LCJ0aW1lc3RhbXBNcyI6NzQyLjU5OTk5OTk2NDIzNzJ9LCJzY3JlZW4iOnsidG9wTGVmdCI6eyJ4IjowLCJ5Ijo0MjV9LCJ3aWR0aCI6MTMxNiwiaGVpZ2h0Ijo0NzcsInRpbWVzdGFtcE1zIjo3NDYuODAwMDAwMDExOTIwOX19fQ==",
-						"pos": "eyJvYm94YWRzLWhlYWRlci0yIjp7InAiOnsieCI6NjU4LCJ5IjoxMDM0fSwidiI6dHJ1ZSwidCI6ImRpdiJ9fQ==",
 						"sm": null,
 						"params": {
 							"ev": "v1",
-							"ci": "MTKP241212"
+							"ci": "ABCD123456"
 						},
 						"rx": {
 							"ReceptivityState": "NonReceptive",
@@ -404,34 +401,7 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 							"score": "4",
 							"gptP": [
 								{
-									"p": {
-										"x": 8,
-										"y": -991
-									},
-									"v": true,
-									"a": "/139271940/example>fr/example_site:oop-1",
-									"s": "oboxads-oop-1",
-									"t": "div"
-								},
-								{
-									"p": {
-										"x": 508,
-										"y": 133
-									},
-									"v": true,
-									"a": "/139271940/example>fr/example_site:header-1",
-									"s": "oboxads-header-1",
-									"t": "div"
-								},
-								{
-									"p": {
-										"x": 658,
-										"y": 1034
-									},
-									"v": true,
-									"a": "/139271940/example>fr/example_site:header-2",
-									"s": "oboxads-header-2",
-									"t": "div"
+									"gpt": 1
 								}
 							],
 							"rand": 64.15681135773268
@@ -456,7 +426,7 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 	request.Imp[0].Ext = json.RawMessage(`{
 		"bidder": {
 			"placementId": "test-placement-real", 
-			"customerId": "MTKP241212"
+			"customerId": "ABCD123456"
 		},
 		"data": {
 			"adserver": {
@@ -609,8 +579,8 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 		t.Fatal("Contxtful data should have params in ext")
 	}
 
-	if params["ci"] != "MTKP241212" {
-		t.Error("Contxtful params should include correct customer ID (MTKP241212)")
+	if params["ci"] != "ABCD123456" {
+		t.Error("Contxtful params should include correct customer ID (ABCD123456)")
 	}
 
 	if params["ev"] != "v1" {
@@ -629,15 +599,6 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 
 	if rx["score"] != "4" {
 		t.Error("Receptivity score should be '4'")
-	}
-
-	// Verify events and position data exist (base64 encoded)
-	if contxtfulExt["events"] == nil {
-		t.Error("Contxtful data should have events data")
-	}
-
-	if contxtfulExt["pos"] == nil {
-		t.Error("Contxtful data should have position data")
 	}
 
 	// Verify device data preservation (real-world structure)
@@ -1058,7 +1019,7 @@ func TestUserSyncWithBuyerUID(t *testing.T) {
 			"ext": {"bidder": {"placementId": "sync-test", "customerId": "SYNC123"}}
 		}],
 		"user": {
-			"buyeruid": "contxtful-v1-eyJjdXN0b21lciI6IlNZTkMxMjMiLCJ0aW1lc3RhbXAiOjE3MzQ1Njc4OTAwMDAsInBhcnRuZXJzIjp7ImFteCI6ImFteC10ZXN0In0sInZlcnNpb24iOiJ2MSJ9"
+			"buyeruid": "contxtful-v1-1234"
 		}
 	}`
 
@@ -1098,8 +1059,8 @@ func TestUserSyncWithBuyerUID(t *testing.T) {
 		t.Error("User BuyerUID should be preserved in payload")
 	}
 
-	if buyerUID != "contxtful-v1-eyJjdXN0b21lciI6IlNZTkMxMjMiLCJ0aW1lc3RhbXAiOjE3MzQ1Njc4OTAwMDAsInBhcnRuZXJzIjp7ImFteCI6ImFteC10ZXN0In0sInZlcnNpb24iOiJ2MSJ9" {
-		t.Errorf("Expected BuyerUID 'contxtful-v1-eyJjdXN0b21lciI6IlNZTkMxMjMiLCJ0aW1lc3RhbXAiOjE3MzQ1Njc4OTAwMDAsInBhcnRuZXJzIjp7ImFteCI6ImFteC10ZXN0In0sInZlcnNpb24iOiJ2MSJ9', got '%s'", buyerUID)
+	if buyerUID != "contxtful-v1-1234" {
+		t.Errorf("Expected BuyerUID 'contxtful-v1-1234', got '%s'", buyerUID)
 	}
 }
 
@@ -1234,7 +1195,7 @@ func TestNoCookieHeaders(t *testing.T) {
 			requestJSON: `{
 				"id": "test-no-cookie-base64",
 				"imp": [{"id": "test-imp", "banner": {"format": [{"w": 300, "h": 250}]}, "ext": {"bidder": {"placementId": "test-placement", "customerId": "NOCOOKIE123"}}}],
-				"user": {"buyeruid": "contxtful-v1-eyJjdXN0b21lciI6Ik5PQ09PS0lFMTIzIiwidGltZXN0YW1wIjoxNzM0NTY3ODkwMDAwLCJwYXJ0bmVycyI6eyJhbXgiOiJhbXgtdGVzdCJ9LCJ2ZXJzaW9uIjoidjEifQ=="}
+				"user": {"buyeruid": "contxtful-v1-1234"}
 			}`,
 			description: "Base64 encoded UID should not generate cookie headers",
 		},
@@ -2509,85 +2470,6 @@ func TestEventURLGeneration(t *testing.T) {
 	}
 }
 
-// TestCookieFormatValidation tests various cookie format scenarios
-func TestCookieFormatValidation(t *testing.T) {
-	testCases := []struct {
-		name             string
-		cookie           string
-		expectValid      bool
-		expectedCustomer string
-		description      string
-	}{
-		{
-			name:             "Valid v1 Base64 format",
-			cookie:           "contxtful-v1-eyJjdXN0b21lciI6IkNUWFAyNDExMjciLCJ0aW1lc3RhbXAiOjE3NTEwNzcwODc0NTMsInBhcnRuZXJzIjp7fSwidmVyc2lvbiI6InYxIn0=",
-			expectValid:      true,
-			expectedCustomer: "CTXP241127",
-			description:      "Should parse valid Base64 v1 format correctly",
-		},
-		{
-			name:             "Valid v2 Base64 format (future compatibility)",
-			cookie:           "contxtful-v2-eyJjdXN0b21lciI6IkZVVFVSRTEyMyIsInRpbWVzdGFtcCI6MTc1MTA3NzA4NzQ1MywicGFydG5lcnMiOnt9LCJ2ZXJzaW9uIjoidjIifQ==",
-			expectValid:      true,
-			expectedCustomer: "FUTURE123",
-			description:      "Should handle future version formats",
-		},
-		{
-			name:             "Invalid old format (should be ignored)",
-			cookie:           "contxtful-pbs-1751077087453-5kaw9arzf",
-			expectValid:      false,
-			expectedCustomer: "",
-			description:      "Should reject old non-Base64 format",
-		},
-		{
-			name:             "Malformed Base64",
-			cookie:           "contxtful-v1-invalid-base64!@#",
-			expectValid:      false,
-			expectedCustomer: "",
-			description:      "Should handle malformed Base64 gracefully",
-		},
-		{
-			name:             "Empty cookie",
-			cookie:           "",
-			expectValid:      false,
-			expectedCustomer: "",
-			description:      "Should handle empty cookie gracefully",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Test cookie parsing logic (simplified version of what happens in real code)
-			var customer string
-			var isValid bool
-
-			if tc.cookie != "" && strings.HasPrefix(tc.cookie, "contxtful-v") {
-				parts := strings.Split(tc.cookie, "-")
-				if len(parts) >= 3 {
-					base64Part := strings.Join(parts[2:], "-")
-					if decoded, err := base64.StdEncoding.DecodeString(base64Part); err == nil {
-						var userData map[string]interface{}
-						if err := json.Unmarshal(decoded, &userData); err == nil {
-							if cust, ok := userData["customer"].(string); ok {
-								customer = cust
-								isValid = true
-							}
-						}
-					}
-				}
-			}
-
-			if isValid != tc.expectValid {
-				t.Errorf("Expected valid=%t, got valid=%t for cookie: %s", tc.expectValid, isValid, tc.cookie)
-			}
-
-			if tc.expectValid && customer != tc.expectedCustomer {
-				t.Errorf("Expected customer=%s, got customer=%s", tc.expectedCustomer, customer)
-			}
-		})
-	}
-}
-
 // TestBidRejectionScenarios tests various scenarios that should result in bid rejection
 func TestBidRejectionScenarios(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
@@ -2835,7 +2717,7 @@ func TestS2SBidderConfigExtraction(t *testing.T) {
 				"ext": {
 					"bidder": {
 						"placementId": "p101152",
-						"customerId": "CTXP241127"
+						"customerId": "ABCD123456"
 					}
 				}
 			}
@@ -2892,12 +2774,10 @@ func TestS2SBidderConfigExtraction(t *testing.T) {
 													],
 													"rand": 66.70383102561092
 												},
-												"events": "eyJ1aSI6eyJzY3JlZW4iOnsidG9wTGVmdCI6eyJ4IjowLCJ5IjowfSwid2lkdGgiOjE2NDUsImhlaWdodCI6NDExLCJ0aW1lc3RhbXBNcyI6MTk1NC4zOTk5OTk5NzYxNTgxfX19",
-												"pos": "eyIvMTk5NjgzMzYvaGVhZGVyLWJpZC10YWctMCI6eyJwIjp7IngiOjgsInkiOjE1Mn0sInYiOnRydWUsInQiOiJkaXYifX0=",
 												"sm": "0fa9d2f7-96a2-497a-83c7-e4f14ee4b580",
 												"params": {
 													"ev": "v1",
-													"ci": "1Pw320rMi1BNmV0C8TEX7LlYD"
+													"ci": "ABCD123456"
 												}
 											},
 											"segment": [
@@ -2955,13 +2835,13 @@ func TestS2SBidderConfigExtraction(t *testing.T) {
 	}
 
 	// Verify customer from bidder config (priority over impression params)
-	expectedCustomer := "1Pw320rMi1BNmV0C8TEX7LlYD" // From bidder config params.ci
+	expectedCustomer := "ABCD123456" // From bidder config params.ci
 	if contxtfulConfig["customer"] != expectedCustomer {
 		t.Errorf("Expected customer '%s' from bidder config, got %v", expectedCustomer, contxtfulConfig["customer"])
 	}
 
 	// Verify endpoint URL uses bidder config customer ID
-	expectedURL := "https://prebid.receptivity.io/v1/pbs/1Pw320rMi1BNmV0C8TEX7LlYD/bid"
+	expectedURL := "https://prebid.receptivity.io/v1/pbs/ABCD123456/bid"
 	if requests[0].Uri != expectedURL {
 		t.Errorf("Expected URL %s (with bidder config customer), got %s", expectedURL, requests[0].Uri)
 	}
