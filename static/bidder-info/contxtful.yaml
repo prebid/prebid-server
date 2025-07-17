@@ -1,7 +1,7 @@
 maintainer:
   email: "contact@contxtful.com"
 disabled: false
-endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid"
+endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid"
 
 platform_id: "5"
 capabilities:
@@ -19,8 +19,8 @@ userSync:
   key: "contxtful"
   default: iframe
   iframe:
-    url: "https://prebid.receptivity.dev/v1/pbs/public/pbs-sync/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    url: "https://prebid.receptivity.io/v1/pbs/public/pbs-sync/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
   redirect:
-    url: "https://prebid.receptivity.dev/v1/pbs/public/pbs-sync/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    url: "https://prebid.receptivity.io/v1/pbs/public/pbs-sync/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"

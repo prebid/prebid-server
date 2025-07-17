@@ -210,7 +210,7 @@ func TestCookieFlowWithBuyerUID(t *testing.T) {
 // TestCookieFlowWithoutBuyerUID tests cookie handling when BuyerUID is not present
 func TestCookieFlowWithoutBuyerUID(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -262,7 +262,7 @@ func TestCookieFlowWithoutBuyerUID(t *testing.T) {
 // TestORTB2HandlingWithExistingData tests generic ORTB2 data preservation using real-world payload
 func TestORTB2HandlingWithExistingData(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -1439,7 +1439,7 @@ func TestBase64PartnerUIDHandling(t *testing.T) {
 // TestBase64UIDVersioning tests different versions of Base64 encoded UIDs
 func TestBase64UIDVersioning(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -1553,7 +1553,7 @@ func TestBase64UIDVersioning(t *testing.T) {
 // TestMultiPartnerUIDSize tests that the adapter handles large Base64 UIDs with many partners
 func TestMultiPartnerUIDSize(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -1621,7 +1621,7 @@ func TestMultiPartnerUIDSize(t *testing.T) {
 // TestPrebidJSEventTrackingURLGeneration tests NURL and BURL event tracking URL generation for Prebid.js format responses
 func TestPrebidJSEventTrackingURLGeneration(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -1773,7 +1773,7 @@ func TestPrebidJSEventTrackingURLGeneration(t *testing.T) {
 // TestPrebidJSHybridEventTrackingURLGeneration tests enhanced PrebidJS responses with tracking fields
 func TestPrebidJSHybridEventTrackingURLGeneration(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -1892,7 +1892,7 @@ func TestPrebidJSHybridEventTrackingURLGeneration(t *testing.T) {
 // TestResponseFormatDetectionPriority tests the priority and accuracy of response format detection
 func TestResponseFormatDetectionPriority(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -2093,7 +2093,7 @@ func TestResponseFormatDetectionPriority(t *testing.T) {
 // TestTrackingValuePropagation tests that tracking values correctly flow from responses to event URLs
 func TestTrackingValuePropagation(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -2250,7 +2250,7 @@ func TestTrackingValuePropagation(t *testing.T) {
 // TestResponseFormatEdgeCases tests edge cases and error scenarios in response format detection
 func TestResponseFormatEdgeCases(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -2406,7 +2406,7 @@ func TestResponseFormatEdgeCases(t *testing.T) {
 // TestEventURLGeneration tests comprehensive event URL parameter inclusion
 func TestEventURLGeneration(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -2591,7 +2591,7 @@ func TestCookieFormatValidation(t *testing.T) {
 // TestBidRejectionScenarios tests various scenarios that should result in bid rejection
 func TestBidRejectionScenarios(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.dev/v1/pbs/{{.AccountID}}/bid",
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
 	}, config.Server{})
 
 	if buildErr != nil {
@@ -3224,7 +3224,7 @@ func TestEventURLGenerationNoDoubleSlash(t *testing.T) {
 		},
 		{
 			name:             "Development endpoint",
-			requestURI:       "https://prebid.receptivity.dev/v1/pbs/DEVCUST456/bid",
+			requestURI:       "https://prebid.receptivity.io/v1/pbs/DEVCUST456/bid",
 			expectedCustomer: "DEVCUST456",
 		},
 		{
