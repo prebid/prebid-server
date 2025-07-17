@@ -29,6 +29,7 @@ const (
 	entityAuctionRequest           entity = "auction-request"
 	entityAuctionResponse          entity = "auction_response"
 	entityAllProcessedBidResponses entity = "all_processed_bid_responses"
+	entityExitPoint                entity = "exit_point"
 )
 
 type StageExecutor interface {
@@ -39,6 +40,7 @@ type StageExecutor interface {
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
 	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid)
 	ExecuteAuctionResponseStage(response *openrtb2.BidResponse)
+	ExecuteExitPointStage(request *openrtb2.BidRequest, bidResponse *openrtb2.BidResponse) (any, http.Header, *RejectError)
 }
 
 type HookStageExecutor interface {
@@ -295,6 +297,39 @@ func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidRespons
 	e.pushStageOutcome(outcome)
 }
 
+func (e *hookExecutor) ExecuteExitPointStage(bidRequest *openrtb2.BidRequest, bidResponse *openrtb2.BidResponse) (any, http.Header, *RejectError) {
+	plan := e.planBuilder.PlanForExitPointStage(e.endpoint, e.account)
+	if len(plan) == 0 {
+		return bidResponse, nil, nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx hookstage.ModuleInvocationContext,
+		hook hookstage.ExitPoint,
+		payload hookstage.ExitPointPayload,
+	) (hookstage.HookResult[hookstage.ExitPointPayload], error) {
+		return hook.HandleExitPointHook(ctx, moduleCtx, payload)
+	}
+
+	stageName := hooks.StageExitPoint.String()
+	executionCtx := e.newContext(stageName)
+	payload := hookstage.ExitPointPayload{
+		Account:     e.account,
+		BidRequest:  bidRequest,
+		BidResponse: bidResponse,
+	}
+
+	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityExitPoint
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
+
+	return payload.Response, payload.HTTPHeaders, reject
+}
+
 func (e *hookExecutor) newContext(stage string) executionContext {
 	return executionContext{
 		account:         e.account,
@@ -354,3 +389,7 @@ func (executor EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[ope
 }
 
 func (executor EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}
+
+func (executor EmptyHookExecutor) ExecuteExitPointStage(_ *openrtb2.BidRequest, _ *openrtb2.BidResponse) (any, http.Header, *RejectError) {
+	return nil, nil, nil
+}

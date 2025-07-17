@@ -19,6 +19,7 @@ const (
 	StageRawBidderResponse        Stage = "raw_bidder_response"
 	StageAllProcessedBidResponses Stage = "all_processed_bid_responses"
 	StageAuctionResponse          Stage = "auction_response"
+	StageExitPoint                Stage = "exit_point"
 )
 
 func (s Stage) String() string {
@@ -41,6 +42,7 @@ type ExecutionPlanBuilder interface {
 	PlanForRawBidderResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse]
 	PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse]
+	PlanForExitPointStage(endpoint string, account *config.Account) Plan[hookstage.ExitPoint]
 }
 
 // Plan represents a slice of groups of hooks of a specific type grouped in the established order.
@@ -153,6 +155,16 @@ func (p PlanBuilder) PlanForAuctionResponseStage(endpoint string, account *confi
 		endpoint,
 		StageAuctionResponse,
 		p.repo.GetAuctionResponseHook,
+	)
+}
+
+func (p PlanBuilder) PlanForExitPointStage(endpoint string, account *config.Account) Plan[hookstage.ExitPoint] {
+	return getMergedPlan(
+		p.hooks,
+		account,
+		endpoint,
+		StageExitPoint,
+		p.repo.GetExitPointHook,
 	)
 }
 
