@@ -47,7 +47,7 @@ func TestTsValue(t *testing.T) {
 	url, err := bidderTappx.buildEndpointURL(&tappxExt, test)
 	require.NoError(t, err, "buildEndpointURL")
 
-	match, err := regexp.MatchString(`http://ssp\.api\.tappx\.com/rtb/v2/DUMMYENDPOINT\?tappxkey=dummy-tappx-key&ts=[0-9]{13}&type_cnn=prebid&v=1\.5`, url)
+	match, err := regexp.MatchString(`http://ssp\.api\.tappx\.com/rtb/v2/DUMMYENDPOINT\?tappxkey=dummy-tappx-key&ts=[0-9]{13}&type_cnn=prebid&v=1\.6`, url)
 	if err != nil {
 		t.Errorf("Error while running regex validation: %s", err.Error())
 		return
