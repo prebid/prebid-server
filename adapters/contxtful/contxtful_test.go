@@ -292,11 +292,11 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 					"data": {
 						"adserver": {
 							"name": "gam",
-							"adslot": "/139271940/tonbarbier>fr/tonbarbier_site:header-2"
+							"adslot": "/139271940/example>fr/example_site:header-2"
 						},
-						"pbadslot": "/139271940/tonbarbier>fr/tonbarbier_site:header-2"
+						"pbadslot": "/139271940/example>fr/example_site:header-2"
 					},
-					"gpid": "/139271940/tonbarbier>fr/tonbarbier_site:header-2"
+					"gpid": "/139271940/example>fr/example_site:header-2"
 				}
 			}
 		],
@@ -321,11 +321,11 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 			}
 		},
 		"site": {
-			"domain": "tonbarbier.com",
+			"domain": "example.com",
 			"publisher": {
-				"domain": "tonbarbier.com"
+				"domain": "example.com"
 			},
-			"page": "https://tonbarbier.com/",
+			"page": "https://example.com/",
 			"ext": {
 				"data": {
 					"documentLang": "fr-CA"
@@ -409,7 +409,7 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 										"y": -991
 									},
 									"v": true,
-									"a": "/139271940/tonbarbier>fr/tonbarbier_site:oop-1",
+									"a": "/139271940/example>fr/example_site:oop-1",
 									"s": "oboxads-oop-1",
 									"t": "div"
 								},
@@ -419,7 +419,7 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 										"y": 133
 									},
 									"v": true,
-									"a": "/139271940/tonbarbier>fr/tonbarbier_site:header-1",
+									"a": "/139271940/example>fr/example_site:header-1",
 									"s": "oboxads-header-1",
 									"t": "div"
 								},
@@ -429,7 +429,7 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 										"y": 1034
 									},
 									"v": true,
-									"a": "/139271940/tonbarbier>fr/tonbarbier_site:header-2",
+									"a": "/139271940/example>fr/example_site:header-2",
 									"s": "oboxads-header-2",
 									"t": "div"
 								}
@@ -461,11 +461,11 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 		"data": {
 			"adserver": {
 				"name": "gam",
-				"adslot": "/139271940/tonbarbier>fr/tonbarbier_site:header-2"
+				"adslot": "/139271940/example>fr/example_site:header-2"
 			},
-			"pbadslot": "/139271940/tonbarbier>fr/tonbarbier_site:header-2"
+			"pbadslot": "/139271940/example>fr/example_site:header-2"
 		},
-		"gpid": "/139271940/tonbarbier>fr/tonbarbier_site:header-2"
+		"gpid": "/139271940/example>fr/example_site:header-2"
 	}`)
 
 	requests, errs := bidder.MakeRequests(&request, &adapters.ExtraRequestInfo{})
@@ -495,11 +495,11 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 		t.Fatal("ortb2.site should be an object")
 	}
 
-	if site["domain"] != "tonbarbier.com" {
+	if site["domain"] != "example.com" {
 		t.Error("ortb2.site.domain should be preserved")
 	}
 
-	if site["page"] != "https://tonbarbier.com/" {
+	if site["page"] != "https://example.com/" {
 		t.Error("ortb2.site.page should be preserved")
 	}
 
@@ -508,7 +508,7 @@ func TestORTB2HandlingWithExistingData(t *testing.T) {
 		t.Fatal("ortb2.site.publisher should be an object")
 	}
 
-	if publisher["domain"] != "tonbarbier.com" {
+	if publisher["domain"] != "example.com" {
 		t.Error("ortb2.site.publisher.domain should be preserved")
 	}
 
