@@ -4,17 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"slices"
-
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // ProcessedAuctionResultFunc is a type alias for a result function that runs in the processed auction request stage.
-type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
+type ProcessedAuctionResultFunc = rules.ResultFunction[hs.ProcessedAuctionRequestPayload, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
 
 const (
 	ExcludeBiddersName = "excludeBidders"
@@ -62,17 +60,17 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (eb *ExcludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
 	// build map[impId] to map [bidder] to bidder params
-	impIdToBidders, err := buildExcludeBidders(req, eb.Args.Bidders)
+	impIdToBidders, err := buildExcludeBidders(payload, eb.Args)
 	if err != nil {
 		return err
 	}
 
-	result.ChangeSet.ProcessedAuctionRequest().Bidders().Update(impIdToBidders)
+	result.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(impIdToBidders)
 
 	return nil
 }
@@ -103,17 +101,17 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
+func (ib *IncludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, result *hs.HookResult[hs.ProcessedAuctionRequestPayload], meta rules.ResultFunctionMeta) error {
 	//  create a change set which captures the changes we want to apply
 	// this function should NOT perform any modifications to the request
 
 	// build map[impId] to map [bidder] to bidder params
-	impIdToBidders, err := buildIncludeBidders(req, ib.Args.Bidders)
+	impIdToBidders, err := buildIncludeBidders(payload.GetBidderRequestPayload(), ib.Args.Bidders)
 	if err != nil {
 		return err
 	}
 
-	result.ChangeSet.ProcessedAuctionRequest().Bidders().Update(impIdToBidders)
+	result.ChangeSet.ProcessedAuctionRequest().Bidders().Add(impIdToBidders)
 
 	return nil
 }
@@ -147,29 +145,24 @@ func buildIncludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (
 	return impIdToBidders, nil
 }
 
-func buildExcludeBidders(req *openrtb_ext.RequestWrapper, argBidders []string) (map[string]map[string]json.RawMessage, error) {
-	impIdToBidders := make(map[string]map[string]json.RawMessage)
-	for _, impWrapper := range req.GetImp() {
-		impExt, impExtErr := impWrapper.GetImpExt()
-		if impExtErr != nil {
-			return impIdToBidders, impExtErr
-		}
-		impPrebid := impExt.GetPrebid()
-		if impPrebid == nil {
-			return nil, fmt.Errorf("impExt for imp %s does not contain prebid extension", impWrapper.ID)
-		}
-		impBidders := impPrebid.Bidder
+func buildExcludeBidders(payload *hs.ProcessedAuctionRequestPayload, args config.ResultFuncParams) ([]string, error) {
+	biddersToDelete := make([]string, 0)
 
-		resultImpBidders := make(map[string]json.RawMessage)
-
-		for bidderName, bidderData := range impBidders {
-			// do not add bidders from argBidders
-			if contains := slices.Contains(argBidders, bidderName); !contains {
-				resultImpBidders[bidderName] = bidderData
+	for _, bidderName := range args.Bidders {
+		if args.IfSyncedId != nil {
+			userSync := *payload.Usersyncs
+			uid, found, active := userSync.GetUID(bidderName)
+			if found {
+				syncValid := found && active && uid != ""
+				ifSynced := *args.IfSyncedId
+				if syncValid == ifSynced {
+					biddersToDelete = append(biddersToDelete, bidderName)
+				}
 			}
+		} else {
+			biddersToDelete = append(biddersToDelete, bidderName)
 		}
-
-		impIdToBidders[impWrapper.ID] = resultImpBidders
 	}
-	return impIdToBidders, nil
+
+	return biddersToDelete, nil
 }

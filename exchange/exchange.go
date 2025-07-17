@@ -36,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/prebid/prebid-server/v3/stored_responses"
 	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/maputil"
 
@@ -54,12 +55,6 @@ type extCacheInstructions struct {
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, r *AuctionRequest, debugLog *DebugLog) (*AuctionResponse, error)
-}
-
-// IdFetcher can find the user's ID for a specific Bidder.
-type IdFetcher interface {
-	GetUID(key string) (uid string, exists bool, notExpired bool)
-	HasAnyLiveSyncs() bool
 }
 
 type exchange struct {
@@ -200,7 +195,7 @@ type AuctionRequest struct {
 	BidRequestWrapper          *openrtb_ext.RequestWrapper
 	ResolvedBidRequest         json.RawMessage
 	Account                    config.Account
-	UserSyncs                  IdFetcher
+	UserSyncs                  util.IdFetcher
 	RequestType                metrics.RequestType
 	StartTime                  time.Time
 	Warnings                   []error
@@ -242,7 +237,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		return nil, nil
 	}
 
-	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper)
+	err := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper, r.UserSyncs)
 	if err != nil {
 		return nil, err
 	}
