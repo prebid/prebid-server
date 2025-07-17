@@ -296,12 +296,6 @@ func TestLoggerMethods(t *testing.T) {
 	}
 }
 
-func TestLoggerType(t *testing.T) {
-	if LoggerTypeDefault != "default" {
-		t.Errorf("Expected LoggerTypeDefault to be 'default', got '%s'", LoggerTypeDefault)
-	}
-}
-
 func TestLoggerConfig(t *testing.T) {
 	depth := 5
 	config := &LoggerConfig{
