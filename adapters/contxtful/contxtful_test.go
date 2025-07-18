@@ -2893,9 +2893,6 @@ func TestS2SBidderConfigExtraction(t *testing.T) {
 	if !ok || len(bidderConfig) == 0 {
 		t.Fatal("ortb2.ext.prebid.bidderconfig should be preserved for relay processing")
 	}
-
-	// The relay will extract rich Contxtful data from bidderconfig directly
-	// We don't need to merge it - simpler and more like other bidders
 }
 
 // TestMissingCustomerIDHandling tests that MakeBids fails fast when customer ID is missing
