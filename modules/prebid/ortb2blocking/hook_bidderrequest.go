@@ -311,6 +311,10 @@ func findImpressionOverrides(
 	messages := []string{}
 
 	for _, imp := range payload.Request.Imp {
+		if imp.Banner == nil {
+			continue
+		}
+
 		// do not add override for attribute if it already exists in request
 		if isAttrPresent(imp) {
 			continue
