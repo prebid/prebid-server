@@ -32,7 +32,8 @@
 					"adUnits": [
 						{
 							"auId": "",
-							"targetId": "-test-imp-id",
+							"targetId": "-test-imp-id:banner",
+							"nativeRequest": {},
 							"dimensions": [[300,250],[300,600]]
 						}
 					],

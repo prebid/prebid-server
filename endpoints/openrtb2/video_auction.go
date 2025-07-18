@@ -265,7 +265,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := ortb.SetDefaults(bidReqWrapper); err != nil {
+	if err := ortb.SetDefaults(bidReqWrapper, deps.cfg.TmaxDefault); err != nil {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
@@ -549,7 +549,7 @@ func buildVideoResponse(bidresponse *openrtb2.BidResponse, podErrors []PodError)
 			if err := jsonutil.UnmarshalValid(bid.Ext, &tempRespBidExt); err != nil {
 				return nil, err
 			}
-			if tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)] == "" {
+			if findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.VastCacheKey, seatBid.Seat)) == "" {
 				continue
 			}
 
@@ -558,10 +558,10 @@ func buildVideoResponse(bidresponse *openrtb2.BidResponse, podErrors []PodError)
 			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				HbPb:       tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbpbConstantKey, seatBid.Seat)],
-				HbPbCatDur: tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbCategoryDurationKey, seatBid.Seat)],
-				HbCacheID:  tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)],
-				HbDeal:     tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbDealIDConstantKey, seatBid.Seat)],
+				HbPb:       findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.PbKey, seatBid.Seat)),
+				HbPbCatDur: findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.CategoryDurationKey, seatBid.Seat)),
+				HbCacheID:  findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.VastCacheKey, seatBid.Seat)),
+				HbDeal:     findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.DealKey, seatBid.Seat)),
 			}
 
 			adPod := findAdPod(podId, adPods)
@@ -605,6 +605,17 @@ func formatTargetingKey(key openrtb_ext.TargetingKey, bidderName string) string 
 		return string(fullKey[0:exchange.MaxKeyLength])
 	}
 	return fullKey
+}
+
+func findTargetingByKey(targetingMap map[string]string, keyWithoutPrefix string) string {
+	for k, v := range targetingMap {
+		prefixIndex := strings.Index(k, "_")
+		// find potentially truncated key in original key name without prefixes
+		if prefixIndex > 0 && strings.HasPrefix(keyWithoutPrefix, k[prefixIndex:]) {
+			return v
+		}
+	}
+	return ""
 }
 
 func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {

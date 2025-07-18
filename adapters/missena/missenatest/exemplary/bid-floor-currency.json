@@ -1,0 +1,125 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "tmax": 500,
+    "cur": ["EUR", "USD"],
+    "site": {
+      "page": "https://publisher.com/url",
+      "domain": "publisher.com"
+    },
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123"
+    },
+    "user": {},
+    "regs": {
+      "coppa": 0
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "bidfloor": 1.5,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "apiKey": "test-api-key",
+            "formats": ["banner"],
+            "placement": "sticky"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/?t=test-api-key",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["123.123.123.123"],
+          "Referer": ["https://publisher.com/url"],
+          "Origin": ["https://publisher.com"]
+        },
+        "body": {
+          "adunit": "test-imp-id",
+          "currency": "USD",
+          "floor": 1.5,
+          "floor_currency": "USD",
+          "ik": "test-request-id",
+          "ortb2": {
+            "cur": ["EUR", "USD"],
+            "device": {
+              "ip": "123.123.123.123",
+              "ua": "test-user-agent"
+            },
+            "id": "test-request-id",
+            "imp": [
+              {
+                "banner": {
+                  "h": 250,
+                  "w": 300
+                },
+                "bidfloor": 1.5,
+                "bidfloorcur": "USD",
+                "ext": {
+                  "bidder": {
+                    "apiKey": "test-api-key",
+                    "formats": ["banner"],
+                    "placement": "sticky"
+                  }
+                },
+                "id": "test-imp-id"
+              }
+            ],
+            "regs": {},
+            "site": {
+              "domain": "publisher.com",
+              "page": "https://publisher.com/url"
+            },
+            "tmax": 500,
+            "user": {}
+          },
+          "request_id": "test-request-id",
+          "timeout": 500,
+          "params": {
+            "formats": ["banner"],
+            "placement": "sticky"
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "ad": "<div>test ad</div>",
+          "cpm": 2.5,
+          "currency": "USD",
+          "requestId": "test-request-id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-id",
+            "impid": "test-imp-id",
+            "price": 2.5,
+            "adm": "<div>test ad</div>",
+            "crid": "test-request-id"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
