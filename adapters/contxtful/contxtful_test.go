@@ -30,9 +30,6 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "contxtfultest", bidder)
 }
 
-// TestEndpointResolution removed - endpoint resolution is now tested through MakeRequests
-// in other test functions since getEndpoint was inlined for optimization
-
 func TestPayloadFormat(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
 		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
