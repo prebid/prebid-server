@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-invalid",
+    "imp": [
+      {
+        "id": "test-imp-invalid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "INVALID123",
+            "placementId": "invalid-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "invalid-site",
+      "domain": "invalid.example.com",
+      "page": "https://invalid.example.com/test"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/INVALID123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-invalid",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "invalid-placement"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "INVALID123",
+              "version": "v1"
+            }
+          },
+          "pbs": {
+            "version": ""
+          },
+          
+          "ortb2": {
+            "id": "test-request-invalid",
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 250,
+                      "w": 300
+                    }
+                  ]
+                },
+                "ext": {},
+                "id": "test-imp-invalid"
+              }
+            ],
+            "site": {
+              "domain": "invalid.example.com",
+              "id": "invalid-site",
+              "page": "https://invalid.example.com/test"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-invalid"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": "Internal Server Error"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500",
+      "comparison": "regex"
+    }
+  ]
+} 

@@ -1,0 +1,169 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-sync",
+    "imp": [
+      {
+        "id": "test-imp-sync",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "DEMO123",
+            "placementId": "sync-placement-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "sync-demo-site",
+      "domain": "sync.example.com",
+      "page": "https://sync.example.com/sync-test",
+      "publisher": {
+        "id": "sync-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36",
+      "ip": "192.0.2.4",
+      "language": "en",
+      "dnt": 0
+    },
+    "user": {
+      "buyeruid": "contxtful-v1-demo-user-id-12345"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/DEMO123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-sync",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "sync-placement-1"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "DEMO123",
+              "version": "v1"
+            }
+          },
+          "pbs": {
+            "version": ""
+          },
+
+          "ortb2": {
+            "device": {
+              "dnt": 0,
+              "ip": "192.0.2.4",
+              "language": "en",
+              "ua": "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36"
+            },
+            "id": "test-request-sync",
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 250,
+                      "w": 300
+                    }
+                  ]
+                },
+                "ext": {},
+                "id": "test-imp-sync"
+              }
+            ],
+            "site": {
+              "domain": "sync.example.com",
+              "id": "sync-demo-site",
+              "page": "https://sync.example.com/sync-test",
+              "publisher": {
+                "id": "sync-publisher"
+              }
+            },
+            "user": {
+              "buyeruid": "contxtful-v1-demo-user-id-12345"
+            }
+          }
+        },
+              "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json;charset=utf-8"
+        ]
+      },
+        "impIDs": ["test-imp-sync"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "cpm": 3.75,
+            "width": 300,
+            "height": 250,
+            "currency": "USD",
+            "requestId": "test-imp-sync",
+            "ad": "<div style=\"width:300px;height:250px;background:#ffe0b2;text-align:center;line-height:250px;\">Contxtful Synced User Ad</div>",
+            "ttl": 300,
+            "creativeId": "sync-creative-456",
+            "netRevenue": true,
+            "mediaType": "banner",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-sync&a=DEMO123&bidder=contxtful&impId=test-imp-sync&price=3.75&traceId=&random=0.000000&domain=sync.example.com&adRequestId=test-request-sync&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-sync&a=DEMO123&bidder=contxtful&impId=test-imp-sync&price=3.75&traceId=&random=0.000000&domain=sync.example.com&adRequestId=test-request-sync&w=300&h=250&f=b"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "contxtful-test-imp-sync",
+            "impid": "test-imp-sync",
+            "price": 3.75,
+            "adm": "<div style=\"width:300px;height:250px;background:#ffe0b2;text-align:center;line-height:250px;\">Contxtful Synced User Ad</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "sync-creative-456",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-sync&a=DEMO123&bidder=contxtful&impId=test-imp-sync&price=3.75&traceId=&random=0.000000&domain=sync.example.com&adRequestId=test-request-sync&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-sync&a=DEMO123&bidder=contxtful&impId=test-imp-sync&price=3.75&traceId=&random=0.000000&domain=sync.example.com&adRequestId=test-request-sync&w=300&h=250&f=b",
+            "ext": {
+              "origbidcpm": 3.75,
+              "origbidcur": "USD",
+              "prebid": {
+                "meta": {
+                  "adaptercode": "contxtful"
+                },
+                "targeting": {
+                  "hb_bidder": "contxtful",
+                  "hb_pb": "3.75",
+                  "hb_size": "300x250"
+                },
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+} 
