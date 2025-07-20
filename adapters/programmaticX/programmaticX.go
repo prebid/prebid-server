@@ -63,13 +63,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			impExt.ProgrammaticXBidderExt.Type = "network"
 		}
 
-		finalyImpExt, err := json.Marshal(impExt)
+		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		reqCopy.Imp[0].Ext = finalyImpExt
+		reqCopy.Imp[0].Ext = impExtJSON
 
 		adapterReq, err := a.makeRequest(&reqCopy)
 		if err != nil {
@@ -80,7 +80,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		adapterRequests = append(adapterRequests, adapterReq)
 	}
 
-	return adapterRequests, nil
+	return adapterRequests, errs
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
@@ -147,7 +147,7 @@ func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)
 	}
-
-	return "", fmt.Errorf("could not define media type for impression: %s", bid.ImpID)
 }
