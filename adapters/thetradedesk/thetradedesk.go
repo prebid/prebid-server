@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -176,6 +178,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		for _, bid := range seatBid.Bid {
 			bid := bid
 
+			resolveAuctionPriceMacros(&bid)
 			bidType, err := getBidType(bid.MType)
 
 			if err != nil {
@@ -231,4 +234,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		defaultEndpoint:        defaultEndpoint,
 		templateEndpoint:       template,
 	}, nil
+}
+
+func resolveAuctionPriceMacros(bid *openrtb2.Bid) {
+	if bid == nil {
+		return
+	}
+	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 }
