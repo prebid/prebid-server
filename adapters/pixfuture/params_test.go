@@ -5,31 +5,26 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	if err != nil {
-		t.Fatalf("Failed to fetch the json schema. %v", err)
-	}
+	require.NoError(t, err, "Failed to fetch the json schema.")
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p)); err != nil {
-			t.Errorf("Schema rejected valid params: %s", p)
-		}
+		assert.NoErrorf(t, validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p)), "Schema rejected valid params: %s", p)
 	}
 }
 
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	if err != nil {
-		t.Fatalf("Failed to fetch the json schema. %v", err)
-	}
+	require.NoError(t, err, "Failed to fetch the json schema")
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p)); err == nil {
-			t.Errorf("Schema allowed invalid params: %s", p)
-		}
+		err := validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p))
+		assert.Errorf(t, err, "Schema allowed invalid params: %s", p)
 	}
 }
 
