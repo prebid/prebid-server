@@ -49,6 +49,7 @@ type visxSeatBid struct {
 
 type visxResponse struct {
 	SeatBid []visxSeatBid `json:"seatbid,omitempty"`
+	Cur     string        `json:"cur,omitempty"`
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -139,6 +140,11 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 			})
 		}
 	}
+
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
+
 	return bidResponse, nil
 
 }

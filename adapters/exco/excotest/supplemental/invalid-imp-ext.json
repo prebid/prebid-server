@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "invalid-imp-ext",
+    "imp": [
+      {
+        "id": "invalid-imp-ext-imp",
+        "ext": {
+          "bidder": "invalid"
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid imp.ext.bidder for impression index 0. Error Information: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
+}

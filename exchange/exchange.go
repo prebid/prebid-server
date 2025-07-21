@@ -14,9 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/privacy"
-
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/adservertargeting"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
@@ -33,7 +30,9 @@ import (
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/privacy"
 	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/prebid/prebid-server/v3/stored_responses"
 	"github.com/prebid/prebid-server/v3/usersync"
@@ -269,9 +268,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	cacheInstructions := getExtCacheInstructions(requestExtPrebid)
 
-	targData := getExtTargetData(requestExtPrebid, cacheInstructions)
+	targData, warning := getExtTargetData(requestExtPrebid, cacheInstructions, r.Account)
 	if targData != nil {
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
+	}
+
+	for _, w := range warning {
+		r.Warnings = append(r.Warnings, w)
 	}
 
 	// Get currency rates conversions for the auction
