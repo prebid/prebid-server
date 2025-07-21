@@ -13,29 +13,59 @@ func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	require.NoError(t, err, "Failed to fetch the json schema.")
 
-	for _, p := range validParams {
-		assert.NoErrorf(t, validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p)), "Schema rejected valid params: %s", p)
+	tests := []struct {
+		name string
+		json string
+	}{
+		{
+			name: "Minimum length satisfied",
+			json: `{"pix_id": "123"}`,
+		},
+		{
+			name: "Longer valid string",
+			json: `{"pix_id": "abcdef"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt // capture range variable
+		t.Run(tt.name, func(t *testing.T) {
+			assert.NoErrorf(t, validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(tt.json)), "Schema rejected valid params: %s", tt.json)
+		})
 	}
 }
 
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	require.NoError(t, err, "Failed to fetch the json schema")
+	require.NoError(t, err, "Failed to fetch the json schema.")
 
-	for _, p := range invalidParams {
-		err := validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(p))
-		assert.Errorf(t, err, "Schema allowed invalid params: %s", p)
+	tests := []struct {
+		name string
+		json string
+	}{
+		{
+			name: "Wrong type (integer)",
+			json: `{"pix_id": 123}`,
+		},
+		{
+			name: "Too short (minLength: 3)",
+			json: `{"pix_id": "ab"}`,
+		},
+		{
+			name: "Missing required pix_id",
+			json: `{}`,
+		},
+		{
+			name: "Empty string (violates minLength)",
+			json: `{"pix_id": ""}`,
+		},
 	}
-}
 
-var validParams = []string{
-	`{"pix_id": "123"}`,    // Minimum length satisfied
-	`{"pix_id": "abcdef"}`, // Longer valid string
-}
-
-var invalidParams = []string{
-	`{"pix_id": 123}`,  // Wrong type (integer)
-	`{"pix_id": "ab"}`, // Too short (minLength: 3)
-	`{}`,               // Missing required pix_id
-	`{"pix_id": ""}`,   // Empty string (violates minLength)
+	for _, tt := range tests {
+		tt := tt // capture range variable
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.Validate(openrtb_ext.BidderPixfuture, json.RawMessage(tt.json))
+			assert.Errorf(t, err, "Schema allowed invalid params: %s", tt.json)
+		})
+	}
 }
