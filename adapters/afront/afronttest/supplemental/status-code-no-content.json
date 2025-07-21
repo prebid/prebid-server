@@ -26,8 +26,8 @@
         },
         "ext": {
           "bidder": {
-            "clientAccountId": "clientAccountId",
-            "dataSourceId": "dataSourceId"
+            "accountId": "accountId",
+            "sourceId": "sourceId"
           }
         }
       }
@@ -36,7 +36,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://snt1.afront.io/?rsd=dataSourceId&sk=clientAccountId",
+        "uri": "https://snt1.afront.io/?rsd=sourceId&sk=accountId",
         "body": {
           "id": "req-id",
           "imp": [

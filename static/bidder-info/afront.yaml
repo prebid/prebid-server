@@ -4,7 +4,7 @@
 # APAC: snt2
 # EU: snt3
 # Please deploy this config in each of your datacenters with the appropriate regional subdomain
-endpoint: "https://snt1.afront.io/?rsd={{.DataSourceId}}&sk={{.ClientAccountId}}"
+endpoint: "https://snt1.afront.io/?rsd={{.SourceId}}&sk={{.AccountID}}"
 maintainer:
   email: "support@afront.io"
 geoscope:

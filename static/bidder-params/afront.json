@@ -4,19 +4,19 @@
   "description": "A schema which validates params accepted by the Afront adapter",
   "type": "object",
   "properties": {
-    "clientAccountId": {
+    "accountId": {
       "type": "string",
       "description": "Client account id",
       "minLength": 1
     },
-    "dataSourceId": {
+    "sourceId": {
       "type": "string",
       "description": "Data source id",
       "minLength": 1
     }
   },
   "required": [
-    "clientAccountId",
-    "dataSourceId"
+    "accountId",
+    "sourceId"
   ]
 }

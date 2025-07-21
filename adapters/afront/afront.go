@@ -65,12 +65,6 @@ func (a *adapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
-	if len(openRTBRequest.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "imp not provided",
-		}}
-	}
-
 	afrontExt, err := a.getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
 		return nil, []error{err}
@@ -118,8 +112,8 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtAfront, e
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtAfront) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		AccountID: params.ClientAccoundId,
-		SourceId:  params.DataSourceId,
+		AccountID: params.AccountID,
+		SourceId:  params.SourceId,
 	}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
