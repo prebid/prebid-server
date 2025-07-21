@@ -44,7 +44,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		reqJSON, err := jsonutil.Marshal(request)
+		requestCopy := *request
+		requestCopy.Imp = request.Imp[i : i+1]
+
+		reqJSON, err := jsonutil.Marshal(requestCopy)
 		if err != nil {
 			errs = append(errs, err)
 			continue
