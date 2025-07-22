@@ -93,8 +93,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	var errors []error
-	for seatBid := range iterators.SlicePointerValues(response.SeatBid) {
-		for bid := range iterators.SlicePointerValues(seatBid.Bid) {
+	for seatBid := range iterutil.SlicePointerValues(response.SeatBid) {
+		for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
 			resolveMacros(bid)
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
