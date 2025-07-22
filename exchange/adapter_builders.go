@@ -179,7 +179,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/pangle"
 	"github.com/prebid/prebid-server/v3/adapters/pgamssp"
 	"github.com/prebid/prebid-server/v3/adapters/playdigo"
-	"github.com/prebid/prebid-server/v3/adapters/progx"
 	"github.com/prebid/prebid-server/v3/adapters/pubmatic"
 	"github.com/prebid/prebid-server/v3/adapters/pubnative"
 	"github.com/prebid/prebid-server/v3/adapters/pubrise"
@@ -443,7 +442,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPangle:            pangle.Builder,
 		openrtb_ext.BidderPGAMSsp:           pgamssp.Builder,
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,
-		openrtb_ext.BidderProgX:             progx.Builder,
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPubrise:           pubrise.Builder,
