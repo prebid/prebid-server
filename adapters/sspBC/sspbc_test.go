@@ -18,3 +18,14 @@ func TestJsonSamples(t *testing.T) {
 
 	adapterstest.RunJSONBidderTest(t, "sspbctest", bidder)
 }
+
+func TestInvalidEndpointURL(t *testing.T) {
+	invalidEndpointURL := "http://ssp.wp.test   /bidder/"
+
+	_, buildErr := Builder(openrtb_ext.BidderSspBC, config.Adapter{
+		Endpoint: invalidEndpointURL}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	if buildErr == nil {
+		t.Fatalf("Adapter allowed invalid endpoint URL %v", invalidEndpointURL)
+	}
+}
