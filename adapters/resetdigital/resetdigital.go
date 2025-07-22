@@ -156,13 +156,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func parseBidResponse(request *openrtb2.BidRequest, bidResp *openrtb2.BidResponse) (*adapters.BidderResponse, []error) {
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
 	var errs []error
 
 	if bidResp.Cur != "" {
 		bidResponse.Currency = bidResp.Cur
-	} else {
-		bidResponse.Currency = currencyUSD
 	}
 
 	for _, seatBid := range bidResp.SeatBid {
