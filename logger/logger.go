@@ -19,7 +19,6 @@ type LoggerConfig struct {
 	Type         LoggerType
 	Depth        *int
 	CustomLogger Logger // For custom logger instances
-	CustomName   string // For registered custom loggers
 }
 
 // New initializes a logger configuration with the specified type and depth, and applies it using NewWithConfig.
@@ -47,12 +46,6 @@ func NewWithConfig(config *LoggerConfig) error {
 	case LoggerTypeCustom:
 		if config.CustomLogger != nil {
 			newLogger = config.CustomLogger
-		} else if config.CustomName != "" {
-			customLogger, err := GetLoggerByName(config.CustomName)
-			if err != nil {
-				return fmt.Errorf("failed to get custom logger '%s': %w", config.CustomName, err)
-			}
-			newLogger = customLogger
 		} else {
 			return fmt.Errorf("custom logger type requires either CustomLogger instance or CustomName")
 		}
@@ -70,30 +63,11 @@ func SetCustomLogger(customLogger Logger) {
 	logger = customLogger
 }
 
-// SetCustomLoggerByName sets a custom logger by its registered name
-func SetCustomLoggerByName(name string) error {
-	customLogger, err := GetLoggerByName(name)
-	if err != nil {
-		return fmt.Errorf("failed to set custom logger '%s': %w", name, err)
-	}
-	logger = customLogger
-	return nil
-}
-
 // NewCustom creates a new custom logger configuration
 func NewCustom(customLogger Logger) error {
 	config := &LoggerConfig{
 		Type:         LoggerTypeCustom,
 		CustomLogger: customLogger,
-	}
-	return NewWithConfig(config)
-}
-
-// NewCustomByName creates a new custom logger configuration using a registered logger name
-func NewCustomByName(name string) error {
-	config := &LoggerConfig{
-		Type:       LoggerTypeCustom,
-		CustomName: name,
 	}
 	return NewWithConfig(config)
 }

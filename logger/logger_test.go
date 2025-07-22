@@ -448,51 +448,6 @@ func TestSetCustomLogger(t *testing.T) {
 	}
 }
 
-func TestSetCustomLoggerByName(t *testing.T) {
-	// Save original logger and clear manager
-	originalLogger := logger
-	originalLoggers := manager.loggers
-	defer func() {
-		logger = originalLogger
-		manager.loggers = originalLoggers
-	}()
-
-	// Reset manager
-	manager.loggers = make(map[string]Logger)
-
-	// Create and register mock logger
-	mockLogger := &MockLogger{}
-	RegisterLogger("test-logger", mockLogger)
-
-	// Test SetCustomLoggerByName with existing logger
-	err := SetCustomLoggerByName("test-logger")
-	if err != nil {
-		t.Errorf("SetCustomLoggerByName returned error: %v", err)
-	}
-
-	// Verify the logger was set
-	if logger != mockLogger {
-		t.Error("SetCustomLoggerByName did not set the logger correctly")
-	}
-
-	// Test that the logger works
-	Info("test message")
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-
-	// Test SetCustomLoggerByName with non-existing logger
-	err = SetCustomLoggerByName("non-existing-logger")
-	if err == nil {
-		t.Error("SetCustomLoggerByName should return error for non-existing logger")
-	}
-
-	expectedError := "failed to set custom logger 'non-existing-logger': logger 'non-existing-logger' not found"
-	if err.Error() != expectedError {
-		t.Errorf("Expected error message '%s', got '%s'", expectedError, err.Error())
-	}
-}
-
 func TestGetCurrentLogger(t *testing.T) {
 	// Save original logger
 	originalLogger := logger
@@ -547,51 +502,6 @@ func TestNewCustom(t *testing.T) {
 	}
 }
 
-func TestNewCustomByName(t *testing.T) {
-	// Save original logger and clear manager
-	originalLogger := logger
-	originalLoggers := manager.loggers
-	defer func() {
-		logger = originalLogger
-		manager.loggers = originalLoggers
-	}()
-
-	// Reset manager
-	manager.loggers = make(map[string]Logger)
-
-	// Create and register mock logger
-	mockLogger := &MockLogger{}
-	RegisterLogger("test-logger", mockLogger)
-
-	// Test NewCustomByName with existing logger
-	err := NewCustomByName("test-logger")
-	if err != nil {
-		t.Errorf("NewCustomByName returned error: %v", err)
-	}
-
-	// Verify the logger was set
-	if logger != mockLogger {
-		t.Error("NewCustomByName did not set the logger correctly")
-	}
-
-	// Test that the logger works
-	Info("test message")
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-
-	// Test NewCustomByName with non-existing logger
-	err = NewCustomByName("non-existing-logger")
-	if err == nil {
-		t.Error("NewCustomByName should return error for non-existing logger")
-	}
-
-	expectedError := "failed to get custom logger 'non-existing-logger': logger 'non-existing-logger' not found"
-	if err.Error() != expectedError {
-		t.Errorf("Expected error message '%s', got '%s'", expectedError, err.Error())
-	}
-}
-
 func TestNewWithConfig_CustomLogger(t *testing.T) {
 	// Save original logger
 	originalLogger := logger
@@ -622,44 +532,6 @@ func TestNewWithConfig_CustomLogger(t *testing.T) {
 	}
 }
 
-func TestNewWithConfig_CustomLoggerByName(t *testing.T) {
-	// Save original logger and clear manager
-	originalLogger := logger
-	originalLoggers := manager.loggers
-	defer func() {
-		logger = originalLogger
-		manager.loggers = originalLoggers
-	}()
-
-	// Reset manager
-	manager.loggers = make(map[string]Logger)
-
-	// Create and register mock logger
-	mockLogger := &MockLogger{}
-	RegisterLogger("test-logger", mockLogger)
-
-	// Test custom logger with registered name
-	config := &LoggerConfig{
-		Type:       LoggerTypeCustom,
-		CustomName: "test-logger",
-	}
-
-	err := NewWithConfig(config)
-	if err != nil {
-		t.Errorf("NewWithConfig returned error: %v", err)
-	}
-
-	if logger != mockLogger {
-		t.Error("NewWithConfig did not set the custom logger by name correctly")
-	}
-
-	// Test that the logger works
-	Info("test message")
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-}
-
 func TestNewWithConfig_CustomLoggerErrors(t *testing.T) {
 	// Save original logger
 	originalLogger := logger
@@ -678,14 +550,6 @@ func TestNewWithConfig_CustomLoggerErrors(t *testing.T) {
 				Type: LoggerTypeCustom,
 			},
 			expectedError: "custom logger type requires either CustomLogger instance or CustomName",
-		},
-		{
-			name: "Custom logger with non-existing name",
-			config: &LoggerConfig{
-				Type:       LoggerTypeCustom,
-				CustomName: "non-existing-logger",
-			},
-			expectedError: "failed to get custom logger 'non-existing-logger': logger 'non-existing-logger' not found",
 		},
 	}
 
@@ -718,69 +582,5 @@ func TestNew_CustomLoggerType(t *testing.T) {
 	expectedError := "custom logger type requires either CustomLogger instance or CustomName"
 	if err.Error() != expectedError {
 		t.Errorf("Expected error '%s', got '%s'", expectedError, err.Error())
-	}
-}
-
-func TestCustomLoggerIntegration(t *testing.T) {
-	// Save original logger and clear manager
-	originalLogger := logger
-	originalLoggers := manager.loggers
-	defer func() {
-		logger = originalLogger
-		manager.loggers = originalLoggers
-	}()
-
-	// Reset manager
-	manager.loggers = make(map[string]Logger)
-
-	// Create mock logger
-	mockLogger := &MockLogger{}
-
-	// Test full integration: register, set, and use
-	RegisterLogger("integration-test", mockLogger)
-
-	err := SetCustomLoggerByName("integration-test")
-	if err != nil {
-		t.Errorf("SetCustomLoggerByName returned error: %v", err)
-	}
-
-	// Test all logger methods
-	Info("info message")
-	Infof("info format %s", "test")
-	Warning("warning message")
-	Warningf("warning format %s", "test")
-	Error("error message")
-	Errorf("error format %s", "test")
-	Fatal("fatal message")
-	Fatalf("fatal format %s", "test")
-	Exitf("exit format %s", "test")
-
-	// Verify all calls were made
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-	if len(mockLogger.InfofCalls) != 1 {
-		t.Errorf("Expected 1 Infof call, got %d", len(mockLogger.InfofCalls))
-	}
-	if len(mockLogger.WarningCalls) != 1 {
-		t.Errorf("Expected 1 Warning call, got %d", len(mockLogger.WarningCalls))
-	}
-	if len(mockLogger.WarningfCalls) != 1 {
-		t.Errorf("Expected 1 Warningf call, got %d", len(mockLogger.WarningfCalls))
-	}
-	if len(mockLogger.ErrorCalls) != 1 {
-		t.Errorf("Expected 1 Error call, got %d", len(mockLogger.ErrorCalls))
-	}
-	if len(mockLogger.ErrorfCalls) != 1 {
-		t.Errorf("Expected 1 Errorf call, got %d", len(mockLogger.ErrorfCalls))
-	}
-	if len(mockLogger.FatalCalls) != 1 {
-		t.Errorf("Expected 1 Fatal call, got %d", len(mockLogger.FatalCalls))
-	}
-	if len(mockLogger.FatalfCalls) != 1 {
-		t.Errorf("Expected 1 Fatalf call, got %d", len(mockLogger.FatalfCalls))
-	}
-	if len(mockLogger.ExitfCalls) != 1 {
-		t.Errorf("Expected 1 Exitf call, got %d", len(mockLogger.ExitfCalls))
 	}
 }
