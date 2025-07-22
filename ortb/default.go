@@ -12,7 +12,7 @@ const (
 	DefaultSecure                     = int8(1)
 )
 
-func SetDefaults(r *openrtb_ext.RequestWrapper) error {
+func SetDefaults(r *openrtb_ext.RequestWrapper, defaultTmax int) error {
 	requestExt, err := r.GetRequestExt()
 	if err != nil {
 		return err
@@ -34,6 +34,10 @@ func SetDefaults(r *openrtb_ext.RequestWrapper) error {
 		if modified {
 			r.SetImp(imps)
 		}
+	}
+
+	if r.TMax == 0 {
+		r.TMax = int64(defaultTmax)
 	}
 
 	return nil

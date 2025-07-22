@@ -1,5 +1,5 @@
 /*
-Package iterators provides a set of iterators for various data structures.
+Package iterutil provides a set of iterutil for various data structures.
 
 # Elements of slices as pointers
 
@@ -15,14 +15,14 @@ In order to improve that, and also not have to use the throw-away `_` variable, 
 iterate across pointers to each element in the slice:
 
 	var myStructs []MyStruct
-	for myStructPtr := range iterators.SlicePointerValues(myStructs) {
+	for myStructPtr := range iterutil.SlicePointerValues(myStructs) {
 		// myStructPtr is a pointer to each element - any changes in the loop will be reflected in the slice element.
 	}
 
 If you still need the index, you can use [SlicePointers]:
 
 	var myStructs []MyStruct
-	for i, myStructPtr := range iterators.SlicePointers(myStructs) {
+	for i, myStructPtr := range iterutil.SlicePointers(myStructs) {
 		// myStructPtr is a pointer to each element - any changes in the loop will be reflected in the slice element.
 		// i is the index of the element.
 	}
@@ -33,4 +33,4 @@ The https://github.com/tidwall/gjson library is already included as a dependency
 the [WalkGjsonLeaves] iterator is available, which will yield the json paths to all leaves in the document along with
 the [gjson.Result] for each leaf.
 */
-package iterators
+package iterutil
