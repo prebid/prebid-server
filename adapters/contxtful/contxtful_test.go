@@ -3903,3 +3903,249 @@ func TestPBSVersionInPayload(t *testing.T) {
 		t.Errorf("Expected PBS version '%s', got '%s'", testVersion, pbsVersion)
 	}
 }
+
+// TestLURLFromPrebidJSResponse tests LURL (Loss URL) extraction from PrebidJS format responses
+func TestLURLFromPrebidJSResponse(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	// Create test request
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "test-imp-id",
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
+						{W: 300, H: 250},
+					},
+				},
+				Ext: json.RawMessage(`{
+					"bidder": {
+						"placementId": "test-placement",
+						"customerId": "test-customer"
+					}
+				}`),
+			},
+		},
+		Site: &openrtb2.Site{
+			Domain: "example.com",
+		},
+	}
+
+	// Mock response with LURL
+	responseBody := `[{
+		"requestId": "test-imp-id",
+		"cpm": 2.50,
+		"currency": "USD",
+		"width": 300,
+		"height": 250,
+		"creativeId": "creative-123",
+		"ad": "<div>Test Ad</div>",
+		"ttl": 300,
+		"netRevenue": true,
+		"mediaType": "banner",
+		"bidderCode": "contxtful",
+		"traceId": "trace-123",
+		"random": 0.123456,
+		"lurl": "https://example.com/loss?price=${AUCTION_PRICE}&reason=${AUCTION_LOSS}"
+	}]`
+
+	response := &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       []byte(responseBody),
+	}
+
+	// Make the request to get request data
+	requestData, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+	if len(errs) > 0 {
+		t.Fatalf("MakeRequests returned errors: %v", errs)
+	}
+
+	// Process the response
+	bidderResponse, errs := bidder.MakeBids(request, requestData[0], response)
+	if len(errs) > 0 {
+		t.Fatalf("MakeBids returned errors: %v", errs)
+	}
+
+	// Verify we got a bid
+	if len(bidderResponse.Bids) != 1 {
+		t.Fatalf("Expected 1 bid, got %d", len(bidderResponse.Bids))
+	}
+
+	bid := bidderResponse.Bids[0].Bid
+
+	// Verify LURL is passed through from response
+	expectedLURL := "https://example.com/loss?price=${AUCTION_PRICE}&reason=${AUCTION_LOSS}"
+	if bid.LURL != expectedLURL {
+		t.Errorf("LURL should be %s, got %s", expectedLURL, bid.LURL)
+	}
+}
+
+// TestLURLWithoutResponseURL tests that LURL is not set when not provided in response
+func TestLURLWithoutResponseURL(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	// Create test request
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "test-imp-id",
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
+						{W: 300, H: 250},
+					},
+				},
+				Ext: json.RawMessage(`{
+					"bidder": {
+						"placementId": "test-placement",
+						"customerId": "test-customer"
+					}
+				}`),
+			},
+		},
+		Site: &openrtb2.Site{
+			Domain: "example.com",
+		},
+	}
+
+	// Mock response without LURL
+	responseBody := `[{
+		"requestId": "test-imp-id",
+		"cpm": 2.50,
+		"currency": "USD",
+		"width": 300,
+		"height": 250,
+		"creativeId": "creative-123",
+		"ad": "<div>Test Ad</div>",
+		"ttl": 300,
+		"netRevenue": true,
+		"mediaType": "banner",
+		"bidderCode": "contxtful",
+		"traceId": "trace-123",
+		"random": 0.123456
+	}]`
+
+	response := &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       []byte(responseBody),
+	}
+
+	// Make the request to get request data
+	requestData, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+	if len(errs) > 0 {
+		t.Fatalf("MakeRequests returned errors: %v", errs)
+	}
+
+	// Process the response
+	bidderResponse, errs := bidder.MakeBids(request, requestData[0], response)
+	if len(errs) > 0 {
+		t.Fatalf("MakeBids returned errors: %v", errs)
+	}
+
+	// Verify we got a bid
+	if len(bidderResponse.Bids) != 1 {
+		t.Fatalf("Expected 1 bid, got %d", len(bidderResponse.Bids))
+	}
+
+	bid := bidderResponse.Bids[0].Bid
+
+	// Verify LURL is not set when not provided in response
+	if bid.LURL != "" {
+		t.Errorf("LURL should be empty when not provided in response, got %s", bid.LURL)
+	}
+}
+
+// TestLURLEmptyString tests handling of empty string values for LURL in response
+func TestLURLEmptyString(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	// Create test request
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "test-imp-id",
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
+						{W: 300, H: 250},
+					},
+				},
+				Ext: json.RawMessage(`{
+					"bidder": {
+						"placementId": "test-placement",
+						"customerId": "test-customer"
+					}
+				}`),
+			},
+		},
+		Site: &openrtb2.Site{
+			Domain: "example.com",
+		},
+	}
+
+	// Mock response with empty string value for LURL
+	responseBody := `[{
+		"requestId": "test-imp-id",
+		"cpm": 2.50,
+		"currency": "USD",
+		"width": 300,
+		"height": 250,
+		"creativeId": "creative-123",
+		"ad": "<div>Test Ad</div>",
+		"ttl": 300,
+		"netRevenue": true,
+		"mediaType": "banner",
+		"bidderCode": "contxtful",
+		"traceId": "trace-123",
+		"random": 0.123456,
+		"lurl": ""
+	}]`
+
+	response := &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       []byte(responseBody),
+	}
+
+	// Make the request to get request data
+	requestData, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+	if len(errs) > 0 {
+		t.Fatalf("MakeRequests returned errors: %v", errs)
+	}
+
+	// Process the response
+	bidderResponse, errs := bidder.MakeBids(request, requestData[0], response)
+	if len(errs) > 0 {
+		t.Fatalf("MakeBids returned errors: %v", errs)
+	}
+
+	// Verify we got a bid
+	if len(bidderResponse.Bids) != 1 {
+		t.Fatalf("Expected 1 bid, got %d", len(bidderResponse.Bids))
+	}
+
+	bid := bidderResponse.Bids[0].Bid
+
+	// Verify LURL is empty when provided as empty string
+	if bid.LURL != "" {
+		t.Errorf("LURL should be empty when provided as empty string, got %s", bid.LURL)
+	}
+}
