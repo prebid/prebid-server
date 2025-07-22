@@ -238,6 +238,7 @@ type ContxtfulExchangeBid struct {
 	Random      float64      `json:"random,omitempty"`
 	NURL        string       `json:"nurl,omitempty"`
 	BURL        string       `json:"burl,omitempty"`
+	LURL        string       `json:"lurl,omitempty"`
 	Ext         ContxtfulExt `json:"ext,omitempty"`
 }
 
@@ -301,7 +302,7 @@ func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *Bi
 			prebidBid.RequestID, prebidBid.CreativeID, prebidBid.Ad,
 			prebidBid.CPM, prebidBid.Width, prebidBid.Height,
 			prebidBid.TraceId, fmt.Sprintf("%.6f", prebidBid.Random),
-			currency, ctx, customerId, prebidBid.Ext.Reseller, prebidBid.PlacementID, prebidBid.NURL, prebidBid.BURL,
+			currency, ctx, customerId, prebidBid.Ext.Reseller, prebidBid.PlacementID, prebidBid.NURL, prebidBid.BURL, prebidBid.LURL,
 		)
 
 		if prebidBid.Currency != "" {
@@ -356,7 +357,7 @@ func (a *adapter) createBid(
 	customerId string,
 	bidderCode string,
 	placementId string,
-	responseNURL, responseBURL string,
+	responseNURL, responseBURL, responseLURL string,
 ) {
 	// Determine media type from impression
 	var bidType openrtb_ext.BidType = openrtb_ext.BidTypeBanner
@@ -381,6 +382,7 @@ func (a *adapter) createBid(
 		CrID:  creativeID,
 		NURL:  responseNURL,
 		BURL:  responseBURL,
+		LURL:  responseLURL,
 	}
 
 	if bidExtJSON, err := createBidExtensions(price, currency, string(bidType), width, height); err == nil {
