@@ -5,7 +5,5 @@ maintainer:
 gvlVendorID: 1344
 userSync:
   iframe:
-    url: https://sync.tagoras.io/api/user/html/685297194d85991a5e6e36dd?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    url: https://sync.programmaticx.ai/api/user/html/685297194d85991a5e6e36dd?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
     userMacro: ${userId}
-openrtb:
-  version: 2.6
