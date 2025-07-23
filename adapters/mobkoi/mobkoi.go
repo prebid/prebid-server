@@ -1,10 +1,11 @@
 package mobkoi
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -14,7 +15,8 @@ import (
 )
 
 type adapter struct {
-	endpoint string
+	// The endpoint of that the bid requests are sent to. Obtained from the server config that provided at adapter initialisation.
+	bidderEndpoint string
 }
 
 type BidderExt struct {
@@ -28,7 +30,7 @@ type UserExt struct {
 // Builder builds a new instance of the {bidder} adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		bidderEndpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
@@ -49,13 +51,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
-	uri := a.endpoint
-	if ext.Bidder.AdServerBaseUrl != "" {
-		baseURL, err := url.ParseRequestURI(ext.Bidder.AdServerBaseUrl)
-		if err == nil { // Ensure parsing doesn't fail
-			baseURL.Path = strings.TrimRight(baseURL.Path, "/") + "/bid"
-			uri = baseURL.String()
-		}
+	if err := updateRequestExt(request); err != nil {
+		return nil, []error{err}
 	}
 
 	if request.User != nil && request.User.Consent != "" {
@@ -79,9 +76,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Content-Type", "application/json")
 	headers.Add("Accept", "application/json")
 
+	bidderEndpoint, err := a.getBidderEndpoint(ext.Bidder)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	requestData := &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     uri,
+		Uri:     bidderEndpoint,
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -118,4 +120,64 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 	return bidResponse, nil
+}
+
+// This function returns the appropriate bidder endpoint, using the provided
+// integration endpoint if valid, otherwise falling back to the bidder endpoint from config.
+// Returns an error if no valid endpoint is available.
+func (a *adapter) getBidderEndpoint(bidderExt openrtb_ext.ImpExtMobkoi) (string, error) {
+	providedEndpoint := bidderExt.IntegrationEndpoint
+	if providedEndpoint != "" && isValidURL(providedEndpoint) {
+		return providedEndpoint, nil
+	}
+
+	if a.bidderEndpoint != "" && isValidURL(a.bidderEndpoint) {
+		return a.bidderEndpoint, nil
+	}
+
+	return "", fmt.Errorf("no valid endpoint configured: both integration endpoint (%s) and bidder endpoint (%s) are invalid", providedEndpoint, a.bidderEndpoint)
+}
+
+
+// This function checks if the endpoint is a valid URL.
+// Example valid and invalid URLs:
+// - https://adapter.config.bidder.endpoint.com/bid (valid)
+// - https://adapter.config.bidder.endpoint.com:8080/bid (valid)
+// - adapter.config.bidder.endpoint.com/bid (invalid)
+// - https://adapter.config.bidder.endpoint.com (invalid)
+func isValidURL(endpoint string) bool {
+	parsed, err := url.Parse(endpoint)
+	return err == nil && parsed.Scheme != "" && parsed.Host != "" && parsed.Path != "" && parsed.Path != "/"
+}
+
+// updateRequestExt sets the mobkoi extension fields in the request extension using standard JSON manipulation.
+func updateRequestExt(request *openrtb2.BidRequest) error {
+	// Parse existing request.Ext as map[string]json.RawMessage
+	extMap := make(map[string]json.RawMessage)
+	if request.Ext != nil {
+		if err := jsonutil.Unmarshal(request.Ext, &extMap); err != nil {
+			return err
+		}
+	}
+
+	// Create mobkoi extension with integration_type
+	mobkoiExt := map[string]interface{}{
+		"integration_type": "pbs",
+	}
+
+	// Marshal mobkoi extension and add to extMap
+	mobkoiBytes, err := jsonutil.Marshal(mobkoiExt)
+	if err != nil {
+		return err
+	}
+	extMap["mobkoi"] = mobkoiBytes
+
+	// Re-marshal and update request.Ext
+	newExt, err := jsonutil.Marshal(extMap)
+	if err != nil {
+		return err
+	}
+
+	request.Ext = newExt
+	return nil
 }

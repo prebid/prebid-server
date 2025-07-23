@@ -28,7 +28,7 @@
         },
         "ext": {
           "bidder": {
-            "adServerBaseUrl": "http://dev.mobkoi.com"
+            "integrationEndpoint": "http://dev.mobkoi.com/bid"
           }
         }
       }
