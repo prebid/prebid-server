@@ -1,4 +1,6 @@
 endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}"
+openrtb:
+  version: 2.6
 geoscope:
   - USA
 maintainer:

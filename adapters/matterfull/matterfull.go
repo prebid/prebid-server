@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -51,21 +52,21 @@ func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][
 	resImps := make([]openrtb2.Imp, 0, len(imps))
 	res := make(map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp)
 
-	for _, imp := range imps {
-		impExt, err := getImpressionExt(&imp)
+	for imp := range iterutil.SlicePointerValues(imps) {
+		impExt, err := getImpressionExt(imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 		//dispatchImpressions
 		//Group impressions by Matterfull-specific parameters `pid
-		if err := compatImpression(&imp); err != nil {
+		if err := compatImpression(imp); err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		res[impExt] = append(res[impExt], imp)
-		resImps = append(resImps, imp)
+		res[impExt] = append(res[impExt], *imp)
+		resImps = append(resImps, *imp)
 	}
 	return res, resImps, errors
 }
@@ -187,12 +188,10 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	seatBid := bidResp.SeatBid[0]
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-
-	for i := 0; i < len(seatBid.Bid); i++ {
-		bid := seatBid.Bid[i]
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seatBid.Bid))
+	for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
+			Bid:     bid,
 			BidType: getMediaTypeForImpID(bid.ImpID, internalRequest.Imp),
 		})
 	}
@@ -201,8 +200,8 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 // getMediaTypeForImp figures out which media type this bid is for
 func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID && imp.Video != nil {
+	for imp := range iterutil.SlicePointerValues(imps) {
+		if imp != nil && imp.ID == impID && imp.Video != nil {
 			return openrtb_ext.BidTypeVideo
 		}
 	}
