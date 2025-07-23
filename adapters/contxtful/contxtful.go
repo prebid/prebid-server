@@ -14,7 +14,6 @@ import (
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/version"
 )
 
 // Essential constants
@@ -210,9 +209,6 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 				"version":  adapterVersion,
 				"customer": customer,
 			},
-		},
-		"pbs": map[string]interface{}{
-			"version": version.Ver,
 		},
 	}
 }

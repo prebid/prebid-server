@@ -110,9 +110,6 @@
               "version": "v1"
             }
           },
-          "pbs": {
-            "version": ""
-          },
           
           "ortb2": {
             "device": {

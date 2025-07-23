@@ -49,9 +49,6 @@
               "version": "v1"
             }
           },
-          "pbs": {
-            "version": ""
-          },
           
           "ortb2": {
             "id": "test-request-empty",

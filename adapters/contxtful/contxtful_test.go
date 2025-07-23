@@ -14,7 +14,6 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/version"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -3808,99 +3807,6 @@ func TestNURLBURLNotPresentInRelayResponse(t *testing.T) {
 	// Verify BURL is not set when not provided in response
 	if bid.BURL != "" {
 		t.Errorf("BURL should be empty when not present in relay response, got %s", bid.BURL)
-	}
-}
-
-// TestPBSVersionInPayload tests that the PBS version is correctly included at the top level of the payload
-func TestPBSVersionInPayload(t *testing.T) {
-	// Store original version and set test version
-	originalVersion := version.Ver
-	testVersion := "test-pbs-version-1.2.3"
-	version.Ver = testVersion
-	defer func() {
-		version.Ver = originalVersion
-	}()
-
-	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
-		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
-	}, config.Server{})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	// Create a simple test request
-	requestJSON := `{
-		"id": "test-request-id",
-		"imp": [
-			{
-				"id": "test-imp-id",
-				"banner": {
-					"format": [
-						{"w": 300, "h": 250}
-					]
-				},
-				"ext": {
-					"bidder": {
-						"placementId": "test-placement",
-						"customerId": "test-customer-123"
-					}
-				}
-			}
-		],
-		"site": {
-			"id": "test-site",
-			"page": "https://example.com"
-		}
-	}`
-
-	var request openrtb2.BidRequest
-	if err := json.Unmarshal([]byte(requestJSON), &request); err != nil {
-		t.Fatalf("Failed to unmarshal test request: %v", err)
-	}
-
-	requests, errs := bidder.MakeRequests(&request, &adapters.ExtraRequestInfo{})
-
-	if len(errs) > 0 {
-		t.Fatalf("MakeRequests returned errors: %v", errs)
-	}
-
-	if len(requests) != 1 {
-		t.Fatalf("Expected 1 request, got %d", len(requests))
-	}
-
-	// Parse the request payload
-	var payload map[string]interface{}
-	if err := json.Unmarshal(requests[0].Body, &payload); err != nil {
-		t.Fatalf("Failed to unmarshal request payload: %v", err)
-	}
-
-	// Verify config exists (should NOT contain pbs)
-	config, ok := payload["config"].(map[string]interface{})
-	if !ok {
-		t.Fatal("Config should be an object")
-	}
-
-	// Verify pbs is NOT in config (it should be at top level)
-	if _, exists := config["pbs"]; exists {
-		t.Error("PBS should not be nested under config, it should be at top level")
-	}
-
-	// Verify pbs config exists at top level
-	pbsConfig, ok := payload["pbs"].(map[string]interface{})
-	if !ok {
-		t.Fatal("PBS config should be an object at top level")
-	}
-
-	// Verify PBS version is present
-	pbsVersion, ok := pbsConfig["version"].(string)
-	if !ok {
-		t.Fatal("PBS version should be a string")
-	}
-
-	// Verify that PBS version matches the expected test version
-	if pbsVersion != testVersion {
-		t.Errorf("Expected PBS version '%s', got '%s'", testVersion, pbsVersion)
 	}
 }
 
