@@ -50,7 +50,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}, nil
 }
 
-// Streamlined impression validation
+// Extract impression parameters (validation handled by JSON schema)
 func validateImpressions(request *openrtb2.BidRequest) ([]string, string, []error) {
 	var errors []error
 	var customerId string
@@ -60,15 +60,6 @@ func validateImpressions(request *openrtb2.BidRequest) ([]string, string, []erro
 		contxtfulParams, err := extractBidderParams(imp.Ext)
 		if err != nil {
 			errors = append(errors, err)
-			continue
-		}
-
-		if contxtfulParams.PlacementId == "" {
-			errors = append(errors, fmt.Errorf("placementId is required for contxtful bidder"))
-			continue
-		}
-		if contxtfulParams.CustomerId == "" {
-			errors = append(errors, fmt.Errorf("customerId is required for contxtful bidder"))
 			continue
 		}
 
