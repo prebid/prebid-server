@@ -229,6 +229,32 @@ type ContxtfulConfigDetails struct {
 	Customer string `json:"customer"`
 }
 
+// BidExtensions represents the complete bid extensions structure
+type BidExtensions struct {
+	OrigBidCPM float64         `json:"origbidcpm"`
+	OrigBidCur string          `json:"origbidcur"`
+	Prebid     PrebidExtension `json:"prebid"`
+}
+
+// PrebidExtension represents the prebid-specific extension data
+type PrebidExtension struct {
+	Type      string          `json:"type"`
+	Meta      PrebidMeta      `json:"meta"`
+	Targeting PrebidTargeting `json:"targeting"`
+}
+
+// PrebidMeta represents the meta information in prebid extensions
+type PrebidMeta struct {
+	AdapterCode string `json:"adaptercode"`
+}
+
+// PrebidTargeting represents the targeting information in prebid extensions
+type PrebidTargeting struct {
+	HBBidder string `json:"hb_bidder"`
+	HBPB     string `json:"hb_pb"`
+	HBSize   string `json:"hb_size"`
+}
+
 type ContxtfulExt struct {
 	Reseller string `json:"reseller,omitempty"`
 }
@@ -410,22 +436,22 @@ func (a *adapter) createBid(
 }
 
 func createBidExtensions(price float64, currency string, bidType string, width int, height int) (json.RawMessage, error) {
-	completeExt := map[string]interface{}{
-		"origbidcpm": price,
-		"origbidcur": currency,
-		"prebid": map[string]interface{}{
-			"type": bidType,
-			"meta": map[string]interface{}{
-				"adaptercode": BidderName,
+	bidExt := BidExtensions{
+		OrigBidCPM: price,
+		OrigBidCur: currency,
+		Prebid: PrebidExtension{
+			Type: bidType,
+			Meta: PrebidMeta{
+				AdapterCode: BidderName,
 			},
-			"targeting": map[string]string{
-				"hb_bidder": BidderName,
-				"hb_pb":     fmt.Sprintf("%.2f", price),
-				"hb_size":   fmt.Sprintf("%dx%d", width, height),
+			Targeting: PrebidTargeting{
+				HBBidder: BidderName,
+				HBPB:     fmt.Sprintf("%.2f", price),
+				HBSize:   fmt.Sprintf("%dx%d", width, height),
 			},
 		},
 	}
-	return json.Marshal(completeExt)
+	return json.Marshal(bidExt)
 }
 
 // Simple unified bidder config extraction - get ORTB2 data and extract params
