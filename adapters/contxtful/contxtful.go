@@ -134,7 +134,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 // Streamlined payload creation
-func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string, bidderCustomerId, bidderVersion, fallbackCustomerId string) map[string]interface{} {
+func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string, bidderCustomerId, bidderVersion, fallbackCustomerId string) ContxtfulRequestPayload {
 	// Create clean request copy
 	requestCopy := *request
 	for i := range requestCopy.Imp {
@@ -166,31 +166,67 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 		requestCopy.User.BuyerUID = uid
 	}
 
-	return map[string]interface{}{
-		"ortb2": requestCopy,
-		"bidRequests": func() []map[string]interface{} {
-			bidRequests := make([]map[string]interface{}, len(request.Imp))
-			for i, imp := range request.Imp {
-				bidRequests[i] = map[string]interface{}{
-					FieldBidder: BidderName,
-					"params": map[string]interface{}{
-						"placementId": validPlacements[i],
-					},
-					"bidId": imp.ID,
-				}
-			}
-			return bidRequests
-		}(),
-		"bidderRequest": map[string]interface{}{
-			"bidderCode": BidderName,
+	// Build bid requests
+	bidRequests := make([]ContxtfulBidRequest, len(request.Imp))
+	for i, imp := range request.Imp {
+		bidRequests[i] = ContxtfulBidRequest{
+			Bidder: BidderName,
+			Params: ContxtfulBidRequestParams{
+				PlacementID: validPlacements[i],
+			},
+			BidID: imp.ID,
+		}
+	}
+
+	return ContxtfulRequestPayload{
+		ORTB2:       &requestCopy,
+		BidRequests: bidRequests,
+		BidderRequest: ContxtfulBidderRequest{
+			BidderCode: BidderName,
 		},
-		"config": map[string]interface{}{
-			BidderName: map[string]interface{}{
-				"version":  adapterVersion,
-				"customer": customer,
+		Config: ContxtfulConfig{
+			Contxtful: ContxtfulConfigDetails{
+				Version:  adapterVersion,
+				Customer: customer,
 			},
 		},
 	}
+}
+
+// ContxtfulRequestPayload represents the complete request payload structure
+type ContxtfulRequestPayload struct {
+	ORTB2         *openrtb2.BidRequest   `json:"ortb2"`
+	BidRequests   []ContxtfulBidRequest  `json:"bidRequests"`
+	BidderRequest ContxtfulBidderRequest `json:"bidderRequest"`
+	Config        ContxtfulConfig        `json:"config"`
+}
+
+// ContxtfulBidRequest represents an individual bid request
+type ContxtfulBidRequest struct {
+	Bidder string                    `json:"bidder"`
+	Params ContxtfulBidRequestParams `json:"params"`
+	BidID  string                    `json:"bidId"`
+}
+
+// ContxtfulBidRequestParams represents the parameters for a bid request
+type ContxtfulBidRequestParams struct {
+	PlacementID string `json:"placementId"`
+}
+
+// ContxtfulBidderRequest represents the bidder request information
+type ContxtfulBidderRequest struct {
+	BidderCode string `json:"bidderCode"`
+}
+
+// ContxtfulConfig represents the configuration section
+type ContxtfulConfig struct {
+	Contxtful ContxtfulConfigDetails `json:"contxtful"`
+}
+
+// ContxtfulConfigDetails represents the detailed configuration
+type ContxtfulConfigDetails struct {
+	Version  string `json:"version"`
+	Customer string `json:"customer"`
 }
 
 type ContxtfulExt struct {
