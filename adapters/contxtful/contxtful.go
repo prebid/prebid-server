@@ -409,26 +409,6 @@ func (a *adapter) createBid(
 	ctx.bidderResponse.Bids = append(ctx.bidderResponse.Bids, typedBid)
 }
 
-func (a *adapter) handleUserSyncs(syncs []string, ctx *BidProcessingContext) {
-	if len(syncs) == 0 || len(ctx.bidderResponse.Bids) == 0 {
-		return
-	}
-
-	firstBid := ctx.bidderResponse.Bids[0].Bid
-	var bidExt map[string]interface{}
-	if firstBid.Ext != nil {
-		json.Unmarshal(firstBid.Ext, &bidExt)
-	} else {
-		bidExt = make(map[string]interface{})
-	}
-
-	bidExt["syncs"] = syncs
-
-	if bidExtJSON, err := json.Marshal(bidExt); err == nil {
-		firstBid.Ext = bidExtJSON
-	}
-}
-
 func createBidExtensions(price float64, currency string, bidType string, width int, height int) (json.RawMessage, error) {
 	completeExt := map[string]interface{}{
 		"origbidcpm": price,
