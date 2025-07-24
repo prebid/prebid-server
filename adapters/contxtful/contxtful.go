@@ -47,9 +47,6 @@ type adapter struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 
 	endpoint := config.Endpoint
-	if endpoint == "" {
-		return nil, fmt.Errorf("missing endpoint configuration")
-	}
 
 	endpointTemplate, err := template.New("endpointTemplate").Parse(endpoint)
 	if err != nil {
