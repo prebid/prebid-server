@@ -63,10 +63,29 @@ func preprocess(request *openrtb2.BidRequest) error {
 			Message: "No Imps in Bid Request",
 		}
 	}
+
+	// Process each impression in the bid request
+	//
+	// FIELD HANDLING BEHAVIOR:
+	// - PRESERVES: All non-bidder fields (gpid, prebid, schain, custom fields, etc.)
+	// - TRANSFORMS: Extracts bidder config from nested structure and flattens to root level
+	// - EXPLICITLY REMOVES: Only the 'bidder' wrapper key (contents are preserved but flattened)
+	//
+	// Example transformation:
+	// Input:  {"gpid": "/path", "bidder": {"placementId": 123}, "custom": "value"}
+	// Output: {"gpid": "/path", "placementId": 123, "custom": "value"}
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = &request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
 
+		// Parse the original extension into a generic map to preserve all fields
+		var originalExt map[string]json.RawMessage
+		if err := jsonutil.Unmarshal(imp.Ext, &originalExt); err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+
+		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
@@ -77,6 +96,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 			return err
 		}
 
+		// Validate the bidder-specific configuration
 		var extImp openrtb_ext.ExtImpCpmstar
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
 			return &errortypes.BadInput{
@@ -84,7 +104,40 @@ func preprocess(request *openrtb2.BidRequest) error {
 			}
 		}
 
-		imp.Ext = bidderExt.Bidder
+		// Create new extension object that preserves all original fields except 'bidder'
+		newExt := make(map[string]json.RawMessage)
+		for key, value := range originalExt {
+			if key != "bidder" {
+				newExt[key] = value
+			}
+		}
+
+		// Add bidder configuration fields directly to the root level
+		var bidderConfig map[string]interface{}
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &bidderConfig); err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+
+		for key, value := range bidderConfig {
+			valueBytes, err := json.Marshal(value)
+			if err != nil {
+				return &errortypes.BadInput{
+					Message: err.Error(),
+				}
+			}
+			newExt[key] = valueBytes
+		}
+
+		// Marshal the new extension object
+		modifiedExt, err := json.Marshal(newExt)
+		if err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+		imp.Ext = modifiedExt
 	}
 
 	return nil
