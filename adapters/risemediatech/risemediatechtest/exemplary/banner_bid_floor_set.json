@@ -1,0 +1,36 @@
+{
+  "mockBidRequest": {
+    "id": "test-bid-floor-set",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": { "placementId": "abc", "bidFloor": 1.23 } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dev-ads.risemediatech.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "test-bid-floor-set",
+          "imp": [
+            {
+              "id": "1",
+              "banner": { "w": 300, "h": 250 },
+              "bidfloor": 1.23,
+              "ext": { "bidder": { "placementId": "abc", "bidFloor": 1.23 } }
+            }
+          ]
+        },
+        "impIDs": ["1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
