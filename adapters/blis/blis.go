@@ -37,7 +37,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var impExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &impExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", 0, err.Error()),
+			Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %v", 0, err),
 		}}
 	}
 	var impExtBidder openrtb_ext.ImpExtBlis
