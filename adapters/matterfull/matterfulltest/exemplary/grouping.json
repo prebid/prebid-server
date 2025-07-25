@@ -1,0 +1,88 @@
+{
+  "request": {
+    "id": "req-id-123",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "pid": "pub-abc"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "pid": "pub-def"
+          }
+        }
+      },
+      {
+        "id": "imp-3",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "pid": "pub-abc"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com"
+    }
+  },
+  "expectedRequestCount": 2,
+  "expectedRequests": [
+    {
+      "request": {
+        "id": "req-id-123",
+        "imp": [
+          {
+            "id": "imp-1",
+            "banner": {
+              "w": 300,
+              "h": 250
+            }
+          },
+          {
+            "id": "imp-3",
+            "banner": {
+              "w": 728,
+              "h": 90
+            }
+          }
+        ]
+      },
+      "url": "http://us.matterfull.co/?uqhash=pub-abc"
+    },
+    {
+      "request": {
+        "id": "req-id-123",
+        "imp": [
+          {
+            "id": "imp-2",
+            "banner": {
+              "w": 320,
+              "h": 50
+            }
+          }
+        ]
+      },
+      "url": "http://us.matterfull.co/?uqhash=pub-def"
+    }
+  ],
+  "mockResponse": {
+    "status": 204
+  },
+  "expectedMakeBidsErrors": []
+}
