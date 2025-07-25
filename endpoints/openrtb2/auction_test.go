@@ -3772,7 +3772,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		openrtb_ext.NormalizeBidderName,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine, hookexecution.NewABTests(deps.cfg))
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
@@ -3853,7 +3853,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		openrtb_ext.NormalizeBidderName,
 	}
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine, hookexecution.NewABTests(deps.cfg))
 	for _, test := range testCases {
 		var req *http.Request
 		deps.cfg.MaxRequestSize = test.maxReqSize
@@ -4036,7 +4036,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				openrtb_ext.NormalizeBidderName,
 			}
 
-			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine, hookexecution.NewABTests(deps.cfg))
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
@@ -4142,7 +4142,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				openrtb_ext.NormalizeBidderName,
 			}
 
-			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine, hookexecution.NewABTests(deps.cfg))
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
@@ -4255,7 +4255,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				openrtb_ext.NormalizeBidderName,
 			}
 
-			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine, hookexecution.NewABTests(deps.cfg))
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{}, hookExecutor)
@@ -5111,7 +5111,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				openrtb_ext.NormalizeBidderName,
 			}
 
-			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+			hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine, hookexecution.NewABTests(deps.cfg))
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 

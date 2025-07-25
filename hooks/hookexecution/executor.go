@@ -57,17 +57,19 @@ type hookExecutor struct {
 	moduleContexts  *moduleContexts
 	metricEngine    metrics.MetricsEngine
 	activityControl privacy.ActivityControl
+	abTests         *ABTests
 	// Mutex needed for BidderRequest and RawBidderResponse Stages as they are run in several goroutines
 	sync.Mutex
 }
 
-func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine) *hookExecutor {
+func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine, abTests *ABTests) *hookExecutor {
 	return &hookExecutor{
 		endpoint:       endpoint,
 		planBuilder:    builder,
 		stageOutcomes:  []StageOutcome{},
 		moduleContexts: &moduleContexts{ctxs: make(map[string]hookstage.ModuleContext)},
 		metricEngine:   me,
+		abTests:        abTests,
 	}
 }
 
@@ -78,6 +80,7 @@ func (e *hookExecutor) SetAccount(account *config.Account) {
 
 	e.account = account
 	e.accountID = account.ID
+	e.abTests.SetAccount(account)
 }
 
 func (e *hookExecutor) SetActivityControl(activityControl privacy.ActivityControl) {
@@ -89,8 +92,19 @@ func (e *hookExecutor) GetOutcomes() []StageOutcome {
 }
 
 func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError) {
-	plan := e.planBuilder.PlanForEntrypointStage(e.endpoint)
+	e.abTests.SetAccountID(body)
+	stagePlan := e.planBuilder.PlanForEntrypointStage(e.endpoint)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityHttpRequest,
+			Stage:  hooks.StageEntrypoint.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
+
 		return body, nil
 	}
 
@@ -112,14 +126,25 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(contexts)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 
 	return payload.Body, rejectErr
 }
 
 func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *RejectError) {
-	plan := e.planBuilder.PlanForRawAuctionStage(e.endpoint, e.account)
+	stagePlan := e.planBuilder.PlanForRawAuctionStage(e.endpoint, e.account)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityHttpRequest,
+			Stage:  hooks.StageRawAuctionRequest.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
+
 		return requestBody, nil
 	}
 
@@ -141,14 +166,25 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(contexts)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 
 	return payload, reject
 }
 
 func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.RequestWrapper) error {
-	plan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
+	stagePlan := e.planBuilder.PlanForProcessedAuctionStage(e.endpoint, e.account)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityHttpRequest,
+			Stage:  hooks.StageEntrypoint.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
+
 		return nil
 	}
 
@@ -174,6 +210,7 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.Request
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(contexts)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 
 	// remove type information if there is no rejection
@@ -185,8 +222,18 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.Request
 }
 
 func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb_ext.RequestWrapper, bidder string) *RejectError {
-	plan := e.planBuilder.PlanForBidderRequestStage(e.endpoint, e.account)
+	stagePlan := e.planBuilder.PlanForBidderRequestStage(e.endpoint, e.account)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityHttpRequest,
+			Stage:  hooks.StageEntrypoint.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
+
 		return nil
 	}
 
@@ -207,14 +254,25 @@ func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb_ext.RequestWrapper
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(contexts)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 
 	return reject
 }
 
 func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError {
-	plan := e.planBuilder.PlanForRawBidderResponseStage(e.endpoint, e.account)
+	stagePlan := e.planBuilder.PlanForRawBidderResponseStage(e.endpoint, e.account)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityHttpRequest,
+			Stage:  hooks.StageEntrypoint.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
+
 		return nil
 	}
 
@@ -237,14 +295,24 @@ func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderRe
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(contexts)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 
 	return reject
 }
 
 func (e *hookExecutor) ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
-	plan := e.planBuilder.PlanForAllProcessedBidResponsesStage(e.endpoint, e.account)
+	stagePlan := e.planBuilder.PlanForAllProcessedBidResponsesStage(e.endpoint, e.account)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityHttpRequest,
+			Stage:  hooks.StageEntrypoint.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
 		return
 	}
 
@@ -265,12 +333,22 @@ func (e *hookExecutor) ExecuteAllProcessedBidResponsesStage(adapterBids map[open
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(contexts)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 }
 
 func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
-	plan := e.planBuilder.PlanForAuctionResponseStage(e.endpoint, e.account)
+	stagePlan := e.planBuilder.PlanForAuctionResponseStage(e.endpoint, e.account)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityHttpRequest,
+			Stage:  hooks.StageEntrypoint.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
 		return
 	}
 
@@ -292,6 +370,7 @@ func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidRespons
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(contexts)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 }
 
@@ -318,6 +397,24 @@ func (e *hookExecutor) pushStageOutcome(outcome StageOutcome) {
 	e.Lock()
 	defer e.Unlock()
 	e.stageOutcomes = append(e.stageOutcomes, outcome)
+}
+
+func applyABTestPlan[T any](ab *ABTests, plan hooks.Plan[T]) hooks.Plan[T] {
+	var p hooks.Plan[T]
+	for _, group := range plan {
+		var g hooks.Group[T]
+		g.Timeout = group.Timeout
+		for _, hook := range group.Hooks {
+			if ab.Run(hook.Module) {
+				g.Hooks = append(g.Hooks, hook)
+			}
+		}
+		if len(g.Hooks) > 0 {
+			p = append(p, g)
+		}
+	}
+
+	return p
 }
 
 type EmptyHookExecutor struct{}

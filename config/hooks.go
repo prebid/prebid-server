@@ -14,6 +14,7 @@ type Hooks struct {
 type Modules map[string]map[string]interface{}
 
 type HookExecutionPlan struct {
+	ABTests   []ABTest `mapstructure:"abtests" json:"abtests"`
 	Endpoints map[string]struct {
 		Stages map[string]struct {
 			Groups []HookExecutionGroup `mapstructure:"groups" json:"groups"`
@@ -31,4 +32,19 @@ type HookExecutionGroup struct {
 		// HookImplCode is an arbitrary value, used to identify hook when sending metrics, debug information, etc.
 		HookImplCode string `mapstructure:"hook_impl_code" json:"hook_impl_code"`
 	} `mapstructure:"hook_sequence" json:"hook_sequence"`
+}
+
+type ABTest struct {
+	// ModuleCode is a composite value in the format: {vendor_name}.{module_name}
+	ModuleCode string `mapstructure:"module_code" json:"module_code"`
+	Enabled    *bool  `mapstructure:"enabled" json:"enabled"`
+	// Accounts is a slice of accounts that will trigger module execution
+	// An empty slice will trigger module execution for all accounts
+	Accounts []string `mapstructure:"accounts" json:"accounts"`
+	// PercentActive enables specifying the percentage of requests that will trigger module execution
+	// The default value (nil) will trigger module execution on every request, the same as if the value "100" is set
+	PercentActive *uint16 `mapstructure:"percent_active" json:"percent_active"`
+	// LogAnalyticsTag specifies whether module execution result will get noted in the analytics log
+	// The default value (nil) will enable writing results to the analytics log, the same as if the value "true" is set
+	LogAnalyticsTag *bool `mapstructure:"log_analytics_tag" json:"log_analytics_tag"`
 }

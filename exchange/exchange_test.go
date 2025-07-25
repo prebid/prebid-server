@@ -5896,7 +5896,7 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 		TMax:   500,
 	}
 
-	exec := hookexecution.NewHookExecutor(TestApplyHookMutationsBuilder{}, "/openrtb2/auction", &metricsConfig.NilMetricsEngine{})
+	exec := hookexecution.NewHookExecutor(TestApplyHookMutationsBuilder{}, "/openrtb2/auction", &metricsConfig.NilMetricsEngine{}, hookexecution.NewABTests(&config.Configuration{}))
 
 	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
