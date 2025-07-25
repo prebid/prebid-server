@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -30,22 +31,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers.Set("Content-Type", "application/json")
 	headers.Set("Accept", "application/json")
 
-	for i := range request.Imp {
-		imp := &request.Imp[i]
-
-		// Validate the Ext field
+	for imp := range iterutil.SlicePointerValues(request.Imp) {
 		var bidderExt struct {
 			Bidder struct {
 				PixID string `json:"pix_id"`
 			} `json:"bidder"`
 		}
+
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{Message: "Invalid pix_id in impression ext: " + err.Error()})
 			continue
 		}
 
 		requestCopy := *request
-		requestCopy.Imp = request.Imp[i : i+1]
+		requestCopy.Imp = []openrtb2.Imp{*imp} // slice notation with dereferencing
 
 		reqJSON, err := jsonutil.Marshal(requestCopy)
 		if err != nil {
