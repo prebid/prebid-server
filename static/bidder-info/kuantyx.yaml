@@ -1,0 +1,10 @@
+aliasOf: aso
+endpoint: "https://srv.kntxy.com/pbs/bidder?zid={{.ZoneID}}"
+maintainer:
+  email: "ssp@kuantyx.com"
+userSync:
+  # Kuantyx supports user syncing, but requires configuration by the host.Contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect
+    - iframe
