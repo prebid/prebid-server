@@ -29,7 +29,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	for imp := range iterators.SlicePointerValues(request.Imp) {
 		impExt, err := parseImpExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: %v", imp.ID, err)})
+			errs = append(errs, &errortypes.BadInput{Message: fmt.Errorf("impID %s: %w", imp.ID, err).Error()})
 			continue
 		}
 
@@ -106,16 +106,16 @@ func extractImpIDs(imps []openrtb2.Imp) []string {
 	return ids
 }
 
-func parseImpExt(ext jsonutils.RawMessage) (*openrtb_ext.ExtImpRiseMediaTech, error) {
+func parseImpExt(ext jsonutils.RawMessage) (openrtb_ext.ExtImpRiseMediaTech, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutils.Unmarshal(ext, &bidderExt); err != nil {
-		return nil, err
+		return openrtb_ext.ExtImpRiseMediaTech{}, err
 	}
 	var riseExt openrtb_ext.ExtImpRiseMediaTech
 	if err := jsonutils.Unmarshal(bidderExt.Bidder, &riseExt); err != nil {
-		return nil, err
+		return openrtb_ext.ExtImpRiseMediaTech{}, err
 	}
-	return &riseExt, nil
+	return riseExt, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
