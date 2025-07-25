@@ -1,7 +1,6 @@
 package risemediatech
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,7 +8,9 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -26,17 +27,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var validImps []openrtb2.Imp
 	var setTestMode bool
 
-	for _, imp := range request.Imp {
+	for imp := range iterutil.SlicePointerValues(request.Imp) {
 		impExt, err := parseImpExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("impID %s: %v", imp.ID, err))
+			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: %v", imp.ID, err)})
 			continue
 		}
 
 		// Validate banner
 		if imp.Banner != nil {
 			if imp.Banner.W == nil || imp.Banner.H == nil || *imp.Banner.W == 0 || *imp.Banner.H == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: invalid banner dimensions", imp.ID))
+				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: invalid banner dimensions", imp.ID)})
 				continue
 			}
 		}
@@ -44,30 +45,30 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		// Validate video
 		if imp.Video != nil {
 			if len(imp.Video.MIMEs) == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: missing or empty video.mimes", imp.ID))
+				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: missing or empty video.mimes", imp.ID)})
 				continue
 			}
 			if imp.Video.W == nil || imp.Video.H == nil || *imp.Video.W == 0 || *imp.Video.H == 0 {
-				errs = append(errs, fmt.Errorf("impID %s: missing or invalid video width/height", imp.ID))
+				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: missing or invalid video width/height", imp.ID)})
 				continue
 			}
 		}
 
 		// Setting bid floor if present
-		if impExt.BidFloor != nil && *impExt.BidFloor > 0 {
-			imp.BidFloor = *impExt.BidFloor
+		if impExt.BidFloor > 0 {
+			imp.BidFloor = impExt.BidFloor
 		}
 
 		// Check test mode
-		if impExt.TestMode != nil && *impExt.TestMode == 1 {
+		if impExt.TestMode == 1 {
 			setTestMode = true
 		}
 
-		validImps = append(validImps, imp)
+		validImps = append(validImps, *imp)
 	}
 
 	if len(validImps) == 0 {
-		return nil, append(errs, errors.New("no valid impressions"))
+		return nil, append(errs, &errortypes.BadInput{Message: "no valid impressions"})
 	}
 
 	modifiedRequest := *request
@@ -76,7 +77,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		modifiedRequest.Test = 1
 	}
 
-	reqJSON, err := json.Marshal(modifiedRequest)
+	reqJSON, err := jsonutil.Marshal(modifiedRequest)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -100,13 +101,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 func extractImpIDs(imps []openrtb2.Imp) []string {
 	ids := make([]string, 0, len(imps))
-	for _, imp := range imps {
+	for imp := range iterutil.SlicePointerValues(imps) {
 		ids = append(ids, imp.ID)
 	}
 	return ids
 }
 
-func parseImpExt(ext json.RawMessage) (*openrtb_ext.ExtImpRiseMediaTech, error) {
+func parseImpExt(ext jsonutil.RawMessage) (*openrtb_ext.ExtImpRiseMediaTech, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(ext, &bidderExt); err != nil {
 		return nil, err
@@ -136,10 +137,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.Reque
 		br.Currency = bidResp.Cur
 	}
 
-	for _, seatBid := range bidResp.SeatBid {
-		for i := range seatBid.Bid {
-			bid := &seatBid.Bid[i]
-
+	for seatBid := range iterutil.SlicePointerValues(bidResp.SeatBid) {
+		for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
 			bidType, err := getBidType(bid)
 			if err != nil {
 				return nil, []error{err}
