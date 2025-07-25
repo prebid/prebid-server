@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Contxtful Adapter Params",
+  "description": "A schema which validates params for the Contxtful adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID"
+    },
+    "customerId": {
+      "type": "string",
+      "description": "Customer ID used to build the endpoint URL"
+    }
+  },
+  "required": ["placementId", "customerId"]
+} 
