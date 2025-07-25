@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "app": {
+      "bundle": "com.example.app"
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "w": 111,
+          "h": 111
+        },
+        "ext": {
+          "pubname": ""
+         }
+    }
+     
+    ],
+    "device": {
+      "ip": "1.1.1.1",
+      "ifa": "9d8fe0a9-c0dd-4482-b16b-5709b00c608d",
+      "ua": "Mozilla/5.0",
+       "os": "ios"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+        "value": "Publisher name missing",
+        "comparison": "literal"
+    }
+    
+  ]
+}
