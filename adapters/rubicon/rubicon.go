@@ -56,7 +56,8 @@ type bidRequestExt struct {
 }
 
 type bidRequestExtPrebid struct {
-	Bidders bidRequestExtPrebidBidders `json:"bidders"`
+	Bidders  bidRequestExtPrebidBidders `json:"bidders"`
+	MultiBid []*openrtb_ext.ExtMultiBid `json:"multibid,omitempty"`
 }
 
 type bidRequestExtPrebidBidders struct {
@@ -77,10 +78,11 @@ type rubiconImpExtRPTrack struct {
 }
 
 type rubiconImpExt struct {
-	RP    rubiconImpExtRP `json:"rp,omitempty"`
-	GPID  string          `json:"gpid,omitempty"`
-	Skadn json.RawMessage `json:"skadn,omitempty"`
-	Tid   string          `json:"tid,omitempty"`
+	RP      rubiconImpExtRP `json:"rp,omitempty"`
+	GPID    string          `json:"gpid,omitempty"`
+	Skadn   json.RawMessage `json:"skadn,omitempty"`
+	Tid     string          `json:"tid,omitempty"`
+	MaxBids *int            `json:"maxbids,omitempty"`
 }
 
 type rubiconImpExtRP struct {
@@ -241,6 +243,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	impsToExtNotGrouped, errs := createImpsToExtMap(request.Imp)
 	impsToExtMap := prepareImpsToExtMap(impsToExtNotGrouped)
 
+	maxBids := getMaxBids(request)
+
 	rubiconRequest := *request
 	for imp, bidderExt := range impsToExtMap {
 		rubiconExt := bidderExt.Bidder
@@ -268,9 +272,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
-			GPID:  bidderExt.Gpid,
-			Skadn: bidderExt.Skadn,
-			Tid:   bidderExt.Tid,
+			GPID:    bidderExt.Gpid,
+			Skadn:   bidderExt.Skadn,
+			Tid:     bidderExt.Tid,
+			MaxBids: maxBids,
 		}
 
 		imp.Ext, err = json.Marshal(&impExt)
@@ -523,6 +528,25 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
+}
+
+func getMaxBids(bidRequest *openrtb2.BidRequest) *int {
+	var bidRequestExt bidRequestExt
+	if err := jsonutil.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+		return nil
+	}
+
+	if len(bidRequestExt.Prebid.MultiBid) == 0 {
+		return nil
+	}
+
+	multiBid := bidRequestExt.Prebid.MultiBid[0]
+
+	if multiBid == nil {
+		return nil
+	}
+
+	return multiBid.MaxBids
 }
 
 func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBidder, []error) {
