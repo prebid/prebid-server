@@ -662,6 +662,7 @@ func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 		p.activityRequest)
 }
 
+// TODO: can this be deleted?
 func (p usersyncPrivacy) ActivityAllowAnalytics(name string) bool {
 	return p.activityControl.Allow(
 		privacy.ActivityReportAnalytics,
@@ -669,6 +670,7 @@ func (p usersyncPrivacy) ActivityAllowAnalytics(name string) bool {
 		privacy.ActivityRequest{}) // TODO: is this correct?
 }
 
+// TODO: can this be deleted?
 func (p usersyncPrivacy) GDPRAllowsAnalytics(name string) bool {
 	return p.gdprAnalyticsPolicy.Allow(name)
 }

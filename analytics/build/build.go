@@ -63,15 +63,6 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-// type enabledAnalytics {
-// 	modules map[string]analytics.Module
-// 	ctx     context.Context
-// }
-
-// func (ea enabledAnalytics) SetContext(ctx context.Context) {
-// 	ea.ctx = ctx
-// }
-
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
 		var isAllowed bool
