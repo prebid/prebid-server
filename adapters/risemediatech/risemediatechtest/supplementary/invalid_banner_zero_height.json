@@ -1,0 +1,15 @@
+{
+    "mockBidRequest": {
+      "id": "test-invalid-banner-zero-height",
+      "imp": [
+        {
+          "id": "1",
+          "banner": { "w": 300, "h": 0 },
+          "ext": { "bidder": { "placementId": "abc" } }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      { "value": "invalid banner dimensions", "comparison": "contains" }
+    ]
+  }
