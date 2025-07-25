@@ -12,6 +12,11 @@
       "type": "string",
       "description": "pending"
     },
+    "refreshrateseconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Time in seconds to consider a cached tree entry expired. If zero, entries will never expire"
+    },
     "rulesets": {
       "type": "array",
       "minItems": 1,
