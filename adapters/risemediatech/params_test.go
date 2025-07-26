@@ -12,12 +12,19 @@ func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	require.NoError(t, err, "Failed to fetch the JSON schema")
 
-	for _, p := range validParams {
-		p := p // capture range variable
-		t.Run(p, func(t *testing.T) {
-			err := validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(p))
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"Valid bidfloor only", `{"bidfloor": 0.01}`},
+		{"Valid bidfloor with testMode", `{"bidfloor": 2.5, "testMode": 1}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(tt.input))
 			if err != nil {
-				t.Errorf("Schema rejected valid params: %s — error: %v", p, err)
+				t.Errorf("Schema rejected valid params: %s — error: %v", tt.input, err)
 			}
 		})
 	}
@@ -27,12 +34,21 @@ func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	require.NoError(t, err, "Failed to fetch the JSON schema")
 
-	for _, p := range invalidParams {
-		p := p // capture range variable
-		t.Run(p, func(t *testing.T) {
-			err := validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(p))
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"Invalid bidfloor type", `{"bidfloor": "1.2"}`},
+		{"Invalid testMode type", `{"testMode": "yes"}`},
+		{"Negative bidfloor", `{"bidfloor": -5}`},
+		{"Invalid testMode value", `{"testMode": 9999}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(tt.input))
 			if err == nil {
-				t.Errorf("Schema allowed invalid params: %s", p)
+				t.Errorf("Schema allowed invalid params: %s", tt.input)
 			}
 		})
 	}

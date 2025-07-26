@@ -1,15 +1,18 @@
 package risemediatech
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/stretchr/testify/require"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -103,20 +106,18 @@ func TestMakeRequestsErrors(t *testing.T) {
 	}{
 		{"Invalid ext", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`not-json`)}}, "impID 1:"},
 		{"Invalid banner dims", []openrtb2.Imp{{ID: "1", Banner: &openrtb2.Banner{} /* nil w/h */, Ext: baseImp.Ext}}, "invalid banner dimensions"},
-		{"Empty video mimes", []openrtb2.Imp{{ID: "1", Video: &openrtb2.Video{W: intPtr(640), H: intPtr(480), MIMEs: []string{}}, Ext: baseImp.Ext}}, "missing or empty video.mimes"},
-		{"Invalid video dims", []openrtb2.Imp{{ID: "1", Video: &openrtb2.Video{W: intPtr(0), H: intPtr(0), MIMEs: []string{"video/mp4"}}, Ext: baseImp.Ext}}, "missing or invalid video width/height"},
+		{"Empty video mimes", []openrtb2.Imp{{ID: "1", Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](640), H: ptrutil.ToPtr[int64](480), MIMEs: []string{}}, Ext: baseImp.Ext}}, "missing or empty video.mimes"},
+		{"Invalid video dims", []openrtb2.Imp{{ID: "1", Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](0), H: ptrutil.ToPtr[int64](0), MIMEs: []string{"video/mp4"}}, Ext: baseImp.Ext}}, "missing or invalid video width/height"},
 		{"No valid imps", []openrtb2.Imp{}, "no valid impressions"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &openrtb2.BidRequest{Imp: tt.imps}
 			_, errs := a.MakeRequests(req, nil)
-			if len(errs) == 0 {
-				t.Errorf("expected error, got none")
-			}
+			assert.NotEmpty(t, errs, "expected error, got none")
 			found := false
 			for _, err := range errs {
-				if err != nil && (tt.wantErr == "" || contains(err.Error(), tt.wantErr)) {
+				if err != nil && (tt.wantErr == "" || strings.Contains(err.Error(), tt.wantErr)) {
 					found = true
 					break
 				}
@@ -145,12 +146,10 @@ func TestMakeBidsErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, errs := a.MakeBids(validReq, validReqData, tt.respData)
-			if len(errs) == 0 {
-				t.Errorf("expected error, got none")
-			}
+			assert.NotEmpty(t, errs, "expected error, got none")
 			found := false
 			for _, err := range errs {
-				if err != nil && contains(err.Error(), tt.wantErr) {
+				if err != nil && strings.Contains(err.Error(), tt.wantErr) {
 					found = true
 					break
 				}
@@ -161,9 +160,3 @@ func TestMakeBidsErrors(t *testing.T) {
 		})
 	}
 }
-
-// Helper for int pointer
-func intPtr(i int64) *int64 { return &i }
-// Helper for string contains
-func contains(s, substr string) bool { return substr == "" || (len(substr) > 0 && len(s) > 0 && (len(s) >= len(substr)) && (stringContains(s, substr))) }
-func stringContains(s, substr string) bool { return len(substr) == 0 || (len(s) >= len(substr) && (s == substr || (len(s) > len(substr) && (s[0:len(substr)] == substr || stringContains(s[1:], substr)))) ) }
