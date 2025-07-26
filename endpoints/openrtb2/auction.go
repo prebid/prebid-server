@@ -550,7 +550,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		errs = append(errs, errsL...)
 	}
 
-	if err := ortb.SetDefaults(req); err != nil {
+	if err := ortb.SetDefaults(req, deps.cfg.TmaxDefault); err != nil {
 		errs = []error{err}
 		return
 	}
