@@ -9,8 +9,8 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	iterators "github.com/prebid/prebid-server/v3/util/iterutil"
-	jsonutils "github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -26,7 +26,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var validImps []openrtb2.Imp
 	var setTestMode bool
 
-	for imp := range iterators.SlicePointerValues(request.Imp) {
+	for imp := range iterutil.SlicePointerValues(request.Imp) {
 		impExt, err := parseImpExt(imp.Ext)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{Message: fmt.Errorf("impID %s: %w", imp.ID, err).Error()})
@@ -76,7 +76,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		modifiedRequest.Test = 1
 	}
 
-	reqJSON, err := jsonutils.Marshal(modifiedRequest)
+	reqJSON, err := jsonutil.Marshal(modifiedRequest)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -100,19 +100,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 func extractImpIDs(imps []openrtb2.Imp) []string {
 	ids := make([]string, 0, len(imps))
-	for imp := range iterators.SlicePointerValues(imps) {
+	for imp := range iterutil.SlicePointerValues(imps) {
 		ids = append(ids, imp.ID)
 	}
 	return ids
 }
 
-func parseImpExt(ext jsonutils.RawMessage) (openrtb_ext.ExtImpRiseMediaTech, error) {
+func parseImpExt(ext jsonutil.RawMessage) (openrtb_ext.ExtImpRiseMediaTech, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := jsonutils.Unmarshal(ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(ext, &bidderExt); err != nil {
 		return openrtb_ext.ExtImpRiseMediaTech{}, err
 	}
 	var riseExt openrtb_ext.ExtImpRiseMediaTech
-	if err := jsonutils.Unmarshal(bidderExt.Bidder, &riseExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &riseExt); err != nil {
 		return openrtb_ext.ExtImpRiseMediaTech{}, err
 	}
 	return riseExt, nil
@@ -127,7 +127,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.Reque
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := jsonutils.Unmarshal(respData.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(respData.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -136,8 +136,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.Reque
 		br.Currency = bidResp.Cur
 	}
 
-	for seatBid := range iterators.SlicePointerValues(bidResp.SeatBid) {
-		for bid := range iterators.SlicePointerValues(seatBid.Bid) {
+	for seatBid := range iterutil.SlicePointerValues(bidResp.SeatBid) {
+		for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
 			bidType, err := getBidType(bid)
 			if err != nil {
 				return nil, []error{err}
