@@ -2,6 +2,7 @@ package thetradedesk
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"net/http"
 	"testing"
@@ -425,7 +426,7 @@ func TestTheTradeDeskAdapter_BuildEndpoint(t *testing.T) {
 			supplySourceId:   "",
 			defaultEndpoint:  "",
 			expectedEndpoint: "",
-			wantErr:          nil,
+			wantErr:          []error{errors.New("Either supplySourceId or a default endpoint must be provided")},
 		},
 	}
 
@@ -442,6 +443,9 @@ func TestTheTradeDeskAdapter_BuildEndpoint(t *testing.T) {
 			finalEndpoint, err := a.buildEndpointURL(tt.supplySourceId)
 			if tt.wantErr != nil {
 				assert.NotNil(t, err)
+				assert.Equal(t, tt.wantErr[0].Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
 			}
 			assert.Equal(t, tt.expectedEndpoint, finalEndpoint)
 		})
