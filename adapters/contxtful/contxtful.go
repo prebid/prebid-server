@@ -460,23 +460,14 @@ func extractBidderConfig(request *openrtb2.BidRequest) (string, string) {
 		return "", ""
 	}
 
-	var requestExt struct {
-		Prebid struct {
-			BidderConfig []struct {
-				Bidders []string `json:"bidders"`
-				Config  struct {
-					ORTB2 json.RawMessage `json:"ortb2"`
-				} `json:"config"`
-			} `json:"bidderconfig"`
-		} `json:"prebid"`
-	}
+	var requestExt openrtb_ext.ExtRequest;
 
 	if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
 		return "", ""
 	}
 
 	// Find contxtful bidder config and extract params from ORTB2 data
-	for _, config := range requestExt.Prebid.BidderConfig {
+	for _, config := range requestExt.Prebid.BidderConfigs {
 		for _, bidder := range config.Bidders {
 			if bidder == BidderName && config.Config.ORTB2 != nil {
 				return extractContxtfulParams(config.Config.ORTB2)
@@ -487,10 +478,8 @@ func extractBidderConfig(request *openrtb2.BidRequest) (string, string) {
 }
 
 // Extract contxtful params from any ORTB2 data (unified for both bidder config and other sources)
-func extractContxtfulParams(ortb2Data json.RawMessage) (string, string) {
-	var ortb2 struct {
-		User struct {
-			Data []struct {
+func extractContxtfulParams(ortb2Data *openrtb_ext.ORTB2) (string, string) {
+	var ortb2UserData []struct {
 				Name string `json:"name"`
 				Ext  struct {
 					Params struct {
@@ -498,16 +487,14 @@ func extractContxtfulParams(ortb2Data json.RawMessage) (string, string) {
 						EV string `json:"ev"` // Version
 					} `json:"params"`
 				} `json:"ext"`
-			} `json:"data"`
-		} `json:"user"`
-	}
+			};
 
-	if err := json.Unmarshal(ortb2Data, &ortb2); err != nil {
+	if err := json.Unmarshal(ortb2Data.User, &ortb2UserData); err != nil {
 		return "", ""
 	}
 
 	// Find contxtful params
-	for _, data := range ortb2.User.Data {
+	for _, data := range ortb2UserData {
 		if data.Name == BidderName && data.Ext.Params.CI != "" {
 			version := data.Ext.Params.EV
 			if version == "" {
