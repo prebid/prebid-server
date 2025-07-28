@@ -1,7 +1,6 @@
 package contxtful
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -25,7 +24,7 @@ const (
 )
 
 // Helper to safely extract bidder parameters from impression extension
-func extractBidderParams(impExt json.RawMessage) (*openrtb_ext.ExtImpContxtful, error) {
+func extractBidderParams(impExt jsonutil.RawMessage) (*openrtb_ext.ExtImpContxtful, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(impExt, &bidderExt); err != nil {
 		return nil, err
@@ -100,7 +99,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// Create payload
 	payload := createRequestPayload(request, validPlacements, bidderCustomerId, bidderVersion, customerId)
 
-	requestJSON, err := json.Marshal(payload)
+	requestJSON, err := jsonutil.Marshal(payload)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -152,7 +151,7 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 	// Create clean request copy
 	requestCopy := *request
 	for i := range requestCopy.Imp {
-		requestCopy.Imp[i].Ext = json.RawMessage(`{}`)
+		requestCopy.Imp[i].Ext = jsonutil.RawMessage(`{}`)
 	}
 
 	// Resolve configuration with fallbacks inline
@@ -332,14 +331,14 @@ func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext
 
 	// Try PrebidJS format first
 	var prebidBids []ContxtfulExchangeBid
-	if err := json.Unmarshal(responseBody, &prebidBids); err == nil && len(prebidBids) > 0 &&
+	if err := jsonutil.Unmarshal(responseBody, &prebidBids); err == nil && len(prebidBids) > 0 &&
 		prebidBids[0].CPM > 0 && prebidBids[0].RequestID != "" && prebidBids[0].Ad != "" {
 		return a.processPrebidJSBids(prebidBids, ctx, customerId)
 	}
 
 	// Handle trace format (acknowledges response, no bids)
 	var traceData []map[string]interface{}
-	if err := json.Unmarshal(responseBody, &traceData); err == nil && len(traceData) > 0 {
+	if err := jsonutil.Unmarshal(responseBody, &traceData); err == nil && len(traceData) > 0 {
 		if _, exists := traceData[0]["traceId"]; exists {
 			return true // Trace acknowledged
 		}
@@ -454,7 +453,7 @@ func (a *adapter) createBid(
 	ctx.bidderResponse.Bids = append(ctx.bidderResponse.Bids, typedBid)
 }
 
-func createBidExtensions(params BidExtensionsParams) (json.RawMessage, error) {
+func createBidExtensions(params BidExtensionsParams) (jsonutil.RawMessage, error) {
 	bidExt := BidExtensions{
 		OrigBidCPM: params.Price,
 		OrigBidCur: params.Currency,
@@ -470,7 +469,7 @@ func createBidExtensions(params BidExtensionsParams) (json.RawMessage, error) {
 			},
 		},
 	}
-	return json.Marshal(bidExt)
+	return jsonutil.Marshal(bidExt)
 }
 
 // Simple unified bidder config extraction - get ORTB2 data and extract params
@@ -481,7 +480,7 @@ func extractBidderConfig(request *openrtb2.BidRequest) (string, string) {
 
 	var requestExt openrtb_ext.ExtRequest
 
-	if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
+	if err := jsonutil.Unmarshal(request.Ext, &requestExt); err != nil {
 		return "", ""
 	}
 
@@ -508,7 +507,7 @@ func extractContxtfulParams(ortb2Data *openrtb_ext.ORTB2) (string, string) {
 		} `json:"ext"`
 	}
 
-	if err := json.Unmarshal(ortb2Data.User, &ortb2UserData); err != nil {
+	if err := jsonutil.Unmarshal(ortb2Data.User, &ortb2UserData); err != nil {
 		return "", ""
 	}
 
@@ -609,7 +608,7 @@ func extractUserIDForCookie(request *openrtb2.BidRequest) string {
 	// Priority 2: PBS buyeruids map (simplified navigation)
 	if request.User.Ext != nil {
 		var userExt openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &userExt); err == nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &userExt); err == nil {
 			if userExt.Prebid != nil && userExt.Prebid.BuyerUIDs != nil {
 				if uid := userExt.Prebid.BuyerUIDs[BidderName]; uid != "" {
 					return uid
