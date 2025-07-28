@@ -550,7 +550,7 @@ const (
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
-	BidderOprx      	    BidderName = "oprx"
+	BidderOprx              BidderName = "oprx"
 	BidderOptidigital       BidderName = "optidigital"
 	BidderOraki             BidderName = "oraki"
 	BidderOrbidder          BidderName = "orbidder"
