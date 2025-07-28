@@ -270,9 +270,6 @@ func modifyVideo(video openrtb2.Video) (*openrtb2.Video, error) {
 	if video.MaxDuration == 0 {
 		video.MaxDuration = videoMaxDuration
 	}
-	if len(video.MIMEs) == 0 {
-		video.MIMEs = []string{"video/mp4"}
-	}
 	if len(video.Protocols) == 0 {
 		video.Protocols = []adcom1.MediaCreativeSubtype{3}
 	}

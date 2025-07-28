@@ -6,7 +6,8 @@
                 "id": "video-imp-id",
                 "video": {
                     "w": 640,
-                    "h": 480
+                    "h": 480,
+                    "mimes": ["video/mp4"]
                 },
                 "ext": {
                     "bidder": {
