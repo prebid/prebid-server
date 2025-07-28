@@ -334,13 +334,12 @@ func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext
 
 	// Store configuration in context for use in bid creation
 	ctx.version = config.Version
-	customerId := config.CustomerID
 
 	// Try PrebidJS format first
 	var prebidBids []ContxtfulExchangeBid
 	if err := jsonutil.Unmarshal(responseBody, &prebidBids); err == nil && len(prebidBids) > 0 &&
 		prebidBids[0].CPM > 0 && prebidBids[0].RequestID != "" && prebidBids[0].Ad != "" {
-		return a.processPrebidJSBids(prebidBids, ctx, customerId)
+		return a.processPrebidJSBids(prebidBids, ctx, config.CustomerID)
 	}
 
 	// Handle trace format (acknowledges response, no bids)
