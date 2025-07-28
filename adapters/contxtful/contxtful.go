@@ -400,7 +400,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		domain:           domain,
 		adRequestID:      request.ID,
 	}
-	ctx.bidderResponse.Currency = "USD"
 
 	if a.processResponse(response.Body, ctx) {
 		return ctx.bidderResponse, ctx.errors
