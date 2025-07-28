@@ -29,6 +29,8 @@ type ModuleInvocationContext struct {
 	Endpoint string
 	// ModuleContext holds values that the module passes to itself from the previous stages.
 	ModuleContext ModuleContext
+	// HookImplCode is the hook_impl_code for a module instance to differentiate between multiple hooks
+	HookImplCode string
 }
 
 // ModuleContext holds arbitrary data passed between module hooks at different stages.
