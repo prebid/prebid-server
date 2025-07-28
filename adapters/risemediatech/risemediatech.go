@@ -99,9 +99,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func extractImpIDs(imps []openrtb2.Imp) []string {
-	ids := make([]string, 0, len(imps))
-	for imp := range iterutil.SlicePointerValues(imps) {
-		ids = append(ids, imp.ID)
+	ids := make([]string, len(imps))
+	for i := range imps {
+		ids[i] = imps[i].ID
 	}
 	return ids
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidParams(t *testing.T) {
@@ -22,10 +23,7 @@ func TestValidParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(tt.input))
-			if err != nil {
-				t.Errorf("Schema rejected valid params: %s — error: %v", tt.input, err)
-			}
+			assert.NoError(t, validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(tt.input)))
 		})
 	}
 }
@@ -46,22 +44,8 @@ func TestInvalidParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(tt.input))
-			if err == nil {
-				t.Errorf("Schema allowed invalid params: %s", tt.input)
-			}
+			assert.Error(t, validator.Validate(openrtb_ext.BidderRiseMediaTech, json.RawMessage(tt.input)))
 		})
 	}
 }
 
-var validParams = []string{
-	`{"bidfloor": 0.01}`,
-	`{"bidfloor": 2.5, "testMode": 1}`,
-}
-
-var invalidParams = []string{
-	`{"bidfloor": "1.2"}`,
-	`{"testMode": "yes"}`,
-	`{"bidfloor": -5}`,
-	`{"testMode": 9999}`,
-}

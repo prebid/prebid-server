@@ -53,10 +53,10 @@ func TestParseImpExt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := parseImpExt(tt.ext)
 			if tt.wantErr && err == nil {
-				t.Errorf("expected error, got nil")
+				assert.Error(t, err)
 			}
 			if !tt.wantErr && err != nil {
-				t.Errorf("did not expect error, got %v", err)
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -81,14 +81,14 @@ func TestGetBidType(t *testing.T) {
 			bidType, err := getBidType(bid)
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("expected error for mtype=%d, got nil", tt.mtype)
+					assert.Error(t, err)
 				}
 			} else {
 				if err != nil {
-					t.Errorf("did not expect error for mtype=%d, got %v", tt.mtype, err)
+					assert.NoError(t, err)
 				}
 				if bidType != tt.wantBidTy {
-					t.Errorf("expected bidType %v, got %v", tt.wantBidTy, bidType)
+					assert.Equal(t, tt.wantBidTy, bidType)
 				}
 			}
 		})
@@ -123,7 +123,7 @@ func TestMakeRequestsErrors(t *testing.T) {
 				}
 			}
 			if !found {
-				t.Errorf("expected error containing %q, got %v", tt.wantErr, errs)
+				assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
 			}
 		})
 	}
@@ -155,7 +155,7 @@ func TestMakeBidsErrors(t *testing.T) {
 				}
 			}
 			if !found {
-				t.Errorf("expected error containing %q, got %v", tt.wantErr, errs)
+				assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
 			}
 		})
 	}
