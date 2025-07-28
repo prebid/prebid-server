@@ -86,32 +86,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		headers.Set("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 	}
 
-	// Validate impressions and extract parameters
-	validPlacements, customerId, validationErrors := validateImpressions(request)
-	errors = append(errors, validationErrors...)
+	// Build dynamic endpoint URL and validate impressions
+	endpoint, validPlacements, customerId, endpointErrors := a.buildEndpointURL(request)
+	errors = append(errors, endpointErrors...)
 
 	if len(validPlacements) == 0 {
 		return nil, errors
 	}
 
-	// Extract bidder config
+	// Extract bidder config for payload creation
 	bidderCustomerId, bidderVersion := extractBidderConfig(request)
-
-	// Use bidder config customer as primary source for endpoint URL
-	endpointCustomerId := customerId
-	if bidderCustomerId != "" {
-		endpointCustomerId = bidderCustomerId
-	}
-
-	// Build dynamic endpoint URL
-	endpointParams := macros.EndpointTemplateParams{
-		AccountID: endpointCustomerId,
-	}
-	endpoint, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
-	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
-	}
 
 	// Create payload
 	payload := createRequestPayload(request, validPlacements, bidderCustomerId, bidderVersion, customerId)
@@ -131,6 +115,36 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	return []*adapters.RequestData{requestData}, errors
+}
+
+// buildEndpointURL validates impressions and creates the endpoint URL
+func (a *adapter) buildEndpointURL(request *openrtb2.BidRequest) (string, []string, string, []error) {
+	// Validate impressions and extract parameters
+	validPlacements, customerId, validationErrors := validateImpressions(request)
+
+	if len(validationErrors) > 0 {
+		return "", validPlacements, customerId, validationErrors
+	}
+
+	// Extract bidder config
+	bidderCustomerId, _ := extractBidderConfig(request)
+
+	// Use bidder config customer as primary source for endpoint URL
+	endpointCustomerId := customerId
+	if bidderCustomerId != "" {
+		endpointCustomerId = bidderCustomerId
+	}
+
+	// Build dynamic endpoint URL
+	endpointParams := macros.EndpointTemplateParams{
+		AccountID: endpointCustomerId,
+	}
+	endpoint, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
+	if err != nil {
+		return "", validPlacements, customerId, []error{err}
+	}
+
+	return endpoint, validPlacements, customerId, nil
 }
 
 // Streamlined payload creation
