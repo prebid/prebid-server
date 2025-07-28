@@ -563,51 +563,6 @@ func getValidJsonConfig() json.RawMessage {
 
 }
 
-func getValidJsonConfigNoRefreshRate() json.RawMessage {
-	return json.RawMessage(`
-  {
-  "enabled": true,
-  "generateRulesFromBidderConfig": true,
-  "timestamp": "20250131 00:00:00",
-  "rulesets": [
-    {
-      "stage": "processed_auction_request",
-      "name": "exclude-in-jpn",
-      "version": "1234",
-      "modelgroups": [
-        {
-          "weight": 100,
-          "analyticsKey": "experiment-name",
-          "version": "4567",
-          "schema": [
-            {
-              "function": "deviceCountryIn",
-              "args": {"countries": ["USA"]}
-            }
-          ],
-          "default": [],
-          "rules": [
-            {
-              "conditions": [
-                "true"
-              ],
-              "results": [
-                {
-                  "function": "excludeBidders",
-                  "args": {"bidders": ["bidderA"], "seatNonBid": 111}
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-`)
-
-}
-
 func getInvalidRuleSetConfig() json.RawMessage {
 	return json.RawMessage(`
   {
