@@ -4137,3 +4137,218 @@ func TestLURLEmptyString(t *testing.T) {
 		t.Errorf("LURL should be empty when provided as empty string, got %s", bid.LURL)
 	}
 }
+
+// TestBuildEndpointURL tests the buildEndpointURL function with various scenarios
+func TestBuildEndpointURL(t *testing.T) {
+	// Create adapter instance for testing
+	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	contxtfulAdapter := bidder.(*adapter)
+
+	tests := []struct {
+		name                    string
+		request                 *openrtb2.BidRequest
+		expectedURL             string
+		expectedValidPlacements []string
+		expectedCustomerID      string
+		expectedErrors          int
+		description             string
+	}{
+		{
+			name: "Valid request with single impression",
+			request: &openrtb2.BidRequest{
+				ID: "test-request-1",
+				Imp: []openrtb2.Imp{
+					{
+						ID: "test-imp-1",
+						Ext: json.RawMessage(`{
+							"bidder": {
+								"placementId": "placement-123",
+								"customerId": "customer-456"
+							}
+						}`),
+					},
+				},
+			},
+			expectedURL:             "https://prebid.receptivity.io/v1/pbs/customer-456/bid",
+			expectedValidPlacements: []string{"placement-123"},
+			expectedCustomerID:      "customer-456",
+			expectedErrors:          0,
+			description:             "Should successfully build endpoint URL with valid impression data",
+		},
+		{
+			name: "Valid request with multiple impressions",
+			request: &openrtb2.BidRequest{
+				ID: "test-request-2",
+				Imp: []openrtb2.Imp{
+					{
+						ID: "test-imp-1",
+						Ext: json.RawMessage(`{
+							"bidder": {
+								"placementId": "placement-123",
+								"customerId": "customer-456"
+							}
+						}`),
+					},
+					{
+						ID: "test-imp-2",
+						Ext: json.RawMessage(`{
+							"bidder": {
+								"placementId": "placement-789",
+								"customerId": "customer-456"
+							}
+						}`),
+					},
+				},
+			},
+			expectedURL:             "https://prebid.receptivity.io/v1/pbs/customer-456/bid",
+			expectedValidPlacements: []string{"placement-123", "placement-789"},
+			expectedCustomerID:      "customer-456",
+			expectedErrors:          0,
+			description:             "Should handle multiple impressions with same customer ID",
+		},
+		{
+			name: "Request with invalid impression extension",
+			request: &openrtb2.BidRequest{
+				ID: "test-request-3",
+				Imp: []openrtb2.Imp{
+					{
+						ID:  "test-imp-1",
+						Ext: json.RawMessage(`{invalid json}`),
+					},
+				},
+			},
+			expectedURL:             "",
+			expectedValidPlacements: []string{},
+			expectedCustomerID:      "",
+			expectedErrors:          1,
+			description:             "Should return error for invalid impression extension JSON",
+		},
+		{
+			name: "Request with no impressions",
+			request: &openrtb2.BidRequest{
+				ID:  "test-request-4",
+				Imp: []openrtb2.Imp{},
+			},
+			expectedURL:             "https://prebid.receptivity.io/v1/pbs//bid",
+			expectedValidPlacements: []string{},
+			expectedCustomerID:      "",
+			expectedErrors:          0,
+			description:             "Should handle empty impressions gracefully",
+		},
+		{
+			name: "Request with mixed valid and invalid impressions",
+			request: &openrtb2.BidRequest{
+				ID: "test-request-5",
+				Imp: []openrtb2.Imp{
+					{
+						ID: "test-imp-1",
+						Ext: json.RawMessage(`{
+							"bidder": {
+								"placementId": "placement-123",
+								"customerId": "customer-456"
+							}
+						}`),
+					},
+					{
+						ID:  "test-imp-2",
+						Ext: json.RawMessage(`{invalid json}`),
+					},
+				},
+			},
+			expectedURL:             "",
+			expectedValidPlacements: []string{"placement-123"},
+			expectedCustomerID:      "customer-456",
+			expectedErrors:          1,
+			description:             "Should return error when any impression validation fails",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url, validPlacements, customerID, errs := contxtfulAdapter.buildEndpointURL(tt.request)
+
+			// Check URL
+			if url != tt.expectedURL {
+				t.Errorf("Expected URL %q, got %q", tt.expectedURL, url)
+			}
+
+			// Check valid placements
+			if len(validPlacements) != len(tt.expectedValidPlacements) {
+				t.Errorf("Expected %d valid placements, got %d", len(tt.expectedValidPlacements), len(validPlacements))
+			} else {
+				for i, expected := range tt.expectedValidPlacements {
+					if i < len(validPlacements) && validPlacements[i] != expected {
+						t.Errorf("Expected placement[%d] %q, got %q", i, expected, validPlacements[i])
+					}
+				}
+			}
+
+			// Check customer ID
+			if customerID != tt.expectedCustomerID {
+				t.Errorf("Expected customer ID %q, got %q", tt.expectedCustomerID, customerID)
+			}
+
+			// Check errors
+			if len(errs) != tt.expectedErrors {
+				t.Errorf("Expected %d errors, got %d: %v", tt.expectedErrors, len(errs), errs)
+			}
+		})
+	}
+}
+
+// TestBuildEndpointURLMacroFailure tests buildEndpointURL when macro resolution fails
+func TestBuildEndpointURLMacroFailure(t *testing.T) {
+	// Create adapter with invalid template that will cause macro resolution to fail
+	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.InvalidMacro}}/bid",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	contxtfulAdapter := bidder.(*adapter)
+
+	request := &openrtb2.BidRequest{
+		ID: "test-macro-failure",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "test-imp-1",
+				Ext: json.RawMessage(`{
+					"bidder": {
+						"placementId": "placement-123",
+						"customerId": "customer-456"
+					}
+				}`),
+			},
+		},
+	}
+
+	url, validPlacements, customerID, errs := contxtfulAdapter.buildEndpointURL(request)
+
+	// Should fail at macro resolution step
+	if url != "" {
+		t.Errorf("Expected empty URL when macro resolution fails, got %q", url)
+	}
+
+	// Should still return valid placements and customer ID from validation step
+	if len(validPlacements) != 1 || validPlacements[0] != "placement-123" {
+		t.Errorf("Expected valid placements to be returned even when macro fails, got %v", validPlacements)
+	}
+
+	if customerID != "customer-456" {
+		t.Errorf("Expected customer ID to be returned even when macro fails, got %q", customerID)
+	}
+
+	// Should have at least one error from macro resolution
+	if len(errs) == 0 {
+		t.Error("Expected at least one error when macro resolution fails")
+	}
+}
