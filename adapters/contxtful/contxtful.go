@@ -608,14 +608,12 @@ func extractUserIDForCookie(request *openrtb2.BidRequest) string {
 
 	// Priority 2: PBS buyeruids map (simplified navigation)
 	if request.User.Ext != nil {
-		var userExt struct {
-			Prebid struct {
-				BuyerUIDs map[string]string `json:"buyeruids"`
-			} `json:"prebid"`
-		}
+		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(request.User.Ext, &userExt); err == nil {
-			if uid := userExt.Prebid.BuyerUIDs[BidderName]; uid != "" {
-				return uid
+			if userExt.Prebid != nil && userExt.Prebid.BuyerUIDs != nil {
+				if uid := userExt.Prebid.BuyerUIDs[BidderName]; uid != "" {
+					return uid
+				}
 			}
 		}
 	}
