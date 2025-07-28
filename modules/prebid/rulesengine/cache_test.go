@@ -12,7 +12,7 @@ func TestGet(t *testing.T) {
 			hashedConfig: "hash1",
 		},
 	}
-	cache := NewCache()
+	cache := NewCache(0)
 	cache.m.Store(innerStorage)
 
 	testCases := []struct {
@@ -47,7 +47,7 @@ func TestSet(t *testing.T) {
 			hashedConfig: "hash1",
 		},
 	}
-	cache := NewCache()
+	cache := NewCache(0)
 	cache.m.Store(innerStorage)
 
 	testCases := []struct {
@@ -161,7 +161,7 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
-	cache := NewCache()
+	cache := NewCache(0)
 	cache.m.Store(originalInnerStorage)
 
 	for _, tc := range testCases {

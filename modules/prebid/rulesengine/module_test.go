@@ -32,8 +32,8 @@ func TestExpired(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ce := cacheEntry{timestamp: tc.inTimestamp, refreshRateSeconds: 5} // Create a cacheEntry to use the expired function
-			res := expired(tc.inTime, &ce)
+			ce := cacheEntry{timestamp: tc.inTimestamp} // Create a cacheEntry to use the expired function
+			res := expired(tc.inTime, &ce, 5)
 			assert.Equal(t, tc.expectedResult, res)
 		})
 	}
@@ -85,56 +85,99 @@ func TestConfigChanged(t *testing.T) {
 
 func TestRebuildTrees(t *testing.T) {
 	testCases := []struct {
-		name           string
-		inCacheEntry   *cacheEntry
-		inJsonConfig   *json.RawMessage
-		expectedResult bool
+		name               string
+		inCacheEntry       *cacheEntry
+		inJsonConfig       *json.RawMessage
+		refreshRateSeconds int
+		expectedResult     bool
 	}{
 		{
 			name: "non_expired_cache_entry_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:          time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC),
-				refreshRateSeconds: 1,
+				timestamp: time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
-			inJsonConfig:   &sampleJsonConfig,
-			expectedResult: false,
+			inJsonConfig:       &sampleJsonConfig,
+			refreshRateSeconds: 1,
+			expectedResult:     false,
 		},
 		{
 			name: "expired_entry_but_same_config_and_default_no_update_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:          time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				hashedConfig:       "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
-				refreshRateSeconds: 1,
+				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				hashedConfig: "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
 			},
-			inJsonConfig:   &sampleJsonConfig,
-			expectedResult: false,
+			inJsonConfig:       &sampleJsonConfig,
+			refreshRateSeconds: 1,
+			expectedResult:     false,
 		},
 		{
 			name: "expired_entry_but_same_config_and_zero_minutes_update_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:          time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				hashedConfig:       "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
-				refreshRateSeconds: 0,
+				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				hashedConfig: "e21c19982a618f9dd3286fc2eb08dad62a1e9ee81d51ffa94b267ab2e3813964",
 			},
-			inJsonConfig:   &sampleJsonConfig,
-			expectedResult: false,
+			inJsonConfig:       &sampleJsonConfig,
+			refreshRateSeconds: 0,
+			expectedResult:     false,
 		},
 		{
 			name: "expired_entry_and_different_config_so_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:          time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-				hashedConfig:       "oldHash",
-				refreshRateSeconds: 1,
+				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				hashedConfig: "oldHash",
 			},
-			inJsonConfig:   &sampleJsonConfig,
-			expectedResult: true,
+			inJsonConfig:       &sampleJsonConfig,
+			refreshRateSeconds: 1,
+			expectedResult:     true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig)
+			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig, tc.refreshRateSeconds)
 			assert.Equal(t, tc.expectedResult, res)
+		})
+	}
+}
+
+func TestGetRefreshRate(t *testing.T) {
+
+	testCases := []struct {
+		name                string
+		inData              json.RawMessage
+		expectedRefreshRate int
+	}{
+		{
+			name:                "nil_data",
+			inData:              nil,
+			expectedRefreshRate: 0,
+		},
+		{
+			name:                "valid_config",
+			inData:              json.RawMessage(`{"enabled": true, "refreshrateseconds": 10}`),
+			expectedRefreshRate: 10,
+		},
+		{
+			name:                "valid_config_negative_refresh_rate",
+			inData:              json.RawMessage(`{"enabled": true, "refreshrateseconds": -10}`),
+			expectedRefreshRate: -10,
+		},
+		{
+			name:                "valid_config_no_refresh_rate",
+			inData:              json.RawMessage(`{"enabled": true}`),
+			expectedRefreshRate: 0,
+		},
+		{
+			name:                "invalid_config",
+			inData:              json.RawMessage(`{"enabled": true, []test}`),
+			expectedRefreshRate: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := GetRefreshRate(tc.inData)
+			assert.Equal(t, tc.expectedRefreshRate, res)
 		})
 	}
 }

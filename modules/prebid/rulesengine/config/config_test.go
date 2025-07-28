@@ -45,12 +45,6 @@ func TestNewConfig(t *testing.T) {
 			expectedConf: getValidConfig(),
 			expectedErr:  nil,
 		},
-		{
-			name:         "success_with_default_refresh_rate",
-			inCfg:        getValidJsonConfigNoRefreshRate(),
-			expectedConf: getValidConfigDefaultRefreshRate(),
-			expectedErr:  nil,
-		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -348,32 +342,6 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[rulesets.0.modelgroups.0.rules.0.results.0.function: rulesets.0.modelgroups.0.rules.0.results.0.function must be one of the following: \"excludeBidders\", \"includeBidders\", \"logATag\"] ",
 				},
-				{ //16
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-					  "refreshrateseconds": -10,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "someName",
-                          "modelgroups": [
-                            {
-							  "schema": [{"function":"channel"}],
-                              "rules": [
-							    {
-								  "conditions": ["cond"],
-								  "results": []
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"[refreshrateseconds: Must be greater than or equal to 0] ",
-				},
 			},
 		},
 		{
@@ -507,7 +475,6 @@ func getValidJsonConfig() json.RawMessage {
 	return json.RawMessage(`
   {
     "enabled": true,
-	"refreshrateseconds": 60,
     "generateRulesFromBidderConfig": true,
     "timestamp": "20250131 00:00:00",
     "rulesets": [
@@ -694,9 +661,8 @@ func getInvalidRuleSetConfig() json.RawMessage {
 
 func getValidConfig() *PbRulesEngine {
 	return &PbRulesEngine{
-		Enabled:            true,
-		RefreshRateSeconds: 60,
-		Timestamp:          "20250131 00:00:00",
+		Enabled:   true,
+		Timestamp: "20250131 00:00:00",
 		RuleSets: []RuleSet{
 			{
 				Stage:   "processed_auction_request",
@@ -757,43 +723,6 @@ func getValidConfig() *PbRulesEngine {
 									{
 										Func: "includeBidders",
 										Args: json.RawMessage(`{"bidders": ["bidderC"], "seatNonBid": 333}`),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func getValidConfigDefaultRefreshRate() *PbRulesEngine {
-	return &PbRulesEngine{
-		Enabled:            true,
-		RefreshRateSeconds: 0,
-		Timestamp:          "20250131 00:00:00",
-		RuleSets: []RuleSet{
-			{
-				Stage:   "processed_auction_request",
-				Name:    "exclude-in-jpn",
-				Version: "1234",
-				ModelGroups: []ModelGroup{
-					{
-						Weight:       100,
-						AnalyticsKey: "experiment-name",
-						Version:      "4567",
-						Schema: []Schema{
-							{Func: "deviceCountryIn", Args: json.RawMessage(`{"countries": ["USA"]}`)},
-						},
-						Default: []Result{},
-						Rules: []Rule{
-							{
-								Conditions: []string{"true"},
-								Results: []Result{
-									{
-										Func: "excludeBidders",
-										Args: json.RawMessage(`{"bidders": ["bidderA"], "seatNonBid": 111}`),
 									},
 								},
 							},

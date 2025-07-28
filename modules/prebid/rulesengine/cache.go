@@ -11,20 +11,27 @@ type cacher interface {
 	Get(string) *cacheEntry
 	Set(string, *cacheEntry)
 	Delete(id accountID)
+	GetRefreshRate() int
 }
 
 type cache struct {
 	sync.Mutex
-	m atomic.Value
+	m                  atomic.Value
+	refreshRateSeconds int
 }
 
-func NewCache() *cache {
+func NewCache(refreshRateSeconds int) *cache {
 	var atomicMap atomic.Value
 	atomicMap.Store(make(map[accountID]*cacheEntry))
 
 	return &cache{
-		m: atomicMap,
+		m:                  atomicMap,
+		refreshRateSeconds: refreshRateSeconds,
 	}
+}
+
+func (c *cache) GetRefreshRate() int {
+	return c.refreshRateSeconds
 }
 
 // Get has been implemented to read from the cache without further synchronization
