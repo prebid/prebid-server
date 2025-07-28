@@ -23,7 +23,7 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "testdata", bidder)
+	adapterstest.RunJSONBidderTest(t, "resetdigitaltest", bidder)
 }
 
 func TestGetMediaType(t *testing.T) {
