@@ -32,11 +32,7 @@
   "httpCalls": [
       {
           "expectedRequest": {
-<<<<<<< HEAD
               "uri": "http://us.matterfull.co/?uqhash=LUN2gcJFHRwysZVTm8p3",
-=======
-              "uri": "http://us.matterfull.co/?pubid=19f1b372c7548ec1fe734d2c9f8dc688",
->>>>>>> da4549a5 (New Adapter: Matterfull)
               "body": {
                   "id": "testid",
                   "imp": [
