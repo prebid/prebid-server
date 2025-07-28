@@ -384,19 +384,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 }
 
 func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
-	if imp.Video != nil {
+	switch {
+	case imp.Video != nil:
 		return openrtb_ext.BidTypeVideo, nil
-	}
-
-	if imp.Native != nil {
+	case imp.Native != nil:
 		return openrtb_ext.BidTypeNative, nil
-	}
-
-	if imp.Banner != nil {
+	case imp.Banner != nil:
 		return openrtb_ext.BidTypeBanner, nil
-	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
+	default:
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
+		}
 	}
 }
