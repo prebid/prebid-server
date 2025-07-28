@@ -15,6 +15,126 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
+// BidExtensionsParams holds the parameters needed to create bid extensions
+type BidExtensionsParams struct {
+	Price    float64
+	Currency string
+	BidType  string
+	Width    int
+	Height   int
+}
+
+// ContxtfulRequestPayload represents the complete request payload structure
+type ContxtfulRequestPayload struct {
+	ORTB2         *openrtb2.BidRequest   `json:"ortb2"`
+	BidRequests   []ContxtfulBidRequest  `json:"bidRequests"`
+	BidderRequest ContxtfulBidderRequest `json:"bidderRequest"`
+	Config        ContxtfulConfig        `json:"config"`
+}
+
+// ContxtfulBidRequest represents an individual bid request
+type ContxtfulBidRequest struct {
+	Bidder string                    `json:"bidder"`
+	Params ContxtfulBidRequestParams `json:"params"`
+	BidID  string                    `json:"bidId"`
+}
+
+// ContxtfulBidRequestParams represents the parameters for a bid request
+type ContxtfulBidRequestParams struct {
+	PlacementID string `json:"placementId"`
+}
+
+// ContxtfulBidderRequest represents the bidder request information
+type ContxtfulBidderRequest struct {
+	BidderCode string `json:"bidderCode"`
+}
+
+// ContxtfulConfig represents the configuration section
+type ContxtfulConfig struct {
+	Contxtful ContxtfulConfigDetails `json:"contxtful"`
+}
+
+// ContxtfulConfigDetails represents the detailed configuration
+type ContxtfulConfigDetails struct {
+	Version  string `json:"version"`
+	Customer string `json:"customer"`
+}
+
+// BidExtensions represents the complete bid extensions structure
+type BidExtensions struct {
+	OrigBidCPM float64         `json:"origbidcpm"`
+	OrigBidCur string          `json:"origbidcur"`
+	Prebid     PrebidExtension `json:"prebid"`
+}
+
+// PrebidExtension represents the prebid-specific extension data
+type PrebidExtension struct {
+	Type      string          `json:"type"`
+	Meta      PrebidMeta      `json:"meta"`
+	Targeting PrebidTargeting `json:"targeting"`
+}
+
+// PrebidMeta represents the meta information in prebid extensions
+type PrebidMeta struct {
+	AdapterCode string `json:"adaptercode"`
+}
+
+// PrebidTargeting represents the targeting information in prebid extensions
+type PrebidTargeting struct {
+	HBBidder string `json:"hb_bidder"`
+	HBPB     string `json:"hb_pb"`
+	HBSize   string `json:"hb_size"`
+}
+
+type ContxtfulExt struct {
+	Reseller string `json:"reseller,omitempty"`
+}
+
+type ContxtfulExchangeBid struct {
+	RequestID   string       `json:"requestId"`
+	CPM         float64      `json:"cpm"`
+	Currency    string       `json:"currency"`
+	Width       int          `json:"width"`
+	Height      int          `json:"height"`
+	CreativeID  string       `json:"creativeId"`
+	Ad          string       `json:"ad"`
+	TTL         int          `json:"ttl"`
+	NetRevenue  bool         `json:"netRevenue"`
+	MediaType   string       `json:"mediaType"`
+	BidderCode  string       `json:"bidderCode"`
+	PlacementID string       `json:"placementId"`
+	TraceId     string       `json:"traceId,omitempty"`
+	Random      float64      `json:"random,omitempty"`
+	NURL        string       `json:"nurl,omitempty"`
+	BURL        string       `json:"burl,omitempty"`
+	LURL        string       `json:"lurl,omitempty"`
+	Ext         ContxtfulExt `json:"ext,omitempty"`
+}
+
+type BidProcessingContext struct {
+	request          *openrtb2.BidRequest
+	requestData      *adapters.RequestData
+	bidderCustomerId string
+	bidderVersion    string
+	bidderResponse   *adapters.BidderResponse
+	errors           []error
+	// Event URL generation fields
+	version     string
+	domain      string
+	adRequestID string
+}
+
+type adapter struct {
+	endpointTemplate *template.Template
+}
+
+// RequestConfig holds extracted configuration from various sources
+type RequestConfig struct {
+	Version    string
+	CustomerID string
+	Source     string // "uri", "bidder_config", or "impression"
+}
+
 // Essential constants
 const (
 	BidderName     = "contxtful"
@@ -36,10 +156,6 @@ func extractBidderParams(impExt jsonutil.RawMessage) (*openrtb_ext.ExtImpContxtf
 	}
 
 	return &contxtfulParams, nil
-}
-
-type adapter struct {
-	endpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the Contxtful adapter for the given bidder with the given config.
@@ -204,115 +320,6 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 			},
 		},
 	}
-}
-
-// BidExtensionsParams holds the parameters needed to create bid extensions
-type BidExtensionsParams struct {
-	Price    float64
-	Currency string
-	BidType  string
-	Width    int
-	Height   int
-}
-
-// ContxtfulRequestPayload represents the complete request payload structure
-type ContxtfulRequestPayload struct {
-	ORTB2         *openrtb2.BidRequest   `json:"ortb2"`
-	BidRequests   []ContxtfulBidRequest  `json:"bidRequests"`
-	BidderRequest ContxtfulBidderRequest `json:"bidderRequest"`
-	Config        ContxtfulConfig        `json:"config"`
-}
-
-// ContxtfulBidRequest represents an individual bid request
-type ContxtfulBidRequest struct {
-	Bidder string                    `json:"bidder"`
-	Params ContxtfulBidRequestParams `json:"params"`
-	BidID  string                    `json:"bidId"`
-}
-
-// ContxtfulBidRequestParams represents the parameters for a bid request
-type ContxtfulBidRequestParams struct {
-	PlacementID string `json:"placementId"`
-}
-
-// ContxtfulBidderRequest represents the bidder request information
-type ContxtfulBidderRequest struct {
-	BidderCode string `json:"bidderCode"`
-}
-
-// ContxtfulConfig represents the configuration section
-type ContxtfulConfig struct {
-	Contxtful ContxtfulConfigDetails `json:"contxtful"`
-}
-
-// ContxtfulConfigDetails represents the detailed configuration
-type ContxtfulConfigDetails struct {
-	Version  string `json:"version"`
-	Customer string `json:"customer"`
-}
-
-// BidExtensions represents the complete bid extensions structure
-type BidExtensions struct {
-	OrigBidCPM float64         `json:"origbidcpm"`
-	OrigBidCur string          `json:"origbidcur"`
-	Prebid     PrebidExtension `json:"prebid"`
-}
-
-// PrebidExtension represents the prebid-specific extension data
-type PrebidExtension struct {
-	Type      string          `json:"type"`
-	Meta      PrebidMeta      `json:"meta"`
-	Targeting PrebidTargeting `json:"targeting"`
-}
-
-// PrebidMeta represents the meta information in prebid extensions
-type PrebidMeta struct {
-	AdapterCode string `json:"adaptercode"`
-}
-
-// PrebidTargeting represents the targeting information in prebid extensions
-type PrebidTargeting struct {
-	HBBidder string `json:"hb_bidder"`
-	HBPB     string `json:"hb_pb"`
-	HBSize   string `json:"hb_size"`
-}
-
-type ContxtfulExt struct {
-	Reseller string `json:"reseller,omitempty"`
-}
-
-type ContxtfulExchangeBid struct {
-	RequestID   string       `json:"requestId"`
-	CPM         float64      `json:"cpm"`
-	Currency    string       `json:"currency"`
-	Width       int          `json:"width"`
-	Height      int          `json:"height"`
-	CreativeID  string       `json:"creativeId"`
-	Ad          string       `json:"ad"`
-	TTL         int          `json:"ttl"`
-	NetRevenue  bool         `json:"netRevenue"`
-	MediaType   string       `json:"mediaType"`
-	BidderCode  string       `json:"bidderCode"`
-	PlacementID string       `json:"placementId"`
-	TraceId     string       `json:"traceId,omitempty"`
-	Random      float64      `json:"random,omitempty"`
-	NURL        string       `json:"nurl,omitempty"`
-	BURL        string       `json:"burl,omitempty"`
-	LURL        string       `json:"lurl,omitempty"`
-	Ext         ContxtfulExt `json:"ext,omitempty"`
-}
-
-type BidProcessingContext struct {
-	request          *openrtb2.BidRequest
-	requestData      *adapters.RequestData
-	bidderCustomerId string
-	bidderVersion    string
-	bidderResponse   *adapters.BidderResponse
-	errors           []error
-	// Event URL generation fields
-	version     string
-	domain      string
-	adRequestID string
 }
 
 // Response format handlers
@@ -522,13 +529,6 @@ func extractContxtfulParams(ortb2Data *openrtb_ext.ORTB2) (string, string) {
 		}
 	}
 	return "", ""
-}
-
-// RequestConfig holds extracted configuration from various sources
-type RequestConfig struct {
-	Version    string
-	CustomerID string
-	Source     string // "uri", "bidder_config", or "impression"
 }
 
 // extractFromURL parses Contxtful URL pattern: /{version}/pbs/{customerId}/bid
