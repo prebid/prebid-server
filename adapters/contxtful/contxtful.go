@@ -460,7 +460,7 @@ func extractBidderConfig(request *openrtb2.BidRequest) (string, string) {
 		return "", ""
 	}
 
-	var requestExt openrtb_ext.ExtRequest;
+	var requestExt openrtb_ext.ExtRequest
 
 	if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
 		return "", ""
@@ -480,14 +480,14 @@ func extractBidderConfig(request *openrtb2.BidRequest) (string, string) {
 // Extract contxtful params from any ORTB2 data (unified for both bidder config and other sources)
 func extractContxtfulParams(ortb2Data *openrtb_ext.ORTB2) (string, string) {
 	var ortb2UserData []struct {
-				Name string `json:"name"`
-				Ext  struct {
-					Params struct {
-						CI string `json:"ci"` // Customer ID
-						EV string `json:"ev"` // Version
-					} `json:"params"`
-				} `json:"ext"`
-			};
+		Name string `json:"name"`
+		Ext  struct {
+			Params struct {
+				CI string `json:"ci"` // Customer ID
+				EV string `json:"ev"` // Version
+			} `json:"params"`
+		} `json:"ext"`
+	}
 
 	if err := json.Unmarshal(ortb2Data.User, &ortb2UserData); err != nil {
 		return "", ""
