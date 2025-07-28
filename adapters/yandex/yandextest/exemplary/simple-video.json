@@ -9,7 +9,7 @@
                     "h": 480,
                     "mimes": ["video/mp4", "video/mpeg", "video/mp2t"],
                     "protocols": [3, 4, 5, 6],
-                    "minduration": 15
+                    "minduration": 0
                 },
                 "ext": {
                     "bidder": {
@@ -52,7 +52,7 @@
                                 "h": 480,
                                 "mimes": ["video/mp4", "video/mpeg", "video/mp2t"],
                                 "protocols": [3, 4, 5, 6],
-                                "minduration": 15,
+                                "minduration": 1,
                                 "maxduration": 120
                             },
                             "displaymanager": "prebid.go",
