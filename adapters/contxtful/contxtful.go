@@ -350,12 +350,7 @@ func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *Bi
 			currency = "USD"
 		}
 
-		a.createBid(
-			prebidBid.RequestID, prebidBid.CreativeID, prebidBid.Ad,
-			prebidBid.CPM, prebidBid.Width, prebidBid.Height,
-			prebidBid.TraceId, fmt.Sprintf("%.6f", prebidBid.Random),
-			currency, ctx, customerId, prebidBid.Ext.Reseller, prebidBid.PlacementID, prebidBid.NURL, prebidBid.BURL, prebidBid.LURL,
-		)
+		a.createBid(prebidBid, currency, ctx, customerId)
 
 		if prebidBid.Currency != "" {
 			ctx.bidderResponse.Currency = prebidBid.Currency
@@ -399,22 +394,17 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return nil, []error{fmt.Errorf("failed to parse response as Contxtful relay or Prebid.js format")}
 }
 
-// Simplified bid creation with fewer parameters
+// Simplified bid creation using prebid bid struct
 func (a *adapter) createBid(
-	impID, creativeID, adMarkup string,
-	price float64,
-	width, height int,
-	traceID, random, currency string,
+	prebidBid ContxtfulExchangeBid,
+	currency string,
 	ctx *BidProcessingContext,
 	customerId string,
-	bidderCode string,
-	placementId string,
-	responseNURL, responseBURL, responseLURL string,
 ) {
 	// Determine media type from impression
 	var bidType openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	for _, imp := range ctx.request.Imp {
-		if imp.ID == impID {
+		if imp.ID == prebidBid.RequestID {
 			if imp.Video != nil {
 				bidType = openrtb_ext.BidTypeVideo
 			} else if imp.Native != nil {
@@ -425,19 +415,19 @@ func (a *adapter) createBid(
 	}
 
 	bid := &openrtb2.Bid{
-		ID:    fmt.Sprintf("%s-%s", BidderName, impID),
-		ImpID: impID,
-		Price: price,
-		AdM:   adMarkup,
-		W:     int64(width),
-		H:     int64(height),
-		CrID:  creativeID,
-		NURL:  responseNURL,
-		BURL:  responseBURL,
-		LURL:  responseLURL,
+		ID:    fmt.Sprintf("%s-%s", BidderName, prebidBid.RequestID),
+		ImpID: prebidBid.RequestID,
+		Price: prebidBid.CPM,
+		AdM:   prebidBid.Ad,
+		W:     int64(prebidBid.Width),
+		H:     int64(prebidBid.Height),
+		CrID:  prebidBid.CreativeID,
+		NURL:  prebidBid.NURL,
+		BURL:  prebidBid.BURL,
+		LURL:  prebidBid.LURL,
 	}
 
-	if bidExtJSON, err := createBidExtensions(price, currency, string(bidType), width, height); err == nil {
+	if bidExtJSON, err := createBidExtensions(prebidBid.CPM, currency, string(bidType), prebidBid.Width, prebidBid.Height); err == nil {
 		bid.Ext = bidExtJSON
 	}
 
