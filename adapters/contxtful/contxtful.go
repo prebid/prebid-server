@@ -207,6 +207,15 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 	}
 }
 
+// BidExtensionsParams holds the parameters needed to create bid extensions
+type BidExtensionsParams struct {
+	Price    float64
+	Currency string
+	BidType  string
+	Width    int
+	Height   int
+}
+
 // ContxtfulRequestPayload represents the complete request payload structure
 type ContxtfulRequestPayload struct {
 	ORTB2         *openrtb2.BidRequest   `json:"ortb2"`
@@ -427,7 +436,13 @@ func (a *adapter) createBid(
 		LURL:  prebidBid.LURL,
 	}
 
-	if bidExtJSON, err := createBidExtensions(prebidBid.CPM, currency, string(bidType), prebidBid.Width, prebidBid.Height); err == nil {
+	if bidExtJSON, err := createBidExtensions(BidExtensionsParams{
+		Price:    prebidBid.CPM,
+		Currency: currency,
+		BidType:  string(bidType),
+		Width:    prebidBid.Width,
+		Height:   prebidBid.Height,
+	}); err == nil {
 		bid.Ext = bidExtJSON
 	}
 
@@ -439,19 +454,19 @@ func (a *adapter) createBid(
 	ctx.bidderResponse.Bids = append(ctx.bidderResponse.Bids, typedBid)
 }
 
-func createBidExtensions(price float64, currency string, bidType string, width int, height int) (json.RawMessage, error) {
+func createBidExtensions(params BidExtensionsParams) (json.RawMessage, error) {
 	bidExt := BidExtensions{
-		OrigBidCPM: price,
-		OrigBidCur: currency,
+		OrigBidCPM: params.Price,
+		OrigBidCur: params.Currency,
 		Prebid: PrebidExtension{
-			Type: bidType,
+			Type: params.BidType,
 			Meta: PrebidMeta{
 				AdapterCode: BidderName,
 			},
 			Targeting: PrebidTargeting{
 				HBBidder: BidderName,
-				HBPB:     fmt.Sprintf("%.2f", price),
-				HBSize:   fmt.Sprintf("%dx%d", width, height),
+				HBPB:     fmt.Sprintf("%.2f", params.Price),
+				HBSize:   fmt.Sprintf("%dx%d", params.Width, params.Height),
 			},
 		},
 	}
