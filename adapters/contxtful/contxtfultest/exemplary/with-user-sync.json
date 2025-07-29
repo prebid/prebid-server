@@ -120,7 +120,7 @@
             "height": 250,
             "currency": "USD",
             "requestId": "test-imp-sync",
-            "ad": "<div style=\"width:300px;height:250px;background:#ffe0b2;text-align:center;line-height:250px;\">Contxtful Synced User Ad</div>",
+            "adm": "<div style=\"width:300px;height:250px;background:#ffe0b2;text-align:center;line-height:250px;\">Contxtful Synced User Ad</div>",
             "ttl": 300,
             "creativeId": "sync-creative-456",
             "netRevenue": true,

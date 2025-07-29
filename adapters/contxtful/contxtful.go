@@ -78,7 +78,7 @@ type ContxtfulExchangeBid struct {
 	Width       int          `json:"width"`
 	Height      int          `json:"height"`
 	CreativeID  string       `json:"creativeId"`
-	Ad          string       `json:"ad"`
+	AdM         string       `json:"adm"`
 	TTL         int          `json:"ttl"`
 	NetRevenue  bool         `json:"netRevenue"`
 	MediaType   string       `json:"mediaType"`
@@ -315,8 +315,7 @@ func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext
 
 	// Try PrebidJS format first
 	var prebidBids []ContxtfulExchangeBid
-	if err := jsonutil.Unmarshal(responseBody, &prebidBids); err == nil && len(prebidBids) > 0 &&
-		prebidBids[0].CPM > 0 && prebidBids[0].RequestID != "" && prebidBids[0].Ad != "" {
+	if err := jsonutil.Unmarshal(responseBody, &prebidBids); err == nil && len(prebidBids) > 0 {
 		return a.processPrebidJSBids(prebidBids, ctx, config.CustomerID)
 	}
 
@@ -336,7 +335,10 @@ func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *Bi
 		if prebidBid.CPM == 0 || prebidBid.RequestID == "" {
 			continue
 		}
-
+		if prebidBid.AdM == "" {
+			ctx.errors = append(ctx.errors, &errortypes.BadServerResponse{Message: "bid has no ad markup"})
+			continue
+		}
 		currency := prebidBid.Currency
 		if currency == "" {
 			currency = "USD"
@@ -409,7 +411,7 @@ func (a *adapter) createBid(
 		ID:    fmt.Sprintf("%s-%s", BidderName, prebidBid.RequestID),
 		ImpID: prebidBid.RequestID,
 		Price: prebidBid.CPM,
-		AdM:   prebidBid.Ad,
+		AdM:   prebidBid.AdM,
 		W:     int64(prebidBid.Width),
 		H:     int64(prebidBid.Height),
 		CrID:  prebidBid.CreativeID,

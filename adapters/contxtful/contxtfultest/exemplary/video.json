@@ -129,7 +129,7 @@
             "height": 480,
             "currency": "USD",
             "requestId": "test-imp-video",
-            "ad": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\"><Ad id=\"demo-video-ad\"><InLine><AdSystem>Contxtful</AdSystem><AdTitle>Demo Video Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\">https://demo.contxtful.com/video.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\"><Ad id=\"demo-video-ad\"><InLine><AdSystem>Contxtful</AdSystem><AdTitle>Demo Video Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\">https://demo.contxtful.com/video.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
             "ttl": 300,
             "creativeId": "demo-video-creative-456",
             "netRevenue": true,

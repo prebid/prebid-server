@@ -847,7 +847,7 @@ func TestBiddingProcessWithDifferentFormats(t *testing.T) {
 				"height": 250,
 				"currency": "USD",
 				"requestId": "test-bid-1",
-				"ad": "<div>Test Ad</div>",
+				"adm": "<div>Test Ad</div>",
 				"ttl": 300,
 				"creativeId": "test-creative-1",
 				"netRevenue": true
@@ -936,7 +936,7 @@ func TestEventTrackingURLGeneration(t *testing.T) {
 		"width": 728,
 		"height": 90,
 		"creativeId": "event-creative-1",
-		"ad": "<div>Event Tracking Test Ad</div>",
+		"adm": "<div>Event Tracking Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -1677,7 +1677,7 @@ func TestPrebidJSEventTrackingURLGeneration(t *testing.T) {
 		"height": 250,
 		"currency": "USD",
 		"requestId": "test-prebidjs-events",
-		"ad": "<div>Prebid.js Event Tracking Test Ad</div>",
+		"adm": "<div>Prebid.js Event Tracking Test Ad</div>",
 		"ttl": 300,
 		"creativeId": "prebidjs-creative-1",
 		"netRevenue": true,
@@ -1826,7 +1826,7 @@ func TestPrebidJSHybridEventTrackingURLGeneration(t *testing.T) {
 		"height": 90,
 		"currency": "USD",
 		"requestId": "test-hybrid-events",
-		"ad": "<div>Hybrid PrebidJS Event Tracking Test Ad</div>",
+		"adm": "<div>Hybrid PrebidJS Event Tracking Test Ad</div>",
 		"ttl": 300,
 		"creativeId": "hybrid-creative-1",
 		"netRevenue": true,
@@ -1969,7 +1969,7 @@ func TestResponseFormatDetectionPriority(t *testing.T) {
 				"height": 250,
 				"currency": "USD",
 				"requestId": "test-prebidjs-pure",
-				"ad": "<div>Pure PrebidJS Ad</div>",
+				"adm": "<div>Pure PrebidJS Ad</div>",
 				"ttl": 300,
 				"creativeId": "pure-creative",
 				"netRevenue": true,
@@ -2004,7 +2004,7 @@ func TestResponseFormatDetectionPriority(t *testing.T) {
 				"height": 90,
 				"currency": "USD",
 				"requestId": "test-hybrid-format",
-				"ad": "<div>Hybrid PrebidJS Ad with Tracking</div>",
+				"adm": "<div>Hybrid PrebidJS Ad with Tracking</div>",
 				"ttl": 300,
 				"creativeId": "hybrid-creative",
 				"netRevenue": true,
@@ -2058,7 +2058,7 @@ func TestResponseFormatDetectionPriority(t *testing.T) {
 			}]`,
 			expectedFormat: "Error",
 			expectedBids:   0,
-			expectedError:  true,
+			expectedError:  false,
 			validateContent: func(t *testing.T, bids *adapters.BidderResponse) {
 				// Should not generate bids for malformed response
 				if bids != nil && len(bids.Bids) > 0 {
@@ -2156,7 +2156,7 @@ func TestTrackingValuePropagation(t *testing.T) {
 				"height": 250,
 				"currency": "USD",
 				"requestId": "tracking-imp-2",
-				"ad": "<div>Hybrid Tracking Ad</div>",
+				"adm": "<div>Hybrid Tracking Ad</div>",
 				"ttl": 300,
 				"creativeId": "hybrid-tracking-creative",
 				"netRevenue": true,
@@ -2188,7 +2188,7 @@ func TestTrackingValuePropagation(t *testing.T) {
 				"height": 50,
 				"currency": "USD",
 				"requestId": "tracking-imp-3",
-				"ad": "<div>Pure PrebidJS Ad</div>",
+				"adm": "<div>Pure PrebidJS Ad</div>",
 				"ttl": 300,
 				"creativeId": "pure-creative",
 				"netRevenue": true,
@@ -2353,7 +2353,7 @@ func TestResponseFormatEdgeCases(t *testing.T) {
 					"height": 250,
 					"currency": "USD",
 					"requestId": "valid-bid",
-					"ad": "<div>Valid Ad</div>",
+					"adm": "<div>Valid Ad</div>",
 					"ttl": 300,
 					"creativeId": "valid-creative",
 					"netRevenue": true
@@ -2399,7 +2399,7 @@ func TestResponseFormatEdgeCases(t *testing.T) {
 						"height": 250,
 						"currency": "USD",
 						"requestId": "large-bid-%d",
-						"ad": "<div>Large Response Bid %d</div>",
+						"adm": "<div>Large Response Bid %d</div>",
 						"ttl": 300,
 						"creativeId": "large-creative-%d",
 						"netRevenue": true
@@ -2487,7 +2487,7 @@ func TestEventURLGeneration(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "test-creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -2701,7 +2701,7 @@ func TestBidExtensionsRegression(t *testing.T) {
 	mockRelayResponse := `[{
 		"requestId": "test-imp-extensions",
 		"cpm": 2.85,
-		"ad": "<div>Test ad for extension validation</div>",
+		"adm": "<div>Test ad for extension validation</div>",
 		"width": 300,
 		"height": 250,
 		"creativeId": "extension-creative-456",
@@ -3063,7 +3063,7 @@ func TestCustomerIDFromURIExtraction(t *testing.T) {
 	responseJSON := `[{
 		"requestId": "test-imp-uri-extraction",
 		"cpm": 2.25,
-		"ad": "<div>URI Extraction Test Ad</div>",
+		"adm": "<div>URI Extraction Test Ad</div>",
 		"width": 728,
 		"height": 90,
 		"creativeId": "uri-extraction-creative",
@@ -3197,7 +3197,7 @@ func TestEventURLGenerationNoDoubleSlash(t *testing.T) {
 			responseJSON := fmt.Sprintf(`[{
 				"requestId": "test-imp-no-double-slash",
 				"cpm": 3.75,
-				"ad": "<div>No Double Slash Test Ad</div>",
+				"adm": "<div>No Double Slash Test Ad</div>",
 				"width": 300,
 				"height": 250,
 				"creativeId": "no-double-slash-creative",
@@ -3323,7 +3323,7 @@ func TestNURLBURLFromPrebidJSResponse(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -3409,7 +3409,7 @@ func TestNURLBURLFromContxtfulRelayResponse(t *testing.T) {
 	responseBody := `[{
 		"requestId": "test-imp-id",
 		"cpm": 1.75,
-		"ad": "<div>Relay Ad</div>",
+		"adm": "<div>Relay Ad</div>",
 		"width": 728,
 		"height": 90,
 		"creativeId": "creative-456",
@@ -3502,7 +3502,7 @@ func TestNURLBURLWithoutResponseURLs(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -3586,7 +3586,7 @@ func TestNURLBURLURLEncoding(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -3675,7 +3675,7 @@ func TestNURLBURLPartialResponse(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -3763,7 +3763,7 @@ func TestNURLBURLEmptyStrings(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -3845,7 +3845,7 @@ func TestNURLBURLNotPresentInRelayResponse(t *testing.T) {
 	responseBody := `[{
 		"requestId": "test-imp-id",
 		"cpm": 1.75,
-		"ad": "<div>Relay Ad</div>",
+		"adm": "<div>Relay Ad</div>",
 		"width": 728,
 		"height": 90,
 		"creativeId": "creative-456",
@@ -3934,7 +3934,7 @@ func TestLURLFromPrebidJSResponse(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -4017,7 +4017,7 @@ func TestLURLWithoutResponseURL(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -4098,7 +4098,7 @@ func TestLURLEmptyString(t *testing.T) {
 		"width": 300,
 		"height": 250,
 		"creativeId": "creative-123",
-		"ad": "<div>Test Ad</div>",
+		"adm": "<div>Test Ad</div>",
 		"ttl": 300,
 		"netRevenue": true,
 		"mediaType": "banner",
@@ -4350,5 +4350,155 @@ func TestBuildEndpointURLMacroFailure(t *testing.T) {
 	// Should have at least one error from macro resolution
 	if len(errs) == 0 {
 		t.Error("Expected at least one error when macro resolution fails")
+	}
+}
+
+// TestPrebidJSValidationErrors tests the validation of PrebidJS responses for missing required fields
+func TestPrebidJSValidationErrors(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderContxtful, config.Adapter{
+		Endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	// Create a test request
+	requestJSON := `{
+		"id": "test-request-validation",
+		"imp": [{
+			"id": "test-imp-validation",
+			"banner": {"format": [{"w": 300, "h": 250}]},
+			"ext": {"bidder": {"placementId": "validation-test", "customerId": "VALIDATION123"}}
+		}]
+	}`
+
+	var request openrtb2.BidRequest
+	if err := json.Unmarshal([]byte(requestJSON), &request); err != nil {
+		t.Fatalf("Failed to unmarshal test request: %v", err)
+	}
+
+	testCases := []struct {
+		name           string
+		responseBody   string
+		expectedErrors int
+		expectedBids   int
+		errorMessages  []string
+	}{
+		{
+			name: "Missing AdM",
+			responseBody: `[{
+				"requestId": "test-imp-validation",
+				"cpm": 1.50,
+				"currency": "USD",
+				"width": 300,
+				"height": 250,
+				"creativeId": "creative-123",
+				"mediaType": "banner",
+				"ttl": 300,
+				"netRevenue": true,
+				"bidderCode": "contxtful",
+				"nurl": "https://example.com/nurl",
+				"burl": "https://example.com/burl"
+			}]`,
+			expectedErrors: 1,
+			expectedBids:   0,
+			errorMessages:  []string{"bid has no ad markup"},
+		},
+		{
+			name: "Empty AdM",
+			responseBody: `[{
+				"requestId": "test-imp-validation",
+				"cpm": 1.50,
+				"currency": "USD",
+				"width": 300,
+				"height": 250,
+				"creativeId": "creative-123",
+				"adm": "",
+				"mediaType": "banner",
+				"ttl": 300,
+				"netRevenue": true,
+				"bidderCode": "contxtful",
+				"nurl": "https://example.com/nurl",
+				"burl": "https://example.com/burl"
+			}]`,
+			expectedErrors: 1,
+			expectedBids:   0,
+			errorMessages:  []string{"bid has no ad markup"},
+		},
+		{
+			name: "Valid bid with all required fields",
+			responseBody: `[{
+				"requestId": "test-imp-validation",
+				"cpm": 1.50,
+				"currency": "USD",
+				"width": 300,
+				"height": 250,
+				"creativeId": "creative-123",
+				"adm": "<div>Valid ad markup</div>",
+				"mediaType": "banner",
+				"ttl": 300,
+				"netRevenue": true,
+				"bidderCode": "contxtful",
+				"nurl": "https://example.com/nurl",
+				"burl": "https://example.com/burl"
+			}]`,
+			expectedErrors: 0,
+			expectedBids:   1,
+			errorMessages:  []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			response := &adapters.ResponseData{
+				StatusCode: 200,
+				Body:       []byte(tc.responseBody),
+			}
+
+			bids, errs := bidder.MakeBids(&request, nil, response)
+
+			// Check error count
+			if len(errs) != tc.expectedErrors {
+				t.Errorf("Expected %d errors, got %d: %v", tc.expectedErrors, len(errs), errs)
+			}
+
+			// Check bid count
+			actualBids := 0
+			if bids != nil {
+				actualBids = len(bids.Bids)
+			}
+			if actualBids != tc.expectedBids {
+				t.Errorf("Expected %d bids, got %d", tc.expectedBids, actualBids)
+			}
+
+			// Check specific error messages
+			if len(tc.errorMessages) > 0 {
+				errorStrings := make([]string, len(errs))
+				for i, err := range errs {
+					errorStrings[i] = err.Error()
+				}
+
+				for _, expectedMsg := range tc.errorMessages {
+					found := false
+					for _, actualMsg := range errorStrings {
+						if strings.Contains(actualMsg, expectedMsg) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("Expected error message containing '%s', but not found in: %v", expectedMsg, errorStrings)
+					}
+				}
+			}
+
+			// For valid cases, verify bid fields are populated correctly
+			if tc.expectedBids > 0 && tc.expectedErrors == 0 && bids != nil && len(bids.Bids) > 0 {
+				bid := bids.Bids[0]
+				assert.NotEmpty(t, bid.Bid.AdM, "AdM should be populated for valid bids")
+				assert.NotEqual(t, openrtb_ext.BidType(""), bid.BidType, "BidType should be populated for valid bids")
+			}
+		})
 	}
 }

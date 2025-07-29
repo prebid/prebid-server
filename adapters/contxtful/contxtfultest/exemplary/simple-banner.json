@@ -121,7 +121,7 @@
             "height": 250,
             "currency": "USD",
             "requestId": "test-imp-banner",
-            "ad": "<div style=\"width:300px;height:250px;background:#f0f0f0;text-align:center;line-height:250px;\">Contxtful Demo Ad</div>",
+            "adm": "<div style=\"width:300px;height:250px;background:#f0f0f0;text-align:center;line-height:250px;\">Contxtful Demo Ad</div>",
             "ttl": 300,
             "creativeId": "demo-creative-123",
             "netRevenue": true,
