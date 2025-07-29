@@ -86,8 +86,8 @@ type ContxtfulExchangeBid struct {
 	PlacementID string       `json:"placementId"`
 	TraceId     string       `json:"traceId,omitempty"`
 	Random      float64      `json:"random,omitempty"`
-	NURL        string       `json:"nurl,omitempty"`
-	BURL        string       `json:"burl,omitempty"`
+	NURL        string       `json:"nurl"`
+	BURL        string       `json:"burl"`
 	LURL        string       `json:"lurl,omitempty"`
 	Ext         ContxtfulExt `json:"ext,omitempty"`
 }
