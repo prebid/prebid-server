@@ -335,6 +335,10 @@ func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *Bi
 		if prebidBid.CPM == 0 || prebidBid.RequestID == "" {
 			continue
 		}
+		if prebidBid.MediaType == "" {
+			ctx.errors = append(ctx.errors, &errortypes.BadServerResponse{Message: "bid has no ad media type"})
+			continue
+		}
 		if prebidBid.AdM == "" {
 			ctx.errors = append(ctx.errors, &errortypes.BadServerResponse{Message: "bid has no ad markup"})
 			continue
