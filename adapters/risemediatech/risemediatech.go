@@ -29,7 +29,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	for imp := range iterutil.SlicePointerValues(request.Imp) {
 		impExt, err := parseImpExt(imp.Ext)
 		if err != nil {
-			errs = append(errs, &errortypes.BadInput{Message: fmt.Errorf("impID %s: %w", imp.ID, err).Error()})
+			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: %v", imp.ID, err)})
 			continue
 		}
 
