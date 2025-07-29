@@ -62,7 +62,12 @@
                     }
                   ]
                 },
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "EMPTY123",
+                    "placementId": "empty-placement"
+                  }
+                },
                 "id": "test-imp-empty"
               }
             ],

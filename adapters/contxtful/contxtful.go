@@ -266,9 +266,6 @@ func (a *adapter) buildEndpointURL(request *openrtb2.BidRequest) (string, []stri
 func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string, bidderCustomerId, bidderVersion, fallbackCustomerId string) ContxtfulRequestPayload {
 	// Create clean request copy
 	requestCopy := *request
-	for i := range requestCopy.Imp {
-		requestCopy.Imp[i].Ext = jsonutil.RawMessage(`{}`)
-	}
 
 	// Resolve configuration with fallbacks inline
 	adapterVersion := bidderVersion

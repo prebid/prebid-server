@@ -79,7 +79,12 @@
                     }
                   ]
                 },
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "DEMO123",
+                    "placementId": "sync-placement-1"
+                  }
+                },
                 "id": "test-imp-sync"
               }
             ],

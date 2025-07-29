@@ -80,7 +80,12 @@
                     }
                   ]
                 },
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "DEMO123",
+                    "placementId": "banner-placement-1"
+                  }
+                },
                 "id": "test-imp-banner"
               }
             ],

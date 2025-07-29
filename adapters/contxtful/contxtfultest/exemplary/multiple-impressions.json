@@ -129,7 +129,12 @@
                     }
                   ]
                 },
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "DEMO123",
+                    "placementId": "header-leaderboard"
+                  }
+                },
                 "id": "test-imp-header"
               },
               {
@@ -145,7 +150,12 @@
                     }
                   ]
                 },
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "DEMO123",
+                    "placementId": "sidebar-display"
+                  }
+                },
                 "id": "test-imp-sidebar"
               },
               {
@@ -157,7 +167,12 @@
                     }
                   ]
                 },
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "DEMO123",
+                    "placementId": "mobile-footer"
+                  }
+                },
                 "id": "test-imp-footer"
               }
             ],

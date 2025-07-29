@@ -62,7 +62,12 @@
                     }
                   ]
                 },
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "INVALID123",
+                    "placementId": "invalid-placement"
+                  }
+                },
                 "id": "test-imp-invalid"
               }
             ],

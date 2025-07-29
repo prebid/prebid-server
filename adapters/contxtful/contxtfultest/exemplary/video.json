@@ -76,7 +76,12 @@
             "id": "test-request-video",
             "imp": [
               {
-                "ext": {},
+                "ext": {
+                  "bidder": {
+                    "customerId": "DEMO123",
+                    "placementId": "video-placement-1"
+                  }
+                },
                 "id": "test-imp-video",
                 "video": {
                   "api": [1, 2],
