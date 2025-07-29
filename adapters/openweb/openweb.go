@@ -23,7 +23,7 @@ type adapter struct {
 }
 
 const (
-	testEndpoint = "https://pbs.openweb-prebid.com/pbs-test"
+	testEndpoint = "https://pbs.openwebmp.com/pbs-test"
 )
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
