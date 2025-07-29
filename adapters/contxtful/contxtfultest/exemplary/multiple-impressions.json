@@ -211,7 +211,13 @@
             "netRevenue": true,
             "mediaType": "banner",
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-header&a=DEMO123&bidder=contxtful&impId=test-imp-header&price=3.25&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=728&h=90&f=b",
-            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-header&a=DEMO123&bidder=contxtful&impId=test-imp-header&price=3.25&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=728&h=90&f=b"
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-header&a=DEMO123&bidder=contxtful&impId=test-imp-header&price=3.25&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=728&h=90&f=b",
+            "ext": {
+              "contxtful": {
+                "placement": "header",
+                "reseller": "premium-partner"
+              }
+            }
           },
           {
             "cpm": 2.80,
@@ -225,7 +231,13 @@
             "netRevenue": true,
             "mediaType": "banner",
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-sidebar&a=DEMO123&bidder=contxtful&impId=test-imp-sidebar&price=2.80&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=300&h=250&f=b",
-            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-sidebar&a=DEMO123&bidder=contxtful&impId=test-imp-sidebar&price=2.80&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=300&h=250&f=b"
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-sidebar&a=DEMO123&bidder=contxtful&impId=test-imp-sidebar&price=2.80&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=300&h=250&f=b",
+            "ext": {
+              "contxtful": {
+                "placement": "sidebar",
+                "format": "display"
+              }
+            }
           },
           {
             "cpm": 1.50,
@@ -239,7 +251,13 @@
             "netRevenue": true,
             "mediaType": "banner",
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
-            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b"
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
+            "ext": {
+              "contxtful": {
+                "placement": "footer",
+                "device": "mobile"
+              }
+            }
           }
         ]
       }
@@ -260,18 +278,9 @@
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-header&a=DEMO123&bidder=contxtful&impId=test-imp-header&price=3.25&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=728&h=90&f=b",
             "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-header&a=DEMO123&bidder=contxtful&impId=test-imp-header&price=3.25&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=728&h=90&f=b",
             "ext": {
-              "origbidcpm": 3.25,
-              "origbidcur": "USD",
-              "prebid": {
-                "meta": {
-                  "adaptercode": "contxtful"
-                },
-                "targeting": {
-                  "hb_bidder": "contxtful",
-                  "hb_pb": "3.25",
-                  "hb_size": "728x90"
-                },
-                "type": "banner"
+              "contxtful": {
+                "placement": "header",
+                "reseller": "premium-partner"
               }
             }
           },
@@ -289,18 +298,9 @@
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-sidebar&a=DEMO123&bidder=contxtful&impId=test-imp-sidebar&price=2.80&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=300&h=250&f=b",
             "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-sidebar&a=DEMO123&bidder=contxtful&impId=test-imp-sidebar&price=2.80&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=300&h=250&f=b",
             "ext": {
-              "origbidcpm": 2.80,
-              "origbidcur": "USD",
-              "prebid": {
-                "meta": {
-                  "adaptercode": "contxtful"
-                },
-                "targeting": {
-                  "hb_bidder": "contxtful",
-                  "hb_pb": "2.80",
-                  "hb_size": "300x250"
-                },
-                "type": "banner"
+              "contxtful": {
+                "placement": "sidebar",
+                "format": "display"
               }
             }
           },
@@ -318,18 +318,9 @@
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
             "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
             "ext": {
-              "origbidcpm": 1.50,
-              "origbidcur": "USD",
-              "prebid": {
-                "meta": {
-                  "adaptercode": "contxtful"
-                },
-                "targeting": {
-                  "hb_bidder": "contxtful",
-                  "hb_pb": "1.50",
-                  "hb_size": "320x50"
-                },
-                "type": "banner"
+              "contxtful": {
+                "placement": "footer",
+                "device": "mobile"
               }
             }
           },

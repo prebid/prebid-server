@@ -15,15 +15,6 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-// BidExtensionsParams holds the parameters needed to create bid extensions
-type BidExtensionsParams struct {
-	Price    float64
-	Currency string
-	BidType  openrtb_ext.BidType
-	Width    int
-	Height   int
-}
-
 // ContxtfulRequestPayload represents the complete request payload structure
 type ContxtfulRequestPayload struct {
 	ORTB2         *openrtb2.BidRequest   `json:"ortb2"`
@@ -67,29 +58,25 @@ type BidExtensions struct {
 	Prebid     openrtb_ext.ExtBidPrebid `json:"prebid"`
 }
 
-type ContxtfulExt struct {
-	Reseller string `json:"reseller,omitempty"`
-}
-
 type ContxtfulExchangeBid struct {
-	RequestID   string       `json:"requestId"`
-	CPM         float64      `json:"cpm"`
-	Currency    string       `json:"currency"`
-	Width       int          `json:"width"`
-	Height      int          `json:"height"`
-	CreativeID  string       `json:"creativeId"`
-	AdM         string       `json:"adm"`
-	TTL         int          `json:"ttl"`
-	NetRevenue  bool         `json:"netRevenue"`
-	MediaType   string       `json:"mediaType"`
-	BidderCode  string       `json:"bidderCode"`
-	PlacementID string       `json:"placementId"`
-	TraceId     string       `json:"traceId,omitempty"`
-	Random      float64      `json:"random,omitempty"`
-	NURL        string       `json:"nurl"`
-	BURL        string       `json:"burl"`
-	LURL        string       `json:"lurl,omitempty"`
-	Ext         ContxtfulExt `json:"ext,omitempty"`
+	RequestID   string              `json:"requestId"`
+	CPM         float64             `json:"cpm"`
+	Currency    string              `json:"currency"`
+	Width       int                 `json:"width"`
+	Height      int                 `json:"height"`
+	CreativeID  string              `json:"creativeId"`
+	AdM         string              `json:"adm"`
+	TTL         int                 `json:"ttl"`
+	NetRevenue  bool                `json:"netRevenue"`
+	MediaType   string              `json:"mediaType"`
+	BidderCode  string              `json:"bidderCode"`
+	PlacementID string              `json:"placementId"`
+	TraceId     string              `json:"traceId,omitempty"`
+	Random      float64             `json:"random,omitempty"`
+	NURL        string              `json:"nurl"`
+	BURL        string              `json:"burl"`
+	LURL        string              `json:"lurl,omitempty"`
+	Ext         jsonutil.RawMessage `json:"ext,omitempty"`
 }
 
 type BidProcessingContext struct {
@@ -422,16 +409,7 @@ func (a *adapter) createBid(
 		NURL:  prebidBid.NURL,
 		BURL:  prebidBid.BURL,
 		LURL:  prebidBid.LURL,
-	}
-
-	if bidExtJSON, err := createBidExtensions(BidExtensionsParams{
-		Price:    prebidBid.CPM,
-		Currency: currency,
-		BidType:  bidType,
-		Width:    prebidBid.Width,
-		Height:   prebidBid.Height,
-	}); err == nil {
-		bid.Ext = bidExtJSON
+		Ext:   prebidBid.Ext,
 	}
 
 	typedBid := &adapters.TypedBid{
@@ -440,25 +418,6 @@ func (a *adapter) createBid(
 	}
 
 	ctx.bidderResponse.Bids = append(ctx.bidderResponse.Bids, typedBid)
-}
-
-func createBidExtensions(params BidExtensionsParams) (jsonutil.RawMessage, error) {
-	bidExt := BidExtensions{
-		OrigBidCPM: params.Price,
-		OrigBidCur: params.Currency,
-		Prebid: openrtb_ext.ExtBidPrebid{
-			Type: params.BidType,
-			Meta: &openrtb_ext.ExtBidPrebidMeta{
-				AdapterCode: BidderName,
-			},
-			Targeting: map[string]string{
-				"hb_bidder": BidderName,
-				"hb_pb":     fmt.Sprintf("%.2f", params.Price),
-				"hb_size":   fmt.Sprintf("%dx%d", params.Width, params.Height),
-			},
-		},
-	}
-	return jsonutil.Marshal(bidExt)
 }
 
 // Simple unified bidder config extraction - get ORTB2 data and extract params

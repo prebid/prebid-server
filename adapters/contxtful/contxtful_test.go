@@ -2717,7 +2717,14 @@ func TestBidExtensionsRegression(t *testing.T) {
 		"mediaType": "banner",
 		"bidderCode": "contxtful",
 		"nurl": "https://monitoring.receptivity.io/v1/pbs/EXTTEST123/pbs-impression?b=contxtful-test-imp-extensions&a=EXTTEST123&bidder=contxtful&impId=test-imp-extensions&price=2.85&traceId=extension-test-trace-123&random=0.789123&domain=extensions.example.com&adRequestId=extension-test-request&w=300&h=250&f=b",
-		"burl": "https://monitoring.receptivity.io/v1/pbs/EXTTEST123/pbs-billing?b=contxtful-test-imp-extensions&a=EXTTEST123&bidder=contxtful&impId=test-imp-extensions&price=2.85&traceId=extension-test-trace-123&random=0.789123&domain=extensions.example.com&adRequestId=extension-test-request&w=300&h=250&f=b"
+		"burl": "https://monitoring.receptivity.io/v1/pbs/EXTTEST123/pbs-billing?b=contxtful-test-imp-extensions&a=EXTTEST123&bidder=contxtful&impId=test-imp-extensions&price=2.85&traceId=extension-test-trace-123&random=0.789123&domain=extensions.example.com&adRequestId=extension-test-request&w=300&h=250&f=b",
+		"ext": {
+			"contxtful": {
+				"segment": "premium",
+				"dealId": "DEAL-123",
+				"customData": "test-value"
+			}
+		}
 	}]`
 
 	responseData := &adapters.ResponseData{
@@ -2737,31 +2744,24 @@ func TestBidExtensionsRegression(t *testing.T) {
 
 	bid := bidderResponse.Bids[0].Bid
 
-	// CRITICAL REGRESSION CHECK: Verify bid extensions are present
-	assert.NotNil(t, bid.Ext, "BID EXTENSIONS MISSING! This indicates the bid extension creation logic was removed during refactoring")
+	// CRITICAL REGRESSION CHECK: Verify bid extensions are present and copied as-is
+	assert.NotNil(t, bid.Ext, "BID EXTENSIONS MISSING! Contxtful ext should be copied as-is")
 
 	// Parse bid extensions
 	var bidExt map[string]interface{}
 	err := json.Unmarshal(bid.Ext, &bidExt)
 	assert.NoError(t, err, "Failed to parse bid extensions JSON")
 
-	// Verify essential PBS bid fields
-	assert.Contains(t, bidExt, "origbidcpm", "Missing origbidcpm - required for PBS processing")
-	assert.Contains(t, bidExt, "origbidcur", "Missing origbidcur - required for PBS processing")
-	assert.Equal(t, 2.85, bidExt["origbidcpm"], "origbidcpm should match bid price")
-	assert.Equal(t, "USD", bidExt["origbidcur"], "origbidcur should be USD")
+	// Verify contxtful ext data is copied as-is from the original response
+	assert.Contains(t, bidExt, "contxtful", "Missing contxtful extensions - should be copied as-is")
 
-	// Verify Prebid targeting extensions (CRITICAL for PBS bid processing)
-	prebidExt, hasPrebid := bidExt["prebid"].(map[string]interface{})
-	assert.True(t, hasPrebid, "Missing prebid extensions - CRITICAL for PBS processing")
+	contxtfulExt, hasContxtfulExt := bidExt["contxtful"].(map[string]interface{})
+	assert.True(t, hasContxtfulExt, "contxtful extensions should be present")
 
-	targeting, hasTargeting := prebidExt["targeting"].(map[string]interface{})
-	assert.True(t, hasTargeting, "Missing prebid.targeting - CRITICAL for PBS processing")
-
-	// These targeting fields are ESSENTIAL for PBS to process bids correctly
-	assert.Equal(t, "contxtful", targeting["hb_bidder"], "hb_bidder must be 'contxtful'")
-	assert.Equal(t, "2.85", targeting["hb_pb"], "hb_pb must match formatted price")
-	assert.Equal(t, "300x250", targeting["hb_size"], "hb_size must match bid dimensions")
+	// Verify specific contxtful ext fields that were in the mock response
+	assert.Equal(t, "premium", contxtfulExt["segment"], "segment should be copied as-is")
+	assert.Equal(t, "DEAL-123", contxtfulExt["dealId"], "dealId should be copied as-is")
+	assert.Equal(t, "test-value", contxtfulExt["customData"], "customData should be copied as-is")
 
 	// Verify essential PBS bid extensions are present (production-level fields only)
 	// Note: contxtfulDebug has been removed for production - only core PBS fields remain

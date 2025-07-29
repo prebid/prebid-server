@@ -127,7 +127,13 @@
             "netRevenue": true,
             "mediaType": "banner",
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
-            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b"
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
+            "ext": {
+              "contxtful": {
+                "reseller": "demo-reseller",
+                "version": "v1.0"
+              }
+            }
           }
         ]
       }
@@ -148,18 +154,9 @@
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
             "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
             "ext": {
-              "origbidcpm": 2.50,
-              "origbidcur": "USD",
-              "prebid": {
-                "meta": {
-                  "adaptercode": "contxtful"
-                },
-                "targeting": {
-                  "hb_bidder": "contxtful",
-                  "hb_pb": "2.50",
-                  "hb_size": "300x250"
-                },
-                "type": "banner"
+              "contxtful": {
+                "reseller": "demo-reseller",
+                "version": "v1.0"
               }
             }
           },

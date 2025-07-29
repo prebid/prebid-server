@@ -135,7 +135,13 @@
             "netRevenue": true,
             "mediaType": "video",
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-video&a=DEMO123&bidder=contxtful&impId=test-imp-video&price=4.75&traceId=&random=0.000000&domain=video.example.com&adRequestId=test-request-video&w=640&h=480&f=b",
-            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-video&a=DEMO123&bidder=contxtful&impId=test-imp-video&price=4.75&traceId=&random=0.000000&domain=video.example.com&adRequestId=test-request-video&w=640&h=480&f=b"
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-video&a=DEMO123&bidder=contxtful&impId=test-imp-video&price=4.75&traceId=&random=0.000000&domain=video.example.com&adRequestId=test-request-video&w=640&h=480&f=b",
+            "ext": {
+              "contxtful": {
+                "mediaType": "video",
+                "vast": "inline"
+              }
+            }
           }
         ]
       }
@@ -156,18 +162,9 @@
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-video&a=DEMO123&bidder=contxtful&impId=test-imp-video&price=4.75&traceId=&random=0.000000&domain=video.example.com&adRequestId=test-request-video&w=640&h=480&f=b",
             "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-video&a=DEMO123&bidder=contxtful&impId=test-imp-video&price=4.75&traceId=&random=0.000000&domain=video.example.com&adRequestId=test-request-video&w=640&h=480&f=b",
             "ext": {
-              "origbidcpm": 4.75,
-              "origbidcur": "USD",
-              "prebid": {
-                "meta": {
-                  "adaptercode": "contxtful"
-                },
-                "targeting": {
-                  "hb_bidder": "contxtful",
-                  "hb_pb": "4.75",
-                  "hb_size": "640x480"
-                },
-                "type": "video"
+              "contxtful": {
+                "mediaType": "video",
+                "vast": "inline"
               }
             }
           },
