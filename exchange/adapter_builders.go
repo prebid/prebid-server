@@ -65,6 +65,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/bigoad"
 	"github.com/prebid/prebid-server/v3/adapters/blasto"
 	"github.com/prebid/prebid-server/v3/adapters/bliink"
+	"github.com/prebid/prebid-server/v3/adapters/blis"
 	"github.com/prebid/prebid-server/v3/adapters/blue"
 	"github.com/prebid/prebid-server/v3/adapters/bluesea"
 	"github.com/prebid/prebid-server/v3/adapters/bmtm"
@@ -325,6 +326,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBigoAd:            bigoad.Builder,
 		openrtb_ext.BidderBlasto:            blasto.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
+		openrtb_ext.BidderBlis:              blis.Builder,
 		openrtb_ext.BidderBlue:              blue.Builder,
 		openrtb_ext.BidderBluesea:           bluesea.Builder,
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
