@@ -18,8 +18,13 @@ import (
 )
 
 type adapter struct {
-	endpoint string
+	endpoint        string
+	testEndpointURL string
 }
+
+const (
+	testEndpoint = "https://pbs.openweb-prebid.com/pbs-test"
+)
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
 	org, err := checkExtAndExtractOrg(request)
@@ -37,9 +42,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
+	endpoint := a.endpoint
+	if request.Test == 1 {
+		endpoint = testEndpoint
+	}
+
 	return append(requestsToBidder, &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.endpoint + "?publisher_id=" + org,
+		Uri:     endpoint + "?publisher_id=" + org,
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
