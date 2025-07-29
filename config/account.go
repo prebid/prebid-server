@@ -44,6 +44,7 @@ type Account struct {
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
 	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
+	AnalyticsModules        map[string]json.RawMessage                  `json:"analytics_modules,omitempty"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

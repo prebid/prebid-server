@@ -2,6 +2,7 @@ package build
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
@@ -9,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics/agma"
 	"github.com/prebid/prebid-server/v3/analytics/clients"
 	"github.com/prebid/prebid-server/v3/analytics/filesystem"
+	"github.com/prebid/prebid-server/v3/analytics/greenbids"
 	"github.com/prebid/prebid-server/v3/analytics/pubstack"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -63,7 +65,25 @@ func New(analytics *config.Analytics) analytics.Runner {
 type enabledAnalytics map[string]analytics.Module
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+	account := ao.Account
+	accountModules := account.AnalyticsModules
+
 	for name, module := range ea {
+		// check if there is a specific configuration for the account
+		if accountModules != nil {
+			if config, exists := accountModules[name]; exists {
+				// if there is a specific configuration, initialize the module with it
+				accountSpecificModule, err := initializeAccountSpecificModule(name, config)
+				if err != nil {
+					glog.Errorf("Failed to initialize account-specific module %s: %v", name, err)
+					continue
+				}
+				accountSpecificModule.LogAuctionObject(ao)
+				continue
+			}
+		}
+
+		// if there is no specific configuration, use the default module
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
@@ -77,19 +97,16 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
-	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				vo.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogVideoObject(vo)
-			if cloneReq != nil {
-				vo.RequestWrapper = cloneReq
-			}
-		}
+func (ea enabledAnalytics) LogAuctionObjectWithCriteria(ao *analytics.AuctionObject, criteria LogCriteria) {
+	combinedAnalytics := combineAnalytics(criteria.HostConfig, criteria.AccountConfig)
 
+	for name, module := range combinedAnalytics {
+		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, criteria.Privacy, name); isAllowed {
+			if cloneBidderReq != nil {
+				ao.RequestWrapper = cloneBidderReq
+			}
+			module.LogAuctionObject(ao)
+		}
 	}
 }
 
@@ -125,6 +142,18 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
 		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
 			module.LogNotificationEventObject(ne)
+		}
+	}
+}
+
+// LogVideoObject implements the missing method for analytics.Runner.
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
+	for name, module := range ea {
+		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
+			if cloneBidderReq != nil {
+				vo.RequestWrapper = cloneBidderReq
+			}
+			module.LogVideoObject(vo)
 		}
 	}
 }
@@ -209,4 +238,71 @@ func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, ada
 		newMap[adapterName] = val
 	}
 	return newMap
+}
+
+func (ea enabledAnalytics) getOrInitializeModule(name string, config json.RawMessage) (analytics.Module, error) {
+	// Sprawdź, czy adapter już istnieje
+	if module, exists := ea[name]; exists {
+		return module, nil
+	}
+
+	// Jeśli nie istnieje, zainicjalizuj go dynamicznie
+	module, err := initializeAccountSpecificModule(name, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize module %s: %v", name, err)
+	}
+
+	// Dodaj do aktywnych adapterów
+	ea[name] = module
+	return module, nil
+}
+
+func combineAnalytics(hostConfig enabledAnalytics, accountConfig map[string]json.RawMessage) enabledAnalytics {
+	combined := make(enabledAnalytics)
+
+	// Dodaj adaptery z host config
+	for name, module := range hostConfig {
+		combined[name] = module
+	}
+
+	// Nadpisz/uzupełnij adaptery z account config
+	for name, config := range accountConfig {
+		if _, exists := combined[name]; !exists {
+			// Lazy loading adaptera
+			if module, err := combined.getOrInitializeModule(name, config); err == nil {
+				combined[name] = module
+			} else {
+				glog.Errorf("Error initializing module %s: %v", name, err)
+			}
+		}
+	}
+
+	return combined
+}
+
+func initializeAccountSpecificModule(name string, config json.RawMessage) (analytics.Module, error) {
+	switch name {
+	case "greenbids":
+		var greenbidsConfig struct {
+			Enabled           bool    `json:"enabled"`
+			PubID             string  `json:"pubid"`
+			GreenbidsSampling float64 `json:"greenbidsSampling"`
+		}
+		if err := json.Unmarshal(config, &greenbidsConfig); err != nil {
+			return nil, fmt.Errorf("invalid configuration for greenbids: %v", err)
+		}
+		if greenbidsConfig.Enabled {
+			return greenbids.NewModule(greenbidsConfig.PubID, greenbidsConfig.GreenbidsSampling), nil
+		}
+	// here we can add more cases for other analytics modules
+	default:
+		return nil, fmt.Errorf("unknown analytics module: %s", name)
+	}
+	return nil, nil
+}
+
+type LogCriteria struct {
+	AccountConfig map[string]json.RawMessage
+	HostConfig    enabledAnalytics
+	Privacy       privacy.ActivityControl
 }
