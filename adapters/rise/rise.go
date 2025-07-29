@@ -22,7 +22,7 @@ type adapter struct {
 }
 
 const (
-	testEndpoint = "https://pbs.minutemedia-prebid.com/pbs-test"
+	testEndpoint = "https://pbs.yellowblue.io/pbs-test"
 )
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
