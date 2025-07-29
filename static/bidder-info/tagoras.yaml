@@ -2,7 +2,6 @@ aliasOf: "vidazoo"
 endpoint: "https://exchange.tagoras.io/openrtb/"
 maintainer:
   email: "prebid@tagoras.io"
-gvlVendorID: 0
 userSync:
   iframe:
     url: https://sync.tagoras.io/api/user/html/6819bdc3e6bb44545c55f843?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
