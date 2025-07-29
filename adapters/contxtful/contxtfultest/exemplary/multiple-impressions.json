@@ -317,8 +317,6 @@
             "crid": "footer-creative-202",
             "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
             "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
-            "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
-            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-footer&a=DEMO123&bidder=contxtful&impId=test-imp-footer&price=1.50&traceId=&random=0.000000&domain=multi.example.com&adRequestId=test-request-multi&w=320&h=50&f=b",
             "ext": {
               "origbidcpm": 1.50,
               "origbidcur": "USD",
