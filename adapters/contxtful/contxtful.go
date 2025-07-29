@@ -19,7 +19,7 @@ import (
 type BidExtensionsParams struct {
 	Price    float64
 	Currency string
-	BidType  string
+	BidType  openrtb_ext.BidType
 	Width    int
 	Height   int
 }
@@ -62,28 +62,9 @@ type ContxtfulConfigDetails struct {
 
 // BidExtensions represents the complete bid extensions structure
 type BidExtensions struct {
-	OrigBidCPM float64         `json:"origbidcpm"`
-	OrigBidCur string          `json:"origbidcur"`
-	Prebid     PrebidExtension `json:"prebid"`
-}
-
-// PrebidExtension represents the prebid-specific extension data
-type PrebidExtension struct {
-	Type      string          `json:"type"`
-	Meta      PrebidMeta      `json:"meta"`
-	Targeting PrebidTargeting `json:"targeting"`
-}
-
-// PrebidMeta represents the meta information in prebid extensions
-type PrebidMeta struct {
-	AdapterCode string `json:"adaptercode"`
-}
-
-// PrebidTargeting represents the targeting information in prebid extensions
-type PrebidTargeting struct {
-	HBBidder string `json:"hb_bidder"`
-	HBPB     string `json:"hb_pb"`
-	HBSize   string `json:"hb_size"`
+	OrigBidCPM float64                  `json:"origbidcpm"`
+	OrigBidCur string                   `json:"origbidcur"`
+	Prebid     openrtb_ext.ExtBidPrebid `json:"prebid"`
 }
 
 type ContxtfulExt struct {
@@ -440,7 +421,7 @@ func (a *adapter) createBid(
 	if bidExtJSON, err := createBidExtensions(BidExtensionsParams{
 		Price:    prebidBid.CPM,
 		Currency: currency,
-		BidType:  string(bidType),
+		BidType:  bidType,
 		Width:    prebidBid.Width,
 		Height:   prebidBid.Height,
 	}); err == nil {
@@ -459,15 +440,15 @@ func createBidExtensions(params BidExtensionsParams) (jsonutil.RawMessage, error
 	bidExt := BidExtensions{
 		OrigBidCPM: params.Price,
 		OrigBidCur: params.Currency,
-		Prebid: PrebidExtension{
+		Prebid: openrtb_ext.ExtBidPrebid{
 			Type: params.BidType,
-			Meta: PrebidMeta{
+			Meta: &openrtb_ext.ExtBidPrebidMeta{
 				AdapterCode: BidderName,
 			},
-			Targeting: PrebidTargeting{
-				HBBidder: BidderName,
-				HBPB:     fmt.Sprintf("%.2f", params.Price),
-				HBSize:   fmt.Sprintf("%dx%d", params.Width, params.Height),
+			Targeting: map[string]string{
+				"hb_bidder": BidderName,
+				"hb_pb":     fmt.Sprintf("%.2f", params.Price),
+				"hb_size":   fmt.Sprintf("%dx%d", params.Width, params.Height),
 			},
 		},
 	}
