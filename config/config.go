@@ -1083,7 +1083,16 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
+	v.SetDefault("accounts.http.endpoint", "")
+	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", false)
 	v.SetDefault("accounts.in_memory_cache.type", "none")
+	v.SetDefault("accounts.in_memory_cache.ttl_seconds", 0)
+	v.SetDefault("accounts.in_memory_cache.size_bytes", 0)
+	v.SetDefault("accounts.cache_events.enabled", false)
+	v.SetDefault("accounts.cache_events.endpoint", "")
+	v.SetDefault("accounts.http_events.endpoint", "")
+	v.SetDefault("accounts.http_events.refresh_rate_seconds", 0)
+	v.SetDefault("accounts.http_events.timeout_ms", 0)
 
 	v.BindEnv("user_sync.external_url")
 	v.BindEnv("user_sync.coop_sync.default")
