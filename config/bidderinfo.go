@@ -407,7 +407,7 @@ func (infos BidderInfos) validate(errs []error) []error {
 	return errs
 }
 
-// might need to revert to embedded bse onl check in th body
+// might need to revert to embedded base only check in the body
 func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
 	if len(aliasBidderInfo.AliasOf) == 0 {
 		return nil
