@@ -81,6 +81,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBigoAd,
 	BidderBlasto,
 	BidderBliink,
+	BidderBlis,
 	BidderBlue,
 	BidderBluesea,
 	BidderBmtm,
@@ -449,6 +450,7 @@ const (
 	BidderBigoAd            BidderName = "bigoad"
 	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
+	BidderBlis              BidderName = "blis"
 	BidderBlue              BidderName = "blue"
 	BidderBluesea           BidderName = "bluesea"
 	BidderBmtm              BidderName = "bmtm"
