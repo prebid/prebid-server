@@ -20,6 +20,7 @@ var (
 	falseValue          = false
 	infoEnabled         = config.BidderInfo{Disabled: false}
 	infoDisabled        = config.BidderInfo{Disabled: true}
+	infoBaseOnly        = config.BidderInfo{BaseOnly: true}
 	multiformatDisabled = config.BidderInfo{
 		Disabled: false,
 		OpenRTB: &config.OpenRTBInfo{
@@ -176,6 +177,14 @@ func TestBuildBidders(t *testing.T) {
 				openrtb_ext.BidderRubicon: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
 			},
 		},
+		{
+			description: "Success - Ignores BaseOnly",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoBaseOnly, "rubicon": infoEnabled},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
+			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
+				openrtb_ext.BidderRubicon: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -262,8 +271,13 @@ func TestGetActiveBidders(t *testing.T) {
 			expected:    map[string]openrtb_ext.BidderName{},
 		},
 		{
+			description: "BaseOnly",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoBaseOnly},
+			expected:    map[string]openrtb_ext.BidderName{},
+		},
+		{
 			description: "Mixed",
-			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "openx": infoEnabled},
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "openx": infoEnabled, "rubicon": infoBaseOnly},
 			expected:    map[string]openrtb_ext.BidderName{"openx": openrtb_ext.BidderOpenx},
 		},
 	}
@@ -292,6 +306,17 @@ func TestGetDisabledBidderWarningMessages(t *testing.T) {
 
 		require.Contains(t, result, "bidderA")
 		assert.Equal(t, result["bidderA"], `Bidder "bidderA" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`)
+	})
+
+	t.Run("removed-and-baseonly", func(t *testing.T) {
+		result := GetDisabledBidderWarningMessages(map[string]config.BidderInfo{"bidderA": infoBaseOnly})
+
+		// test proper construction by verifying one expected bidder is in the list with the baseonly bidder
+		require.Contains(t, result, "groupm")
+		assert.Equal(t, result["groupm"], `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`)
+
+		require.Contains(t, result, "bidderA")
+		assert.Equal(t, result["bidderA"], `Bidder "bidderA" can only be aliased and cannot be used directly.`)
 	})
 }
 
@@ -327,10 +352,16 @@ func TestMergeRemovedAndDisabledBidderWarningMessages(t *testing.T) {
 			expected:         map[string]string{"bidderA": `Bidder "bidderA" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`},
 		},
 		{
+			name:             "baseonly",
+			givenRemoved:     map[string]string{},
+			givenBidderInfos: map[string]config.BidderInfo{"bidderA": infoBaseOnly},
+			expected:         map[string]string{"bidderA": `Bidder "bidderA" can only be aliased and cannot be used directly.`},
+		},
+		{
 			name:             "mixed",
 			givenRemoved:     map[string]string{"bidderA": `Bidder A Message`},
-			givenBidderInfos: map[string]config.BidderInfo{"bidderB": infoEnabled, "bidderC": infoDisabled},
-			expected:         map[string]string{"bidderA": `Bidder A Message`, "bidderC": `Bidder "bidderC" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`},
+			givenBidderInfos: map[string]config.BidderInfo{"bidderB": infoEnabled, "bidderC": infoDisabled, "bidderD": infoBaseOnly},
+			expected:         map[string]string{"bidderA": `Bidder A Message`, "bidderC": `Bidder "bidderC" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, "bidderD": `Bidder "bidderD" can only be aliased and cannot be used directly.`},
 		},
 	}
 
@@ -338,6 +369,42 @@ func TestMergeRemovedAndDisabledBidderWarningMessages(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			result := mergeRemovedAndDisabledBidderWarningMessages(test.givenRemoved, test.givenBidderInfos)
 			assert.Equal(t, test.expected, result, test.name)
+		})
+	}
+}
+
+func TestIsBidderDisabledDueToBaseOnly(t *testing.T) {
+	testCases := []struct {
+		name     string
+		message  string
+		expected bool
+	}{
+		{
+			name:     "empty",
+			message:  "",
+			expected: false,
+		},
+		{
+			name:     "baseonly",
+			message:  `Bidder "test" can only be aliased and cannot be used directly.`,
+			expected: true,
+		},
+		{
+			name:     "disabled",
+			message:  `Bidder "test" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
+			expected: false,
+		},
+		{
+			name:     "removed",
+			message:  `Bidder "test" is no longer available in Prebid Server. Please update your configuration.`,
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := IsBidderDisabledDueToBaseOnly(test.message)
+			assert.Equal(t, test.expected, result)
 		})
 	}
 }

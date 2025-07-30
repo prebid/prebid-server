@@ -12,10 +12,12 @@ import (
 
 func TestPrepareBiddersResponseAll(t *testing.T) {
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore      = config.BidderInfo{Disabled: false}
+		enabledAlias     = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledBaseOnly  = config.BidderInfo{Disabled: false, BaseOnly: true}
+		disabledCore     = config.BidderInfo{Disabled: true}
+		disabledAlias    = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledBaseOnly = config.BidderInfo{Disabled: true, BaseOnly: true}
 	)
 
 	testCases := []struct {
@@ -69,9 +71,24 @@ func TestPrepareBiddersResponseAll(t *testing.T) {
 			expected:     `["a","z"]`,
 		},
 		{
+			name:         "baseonly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "baseonly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "baseonly-many-mixed",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly, "b": disabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
 			name:         "mixed",
-			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			expected:     `["a","b","c","d"]`,
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledBaseOnly, "d": enabledCore, "e": enabledAlias, "f": enabledBaseOnly},
+			expected:     `["a","b","d","e"]`,
 		},
 	}
 
@@ -84,12 +101,14 @@ func TestPrepareBiddersResponseAll(t *testing.T) {
 	}
 }
 
-func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
+func TestPrepareBiddersResponseAllBase(t *testing.T) {
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore      = config.BidderInfo{Disabled: false}
+		enabledAlias     = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledBaseOnly  = config.BidderInfo{Disabled: false, BaseOnly: true}
+		disabledCore     = config.BidderInfo{Disabled: true}
+		disabledAlias    = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledBaseOnly = config.BidderInfo{Disabled: true, BaseOnly: true}
 	)
 
 	testCases := []struct {
@@ -138,15 +157,30 @@ func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
 			expected:     `[]`,
 		},
 		{
+			name:         "baseonly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "baseonly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "baseonly-many",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly, "b": enabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
 			name:         "mixed",
-			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			expected:     `["a","c"]`,
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledBaseOnly, "d": enabledCore, "e": enabledAlias, "f": enabledBaseOnly},
+			expected:     `["a","d"]`,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseAllBaseOnly(test.givenBidders)
+			result, err := prepareBiddersResponseAllBase(test.givenBidders)
 			assert.NoError(t, err)
 			assert.Equal(t, []byte(test.expected), result)
 		})
@@ -155,10 +189,12 @@ func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
 
 func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore      = config.BidderInfo{Disabled: false}
+		enabledAlias     = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledBaseOnly  = config.BidderInfo{Disabled: false, BaseOnly: true}
+		disabledCore     = config.BidderInfo{Disabled: true}
+		disabledAlias    = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledBaseOnly = config.BidderInfo{Disabled: true, BaseOnly: true}
 	)
 
 	testCases := []struct {
@@ -212,15 +248,30 @@ func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 			expected:     `["a","z"]`,
 		},
 		{
+			name:         "basepnly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "basepnly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "basepnly-many-mixed",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly, "b": disabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
 			name:         "mixed",
-			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			expected:     `["c","d"]`,
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledBaseOnly, "d": enabledCore, "e": enabledAlias, "f": enabledBaseOnly},
+			expected:     `["d","e"]`,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseEnabledOnly(test.givenBidders)
+			result, err := prepareBiddersResponseEnabled(test.givenBidders)
 			assert.NoError(t, err)
 			assert.Equal(t, []byte(test.expected), result)
 		})
@@ -229,10 +280,12 @@ func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 
 func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore      = config.BidderInfo{Disabled: false}
+		enabledAlias     = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledBaseOnly  = config.BidderInfo{Disabled: false, BaseOnly: true}
+		disabledCore     = config.BidderInfo{Disabled: true}
+		disabledAlias    = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledBaseOnly = config.BidderInfo{Disabled: true, BaseOnly: true}
 	)
 
 	testCases := []struct {
@@ -277,7 +330,7 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 		},
 		{
 			name:         "alias-one-disabled",
-			givenBidders: config.BidderInfos{"a": enabledAlias},
+			givenBidders: config.BidderInfos{"a": disabledAlias},
 			expected:     `[]`,
 		},
 		{
@@ -286,15 +339,30 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 			expected:     `[]`,
 		},
 		{
+			name:         "baseonly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "baseonly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "baseonly-many",
+			givenBidders: config.BidderInfos{"a": enabledBaseOnly, "b": enabledBaseOnly},
+			expected:     `[]`,
+		},
+		{
 			name:         "mixed",
-			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			expected:     `["c"]`,
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledBaseOnly, "d": enabledCore, "e": enabledAlias, "f": enabledBaseOnly},
+			expected:     `["d"]`,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseEnabledOnlyBaseOnly(test.givenBidders)
+			result, err := prepareBiddersResponseEnabledBase(test.givenBidders)
 			assert.NoError(t, err)
 			assert.Equal(t, []byte(test.expected), result)
 		})
@@ -302,14 +370,20 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 }
 
 func TestBiddersHandler(t *testing.T) {
+	// There are two separate meanings of "base only" in this test:
+	// 1. enabledBaseOnly/disabledBaseOnly refers to bidders which cannot be used directly.
+	// 2. The URL parameter baseadaptersonly refers to the exclusion of aliases.
+
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore      = config.BidderInfo{Disabled: false}
+		enabledAlias     = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledBaseOnly  = config.BidderInfo{Disabled: false, BaseOnly: true}
+		disabledCore     = config.BidderInfo{Disabled: true}
+		disabledAlias    = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledBaseOnly = config.BidderInfo{Disabled: true, BaseOnly: true}
 	)
 
-	bidders := config.BidderInfos{"a": enabledCore, "b": enabledAlias, "c": disabledCore, "d": disabledAlias}
+	bidders := config.BidderInfos{"a": enabledCore, "b": enabledAlias, "c": enabledBaseOnly, "d": disabledCore, "e": disabledAlias, "f": disabledBaseOnly}
 
 	testCases := []struct {
 		name            string
@@ -322,21 +396,21 @@ func TestBiddersHandler(t *testing.T) {
 			name:            "simple",
 			givenURL:        "/info/bidders",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "enabledonly-false",
 			givenURL:        "/info/bidders?enabledonly=false",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "enabledonly-false-caseinsensitive",
 			givenURL:        "/info/bidders?enabledonly=fAlSe",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
@@ -371,28 +445,28 @@ func TestBiddersHandler(t *testing.T) {
 			name:            "baseonly-false",
 			givenURL:        "/info/bidders?baseadaptersonly=false",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "baseonly-false-caseinsensitive",
 			givenURL:        "/info/bidders?baseadaptersonly=fAlSe",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "baseonly-true",
 			givenURL:        "/info/bidders?baseadaptersonly=true",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","c"]`,
+			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "baseonly-true-caseinsensitive",
 			givenURL:        "/info/bidders?baseadaptersonly=TrUe",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","c"]`,
+			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
@@ -420,7 +494,7 @@ func TestBiddersHandler(t *testing.T) {
 			name:            "enabledonly-false-baseonly-true",
 			givenURL:        "/info/bidders?enabledonly=false&baseadaptersonly=true",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","c"]`,
+			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{

@@ -21,17 +21,17 @@ func NewBiddersEndpoint(bidders config.BidderInfos) httprouter.Handle {
 		glog.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
 	}
 
-	responseAllBaseOnly, err := prepareBiddersResponseAllBaseOnly(bidders)
+	responseAllBaseOnly, err := prepareBiddersResponseAllBase(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
 	}
 
-	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders)
+	responseEnabledOnly, err := prepareBiddersResponseEnabled(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
 	}
 
-	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledOnlyBaseOnly(bidders)
+	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledBase(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
 	}
@@ -106,23 +106,23 @@ func prepareResponse(bidders config.BidderInfos, p bidderPredicate) ([]byte, err
 }
 
 func prepareBiddersResponseAll(bidders config.BidderInfos) ([]byte, error) {
-	filterNone := func(_ config.BidderInfo) bool { return true }
+	filterNone := func(info config.BidderInfo) bool { return !info.BaseOnly }
 	return prepareResponse(bidders, filterNone)
 }
 
-func prepareBiddersResponseAllBaseOnly(bidders config.BidderInfos) ([]byte, error) {
-	filterBaseOnly := func(info config.BidderInfo) bool { return len(info.AliasOf) == 0 }
-	return prepareResponse(bidders, filterBaseOnly)
+func prepareBiddersResponseAllBase(bidders config.BidderInfos) ([]byte, error) {
+	filterBase := func(info config.BidderInfo) bool { return !info.BaseOnly && len(info.AliasOf) == 0 }
+	return prepareResponse(bidders, filterBase)
 }
 
-func prepareBiddersResponseEnabledOnly(bidders config.BidderInfos) ([]byte, error) {
-	filterEnabledOnly := func(info config.BidderInfo) bool { return info.IsEnabled() }
-	return prepareResponse(bidders, filterEnabledOnly)
+func prepareBiddersResponseEnabled(bidders config.BidderInfos) ([]byte, error) {
+	filterEnabled := func(info config.BidderInfo) bool { return info.IsEnabled() }
+	return prepareResponse(bidders, filterEnabled)
 }
 
-func prepareBiddersResponseEnabledOnlyBaseOnly(bidders config.BidderInfos) ([]byte, error) {
-	filterEnabledOnlyBaseOnly := func(info config.BidderInfo) bool { return info.IsEnabled() && len(info.AliasOf) == 0 }
-	return prepareResponse(bidders, filterEnabledOnlyBaseOnly)
+func prepareBiddersResponseEnabledBase(bidders config.BidderInfos) ([]byte, error) {
+	filterEnabledBase := func(info config.BidderInfo) bool { return info.IsEnabled() && len(info.AliasOf) == 0 }
+	return prepareResponse(bidders, filterEnabledBase)
 }
 
 func writeBadRequest(w http.ResponseWriter, data []byte) {
