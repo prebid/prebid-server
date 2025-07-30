@@ -248,17 +248,17 @@ func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 			expected:     `["a","z"]`,
 		},
 		{
-			name:         "basepnly-one-enabled",
+			name:         "baseonly-one-enabled",
 			givenBidders: config.BidderInfos{"a": enabledBaseOnly},
 			expected:     `[]`,
 		},
 		{
-			name:         "basepnly-one-disabled",
+			name:         "baseonly-one-disabled",
 			givenBidders: config.BidderInfos{"a": disabledBaseOnly},
 			expected:     `[]`,
 		},
 		{
-			name:         "basepnly-many-mixed",
+			name:         "baseonly-many-mixed",
 			givenBidders: config.BidderInfos{"a": enabledBaseOnly, "b": disabledBaseOnly},
 			expected:     `[]`,
 		},
