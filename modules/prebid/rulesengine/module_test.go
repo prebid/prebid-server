@@ -176,7 +176,7 @@ func TestGetRefreshRate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := GetRefreshRate(tc.inData)
+			res := getRefreshRate(tc.inData)
 			assert.Equal(t, tc.expectedRefreshRate, res)
 		})
 	}

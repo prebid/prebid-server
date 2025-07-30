@@ -29,7 +29,7 @@ func Builder(cfg json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) 
 		schemaValidator: schemaValidator,
 		monitor:         &treeManagerLogger{},
 	}
-	c := NewCache(GetRefreshRate(cfg))
+	c := NewCache(getRefreshRate(cfg))
 
 	go tm.Run(c)
 
@@ -138,7 +138,7 @@ func configChanged(oldHash hash, data *json.RawMessage) bool {
 	return false
 }
 
-func GetRefreshRate(jsonCfg json.RawMessage) int {
+func getRefreshRate(jsonCfg json.RawMessage) int {
 	updateFrequency, err := jsonparser.GetInt(jsonCfg, "refreshrateseconds")
 	if err != nil {
 		updateFrequency = 0
