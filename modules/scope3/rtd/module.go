@@ -76,6 +76,14 @@ type segmentCache struct {
 	data map[string]cacheEntry
 }
 
+type userExt struct {
+	Eids           *[]openrtb2.EID `json:"eids"`
+	RampID         string          `json:"rampid"`
+	LiverampIDL    string          `json:"liveramp_idl"`
+	ATSEnvelope    string          `json:"ats_envelope"`
+	RampIDEnvelope string          `json:"rampId_envelope"`
+}
+
 func (c *segmentCache) get(key string, ttl time.Duration) ([]string, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -239,7 +247,11 @@ func (m *Module) HandleAuctionResponseHook(
 				"segments": segments,
 			}
 
-			payload.BidResponse.Ext, _ = json.Marshal(extMap)
+			extResp, err := json.Marshal(extMap)
+			if err == nil {
+				payload.BidResponse.Ext = extResp
+			}
+
 			return payload, nil
 		},
 		hookstage.MutationUpdate,
@@ -292,7 +304,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 
 	// Parse response
 	var scope3Resp Scope3Response
-	if err := json.NewDecoder(resp.Body).Decode(&scope3Resp); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&scope3Resp); err != nil {
 		return nil, err
 	}
 
@@ -336,31 +348,21 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 
 	// Include user identifiers if available
 	if bidRequest.User != nil && bidRequest.User.Ext != nil {
-		var userExt map[string]interface{}
+		var userExt userExt
 		if err := json.Unmarshal(bidRequest.User.Ext, &userExt); err == nil {
 			// Include LiveRamp identifiers
-			if eids, ok := userExt["eids"].([]interface{}); ok {
-				for _, eid := range eids {
-					if eidMap, ok := eid.(map[string]interface{}); ok {
-						if source, ok := eidMap["source"].(string); ok && source == "liveramp.com" {
-							if uidsArray, ok := eidMap["uids"].([]interface{}); ok && len(uidsArray) > 0 {
-								if uidMap, ok := uidsArray[0].(map[string]interface{}); ok {
-									if id, ok := uidMap["id"].(string); ok {
-										hasher.Write([]byte("rampid:" + id))
-									}
-								}
-							}
-						}
-					}
+			for _, eid := range *userExt.Eids {
+				if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
+					hasher.Write([]byte("rampid:" + eid.UIDs[0].ID))
 				}
 			}
 
 			// Include other identifier types
-			if rampID, ok := userExt["rampid"].(string); ok {
-				hasher.Write([]byte("rampid:" + rampID))
+			if userExt.RampID != "" {
+				hasher.Write([]byte("rampid:" + userExt.RampID))
 			}
-			if atsEnvelope, ok := userExt["liveramp_idl"].(string); ok {
-				hasher.Write([]byte("ats:" + atsEnvelope))
+			if userExt.LiverampIDL != "" {
+				hasher.Write([]byte("ats:" + userExt.LiverampIDL))
 			}
 		}
 
@@ -385,7 +387,7 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 		return
 	}
 
-	var userExt map[string]interface{}
+	var userExt userExt
 	if err := json.Unmarshal(bidRequest.User.Ext, &userExt); err != nil {
 		return
 	}
@@ -395,34 +397,28 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 	// publisher implementations, other RTD modules, or identity providers
 
 	// 1. Check for LiveRamp EID in the standard eids array
-	if eids, ok := userExt["eids"].([]interface{}); ok {
-		for _, eid := range eids {
-			if eidMap, ok := eid.(map[string]interface{}); ok {
-				if source, ok := eidMap["source"].(string); ok && source == "liveramp.com" {
-					// LiveRamp EID found - will be included in the API request
-					return
-				}
-			}
+	for _, eid := range *userExt.Eids {
+		if eid.Source == "liveramp.com" {
+			// LiveRamp EID found - will be included in the API request
+			return
 		}
 	}
 
 	// 2. Check for direct rampid field (alternative location used by some publishers)
-	if rampID, ok := userExt["rampid"].(string); ok && rampID != "" {
+	if userExt.RampID != "" {
 		// RampID found in alternative location
 		return
 	}
 
 	// 3. Check for ATS envelope in various possible locations
 	// Publishers may store ATS envelopes in different extension fields
-	atsLocations := []string{"liveramp_idl", "ats_envelope", "rampId_envelope"}
-	for _, location := range atsLocations {
-		if atsEnvelope, ok := userExt[location].(string); ok && atsEnvelope != "" {
-			// ATS envelope found - will be forwarded in the request
-			return
-		}
+	if userExt.LiverampIDL != "" || userExt.ATSEnvelope != "" || userExt.RampIDEnvelope != "" {
+		// ATS envelope found - will be forwarded in the request
+		return
 	}
 
 	// 4. Check for ATS envelope in top-level request extensions
+	atsLocations := []string{"liveramp_idl", "ats_envelope", "rampId_envelope"}
 	if bidRequest.Ext != nil {
 		var reqExt map[string]interface{}
 		if err := json.Unmarshal(bidRequest.Ext, &reqExt); err == nil {
