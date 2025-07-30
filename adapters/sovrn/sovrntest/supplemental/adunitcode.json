@@ -19,7 +19,7 @@
         "ext": {
           "bidder": {
             "tagid": "123456",
-            "adunitcode": "sovrn_auc"
+            "adunitcode": "sovrn_auc_bidder"
           },
           "gpid": "test-gpid",
           "adunitcode": "sovrn_auc"
@@ -63,7 +63,7 @@
               },
               "tagid": "123456",
               "ext": {
-                "adunitcode": "sovrn_auc",
+                "adunitcode": "sovrn_auc_bidder",
                 "bidder": {
                   "tagid": "123456",
                   "adunitcode": "sovrn_auc"
