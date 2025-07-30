@@ -362,6 +362,24 @@ func TestDefaults(t *testing.T) {
 
 // When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
 var fullConfig = []byte(`
+accounts:
+  filesystem:
+    enabled: true
+    directorypath: "./example_directory"
+  http:
+    endpoint: "https://prebid.org"
+    use_rfc3986_compliant_request_builder: true
+  in_memory_cache:
+    type: "lru"
+    ttl_seconds: 300
+    size_bytes: 1000
+  cache_events:
+    enabled: true
+    endpoint: "https://prebid.org"
+  http_events:
+    endpoint: "https://prebid.org"
+    refresh_rate_seconds: 300
+    timeout_ms: 100
 gdpr:
   host_vendor_id: 15
   default_value: "1"
@@ -636,6 +654,18 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
 	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
 	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "accounts.filesystem.enabled", true, cfg.Accounts.Files.Enabled)
+	cmpStrings(t, "accounts.filesystem.directorypath", "./example_directory", cfg.Accounts.Files.Path)
+	cmpStrings(t, "accounts.http.endpoint", "https://prebid.org", cfg.Accounts.HTTP.Endpoint)
+	cmpBools(t, "accounts.http.use_rfc3986_compliant_request_builder", true, cfg.Accounts.HTTP.UseRfcCompliantBuilder)
+	cmpStrings(t, "accounts.in_memory_cache.type", "lru", cfg.Accounts.InMemoryCache.Type)
+	cmpInts(t, "accounts.in_memory_cache.ttl_seconds", 300, cfg.Accounts.InMemoryCache.TTL)
+	cmpInts(t, "accounts.in_memory_cache.size_bytes", 1000, cfg.Accounts.InMemoryCache.Size)
+	cmpBools(t, "accounts.cache_events.enabled", true, cfg.Accounts.CacheEvents.Enabled)
+	cmpStrings(t, "accounts.cache_events.endpoint", "https://prebid.org", cfg.Accounts.CacheEvents.Endpoint)
+	cmpStrings(t, "accounts.http_events.endpoint", "https://prebid.org", cfg.Accounts.HTTPEvents.Endpoint)
+	cmpInts(t, "accounts.http_events.refresh_rate_seconds", 300, int(cfg.Accounts.HTTPEvents.RefreshRate))
+	cmpInts(t, "accounts.http_events.timeout_ms", 100, int(cfg.Accounts.HTTPEvents.Timeout))
 	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
 	cmpStrings(t, "cache.host", "prebidcache.net", cfg.CacheURL.Host)
 	cmpStrings(t, "cache.query", "uuid=%PBS_CACHE_UUID%", cfg.CacheURL.Query)
