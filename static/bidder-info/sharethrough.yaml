@@ -2,6 +2,10 @@ endpoint: "https://btlr.sharethrough.com/universal/v1?supply_id=FGMrCMMc"
 maintainer:
   email: pubgrowth.engineering@sharethrough.com
 gvlVendorID: 80
+openrtb:
+  version: 2.6
+geoscope:
+  - global
 capabilities:
   app:
     mediaTypes:

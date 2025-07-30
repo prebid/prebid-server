@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 )
 
 // ChannelType enumerates the values of integrations Prebid Server can configure for an account
@@ -42,6 +42,8 @@ type Account struct {
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
+	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
+	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -159,6 +161,7 @@ type AccountGDPR struct {
 	PurposeConfigs      map[consentconstants.Purpose]*AccountGDPRPurpose
 	PurposeOneTreatment AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
 	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
+	EEACountries        []string                       `mapstructure:"eea_countries" json:"eea_countries"`
 }
 
 // EnabledForChannelType indicates whether GDPR is turned on at the account level for the specified channel type

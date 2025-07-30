@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -164,6 +164,9 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "stored_requests_timeout_ms", 50, cfg.StoredRequestsTimeout)
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
+	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
+	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
+	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
 	cmpBools(t, "auto_gen_source_tid", true, cfg.AutoGenSourceTID)
 	cmpBools(t, "generate_bid_id", false, cfg.GenerateBidID)
 	cmpStrings(t, "experiment.adscert.mode", "off", cfg.Experiment.AdCerts.Mode)
@@ -223,6 +226,8 @@ func TestDefaults(t *testing.T) {
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 0, cfg.TmaxAdjustments.BidderResponseDurationMin)
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+
+	cmpInts(t, "tmax_default", 0, cfg.TmaxDefault)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
@@ -451,7 +456,7 @@ metrics:
     adapter_buyeruid_scrubbed: false
     adapter_gdpr_request_blocked: true
     account_modules_metrics: true
-blacklisted_apps: ["spamAppID","sketchy-app-id"]
+blocked_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 auto_gen_source_tid: false
 certificates_file: /etc/ssl/cert.pem
@@ -546,6 +551,7 @@ tmax_adjustments:
   bidder_response_duration_min_ms: 700
   bidder_network_latency_buffer_ms: 100
   pbs_response_preparation_duration_ms: 100
+tmax_default: 600
 analytics:
   agma:
     enabled: true
@@ -615,6 +621,9 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "auction_timeouts_ms.default", 50, int(cfg.AuctionTimeouts.Default))
 	cmpInts(t, "auction_timeouts_ms.max", 123, int(cfg.AuctionTimeouts.Max))
 	cmpInts(t, "stored_request_timeout_ms", 75, cfg.StoredRequestsTimeout)
+	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
+	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
+	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
 	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
 	cmpStrings(t, "cache.host", "prebidcache.net", cfg.CacheURL.Host)
 	cmpStrings(t, "cache.query", "uuid=%PBS_CACHE_UUID%", cfg.CacheURL.Query)
@@ -644,6 +653,7 @@ func TestFullConfig(t *testing.T) {
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 700, cfg.TmaxAdjustments.BidderResponseDurationMin)
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+	cmpInts(t, "tmax_default", 600, cfg.TmaxDefault)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
@@ -714,12 +724,12 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "lmt.enforce", true, cfg.LMT.Enforce)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
-	cmpStrings(t, "blacklisted_apps", "spamAppID", cfg.BlacklistedApps[0])
-	cmpStrings(t, "blacklisted_apps", "sketchy-app-id", cfg.BlacklistedApps[1])
+	cmpStrings(t, "blocked_apps", "spamAppID", cfg.BlockedApps[0])
+	cmpStrings(t, "blocked_apps", "sketchy-app-id", cfg.BlockedApps[1])
 
-	//Assert the BlacklistedAppMap hash table was built correctly
-	for i := 0; i < len(cfg.BlacklistedApps); i++ {
-		cmpBools(t, "cfg.BlacklistedAppMap", true, cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]])
+	//Assert the BlockedAppsLookup hash table was built correctly
+	for i := 0; i < len(cfg.BlockedApps); i++ {
+		cmpBools(t, "cfg.BlockedAppsLookup", true, cfg.BlockedAppsLookup[cfg.BlockedApps[i]])
 	}
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly

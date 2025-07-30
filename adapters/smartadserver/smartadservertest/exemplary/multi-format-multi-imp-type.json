@@ -1,0 +1,188 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-multi-id",
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            1
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 1,
+            "pageId": 2,
+            "formatId": 3,
+            "networkId": 73
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 150
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            1
+          ],
+          "w": 920,
+          "h": 200
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 1,
+            "pageId": 2,
+            "formatId": 4,
+            "networkId": 73
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
+        "body": {
+          "id": "test-request-multi-id",
+          "imp": [
+            {
+              "id": "test-imp-id-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  1
+                ],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 1,
+                  "pageId": 2,
+                  "formatId": 3,
+                  "networkId": 73
+                }
+              }
+            },
+            {
+              "id": "test-imp-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 150
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  1
+                ],
+                "w": 920,
+                "h": 200
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 1,
+                  "pageId": 2,
+                  "formatId": 4,
+                  "networkId": 73
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "73"
+            }
+          }
+        },
+        "impIDs": [
+          "test-imp-id-1",
+          "test-imp-id-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-multi-id",
+          "seatbid": [
+            {
+              "seat": "smartadserver",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e801",
+                  "impid": "test-imp-id-2",
+                  "price": 0.800000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_11",
+                  "mtype": 2,
+                  "w": 920,
+                  "h": 200
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e801",
+            "impid": "test-imp-id-2",
+            "price": 0.8,
+            "adm": "some-test-ad",
+            "crid": "crid_11",
+            "mtype": 2,
+            "w": 920,
+            "h": 200
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

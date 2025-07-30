@@ -10,35 +10,36 @@ import (
 	"strings"
 	"time"
 
-	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/endpoints"
-	"github.com/prebid/prebid-server/v2/endpoints/events"
-	infoEndpoints "github.com/prebid/prebid-server/v2/endpoints/info"
-	"github.com/prebid/prebid-server/v2/endpoints/openrtb2"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange"
-	"github.com/prebid/prebid-server/v2/experiment/adscert"
-	"github.com/prebid/prebid-server/v2/floors"
-	"github.com/prebid/prebid-server/v2/gdpr"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/metrics"
-	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/modules"
-	"github.com/prebid/prebid-server/v2/modules/moduledeps"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/pbs"
-	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
-	"github.com/prebid/prebid-server/v2/router/aspects"
-	"github.com/prebid/prebid-server/v2/server/ssl"
-	storedRequestsConf "github.com/prebid/prebid-server/v2/stored_requests/config"
-	"github.com/prebid/prebid-server/v2/usersync"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/uuidutil"
-	"github.com/prebid/prebid-server/v2/version"
+	openrtb2model "github.com/prebid/openrtb/v20/openrtb2"
+	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/endpoints"
+	"github.com/prebid/prebid-server/v3/endpoints/events"
+	infoEndpoints "github.com/prebid/prebid-server/v3/endpoints/info"
+	"github.com/prebid/prebid-server/v3/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/experiment/adscert"
+	"github.com/prebid/prebid-server/v3/floors"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/modules"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
+	"github.com/prebid/prebid-server/v3/pbs"
+	pbc "github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/router/aspects"
+	"github.com/prebid/prebid-server/v3/server/ssl"
+	storedRequestsConf "github.com/prebid/prebid-server/v3/stored_requests/config"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/uuidutil"
+	"github.com/prebid/prebid-server/v3/version"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
@@ -57,11 +58,11 @@ import (
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
-func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
-	return newJsonDirectoryServer(schemaDirectory, validator, aliases, openrtb_ext.GetAliasBidderToParent())
+func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator) httprouter.Handle {
+	return newJsonDirectoryServer(schemaDirectory, validator, openrtb_ext.GetAliasBidderToParent())
 }
 
-func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string, yamlAliases map[openrtb_ext.BidderName]openrtb_ext.BidderName) httprouter.Handle {
+func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[openrtb_ext.BidderName]openrtb_ext.BidderName) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
@@ -81,17 +82,8 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 	}
 
 	// Add in any aliases
-	for aliasName, parentBidder := range yamlAliases {
+	for aliasName, parentBidder := range aliases {
 		data[string(aliasName)] = json.RawMessage(validator.Schema(parentBidder))
-	}
-
-	// Add in any default aliases
-	for aliasName, bidderName := range aliases {
-		bidderData, ok := data[bidderName]
-		if !ok {
-			glog.Fatalf("Default alias (%s) exists referencing unknown bidder: %s", aliasName, bidderName)
-		}
-		data[aliasName] = bidderData
 	}
 
 	response, err := jsonutil.Marshal(data)
@@ -194,7 +186,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor}
-	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
+	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
@@ -206,7 +198,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
 
 	// register the analytics runner for shutdown
-	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown)
+	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
@@ -216,10 +208,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	activeBidders := exchange.GetActiveBidders(cfg.BidderInfos)
 	disabledBidders := exchange.GetDisabledBidderWarningMessages(cfg.BidderInfos)
 
-	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
-	if err := validateDefaultAliases(defaultAliases); err != nil {
-		return nil, err
-	}
+	defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, gdpr.VendorListURLMaker)
@@ -228,7 +217,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
-	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, cfg.BidderInfos, r.MetricsEngine)
+	adapters, singleFormatAdapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, cfg.BidderInfos, r.MetricsEngine)
 	if len(adaptersErrs) > 0 {
 		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
 		return nil, errs
@@ -244,7 +233,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	macroReplacer := macros.NewStringIndexBasedReplacer()
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher, singleFormatAdapters)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
@@ -269,9 +258,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
-	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(cfg.BidderInfos, defaultAliases))
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(cfg.BidderInfos, defaultAliases))
-	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
+	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(cfg.BidderInfos))
+	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(cfg.BidderInfos))
+	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, analyticsRunner, accounts, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
@@ -362,56 +351,31 @@ func SupportCORS(handler http.Handler) http.Handler {
 	return c.Handler(handler)
 }
 
-type defReq struct {
-	Ext defExt `json:"ext"`
-}
-type defExt struct {
-	Prebid defaultAliases `json:"prebid"`
-}
-type defaultAliases struct {
-	Aliases map[string]string `json:"aliases"`
-}
-
-func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []byte) {
-	defReq := &defReq{}
-	aliases := make(map[string]string)
-	if defReqConfig.Type == "file" {
-		if len(defReqConfig.FileSystem.FileName) == 0 {
-			return aliases, []byte{}
-		}
-		defReqJSON, err := os.ReadFile(defReqConfig.FileSystem.FileName)
-		if err != nil {
-			glog.Fatalf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
-			return aliases, []byte{}
-		}
-
-		if err := jsonutil.UnmarshalValid(defReqJSON, defReq); err != nil {
-			// we might not have aliases defined, but will at least show that the JSON file is parsable.
-			glog.Fatalf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
-			return aliases, []byte{}
-		}
-
-		// Read in the alias map if we want to populate the info endpoints with aliases.
-		if defReqConfig.AliasInfo {
-			aliases = defReq.Ext.Prebid.Aliases
-		}
-		return aliases, defReqJSON
+func readDefaultRequest(defReqConfig config.DefReqConfig) []byte {
+	switch defReqConfig.Type {
+	case "file":
+		return readDefaultRequestFromFile(defReqConfig)
+	default:
+		return []byte{}
 	}
-	return aliases, []byte{}
 }
 
-func validateDefaultAliases(aliases map[string]string) error {
-	var errs []error
-
-	for alias := range aliases {
-		if openrtb_ext.IsBidderNameReserved(alias) {
-			errs = append(errs, fmt.Errorf("alias %s is a reserved bidder name and cannot be used", alias))
-		}
+func readDefaultRequestFromFile(defReqConfig config.DefReqConfig) []byte {
+	if len(defReqConfig.FileSystem.FileName) == 0 {
+		return []byte{}
 	}
 
-	if len(errs) > 0 {
-		return errortypes.NewAggregateError("default request alias errors", errs)
+	defaultRequestJSON, err := os.ReadFile(defReqConfig.FileSystem.FileName)
+	if err != nil {
+		glog.Fatalf("error reading default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
+		return []byte{}
 	}
 
-	return nil
+	// validate json is valid
+	if err := jsonutil.UnmarshalValid(defaultRequestJSON, &openrtb2model.BidRequest{}); err != nil {
+		glog.Fatalf("error parsing default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
+		return []byte{}
+	}
+
+	return defaultRequestJSON
 }

@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -90,7 +91,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -117,13 +118,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtFRVRAdn, error) {
 	var extImpBidder adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &extImpBidder); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &extImpBidder); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "missing ext",
 		}
 	}
 	var frvrAdnExt openrtb_ext.ImpExtFRVRAdn
-	if err := json.Unmarshal(extImpBidder.Bidder, &frvrAdnExt); err != nil {
+	if err := jsonutil.Unmarshal(extImpBidder.Bidder, &frvrAdnExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "missing ext.bidder",
 		}
@@ -139,7 +140,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtFRVRAdn, error) {
 
 func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var extBid openrtb_ext.ExtBid
-	err := json.Unmarshal(bid.Ext, &extBid)
+	err := jsonutil.Unmarshal(bid.Ext, &extBid)
 	if err != nil {
 		return "", fmt.Errorf("unable to deserialize imp %v bid.ext", bid.ImpID)
 	}

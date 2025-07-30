@@ -18,30 +18,30 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange"
-	"github.com/prebid/prebid-server/v2/experiment/adscert"
-	"github.com/prebid/prebid-server/v2/gdpr"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
-	pbc "github.com/prebid/prebid-server/v2/prebid_cache_client"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/util/iputil"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/uuidutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/experiment/adscert"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
+	pbc "github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/uuidutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // In this file we define:
@@ -64,15 +64,16 @@ const (
 
 type testCase struct {
 	// Common
-	endpointType            int
-	Description             string            `json:"description"`
-	Config                  *testConfigValues `json:"config"`
-	BidRequest              json.RawMessage   `json:"mockBidRequest"`
-	ExpectedValidatedBidReq json.RawMessage   `json:"expectedValidatedBidRequest"`
-	ExpectedReturnCode      int               `json:"expectedReturnCode,omitempty"`
-	ExpectedErrorMessage    string            `json:"expectedErrorMessage"`
-	Query                   string            `json:"query"`
-	planBuilder             hooks.ExecutionPlanBuilder
+	endpointType               int
+	Description                string                     `json:"description"`
+	Config                     *testConfigValues          `json:"config"`
+	BidRequest                 json.RawMessage            `json:"mockBidRequest"`
+	ExpectedValidatedBidReq    json.RawMessage            `json:"expectedValidatedBidRequest"`
+	ExpectedMockBidderRequests map[string]json.RawMessage `json:"expectedMockBidderRequests"`
+	ExpectedReturnCode         int                        `json:"expectedReturnCode,omitempty"`
+	ExpectedErrorMessage       string                     `json:"expectedErrorMessage"`
+	Query                      string                     `json:"query"`
+	planBuilder                hooks.ExecutionPlanBuilder
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
@@ -84,13 +85,35 @@ type testCase struct {
 }
 
 type testConfigValues struct {
-	AccountRequired     bool                          `json:"accountRequired"`
-	AliasJSON           string                        `json:"aliases"`
-	BlacklistedApps     []string                      `json:"blacklistedApps"`
-	DisabledAdapters    []string                      `json:"disabledAdapters"`
-	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
-	MockBidders         []mockBidderHandler           `json:"mockBidders"`
-	RealParamsValidator bool                          `json:"realParamsValidator"`
+	AccountRequired     bool                           `json:"accountRequired"`
+	AliasJSON           string                         `json:"aliases"`
+	BlockedApps         []string                       `json:"blockedApps"`
+	DisabledAdapters    []string                       `json:"disabledAdapters"`
+	CurrencyRates       map[string]map[string]float64  `json:"currencyRates"`
+	MockBidders         []mockBidderHandler            `json:"mockBidders"`
+	RealParamsValidator bool                           `json:"realParamsValidator"`
+	BidderInfos         map[string]bidderInfoOverrides `json:"bidderInfoOverrides"`
+	PreferredMediaType  openrtb_ext.PreferredMediaType `json:"preferredmediatype"`
+}
+type bidderInfoOverrides struct {
+	OpenRTB      *OpenRTBInfo      `json:"openrtb"`
+	Capabilities *CapabilitiesInfo `json:"capabilities"`
+}
+type OpenRTBInfo struct {
+	Version              string `json:"version"`
+	MultiformatSupported *bool  `json:"multiformat-supported"`
+}
+
+// CapabilitiesInfo specifies the supported platforms for a bidder.
+type CapabilitiesInfo struct {
+	App  *PlatformInfo `json:"app" mapstructure:"app"`
+	Site *PlatformInfo `json:"site" mapstructure:"site"`
+	DOOH *PlatformInfo `json:"dooh" mapstructure:"dooh"`
+}
+
+// PlatformInfo specifies the supported media types for a bidder.
+type PlatformInfo struct {
+	MediaTypes []openrtb_ext.BidType `yaml:"mediaTypes" mapstructure:"mediaTypes"`
 }
 
 type brokenExchange struct{}
@@ -1002,6 +1025,7 @@ type mockAdapter struct {
 	mockServerURL string
 	Server        config.Server
 	seat          string
+	requestData   [][]byte
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -1012,7 +1036,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return adapter, nil
 }
 
-func (a mockAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *mockAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
 
@@ -1032,11 +1056,12 @@ func (a mockAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *ada
 			Body:   requestJSON,
 		}
 		requests = append(requests, requestData)
+		a.requestData = append(a.requestData, requestData.Body)
 	}
 	return requests, errors
 }
 
-func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode != http.StatusOK {
 		switch responseData.StatusCode {
 		case http.StatusNoContent:
@@ -1159,27 +1184,40 @@ func parseTestData(fileData []byte, testFile string) (testCase, error) {
 		return parsedTestData, fmt.Errorf("Test case %s should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.", testFile)
 	}
 
+	// Get optional expected validated bid request
+	parsedTestData.ExpectedValidatedBidReq, _, _, err = jsonparser.Get(fileData, "expectedValidatedBidRequest")
+
+	// Get optional expected mock bidder requests
+	jsonExpectedMockBidderRequests, _, _, err := jsonparser.Get(fileData, "expectedMockBidderRequests")
+	if err == nil && jsonExpectedMockBidderRequests != nil {
+		parsedTestData.ExpectedMockBidderRequests = make(map[string]json.RawMessage)
+		if err = jsonutil.UnmarshalValid(jsonExpectedMockBidderRequests, &parsedTestData.ExpectedMockBidderRequests); err != nil {
+			return parsedTestData, fmt.Errorf("Error unmarshaling root.expectedMockBidderRequests from file %s. Desc: %v.", testFile, err)
+		}
+	}
+
 	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
 
 	return parsedTestData, nil
 }
 
-func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
-	var blacklistedAppMap map[string]bool
+func (tc *testConfigValues) getBlockedAppLookup() map[string]bool {
+	var blockedAppLookup map[string]bool
 
-	if len(tc.BlacklistedApps) > 0 {
-		blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
-		for _, app := range tc.BlacklistedApps {
-			blacklistedAppMap[app] = true
+	if len(tc.BlockedApps) > 0 {
+		blockedAppLookup = make(map[string]bool, len(tc.BlockedApps))
+		for _, app := range tc.BlockedApps {
+			blockedAppLookup[app] = true
 		}
 	}
-	return blacklistedAppMap
+	return blockedAppLookup
 }
 
 // exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
 type exchangeTestWrapper struct {
 	ex                    exchange.Exchange
 	actualValidatedBidReq *openrtb2.BidRequest
+	adapters              map[openrtb_ext.BidderName]exchange.AdaptedBidder
 }
 
 func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r *exchange.AuctionRequest, debugLog *exchange.DebugLog) (*exchange.AuctionResponse, error) {
@@ -1201,13 +1239,20 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}
+	singleFormatBidders := make(map[openrtb_ext.BidderName]struct{})
 	for _, mockBidder := range testCfg.MockBidders {
 		bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
-		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL, seat: mockBidder.Seat}
+		bidderAdapter := &mockAdapter{mockServerURL: bidServer.URL, seat: mockBidder.Seat}
 		bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
 
-		adapterMap[bidderName] = exchange.AdaptBidder(bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil, "")
+		infoAwareBidderAdapter := adapters.BuildInfoAwareBidder(bidderAdapter, bidderInfos[string(bidderName)])
+
+		adapterMap[bidderName] = exchange.AdaptBidder(infoAwareBidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil, "")
 		mockBidServersArray = append(mockBidServersArray, bidServer)
+
+		if bidderInfo := bidderInfos[string(bidderName)]; bidderInfo.OpenRTB != nil && bidderInfo.OpenRTB.MultiformatSupported != nil && !*bidderInfo.OpenRTB.MultiformatSupported {
+			singleFormatBidders[bidderName] = struct{}{}
+		}
 	}
 
 	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
@@ -1230,10 +1275,12 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		singleFormatBidders,
 	)
 
 	testExchange = &exchangeTestWrapper{
-		ex: testExchange,
+		ex:       testExchange,
+		adapters: adapterMap,
 	}
 
 	return testExchange, mockBidServersArray
@@ -1257,6 +1304,45 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	}
 
 	bidderInfos, _ := config.LoadBidderInfoFromDisk("../../static/bidder-info")
+	for bidder, overrides := range test.Config.BidderInfos {
+		if bi, ok := bidderInfos[bidder]; ok {
+			if overrides.OpenRTB != nil || overrides.Capabilities != nil {
+				if bi.OpenRTB == nil {
+					bi.OpenRTB = &config.OpenRTBInfo{}
+				}
+				if overrides.OpenRTB != nil {
+					if len(overrides.OpenRTB.Version) > 0 {
+						bi.OpenRTB.Version = overrides.OpenRTB.Version
+					}
+					if overrides.OpenRTB.MultiformatSupported != nil {
+						bi.OpenRTB.MultiformatSupported = overrides.OpenRTB.MultiformatSupported
+					}
+				}
+				if overrides.Capabilities != nil {
+					if bi.Capabilities == nil {
+						bi.Capabilities = &config.CapabilitiesInfo{}
+					}
+
+					if overrides.Capabilities.Site != nil {
+						bi.Capabilities.Site = &config.PlatformInfo{}
+						bi.Capabilities.Site.MediaTypes = overrides.Capabilities.Site.MediaTypes
+					}
+
+					if overrides.Capabilities.App != nil {
+						bi.Capabilities.App = &config.PlatformInfo{}
+						bi.Capabilities.App.MediaTypes = overrides.Capabilities.App.MediaTypes
+					}
+
+					if overrides.Capabilities.DOOH != nil {
+						bi.Capabilities.DOOH = &config.PlatformInfo{}
+						bi.Capabilities.DOOH.MediaTypes = overrides.Capabilities.DOOH.MediaTypes
+					}
+				}
+				bidderInfos[bidder] = bi
+			}
+		}
+	}
+
 	enableBidders(bidderInfos)
 	disableBidders(test.Config.DisabledAdapters, bidderInfos)
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
@@ -1429,10 +1515,10 @@ func (p *fakePermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) gdpr.AuctionPermissions {
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
-	}, nil
+	}
 }
 
 type mockPlanBuilder struct {

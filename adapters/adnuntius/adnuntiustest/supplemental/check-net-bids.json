@@ -31,12 +31,13 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=prebid&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
 							"auId": "123",
-							"targetId": "123-test-imp-id",
+							"targetId": "123-test-imp-id:banner",
+							"nativeRequest": {},
 							"dimensions": [[300,250],[300,600]]
 						}
 					],
@@ -54,6 +55,7 @@
 						{
 							"auId": "0000000000000123",
 							"targetId": "123-test-imp-id",
+							"matchedAdCount": 1,
 							"html": "<ADCODE>",
 							"responseId": "adn-rsp-900646517",
 							"ads": [
@@ -61,6 +63,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": { "amount": 20.0, "currency": "NOK" },
 									"grossBid": {"amount": 0.1, "currency": "NOK"},
 									"netBid": {"amount": 0.075, "currency": "NOK"},
@@ -92,6 +95,7 @@
 						],
 						"cid": "q7y9qm5b0xt9htrv",
 						"crid": "jn9hpzvlsf8cpdmm",
+						"mtype": 1,
 						"w": 980,
 						"h": 240
 					},

@@ -8,10 +8,11 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // adapter implements Bidder interface.
@@ -47,7 +48,7 @@ func (g *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 					siteCopy.Publisher = &openrtb2.Publisher{ID: strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)}
 				}
 			}
-
+			//modified Imp along with tagID is added to the request
 			validImps = append(validImps, imp)
 		}
 	}
@@ -98,7 +99,7 @@ func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %d. ", err),
 		}}
@@ -121,25 +122,33 @@ func (g *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			})
 		}
 	}
-
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, errs
 }
 
 func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		err = &errortypes.BadInput{
+			Message: err.Error(),
+		}
+		return nil, err
+	}
+	var gumgumExt openrtb_ext.ExtImpGumGum
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &gumgumExt); err != nil {
 		err = &errortypes.BadInput{
 			Message: err.Error(),
 		}
 		return nil, err
 	}
 
-	var gumgumExt openrtb_ext.ExtImpGumGum
-	if err := json.Unmarshal(bidderExt.Bidder, &gumgumExt); err != nil {
-		err = &errortypes.BadInput{
-			Message: err.Error(),
+	var ext openrtb_ext.ExtImpAdUnitCode
+	if err := json.Unmarshal(imp.Ext, &ext); err == nil {
+		if ext.Prebid.AdUnitCode != "" {
+			imp.TagID = ext.Prebid.AdUnitCode
 		}
-		return nil, err
 	}
 
 	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
@@ -147,7 +156,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		format := bannerCopy.Format[0]
 		bannerCopy.W = &(format.W)
 		bannerCopy.H = &(format.H)
-
 		if gumgumExt.Slot != 0 {
 			var err error
 			bannerExt := getBiggerFormat(bannerCopy.Format, gumgumExt.Slot)
@@ -156,10 +164,8 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 				return nil, err
 			}
 		}
-
 		imp.Banner = &bannerCopy
 	}
-
 	if imp.Video != nil {
 		if gumgumExt.IrisID != "" {
 			var err error
@@ -172,7 +178,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 			imp.Video = &videoCopy
 		}
 	}
-
 	if gumgumExt.Product != "" {
 		var err error
 		imp.Ext, err = json.Marshal(map[string]string{"product": gumgumExt.Product})
@@ -180,7 +185,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 			return nil, err
 		}
 	}
-
 	return &gumgumExt, nil
 }
 

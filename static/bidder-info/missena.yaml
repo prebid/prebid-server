@@ -1,0 +1,16 @@
+endpoint: https://bid.missena.io/?t={{.PublisherID}}
+maintainer:
+  email: prebid@missena.com
+gvlVendorID: 687
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  iframe:
+    url: https://sync.missena.io/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID

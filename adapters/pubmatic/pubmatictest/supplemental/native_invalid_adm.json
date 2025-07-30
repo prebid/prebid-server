@@ -53,7 +53,6 @@
                       }
                   },
                   "ext": {
-                      "prebid": {},
                       "wrapper": {
                           "profile": 5123,
                           "version": 1
@@ -77,6 +76,7 @@
                                   "adid": "some-test-id",
                                   "adm": "{",
                                   "crid": "29681110",
+                                  "mtype":4,
                                   "ext": {
                                       "deal_channel": 1,
                                       "bidtype": 2
@@ -103,6 +103,7 @@
                     "adid": "some-test-id",
                     "adm": "{",
                     "crid": "29681110",
+                    "mtype":4,
                     "ext": {
                         "deal_channel": 1,
                         "bidtype": 2

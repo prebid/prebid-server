@@ -7,10 +7,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -23,15 +24,16 @@ type response struct {
 }
 
 type bidResponse struct {
-	ID     string          `json:"id"`
-	BidID  string          `json:"bidId"`
-	CPM    float64         `json:"cpm"`
-	Width  int64           `json:"width"`
-	Height int64           `json:"height"`
-	Ad     string          `json:"ad"`
-	CrID   string          `json:"crid"`
-	Mtype  string          `json:"mtype"`
-	DSA    json.RawMessage `json:"dsa"`
+	ID      string          `json:"id"`
+	BidID   string          `json:"bidId"`
+	CPM     float64         `json:"cpm"`
+	Width   int64           `json:"width"`
+	Height  int64           `json:"height"`
+	Ad      string          `json:"ad"`
+	CrID    string          `json:"crid"`
+	Mtype   string          `json:"mtype"`
+	DSA     json.RawMessage `json:"dsa"`
+	ADomain []string        `json:"adomain,omitempty"`
 }
 
 type bidExt struct {
@@ -59,7 +61,7 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 	var errors []error
 	stroeerResponse := response{}
 
-	if err := json.Unmarshal(responseData.Body, &stroeerResponse); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &stroeerResponse); err != nil {
 		errors = append(errors, err)
 		return nil, errors
 	}
@@ -77,14 +79,15 @@ func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapter
 		}
 
 		openRtbBid := openrtb2.Bid{
-			ID:    bid.ID,
-			ImpID: bid.BidID,
-			W:     bid.Width,
-			H:     bid.Height,
-			Price: bid.CPM,
-			AdM:   bid.Ad,
-			CrID:  bid.CrID,
-			MType: markupType,
+			ID:      bid.ID,
+			ImpID:   bid.BidID,
+			W:       bid.Width,
+			H:       bid.Height,
+			Price:   bid.CPM,
+			AdM:     bid.Ad,
+			CrID:    bid.CrID,
+			MType:   markupType,
+			ADomain: bid.ADomain,
 		}
 
 		if bid.DSA != nil {
@@ -111,13 +114,13 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo
 	for idx := range bidRequest.Imp {
 		imp := &bidRequest.Imp[idx]
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
 		var stroeerExt openrtb_ext.ExtImpStroeerCore
-		if err := json.Unmarshal(bidderExt.Bidder, &stroeerExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &stroeerExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}

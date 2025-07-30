@@ -2,12 +2,11 @@ package devicedetection
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/51Degrees/device-detection-go/v4/dd"
-	"github.com/pkg/errors"
-
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type config struct {
@@ -65,7 +64,7 @@ func (c *config) getPerformanceProfile() dd.PerformanceProfile {
 func parseConfig(data json.RawMessage) (config, error) {
 	var cfg config
 	if err := jsonutil.UnmarshalValid(data, &cfg); err != nil {
-		return cfg, errors.Wrap(err, "failed to parse config")
+		return cfg, fmt.Errorf("failed to parse config: %w", err)
 	}
 	return cfg, nil
 }
@@ -73,7 +72,7 @@ func parseConfig(data json.RawMessage) (config, error) {
 func validateConfig(cfg config) error {
 	_, err := os.Stat(cfg.DataFile.Path)
 	if err != nil {
-		return errors.Wrap(err, "error opening hash file path")
+		return fmt.Errorf("error opening hash file path: %w", err)
 	}
 
 	return nil

@@ -1,5 +1,7 @@
 package openrtb_ext
 
+import "github.com/prebid/openrtb/v20/adcom1"
+
 func ConvertDownTo25(r *RequestWrapper) error {
 	// schain
 	if err := moveSupplyChainFrom26To25(r); err != nil {
@@ -30,13 +32,6 @@ func ConvertDownTo25(r *RequestWrapper) error {
 			return err
 		}
 	}
-
-	// Remove fields introduced in OpenRTB 2.6+. The previous OpenRTB 2.5 spec did not specify that
-	// bidders must tolerate new or unexpected fields.
-	clear26Fields(r)
-	clear202211Fields(r)
-	clear202303Fields(r)
-	clear202309Fields(r)
 
 	return nil
 }
@@ -181,9 +176,9 @@ func moveRewardedFrom26ToPrebidExt(i *ImpWrapper) error {
 	return nil
 }
 
-// clear26Fields sets all fields introduced in OpenRTB 2.6 to default values, which
+// Clear26Fields sets all fields introduced in OpenRTB 2.6 to default values, which
 // will cause them to be omitted during json marshal.
-func clear26Fields(r *RequestWrapper) {
+func Clear26Fields(r *RequestWrapper) {
 	r.WLangB = nil
 	r.CatTax = 0
 
@@ -274,9 +269,9 @@ func clear26Fields(r *RequestWrapper) {
 	}
 }
 
-// clear202211Fields sets all fields introduced in OpenRTB 2.6-202211 to default values
+// Clear202211Fields sets all fields introduced in OpenRTB 2.6-202211 to default values
 // which will cause them to be omitted during json marshal.
-func clear202211Fields(r *RequestWrapper) {
+func Clear202211Fields(r *RequestWrapper) {
 	r.DOOH = nil
 
 	if app := r.App; app != nil {
@@ -298,9 +293,9 @@ func clear202211Fields(r *RequestWrapper) {
 	}
 }
 
-// clear202303Fields sets all fields introduced in OpenRTB 2.6-202303 to default values
+// Clear202303Fields sets all fields introduced in OpenRTB 2.6-202303 to default values
 // which will cause them to be omitted during json marshal.
-func clear202303Fields(r *RequestWrapper) {
+func Clear202303Fields(r *RequestWrapper) {
 	for _, imp := range r.GetImp() {
 		imp.Refresh = nil
 
@@ -310,9 +305,9 @@ func clear202303Fields(r *RequestWrapper) {
 	}
 }
 
-// clear202309Fields sets all fields introduced in OpenRTB 2.6-202309 to default values
+// Clear202309Fields sets all fields introduced in OpenRTB 2.6-202309 to default values
 // which will cause them to be omitted during json marshal.
-func clear202309Fields(r *RequestWrapper) {
+func Clear202309Fields(r *RequestWrapper) {
 	r.ACat = nil
 
 	for _, imp := range r.GetImp() {
@@ -330,6 +325,28 @@ func clear202309Fields(r *RequestWrapper) {
 				pmp.Deals[i].MinCPMPerSec = 0
 				pmp.Deals[i].DurFloors = nil
 			}
+		}
+	}
+}
+
+// Clear202402Fields sets all fields introduced in OpenRTB 2.6-202402 to default values
+// which will cause them to be omitted during json marshal.
+func Clear202402Fields(r *RequestWrapper) {
+	for _, imp := range r.GetImp() {
+		if video := imp.Video; video != nil {
+			video.PodDedupe = nil
+		}
+	}
+}
+
+// Clear202409Fields sets all fields introduced in OpenRTB 2.6-202409 to default values
+// which will cause them to be omitted during json marshal.
+func Clear202409Fields(r *RequestWrapper) {
+	if user := r.User; user != nil {
+		for i := range user.EIDs {
+			user.EIDs[i].Inserter = ""
+			user.EIDs[i].Matcher = ""
+			user.EIDs[i].MM = adcom1.MatchMethodUnknown
 		}
 	}
 }

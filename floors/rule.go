@@ -9,9 +9,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const (
@@ -421,7 +421,7 @@ func getAdUnitCode(imp *openrtb_ext.ImpWrapper) string {
 		}
 
 		prebidExt := impExt.GetPrebid()
-		if prebidExt != nil && prebidExt.StoredRequest.ID != "" {
+		if prebidExt != nil && prebidExt.StoredRequest != nil && prebidExt.StoredRequest.ID != "" {
 			return prebidExt.StoredRequest.ID
 		}
 	}

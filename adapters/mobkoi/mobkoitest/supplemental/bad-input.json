@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user",
+      "consent": "consent-string"
+    },
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id1",
+        "tagid": "",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placementId",
+            "adServerBaseUrl": "http://dev.mobkoi.com"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "uri": "http://dev.mobkoi.com/bid",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id1",
+              "tagid": "placementId",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placementId",
+                  "adServerBaseUrl": "http://dev.mobkoi.com"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user",
+            "consent": "consent-string",
+            "ext": {
+              "consent": "consent-string"
+            }
+          },
+          "tmax": 1000
+        },
+        "impIDs": [
+          "some-impression-id1"
+        ]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {
+          "message": "irrelevant"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

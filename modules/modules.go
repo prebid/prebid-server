@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/modules/moduledeps"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 //go:generate go run ./generator/buildergen.go
@@ -25,7 +25,7 @@ type Builder interface {
 	// It returns hook repository created based on the implemented hook interfaces by modules
 	// and a map of modules to a list of stage names for which module provides hooks
 	// or an error encountered during module initialization.
-	Build(cfg config.Modules, client moduledeps.ModuleDeps) (hooks.HookRepository, map[string][]string, error)
+	Build(cfg config.Modules, client moduledeps.ModuleDeps) (hooks.HookRepository, map[string][]string, *ShutdownModules, error)
 }
 
 type (
@@ -49,7 +49,7 @@ type builder struct {
 func (m *builder) Build(
 	cfg config.Modules,
 	deps moduledeps.ModuleDeps,
-) (hooks.HookRepository, map[string][]string, error) {
+) (hooks.HookRepository, map[string][]string, *ShutdownModules, error) {
 	modules := make(map[string]interface{})
 	for vendor, moduleBuilders := range m.builders {
 		for moduleName, builder := range moduleBuilders {
@@ -60,7 +60,7 @@ func (m *builder) Build(
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
 				if conf, err = jsonutil.Marshal(data); err != nil {
-					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
+					return nil, nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
 
 				if values, ok := data.(map[string]interface{}); ok {
@@ -77,7 +77,7 @@ func (m *builder) Build(
 
 			module, err := builder(conf, deps)
 			if err != nil {
-				return nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
+				return nil, nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
 			}
 
 			modules[id] = module
@@ -86,10 +86,12 @@ func (m *builder) Build(
 
 	collection, err := createModuleStageNamesCollection(modules)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	repo, err := hooks.NewHookRepository(modules)
 
-	return repo, collection, err
+	sdm := NewShutdownModules(modules)
+
+	return repo, collection, sdm, err
 }

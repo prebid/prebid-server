@@ -30,12 +30,13 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=prebid&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
 							"auId": "123",
-							"targetId": "123-test-imp-id",
+							"targetId": "123-test-imp-id:banner",
+							"nativeRequest": {},
 							"dimensions": [[300,250],[300,600]]
 						}
 					],
@@ -60,6 +61,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 20.0,
 										"currency": "NOK"
@@ -82,7 +84,7 @@
 	],
 	"expectedMakeBidsErrors": [
 		{
-			"value": "json: cannot unmarshal number into Go struct field Ad.AdUnits.Ads.CreativeWidth of type string",
+			"value": "cannot unmarshal adnuntius.Ad.CreativeWidth: expects \" or n, but found 9",
 			"comparison": "literal"
 		}
 	]

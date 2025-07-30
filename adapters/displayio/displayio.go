@@ -8,11 +8,12 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -37,18 +38,9 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 	for _, impression := range request.Imp {
 		var requestExt map[string]interface{}
 
-		if impression.BidFloor == 0 {
-			errs = append(errs, &errortypes.BadInput{
-				Message: "BidFloor should be defined",
-			})
-			continue
-		}
-
-		if impression.BidFloorCur == "" {
+		if impression.BidFloorCur == "" || impression.BidFloor == 0 {
 			impression.BidFloorCur = "USD"
-		}
-
-		if impression.BidFloorCur != "USD" {
+		} else if impression.BidFloorCur != "USD" {
 			convertedValue, err := requestInfo.ConvertCurrency(impression.BidFloor, impression.BidFloorCur, "USD")
 
 			if err != nil {
@@ -56,8 +48,8 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 				continue
 			}
 
-			impression.BidFloorCur = "USD"
 			impression.BidFloor = convertedValue
+			impression.BidFloorCur = "USD"
 		}
 
 		if len(impression.Ext) == 0 {
@@ -66,7 +58,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 		}
 
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(impression.Ext, &bidderExt)
+		err := jsonutil.Unmarshal(impression.Ext, &bidderExt)
 
 		if err != nil {
 			errs = append(errs, err)
@@ -74,7 +66,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 		}
 
 		var impressionExt openrtb_ext.ExtImpDisplayio
-		err = json.Unmarshal(bidderExt.Bidder, &impressionExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &impressionExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -84,7 +76,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 
 		requestCopy := *request
 
-		err = json.Unmarshal(requestCopy.Ext, &requestExt)
+		err = jsonutil.Unmarshal(requestCopy.Ext, &requestExt)
 		if err != nil {
 			requestExt = make(map[string]interface{})
 		}
@@ -137,7 +129,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapte
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(responseData.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &bidResp); err != nil {
 		msg := fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}

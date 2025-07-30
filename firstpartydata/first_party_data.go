@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 var (
@@ -32,9 +32,10 @@ const (
 )
 
 type ResolvedFirstPartyData struct {
-	Site *openrtb2.Site
-	App  *openrtb2.App
-	User *openrtb2.User
+	Site   *openrtb2.Site
+	App    *openrtb2.App
+	User   *openrtb2.User
+	Device *openrtb2.Device
 }
 
 // ExtractGlobalFPD extracts request level FPD from the request and removes req.{site,app,user}.ext.data if exists
@@ -159,11 +160,73 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 		}
 		resolvedFpdConfig.Site = newSite
 
+		newDevice, err := resolveDevice(fpdConfig, bidRequest.Device)
+		if err != nil {
+			errL = append(errL, err)
+		}
+		resolvedFpdConfig.Device = newDevice
+
 		if len(errL) == 0 {
 			resolvedFpd[openrtb_ext.BidderName(bidderName)] = resolvedFpdConfig
 		}
 	}
 	return resolvedFpd, errL
+}
+
+// resolveDevice merges the device information from the FPD (First Party Data) configuration
+// with the device information provided in the bid request. It returns a new Device object
+// that contains the merged data.
+func resolveDevice(fpdConfig *openrtb_ext.ORTB2, bidRequestDevice *openrtb2.Device) (*openrtb2.Device, error) {
+	var fpdConfigDevice json.RawMessage
+
+	if fpdConfig != nil && fpdConfig.Device != nil {
+		fpdConfigDevice = fpdConfig.Device
+	}
+
+	if bidRequestDevice == nil && fpdConfigDevice == nil {
+		return nil, nil
+	}
+
+	var newDevice *openrtb2.Device
+	if bidRequestDevice != nil {
+		newDevice = ptrutil.Clone(bidRequestDevice)
+	} else {
+		newDevice = &openrtb2.Device{}
+	}
+
+	if fpdConfigDevice != nil {
+		if err := jsonutil.MergeClone(newDevice, fpdConfigDevice); err != nil {
+			return nil, formatMergeCloneError(err)
+		}
+	}
+
+	err := validateDevice(newDevice)
+	if err != nil {
+		return nil, err
+	}
+	return newDevice, nil
+}
+
+func validateDevice(device *openrtb2.Device) error {
+	if device == nil {
+		return nil
+	}
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if device.W < 0 {
+		return errors.New("request.device.w must be a positive number")
+	}
+	if device.H < 0 {
+		return errors.New("request.device.h must be a positive number")
+	}
+	if device.PPI < 0 {
+		return errors.New("request.device.ppi must be a positive number")
+	}
+	if device.Geo != nil && device.Geo.Accuracy < 0 {
+		return errors.New("request.device.geo.accuracy must be a positive number")
+	}
+	return nil
 }
 
 func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.User, error) {
@@ -377,6 +440,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 					fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
 					fpdBidderData.App = bidderConfig.Config.ORTB2.App
 					fpdBidderData.User = bidderConfig.Config.ORTB2.User
+					fpdBidderData.Device = bidderConfig.Config.ORTB2.Device
 				}
 
 				fpd[bidderName] = fpdBidderData

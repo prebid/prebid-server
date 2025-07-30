@@ -35,11 +35,16 @@ or compile a standalone binary using the command:
 ``` bash
 go build .
 ```
+**Note:** if building from source there are a couple dependencies to be aware of: 
+1. *Compile-time*. Some modules ship native code that requires `cgo` (comes with the `go` compiler) being enabled - by default it is and environment variable `CGO_ENABLED=1` do NOT set it to `0`.
+2. *Compile-time*. `cgo` depends on the C-compiler, which usually is `gcc`, but can be changed by setting the value of `CC` env var, f.e. `CC=clang`.  On ubuntu `gcc` can be installed via `sudo apt-get install gcc`. 
+3. *Runtime*. Some modules require `libatomic`.  On ubuntu it is installed by running `sudo apt-get install libatomic1`.  `libatomic1` is a dependency of `gcc`, so if you are building with `gcc` and running on the same machine, it is likely that `libatomic1` is already installed.   
+
 Ensure that you deploy the `/static` directory, as Prebid Server requires those files at startup.
 
 ## Developing
 
-Prebid Server requires [Go](https://go.dev) version 1.21 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
+Prebid Server requires [Go](https://go.dev) version 1.23 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
 1. Clone The Repository
 ``` bash

@@ -5,18 +5,18 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"strings"
-
 	"regexp"
+	"strings"
 
 	"fmt"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"strconv"
 )
@@ -195,6 +195,13 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 		query.Set("vctx", strconv.Itoa(impType))
 		query.Set("vv", vastVersionDefault)
 	}
+	if request.Source != nil && request.Source.Ext != nil {
+		err := setSchain(request.Source.Ext, &query)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+	}
 
 	uriObj.RawQuery = query.Encode()
 	uri := uriObj.String()
@@ -210,6 +217,101 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqI
 	requests := []*adapters.RequestData{&requestData}
 
 	return requests, errors
+}
+
+func setSchain(ext json.RawMessage, query *url.Values) error {
+	openRtbSchain, err := unmarshalSupplyChain(ext)
+	if err != nil {
+		return err
+	}
+	if openRtbSchain == nil || len(openRtbSchain.Nodes) > 2 {
+		return nil
+	}
+
+	schainValue, err := makeSupplyChain(*openRtbSchain)
+	if err != nil {
+		return err
+	}
+
+	if schainValue != "" {
+		query.Set("sch", schainValue)
+	}
+
+	return nil
+}
+
+func unmarshalSupplyChain(ext json.RawMessage) (*openrtb2.SupplyChain, error) {
+	var extSChain openrtb_ext.ExtRequestPrebidSChain
+	err := jsonutil.Unmarshal(ext, &extSChain)
+	if err != nil {
+		return nil, err
+	}
+	return &extSChain.SChain, nil
+}
+
+func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) (string, error) {
+	if len(openRtbSchain.Nodes) == 0 {
+		return "", nil
+	}
+
+	const schainPrefixFmt = "%s,%d"
+	const schainNodeFmt = "!%s,%s,%s,%s,%s,%s,%s"
+	schainPrefix := fmt.Sprintf(schainPrefixFmt, openRtbSchain.Ver, openRtbSchain.Complete)
+	var sb strings.Builder
+	sb.WriteString(schainPrefix)
+	for _, node := range openRtbSchain.Nodes {
+		nodeValues := []any{
+			node.ASI, node.SID, node.HP, node.RID, node.Name, node.Domain, node.Ext,
+		}
+		formattedValues, err := formatNodeValues(nodeValues)
+		if err != nil {
+			return "", err
+		}
+
+		schainNode := fmt.Sprintf(schainNodeFmt, formattedValues...)
+		sb.WriteString(schainNode)
+	}
+
+	return sb.String(), nil
+}
+
+func formatNodeValues(nodeValues []any) ([]any, error) {
+	var formattedValues []any
+	for _, value := range nodeValues {
+		formattedValue, err := makeNodeValue(value)
+		if err != nil {
+			return nil, err
+		}
+		formattedValues = append(formattedValues, formattedValue)
+	}
+	return formattedValues, nil
+}
+
+func makeNodeValue(nodeParam any) (string, error) {
+	switch nodeParam := nodeParam.(type) {
+	case string:
+		// url.QueryEscape() follows the application/x-www-form-urlencoded convention, which encodes spaces as + and RFC 3986 encodes as %20
+		return strings.ReplaceAll(url.QueryEscape(nodeParam), "+", "%20"), nil
+	case *int8:
+		pointer := nodeParam
+		if pointer == nil {
+			return "", nil
+		}
+		return makeNodeValue(int(*pointer))
+	case int:
+		return strconv.Itoa(nodeParam), nil
+	case json.RawMessage:
+		if nodeParam != nil {
+			freeFormJson, err := json.Marshal(nodeParam)
+			if err != nil {
+				return "", err
+			}
+			return makeNodeValue(string(freeFormJson))
+		}
+		return "", nil
+	default:
+		return "", nil
+	}
 }
 
 func isMobileDevice(request *openrtb2.BidRequest) bool {
@@ -243,7 +345,7 @@ func cleanName(name string) string {
 func verifyImp(imp *openrtb2.Imp, isMobile bool, impType int) (*openrtb_ext.ExtImpEPlanning, error) {
 	var bidderExt adapters.ExtImpBidder
 
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
@@ -268,7 +370,7 @@ func verifyImp(imp *openrtb2.Imp, isMobile bool, impType int) (*openrtb_ext.ExtI
 	}
 
 	impExt := openrtb_ext.ExtImpEPlanning{}
-	err := json.Unmarshal(bidderExt.Bidder, &impExt)
+	err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
@@ -364,7 +466,7 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb2.BidRequest, 
 	}
 
 	var parsedResponse hbResponse
-	if err := json.Unmarshal(response.Body, &parsedResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &parsedResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error unmarshaling HB response: %s", err.Error()),
 		}}

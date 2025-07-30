@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
-	"github.com/prebid/prebid-server/v2/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,62 +30,70 @@ func TestModuleBuilderBuild(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		givenModule           interface{}
-		givenConfig           config.Modules
-		givenHookBuilderErr   error
-		expectedHookRepo      hooks.HookRepository
-		expectedModulesStages map[string][]string
-		expectedErr           error
+		givenModule             interface{}
+		givenConfig             config.Modules
+		givenHookBuilderErr     error
+		expectedHookRepo        hooks.HookRepository
+		expectedModulesStages   map[string][]string
+		expectedShutdownModules *ShutdownModules
+		expectedErr             error
 	}{
 		"Can build module with config": {
-			givenModule:           module{},
-			givenConfig:           defaultModulesConfig,
-			expectedModulesStages: map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
-			expectedHookRepo:      defaultHookRepository,
-			expectedErr:           nil,
+			givenModule:             module{},
+			givenConfig:             defaultModulesConfig,
+			expectedModulesStages:   map[string][]string{vendor + "_" + moduleName: {hooks.StageEntrypoint.String(), hooks.StageAuctionResponse.String()}},
+			expectedHookRepo:        defaultHookRepository,
+			expectedShutdownModules: &ShutdownModules{modules: []Shutdowner{module{}}},
+			expectedErr:             nil,
 		},
 		"Module is not added to hook repository if it's disabled": {
-			givenModule:           module{},
-			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: map[string]interface{}{"enabled": false, "attr": "val"}}},
-			expectedModulesStages: map[string][]string{},
-			expectedHookRepo:      emptyHookRepository,
-			expectedErr:           nil,
+			givenModule:             module{},
+			givenConfig:             map[string]map[string]interface{}{vendor: {moduleName: map[string]interface{}{"enabled": false, "attr": "val"}}},
+			expectedModulesStages:   map[string][]string{},
+			expectedHookRepo:        emptyHookRepository,
+			expectedShutdownModules: &ShutdownModules{modules: []Shutdowner{}},
+			expectedErr:             nil,
 		},
 		"Module considered disabled if status property not defined in module config": {
-			givenModule:           module{},
-			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: map[string]interface{}{"foo": "bar"}}},
-			expectedHookRepo:      emptyHookRepository,
-			expectedModulesStages: map[string][]string{},
-			expectedErr:           nil,
+			givenModule:             module{},
+			givenConfig:             map[string]map[string]interface{}{vendor: {moduleName: map[string]interface{}{"foo": "bar"}}},
+			expectedHookRepo:        emptyHookRepository,
+			expectedModulesStages:   map[string][]string{},
+			expectedShutdownModules: &ShutdownModules{modules: []Shutdowner{}},
+			expectedErr:             nil,
 		},
 		"Module considered disabled if its config not provided and as a result skipped from execution": {
-			givenModule:           module{},
-			givenConfig:           nil,
-			expectedHookRepo:      emptyHookRepository,
-			expectedModulesStages: map[string][]string{},
-			expectedErr:           nil,
+			givenModule:             module{},
+			givenConfig:             nil,
+			expectedHookRepo:        emptyHookRepository,
+			expectedModulesStages:   map[string][]string{},
+			expectedShutdownModules: &ShutdownModules{modules: []Shutdowner{}},
+			expectedErr:             nil,
 		},
 		"Fails if module does not implement any hook interface": {
-			givenModule:           struct{}{},
-			givenConfig:           defaultModulesConfig,
-			expectedHookRepo:      nil,
-			expectedModulesStages: nil,
-			expectedErr:           fmt.Errorf(`hook "%s.%s" does not implement any supported hook interface`, vendor, moduleName),
+			givenModule:             struct{}{},
+			givenConfig:             defaultModulesConfig,
+			expectedHookRepo:        nil,
+			expectedModulesStages:   nil,
+			expectedShutdownModules: nil,
+			expectedErr:             fmt.Errorf(`hook "%s.%s" does not implement any supported hook interface`, vendor, moduleName),
 		},
 		"Fails if module builder function returns error": {
-			givenModule:           module{},
-			givenConfig:           defaultModulesConfig,
-			givenHookBuilderErr:   errors.New("failed to build module"),
-			expectedHookRepo:      nil,
-			expectedModulesStages: nil,
-			expectedErr:           fmt.Errorf(`failed to init "%s.%s" module: %s`, vendor, moduleName, "failed to build module"),
+			givenModule:             module{},
+			givenConfig:             defaultModulesConfig,
+			givenHookBuilderErr:     errors.New("failed to build module"),
+			expectedHookRepo:        nil,
+			expectedModulesStages:   nil,
+			expectedShutdownModules: nil,
+			expectedErr:             fmt.Errorf(`failed to init "%s.%s" module: %s`, vendor, moduleName, "failed to build module"),
 		},
 		"Fails if config marshaling returns error": {
-			givenModule:           module{},
-			givenConfig:           map[string]map[string]interface{}{vendor: {moduleName: math.Inf(1)}},
-			expectedHookRepo:      nil,
-			expectedModulesStages: nil,
-			expectedErr:           fmt.Errorf(`failed to marshal "%s.%s" module config: unsupported value: +Inf`, vendor, moduleName),
+			givenModule:             module{},
+			givenConfig:             map[string]map[string]interface{}{vendor: {moduleName: math.Inf(1)}},
+			expectedHookRepo:        nil,
+			expectedModulesStages:   nil,
+			expectedShutdownModules: nil,
+			expectedErr:             fmt.Errorf(`failed to marshal "%s.%s" module config: unsupported value: +Inf`, vendor, moduleName),
 		},
 	}
 
@@ -101,9 +109,10 @@ func TestModuleBuilderBuild(t *testing.T) {
 				},
 			}
 
-			repo, modulesStages, err := builder.Build(test.givenConfig, moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
+			repo, modulesStages, shutdownModules, err := builder.Build(test.givenConfig, moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
 			assert.Equal(t, test.expectedErr, err)
 			assert.Equal(t, test.expectedModulesStages, modulesStages)
+			assert.Equal(t, test.expectedShutdownModules, shutdownModules)
 			assert.Equal(t, test.expectedHookRepo, repo)
 		})
 	}
@@ -117,4 +126,8 @@ func (h module) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvoca
 
 func (h module) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
+}
+
+func (h module) Shutdown() error {
+	return nil
 }

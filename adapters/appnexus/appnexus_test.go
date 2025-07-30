@@ -4,9 +4,9 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,4 +49,7 @@ type FakeRandomNumberGenerator struct {
 
 func (f FakeRandomNumberGenerator) GenerateInt63() int64 {
 	return f.Number
+}
+func (f FakeRandomNumberGenerator) Intn(n int) int {
+	return int(f.Number)
 }

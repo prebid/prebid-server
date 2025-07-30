@@ -12,11 +12,12 @@ import (
 	"golang.org/x/text/currency"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 // YieldlabAdapter connects the Yieldlab API to prebid server
@@ -85,7 +86,7 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 		q.Set("gdpr", gdpr)
 	}
 	if consent != "" {
-		q.Set("consent", consent)
+		q.Set("gdpr_consent", consent)
 	}
 
 	if req.Source != nil && req.Source.Ext != nil {
@@ -130,7 +131,7 @@ func getDSA(req *openrtb2.BidRequest) (*dsaRequest, error) {
 	}
 
 	var extRegs openRTBExtRegsWithDSA
-	err := json.Unmarshal(req.Regs.Ext, &extRegs)
+	err := jsonutil.Unmarshal(req.Regs.Ext, &extRegs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Regs.Ext object from Yieldlab response: %v", err)
 	}
@@ -207,7 +208,7 @@ func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string,
 	consent := ""
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err != nil {
 			return "", "", fmt.Errorf("failed to parse ExtUser in Yieldlab GDPR check: %v", err)
 		}
 		consent = extUser.Consent
@@ -216,7 +217,7 @@ func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string,
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+		if err := jsonutil.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
 			if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
 				gdpr = strconv.Itoa(int(*extRegs.GDPR))
 			}
@@ -271,12 +272,12 @@ func (a *YieldlabAdapter) parseRequest(request *openrtb2.BidRequest) []*openrtb_
 
 	for i := 0; i < len(request.Imp); i++ {
 		bidderExt := new(adapters.ExtImpBidder)
-		if err := json.Unmarshal(request.Imp[i].Ext, bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(request.Imp[i].Ext, bidderExt); err != nil {
 			continue
 		}
 
 		yieldlabExt := new(openrtb_ext.ExtImpYieldlab)
-		if err := json.Unmarshal(bidderExt.Bidder, yieldlabExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, yieldlabExt); err != nil {
 			continue
 		}
 
@@ -314,7 +315,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	}
 
 	bids := make([]*bidResponse, 0)
-	if err := json.Unmarshal(response.Body, &bids); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bids); err != nil {
 		return nil, []error{
 			&errortypes.BadServerResponse{
 				Message: fmt.Sprintf("failed to parse bids response from yieldlab: %v", err),
@@ -420,9 +421,9 @@ func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtI
 
 func (a *YieldlabAdapter) extractAdslotID(internalRequestImp openrtb2.Imp) string {
 	bidderExt := new(adapters.ExtImpBidder)
-	json.Unmarshal(internalRequestImp.Ext, bidderExt)
+	jsonutil.Unmarshal(internalRequestImp.Ext, bidderExt)
 	yieldlabExt := new(openrtb_ext.ExtImpYieldlab)
-	json.Unmarshal(bidderExt.Bidder, yieldlabExt)
+	jsonutil.Unmarshal(bidderExt.Bidder, yieldlabExt)
 	return yieldlabExt.AdslotID
 }
 
@@ -447,7 +448,7 @@ func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb
 	gdpr, consent, err := a.getGDPR(req)
 	if err == nil && gdpr != "" && consent != "" {
 		val.Set("gdpr", gdpr)
-		val.Set("consent", consent)
+		val.Set("gdpr_consent", consent)
 	}
 
 	return fmt.Sprintf(adSourceURL, ext.AdslotID, ext.SupplyID, res.Adsize, val.Encode())
@@ -460,7 +461,7 @@ func (a *YieldlabAdapter) makeCreativeID(req *openrtb_ext.ExtImpYieldlab, bid *b
 // unmarshalSupplyChain makes the value for the schain URL parameter from the openRTB schain object.
 func unmarshalSupplyChain(req *openrtb2.BidRequest) *openrtb2.SupplyChain {
 	var extSChain openrtb_ext.ExtRequestPrebidSChain
-	err := json.Unmarshal(req.Source.Ext, &extSChain)
+	err := jsonutil.Unmarshal(req.Source.Ext, &extSChain)
 	if err != nil {
 		// req.Source.Ext could be anything so don't handle any errors
 		return nil

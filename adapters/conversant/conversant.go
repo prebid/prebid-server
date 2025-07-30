@@ -8,10 +8,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type ConversantAdapter struct {
@@ -25,14 +26,14 @@ func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	}
 	for i := 0; i < len(request.Imp); i++ {
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Impression[%d] missing ext object", i),
 			}}
 		}
 
 		var cnvrExt openrtb_ext.ExtImpConversant
-		if err := json.Unmarshal(bidderExt.Bidder, &cnvrExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &cnvrExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Impression[%d] missing ext.bidder object", i),
 			}}
@@ -164,7 +165,7 @@ func (c *ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	}
 
 	var resp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &resp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &resp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
 		}}
@@ -188,16 +189,20 @@ func (c *ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 }
 
 func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	bidType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Video != nil {
-				bidType = openrtb_ext.BidTypeVideo
+			switch {
+			case imp.Native != nil:
+				return openrtb_ext.BidTypeNative
+			case imp.Audio != nil:
+				return openrtb_ext.BidTypeAudio
+			case imp.Video != nil:
+				return openrtb_ext.BidTypeVideo
 			}
 			break
 		}
 	}
-	return bidType
+	return openrtb_ext.BidTypeBanner
 }
 
 // Builder builds a new instance of the Conversant adapter for the given bidder with the given config.

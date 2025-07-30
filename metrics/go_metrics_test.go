@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
@@ -73,7 +73,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "syncer.foo.request.ok", m.SyncerRequestsMeter["foo"][SyncerCookieSyncOK])
 	ensureContains(t, registry, "syncer.foo.request.privacy_blocked", m.SyncerRequestsMeter["foo"][SyncerCookieSyncPrivacyBlocked])
 	ensureContains(t, registry, "syncer.foo.request.already_synced", m.SyncerRequestsMeter["foo"][SyncerCookieSyncAlreadySynced])
-	ensureContains(t, registry, "syncer.foo.request.type_not_supported", m.SyncerRequestsMeter["foo"][SyncerCookieSyncTypeNotSupported])
+	ensureContains(t, registry, "syncer.foo.request.rejected_by_filter", m.SyncerRequestsMeter["foo"][SyncerCookieSyncRejectedByFilter])
 	ensureContains(t, registry, "syncer.foo.set.ok", m.SyncerSetsMeter["foo"][SyncerSetUidOK])
 	ensureContains(t, registry, "syncer.foo.set.cleared", m.SyncerSetsMeter["foo"][SyncerSetUidCleared])
 
@@ -908,7 +908,7 @@ func TestRecordSyncerRequest(t *testing.T) {
 	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncOK].Count(), int64(1))
 	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncPrivacyBlocked].Count(), int64(0))
 	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncAlreadySynced].Count(), int64(0))
-	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncTypeNotSupported].Count(), int64(0))
+	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncRejectedByFilter].Count(), int64(0))
 }
 
 func TestRecordSetUid(t *testing.T) {
@@ -1064,8 +1064,8 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	module := "foobar"
 	stage1 := "entrypoint"
-	stage2 := "raw_auction"
-	stage3 := "processed_auction"
+	stage2 := "raw_auction_request"
+	stage3 := "processed_auction_request"
 
 	testCases := []struct {
 		description                string

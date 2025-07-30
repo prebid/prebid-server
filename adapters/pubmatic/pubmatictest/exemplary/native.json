@@ -56,8 +56,7 @@
                       "wrapper": {
                           "profile": 5123,
                           "version": 1
-                      },
-                      "prebid": {}
+                      }
                   }
               },
               "impIDs":["test-native-imp"]
@@ -77,6 +76,7 @@
                                   "adid": "some-test-id",
                                   "adm": "{\"native\":{\"assets\":[{\"id\":2,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":4},{\"id\":3,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"id\":1,\"title\":{\"text\":\"Native Test Title\"}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":5}],\"imptrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"jstracker\":\"<script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'><script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'>\",\"link\":{\"clicktrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"fallback\":\"http://www.pubmatic.com\",\"url\":\"//www.pubmatic.com\"}}}",
                                   "crid": "29681110",
+                                  "mtype":4,
                                   "ext": {
                                       "deal_channel": 1,
                                       "bidtype": 2
@@ -103,12 +103,13 @@
                       "adid": "some-test-id",
                       "adm": "{\"assets\":[{\"id\":2,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":4},{\"id\":3,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"id\":1,\"title\":{\"text\":\"Native Test Title\"}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":5}],\"imptrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"jstracker\":\"<script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'><script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'>\",\"link\":{\"clicktrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"fallback\":\"http://www.pubmatic.com\",\"url\":\"//www.pubmatic.com\"}}",
                       "crid": "29681110",
+                      "mtype":4,
                       "ext": {
                           "deal_channel": 1,
                           "bidtype": 2
                       }
                   },
-                  "type": "native"
+                   "type": "native"
               }
           ]
       }

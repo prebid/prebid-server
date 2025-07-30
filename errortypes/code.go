@@ -5,7 +5,7 @@ const (
 	UnknownErrorCode = 999
 	TimeoutErrorCode = iota
 	BadInputErrorCode
-	BlacklistedAppErrorCode
+	BlockedAppErrorCode
 	BadServerResponseErrorCode
 	FailedToRequestBidsErrorCode
 	BidderTemporarilyDisabledErrorCode
@@ -35,6 +35,10 @@ const (
 	InvalidBidResponseDSAWarningCode
 	SecCookieDeprecationLenWarningCode
 	SecBrowsingTopicsWarningCode
+	InvalidUserEIDsWarningCode
+	InvalidUserUIDsWarningCode
+	TooLongTargetingPrefixWarningCode
+	TooShortTargetingPrefixWarningCode
 )
 
 // Coder provides an error or warning code with severity.

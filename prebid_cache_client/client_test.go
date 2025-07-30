@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	metricsConf "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -49,7 +49,7 @@ func TestBadResponse(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &metrics.MetricsEngineMock{}
-	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
+	metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),

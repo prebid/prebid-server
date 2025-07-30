@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSingleReq(t *testing.T) {
-	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil)
+func TestSingleReqRfcCompliant(t *testing.T) {
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil, true)
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil)
@@ -24,8 +24,18 @@ func TestSingleReq(t *testing.T) {
 	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
 }
 
-func TestSeveralReqs(t *testing.T) {
-	fetcher, close := newTestFetcher(t, []string{"req-1", "req-2"}, nil)
+func TestSingleReq(t *testing.T) {
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil, false)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil)
+	assert.Empty(t, errs, "Unexpected errors fetching known requests")
+	assertMapKeys(t, reqData, "req-1")
+	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
+}
+
+func TestSeveralReqsRfcCompliant(t *testing.T) {
+	fetcher, close := newTestFetcher(t, []string{"req-1", "req-2"}, nil, true)
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil)
@@ -34,8 +44,18 @@ func TestSeveralReqs(t *testing.T) {
 	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
 }
 
-func TestSingleImp(t *testing.T) {
-	fetcher, close := newTestFetcher(t, nil, []string{"imp-1"})
+func TestSeveralReqs(t *testing.T) {
+	fetcher, close := newTestFetcher(t, []string{"req-1", "req-2"}, nil, false)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil)
+	assert.Empty(t, errs, "Unexpected errors fetching known requests")
+	assertMapKeys(t, reqData, "req-1", "req-2")
+	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
+}
+
+func TestSingleImpRfcCompliant(t *testing.T) {
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1"}, true)
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"})
@@ -44,8 +64,18 @@ func TestSingleImp(t *testing.T) {
 	assertMapKeys(t, impData, "imp-1")
 }
 
-func TestSeveralImps(t *testing.T) {
-	fetcher, close := newTestFetcher(t, nil, []string{"imp-1", "imp-2"})
+func TestSingleImp(t *testing.T) {
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1"}, false)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"})
+	assert.Empty(t, errs, "Unexpected errors fetching known imps")
+	assert.Empty(t, reqData, "Unexpected requests returned fetching just imps")
+	assertMapKeys(t, impData, "imp-1")
+}
+
+func TestSeveralImpsRfcCompliant(t *testing.T) {
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1", "imp-2"}, true)
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"})
@@ -54,8 +84,18 @@ func TestSeveralImps(t *testing.T) {
 	assertMapKeys(t, impData, "imp-1", "imp-2")
 }
 
-func TestReqsAndImps(t *testing.T) {
-	fetcher, close := newTestFetcher(t, []string{"req-1"}, []string{"imp-1"})
+func TestSeveralImps(t *testing.T) {
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1", "imp-2"}, false)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"})
+	assert.Empty(t, errs, "Unexpected errors fetching known imps")
+	assert.Empty(t, reqData, "Unexpected requests returned fetching just imps")
+	assertMapKeys(t, impData, "imp-1", "imp-2")
+}
+
+func TestReqsAndImpsRfcCompliant(t *testing.T) {
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, []string{"imp-1"}, true)
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
@@ -64,8 +104,18 @@ func TestReqsAndImps(t *testing.T) {
 	assertMapKeys(t, impData, "imp-1")
 }
 
-func TestMissingValues(t *testing.T) {
-	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"})
+func TestReqsAndImps(t *testing.T) {
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, []string{"imp-1"}, false)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
+	assert.Empty(t, errs, "Unexpected errors fetching known reqs and imps")
+	assertMapKeys(t, reqData, "req-1")
+	assertMapKeys(t, impData, "imp-1")
+}
+
+func TestMissingValuesRfcCompliant(t *testing.T) {
+	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"}, true)
 	defer close()
 
 	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
@@ -74,8 +124,27 @@ func TestMissingValues(t *testing.T) {
 	assert.Len(t, errs, 3, "Fetching 3 unknown reqs+imps should return 3 errors")
 }
 
+func TestMissingValues(t *testing.T) {
+	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"}, false)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
+	assert.Empty(t, reqData, "Fetching unknown reqs should return no reqs")
+	assert.Empty(t, impData, "Fetching unknown imps should return no imps")
+	assert.Len(t, errs, 3, "Fetching 3 unknown reqs+imps should return 3 errors")
+}
+
+func TestFetchAccountsRfcCompliant(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, true)
+	defer close()
+
+	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1", "acc-2"})
+	assert.Empty(t, errs, "Unexpected error fetching known accounts")
+	assertMapKeys(t, accData, "acc-1", "acc-2")
+}
+
 func TestFetchAccounts(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, false)
 	defer close()
 
 	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1", "acc-2"})
@@ -101,8 +170,17 @@ func TestFetchAccountsBadJSON(t *testing.T) {
 	assert.Nil(t, accData, "Fetching account with broken json should return nil account map")
 }
 
+func TestFetchAccountsNoIDsProvidedRfcCompliant(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, true)
+	defer close()
+
+	accData, errs := fetcher.FetchAccounts(context.TODO(), []string{})
+	assert.Empty(t, errs, "Unexpected error fetching empty account list")
+	assert.Nil(t, accData, "Fetching empty account list should return nil")
+}
+
 func TestFetchAccountsNoIDsProvided(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, false)
 	defer close()
 
 	accData, errs := fetcher.FetchAccounts(context.TODO(), []string{})
@@ -111,8 +189,18 @@ func TestFetchAccountsNoIDsProvided(t *testing.T) {
 }
 
 // Force build request failure by not providing a context
+func TestFetchAccountsFailedBuildRequestRfcCompliant(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, true)
+	defer close()
+
+	accData, errs := fetcher.FetchAccounts(nil, []string{"acc-1"}) //nolint: staticcheck // test handling of a nil context
+	assert.Len(t, errs, 1, "Fetching accounts without context should result in error ")
+	assert.Nil(t, accData, "Fetching accounts without context should return nil")
+}
+
+// Force build request failure by not providing a context
 func TestFetchAccountsFailedBuildRequest(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, false)
 	defer close()
 
 	accData, errs := fetcher.FetchAccounts(nil, []string{"acc-1"}) //nolint: staticcheck // test handling of a nil context
@@ -121,8 +209,8 @@ func TestFetchAccountsFailedBuildRequest(t *testing.T) {
 }
 
 // Force http error via request timeout
-func TestFetchAccountsContextTimeout(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"})
+func TestFetchAccountsContextTimeoutRfcCompliant(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, true)
 	defer close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(0))
@@ -132,8 +220,20 @@ func TestFetchAccountsContextTimeout(t *testing.T) {
 	assert.Nil(t, accData, "Unexpected account data returned instead of timeout")
 }
 
-func TestFetchAccount(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
+// Force http error via request timeout
+func TestFetchAccountsContextTimeout(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, false)
+	defer close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(0))
+	defer cancel()
+	accData, errs := fetcher.FetchAccounts(ctx, []string{"acc-1"})
+	assert.Len(t, errs, 1, "Expected context timeout error")
+	assert.Nil(t, accData, "Unexpected account data returned instead of timeout")
+}
+
+func TestFetchAccountRfcCompliant(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"}, true)
 	defer close()
 
 	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled":true}`), "acc-1")
@@ -141,8 +241,26 @@ func TestFetchAccount(t *testing.T) {
 	assert.JSONEq(t, `{"disabled": true, "id":"acc-1"}`, string(account), "Unexpected account data fetching existing account")
 }
 
+func TestFetchAccount(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"}, false)
+	defer close()
+
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled":true}`), "acc-1")
+	assert.Empty(t, errs, "Unexpected error fetching existing account")
+	assert.JSONEq(t, `{"disabled": true, "id":"acc-1"}`, string(account), "Unexpected account data fetching existing account")
+}
+
+func TestAccountMergeErrorRfcCompliant(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"}, true)
+	defer close()
+
+	_, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled"}`), "acc-1")
+	assert.Error(t, errs[0])
+	assert.Equal(t, fmt.Errorf("Invalid JSON Document"), errs[0])
+}
+
 func TestAccountMergeError(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"})
+	fetcher, close := newTestAccountFetcher(t, []string{"acc-1"}, false)
 	defer close()
 
 	_, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled"}`), "acc-1")
@@ -159,8 +277,17 @@ func TestFetchAccountNoData(t *testing.T) {
 	assert.Nil(t, unknownAccount, "Retrieving unknown account should return nil json.RawMessage")
 }
 
+func TestFetchAccountNoIDProvidedRfcCompliant(t *testing.T) {
+	fetcher, close := newTestAccountFetcher(t, nil, true)
+	defer close()
+
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{disabled":true}`), "")
+	assert.Len(t, errs, 1, "Fetching account with empty id should error")
+	assert.Nil(t, account, "Fetching account with empty id should return nil")
+}
+
 func TestFetchAccountNoIDProvided(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, nil)
+	fetcher, close := newTestAccountFetcher(t, nil, false)
 	defer close()
 
 	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{disabled":true}`), "")
@@ -182,7 +309,7 @@ func newFetcherBrokenBackend() (fetcher *HttpFetcher, closer func()) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
+	return NewFetcher(server.Client(), server.URL, false), server.Close
 }
 
 func newFetcherBadJSON() (fetcher *HttpFetcher, closer func()) {
@@ -190,26 +317,32 @@ func newFetcherBadJSON() (fetcher *HttpFetcher, closer func()) {
 		w.Write([]byte(`broken JSON`))
 	}
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
+	return NewFetcher(server.Client(), server.URL, false), server.Close
 }
 
-func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *HttpFetcher, closer func()) {
-	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyToNull)
+func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string, useRfcCompliantBuilder bool) (fetcher *HttpFetcher, closer func()) {
+	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyToNull, useRfcCompliantBuilder)
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
+	return NewFetcher(server.Client(), server.URL, useRfcCompliantBuilder), server.Close
 }
 
-func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *HttpFetcher, closer func()) {
-	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyID)
+func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string, useRfcCompliantBuilder bool) (fetcher *HttpFetcher, closer func()) {
+	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyID, useRfcCompliantBuilder)
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
+	return NewFetcher(server.Client(), server.URL, useRfcCompliantBuilder), server.Close
 }
 
-func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
+func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, jsonifier func(string) json.RawMessage, useRfcCompliantBuilder bool) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		gotReqIDs := richSplit(query.Get("request-ids"))
-		gotImpIDs := richSplit(query.Get("imp-ids"))
+		var gotReqIDs, gotImpIDs []string
+		if !useRfcCompliantBuilder {
+			gotReqIDs = richSplit(query.Get("request-ids"))
+			gotImpIDs = richSplit(query.Get("imp-ids"))
+		} else {
+			gotReqIDs = query["request-id"]
+			gotImpIDs = query["imp-id"]
+		}
 
 		assertMatches(t, gotReqIDs, expectReqIDs)
 		assertMatches(t, gotImpIDs, expectImpIDs)
@@ -243,16 +376,21 @@ func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, json
 	}
 }
 
-func newTestAccountFetcher(t *testing.T, expectAccIDs []string) (fetcher *HttpFetcher, closer func()) {
-	handler := newAccountHandler(t, expectAccIDs)
+func newTestAccountFetcher(t *testing.T, expectAccIDs []string, useRfcCompliantBuilder bool) (fetcher *HttpFetcher, closer func()) {
+	handler := newAccountHandler(t, expectAccIDs, useRfcCompliantBuilder)
 	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
+	return NewFetcher(server.Client(), server.URL, useRfcCompliantBuilder), server.Close
 }
 
-func newAccountHandler(t *testing.T, expectAccIDs []string) func(w http.ResponseWriter, r *http.Request) {
+func newAccountHandler(t *testing.T, expectAccIDs []string, useRfcCompliantBuilder bool) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		gotAccIDs := richSplit(query.Get("account-ids"))
+		var gotAccIDs []string
+		if !useRfcCompliantBuilder {
+			gotAccIDs = richSplit(query.Get("account-ids"))
+		} else {
+			gotAccIDs = query["account-id"]
+		}
 
 		assertMatches(t, gotAccIDs, expectAccIDs)
 

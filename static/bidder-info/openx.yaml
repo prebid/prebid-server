@@ -8,16 +8,21 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 modifyingVastXmlAllowed: true
 userSync:
   iframe:
-    url: "https://u.openx.net/w/1.0/cm?id=891039ac-a916-42bb-a651-4be9e3b201da&ph=a3aece0c-9e80-4316-8deb-faf804779bd1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
+    url: "https://u.openx.net/w/1.0/cm?id=891039ac-a916-42bb-a651-4be9e3b201da&ph=a3aece0c-9e80-4316-8deb-faf804779bd1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
     userMacro: "{OPENX_ID}"
   redirect:
-    url: "https://rtb.openx.net/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
+    url: "https://rtb.openx.net/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
     userMacro: "${UID}"
+openrtb:
+  version: 2.6
+  gpp-supported: true
 

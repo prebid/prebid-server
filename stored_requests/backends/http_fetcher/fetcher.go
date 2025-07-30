@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
@@ -24,8 +24,14 @@ import (
 // Stored requests
 // GET {endpoint}?request-ids=["req1","req2"]&imp-ids=["imp1","imp2","imp3"]
 //
+// If useRfcCompliantBuilder is true (symbols will be URLEncoded)
+// GET {endpoint}?request-id=req1&request-id=req2&imp-id=imp1&imp-id=imp2&imp-id=imp3
+//
 // Accounts
 // GET {endpoint}?account-ids=["acc1","acc2"]
+//
+// If UseRfcCompliantBuilder is true (symbols will be URLEncoded)
+// GET {endpoint}?account-id=acc1&account-id=acc2
 //
 // The above endpoints should return a payload like:
 //
@@ -49,33 +55,26 @@ import (
 //	    "acc2": { ... config data for acc2 ... },
 //	  },
 //	}
-func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
-	// Do some work up-front to figure out if the (configurable) endpoint has a query string or not.
-	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
-	// `&request-ids=...&imp-ids=...`.
+func NewFetcher(client *http.Client, endpoint string, useRfcCompliantBuilder bool) *HttpFetcher {
+	endpointURL, err := url.Parse(endpoint)
 
-	if _, err := url.Parse(endpoint); err != nil {
+	if err != nil {
 		glog.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
 	}
 	glog.Infof("Making http_fetcher for endpoint %v", endpoint)
 
-	urlPrefix := endpoint
-	if strings.Contains(endpoint, "?") {
-		urlPrefix = urlPrefix + "&"
-	} else {
-		urlPrefix = urlPrefix + "?"
-	}
-
 	return &HttpFetcher{
-		client:   client,
-		Endpoint: urlPrefix,
+		client:                 client,
+		EndpointURL:            endpointURL,
+		UseRfcCompliantBuilder: useRfcCompliantBuilder,
 	}
 }
 
 type HttpFetcher struct {
-	client     *http.Client
-	Endpoint   string
-	Categories map[string]map[string]stored_requests.Category
+	client                 *http.Client
+	EndpointURL            *url.URL
+	UseRfcCompliantBuilder bool
+	Categories             map[string]map[string]stored_requests.Category
 }
 
 func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
@@ -83,7 +82,7 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 		return nil, nil, nil
 	}
 
-	httpReq, err := buildRequest(fetcher.Endpoint, requestIDs, impIDs)
+	httpReq, err := fetcher.buildRequest(requestIDs, impIDs)
 	if err != nil {
 		return nil, nil, []error{err}
 	}
@@ -106,6 +105,9 @@ func (fetcher *HttpFetcher) FetchResponses(ctx context.Context, ids []string) (d
 // Request format is similar to the one for requests:
 // GET {endpoint}?account-ids=["account1","account2",...]
 //
+// If UseRfcCompliantBuilder is true (symbols will be URLEncoded):
+// GET {endpoint}?account-id=account1&account-id=account2&...
+//
 // The endpoint is expected to respond with a JSON map with accountID -> json.RawMessage
 //
 //	{
@@ -117,7 +119,17 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 	if len(accountIDs) == 0 {
 		return nil, nil
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, "GET", fetcher.Endpoint+"account-ids=[\""+strings.Join(accountIDs, "\",\"")+"\"]", nil)
+	u := fetcher.EndpointURL
+	q := u.Query()
+	if !fetcher.UseRfcCompliantBuilder {
+		q.Set("account-ids", `["`+strings.Join(accountIDs, `","`)+`"]`)
+	} else {
+		for _, id := range accountIDs {
+			q.Add("account-id", id)
+		}
+	}
+	u.RawQuery = q.Encode()
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: build request failed with %v`, accountIDs, err),
@@ -164,6 +176,9 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSO
 			DataType: "Account",
 		}}
 	}
+	if accountDefaultsJSON == nil {
+		return accountJSON, nil
+	}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
 	if err != nil {
 		return nil, []error{err}
@@ -181,10 +196,10 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	var dataName, url string
 	if publisherId != "" {
 		dataName = fmt.Sprintf("%s_%s", primaryAdServer, publisherId)
-		url = fmt.Sprintf("%s/%s/%s.json", strings.TrimSuffix(fetcher.Endpoint, "?"), primaryAdServer, publisherId)
+		url = fmt.Sprintf("%s/%s/%s.json", fetcher.EndpointURL.String(), primaryAdServer, publisherId)
 	} else {
 		dataName = primaryAdServer
-		url = fmt.Sprintf("%s/%s.json", strings.TrimSuffix(fetcher.Endpoint, "?"), primaryAdServer)
+		url = fmt.Sprintf("%s/%s.json", fetcher.EndpointURL.String(), primaryAdServer)
 	}
 
 	if data, ok := fetcher.Categories[dataName]; ok {
@@ -224,14 +239,29 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 }
 
-func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
-	if len(requestIDs) > 0 && len(impIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]&imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
-	} else if len(requestIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]", nil)
-	} else {
-		return http.NewRequest("GET", endpoint+"imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
+func AddQueryParam(q *url.Values, paramName string, ids []string, useRfcCompliantBuilder bool) {
+	if len(ids) > 0 {
+		if !useRfcCompliantBuilder {
+			q.Set(paramName+"s", `["`+strings.Join(ids, `","`)+`"]`)
+		} else {
+			for _, requestID := range ids {
+				q.Add(paramName, requestID)
+			}
+		}
 	}
+}
+
+func (fetcher *HttpFetcher) buildRequest(requestIDs []string, impIDs []string) (*http.Request, error) {
+	u := *fetcher.EndpointURL
+
+	q := u.Query()
+
+	AddQueryParam(&q, "request-id", requestIDs, fetcher.UseRfcCompliantBuilder)
+	AddQueryParam(&q, "imp-id", impIDs, fetcher.UseRfcCompliantBuilder)
+
+	u.RawQuery = q.Encode()
+
+	return http.NewRequest("GET", u.String(), nil)
 }
 
 func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {

@@ -3,8 +3,8 @@ package bidadjustment
 import (
 	"math"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 const (

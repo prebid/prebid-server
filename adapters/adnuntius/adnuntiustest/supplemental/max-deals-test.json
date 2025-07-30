@@ -32,12 +32,13 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=prebid&tzo=0",
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
 							"auId": "123",
-							"targetId": "123-test-imp-id",
+							"targetId": "123-test-imp-id:banner",
+							"nativeRequest": {},
 							"dimensions": [[300,250],[300,600]],
 							"maxDeals": 2
 						}
@@ -67,6 +68,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"cpm": {
 										"amount": 1.0,
 										"currency": "NOK"
@@ -104,6 +106,7 @@
 									"destinationUrls": {
 										"url": "http://www.google.com"
 									},
+									"advertiserDomains": ["google.com"],
 									"bid": {
 										"amount": 0.001,
 										"currency": "NOK"
@@ -141,6 +144,7 @@
 						"adomain": ["google.com"],
 						"cid": "q7y9qm5b0xt9htrv",
 						"crid": "jn9hpzvlsf8cpdmm",
+						"mtype": 1,
 						"w": 300,
 						"h": 250
 					},
@@ -157,6 +161,7 @@
 						"cid": "6l5w2d29kz3vkprq",
 						"crid": "dl0knc1lnks9jgvx",
 						"dealid": "deal_123",
+						"mtype": 1,
 						"w": 300,
 						"h": 250
 					},

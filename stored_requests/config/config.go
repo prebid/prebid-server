@@ -5,24 +5,24 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v3/metrics"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/file_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/http_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_requests/caches/memory"
-	"github.com/prebid/prebid-server/v2/stored_requests/caches/nil_cache"
-	"github.com/prebid/prebid-server/v2/stored_requests/events"
-	apiEvents "github.com/prebid/prebid-server/v2/stored_requests/events/api"
-	databaseEvents "github.com/prebid/prebid-server/v2/stored_requests/events/database"
-	httpEvents "github.com/prebid/prebid-server/v2/stored_requests/events/http"
-	"github.com/prebid/prebid-server/v2/util/task"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/db_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/db_provider"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/file_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/http_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_requests/caches/memory"
+	"github.com/prebid/prebid-server/v3/stored_requests/caches/nil_cache"
+	"github.com/prebid/prebid-server/v3/stored_requests/events"
+	apiEvents "github.com/prebid/prebid-server/v3/stored_requests/events/api"
+	databaseEvents "github.com/prebid/prebid-server/v3/stored_requests/events/database"
+	httpEvents "github.com/prebid/prebid-server/v3/stored_requests/events/http"
+	"github.com/prebid/prebid-server/v3/util/task"
 )
 
 // CreateStoredRequests returns three things:
@@ -166,7 +166,7 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 	}
 	if cfg.HTTP.Endpoint != "" {
 		glog.Infof("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType(), cfg.HTTP.Endpoint)
-		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint))
+		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint, cfg.HTTP.UseRfcCompliantBuilder))
 	}
 
 	fetcher = consolidate(cfg.DataType(), idList)

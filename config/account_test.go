@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -722,11 +722,8 @@ func TestPurposeOneTreatmentAccessAllowed(t *testing.T) {
 func TestModulesGetConfig(t *testing.T) {
 	modules := AccountModules{
 		"acme": {
-			"foo":     json.RawMessage(`{"foo": "bar"}`),
-			"foo.bar": json.RawMessage(`{"foo": "bar"}`),
-		},
-		"acme.foo": {
-			"baz": json.RawMessage(`{"foo": "bar"}`),
+			"foo":     json.RawMessage(`{"first":"value"}`),
+			"foo.bar": json.RawMessage(`{"second":"value"}`),
 		},
 	}
 
@@ -738,42 +735,42 @@ func TestModulesGetConfig(t *testing.T) {
 		expectedError  error
 	}{
 		{
-			description:    "Returns module config if found by ID",
+			description:    "returns-first-module-config-if-found-by-ID",
 			givenId:        "acme.foo",
 			givenModules:   modules,
-			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedConfig: json.RawMessage(`{"first":"value"}`),
 			expectedError:  nil,
 		},
 		{
-			description:    "Returns module config if found by ID",
+			description:    "returns-second-module-config-if-found-by-ID",
 			givenId:        "acme.foo.bar",
 			givenModules:   modules,
-			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedConfig: json.RawMessage(`{"second":"value"}`),
 			expectedError:  nil,
 		},
 		{
-			description:    "Returns nil config if wrong ID provided",
+			description:    "returns-nil-config-if-no-matching-vendor-exists",
+			givenId:        "unreachable.foo",
+			givenModules:   modules,
+			expectedConfig: nil,
+			expectedError:  nil,
+		},
+		{
+			description:    "Returns-nil-config-if-wrong-ID-provided",
 			givenId:        "invalid_id",
 			givenModules:   modules,
 			expectedConfig: nil,
 			expectedError:  errors.New("ID must consist of vendor and module names separated by dot, got: invalid_id"),
 		},
 		{
-			description:    "Returns nil config if no matching module exists",
+			description:    "Returns-nil-config-if-no-matching-module-exists-for-vendor",
 			givenId:        "acme.bar",
 			givenModules:   modules,
 			expectedConfig: nil,
 			expectedError:  nil,
 		},
 		{
-			description:    "Returns nil config if no matching module exists",
-			givenId:        "acme.foo.baz",
-			givenModules:   modules,
-			expectedConfig: nil,
-			expectedError:  nil,
-		},
-		{
-			description:    "Returns nil config if no module configs defined in account",
+			description:    "Returns-nil-config-if-no-module-configs-defined-in-account",
 			givenId:        "acme.foo",
 			givenModules:   nil,
 			expectedConfig: nil,
@@ -784,8 +781,8 @@ func TestModulesGetConfig(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			gotConfig, err := test.givenModules.ModuleConfig(test.givenId)
-			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedConfig, gotConfig)
+			assert.Equal(t, test.expectedError, err)
 		})
 	}
 }

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -96,8 +96,9 @@ type AdapterXAPI struct {
 // Version is not yet actively supported
 // GPPSupported is not yet actively supported
 type OpenRTBInfo struct {
-	Version      string `yaml:"version" mapstructure:"version"`
-	GPPSupported bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
+	Version              string `yaml:"version" mapstructure:"version"`
+	GPPSupported         bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
+	MultiformatSupported *bool  `yaml:"multiformat-supported" mapstructure:"multiformat-supported"`
 }
 
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,

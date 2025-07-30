@@ -9,12 +9,13 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 type adapter struct {
@@ -77,7 +78,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(respData.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(respData.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -98,8 +99,9 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, reqData *adapters.Reques
 				return nil, []error{err}
 			}
 			resp.Bids = append(resp.Bids, &adapters.TypedBid{
-				Bid:     bid,
-				BidType: bidType,
+				Bid:      bid,
+				BidType:  bidType,
+				BidVideo: getBidVideo(bid),
 			})
 		}
 	}
@@ -116,12 +118,12 @@ func (a *adapter) getEndpoint(ext *openrtb_ext.ExtImpMetaX) (string, error) {
 
 func parseBidderExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpMetaX, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, err
 	}
 
 	var metaxExt openrtb_ext.ExtImpMetaX
-	if err := json.Unmarshal(bidderExt.Bidder, &metaxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &metaxExt); err != nil {
 		return nil, errors.New("Wrong MetaX bidder ext")
 	}
 
@@ -174,6 +176,17 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 			Message: fmt.Sprintf("Unsupported MType %d", bid.MType),
 		}
 	}
+}
+
+func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+	bidVideo := openrtb_ext.ExtBidPrebidVideo{}
+	if len(bid.Cat) > 0 {
+		bidVideo.PrimaryCategory = bid.Cat[0]
+	}
+	if bid.Dur > 0 {
+		bidVideo.Duration = int(bid.Dur)
+	}
+	return &bidVideo
 }
 
 // Builder builds a new instance of the MetaX adapter for the given bidder with the given config.

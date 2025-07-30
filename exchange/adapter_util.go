@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, map[openrtb_ext.BidderName]struct{}, []error) {
 	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter}
-	bidders, errs := buildBidders(infos, newAdapterBuilders(), server)
+	bidders, singleFormatBidders, errs := buildBidders(infos, newAdapterBuilders(), server)
 
 	if len(errs) > 0 {
-		return nil, errs
+		return nil, nil, errs
 	}
 
 	exchangeBidders := make(map[openrtb_ext.BidderName]AdaptedBidder, len(bidders))
@@ -25,11 +25,12 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.
 		exchangeBidder = addValidatedBidderMiddleware(exchangeBidder)
 		exchangeBidders[bidderName] = exchangeBidder
 	}
-	return exchangeBidders, nil
+	return exchangeBidders, singleFormatBidders, nil
 }
 
-func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, server config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
+func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, server config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, map[openrtb_ext.BidderName]struct{}, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
+	singleFormatBidders := make(map[openrtb_ext.BidderName]struct{})
 	var errs []error
 
 	for bidder, info := range infos {
@@ -61,9 +62,12 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 				continue
 			}
 			bidders[bidderName] = adapters.BuildInfoAwareBidder(bidderInstance, info)
+			if !adapters.IsMultiFormatSupported(info) {
+				singleFormatBidders[bidderName] = struct{}{}
+			}
 		}
 	}
-	return bidders, errs
+	return bidders, singleFormatBidders, errs
 }
 
 func setAliasBuilder(info config.BidderInfo, builders map[openrtb_ext.BidderName]adapters.Builder, bidderName openrtb_ext.BidderName) error {
@@ -106,7 +110,6 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]string {
 	removed := map[string]string{
 		"lifestreet":      `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-		"adagio":          `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 		"somoaudience":    `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
 		"yssp":            `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 		"andbeyondmedia":  `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,

@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -140,52 +140,6 @@ func TestResolveNativeObject(t *testing.T) {
 	for _, scenario := range testScenarios {
 		_, err := resolveNativeObject(&scenario.nativeObject, scenario.target)
 		assert.Equal(t, scenario.expectedError, err)
-	}
-}
-
-func TestResolveVideoSizeId(t *testing.T) {
-	testScenarios := []struct {
-		placement   adcom1.VideoPlacementSubtype
-		instl       int8
-		impId       string
-		expected    int
-		expectedErr error
-	}{
-		{
-			placement:   1,
-			instl:       1,
-			impId:       "impId",
-			expected:    201,
-			expectedErr: nil,
-		},
-		{
-			placement:   3,
-			instl:       1,
-			impId:       "impId",
-			expected:    203,
-			expectedErr: nil,
-		},
-		{
-			placement:   4,
-			instl:       1,
-			impId:       "impId",
-			expected:    202,
-			expectedErr: nil,
-		},
-		{
-			placement: 4,
-			instl:     3,
-			impId:     "impId",
-			expectedErr: &errortypes.BadInput{
-				Message: "video.size_id can not be resolved in impression with id : impId",
-			},
-		},
-	}
-
-	for _, scenario := range testScenarios {
-		res, err := resolveVideoSizeId(scenario.placement, scenario.instl, scenario.impId)
-		assert.Equal(t, scenario.expected, res)
-		assert.Equal(t, scenario.expectedErr, err)
 	}
 }
 
@@ -525,12 +479,10 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 					"inventory": {"key1" : "val1"},
 					"visitor": {"key2" : "val2"}
 				},
-				"context": {
-					"data": {
-                        "adserver": {
-                             "adslot": "/test-adslot",
-                             "name": "gam"
-                        }
+				"data": {
+					"adserver": {
+						 "adslot": "/test-adslot",
+						 "name": "gam"
 					}
 				}
 			}`),
@@ -606,6 +558,73 @@ func TestOpenRTBFirstPartyDataPopulating(t *testing.T) {
 		populateFirstPartyDataAttributes(scenario.source, scenario.target)
 		assert.Equal(t, scenario.result, scenario.target)
 	}
+}
+
+func TestPbsHostInfoPopulating(t *testing.T) {
+	bidder := RubiconAdapter{
+		URI:          "url",
+		externalURI:  "externalUrl",
+		XAPIUsername: "username",
+		XAPIPassword: "password",
+	}
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					{W: 300, H: 250},
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891,
+					"inventory": {"key1" : "val1"},
+					"visitor": {"key2" : "val2"}
+				}
+			}`),
+		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb2.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	var rpImpExt rubiconImpExt
+	if err := json.Unmarshal(rubiconReq.Imp[0].Ext, &rpImpExt); err != nil {
+		t.Fatalf("Error unmarshalling imp.ext: %s", err)
+	}
+
+	var pbsLogin string
+	pbsLogin, err := jsonparser.GetString(rpImpExt.RP.Target, "pbs_login")
+	if err != nil {
+		t.Fatal("Error extracting pbs_login")
+	}
+	assert.Equal(t, pbsLogin, "username", "Unexpected pbs_login value")
+
+	var pbsVersion string
+	pbsVersion, err = jsonparser.GetString(rpImpExt.RP.Target, "pbs_version")
+	if err != nil {
+		t.Fatal("Error extracting pbs_version")
+	}
+	assert.Equal(t, pbsVersion, "", "Unexpected pbs_version value")
+
+	var pbsUrl string
+	pbsUrl, err = jsonparser.GetString(rpImpExt.RP.Target, "pbs_url")
+	if err != nil {
+		t.Fatal("Error extracting pbs_url")
+	}
+	assert.Equal(t, pbsUrl, "externalUrl", "Unexpected pbs_url value")
 }
 
 func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
@@ -944,7 +963,7 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 
 		var givenBidExt json.RawMessage
 		if scenario.bidExt != nil {
-			marshalledExt, _ := json.Marshal(scenario.bidExt)
+			marshalledExt, _ := json.Marshal(&openrtb_ext.ExtBid{Prebid: scenario.bidExt})
 			givenBidExt = marshalledExt
 		} else {
 			givenBidExt = nil
@@ -974,6 +993,73 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 	}
 }
 
+func TestUpdateBidExtWithMeta_OnlySeatSet(t *testing.T) {
+	bid := rubiconBid{
+		Bid: openrtb2.Bid{
+			Ext: nil,
+		},
+		AdmNative: nil,
+	}
+	seat := "test-seat"
+	buyer := 0
+
+	ext := updateBidExtWithMeta(bid, buyer, seat)
+	assert.NotNil(t, ext, "Expected non-nil ext when seat is set")
+
+	var extPrebidWrapper struct {
+		Prebid struct {
+			Meta struct {
+				Seat      string `json:"seat"`
+				NetworkID *int   `json:"networkId,omitempty"`
+			} `json:"meta"`
+		} `json:"prebid"`
+	}
+	err := json.Unmarshal(ext, &extPrebidWrapper)
+	assert.NoError(t, err, "Unmarshal should succeed")
+	assert.Equal(t, seat, extPrebidWrapper.Prebid.Meta.Seat, "Seat should be set")
+	assert.Zero(t, extPrebidWrapper.Prebid.Meta.NetworkID, "NetworkID should be omitted or zero")
+}
+
+func TestOpenRTBResponseBidExtPrebidMetaPassthrough(t *testing.T) {
+	request := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID:     "test-imp-id",
+			Banner: &openrtb2.Banner{},
+		}},
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     "test-uri",
+		Body:    requestJson,
+		Headers: nil,
+	}
+
+	bidExt := &openrtb_ext.ExtBid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "1", MediaType: "banner"}}}
+	givenBidExt, _ := json.Marshal(bidExt)
+
+	givenBidResponse := rubiconBidResponse{
+		SeatBid: []rubiconSeatBid{{
+			Bid: []rubiconBid{{
+				Bid: openrtb2.Bid{Price: 123.2, ImpID: "test-imp-id", Ext: givenBidExt}}}}},
+	}
+	body, _ := json.Marshal(&givenBidResponse)
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       body,
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
+	assert.Empty(t, errs)
+
+	var actualBidExt openrtb_ext.ExtBid
+	err := json.Unmarshal(bidResponse.Bids[0].Bid.Ext, &actualBidExt)
+	assert.NoError(t, err)
+	assert.Equal(t, bidExt.Prebid.Meta, actualBidExt.Prebid.Meta)
+}
+
 func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
@@ -990,7 +1076,7 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 				"siteId": 68780,
 				"zoneId": 327642,
 				"debug": {
-					"cpmoverride" : 20 
+					"cpmoverride" : 20
 				}
 			}}`),
 		}},

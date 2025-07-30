@@ -1,13 +1,13 @@
 package devicedetection
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
-	"github.com/51Degrees/device-detection-go/v4/onpremise"
-	"github.com/pkg/errors"
-
 	"github.com/51Degrees/device-detection-go/v4/dd"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/51Degrees/device-detection-go/v4/onpremise"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 )
 
 type defaultEvidenceExtractor struct {
@@ -62,11 +62,11 @@ func (x *defaultEvidenceExtractor) extract(ctx hookstage.ModuleContext) ([]onpre
 
 	suaStrings, err := x.getEvidenceStrings(ctx[evidenceFromSuaCtxKey])
 	if err != nil {
-		return nil, "", errors.Wrap(err, "error extracting sua evidence")
+		return nil, "", fmt.Errorf("error extracting sua evidence: %w", err)
 	}
 	headerString, err := x.getEvidenceStrings(ctx[evidenceFromHeadersCtxKey])
 	if err != nil {
-		return nil, "", errors.Wrap(err, "error extracting header evidence")
+		return nil, "", fmt.Errorf("error extracting header evidence: %w", err)
 	}
 
 	// Merge evidence from headers and SUA, sua has higher priority

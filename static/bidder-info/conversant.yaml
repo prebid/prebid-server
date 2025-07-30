@@ -9,10 +9,14 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - audio
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - audio
+      - native
 userSync:
   redirect:
     url: "https://prebid-match.dotomi.com/match/bounce/current?version=1&networkId=72582&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&rurl={{.RedirectURL}}"

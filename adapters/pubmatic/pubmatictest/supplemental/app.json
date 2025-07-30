@@ -37,10 +37,10 @@
 		    	"id": "appID",
 		    	"publisher": {
 		      		"id": "1234"
-		    	}
+		    	},
+          "ext":{}
 		    }
     },
-  
     "httpCalls": [
       {
         "expectedRequest": {
@@ -75,14 +75,14 @@
                 "id": "appID",
                 "publisher": {
                     "id": "999"
-                }
+                },
+                "ext":{}
             },
             "ext": {
                 "wrapper": {
                     "profile": 5123,
                     "version":1
-                },
-                "prebid": {}
+                }
             }
           },
           "impIDs":["app-imp"]
@@ -104,6 +104,7 @@
                   "crid": "29681110",
                   "h": 250,
                   "w": 300,
+                  "mtype": 1,
                   "dealid":"test deal"
                 }]
               }
@@ -130,17 +131,18 @@
               "crid": "29681110",
               "w": 300,
               "h": 250,
+              "mtype": 1,
               "dealid":"test deal"
             },
-            "type": "banner"
+             "type": "banner"
           }
         ]
       }
     ],
     "expectedMakeBidsErrors": [
       {
-        "value": "unexpected end of JSON input",
-        "comparison": "literal"
+        "value": "expect { or n, but found",
+        "comparison": "startswith"
       }
     ]
   }

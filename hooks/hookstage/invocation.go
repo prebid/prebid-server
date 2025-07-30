@@ -3,7 +3,7 @@ package hookstage
 import (
 	"encoding/json"
 
-	"github.com/prebid/prebid-server/v2/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 )
 
 // HookResult represents the result of execution the concrete hook instance.
@@ -21,12 +21,16 @@ type HookResult[T any] struct {
 
 // ModuleInvocationContext holds data passed to the module hook during invocation.
 type ModuleInvocationContext struct {
+	// AccountID holds the account ID
+	AccountID string
 	// AccountConfig represents module config rewritten at the account-level.
 	AccountConfig json.RawMessage
 	// Endpoint represents the path of the current endpoint.
 	Endpoint string
 	// ModuleContext holds values that the module passes to itself from the previous stages.
 	ModuleContext ModuleContext
+	// HookImplCode is the hook_impl_code for a module instance to differentiate between multiple hooks
+	HookImplCode string
 }
 
 // ModuleContext holds arbitrary data passed between module hooks at different stages.

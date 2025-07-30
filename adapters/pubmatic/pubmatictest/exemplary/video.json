@@ -53,7 +53,6 @@
         }
       }
     },
-  
     "httpCalls": [
       {
         "expectedRequest": {
@@ -100,12 +99,7 @@
                     "profile": 5123,
                     "version":1
                 },
-                "acat": ["drg","dlu","ssr"],
-                "prebid": {
-                  "bidderparams": {
-                    "acat": ["drg","dlu","ssr"]
-                  }
-                }
+                "acat": ["drg","dlu","ssr"]
             }
           },
           "impIDs":["test-video-imp"]
@@ -129,6 +123,7 @@
                   "w": 300,
                   "dealid":"test deal",
                   "cat" : ["IAB-1", "IAB-2"], 
+                  "mtype":2,
                   "ext": {
                     "dspid": 6,
                     "deal_channel": 1,
@@ -166,6 +161,7 @@
               "w": 300,
               "h": 250,
               "dealid":"test deal",
+              "mtype":2,
               "ext": {
                 "dspid": 6,
                 "deal_channel": 1,
@@ -177,7 +173,8 @@
             },
             "type": "video",
             "video" :{
-              "duration" : 5
+              "duration" : 5,
+              "primary_category": ""
             }
           }
         ]

@@ -13,14 +13,14 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/db_provider"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/http_fetcher"
-	"github.com/prebid/prebid-server/v2/stored_requests/events"
-	httpEvents "github.com/prebid/prebid-server/v2/stored_requests/events/http"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/db_provider"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_requests/backends/http_fetcher"
+	"github.com/prebid/prebid-server/v3/stored_requests/events"
+	httpEvents "github.com/prebid/prebid-server/v3/stored_requests/events/http"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -134,8 +134,8 @@ func TestNewHTTPFetcher(t *testing.T) {
 		},
 	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
-		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
-			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
+		if httpFetcher.EndpointURL.String() != "stored-requests.prebid.com" {
+			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com", httpFetcher.EndpointURL)
 		}
 	} else {
 		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", fetcher)

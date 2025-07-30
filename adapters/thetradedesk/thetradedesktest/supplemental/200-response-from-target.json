@@ -46,8 +46,7 @@
             ],
             "Accept": [
               "application/json"
-            ],
-            "X-Integration-Type": ["1"]
+            ]
           },
           "body": {
             "id": "test-request-id",
@@ -98,8 +97,8 @@
     ],
     "expectedMakeBidsErrors": [
       {
-        "value": "unexpected end of JSON input",
-        "comparison": "literal"
+        "value": "expect { or n, but found",
+        "comparison": "startswith"
       }
     ]
   }

@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type VisxAdapter struct {
@@ -48,6 +49,7 @@ type visxSeatBid struct {
 
 type visxResponse struct {
 	SeatBid []visxSeatBid `json:"seatbid,omitempty"`
+	Cur     string        `json:"cur,omitempty"`
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -107,7 +109,7 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 	}
 
 	var bidResp visxResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -138,6 +140,11 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 			})
 		}
 	}
+
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
+
 	return bidResponse, nil
 
 }
@@ -146,7 +153,7 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb
 	for _, imp := range imps {
 		if imp.ID == impID {
 			var ext visxBidExt
-			if err := json.Unmarshal(bid.Ext, &ext); err == nil {
+			if err := jsonutil.Unmarshal(bid.Ext, &ext); err == nil {
 				if ext.Prebid.Meta.MediaType == openrtb_ext.BidTypeBanner {
 					return openrtb_ext.BidTypeBanner, nil
 				}

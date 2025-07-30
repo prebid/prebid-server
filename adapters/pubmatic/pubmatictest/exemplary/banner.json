@@ -46,8 +46,7 @@
 			        	"id": "1234"
 		      	}
 		      }
-     },
-  
+     }, 
     "httpCalls": [
       {
         "expectedRequest": {
@@ -89,12 +88,7 @@
                     "profile": 5123,
                     "version":1
                 },
-                "acat": ["drg","dlu","ssr"],
-                "prebid": {
-                  "bidderparams": {
-                    "acat": ["drg","dlu","ssr"]
-                  }
-                }
+                "acat": ["drg","dlu","ssr"]
             }
           },
           "impIDs":["test-imp-id"]
@@ -117,6 +111,7 @@
                   "h": 250,
                   "w": 300,
                   "dealid":"test deal",
+                  "mtype": 1,
                   "ext": {
                     "dspid": 6,
                     "deal_channel": 1,
@@ -148,13 +143,14 @@
               "w": 300,
               "h": 250,
               "dealid":"test deal",
+              "mtype": 1,
               "ext": {
                 "dspid": 6,
                 "deal_channel": 1,
                 "prebiddealpriority": 1
               }
             },
-            "type": "banner"
+             "type": "banner"
           }
         ]
       }

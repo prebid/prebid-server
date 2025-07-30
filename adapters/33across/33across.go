@@ -7,10 +7,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type TtxAdapter struct {
@@ -76,7 +77,7 @@ func (a *TtxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapter
 			// Skip over imps whose extensions cannot be read since
 			// we cannot glean Prod or ZoneID which are required to
 			// group together. However let's not block request creation.
-			if err := json.Unmarshal(impCopy.Ext, &impExt); err == nil {
+			if err := jsonutil.Unmarshal(impCopy.Ext, &impExt); err == nil {
 				impKey := impExt.Ttx.Prod + impExt.Ttx.Zoneid
 				groupedImps[impKey] = append(groupedImps[impKey], impCopy)
 			} else {
@@ -126,14 +127,14 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return openrtb2.Imp{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var ttxExt openrtb_ext.ExtImp33across
-	if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
 		return openrtb2.Imp{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -177,7 +178,7 @@ func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {
 	var reqExt reqExt
 
 	if len(request.Ext) > 0 {
-		if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
+		if err := jsonutil.Unmarshal(request.Ext, &reqExt); err != nil {
 			return nil, err
 		}
 	}
@@ -215,7 +216,7 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequ
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -226,7 +227,7 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequ
 			var bidExt bidExt
 			var bidType openrtb_ext.BidType
 
-			if err := json.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
+			if err := jsonutil.Unmarshal(sb.Bid[i].Ext, &bidExt); err != nil {
 				bidType = openrtb_ext.BidTypeBanner
 			} else {
 				bidType = getBidType(bidExt)

@@ -1,0 +1,165 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "id": "site-id",
+            "page": "oms.com"
+        },
+        "device": {
+            "os": "android",
+            "ip": "91.199.242.236",
+            "ua": "random user agent"
+        },
+        "user": {
+            "ext": {
+                "eids": [
+                    {
+                        "source": "oms.com",
+                        "uids": [
+                            {
+                                "id": "oms-eid"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "imp": [
+            {
+                "id": "test-video-imp-id",
+                "video": {
+                    "w": 640,
+                    "h": 480,
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "protocols": [
+                        2,
+                        3,
+                        5,
+                        6
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "pid": "12345"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://rt.marphezis.com/pbs?publisherId=12345",
+                "headers": {},
+                "body": {
+                    "id": "test-request-id",
+                    "site": {
+                        "id": "site-id",
+                        "page": "oms.com"
+                    },
+                    "device": {
+                        "os": "android",
+                        "ip": "91.199.242.236",
+                        "ua": "random user agent"
+                    },
+                    "user": {
+                        "ext": {
+                            "eids": [
+                                {
+                                    "source": "oms.com",
+                                    "uids": [
+                                        {
+                                            "id": "oms-eid"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    "imp": [
+                        {
+                            "id": "test-video-imp-id",
+                            "video": {
+                                "w": 640,
+                                "h": 480,
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "protocols": [
+                                    2,
+                                    3,
+                                    5,
+                                    6
+                                ]
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "pid": "12345"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs": [
+                    "test-video-imp-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "currency": "USD",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "test-slot-id",
+                                    "impid": "test-video-imp-id",
+                                    "price": 0.1,
+                                    "crid": "creative-123",
+                                    "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.oms.com'></iframe>",
+                                    "w": 640,
+                                    "h": 480,
+                                    "dur": 10,
+                                    "cat": [
+                                        "IAB20"
+                                    ],
+                                    "mtype": 2
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-slot-id",
+                        "impid": "test-video-imp-id",
+                        "price": 0.1,
+                        "crid": "creative-123",
+                        "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.oms.com'></iframe>",
+                        "w": 640,
+                        "h": 480,
+                        "dur": 10,
+                        "cat": [
+                            "IAB20"
+                        ],
+                        "mtype": 2
+                    },
+                    "video": {
+                        "duration": 10,
+                        "primary_category": "IAB20"
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}

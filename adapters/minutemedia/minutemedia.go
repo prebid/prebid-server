@@ -10,20 +10,27 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // adapter is a MinuteMedia implementation of the adapters.Bidder interface.
 type adapter struct {
-	endpointURL string
+	endpointURL     string
+	testEndpointURL string
 }
+
+const (
+	testEndpoint = "https://pbs.minutemedia-prebid.com/pbs-test"
+)
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	return &adapter{
-		endpointURL: config.Endpoint,
+		endpointURL:     config.Endpoint,
+		testEndpointURL: testEndpoint,
 	}, nil
 }
 
@@ -42,9 +49,14 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
+	endpoint := a.endpointURL
+	if openRTBRequest.Test == 1 {
+		endpoint = a.testEndpointURL
+	}
+
 	return append(requestsToBidder, &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.endpointURL + "?publisher_id=" + url.QueryEscape(org),
+		Uri:     endpoint + "?publisher_id=" + url.QueryEscape(org),
 		Body:    openRTBRequestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
@@ -62,7 +74,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -96,12 +108,12 @@ func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err = json.Unmarshal(openRTBRequest.Imp[0].Ext, &bidderExt); err != nil {
+	if err = jsonutil.Unmarshal(openRTBRequest.Imp[0].Ext, &bidderExt); err != nil {
 		return "", fmt.Errorf("failed to unmarshal bidderExt: %w", err)
 	}
 
 	var impExt openrtb_ext.ImpExtMinuteMedia
-	if err = json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+	if err = jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 		return "", fmt.Errorf("failed to unmarshal ImpExtMinuteMedia: %w", err)
 	}
 

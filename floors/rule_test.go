@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -956,6 +956,11 @@ func TestGetAdUnitCode(t *testing.T) {
 		{
 			name: "empty adUnitCode",
 			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{}},
+			want: "*",
+		},
+		{
+			name: "empty_imp.ext.prebid.storedrequest.id",
+			imp:  &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{Ext: json.RawMessage(`{"prebid": {"custom":{"id":"123"}}}`)}},
 			want: "*",
 		},
 	}

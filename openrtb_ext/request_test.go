@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -279,6 +279,10 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 						Bidders: []string{"foo"},
 						Config:  &Config{&ORTB2{User: json.RawMessage(`{"value":"config3"}`)}},
 					},
+					{
+						Bidders: []string{"Bidder9"},
+						Config:  &Config{&ORTB2{Device: json.RawMessage(`{"value":"config4"}`)}},
+					},
 				},
 			},
 			prebidCopy: &ExtRequestPrebid{
@@ -295,6 +299,10 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 						Bidders: []string{"foo"},
 						Config:  &Config{&ORTB2{User: json.RawMessage(`{"value":"config3"}`)}},
 					},
+					{
+						Bidders: []string{"Bidder9"},
+						Config:  &Config{&ORTB2{Device: json.RawMessage(`{"value":"config4"}`)}},
+					},
 				},
 			},
 			mutator: func(t *testing.T, prebid *ExtRequestPrebid) {
@@ -304,6 +312,7 @@ func TestCloneExtRequestPrebid(t *testing.T) {
 					Config:  &Config{nil},
 				}
 				prebid.BidderConfigs[2].Config.ORTB2.User = json.RawMessage(`{"id": 345}`)
+				prebid.BidderConfigs[3].Config.ORTB2.Device = json.RawMessage(`{"id": 999}`)
 				prebid.BidderConfigs = append(prebid.BidderConfigs, BidderConfig{
 					Bidders: []string{"bidder2"},
 					Config:  &Config{&ORTB2{}},

@@ -84,7 +84,6 @@
                         }
                     },
                     "ext": {
-                        "prebid": {},
                         "wrapper": {
                             "profile": 5123,
                             "version": 1
@@ -114,6 +113,7 @@
                                     "h": 250,
                                     "w": 300,
                                     "dealid": "test deal",
+                                    "mtype": 1,
                                     "ext": {
                                         "dspid": 6,
                                         "deal_channel": 1
@@ -146,6 +146,7 @@
                         "w": 300,
                         "h": 250,
                         "dealid": "test deal",
+                        "mtype": 1,
                         "ext": {
                             "dspid": 6,
                             "deal_channel": 1
