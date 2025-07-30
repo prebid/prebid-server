@@ -134,14 +134,6 @@ func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 	return ba
 }
 
-// getThrottleWindow returns the throttle window value, enforcing a default of 100 if not set or set to zero.
-func getThrottleWindow(tw int) int {
-	if tw <= 0 {
-		return 100 // Default to 100 if the configured throttle window is less than or equal to zero
-	}
-	return tw
-}
-
 func parseDebugInfo(info *config.DebugInfo) bool {
 	if info == nil {
 		return true
@@ -654,7 +646,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	}
 	defer httpResp.Body.Close()
 
-	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 500 {
 		bidder.logHealthCheck(false)
 		err = &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode),
@@ -858,13 +850,15 @@ func (bidder *BidderAdapter) getHealth() float64 {
 	return math.Float64frombits(atomic.LoadUint64(&bidder.healthBits))
 }
 
+const maxLoggingTries = 5
+
 // logHealthCheck registers a health check for the bidder. True for a healthy result, false for an unhealthy result.
 func (bidder *BidderAdapter) logHealthCheck(success bool) {
 	if !bidder.config.ThrottleConfig.enabled {
 		// Don't update health if throttling is not enabled
 		return
 	}
-	for {
+	for i := 0; i < maxLoggingTries; i++ {
 		oldBits := atomic.LoadUint64(&bidder.healthBits)
 		old := math.Float64frombits(oldBits)
 		var newVal float64
