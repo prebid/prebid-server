@@ -39,9 +39,8 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
-		} else {
-			result = append(result, bidRequest)
 		}
+		result = append(result, bidRequest)
 	}
 	return result, errs
 }
@@ -201,7 +200,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 // getMediaTypeForImp figures out which media type this bid is for
 func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for imp := range iterutil.SlicePointerValues(imps) {
-		if imp != nil && imp.ID == impID && imp.Video != nil {
+		if imp.ID == impID && imp.Video != nil {
 			return openrtb_ext.BidTypeVideo
 		}
 	}
