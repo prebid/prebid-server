@@ -27,7 +27,8 @@
             "siteId": 1,
             "pageId": 2,
             "formatId": 4,
-            "networkId": 73
+            "networkId": 73,
+            "programmaticGuaranteed": true
           }
         }
       }
@@ -37,7 +38,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
+        "uri": "https://prebid-global.smartadserver.com/ortb",
         "body": {
           "id": "test-request-multi-id",
           "imp": [
@@ -47,7 +48,7 @@
                 "format": [{"w": 728, "h": 90}]
               },
               "ext": {
-                "bidder": {
+                "smartadserver": {
                   "siteId": 1,
                   "pageId": 2,
                   "formatId": 3,
@@ -61,7 +62,7 @@
                 "format": [{"w": 300, "h": 150}]
               },
               "ext": {
-                "bidder": {
+                "smartadserver": {
                   "siteId": 1,
                   "pageId": 2,
                   "formatId": 4,
