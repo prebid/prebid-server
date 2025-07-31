@@ -12,8 +12,8 @@ type RequestWrapper = openrtb_ext.RequestWrapper
 type ModelGroup = cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]
 
 type ProcessedAuctionHookResult struct {
-	HookResult   hs.HookResult[hs.ProcessedAuctionRequestPayload]
-	BiddersToAdd []string
+	HookResult     hs.HookResult[hs.ProcessedAuctionRequestPayload]
+	AllowedBidders map[string]struct{}
 }
 
 func handleProcessedAuctionHook(ruleSets []cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult], payload hs.ProcessedAuctionRequestPayload) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
@@ -23,31 +23,31 @@ func handleProcessedAuctionHook(ruleSets []cacheRuleSet[openrtb_ext.RequestWrapp
 	}
 
 	auctionHookRes := ProcessedAuctionHookResult{
-		HookResult:   result,
-		BiddersToAdd: make([]string, 0),
+		HookResult:     result,
+		AllowedBidders: make(map[string]struct{}),
 	}
 
 	for _, ruleSet := range ruleSets {
 		selectedGroup, err := selectModelGroup(ruleSet.modelGroups, randomutil.RandomNumberGenerator{})
 		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("failed to select model group: %s", err))
+			auctionHookRes.HookResult.Errors = append(auctionHookRes.HookResult.Errors, fmt.Sprintf("failed to select model group: %s", err))
 			continue
 		}
 
-		if err := selectedGroup.tree.Run(payload.Request, &auctionHookRes); err != nil {
+		if err = selectedGroup.tree.Run(payload.Request, &auctionHookRes); err != nil {
 			//TODO: classify errors as warnings or errors
-			result.Errors = append(result.Errors, err.Error())
+			auctionHookRes.HookResult.Errors = append(auctionHookRes.HookResult.Errors, err.Error())
 		}
 
-		if len(auctionHookRes.BiddersToAdd) > 0 {
-			auctionHookRes.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(auctionHookRes.BiddersToAdd)
+		if len(auctionHookRes.AllowedBidders) > 0 {
+			auctionHookRes.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(auctionHookRes.AllowedBidders)
 		}
 	}
 
 	return auctionHookRes.HookResult, nil
 }
 
-func selectModelGroup(modelGroups []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult], rg randomutil.RandomGenerator) (ModelGroup, error) {
+func selectModelGroup(modelGroups []ModelGroup, rg randomutil.RandomGenerator) (ModelGroup, error) {
 	if len(modelGroups) == 0 {
 		return ModelGroup{}, fmt.Errorf("no model groups available")
 	}

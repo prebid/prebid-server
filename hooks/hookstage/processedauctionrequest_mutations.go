@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"slices"
 )
 
 func (c *ChangeSet[T]) ProcessedAuctionRequest() ChangeSetProcessedAuctionRequest[T] {
@@ -33,7 +32,7 @@ func (c ChangeSetProcessedAuctionRequest[T]) castPayload(p T) (*openrtb_ext.Requ
 	return nil, errors.New("failed to cast ProcessedAuctionRequestPayload")
 }
 
-func (c ChangeBidders[T]) Add(finalBidders []string) {
+func (c ChangeBidders[T]) Add(finalBidders map[string]struct{}) {
 	c.changeSetProcessedAuctionRequest.changeSet.AddMutation(func(p T) (T, error) {
 		bidRequest, err := c.changeSetProcessedAuctionRequest.castPayload(p)
 		if err == nil {
@@ -47,15 +46,13 @@ func (c ChangeBidders[T]) Add(finalBidders []string) {
 				if impPrebid == nil {
 					impPrebid = &openrtb_ext.ExtImpPrebid{}
 				}
-				resBiddders := make(map[string]json.RawMessage)
+				resBidders := make(map[string]json.RawMessage)
 				for impBidder, bidderParams := range impPrebid.Bidder {
-					for _, finalBidder := range finalBidders {
-						if impBidder == finalBidder {
-							resBiddders[impBidder] = bidderParams
-						}
+					if _, exists := finalBidders[impBidder]; exists {
+						resBidders[impBidder] = bidderParams
 					}
 				}
-				impPrebid.Bidder = resBiddders
+				impPrebid.Bidder = resBidders
 				impExt.SetPrebid(impPrebid)
 
 			}
@@ -64,7 +61,7 @@ func (c ChangeBidders[T]) Add(finalBidders []string) {
 	}, MutationAdd, "bidrequest", "imp", "ext", "prebid", "bidders")
 }
 
-func (c ChangeBidders[T]) Delete(biddersToDelete []string) {
+func (c ChangeBidders[T]) Delete(biddersToDelete map[string]struct{}) {
 	c.changeSetProcessedAuctionRequest.changeSet.AddMutation(func(p T) (T, error) {
 		bidRequest, err := c.changeSetProcessedAuctionRequest.castPayload(p)
 		if err == nil {
@@ -81,7 +78,7 @@ func (c ChangeBidders[T]) Delete(biddersToDelete []string) {
 				newImpBidders := make(map[string]json.RawMessage)
 
 				for bidderName, bidderData := range impPrebid.Bidder {
-					if contains := slices.Contains(biddersToDelete, bidderName); !contains {
+					if _, exists := biddersToDelete[bidderName]; !exists {
 						newImpBidders[bidderName] = bidderData
 					}
 				}

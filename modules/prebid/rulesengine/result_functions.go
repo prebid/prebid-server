@@ -61,7 +61,12 @@ type ExcludeBidders struct {
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
 func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
-	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(eb.Args.Bidders)
+	resBidders := make(map[string]struct{})
+	for _, bidderName := range eb.Args.Bidders {
+		resBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
+	}
+
+	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(resBidders)
 	return nil
 }
 
@@ -92,7 +97,9 @@ type IncludeBidders struct {
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
 func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
-	result.BiddersToAdd = append(result.BiddersToAdd, ib.Args.Bidders...)
+	for _, bidderName := range ib.Args.Bidders {
+		result.AllowedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
+	}
 	return nil
 }
 
