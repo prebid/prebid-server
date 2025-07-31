@@ -94,15 +94,15 @@ type NotificationEvent struct {
 	Account *config.Account `json:"account"`
 }
 
-// ModuleBuilder is implemented by each analytics module to allow dynamic instantiation.
+// ModuleBuilder interface for dynamic module initialization
 type ModuleBuilder interface {
-	Build(cfg json.RawMessage) (Module, error)
+    Build(cfg json.RawMessage) (Module, error)
 }
 
-// Registry of all available analytics modules.
-var moduleRegistry = make(map[string]ModuleBuilder)
+// Registry for all available analytics modules
+var ModuleRegistry = make(map[string]ModuleBuilder)
+// RegisterModule adds a module to the registry
 
-// RegisterModule allows analytics modules to register themselves in the registry.
 func RegisterModule(name string, builder ModuleBuilder) {
-	moduleRegistry[name] = builder
+    ModuleRegistry[name] = builder
 }
