@@ -147,7 +147,7 @@ type BidderAdapter struct {
 	Client     *http.Client
 	me         metrics.MetricsEngine
 	config     bidderAdapterConfig
-	healthBits uint64 // use atomic on this
+	healthBits atomic.Uint64 // use atomic on this
 
 }
 
@@ -646,8 +646,10 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	}
 	defer httpResp.Body.Close()
 
-	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 500 {
-		bidder.logHealthCheck(false)
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
+		if httpResp.StatusCode >= 500 {
+			bidder.logHealthCheck(false)
+		}
 		err = &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode),
 		}
@@ -847,7 +849,7 @@ var gzipWriterPool = sync.Pool{
 }
 
 func (bidder *BidderAdapter) getHealth() float64 {
-	return math.Float64frombits(atomic.LoadUint64(&bidder.healthBits))
+	return math.Float64frombits(bidder.healthBits.Load())
 }
 
 const maxLoggingTries = 5
@@ -858,20 +860,17 @@ func (bidder *BidderAdapter) logHealthCheck(success bool) {
 		// Don't update health if throttling is not enabled
 		return
 	}
-	for i := 0; i < maxLoggingTries; i++ {
-		oldBits := atomic.LoadUint64(&bidder.healthBits)
-		old := math.Float64frombits(oldBits)
-		var newVal float64
-		if success {
-			newVal = bidder.config.ThrottleConfig.bulkValue * old
-		} else {
-			newVal = bidder.config.ThrottleConfig.bulkValue*old + bidder.config.ThrottleConfig.deltaValue
-		}
-		newBits := math.Float64bits(newVal)
-		if atomic.CompareAndSwapUint64(&bidder.healthBits, oldBits, newBits) {
-			break
-		}
+	old := bidder.getHealth()
+	var newVal float64
+	if success {
+		newVal = bidder.config.ThrottleConfig.bulkValue * old
+	} else {
+		newVal = bidder.config.ThrottleConfig.bulkValue*old + bidder.config.ThrottleConfig.deltaValue
 	}
+	// There is a race condition where under heavy traffic multiple attempts to update health can happen at the same time.
+	// This will result in health changing slower than otherwise. This might be a good thing, as it will prevent
+	// the bidder's health from changing too quickly in these conditions.
+	bidder.healthBits.Store(math.Float64bits(newVal))
 }
 
 func (bidder *BidderAdapter) shouldRequest() bool {

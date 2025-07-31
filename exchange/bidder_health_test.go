@@ -4,7 +4,6 @@ import (
 	"math"
 	"math/rand"
 	"sync"
-	"sync/atomic"
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/metrics"
@@ -114,7 +113,7 @@ func TestBidderAdapter_LogHealthCheck(t *testing.T) {
 			// Create a new BidderAdapter with the initial health value
 			bidder := &BidderAdapter{}
 			*bidder = testAdapter
-			bidder.healthBits = math.Float64bits(tc.initialHealth)
+			bidder.healthBits.Store(math.Float64bits(tc.initialHealth))
 
 			// Call the logHealthCheck method
 			bidder.logHealthCheck(tc.success)
@@ -130,7 +129,7 @@ func TestBidderAdapter_LogHealthCheck(t *testing.T) {
 func TestBidderAdapter_LogHealthCheck_ConcurrentAccess(t *testing.T) {
 	bidder := &BidderAdapter{}
 	*bidder = testAdapter
-	bidder.healthBits = math.Float64bits(0.5) // Start at 0.5
+	bidder.healthBits.Store(math.Float64bits(0.5)) // Start at 0.5
 
 	const numGoroutines = 100
 	const updatesPerGoroutine = 10
@@ -194,7 +193,7 @@ func TestBidderAdapter_ShouldRequest(t *testing.T) {
 			bidder := &BidderAdapter{}
 			*bidder = testAdapter
 			bidder.me = &meMock
-			atomic.StoreUint64(&bidder.healthBits, math.Float64bits(tc.healthValue))
+			bidder.healthBits.Store(math.Float64bits(tc.healthValue))
 
 			if tc.expectedAlways {
 				// Test multiple times to ensure it's consistently returning true
@@ -234,14 +233,14 @@ func TestBidderAdapter_HealthIntegration(t *testing.T) {
 	*bidder = testAdapter
 
 	// Start with zero health - should always request
-	bidder.healthBits = math.Float64bits(0.0)
+	bidder.healthBits.Store(math.Float64bits(0.0))
 
 	// Check initial state
 	assert.Equal(t, float64(0.0), bidder.getHealth())
 	assert.True(t, bidder.shouldRequest(), "Should initially always request with zero health")
 
 	// Log many failures to increase health
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		bidder.logHealthCheck(false)
 	}
 
@@ -265,7 +264,7 @@ func TestBidderAdapter_HealthIntegration(t *testing.T) {
 	t.Logf("Health: %f, Throttled: %d/%d", health, throttledCount, numTests)
 
 	// Now log many successes to decrease health
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		bidder.logHealthCheck(true)
 	}
 
@@ -280,7 +279,7 @@ func TestBidderAdapter_GetHealth(t *testing.T) {
 	for _, val := range testValues {
 		bidder := &BidderAdapter{}
 		*bidder = testAdapter
-		bidder.healthBits = math.Float64bits(val)
+		bidder.healthBits.Store(math.Float64bits(val))
 
 		actual := bidder.getHealth()
 		assert.InDelta(t, val, actual, 0.000001, "getHealth() should return the stored health value")
