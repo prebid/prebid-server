@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -91,4 +92,17 @@ type UsersyncInfo struct {
 type NotificationEvent struct {
 	Request *EventRequest   `json:"request"`
 	Account *config.Account `json:"account"`
+}
+
+// ModuleBuilder is implemented by each analytics module to allow dynamic instantiation.
+type ModuleBuilder interface {
+	Build(cfg json.RawMessage) (Module, error)
+}
+
+// Registry of all available analytics modules.
+var moduleRegistry = make(map[string]ModuleBuilder)
+
+// RegisterModule allows analytics modules to register themselves in the registry.
+func RegisterModule(name string, builder ModuleBuilder) {
+	moduleRegistry[name] = builder
 }

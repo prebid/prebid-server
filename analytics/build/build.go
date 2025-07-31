@@ -4,14 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/agma"
-	"github.com/prebid/prebid-server/v3/analytics/clients"
-	"github.com/prebid/prebid-server/v3/analytics/filesystem"
-	"github.com/prebid/prebid-server/v3/analytics/greenbids"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
@@ -19,42 +13,18 @@ import (
 )
 
 // Modules that need to be logged to need to be initialized here
-func New(analytics *config.Analytics) analytics.Runner {
-	modules := make(enabledAnalytics, 0)
-	if len(analytics.File.Filename) > 0 {
-		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
-			modules["filelogger"] = mod
-		} else {
-			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
-		}
-	}
+func New(analyticsConfig *config.Analytics) analytics.Runner {
+	modules := make(enabledAnalytics)
 
-	if analytics.Pubstack.Enabled {
-		pubstackModule, err := pubstack.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Pubstack.ScopeId,
-			analytics.Pubstack.IntakeUrl,
-			analytics.Pubstack.ConfRefresh,
-			analytics.Pubstack.Buffers.EventCount,
-			analytics.Pubstack.Buffers.BufferSize,
-			analytics.Pubstack.Buffers.Timeout,
-			clock.New())
-		if err == nil {
-			modules["pubstack"] = pubstackModule
-		} else {
-			glog.Errorf("Could not initialize PubstackModule: %v", err)
-		}
-	}
-
-	if analytics.Agma.Enabled {
-		agmaModule, err := agma.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Agma,
-			clock.New())
-		if err == nil {
-			modules["agma"] = agmaModule
-		} else {
-			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
+	// Enable host-level modules
+	for name, builder := range moduleRegistry {
+		if cfg, exists := analyticsConfig.Modules[name]; exists {
+			module, err := builder.Build(cfg)
+			if err != nil {
+				glog.Errorf("Failed to initialize analytics module %s: %v", name, err)
+				continue
+			}
+			modules[name] = module
 		}
 	}
 
@@ -253,6 +223,25 @@ func (ea enabledAnalytics) getOrInitializeModule(name string, config json.RawMes
 	}
 
 	// Dodaj do aktywnych adapterów
+	ea[name] = module
+	return module, nil
+}
+
+func (ea enabledAnalytics) getOrEnableModule(name string, config json.RawMessage) (analytics.Module, error) {
+	if module, exists := ea[name]; exists {
+		return module, nil
+	}
+
+	builder, exists := moduleRegistry[name]
+	if !exists {
+		return nil, fmt.Errorf("analytics module %s is not registered", name)
+	}
+
+	module, err := builder.Build(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize analytics module %s: %v", name, err)
+	}
+
 	ea[name] = module
 	return module, nil
 }
