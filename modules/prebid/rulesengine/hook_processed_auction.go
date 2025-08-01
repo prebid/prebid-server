@@ -9,31 +9,42 @@ import (
 )
 
 type RequestWrapper = openrtb_ext.RequestWrapper
-type ProcessedAuctionHookResult = hs.HookResult[hs.ProcessedAuctionRequestPayload]
 type ModelGroup = cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]
 
-func handleProcessedAuctionHook(
-	ruleSets []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]],
-	payload hs.ProcessedAuctionRequestPayload) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
+type ProcessedAuctionHookResult struct {
+	HookResult     hs.HookResult[hs.ProcessedAuctionRequestPayload]
+	AllowedBidders map[string]struct{}
+}
+
+func handleProcessedAuctionHook(ruleSets []cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult], payload hs.ProcessedAuctionRequestPayload) (hs.HookResult[hs.ProcessedAuctionRequestPayload], error) {
 
 	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 	}
 
+	auctionHookRes := ProcessedAuctionHookResult{
+		HookResult:     result,
+		AllowedBidders: make(map[string]struct{}),
+	}
+
 	for _, ruleSet := range ruleSets {
 		selectedGroup, err := selectModelGroup(ruleSet.modelGroups, randomutil.RandomNumberGenerator{})
 		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("failed to select model group: %s", err))
+			auctionHookRes.HookResult.Errors = append(auctionHookRes.HookResult.Errors, fmt.Sprintf("failed to select model group: %s", err))
 			continue
 		}
 
-		if err := selectedGroup.tree.Run(payload.Request, &result); err != nil {
+		if err = selectedGroup.tree.Run(payload.Request, &auctionHookRes); err != nil {
 			//TODO: classify errors as warnings or errors
-			result.Errors = append(result.Errors, err.Error())
+			auctionHookRes.HookResult.Errors = append(auctionHookRes.HookResult.Errors, err.Error())
+		}
+
+		if len(auctionHookRes.AllowedBidders) > 0 {
+			auctionHookRes.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(auctionHookRes.AllowedBidders)
 		}
 	}
 
-	return result, nil
+	return auctionHookRes.HookResult, nil
 }
 
 func selectModelGroup(modelGroups []ModelGroup, rg randomutil.RandomGenerator) (ModelGroup, error) {
