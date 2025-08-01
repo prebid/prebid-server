@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/errortypes"
@@ -104,6 +104,8 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
+	// Logger provides a way to specify logger type
+	Logger Logger `mapstructure:"logger"`
 }
 
 type Admin struct {
@@ -152,11 +154,11 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.ExtCacheURL.validate(errs)
 	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
-		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
+		logger.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
 
 	if cfg.AccountDefaults.Events.Enabled {
-		glog.Warning(`account_defaults.events has no effect as the feature is under development.`)
+		logger.Warning(`account_defaults.events has no effect as the feature is under development.`)
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -268,7 +270,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
 	if cfg.HostVendorID == 0 {
-		glog.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
+		logger.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
 	}
 	if cfg.AMPException {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
@@ -714,6 +716,12 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 	return errs
 }
 
+type Logger struct {
+	// the type of logger: default or alternative
+	Type  string `mapstructure:"type"`
+	Depth *int   `mapstructure:"depth"`
+}
+
 // New uses viper to get our server configurations.
 func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
@@ -725,8 +733,12 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 		return nil, err
 	}
 
+	if err := logger.New(c.Logger.Type, c.Logger.Depth); err != nil {
+		return nil, err
+	}
+
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		logger.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
 		return nil, err
 	}
 
@@ -816,7 +828,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 	c.BidderInfos = mergedBidderInfos
 
-	glog.Info("Logging the resolved configuration:")
+	logger.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(v); len(errs) > 0 {
 		return &c, errortypes.NewAggregateError("validation errors", errs)
@@ -859,7 +871,7 @@ func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) 
 func (cfg *Configuration) MarshalAccountDefaults() error {
 	var err error
 	if cfg.accountDefaultsJSON, err = jsonutil.Marshal(cfg.AccountDefaults); err != nil {
-		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
+		logger.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
 }
@@ -1286,6 +1298,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
 
 	v.SetDefault("hooks.enabled", false)
+
+	v.SetDefault("logger.type", "default")
+	v.SetDefault("logger.depth", 1)
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))

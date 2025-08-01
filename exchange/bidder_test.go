@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net"
 	"net/http"
@@ -21,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
@@ -2210,7 +2210,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
 	} else {
-		bidder.doTimeoutNotification(tb, &adapters.RequestData{}, glog.Warningf)
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{}, logger.Warningf)
 	}
 }
 

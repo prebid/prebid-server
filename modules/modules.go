@@ -3,8 +3,8 @@ package modules
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/v3/logger"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
@@ -71,7 +71,7 @@ func (m *builder) Build(
 			}
 
 			if !isEnabled {
-				glog.Infof("Skip %s module, disabled.", id)
+				logger.Infof("Skip %s module, disabled.", id)
 				continue
 			}
 
