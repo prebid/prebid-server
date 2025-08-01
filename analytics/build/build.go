@@ -2,6 +2,7 @@ package build
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
@@ -62,24 +63,47 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
-	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
+// func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+// 	for name, module := range ea {
+// 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
+// 			if cloneBidderReq != nil {
+// 				ao.RequestWrapper = cloneBidderReq
+// 			}
+// 			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
+// 			module.LogAuctionObject(ao)
+// 			if cloneReq != nil {
+// 				ao.RequestWrapper = cloneReq
+// 			}
+// 		}
+// 	}
+// }
+
+func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, hostConfig map[string]analytics.Module, account *config.Account, privacyPolicy privacy.ActivityControl) {
+	modules, err := combineAnalytics(hostConfig, account)
+	if err != nil {
+		glog.Errorf("Failed to combine analytics: %v", err)
+		return
+	}
+
+	for name, module := range modules {
+		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, privacyPolicy, name); isAllowed {
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
-			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
 			module.LogAuctionObject(ao)
-			if cloneReq != nil {
-				ao.RequestWrapper = cloneReq
-			}
 		}
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
-	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, hostConfig map[string]analytics.Module, account *config.Account, privacyPolicy privacy.ActivityControl) {
+	modules, err := combineAnalytics(hostConfig, account)
+	if err != nil {
+		glog.Errorf("Failed to combine analytics: %v", err)
+		return
+	}
+
+	for name, module := range modules {
+		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, privacyPolicy, name); isAllowed {
 			if cloneBidderReq != nil {
 				vo.RequestWrapper = cloneBidderReq
 			}
@@ -209,4 +233,45 @@ func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, ada
 		newMap[adapterName] = val
 	}
 	return newMap
+}
+
+func getOrCreateModule(name string, cfg json.RawMessage, modules map[string]analytics.Module) (analytics.Module, error) {
+	if module, exists := modules[name]; exists {
+		return module, nil
+	}
+
+	builder, exists := analytics.ModuleRegistry[name]
+	if !exists {
+		return nil, fmt.Errorf("module %s not found in registry", name)
+	}
+
+	module, err := builder.Build(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize module %s: %v", name, err)
+	}
+
+	modules[name] = module
+	return module, nil
+}
+
+func combineAnalytics(hostConfig map[string]analytics.Module, account *config.Account) (map[string]analytics.Module, error) {
+	finalModules := make(map[string]analytics.Module)
+
+	// Add host-configured modules
+	for name, module := range hostConfig {
+		finalModules[name] = module
+	}
+
+	// Add or override with account-specific modules
+	for name, cfg := range account.Analytics {
+		if _, exists := finalModules[name]; !exists {
+			module, err := getOrCreateModule(name, cfg, finalModules)
+			if err != nil {
+				return nil, err
+			}
+			finalModules[name] = module
+		}
+	}
+
+	return finalModules, nil
 }
