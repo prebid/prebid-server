@@ -708,11 +708,11 @@ func TestValidateAliases(t *testing.T) {
 			expectedErr: errors.New("bidder: a cannot be an alias of an alias: b"), // does this make sense? should it be reversed?
 		},
 		{
-			name:        "base-only",
+			name:        "whitelabelonly",
 			bidderName:  "b",
 			bidderInfo:  BidderInfo{AliasOf: "a", WhiteLabelOnly: true},
 			bidderInfos: BidderInfos{"a": BidderInfo{}},
-			expectedErr: errors.New("bidder: b is an alias and cannot be set as base only"),
+			expectedErr: errors.New("bidder: b is an alias and cannot be set as white label only"),
 		},
 	}
 

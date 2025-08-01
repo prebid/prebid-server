@@ -21,17 +21,17 @@ func NewBiddersEndpoint(bidders config.BidderInfos) httprouter.Handle {
 		glog.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
 	}
 
-	responseAllBaseOnly, err := prepareBiddersResponseAllBase(bidders)
+	responseAllBaseOnly, err := prepareBiddersResponseAllBaseOnly(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
 	}
 
-	responseEnabledOnly, err := prepareBiddersResponseEnabled(bidders)
+	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
 	}
 
-	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledBase(bidders)
+	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledBaseOnly(bidders)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
 	}
@@ -110,17 +110,17 @@ func prepareBiddersResponseAll(bidders config.BidderInfos) ([]byte, error) {
 	return prepareResponse(bidders, filterNone)
 }
 
-func prepareBiddersResponseAllBase(bidders config.BidderInfos) ([]byte, error) {
+func prepareBiddersResponseAllBaseOnly(bidders config.BidderInfos) ([]byte, error) {
 	filterBase := func(info config.BidderInfo) bool { return !info.WhiteLabelOnly && len(info.AliasOf) == 0 }
 	return prepareResponse(bidders, filterBase)
 }
 
-func prepareBiddersResponseEnabled(bidders config.BidderInfos) ([]byte, error) {
+func prepareBiddersResponseEnabledOnly(bidders config.BidderInfos) ([]byte, error) {
 	filterEnabled := func(info config.BidderInfo) bool { return info.IsEnabled() }
 	return prepareResponse(bidders, filterEnabled)
 }
 
-func prepareBiddersResponseEnabledBase(bidders config.BidderInfos) ([]byte, error) {
+func prepareBiddersResponseEnabledBaseOnly(bidders config.BidderInfos) ([]byte, error) {
 	filterEnabledBase := func(info config.BidderInfo) bool { return info.IsEnabled() && len(info.AliasOf) == 0 }
 	return prepareResponse(bidders, filterEnabledBase)
 }

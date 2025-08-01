@@ -180,7 +180,7 @@ func TestPrepareBiddersResponseAllBase(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseAllBase(test.givenBidders)
+			result, err := prepareBiddersResponseAllBaseOnly(test.givenBidders)
 			assert.NoError(t, err)
 			assert.Equal(t, []byte(test.expected), result)
 		})
@@ -271,7 +271,7 @@ func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseEnabled(test.givenBidders)
+			result, err := prepareBiddersResponseEnabledOnly(test.givenBidders)
 			assert.NoError(t, err)
 			assert.Equal(t, []byte(test.expected), result)
 		})
@@ -362,7 +362,7 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseEnabledBase(test.givenBidders)
+			result, err := prepareBiddersResponseEnabledBaseOnly(test.givenBidders)
 			assert.NoError(t, err)
 			assert.Equal(t, []byte(test.expected), result)
 		})
@@ -438,42 +438,42 @@ func TestBiddersHandler(t *testing.T) {
 			expectedHeaders: http.Header{},
 		},
 		{
-			name:            "whitelabelonly-false",
+			name:            "baseonly-false",
 			givenURL:        "/info/bidders?baseadaptersonly=false",
 			expectedStatus:  http.StatusOK,
 			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
-			name:            "whitelabelonly-false-caseinsensitive",
+			name:            "baseonly-false-caseinsensitive",
 			givenURL:        "/info/bidders?baseadaptersonly=fAlSe",
 			expectedStatus:  http.StatusOK,
 			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
-			name:            "whitelabelonly-true",
+			name:            "baseonly-true",
 			givenURL:        "/info/bidders?baseadaptersonly=true",
 			expectedStatus:  http.StatusOK,
 			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
-			name:            "whitelabelonly-true-caseinsensitive",
+			name:            "baseonly-true-caseinsensitive",
 			givenURL:        "/info/bidders?baseadaptersonly=TrUe",
 			expectedStatus:  http.StatusOK,
 			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
-			name:            "whitelabelonly-invalid",
+			name:            "baseonly-invalid",
 			givenURL:        "/info/bidders?baseadaptersonly=foo",
 			expectedStatus:  http.StatusBadRequest,
 			expectedBody:    `Invalid value for 'baseadaptersonly' query param, must be of boolean type`,
 			expectedHeaders: http.Header{},
 		},
 		{
-			name:            "whitelabelonly-missing",
+			name:            "baseonly-missing",
 			givenURL:        "/info/bidders?baseadaptersonly=",
 			expectedStatus:  http.StatusBadRequest,
 			expectedBody:    `Invalid value for 'baseadaptersonly' query param, must be of boolean type`,

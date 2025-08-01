@@ -5225,7 +5225,7 @@ func TestValidateAliases(t *testing.T) {
 	deps := &endpointDeps{
 		disabledBidders: map[string]string{
 			"rubicon":  "rubicon is disabled",
-			"appnexus": `Bidder "appnexus" can only be aliased and cannot be used directly.`, // exact wording needed to recognize base only adapter error state
+			"appnexus": `Bidder "appnexus" can only be aliased and cannot be used directly.`, // exact wording needed to recognize white label only adapter error state
 		},
 		bidderMap: map[string]openrtb_ext.BidderName{
 			"appnexus": openrtb_ext.BidderName("appnexus"),
@@ -5271,7 +5271,7 @@ func TestValidateAliases(t *testing.T) {
 			expectedError:   errors.New("request.ext.prebid.aliases.openx defines a no-op alias. Choose a different alias, or remove this entry."),
 		},
 		{
-			description:     "base only bidder cannot be aliased",
+			description:     "white label only bidder cannot be aliased",
 			aliases:         map[string]string{"test": "appnexus"},
 			expectedAliases: nil,
 			expectedError:   errors.New("request.ext.prebid.aliases.test refers to a bidder that cannot be aliased: appnexus"),

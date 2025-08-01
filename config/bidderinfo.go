@@ -413,7 +413,7 @@ func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName s
 	}
 
 	if aliasBidderInfo.WhiteLabelOnly {
-		return fmt.Errorf("bidder: %s is an alias and cannot be set as base only", bidderName)
+		return fmt.Errorf("bidder: %s is an alias and cannot be set as white label", bidderName)
 	}
 
 	parentBidder, parentBidderFound := infos[aliasBidderInfo.AliasOf]
