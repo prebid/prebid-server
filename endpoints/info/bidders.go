@@ -106,12 +106,12 @@ func prepareResponse(bidders config.BidderInfos, p bidderPredicate) ([]byte, err
 }
 
 func prepareBiddersResponseAll(bidders config.BidderInfos) ([]byte, error) {
-	filterNone := func(_ config.BidderInfo) bool { return true }
+	filterNone := func(info config.BidderInfo) bool { return !info.WhiteLabelOnly }
 	return prepareResponse(bidders, filterNone)
 }
 
 func prepareBiddersResponseAllBaseOnly(bidders config.BidderInfos) ([]byte, error) {
-	filterBaseOnly := func(info config.BidderInfo) bool { return len(info.AliasOf) == 0 }
+	filterBaseOnly := func(info config.BidderInfo) bool { return !info.WhiteLabelOnly && len(info.AliasOf) == 0 }
 	return prepareResponse(bidders, filterBaseOnly)
 }
 

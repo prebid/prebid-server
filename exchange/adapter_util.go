@@ -3,6 +3,7 @@ package exchange
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
@@ -134,11 +135,18 @@ func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, inf
 	disabledBidders := removed
 
 	for name, info := range infos {
-		if info.Disabled {
+		if info.WhiteLabelOnly {
+			msg := fmt.Sprintf(`Bidder "%s" can only be aliased and cannot be used directly.`, name)
+			disabledBidders[name] = msg
+		} else if info.Disabled {
 			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, name)
 			disabledBidders[name] = msg
 		}
 	}
 
 	return disabledBidders
+}
+
+func IsBidderDisabledDueToWhiteLabelOnly(disabledMessage string) bool {
+	return strings.HasSuffix(disabledMessage, "can only be aliased and cannot be used directly.")
 }
