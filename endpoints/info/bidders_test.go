@@ -101,7 +101,7 @@ func TestPrepareBiddersResponseAll(t *testing.T) {
 	}
 }
 
-func TestPrepareBiddersResponseAllBase(t *testing.T) {
+func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
 	var (
 		enabledCore            = config.BidderInfo{Disabled: false}
 		enabledAlias           = config.BidderInfo{Disabled: false, AliasOf: "something"}
@@ -362,7 +362,7 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseEnabledBaseOnly(test.givenBidders)
+			result, err := prepareBiddersResponseEnabledOnlyBaseOnly(test.givenBidders)
 			assert.NoError(t, err)
 			assert.Equal(t, []byte(test.expected), result)
 		})
