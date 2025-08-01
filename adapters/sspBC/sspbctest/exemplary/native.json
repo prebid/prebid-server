@@ -11,14 +11,10 @@
                     }
                 },
                 "secure": 1,
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        }
-                    ]
-                },
+                "native": {
+                    "request": "{json string}",
+                    "ver": "1.2"
+                  },
                 "tagid": "ad-test1"
             }
         ],
@@ -49,14 +45,10 @@
                         "imp": [
                             {
                                 "id": "slot",
-                                "banner": {
-                                    "format": [
-                                        {
-                                            "w": 300,
-                                            "h": 250
-                                        }
-                                    ]
-                                },
+                                "native": {
+                                    "request": "{json string}",
+                                    "ver": "1.2"
+                                  },
                                 "tagid": "ad-test1",
                                 "secure": 1,
                                 "ext": {
@@ -91,10 +83,41 @@
                 "impIDs":["slot"]
             },
             "mockResponse": {
-                "status": 204,
-                "body": {}
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "seat": "sspbc-test",
+                            "bid": [{
+                                "adm": "test-native-ad",
+                                "id": "response-005",
+                                "impid": "slot",
+                                "price": 20,
+                                "mtype": 4
+                              }]
+                        }
+                    ]
+                }
             }
         }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "adm": "test-native-ad",
+                        "id": "response-005",
+                        "impid": "slot",
+                        "price": 20,
+                        "mtype": 4
+                    },
+                    "type": "native"
+                }
+            ]
+        }
+    ]
 }
