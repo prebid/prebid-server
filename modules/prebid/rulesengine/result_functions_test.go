@@ -7,6 +7,9 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v3/util"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -111,13 +114,15 @@ func TestExcludeBiddersCall(t *testing.T) {
 			result := &hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
-
-			err := eb.Call(tt.req, result, rules.ResultFunctionMeta{})
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &userSyncs}
+			err := eb.Call(&payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
 			assert.NotEmptyf(t, result.ChangeSet, "change set is empty")
 			assert.Len(t, result.ChangeSet.Mutations(), 1)
-			assert.Equal(t, hs.MutationUpdate, result.ChangeSet.Mutations()[0].Type())
+			assert.Equal(t, hs.MutationDelete, result.ChangeSet.Mutations()[0].Type())
 
 		})
 	}
@@ -170,12 +175,15 @@ func TestIncludeBiddersCall(t *testing.T) {
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
 
-			err := ib.Call(tt.req, result, rules.ResultFunctionMeta{})
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &userSyncs}
+			err := ib.Call(&payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
 			assert.NotEmptyf(t, result.ChangeSet, "change set is empty")
 			assert.Len(t, result.ChangeSet.Mutations(), 1)
-			assert.Equal(t, hs.MutationUpdate, result.ChangeSet.Mutations()[0].Type())
+			assert.Equal(t, hs.MutationAdd, result.ChangeSet.Mutations()[0].Type())
 		})
 	}
 }
@@ -311,126 +319,152 @@ func TestBuildExcludeBidders(t *testing.T) {
 		name       string
 		argBidders []string
 		req        *openrtb_ext.RequestWrapper
-		expected   map[string]map[string]json.RawMessage
+		userSyncs  map[string]string
+		ifSyncedId *bool
+		expected   []string
 		expectErr  bool
 	}{
 		{
 			name:       "exclude_valid_bidders",
 			argBidders: []string{"bidder1"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
-			expected: map[string]map[string]json.RawMessage{
-				"imp1": {
-					"bidder2": json.RawMessage(`{}`),
-					"bidder3": json.RawMessage(`{}`),
-				},
-			},
-			expectErr: false,
+			expected:   []string{"bidder1"},
+			expectErr:  false,
 		},
 		{
 			name:       "exclude_all_bidders",
 			argBidders: []string{"bidder1", "bidder2", "bidder3"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
-			expected:   map[string]map[string]json.RawMessage{"imp1": {}},
+			expected:   []string{"bidder1", "bidder2", "bidder3"},
 			expectErr:  false,
 		},
 		{
 			name:       "req-imp-is-nil",
 			argBidders: []string{"bidder4"},
 			req:        &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-			expected:   map[string]map[string]json.RawMessage{},
+			expected:   []string{"bidder4"},
 			expectErr:  false,
 		},
 		{
 			name:       "req-imp-is-empty",
 			argBidders: []string{"bidder4"},
 			req:        mockRequestWrapperWithEmptyImp(t),
-			expected:   map[string]map[string]json.RawMessage{},
+			expected:   []string{"bidder4"},
 			expectErr:  false,
-		},
-		{
-			name:       "req-imp-ext-is-nil",
-			argBidders: []string{"bidder4"},
-			req:        mockRequestWrapperWithImpExtNil(t),
-			expectErr:  true,
-		},
-		{
-			name:       "req-imp-ext-error",
-			argBidders: []string{"bidder4"},
-			req:        mockRequestWrapperWithInvalidImpExt(t),
-			expectErr:  true,
-		},
-		{
-			name:       "req-imp-ext-prebid-is-nil",
-			argBidders: []string{"bidder4"},
-			req:        mockRequestWrapperWithImpExtPrebidNil(t),
-			expectErr:  true,
 		},
 		{
 			name:       "exclude-one-bidder-already-in-req",
 			argBidders: []string{"bidder1"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1"}),
-			expected: map[string]map[string]json.RawMessage{
-				"imp1": {},
-			},
-			expectErr: false,
+			expected:   []string{"bidder1"},
+			expectErr:  false,
 		},
 		{
 			name:       "exclude-one-bidder-not-in-req",
 			argBidders: []string{"bidder2"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder1"}),
-			expected: map[string]map[string]json.RawMessage{
-				"imp1": {
-					"bidder1": json.RawMessage(`{}`),
-				},
-			},
-			expectErr: false,
+			expected:   []string{"bidder2"},
+			expectErr:  false,
 		},
 		{
 			name:       "exclude-multiple-bidders-not-in-req",
 			argBidders: []string{"bidder1", "bidder2", "bidder3"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder4"}),
-			expected: map[string]map[string]json.RawMessage{
-				"imp1": {
-					"bidder4": json.RawMessage(`{}`),
-				},
-			},
-			expectErr: false,
+			expected:   []string{"bidder1", "bidder2", "bidder3"},
+			expectErr:  false,
 		},
 		{
 			name:       "exclude-one-bidder-in-req-and-one-not-in-req",
 			argBidders: []string{"bidder1", "bidder2"},
 			req:        mockRequestWrapperWithBidders(t, []string{"bidder2", "bidder3"}),
-			expected: map[string]map[string]json.RawMessage{
-				"imp1": {
-					"bidder3": json.RawMessage(`{}`),
-				},
-			},
-			expectErr: false,
+			expected:   []string{"bidder1", "bidder2"},
+			expectErr:  false,
 		},
 		{
 			name:       "multiple-imps",
 			argBidders: []string{"bidder1", "bidder2"},
 			req:        mockRequestWrapperWithBMultipleImpsWithBidders(t, []string{"bidder2", "bidder3"}),
-			expected: map[string]map[string]json.RawMessage{
-				"imp1": {
-					"bidder3": json.RawMessage(`{}`),
-				},
-				"imp2": {
-					"bidder3": json.RawMessage(`{}`),
-				},
-			},
-			expectErr: false,
+			expected:   []string{"bidder1", "bidder2"},
+			expectErr:  false,
+		},
+		//userSyncs tests
+		{
+			name:       "multiple-bidders-exclude-one-bidder-valid-user-sync-true",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": "111"},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected:   []string{"bidder1"},
+			expectErr:  false,
+		},
+		{
+			name:       "multiple-bidders-not-exclude-one-bidder-valid-user-sync-false",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": "111"},
+			ifSyncedId: ptrutil.ToPtr(false),
+			expected:   []string{},
+			expectErr:  false,
+		},
+		{
+			name:       "multiple-bidders-include-one-bidder-invalid-user-sync-true",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": ""},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected:   []string{},
+			expectErr:  false,
+		},
+		{
+			name:       "multiple-bidders-not-exclude-one-bidder-invalid-user-sync-false",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder1": ""},
+			ifSyncedId: ptrutil.ToPtr(false),
+			expected:   []string{"bidder1"},
+			expectErr:  false,
+		},
+		{
+			name:       "multiple-bidders-not-present-in-cookies-valid-user-sync-true",
+			argBidders: []string{"bidder3"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}),
+			userSyncs:  map[string]string{"bidder3": "111"},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected:   []string{"bidder3"},
+			expectErr:  false,
+		},
+		{
+			name:       "multiple-bidders-not-present-in-cookies-valid-user-sync-true-not-in-args",
+			argBidders: []string{"bidder1"},
+			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			userSyncs:  map[string]string{"bidder3": "111"},
+			ifSyncedId: ptrutil.ToPtr(true),
+			expected:   []string{},
+			expectErr:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := buildExcludeBidders(tt.req, tt.argBidders)
+
+			var userSyncs util.IdFetcher
+			userSyncs = &usersync.Cookie{}
+			if len(tt.userSyncs) > 0 {
+				cookie := usersync.NewCookie()
+				for key, val := range tt.userSyncs {
+					cookie.Sync(key, val)
+				}
+				userSyncs = cookie
+			}
+
+			payload := hs.ProcessedAuctionRequestPayload{Request: tt.req, Usersyncs: &userSyncs}
+			args := config.ResultFuncParams{Bidders: tt.argBidders, IfSyncedId: tt.ifSyncedId}
+			result, err := buildExcludeBidders(&payload, args)
 			if tt.expectErr {
 				assert.Error(t, err, "expected error but got nil")
 			} else {
 				assert.NoError(t, err, "unexpected error")
-				assert.True(t, compareMaps(result, tt.expected), "bidders to exclude do not match")
+				assert.True(t, compareLists(result, tt.expected), "bidders to exclude do not match")
 			}
 		})
 	}
@@ -528,6 +562,19 @@ func compareMaps(a, b map[string]map[string]json.RawMessage) bool {
 			if string(subVal) != string(b[key][subKey]) {
 				return false
 			}
+		}
+	}
+	return true
+}
+
+// Helper function to compare lists
+func compareLists(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
 		}
 	}
 	return true
