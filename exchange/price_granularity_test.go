@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
@@ -194,8 +195,104 @@ func TestGetPriceBucketString(t *testing.T) {
 	for _, testGroup := range testGroups {
 		for i, test := range testGroup.testCases {
 			var priceBucket string
-			assert.NotPanics(t, func() { priceBucket = GetPriceBucket(testGroup.bid, test.targetData) }, "Group: %s Granularity: %d", testGroup.groupDesc, i)
+			assert.NotPanics(t, func() {
+				priceBucket = GetPriceBucket(testGroup.bid, test.targetData, config.Account{BidRounding: config.RoundingModeDown})
+			}, "Group: %s Granularity: %d", testGroup.groupDesc, i)
 			assert.Equal(t, test.expectedPriceBucket, priceBucket, "Group: %s Granularity: %s :: Expected %s, got %s from %f", testGroup.groupDesc, test.granularityId, test.expectedPriceBucket, priceBucket, testGroup.bid.Price)
 		}
+	}
+}
+
+func TestGetPriceBucketRounding(t *testing.T) {
+	granularity, _ := openrtb_ext.NewPriceGranularityFromLegacyID("auto")
+	target := targetData{priceGranularity: granularity}
+
+	// Define test cases
+	tests := []struct {
+		desc                 string
+		bid                  openrtb2.Bid
+		account              config.Account
+		expectedPriceBuckets []string
+	}{
+		{
+			"Rounding down, lower half",
+			openrtb2.Bid{Price: 1.87},
+			config.Account{BidRounding: config.RoundingModeDown},
+			[]string{"1.85"},
+		},
+		{
+			"Rounding down, upper half",
+			openrtb2.Bid{Price: 1.88},
+			config.Account{BidRounding: config.RoundingModeDown},
+			[]string{"1.85"},
+		},
+		{
+			"Rounding up, lower half",
+			openrtb2.Bid{Price: 1.87},
+			config.Account{BidRounding: config.RoundingModeUp},
+			[]string{"1.90"},
+		},
+		{
+			"Rounding up, upper half",
+			openrtb2.Bid{Price: 1.88},
+			config.Account{BidRounding: config.RoundingModeUp},
+			[]string{"1.90"},
+		},
+		{
+			"Rounding true, lower half",
+			openrtb2.Bid{Price: 1.87},
+			config.Account{BidRounding: config.RoundingModeTrue},
+			[]string{"1.85"},
+		},
+		{
+			"Rounding true, upper half",
+			openrtb2.Bid{Price: 1.88},
+			config.Account{BidRounding: config.RoundingModeTrue},
+			[]string{"1.90"},
+		},
+		{
+			"Rounding timestplit, lower half",
+			openrtb2.Bid{Price: 1.87},
+			config.Account{BidRounding: config.RoundingModeTimeSplit},
+			[]string{"1.85", "1.90"},
+		},
+		{
+			"Rounding timestplit, upper half",
+			openrtb2.Bid{Price: 1.88},
+			config.Account{BidRounding: config.RoundingModeTimeSplit},
+			[]string{"1.85", "1.90"},
+		},
+		{
+			"Rounding default, lower half",
+			openrtb2.Bid{Price: 1.87},
+			config.Account{},
+			[]string{"1.85"},
+		},
+		{
+			"Rounding default, upper half",
+			openrtb2.Bid{Price: 1.88},
+			config.Account{},
+			[]string{"1.85"},
+		},
+		{
+			"Rounding invalid, lower half",
+			openrtb2.Bid{Price: 1.87},
+			config.Account{BidRounding: "invalid"},
+			[]string{"1.85"},
+		},
+		{
+			"Rounding invalid, upper half",
+			openrtb2.Bid{Price: 1.88},
+			config.Account{BidRounding: "invalid"},
+			[]string{"1.85"},
+		},
+	}
+
+	for _, test := range tests {
+		var priceBucket string
+		assert.NotPanics(t, func() {
+			priceBucket = GetPriceBucket(test.bid, target, test.account)
+		}, "Case: %s", test.desc)
+		assert.Contains(t, test.expectedPriceBuckets, priceBucket, "Case: %s Rounding mode: %s :: Expected %s, got %s from %f", test.desc, test.account.BidRounding, test.expectedPriceBuckets, priceBucket, test.bid.Price)
 	}
 }
