@@ -1,3 +1,0 @@
-# DEPRECATED: Use imds bidder instead
-aliasOf: imds
-endpoint: "https://pbs.technoratimedia.com/openrtb/bids/{{.AccountID}}?src={{.SourceId}}&adapter=synacormedia"
