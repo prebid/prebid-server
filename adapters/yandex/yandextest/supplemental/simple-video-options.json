@@ -1,0 +1,120 @@
+{
+    "mockBidRequest": {
+        "id": "video-request-id",
+        "imp": [
+            {
+                "id": "video-imp-id",
+                "video": {
+                    "w": 640,
+                    "h": 480,
+                    "mimes": ["video/mp4"]
+                },
+                "ext": {
+                    "bidder": {
+                        "placement_id": "123-456"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "page": "http://example.com",
+            "domain": "example.com"
+        },
+        "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "192.168.1.1",
+            "language": "en"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://bs-metadsp.yandex.ru/prebid/123?imp-id=456&ssp-id=10500&target-ref=example.com",
+                "headers": {
+                    "Accept": ["application/json"],
+                    "Accept-Language": ["en"],
+                    "Content-Type": ["application/json;charset=utf-8"],
+                    "Referer": ["http://example.com"],
+                    "User-Agent": ["Mozilla/5.0"],
+                    "X-Forwarded-For": ["192.168.1.1"],
+                    "X-Real-Ip": ["192.168.1.1"],
+                    "X-Openrtb-Version": ["2.5"]
+                },
+                "body": {
+                    "id": "video-request-id",
+                    "imp": [
+                        {
+                            "id": "video-imp-id",
+                            "video": {
+                                "w": 640,
+                                "h": 480,
+                                "mimes": ["video/mp4"],
+                                "protocols": [3],
+                                "minduration": 1,
+                                "maxduration": 120
+                            },
+                            "displaymanager": "prebid.go",
+                            "displaymanagerver": "1.1",
+                            "ext": {
+                                "bidder": {
+                                    "placement_id": "123-456"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "page": "http://example.com",
+                        "domain": "example.com"
+                    },
+                    "device": {
+                        "ua": "Mozilla/5.0",
+                        "ip": "192.168.1.1",
+                        "language": "en"
+                    }
+                },
+                "impIDs": ["video-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "headers": {},
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "video-bid-id",
+                                    "impid": "video-imp-id",
+                                    "price": 1.5,
+                                    "adm": "<VAST version=\"3.0\"><Ad><InLine><AdSystem>Yandex</AdSystem><AdTitle>Test Video Ad</AdTitle><Impression><![CDATA[http://example.com/impression]]></Impression><Creatives><Creative><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\"><![CDATA[http://example.com/video.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                                    "crid": "video-creative-id",
+                                    "w": 640,
+                                    "h": 480
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "video-bid-id",
+                        "impid": "video-imp-id",
+                        "price": 1.5,
+                        "adm": "<VAST version=\"3.0\"><Ad><InLine><AdSystem>Yandex</AdSystem><AdTitle>Test Video Ad</AdTitle><Impression><![CDATA[http://example.com/impression]]></Impression><Creatives><Creative><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\"><![CDATA[http://example.com/video.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                        "crid": "video-creative-id",
+                        "w": 640,
+                        "h": 480
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}
