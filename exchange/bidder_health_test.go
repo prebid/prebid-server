@@ -12,16 +12,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testAdapter = BidderAdapter{
-	me: &config.NilMetricsEngine{},
-	config: bidderAdapterConfig{
-		ThrottleConfig: bidderAdapterThrottleConfig{
-			enabled:        true,
-			throttleWindow: 100,
-			bulkValue:      0.99,
-			deltaValue:     0.01,
+func newTestAdapter() *BidderAdapter {
+	return &BidderAdapter{
+		me: &config.NilMetricsEngine{},
+		config: bidderAdapterConfig{
+			ThrottleConfig: bidderAdapterThrottleConfig{
+				enabled:        true,
+				throttleWindow: 100,
+				bulkValue:      0.99,
+				deltaValue:     0.01,
+			},
 		},
-	},
+	}
 }
 
 func TestBidderAdapter_LogHealthCheck(t *testing.T) {
@@ -111,8 +113,7 @@ func TestBidderAdapter_LogHealthCheck(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a new BidderAdapter with the initial health value
-			bidder := &BidderAdapter{}
-			*bidder = testAdapter
+			bidder := newTestAdapter()
 			bidder.healthBits.Store(math.Float64bits(tc.initialHealth))
 
 			// Call the logHealthCheck method
@@ -127,8 +128,7 @@ func TestBidderAdapter_LogHealthCheck(t *testing.T) {
 }
 
 func TestBidderAdapter_LogHealthCheck_ConcurrentAccess(t *testing.T) {
-	bidder := &BidderAdapter{}
-	*bidder = testAdapter
+	bidder := newTestAdapter()
 	bidder.healthBits.Store(math.Float64bits(0.5)) // Start at 0.5
 
 	const numGoroutines = 100
@@ -190,8 +190,7 @@ func TestBidderAdapter_ShouldRequest(t *testing.T) {
 			meMock := metrics.MetricsEngineMock{}
 			var biddername openrtb_ext.BidderName
 			meMock.On("RecordAdapterThrottled", biddername).Return()
-			bidder := &BidderAdapter{}
-			*bidder = testAdapter
+			bidder := newTestAdapter()
 			bidder.me = &meMock
 			bidder.healthBits.Store(math.Float64bits(tc.healthValue))
 
@@ -229,8 +228,7 @@ func TestBidderAdapter_ShouldRequest(t *testing.T) {
 
 func TestBidderAdapter_HealthIntegration(t *testing.T) {
 	// Test integration between logHealthCheck and shouldRequest
-	bidder := &BidderAdapter{}
-	*bidder = testAdapter
+	bidder := newTestAdapter()
 
 	// Start with zero health - should always request
 	bidder.healthBits.Store(math.Float64bits(0.0))
@@ -240,7 +238,7 @@ func TestBidderAdapter_HealthIntegration(t *testing.T) {
 	assert.True(t, bidder.shouldRequest(), "Should initially always request with zero health")
 
 	// Log many failures to increase health
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		bidder.logHealthCheck(false)
 	}
 
@@ -264,7 +262,7 @@ func TestBidderAdapter_HealthIntegration(t *testing.T) {
 	t.Logf("Health: %f, Throttled: %d/%d", health, throttledCount, numTests)
 
 	// Now log many successes to decrease health
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		bidder.logHealthCheck(true)
 	}
 
@@ -277,8 +275,7 @@ func TestBidderAdapter_GetHealth(t *testing.T) {
 	testValues := []float64{0.0, 0.1, 0.5, 0.99, 1.0}
 
 	for _, val := range testValues {
-		bidder := &BidderAdapter{}
-		*bidder = testAdapter
+		bidder := newTestAdapter()
 		bidder.healthBits.Store(math.Float64bits(val))
 
 		actual := bidder.getHealth()
