@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -1952,6 +1953,386 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 	}
 }
 
+func TestExecuteExitpointStage(t *testing.T) {
+	type fields struct {
+		account         *config.Account
+		endpoint        string
+		planBuilder     hooks.ExecutionPlanBuilder
+		metricEngine    metrics.MetricsEngine
+		activityControl privacy.ActivityControl
+	}
+	type args struct {
+		response any
+		w        http.ResponseWriter
+	}
+	tests := []struct {
+		name                    string
+		fields                  fields
+		args                    args
+		expectedResponse        any
+		expectedResponseHeaders http.Header
+		expectedModuleContexts  *moduleContexts
+		expectedStageOutcomes   []StageOutcome
+	}{
+		{
+			name: "payload not changed when plan is empty",
+			fields: fields{
+				account: &config.Account{
+					ID: "test-account",
+				},
+				endpoint:     EndpointAuction,
+				planBuilder:  hooks.EmptyPlanBuilder{},
+				metricEngine: &metricsConfig.NilMetricsEngine{},
+			},
+			args: args{
+				response: &openrtb2.BidResponse{
+					ID: "test-id",
+				},
+				w: func() http.ResponseWriter {
+					w := httptest.NewRecorder()
+					w.Header().Set("Content-Type", "application/json")
+					return w
+				}(),
+			},
+			expectedResponse: &openrtb2.BidResponse{
+				ID: "test-id",
+			},
+			expectedResponseHeaders: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{}},
+			expectedStageOutcomes:  []StageOutcome{},
+		},
+		{
+			name: "payload changed after hook returned mutation",
+			fields: fields{
+				account: &config.Account{
+					ID: "test-account",
+				},
+				endpoint:     EndpointAuction,
+				planBuilder:  TestApplyHookMutationsBuilder{},
+				metricEngine: &metricsConfig.NilMetricsEngine{},
+			},
+			args: args{
+				response: &openrtb2.BidResponse{
+					ID: "test-id",
+				},
+				w: func() http.ResponseWriter {
+					w := httptest.NewRecorder()
+					w.Header().Set("Content-Type", "application/json")
+					return w
+				}(),
+			},
+			expectedResponse: `<VAST version="2.0"/>`,
+			expectedResponseHeaders: http.Header{
+				"Content-Type": []string{"application/xml"},
+			},
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: "exitpoint",
+					Stage:  "exitpoint",
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									DebugMessages: []string{"Hook mutation successfully applied, affected key: exitpoint.bidResponse.custom-response, mutation type: update"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Stage execution can't be rejected - stage doesn't support rejection",
+			fields: fields{
+				account: &config.Account{
+					ID: "test-account",
+				},
+				endpoint:     EndpointAuction,
+				planBuilder:  TestRejectPlanBuilder{},
+				metricEngine: &metricsConfig.NilMetricsEngine{},
+			},
+			args: args{
+				response: &openrtb2.BidResponse{ID: "test-id"},
+				w: func() http.ResponseWriter {
+					w := httptest.NewRecorder()
+					w.Header().Set("Content-Type", "application/json")
+					return w
+				}(),
+			},
+			expectedResponse:        `<VAST version="2.0"/>`,
+			expectedResponseHeaders: http.Header{"Content-Type": []string{"application/xml"}},
+			expectedModuleContexts:  &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityExitpoint,
+					Stage:  hooks.StageExitpoint.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "baz"},
+									Status:        StatusExecutionFailure,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        []string{"unexpected error"},
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
+									Status:        StatusExecutionFailure,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors: []string{
+										fmt.Sprintf("Module (name: foobar, hook code: foo) tried to reject request on the %s stage that does not support rejection", hooks.StageExitpoint),
+									},
+									Warnings: nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									Message:       "",
+									DebugMessages: []string{
+										fmt.Sprintf("Hook mutation successfully applied, affected key: exitpoint.bidResponse.custom-response, mutation type: %s", hookstage.MutationUpdate),
+									},
+									Errors:   nil,
+									Warnings: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Request can be changed when a hook times out",
+			fields: fields{
+				account: &config.Account{
+					ID: "test-account",
+				},
+				endpoint:     EndpointAuction,
+				planBuilder:  TestWithTimeoutPlanBuilder{},
+				metricEngine: &metricsConfig.NilMetricsEngine{},
+			},
+			args: args{
+				response: &openrtb2.BidResponse{ID: "test-id"},
+				w: func() http.ResponseWriter {
+					w := httptest.NewRecorder()
+					w.Header().Set("Content-Type", "application/json")
+					return w
+				}(),
+			},
+			expectedResponse:        `<VAST version="2.0"/>`,
+			expectedResponseHeaders: http.Header{"Content-Type": []string{"application/xml"}},
+			expectedModuleContexts:  &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityExitpoint,
+					Stage:  hooks.StageExitpoint.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "foo"},
+									Status:        StatusTimeout,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        []string{"Hook execution timeout"},
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookImplCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									Message:       "",
+									DebugMessages: []string{
+										fmt.Sprintf("Hook mutation successfully applied, affected key: exitpoint.bidResponse.custom-response, mutation type: %s", hookstage.MutationUpdate),
+									},
+									Errors:   nil,
+									Warnings: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Modules contexts are preserved and correct",
+			fields: fields{
+				account:      &config.Account{ID: "test-account"},
+				endpoint:     EndpointAuction,
+				planBuilder:  TestWithModuleContextsPlanBuilder{},
+				metricEngine: &metricsConfig.NilMetricsEngine{},
+			},
+			args: args{
+				response: &openrtb2.BidResponse{ID: "test-id"},
+				w: func() http.ResponseWriter {
+					w := httptest.NewRecorder()
+					w.Header().Set("Content-Type", "application/json")
+					return w
+				}(),
+			},
+			expectedResponse:        &openrtb2.BidResponse{ID: "test-id"},
+			expectedResponseHeaders: http.Header{"Content-Type": []string{"application/json"}},
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": {"exitpoint-ctx-1": "some-ctx-1", "exitpoint-ctx-3": "some-ctx-3"},
+				"module-2": {"exitpoint-ctx-2": "some-ctx-2"},
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityExitpoint,
+					Stage:  hooks.StageExitpoint.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "baz"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple hooks modify payload",
+			fields: fields{
+				account: &config.Account{
+					ID: "test-account",
+				},
+				endpoint:     EndpointAuction,
+				planBuilder:  TestMultipleHooksUpdatePayloadBuilder{},
+				metricEngine: &metricsConfig.NilMetricsEngine{},
+			},
+			args: args{
+				response: &openrtb2.BidResponse{
+					ID: "test-id",
+				},
+				w: func() http.ResponseWriter {
+					w := httptest.NewRecorder()
+					w.Header().Set("Content-Type", "application/json")
+					return w
+				}(),
+			},
+			expectedResponse: &openrtb2.BidResponse{ID: "modified-id"},
+			expectedResponseHeaders: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": nil,
+				"module-2": nil,
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: "exitpoint",
+					Stage:  "exitpoint",
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookImplCode: "xml-response"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									DebugMessages: []string{"Hook mutation successfully applied, affected key: exitpoint.bidResponse.custom-response, mutation type: update"},
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-2", HookImplCode: "json-response"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									DebugMessages: []string{"Hook mutation successfully applied, affected key: exitpoint.bidResponse.json-response, mutation type: update"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := NewHookExecutor(tt.fields.planBuilder, tt.fields.endpoint, tt.fields.metricEngine)
+			e.SetAccount(tt.fields.account)
+			e.SetActivityControl(tt.fields.activityControl)
+			newResponse := e.ExecuteExitpointStage(tt.args.response, tt.args.w)
+			assert.Equal(t, tt.expectedResponse, newResponse, "response is malformed")
+			assert.Equal(t, tt.expectedResponseHeaders, tt.args.w.Header(), "incorrect response headers")
+			assert.Equal(t, tt.expectedModuleContexts, e.moduleContexts, "Incorrect module contexts")
+
+			stageOutcomes := e.GetOutcomes()
+			if len(tt.expectedStageOutcomes) == 0 {
+				assert.Empty(t, stageOutcomes, "Incorrect stage outcomes.")
+			} else {
+				assertEqualStageOutcomes(t, tt.expectedStageOutcomes[0], stageOutcomes[0])
+			}
+		})
+	}
+}
+
 func TestInterStageContextCommunication(t *testing.T) {
 	body := []byte(`{"foo": "bar"}`)
 	reader := bytes.NewReader(body)
@@ -2169,6 +2550,17 @@ func (e TestApplyHookMutationsBuilder) PlanForAuctionResponseStage(_ string, _ *
 	}
 }
 
+func (e TestApplyHookMutationsBuilder) PlanForExitpointStage(_ string, _ *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return hooks.Plan[hookstage.Exitpoint]{
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 2 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "foobar", Code: "foo", Hook: mockUpdateResponseHook{}},
+			},
+		},
+	}
+}
+
 type TestRejectPlanBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -2333,6 +2725,31 @@ func (e TestRejectPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.A
 	}
 }
 
+func (e TestRejectPlanBuilder) PlanForExitpointStage(_ string, _ *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return hooks.Plan[hookstage.Exitpoint]{
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "foobar", Code: "baz", Hook: mockErrorHook{}},
+			},
+		},
+		// rejection ignored, stage doesn't support rejection
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "foobar", Code: "foo", Hook: mockRejectHook{}},
+			},
+		},
+		// hook executed and payload updated because this stage doesn't support rejection
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "foobar", Code: "bar", Hook: mockUpdateResponseHook{}},
+			},
+		},
+	}
+}
+
 type TestWithTimeoutPlanBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -2452,6 +2869,23 @@ func (e TestWithTimeoutPlanBuilder) PlanForAuctionResponseStage(_ string, _ *con
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.AuctionResponse]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidResponseHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithTimeoutPlanBuilder) PlanForExitpointStage(_ string, _ *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return hooks.Plan[hookstage.Exitpoint]{
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "foobar", Code: "foo", Hook: mockTimeoutHook{}},
+			},
+		},
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "foobar", Code: "bar", Hook: mockUpdateResponseHook{}},
 			},
 		},
 	}
@@ -2585,6 +3019,24 @@ func (e TestWithModuleContextsPlanBuilder) PlanForAuctionResponseStage(_ string,
 	}
 }
 
+func (e TestWithModuleContextsPlanBuilder) PlanForExitpointStage(_ string, _ *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return hooks.Plan[hookstage.Exitpoint]{
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "exitpoint-ctx-1", val: "some-ctx-1"}},
+				{Module: "module-2", Code: "baz", Hook: mockModuleContextHook{key: "exitpoint-ctx-2", val: "some-ctx-2"}},
+			},
+		},
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "module-1", Code: "bar", Hook: mockModuleContextHook{key: "exitpoint-ctx-3", val: "some-ctx-3"}},
+			},
+		},
+	}
+}
+
 type TestAllHookResultsBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -2608,6 +3060,27 @@ func (e TestAllHookResultsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[h
 			Timeout: 10 * time.Second,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "module.x-1", Code: "code-2", Hook: mockRejectHook{}},
+			},
+		},
+	}
+}
+
+type TestMultipleHooksUpdatePayloadBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestMultipleHooksUpdatePayloadBuilder) PlanForExitpointStage(_ string, _ *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return hooks.Plan[hookstage.Exitpoint]{
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "module-1", Code: "xml-response", Hook: mockUpdateResponseHook{}},
+			},
+		},
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "module-2", Code: "json-response", Hook: mockUpdateResponseAgainHook{}},
 			},
 		},
 	}
