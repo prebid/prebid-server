@@ -197,6 +197,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOwnAdx,
 	BidderPangle,
 	BidderPGAMSsp,
+	BidderPinkLion,
 	BidderPlaydigo,
 	BidderPubmatic,
 	BidderPubrise,
@@ -565,6 +566,7 @@ const (
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
 	BidderPGAMSsp           BidderName = "pgamssp"
+	BidderPinkLion          BidderName = "pinkLion"
 	BidderPlaydigo          BidderName = "playdigo"
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubrise           BidderName = "pubrise"
