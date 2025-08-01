@@ -47,9 +47,10 @@ type pubmaticBidExtVideo struct {
 
 type ExtImpBidderPubmatic struct {
 	adapters.ExtImpBidder
-	Data json.RawMessage `json:"data,omitempty"`
-	AE   int             `json:"ae,omitempty"`
-	GpId string          `json:"gpid,omitempty"`
+	Data        json.RawMessage `json:"data,omitempty"`
+	AE          int             `json:"ae,omitempty"`
+	GpId        string          `json:"gpid,omitempty"`
+	SKAdnetwork json.RawMessage `json:"skadn,omitempty"`
 }
 
 type ExtAdServer struct {
@@ -80,6 +81,7 @@ const (
 	AdServerKey        = "adserver"
 	PBAdslotKey        = "pbadslot"
 	gpIdKey            = "gpid"
+	skAdnetworkKey     = "skadn"
 )
 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -334,6 +336,10 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 
 	if bidderExt.GpId != "" {
 		extMap[gpIdKey] = bidderExt.GpId
+	}
+
+	if bidderExt.SKAdnetwork != nil {
+		extMap[skAdnetworkKey] = bidderExt.SKAdnetwork
 	}
 
 	imp.Ext = nil
