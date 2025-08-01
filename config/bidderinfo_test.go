@@ -710,7 +710,7 @@ func TestValidateAliases(t *testing.T) {
 		{
 			name:        "base-only",
 			bidderName:  "b",
-			bidderInfo:  BidderInfo{AliasOf: "a", BaseOnly: true},
+			bidderInfo:  BidderInfo{AliasOf: "a", WhiteLabelOnly: true},
 			bidderInfos: BidderInfos{"a": BidderInfo{}},
 			expectedErr: errors.New("bidder: b is an alias and cannot be set as base only"),
 		},
@@ -1574,8 +1574,8 @@ func TestBidderInfoIsEnabled(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "enabled-baseonly",
-			bidder:   BidderInfo{Disabled: false, BaseOnly: true},
+			name:     "enabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: false, WhiteLabelOnly: true},
 			expected: false,
 		},
 		{
@@ -1584,8 +1584,8 @@ func TestBidderInfoIsEnabled(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:     "disabled-baseonly",
-			bidder:   BidderInfo{Disabled: true, BaseOnly: true},
+			name:     "disabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: true, WhiteLabelOnly: true},
 			expected: false,
 		},
 	}

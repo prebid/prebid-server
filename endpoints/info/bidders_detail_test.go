@@ -73,7 +73,7 @@ func TestMapDetails(t *testing.T) {
 		bidderBInfo   = config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 		bidderBDetail = bidderDetail{Status: "ACTIVE", UsesHTTPS: ptrutil.ToPtr(false), Maintainer: &maintainer{Email: "bidderB"}}
 
-		bidderCInfo = config.BidderInfo{BaseOnly: true, Endpoint: "https://secureEndpoint.com", Maintainer: &config.MaintainerInfo{Email: "bidderC"}}
+		bidderCInfo = config.BidderInfo{WhiteLabelOnly: true, Endpoint: "https://secureEndpoint.com", Maintainer: &config.MaintainerInfo{Email: "bidderC"}}
 	)
 
 	var testCases = []struct {
@@ -92,7 +92,7 @@ func TestMapDetails(t *testing.T) {
 			expectedDetails: map[string]bidderDetail{"a": bidderADetail},
 		},
 		{
-			name:            "one-baseonly",
+			name:            "one-whitelabelonly",
 			givenBidders:    config.BidderInfos{"c": bidderCInfo},
 			expectedDetails: map[string]bidderDetail{},
 		},

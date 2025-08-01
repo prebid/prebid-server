@@ -270,18 +270,18 @@ func TestShouldCreateSyncer(t *testing.T) {
 			expected:    false,
 		},
 		{
-			description: "BaseOnly, No Syncer",
-			given:       config.BidderInfo{BaseOnly: true, Syncer: nil},
+			description: "WhiteLabelOnly, No Syncer",
+			given:       config.BidderInfo{WhiteLabelOnly: true, Syncer: nil},
 			expected:    false,
 		},
 		{
-			description: "BaseOnly, Syncer",
-			given:       config.BidderInfo{BaseOnly: true, Syncer: &config.Syncer{Key: "anyKey"}},
+			description: "WhiteLabelOnly, Syncer",
+			given:       config.BidderInfo{WhiteLabelOnly: true, Syncer: &config.Syncer{Key: "anyKey"}},
 			expected:    false,
 		},
 		{
-			description: "BaseOnly, Syncer - Fully Loaded",
-			given:       config.BidderInfo{BaseOnly: true, Syncer: &config.Syncer{Key: "anyKey", Supports: anySupports, IFrame: anyEndpoint, Redirect: anyEndpoint, SupportCORS: &anyCORS}},
+			description: "WhiteLabelOnly, Syncer - Fully Loaded",
+			given:       config.BidderInfo{WhiteLabelOnly: true, Syncer: &config.Syncer{Key: "anyKey", Supports: anySupports, IFrame: anyEndpoint, Redirect: anyEndpoint, SupportCORS: &anyCORS}},
 			expected:    false,
 		},
 	}

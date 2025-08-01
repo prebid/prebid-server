@@ -20,7 +20,7 @@ var (
 	falseValue          = false
 	infoEnabled         = config.BidderInfo{Disabled: false}
 	infoDisabled        = config.BidderInfo{Disabled: true}
-	infoBaseOnly        = config.BidderInfo{BaseOnly: true}
+	infoWhiteLabelOnly  = config.BidderInfo{WhiteLabelOnly: true}
 	multiformatDisabled = config.BidderInfo{
 		Disabled: false,
 		OpenRTB: &config.OpenRTBInfo{
@@ -178,8 +178,8 @@ func TestBuildBidders(t *testing.T) {
 			},
 		},
 		{
-			description: "Success - Ignores BaseOnly",
-			bidderInfos: map[string]config.BidderInfo{"appnexus": infoBaseOnly, "rubicon": infoEnabled},
+			description: "Success - Ignores WhiteLabelOnly",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoWhiteLabelOnly, "rubicon": infoEnabled},
 			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
 				openrtb_ext.BidderRubicon: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
@@ -271,13 +271,13 @@ func TestGetActiveBidders(t *testing.T) {
 			expected:    map[string]openrtb_ext.BidderName{},
 		},
 		{
-			description: "BaseOnly",
-			bidderInfos: map[string]config.BidderInfo{"appnexus": infoBaseOnly},
+			description: "WhiteLabelOnly",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoWhiteLabelOnly},
 			expected:    map[string]openrtb_ext.BidderName{},
 		},
 		{
 			description: "Mixed",
-			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "openx": infoEnabled, "rubicon": infoBaseOnly},
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "openx": infoEnabled, "rubicon": infoWhiteLabelOnly},
 			expected:    map[string]openrtb_ext.BidderName{"openx": openrtb_ext.BidderOpenx},
 		},
 	}
@@ -308,10 +308,10 @@ func TestGetDisabledBidderWarningMessages(t *testing.T) {
 		assert.Equal(t, result["bidderA"], `Bidder "bidderA" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`)
 	})
 
-	t.Run("removed-and-baseonly", func(t *testing.T) {
-		result := GetDisabledBidderWarningMessages(map[string]config.BidderInfo{"bidderA": infoBaseOnly})
+	t.Run("removed-and-whitelabelonly", func(t *testing.T) {
+		result := GetDisabledBidderWarningMessages(map[string]config.BidderInfo{"bidderA": infoWhiteLabelOnly})
 
-		// test proper construction by verifying one expected bidder is in the list with the baseonly bidder
+		// test proper construction by verifying one expected bidder is in the list with the whitelabelonly bidder
 		require.Contains(t, result, "groupm")
 		assert.Equal(t, result["groupm"], `Bidder "groupm" is no longer available in Prebid Server. Please update your configuration.`)
 
@@ -352,15 +352,15 @@ func TestMergeRemovedAndDisabledBidderWarningMessages(t *testing.T) {
 			expected:         map[string]string{"bidderA": `Bidder "bidderA" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`},
 		},
 		{
-			name:             "baseonly",
+			name:             "whitelabelonly",
 			givenRemoved:     map[string]string{},
-			givenBidderInfos: map[string]config.BidderInfo{"bidderA": infoBaseOnly},
+			givenBidderInfos: map[string]config.BidderInfo{"bidderA": infoWhiteLabelOnly},
 			expected:         map[string]string{"bidderA": `Bidder "bidderA" can only be aliased and cannot be used directly.`},
 		},
 		{
 			name:             "mixed",
 			givenRemoved:     map[string]string{"bidderA": `Bidder A Message`},
-			givenBidderInfos: map[string]config.BidderInfo{"bidderB": infoEnabled, "bidderC": infoDisabled, "bidderD": infoBaseOnly},
+			givenBidderInfos: map[string]config.BidderInfo{"bidderB": infoEnabled, "bidderC": infoDisabled, "bidderD": infoWhiteLabelOnly},
 			expected:         map[string]string{"bidderA": `Bidder A Message`, "bidderC": `Bidder "bidderC" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, "bidderD": `Bidder "bidderD" can only be aliased and cannot be used directly.`},
 		},
 	}
@@ -373,7 +373,7 @@ func TestMergeRemovedAndDisabledBidderWarningMessages(t *testing.T) {
 	}
 }
 
-func TestIsBidderDisabledDueToBaseOnly(t *testing.T) {
+func TestIsBidderDisabledDueToWhiteLabelOnly(t *testing.T) {
 	testCases := []struct {
 		name     string
 		message  string
@@ -385,7 +385,7 @@ func TestIsBidderDisabledDueToBaseOnly(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:     "baseonly",
+			name:     "whitelabelonly",
 			message:  `Bidder "test" can only be aliased and cannot be used directly.`,
 			expected: true,
 		},
@@ -403,7 +403,7 @@ func TestIsBidderDisabledDueToBaseOnly(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result := IsBidderDisabledDueToBaseOnly(test.message)
+			result := IsBidderDisabledDueToWhiteLabelOnly(test.message)
 			assert.Equal(t, test.expected, result)
 		})
 	}

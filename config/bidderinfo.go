@@ -22,7 +22,7 @@ type BidderInfos map[string]BidderInfo
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
 	AliasOf          string       `yaml:"aliasOf" mapstructure:"aliasOf"`
-	BaseOnly         bool         `yaml:"baseOnly" mapstructure:"baseOnly"`
+	WhiteLabelOnly   bool         `yaml:"whiteLabelOnly" mapstructure:"whiteLabelOnly"`
 	Disabled         bool         `yaml:"disabled" mapstructure:"disabled"`
 	Endpoint         string       `yaml:"endpoint" mapstructure:"endpoint"`
 	ExtraAdapterInfo string       `yaml:"extra_info" mapstructure:"extra_info"`
@@ -200,7 +200,7 @@ type SyncerEndpoint struct {
 }
 
 func (bi BidderInfo) IsEnabled() bool {
-	return !bi.BaseOnly && !bi.Disabled
+	return !bi.WhiteLabelOnly && !bi.Disabled
 }
 
 // Defined returns true if at least one field exists, except for the supports field.
@@ -412,7 +412,7 @@ func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName s
 		return nil
 	}
 
-	if aliasBidderInfo.BaseOnly {
+	if aliasBidderInfo.WhiteLabelOnly {
 		return fmt.Errorf("bidder: %s is an alias and cannot be set as base only", bidderName)
 	}
 

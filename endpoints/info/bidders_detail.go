@@ -78,7 +78,7 @@ func mapDetails(bidders config.BidderInfos) map[string]bidderDetail {
 	details := map[string]bidderDetail{}
 
 	for bidderName, bidderInfo := range bidders {
-		if !bidderInfo.BaseOnly {
+		if !bidderInfo.WhiteLabelOnly {
 			details[bidderName] = mapDetailFromConfig(bidderInfo)
 		}
 	}

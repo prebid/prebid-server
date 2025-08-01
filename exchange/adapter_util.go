@@ -136,7 +136,7 @@ func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, inf
 	disabledBidders := removed
 
 	for name, info := range infos {
-		if info.BaseOnly {
+		if info.WhiteLabelOnly {
 			msg := fmt.Sprintf(`Bidder "%s" can only be aliased and cannot be used directly.`, name)
 			disabledBidders[name] = msg
 		} else if info.Disabled {
@@ -148,6 +148,6 @@ func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, inf
 	return disabledBidders
 }
 
-func IsBidderDisabledDueToBaseOnly(disabledMessage string) bool {
+func IsBidderDisabledDueToWhiteLabelOnly(disabledMessage string) bool {
 	return strings.HasSuffix(disabledMessage, "can only be aliased and cannot be used directly.")
 }
