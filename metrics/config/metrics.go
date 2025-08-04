@@ -371,6 +371,13 @@ func (me *MultiMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 	}
 }
 
+// RecordAdapterThrottled across all engines
+func (me *MultiMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterThrottled(adapter)
+	}
+}
+
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -545,4 +552,8 @@ func (me *NilMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLabe
 }
 
 func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
+}
+
+// RecordAdapterThrottled as a noop
+func (me *NilMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
 }

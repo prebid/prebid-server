@@ -5660,6 +5660,14 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 	return
 }
 
+func (b *validatingBidder) logHealthCheck(success bool) {
+	// This is a no-op.
+}
+
+func (b *validatingBidder) shouldRequest() bool {
+	return true
+}
+
 type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
@@ -5773,6 +5781,13 @@ type panicingAdapter struct{}
 
 func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) (posb []*entities.PbsOrtbSeatBid, extraInfo extraBidderRespInfo, errs []error) {
 	panic("Panic! Panic! The world is ending!")
+}
+
+func (panicingAdapter) logHealthCheck(success bool) {
+	// This is a no-op, but it is required to implement the Adapter interface.
+}
+func (panicingAdapter) shouldRequest() bool {
+	return true
 }
 
 func blankAdapterConfig(bidderList []openrtb_ext.BidderName) map[string]config.Adapter {
