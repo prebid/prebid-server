@@ -125,10 +125,24 @@ type PriceFloorFetcher struct {
 const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
-	MaxConnsPerHost     int `mapstructure:"max_connections_per_host"`
-	MaxIdleConns        int `mapstructure:"max_idle_connections"`
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
-	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
+	MaxConnsPerHost     int          `mapstructure:"max_connections_per_host"`
+	MaxIdleConns        int          `mapstructure:"max_idle_connections"`
+	MaxIdleConnsPerHost int          `mapstructure:"max_idle_connections_per_host"`
+	IdleConnTimeout     int          `mapstructure:"idle_connection_timeout_seconds"`
+	Throttle            HTTPThrottle `mapstructure:"throttle"`
+}
+
+type HTTPThrottle struct {
+	// Enables bidder throttling
+	EnableThrottling bool `mapstructure:"enable_throttling"`
+	// If enabled, we will only log that the bidder was to be throttled, but not actually throttle it.
+	SimulateThrottlingOnly bool `mapstructure:"simulate_throttling_only"`
+	// Queue wait time that is considered unhealthy
+	LongQueueWaitThresholdMS int `mapstructure:"long_queue_wait_threshold_ms"`
+	// Queue wait time that is short enough to be considered a healthy signal
+	ShortQueueWaitThresholdMS int `mapstructure:"short_queue_wait_threshold_ms"`
+	// ThrottleWindow controls the speed that the throttling logic will react to changes in the health of the bidder.
+	ThrottleWindow int `mapstructure:"throttle_window"`
 }
 
 func (cfg *Configuration) validate(v *viper.Viper) []error {
