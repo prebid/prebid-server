@@ -77,11 +77,11 @@ type segmentCache struct {
 }
 
 type userExt struct {
-	Eids           *[]openrtb2.EID `json:"eids"`
-	RampID         string          `json:"rampid"`
-	LiverampIDL    string          `json:"liveramp_idl"`
-	ATSEnvelope    string          `json:"ats_envelope"`
-	RampIDEnvelope string          `json:"rampId_envelope"`
+	Eids           []openrtb2.EID `json:"eids"`
+	RampID         string         `json:"rampid"`
+	LiverampIDL    string         `json:"liveramp_idl"`
+	ATSEnvelope    string         `json:"ats_envelope"`
+	RampIDEnvelope string         `json:"rampId_envelope"`
 }
 
 func (c *segmentCache) get(key string, ttl time.Duration) ([]string, bool) {
@@ -348,21 +348,21 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 
 	// Include user identifiers if available
 	if bidRequest.User != nil && bidRequest.User.Ext != nil {
-		var userExt userExt
-		if err := json.Unmarshal(bidRequest.User.Ext, &userExt); err == nil {
+		var userExtension userExt
+		if err := json.Unmarshal(bidRequest.User.Ext, &userExtension); err == nil {
 			// Include LiveRamp identifiers
-			for _, eid := range *userExt.Eids {
+			for _, eid := range userExtension.Eids {
 				if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
 					hasher.Write([]byte("rampid:" + eid.UIDs[0].ID))
 				}
 			}
 
 			// Include other identifier types
-			if userExt.RampID != "" {
-				hasher.Write([]byte("rampid:" + userExt.RampID))
+			if userExtension.RampID != "" {
+				hasher.Write([]byte("rampid:" + userExtension.RampID))
 			}
-			if userExt.LiverampIDL != "" {
-				hasher.Write([]byte("ats:" + userExt.LiverampIDL))
+			if userExtension.LiverampIDL != "" {
+				hasher.Write([]byte("ats:" + userExtension.LiverampIDL))
 			}
 		}
 
@@ -387,8 +387,8 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 		return
 	}
 
-	var userExt userExt
-	if err := json.Unmarshal(bidRequest.User.Ext, &userExt); err != nil {
+	var userExtension userExt
+	if err := json.Unmarshal(bidRequest.User.Ext, &userExtension); err != nil {
 		return
 	}
 
@@ -397,7 +397,7 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 	// publisher implementations, other RTD modules, or identity providers
 
 	// 1. Check for LiveRamp EID in the standard eids array
-	for _, eid := range *userExt.Eids {
+	for _, eid := range userExtension.Eids {
 		if eid.Source == "liveramp.com" {
 			// LiveRamp EID found - will be included in the API request
 			return
@@ -405,14 +405,14 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 	}
 
 	// 2. Check for direct rampid field (alternative location used by some publishers)
-	if userExt.RampID != "" {
+	if userExtension.RampID != "" {
 		// RampID found in alternative location
 		return
 	}
 
 	// 3. Check for ATS envelope in various possible locations
 	// Publishers may store ATS envelopes in different extension fields
-	if userExt.LiverampIDL != "" || userExt.ATSEnvelope != "" || userExt.RampIDEnvelope != "" {
+	if userExtension.LiverampIDL != "" || userExtension.ATSEnvelope != "" || userExtension.RampIDEnvelope != "" {
 		// ATS envelope found - will be forwarded in the request
 		return
 	}
