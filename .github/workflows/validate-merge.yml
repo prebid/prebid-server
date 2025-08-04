@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout Merged Branch
+      uses: actions/checkout@v4
+
     - name: Install Go
       uses: actions/setup-go@v5
       with:
         go-version: 1.24.0
-
-    - name: Checkout Merged Branch
-      uses: actions/checkout@v4
 
     - name: Validate
       run: |
