@@ -6575,3 +6575,135 @@ type mockRequestValidator struct {
 func (mrv *mockRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ortb.ValidationConfig, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
 	return mrv.errors
 }
+
+func TestAmpEnv(t *testing.T) {
+	type aTest struct {
+		desc                  string
+		requestType           metrics.RequestType
+		expectedEnvInResponse string
+	}
+	testCases := []aTest{
+		{
+			desc:                  "Amp request",
+			requestType:           "amp",
+			expectedEnvInResponse: "amp",
+		},
+		{
+			desc:                  "Non amp request",
+			requestType:           "video",
+			expectedEnvInResponse: "",
+		},
+	}
+
+	// Set up test
+	type PrebidExt struct {
+		Prebid struct {
+			Targeting map[string]string `json:"targeting"`
+		} `json:"prebid"`
+	}
+
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	categoriesFetcher, err := newCategoryFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+
+	e := new(exchange)
+
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
+	e.gdprPermsBuilder = fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+		},
+	}.Builder
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.categoriesFetcher = categoriesFetcher
+	e.requestSplitter = requestSplitter{
+		me:               &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder: e.gdprPermsBuilder,
+	}
+	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
+	e.singleFormatBidders = map[openrtb_ext.BidderName]struct{}{
+		"bidder": {},
+	}
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte(""),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{
+						ID:    "bid-id",
+						ImpID: "impression-id",
+					},
+					BidType: openrtb_ext.BidTypeBanner,
+				},
+			},
+		},
+	}
+
+	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, ""),
+	}
+	ctx := context.Background()
+
+	priceGran := openrtb_ext.PriceGranularity{
+		Precision: ptrutil.ToPtr(2),
+		Ranges:    []openrtb_ext.GranularityRange{},
+	}
+
+	bidRequest := &openrtb2.BidRequest{
+		ID: "request-id",
+		Imp: []openrtb2.Imp{{
+			ID:     "impression-id",
+			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
+		}},
+	}
+
+	reqWrapper := openrtb_ext.RequestWrapper{BidRequest: bidRequest}
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		t.Fatalf("cannot get request ext: %v", err)
+	}
+
+	requestExt.SetPrebid(&openrtb_ext.ExtRequestPrebid{
+		Targeting: &openrtb_ext.ExtRequestTargeting{
+			PriceGranularity:  &priceGran,
+			IncludeBidderKeys: ptrutil.ToPtr(true),
+			IncludeWinners:    ptrutil.ToPtr(true),
+		},
+	})
+
+	for _, test := range testCases {
+		auctionRequest := &AuctionRequest{
+			BidRequestWrapper: &reqWrapper,
+			Account:           config.Account{DebugAllow: true},
+			UserSyncs:         &emptyUsersync{},
+			StartTime:         time.Now(),
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+			RequestType:       test.requestType,
+		}
+
+		// Run test
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, &DebugLog{})
+		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
+
+		var responseExt PrebidExt
+		err = json.Unmarshal(outBidResponse.SeatBid[0].Bid[0].Ext, &responseExt)
+		assert.NoErrorf(t, err, "%s. Failed to Unmarshal HoldAuction response. The error: %v \n", test.desc, err)
+		assert.Equalf(t, test.expectedEnvInResponse, responseExt.Prebid.Targeting["hb_env"], "Response mismatch")
+	}
+}
