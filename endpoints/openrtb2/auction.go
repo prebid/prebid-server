@@ -192,7 +192,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	setBrowsingTopicsHeader(w, r)
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
-	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+	if errortypes.ContainsFatalError(errL) {
+		writeError(errL, w, &labels, req, deps.cfg)
 		return
 	}
 
@@ -235,7 +236,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	err := deps.setIntegrationType(req, account)
 	if err != nil {
 		errL = append(errL, err)
-		writeError(errL, w, &labels)
+		writeError(errL, w, &labels, req, deps.cfg)
 		return
 	}
 	secGPC := r.Header.Get("Sec-GPC")
@@ -278,7 +279,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
-			writeError([]error{err}, w, &labels)
+			writeError([]error{err}, w, &labels, req, deps.cfg)
 			return
 		}
 		labels.RequestStatus = metrics.RequestStatusErr
@@ -1903,35 +1904,95 @@ func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrappe
 	}
 }
 
-// Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) bool {
-	var rc bool = false
-	if len(errs) > 0 {
-		httpStatus := http.StatusBadRequest
-		metricsStatus := metrics.RequestStatusBadInput
-		for _, err := range errs {
-			erVal := errortypes.ReadCode(err)
-			if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
-				httpStatus = http.StatusServiceUnavailable
-				metricsStatus = metrics.RequestStatusBlockedApp
-				break
-			} else if erVal == errortypes.MalformedAcctErrorCode {
-				httpStatus = http.StatusInternalServerError
-				metricsStatus = metrics.RequestStatusAccountConfigErr
-				break
-			}
+func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req *openrtb_ext.RequestWrapper, cfg *config.Configuration) {
+	if len(errs) == 0 {
+		return
+	}
+
+	httpStatus := http.StatusOK
+	labels.RequestStatus = metrics.RequestStatusErr
+	for _, err := range errs {
+		erVal := errortypes.ReadCode(err)
+		if erVal == errortypes.BadInputErrorCode {
+			httpStatus = http.StatusBadRequest
+			labels.RequestStatus = metrics.RequestStatusBadInput
+			break
+		} else if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
+			httpStatus = http.StatusServiceUnavailable
+			labels.RequestStatus = metrics.RequestStatusBlockedApp
+			break
+		} else if erVal == errortypes.MalformedAcctErrorCode {
+			httpStatus = http.StatusInternalServerError
+			labels.RequestStatus = metrics.RequestStatusAccountConfigErr
+			break
 		}
+	}
+
+	// Use legacy plain text format
+	if !shouldUseORTBErrorFormat(req, cfg) {
 		w.WriteHeader(httpStatus)
-		labels.RequestStatus = metricsStatus
 		for _, err := range errs {
 			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
 		}
-		rc = true
+		return
 	}
-	return rc
+
+	response := &openrtb2.BidResponse{}
+	if req != nil && req.BidRequest != nil {
+		response.ID = req.BidRequest.ID
+	}
+
+	// Set NBR code
+	var nbr openrtb3.NoBidReason
+	for _, err := range errs {
+		nbr = errortypes.GetNBRCodeFromError(err)
+		if nbr != openrtb3.NoBidUnknownError {
+			break
+		}
+	}
+	response.NBR = nbr.Ptr()
+
+	errMessages := make([]string, len(errs))
+	for i, err := range errs {
+		errMessages[i] = err.Error()
+	}
+
+	responseExt := &openrtb_ext.ExtBidResponse{
+		Prebid: &openrtb_ext.ExtResponsePrebid{
+			Errors: errMessages,
+		},
+	}
+	responseExtBytes, _ := jsonutil.Marshal(responseExt)
+	response.Ext = responseExtBytes
+
+	w.WriteHeader(httpStatus)
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(response); err != nil {
+		glog.Errorf("Failed to encode ORTB error response: %v", err)
+	}
 }
 
 // Returns the account ID for the request
+// shouldUseORTBErrorFormat determines if ORTB error format should be used
+// based on request-level config or global config
+func shouldUseORTBErrorFormat(request *openrtb_ext.RequestWrapper, cfg *config.Configuration) bool {
+	// First check request-level config
+	if request != nil {
+		reqExt, err := request.GetRequestExt()
+		if err == nil && reqExt != nil {
+			prebid := reqExt.GetPrebid()
+			if prebid != nil && prebid.ORTBErrors != nil {
+				return *prebid.ORTBErrors
+			}
+		}
+	}
+
+	// Fall back to global config if not specified in request
+	return cfg != nil && cfg.ORTBErrorResponse
+}
+
 func getAccountID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
