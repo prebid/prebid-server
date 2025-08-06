@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,12 +52,11 @@ func TestParseImpExt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := parseImpExt(tt.ext)
-			if tt.wantErr && err == nil {
-				assert.Error(t, err)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
 			}
-			if !tt.wantErr && err != nil {
-				assert.NoError(t, err)
-			}
+			require.NoError(t, err)
 		})
 	}
 }
@@ -80,17 +79,11 @@ func TestGetBidType(t *testing.T) {
 			bid := &openrtb2.Bid{MType: tt.mtype}
 			bidType, err := getBidType(bid)
 			if tt.wantErr {
-				if err == nil {
-					assert.Error(t, err)
-				}
-			} else {
-				if err != nil {
-					assert.NoError(t, err)
-				}
-				if bidType != tt.wantBidTy {
-					assert.Equal(t, tt.wantBidTy, bidType)
-				}
+				require.Error(t, err)
+				return
 			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantBidTy, bidType)
 		})
 	}
 }
@@ -114,7 +107,7 @@ func TestMakeRequestsErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &openrtb2.BidRequest{Imp: tt.imps}
 			_, errs := a.MakeRequests(req, nil)
-			assert.NotEmpty(t, errs, "expected error, got none")
+			require.NotEmpty(t, errs, "expected error, got none")
 			found := false
 			for _, err := range errs {
 				if err != nil && (tt.wantErr == "" || strings.Contains(err.Error(), tt.wantErr)) {
@@ -122,9 +115,7 @@ func TestMakeRequestsErrors(t *testing.T) {
 					break
 				}
 			}
-			if !found {
-				assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
-			}
+			assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
 		})
 	}
 }
@@ -146,7 +137,7 @@ func TestMakeBidsErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, errs := a.MakeBids(validReq, validReqData, tt.respData)
-			assert.NotEmpty(t, errs, "expected error, got none")
+			require.NotEmpty(t, errs, "expected error, got none")
 			found := false
 			for _, err := range errs {
 				if err != nil && strings.Contains(err.Error(), tt.wantErr) {
@@ -154,9 +145,7 @@ func TestMakeBidsErrors(t *testing.T) {
 					break
 				}
 			}
-			if !found {
-				assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
-			}
+			assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
 		})
 	}
 }
