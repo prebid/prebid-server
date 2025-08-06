@@ -1,0 +1,37 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "protocols": [3],
+                    "minduration": 15,
+                    "maxduration": 30
+                },
+                "ext": {
+                    "bidder": {
+                        "placement_id": "123-456"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "page": "http://example.com",
+            "domain": "example.com"
+        },
+        "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "192.168.1.1",
+            "language": "en"
+        }
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "Invalid size provided for Video",
+            "comparison": "literal"
+        }
+    ],
+    "expectedBidderRequests": []
+} 
