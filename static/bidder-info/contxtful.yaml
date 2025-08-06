@@ -19,8 +19,5 @@ userSync:
   key: "contxtful"
   default: iframe
   iframe:
-    url: "https://sync.receptivity.io/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
-    userMacro: "$UID"
-  redirect:
-    url: "https://sync.receptivity.io/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    url: "https://sync.receptivity.io/pbs/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
