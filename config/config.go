@@ -969,6 +969,11 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client.throttle.enable_throttling", false)
+	v.SetDefault("http_client.throttle.simulate_throttling_only", false)
+	v.SetDefault("http_client.throttle.long_queue_wait_threshold_ms", 50)
+	v.SetDefault("http_client.throttle.short_queue_wait_threshold_ms", 10)
+	v.SetDefault("http_client.throttle.throttle_window", 1000)
 	v.SetDefault("http_client_cache.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client_cache.max_idle_connections", 10)
 	v.SetDefault("http_client_cache.max_idle_connections_per_host", 2)
