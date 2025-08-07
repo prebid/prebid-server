@@ -29,7 +29,7 @@ const (
 	entityAuctionRequest           entity = "auction-request"
 	entityAuctionResponse          entity = "auction_response"
 	entityAllProcessedBidResponses entity = "all_processed_bid_responses"
-	entityExitpoint                       = "exitpoint"
+	entityExitpoint                entity = "exitpoint"
 )
 
 type StageExecutor interface {
