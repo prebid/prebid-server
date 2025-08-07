@@ -79,11 +79,11 @@ type ContxtfulExchangeBid struct {
 }
 
 type BidProcessingContext struct {
-	request          *openrtb2.BidRequest
-	requestData      *adapters.RequestData
-	customerId       string
-	bidderResponse   *adapters.BidderResponse
-	errors           []error
+	request        *openrtb2.BidRequest
+	requestData    *adapters.RequestData
+	customerId     string
+	bidderResponse *adapters.BidderResponse
+	errors         []error
 	// Event URL generation fields
 	version     string
 	domain      string
@@ -331,11 +331,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	ctx := &BidProcessingContext{
-		request:          request,
-		requestData:      requestData,
-		bidderResponse:   adapters.NewBidderResponse(),
-		domain:           domain,
-		adRequestID:      request.ID,
+		request:        request,
+		requestData:    requestData,
+		bidderResponse: adapters.NewBidderResponse(),
+		domain:         domain,
+		adRequestID:    request.ID,
 	}
 
 	if a.processResponse(response.Body, ctx) {
