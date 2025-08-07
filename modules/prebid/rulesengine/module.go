@@ -5,13 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+
 	"github.com/buger/jsonparser"
-	"time"
 
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 // Builder configures the rules engine module initiating an in-memory cache and kicking
@@ -29,7 +28,13 @@ func Builder(cfg json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) 
 		schemaValidator: schemaValidator,
 		monitor:         &treeManagerLogger{},
 	}
-	c := NewCache(getRefreshRate(cfg))
+
+	refreshRate, err := getRefreshRate(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	c := NewCache(refreshRate)
 
 	go tm.Run(c)
 
@@ -76,7 +81,7 @@ func (m Module) HandleProcessedAuctionHook(
 		}, nil
 	}
 	// cache hit
-	if rebuildTrees(co, &miCtx.AccountConfig, m.Cache.GetRefreshRate()) {
+	if rebuildTrees(co, &miCtx.AccountConfig, m.Cache) {
 		bi := buildInstruction{
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
@@ -102,25 +107,12 @@ func (m Module) Shutdown() {
 	<-m.TreeManager.done
 }
 
-// rebuildTrees returns true if the trees for this account need to be rebuilt; false otherwise
-func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage, refreshRateSeconds int) bool {
-	if refreshRateSeconds <= 0 {
-		return false
-	}
-
-	if !expired(&timeutil.RealTime{}, co, refreshRateSeconds) {
+// rebuildTrees returns true if the trees need to be rebuilt; false otherwise
+func rebuildTrees(co *cacheEntry, jsonConfig *json.RawMessage, cacher cacher) bool {
+	if !cacher.Expired(co.timestamp) {
 		return false
 	}
 	return configChanged(co.hashedConfig, jsonConfig)
-}
-
-// expired returns true if the refresh time has expired; false otherwise
-func expired(t timeutil.Time, co *cacheEntry, refreshRateSeconds int) bool {
-	currentTime := t.Now().UTC()
-
-	delta := currentTime.Sub(co.timestamp.UTC())
-	freq := time.Duration(refreshRateSeconds) * time.Second
-	return delta.Seconds() > freq.Seconds()
 }
 
 // configChanged hashes the raw JSON config comparing it with the old hash returning
@@ -138,10 +130,14 @@ func configChanged(oldHash hash, data *json.RawMessage) bool {
 	return false
 }
 
-func getRefreshRate(jsonCfg json.RawMessage) int {
+func getRefreshRate(jsonCfg json.RawMessage) (int, error) {
 	updateFrequency, err := jsonparser.GetInt(jsonCfg, "refreshrateseconds")
 	if err != nil {
-		updateFrequency = 0
+		if err == jsonparser.KeyPathNotFoundError {
+			updateFrequency = 0
+		} else {
+			return 0, err
+		}
 	}
-	return int(updateFrequency)
+	return int(updateFrequency), nil
 }

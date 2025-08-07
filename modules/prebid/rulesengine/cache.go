@@ -3,6 +3,7 @@ package rulesengine
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type accountID = string
@@ -11,7 +12,7 @@ type cacher interface {
 	Get(string) *cacheEntry
 	Set(string, *cacheEntry)
 	Delete(id accountID)
-	GetRefreshRate() int
+	Expired(time.Time) bool
 }
 
 type cache struct {
@@ -30,8 +31,14 @@ func NewCache(refreshRateSeconds int) *cache {
 	}
 }
 
-func (c *cache) GetRefreshRate() int {
-	return c.refreshRateSeconds
+func (c *cache) Expired(coTimestamp time.Time) bool {
+	if c.refreshRateSeconds <= 0 {
+		return false
+	}
+	currentTime := time.Now()
+	delta := currentTime.Sub(coTimestamp)
+	freq := time.Duration(c.refreshRateSeconds) * time.Second
+	return delta.Seconds() > freq.Seconds()
 }
 
 // Get has been implemented to read from the cache without further synchronization

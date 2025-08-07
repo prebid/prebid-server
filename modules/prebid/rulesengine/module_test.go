@@ -5,39 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/util/timeutil"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestExpired(t *testing.T) {
-	testCases := []struct {
-		name           string
-		inTime         timeutil.Time
-		inTimestamp    time.Time
-		expectedResult bool
-	}{
-		{
-			name:           "expired",
-			inTime:         mockTimeUtil{},
-			inTimestamp:    mockTimeUtil{}.Now().Add(-time.Hour),
-			expectedResult: true,
-		},
-		{
-			name:           "not_expired",
-			inTime:         mockTimeUtil{},
-			inTimestamp:    mockTimeUtil{}.Now().Add(time.Hour),
-			expectedResult: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			ce := cacheEntry{timestamp: tc.inTimestamp} // Create a cacheEntry to use the expired function
-			res := expired(tc.inTime, &ce, 5)
-			assert.Equal(t, tc.expectedResult, res)
-		})
-	}
-}
 
 type mockTimeUtil struct{}
 
@@ -134,7 +103,10 @@ func TestRebuildTrees(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig, tc.refreshRateSeconds)
+			var c cacher = &cache{
+				refreshRateSeconds: tc.refreshRateSeconds,
+			}
+			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig, c)
 			assert.Equal(t, tc.expectedResult, res)
 		})
 	}
@@ -146,6 +118,7 @@ func TestGetRefreshRate(t *testing.T) {
 		name                string
 		inData              json.RawMessage
 		expectedRefreshRate int
+		expectError         bool
 	}{
 		{
 			name:                "nil_data",
@@ -169,14 +142,26 @@ func TestGetRefreshRate(t *testing.T) {
 		},
 		{
 			name:                "invalid_config",
-			inData:              json.RawMessage(`{"enabled": true, []test}`),
+			inData:              json.RawMessage(`{"enabled": true, "refreshrateseconds": "test"}`),
 			expectedRefreshRate: 0,
+			expectError:         true,
+		},
+		{
+			name:                "path_not_foud",
+			inData:              json.RawMessage(`{"enabled": true, "test": 10}`),
+			expectedRefreshRate: 0,
+			expectError:         false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := getRefreshRate(tc.inData)
+			res, err := getRefreshRate(tc.inData)
+			if tc.expectError {
+				assert.Error(t, err, "Expected an error but got none")
+			} else {
+				assert.NoError(t, err, "Expected no error but got one")
+			}
 			assert.Equal(t, tc.expectedRefreshRate, res)
 		})
 	}
