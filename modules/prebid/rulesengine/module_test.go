@@ -57,10 +57,10 @@ func TestRebuildTrees(t *testing.T) {
 		{
 			name: "non_expired_cache_entry_so_no_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp: time.Date(2050, 1, 1, 0, 0, 0, 0, time.UTC),
+				timestamp: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			inJsonConfig:       &sampleJsonConfig,
-			refreshRateSeconds: 1,
+			refreshRateSeconds: 10,
 			expectedResult:     false,
 		},
 		{
@@ -86,7 +86,7 @@ func TestRebuildTrees(t *testing.T) {
 		{
 			name: "expired_entry_and_different_config_so_rebuild",
 			inCacheEntry: &cacheEntry{
-				timestamp:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+				timestamp:    time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC),
 				hashedConfig: "oldHash",
 			},
 			inJsonConfig:       &sampleJsonConfig,
@@ -100,6 +100,7 @@ func TestRebuildTrees(t *testing.T) {
 			refreshFreq := time.Duration(tc.refreshRateSeconds) * time.Second
 			var c cacher = &cache{
 				refreshFrequency: refreshFreq,
+				t:                mockTimeUtil{},
 			}
 			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig, c)
 			assert.Equal(t, tc.expectedResult, res)
