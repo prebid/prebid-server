@@ -313,7 +313,7 @@ type TargetingTestData struct {
 	Description        string
 	TargetData         targetData
 	Auction            auction
-	IsApp              bool
+	AppEnv             string
 	CategoryMapping    map[string]string
 	ExpectedPbsBids    map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid
 	TruncateTargetAttr *int
@@ -1078,6 +1078,137 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			},
 		},
 	},
+	{
+		Description: "Empty targeting environment test",
+		TargetData: targetData{
+			priceGranularity: lookupPriceGranularity("med"),
+			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
+		},
+		AppEnv: "",
+		Auction: auction{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {{
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+				},
+			},
+		},
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder": "appnexus",
+							"hb_pb":     "1.20",
+						},
+					},
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
+	{
+		Description: "Amp targeting environment test",
+		TargetData: targetData{
+			priceGranularity: lookupPriceGranularity("med"),
+			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
+		},
+		AppEnv: openrtb_ext.EnvAmpValue,
+		Auction: auction{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {{
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+				},
+			},
+		},
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder": "appnexus",
+							"hb_pb":     "1.20",
+							"hb_env":    "amp",
+						},
+					},
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
+	{
+		Description: "App targeting environment test",
+		TargetData: targetData{
+			priceGranularity: lookupPriceGranularity("med"),
+			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
+		},
+		AppEnv: openrtb_ext.EnvAppValue,
+		Auction: auction{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {{
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+				},
+			},
+		},
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder": "appnexus",
+							"hb_pb":     "1.20",
+							"hb_env":    "mobile-app",
+						},
+					},
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
+	{
+		Description: "Custom targeting environment test",
+		TargetData: targetData{
+			priceGranularity: lookupPriceGranularity("med"),
+			includeWinners:   true,
+			prefix:           DefaultKeyPrefix,
+		},
+		AppEnv: "custom-targeting",
+		Auction: auction{
+			allBidsByBidder: map[string]map[openrtb_ext.BidderName][]*entities.PbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {{
+						Bid:     bid123,
+						BidType: openrtb_ext.BidTypeBanner,
+					}},
+				},
+			},
+		},
+		ExpectedPbsBids: map[string]map[openrtb_ext.BidderName][]ExpectedPbsBid{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: []ExpectedPbsBid{
+					{
+						BidTargets: map[string]string{
+							"hb_bidder": "appnexus",
+							"hb_pb":     "1.20",
+							"hb_env":    "custom-targeting",
+						},
+					},
+				},
+			},
+		},
+		TruncateTargetAttr: nil,
+	},
 }
 
 func TestSetTargeting(t *testing.T) {
@@ -1102,7 +1233,7 @@ func TestSetTargeting(t *testing.T) {
 		}
 		auc.winningBids = winningBids
 		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, test.MultiBidMap)
+		targData.setTargeting(auc, test.AppEnv, test.CategoryMapping, test.TruncateTargetAttr, test.MultiBidMap)
 		for imp, targetsByBidder := range test.ExpectedPbsBids {
 			for bidder, expectedTargets := range targetsByBidder {
 				for i, expected := range expectedTargets {
