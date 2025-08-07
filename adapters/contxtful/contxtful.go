@@ -82,8 +82,6 @@ type ContxtfulExchangeBid struct {
 type BidProcessingContext struct {
 	request          *openrtb2.BidRequest
 	requestData      *adapters.RequestData
-	bidderCustomerId string
-	bidderVersion    string
 	bidderResponse   *adapters.BidderResponse
 	errors           []error
 	// Event URL generation fields
@@ -177,11 +175,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, errors
 	}
 
-	// Extract bidder config for payload creation
-	bidderCustomerId, bidderVersion := extractBidderConfig(request)
-
 	// Create payload
-	payload := createRequestPayload(request, validPlacements, bidderCustomerId, bidderVersion, customerId)
+	payload := createRequestPayload(request, validPlacements, customerId)
 
 	requestJSON, err := jsonutil.Marshal(payload)
 	if err != nil {
@@ -209,14 +204,8 @@ func (a *adapter) buildEndpointURL(request *openrtb2.BidRequest) (string, []stri
 		return "", validPlacements, customerId, validationErrors
 	}
 
-	// Extract bidder config
-	bidderCustomerId, _ := extractBidderConfig(request)
-
 	// Use bidder config customer as primary source for endpoint URL
 	endpointCustomerId := customerId
-	if bidderCustomerId != "" {
-		endpointCustomerId = bidderCustomerId
-	}
 
 	// Build dynamic endpoint URL
 	endpointParams := macros.EndpointTemplateParams{
@@ -231,20 +220,12 @@ func (a *adapter) buildEndpointURL(request *openrtb2.BidRequest) (string, []stri
 }
 
 // Streamlined payload creation
-func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string, bidderCustomerId, bidderVersion, fallbackCustomerId string) ContxtfulRequestPayload {
+func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string, customerId string) ContxtfulRequestPayload {
 	// Create clean request copy
 	requestCopy := *request
 
-	// Resolve configuration with fallbacks inline
-	adapterVersion := bidderVersion
-	if adapterVersion == "" {
-		adapterVersion = DefaultVersion
-	}
-
-	customer := bidderCustomerId
-	if customer == "" {
-		customer = fallbackCustomerId
-	}
+	adapterVersion := DefaultVersion
+	customer := customerId
 
 	uid := extractUserIDForCookie(request)
 
@@ -291,7 +272,7 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 // Direct response processing without over-engineered handler pattern
 func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext) bool {
 	// Extract configuration from various sources with priority
-	config, err := extractRequestConfig(ctx.requestData, ctx.request, ctx.bidderCustomerId)
+	config, err := extractRequestConfig(ctx.requestData, ctx.request)
 	if err != nil {
 		ctx.errors = append(ctx.errors, &errortypes.BadInput{Message: err.Error()})
 		return true
@@ -353,8 +334,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, nil
 	}
 
-	bidderCustomerId, bidderVersion := extractBidderConfig(request)
-
 	// Extract domain for event URLs
 	domain := ""
 	if request.Site != nil && request.Site.Domain != "" {
@@ -364,8 +343,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	ctx := &BidProcessingContext{
 		request:          request,
 		requestData:      requestData,
-		bidderCustomerId: bidderCustomerId,
-		bidderVersion:    bidderVersion,
 		bidderResponse:   adapters.NewBidderResponse(),
 		domain:           domain,
 		adRequestID:      request.ID,
@@ -420,58 +397,6 @@ func (a *adapter) createBid(
 	ctx.bidderResponse.Bids = append(ctx.bidderResponse.Bids, typedBid)
 }
 
-// Simple unified bidder config extraction - get ORTB2 data and extract params
-func extractBidderConfig(request *openrtb2.BidRequest) (string, string) {
-	if request == nil || request.Ext == nil {
-		return "", ""
-	}
-
-	var requestExt openrtb_ext.ExtRequest
-
-	if err := jsonutil.Unmarshal(request.Ext, &requestExt); err != nil {
-		return "", ""
-	}
-
-	// Find contxtful bidder config and extract params from ORTB2 data
-	for _, config := range requestExt.Prebid.BidderConfigs {
-		for _, bidder := range config.Bidders {
-			if bidder == BidderName && config.Config.ORTB2 != nil {
-				return extractContxtfulParams(config.Config.ORTB2)
-			}
-		}
-	}
-	return "", ""
-}
-
-// Extract contxtful params from any ORTB2 data (unified for both bidder config and other sources)
-func extractContxtfulParams(ortb2Data *openrtb_ext.ORTB2) (string, string) {
-	var ortb2UserData []struct {
-		Name string `json:"name"`
-		Ext  struct {
-			Params struct {
-				CI string `json:"ci"` // Customer ID
-				EV string `json:"ev"` // Version
-			} `json:"params"`
-		} `json:"ext"`
-	}
-
-	if err := jsonutil.Unmarshal(ortb2Data.User, &ortb2UserData); err != nil {
-		return "", ""
-	}
-
-	// Find contxtful params
-	for _, data := range ortb2UserData {
-		if data.Name == BidderName && data.Ext.Params.CI != "" {
-			version := data.Ext.Params.EV
-			if version == "" {
-				version = DefaultVersion
-			}
-			return data.Ext.Params.CI, version
-		}
-	}
-	return "", ""
-}
-
 // extractFromURL parses Contxtful URL pattern: /{version}/pbs/{customerId}/bid
 func extractFromURL(uri string) (version, customerID string) {
 	idx := strings.Index(uri, PbsPath)
@@ -495,7 +420,7 @@ func extractFromURL(uri string) (version, customerID string) {
 }
 
 // extractRequestConfig extracts configuration from multiple sources with priority
-func extractRequestConfig(requestData *adapters.RequestData, request *openrtb2.BidRequest, bidderCustomerId string) (*RequestConfig, error) {
+func extractRequestConfig(requestData *adapters.RequestData, request *openrtb2.BidRequest) (*RequestConfig, error) {
 	// Priority 1: Extract from request URI
 	if requestData != nil {
 		version, customerID := extractFromURL(requestData.Uri)
@@ -509,15 +434,6 @@ func extractRequestConfig(requestData *adapters.RequestData, request *openrtb2.B
 				Source:     "uri",
 			}, nil
 		}
-	}
-
-	// Priority 2: Use bidder config (already extracted)
-	if bidderCustomerId != "" {
-		return &RequestConfig{
-			Version:    DefaultVersion,
-			CustomerID: bidderCustomerId,
-			Source:     "bidder_config",
-		}, nil
 	}
 
 	// Priority 3: Extract from impression parameters
