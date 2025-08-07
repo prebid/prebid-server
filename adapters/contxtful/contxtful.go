@@ -94,13 +94,6 @@ type adapter struct {
 	endpointTemplate *template.Template
 }
 
-// RequestConfig holds extracted configuration from various sources
-type RequestConfig struct {
-	Version    string
-	CustomerID string
-	Source     string // "uri", "bidder_config", or "impression"
-}
-
 // Essential constants
 const (
 	BidderName     = "contxtful"
