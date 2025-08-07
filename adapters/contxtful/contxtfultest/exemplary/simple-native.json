@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-native",
+    "imp": [
+      {
+        "id": "test-imp-native",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":150,\"h\":50}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":90}}]}"
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "DEMO123",
+            "placementId": "native-placement-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "domain": "example.com",
+      "page": "https://example.com/demo",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "ip": "192.0.2.1",
+      "language": "en",
+      "dnt": 0
+    },
+    "user": {
+      "id": "demo-user"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/DEMO123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-native",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "native-placement-1"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "DEMO123",
+              "version": "v1"
+            }
+          },
+          
+          "ortb2": {
+            "device": {
+              "dnt": 0,
+              "ip": "192.0.2.1",
+              "language": "en",
+              "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            "id": "test-request-native",
+            "imp": [
+              {
+                "native": {
+                  "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":150,\"h\":50}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":90}}]}"
+                },
+                "ext": {
+                  "bidder": {
+                    "customerId": "DEMO123",
+                    "placementId": "native-placement-1"
+                  }
+                },
+                "id": "test-imp-native"
+              }
+            ],
+            "site": {
+              "domain": "example.com",
+              "id": "demo-site",
+              "page": "https://example.com/demo",
+              "publisher": {
+                "id": "demo-publisher"
+              }
+            },
+            "user": {
+              "id": "demo-user"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-native"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "cpm": 1.75,
+            "width": 1,
+            "height": 1,
+            "currency": "USD",
+            "requestId": "test-imp-native",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Contxtful Native Ad\"}},{\"id\":2,\"img\":{\"url\":\"https://example.com/native-img.jpg\",\"w\":150,\"h\":50}},{\"id\":3,\"data\":{\"value\":\"Experience the best native advertising with Contxtful technology.\"}}],\"link\":{\"url\":\"https://example.com/click\"}}",
+            "ttl": 300,
+            "creativeId": "demo-native-creative-456",
+            "netRevenue": true,
+            "mediaType": "native",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-native&a=DEMO123&bidder=contxtful&impId=test-imp-native&price=1.75&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-native&w=1&h=1&f=n",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-native&a=DEMO123&bidder=contxtful&impId=test-imp-native&price=1.75&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-native&w=1&h=1&f=n",
+            "ext": {
+              "contxtful": {
+                "reseller": "demo-reseller",
+                "version": "v1.0"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "contxtful-test-imp-native",
+            "impid": "test-imp-native",
+            "price": 1.75,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Contxtful Native Ad\"}},{\"id\":2,\"img\":{\"url\":\"https://example.com/native-img.jpg\",\"w\":150,\"h\":50}},{\"id\":3,\"data\":{\"value\":\"Experience the best native advertising with Contxtful technology.\"}}],\"link\":{\"url\":\"https://example.com/click\"}}",
+            "w": 1,
+            "h": 1,
+            "crid": "demo-native-creative-456",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-native&a=DEMO123&bidder=contxtful&impId=test-imp-native&price=1.75&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-native&w=1&h=1&f=n",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-native&a=DEMO123&bidder=contxtful&impId=test-imp-native&price=1.75&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-native&w=1&h=1&f=n",
+            "ext": {
+              "contxtful": {
+                "reseller": "demo-reseller",
+                "version": "v1.0"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+} 
