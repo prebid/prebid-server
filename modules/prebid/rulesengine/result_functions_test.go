@@ -2,13 +2,14 @@ package rulesengine
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewProcessedAuctionRequestResultFunction(t *testing.T) {
@@ -184,6 +185,7 @@ func TestIncludeBiddersCall(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Emptyf(t, result.HookResult.ChangeSet, "change set is empty")
 			assert.Len(t, result.HookResult.ChangeSet.Mutations(), 0)
+			assert.Len(t, result.AllowedBidders, len(tt.argBidders))
 		})
 	}
 }

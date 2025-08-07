@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 
+	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
@@ -61,12 +61,12 @@ type ExcludeBidders struct {
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
 func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
-	resBidders := make(map[string]struct{})
+	excludedBidders := make(map[string]struct{})
 	for _, bidderName := range eb.Args.Bidders {
-		resBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
+		excludedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
 	}
 
-	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(resBidders)
+	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(excludedBidders)
 	return nil
 }
 
