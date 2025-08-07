@@ -4,6 +4,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 type accountID = string
@@ -17,8 +19,9 @@ type cacher interface {
 
 type cache struct {
 	sync.Mutex
-	m                  atomic.Value
-	refreshRateSeconds int
+	m                atomic.Value
+	refreshFrequency time.Duration
+	t                timeutil.Time
 }
 
 func NewCache(refreshRateSeconds int) *cache {
@@ -26,19 +29,19 @@ func NewCache(refreshRateSeconds int) *cache {
 	atomicMap.Store(make(map[accountID]*cacheEntry))
 
 	return &cache{
-		m:                  atomicMap,
-		refreshRateSeconds: refreshRateSeconds,
+		m:                atomicMap,
+		refreshFrequency: time.Duration(refreshRateSeconds) * time.Second,
+		t:                &timeutil.RealTime{},
 	}
 }
 
 func (c *cache) Expired(coTimestamp time.Time) bool {
-	if c.refreshRateSeconds <= 0 {
+	if c.refreshFrequency <= 0 {
 		return false
 	}
-	currentTime := time.Now()
+	currentTime := c.t.Now()
 	delta := currentTime.Sub(coTimestamp)
-	freq := time.Duration(c.refreshRateSeconds) * time.Second
-	return delta.Seconds() > freq.Seconds()
+	return delta.Seconds() > c.refreshFrequency.Seconds()
 }
 
 // Get has been implemented to read from the cache without further synchronization

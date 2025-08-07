@@ -8,12 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockTimeUtil struct{}
-
-func (mt mockTimeUtil) Now() time.Time {
-	return time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-}
-
 var sampleJsonConfig json.RawMessage = json.RawMessage(`{"enabled": true, "ruleSets": []}`)
 
 func TestConfigChanged(t *testing.T) {
@@ -103,8 +97,9 @@ func TestRebuildTrees(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			refreshFreq := time.Duration(tc.refreshRateSeconds) * time.Second
 			var c cacher = &cache{
-				refreshRateSeconds: tc.refreshRateSeconds,
+				refreshFrequency: refreshFreq,
 			}
 			res := rebuildTrees(tc.inCacheEntry, tc.inJsonConfig, c)
 			assert.Equal(t, tc.expectedResult, res)

@@ -132,12 +132,12 @@ func configChanged(oldHash hash, data *json.RawMessage) bool {
 
 func getRefreshRate(jsonCfg json.RawMessage) (int, error) {
 	updateFrequency, err := jsonparser.GetInt(jsonCfg, "refreshrateseconds")
+
+	if err == jsonparser.KeyPathNotFoundError {
+		return 0, nil
+	}
 	if err != nil {
-		if err == jsonparser.KeyPathNotFoundError {
-			updateFrequency = 0
-		} else {
-			return 0, err
-		}
+		return 0, err
 	}
 	return int(updateFrequency), nil
 }
