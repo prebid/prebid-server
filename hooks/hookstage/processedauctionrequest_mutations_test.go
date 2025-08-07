@@ -2,10 +2,11 @@ package hookstage
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestAddPrebidBidders(t *testing.T) {
@@ -60,9 +61,11 @@ func TestAddPrebidBidders(t *testing.T) {
 			}},
 		},
 		{
-			name:           "two-allowed-bidders-two-imp-bidders-one-mutation",
-			bidRequest:     &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
-			allowedBidders: []map[string]struct{}{{"bidderA": {}, "bidderB": {}}},
+			name:       "two-allowed-bidders-two-imp-bidders-one-mutation",
+			bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
+			allowedBidders: []map[string]struct{}{
+				{"bidderA": {}, "bidderB": {}}, // one mutation for two bidders
+			},
 			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
 				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
 				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
@@ -73,9 +76,12 @@ func TestAddPrebidBidders(t *testing.T) {
 			}},
 		},
 		{
-			name:           "two-imp-bidders-two-mutations-override-all",
-			bidRequest:     &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
-			allowedBidders: []map[string]struct{}{{"bidderA": {}}, {"bidderB": {}}},
+			name:       "two-imp-bidders-two-mutations-override-all",
+			bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpA"}}},
+			allowedBidders: []map[string]struct{}{
+				{"bidderA": {}}, // first mutation for bidderA
+				{"bidderB": {}}, // second mutation for bidderB
+			},
 			extImpPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
 				"bidderA": json.RawMessage(`{"paramA": "valueA"}`),
 				"bidderB": json.RawMessage(`{"paramB": "valueB"}`),
