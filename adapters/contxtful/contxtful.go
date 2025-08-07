@@ -3,7 +3,6 @@ package contxtful
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -82,6 +81,7 @@ type ContxtfulExchangeBid struct {
 type BidProcessingContext struct {
 	request          *openrtb2.BidRequest
 	requestData      *adapters.RequestData
+	customerId       string
 	bidderResponse   *adapters.BidderResponse
 	errors           []error
 	// Event URL generation fields
@@ -271,20 +271,10 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 // Response format handlers
 // Direct response processing without over-engineered handler pattern
 func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext) bool {
-	// Extract configuration from various sources with priority
-	config, err := extractRequestConfig(ctx.requestData, ctx.request)
-	if err != nil {
-		ctx.errors = append(ctx.errors, &errortypes.BadInput{Message: err.Error()})
-		return true
-	}
-
-	// Store configuration in context for use in bid creation
-	ctx.version = config.Version
-
 	// Try PrebidJS format first
 	var prebidBids []ContxtfulExchangeBid
 	if err := jsonutil.Unmarshal(responseBody, &prebidBids); err == nil && len(prebidBids) > 0 {
-		return a.processPrebidJSBids(prebidBids, ctx, config.CustomerID)
+		return a.processPrebidJSBids(prebidBids, ctx)
 	}
 
 	// Handle trace format (acknowledges response, no bids)
@@ -298,7 +288,7 @@ func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext
 	return false
 }
 
-func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *BidProcessingContext, customerId string) bool {
+func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *BidProcessingContext) bool {
 	for _, prebidBid := range prebidBids {
 		if prebidBid.CPM == 0 || prebidBid.RequestID == "" {
 			continue
@@ -316,7 +306,7 @@ func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *Bi
 			currency = "USD"
 		}
 
-		a.createBid(prebidBid, currency, ctx, customerId)
+		a.createBid(prebidBid, currency, ctx)
 
 		if prebidBid.Currency != "" {
 			ctx.bidderResponse.Currency = prebidBid.Currency
@@ -360,7 +350,6 @@ func (a *adapter) createBid(
 	prebidBid ContxtfulExchangeBid,
 	currency string,
 	ctx *BidProcessingContext,
-	customerId string,
 ) {
 	// Determine media type from impression
 	var bidType openrtb_ext.BidType = openrtb_ext.BidTypeBanner
@@ -395,61 +384,6 @@ func (a *adapter) createBid(
 	}
 
 	ctx.bidderResponse.Bids = append(ctx.bidderResponse.Bids, typedBid)
-}
-
-// extractFromURL parses Contxtful URL pattern: /{version}/pbs/{customerId}/bid
-func extractFromURL(uri string) (version, customerID string) {
-	idx := strings.Index(uri, PbsPath)
-	if idx == -1 {
-		return "", ""
-	}
-
-	// Extract version from before /prebid/
-	beforePrebid := uri[:idx]
-	if lastSlash := strings.LastIndex(beforePrebid, "/"); lastSlash != -1 {
-		version = beforePrebid[lastSlash+1:]
-	}
-
-	// Extract customer ID from after /prebid/
-	remaining := uri[idx+len(PbsPath):]
-	if extractedCustomerID, _, found := strings.Cut(remaining, "/"); found && extractedCustomerID != "" {
-		customerID = extractedCustomerID
-	}
-
-	return version, customerID
-}
-
-// extractRequestConfig extracts configuration from multiple sources with priority
-func extractRequestConfig(requestData *adapters.RequestData, request *openrtb2.BidRequest) (*RequestConfig, error) {
-	// Priority 1: Extract from request URI
-	if requestData != nil {
-		version, customerID := extractFromURL(requestData.Uri)
-		if customerID != "" {
-			if version == "" {
-				version = DefaultVersion
-			}
-			return &RequestConfig{
-				Version:    version,
-				CustomerID: customerID,
-				Source:     "uri",
-			}, nil
-		}
-	}
-
-	// Priority 3: Extract from impression parameters
-	if request != nil {
-		for _, imp := range request.Imp {
-			if contxtfulParams, err := extractBidderParams(imp.Ext); err == nil && contxtfulParams.CustomerId != "" {
-				return &RequestConfig{
-					Version:    DefaultVersion,
-					CustomerID: contxtfulParams.CustomerId,
-					Source:     "impression",
-				}, nil
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("No customer ID found in request URI, bidder config, or impression parameters")
 }
 
 func extractUserIDForCookie(request *openrtb2.BidRequest) string {
