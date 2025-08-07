@@ -1,0 +1,179 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-bidder-config",
+    "imp": [
+      {
+        "id": "test-imp-bidder-config",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "CONFIG123",
+            "placementId": "config-placement-test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "config-site",
+      "domain": "config.example.com",
+      "page": "https://config.example.com/test"
+    },
+    "ext": {
+      "prebid": {
+        "bidderconfigs": [
+          {
+            "bidders": ["contxtful"],
+            "config": {
+              "ortb2": {
+                "user": [
+                  {
+                    "name": "contxtful",
+                    "ext": {
+                      "params": {
+                        "ev": "v2",
+                        "ci": "BIDDERCONFIG456"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/CONFIG123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-bidder-config",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "config-placement-test"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "CONFIG123",
+              "version": "v1"
+            }
+          },
+          "ortb2": {
+            "id": "test-request-bidder-config",
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 250,
+                      "w": 300
+                    }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "customerId": "CONFIG123",
+                    "placementId": "config-placement-test"
+                  }
+                },
+                "id": "test-imp-bidder-config"
+              }
+            ],
+            "site": {
+              "domain": "config.example.com",
+              "id": "config-site",
+              "page": "https://config.example.com/test"
+            },
+            "ext": {
+              "prebid": {
+                "bidderconfigs": [
+                  {
+                    "bidders": ["contxtful"],
+                    "config": {
+                      "ortb2": {
+                        "user": [
+                          {
+                            "name": "contxtful",
+                            "ext": {
+                              "params": {
+                                "ev": "v2",
+                                "ci": "BIDDERCONFIG456"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-bidder-config"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "cpm": 1.85,
+            "width": 300,
+            "height": 250,
+            "currency": "USD",
+            "requestId": "test-imp-bidder-config",
+            "adm": "<div>Bidder Config Test Ad</div>",
+            "ttl": 300,
+            "creativeId": "config-creative-789",
+            "netRevenue": true,
+            "mediaType": "banner",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/CONFIG123/pbs-impression?b=contxtful-test-imp-bidder-config&a=CONFIG123&bidder=contxtful&impId=test-imp-bidder-config&price=1.85&traceId=&random=0.000000&domain=config.example.com&adRequestId=test-request-bidder-config&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/CONFIG123/pbs-billing?b=contxtful-test-imp-bidder-config&a=CONFIG123&bidder=contxtful&impId=test-imp-bidder-config&price=1.85&traceId=&random=0.000000&domain=config.example.com&adRequestId=test-request-bidder-config&w=300&h=250&f=b"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "contxtful-test-imp-bidder-config",
+            "impid": "test-imp-bidder-config",
+            "price": 1.85,
+            "adm": "<div>Bidder Config Test Ad</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "config-creative-789",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/CONFIG123/pbs-impression?b=contxtful-test-imp-bidder-config&a=CONFIG123&bidder=contxtful&impId=test-imp-bidder-config&price=1.85&traceId=&random=0.000000&domain=config.example.com&adRequestId=test-request-bidder-config&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/CONFIG123/pbs-billing?b=contxtful-test-imp-bidder-config&a=CONFIG123&bidder=contxtful&impId=test-imp-bidder-config&price=1.85&traceId=&random=0.000000&domain=config.example.com&adRequestId=test-request-bidder-config&w=300&h=250&f=b"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+} 
