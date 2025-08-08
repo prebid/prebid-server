@@ -313,3 +313,29 @@ func TestMakeRequests_ErrorPaths_ReturnNilAndSingleError(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildEndpointURL_DirectError(t *testing.T) {
+	tests := []struct {
+		name     string
+		template *template.Template
+	}{
+		{
+			name:     "Template with missingkey=error and missing field",
+			template: template.Must(template.New("missing").Option("missingkey=error").Parse("{{.NonExistentField}}")),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			adapter := &adapter{endpoint: tc.template}
+			boldwinExt := openrtb_ext.ImpExtBoldwinRapid{
+				Pid: "testPub",
+				Tid: "testTag",
+			}
+
+			// Direct call to buildEndpointURL should return error
+			_, err := adapter.buildEndpointURL(boldwinExt)
+			require.Error(t, err)
+		})
+	}
+}
