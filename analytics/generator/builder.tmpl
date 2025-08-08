@@ -1,0 +1,23 @@
+package analytics
+
+import (
+{{- if .Imports }}
+{{- range .Imports }}
+	{{ .Vendor }}{{ .Module | Title }} "github.com/prebid/prebid-server/v3/analytics/{{ .Vendor }}/{{ .Module }}"
+{{- end }}
+{{- end }}
+)
+
+// builders returns mapping between analytics module name and its builder
+// vendor and module names are chosen based on the module directory name
+func builders() AnalyticsModuleBuilders {
+	return AnalyticsModuleBuilders{
+		{{- range $vendor, $modules := .Vendors }}
+		"{{$vendor}}": {
+			{{- range $module := $modules }}
+			"{{$module}}": {{$vendor}}{{$module | Title}}.Builder,
+			{{- end }}
+		},
+		{{- end }}
+	}
+}

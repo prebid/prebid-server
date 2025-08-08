@@ -37,3 +37,7 @@ format:
 # formatcheck runs format for diagnostics, without modifying the code
 formatcheck:
 	./scripts/format.sh -f false
+
+# build-analytics generates analytics/builder.go file which provides a list of all available analytics modules
+build-analytics:
+	go generate analytics/modules.go
