@@ -60,6 +60,9 @@
           "Host": [
             "rtb.beardfleet.com"
           ],
+          "Ip": [
+            "123.123.123.123"
+          ],
           "User-Agent": [
             "test-user-agent"
           ],
