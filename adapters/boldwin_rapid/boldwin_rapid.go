@@ -103,7 +103,8 @@ func (a *adapter) getHeaders(request *openrtb2.BidRequest) http.Header {
 		}
 
 		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
+			headers.Set("X-Forwarded-For", request.Device.IP)
+			headers.Add("IP", request.Device.IP)
 		}
 	}
 
