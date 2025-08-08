@@ -43,7 +43,6 @@ func (a adapter) buildEndpointURL(boldwinExt openrtb_ext.ImpExtBoldwinRapid) (st
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
@@ -57,25 +56,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 		// Use the current impression's Ext
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
-			continue
+			return nil, []error{err}
 		}
 
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &boldwinExt); err != nil {
-			errs = append(errs, err)
-			continue
+			return nil, []error{err}
 		}
 
 		endpoint, err := a.buildEndpointURL(boldwinExt)
 		if err != nil {
-			errs = append(errs, err)
-			continue
+			return nil, []error{err}
 		}
 
 		adapterReq, err := a.makeRequest(&reqCopy, endpoint)
 		if err != nil {
-			errs = append(errs, err)
-			continue
+			return nil, []error{err}
 		}
 
 		if adapterReq != nil {
@@ -83,7 +78,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}
 	}
 
-	return adapterRequests, errs
+	return adapterRequests, nil
 }
 
 func (a *adapter) getHeaders(request *openrtb2.BidRequest) http.Header {
