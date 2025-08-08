@@ -1,0 +1,14 @@
+{
+    "mockBidRequest": {
+      "id": "test-no-banner-no-video",
+      "imp": [
+        {
+          "id": "1",
+          "ext": { "bidder": { "placementId": "abc" } }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      { "value": "no valid impressions", "comparison": "contains" }
+    ]
+  }
