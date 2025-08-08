@@ -37,17 +37,22 @@ const (
 
 const uidCookieName = "uids"
 
-func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, analyticsRunner analytics.Runner, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, analyticsRunner analytics.Runner, gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	encoder := usersync.Base64Encoder{}
 	decoder := usersync.Base64Decoder{}
 
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+		var analyticsPolicy gdpr.PrivacyPolicy
+		analyticsPolicy = &gdpr.AllowAllAnalytics{}
+		activityControl := privacy.ActivityControl{}
+
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,
 			Errors: make([]error, 0),
 		}
 
-		defer analyticsRunner.LogSetUIDObject(&so)
+		defer analyticsRunner.LogSetUIDObject(&so, activityControl, analyticsPolicy)
 
 		cookie := usersync.ReadCookie(r, decoder, &cfg.HostCookie)
 		if !cookie.AllowSyncs() {
@@ -93,7 +98,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
-		activityControl := privacy.NewActivityControl(&account.Privacy)
+		activityControl = privacy.NewActivityControl(&account.Privacy)
 
 		gppSID, err := stringutil.StrToInt8Slice(query.Get("gpp_sid"))
 		if err != nil {
@@ -129,6 +134,9 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		}
 
 		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
+
+		analyticsPolicy = gdprAnalyticsPolicyBuilder(tcf2Cfg, gdprRequestInfo.GDPRSignal, gdprRequestInfo.Consent)
+		analyticsPolicy.SetContext(context.Background())
 
 		if shouldReturn, status, body := preventSyncsGDPR(gdprRequestInfo, gdprPermsBuilder, tcf2Cfg); shouldReturn {
 			var metricValue metrics.SetUidStatus
