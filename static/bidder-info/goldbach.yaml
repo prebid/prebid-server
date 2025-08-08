@@ -1,0 +1,15 @@
+endpoint: "https://goldlayer-api.prod.gbads.net/openrtb/2.5/auction"
+maintainer:
+  email: "simon.aebli@goldbach.com"
+gvlVendorID: 580
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
