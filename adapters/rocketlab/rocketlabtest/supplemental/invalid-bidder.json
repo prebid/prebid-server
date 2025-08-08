@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": 999
+        }
+      }
+    ],
+    "app": {
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expect { or n, but found 9",
+      "comparison": "literal"
+    }
+  ]
+}
