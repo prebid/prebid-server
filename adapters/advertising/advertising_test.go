@@ -1,4 +1,4 @@
-package imds
+package advertising
 
 import (
 	"testing"
@@ -10,18 +10,18 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderImds, config.Adapter{
-		Endpoint: "http://pbs.technoratimedia.com/openrtb/bids/{{.AccountID}}?src={{.SourceId}}&adapter=imds"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	bidder, buildErr := Builder(openrtb_ext.BidderAdvertising, config.Adapter{
+		Endpoint: "http://pbs.technoratimedia.com/openrtb/bids/{{.AccountID}}?src={{.SourceId}}&adapter=advertising"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "imdstest", bidder)
+	adapterstest.RunJSONBidderTest(t, "advertisingtest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderImds, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderAdvertising, config.Adapter{
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
