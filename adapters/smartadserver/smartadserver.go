@@ -22,6 +22,11 @@ type SmartAdserverAdapter struct {
 	Server        config.Server
 }
 
+type PendingImpAndExt struct {
+	imp openrtb2.Imp
+	ext openrtb_ext.ExtImpSmartadserverOut
+}
+
 // Builder builds a new instance of the SmartAdserver adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &SmartAdserverAdapter{
@@ -61,8 +66,8 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 		smartRequest.Site.Publisher = &publisher
 	}
 
+	var pendingImpsAndExts []PendingImpAndExt
 	var imps []openrtb2.Imp
-	var impSmartadserverExts []openrtb_ext.ExtImpSmartadserverOut
 	isProgrammaticGuaranteed := false
 	impExtKey := "bidder"
 
@@ -89,36 +94,35 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInf
 			impExtKey = "smartadserver"
 		}
 
-		imps = append(imps, imp)
-		impSmartadserverExts = append(impSmartadserverExts, openrtb_ext.ExtImpSmartadserverOut(smartadserverExtIn))
+		pendingImpsAndExts = append(pendingImpsAndExts, PendingImpAndExt{imp, openrtb_ext.ExtImpSmartadserverOut(smartadserverExtIn)})
 
 		// Properly set publisher id from extentions for coming request
 		smartRequest.Site.Publisher.ID = strconv.Itoa(smartadserverExtIn.NetworkID)
 	}
 
 	// Loop again to serialize extension properly
-	for index, imp := range imps {
+	for _, pendingImpAndExt := range pendingImpsAndExts {
 		var completeExt map[string]any
-		if err := json.Unmarshal(imp.Ext, &completeExt); err != nil {
+		if err := json.Unmarshal(pendingImpAndExt.imp.Ext, &completeExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Error parsing imp.Ext object",
 			})
 			continue
 		}
 
-		// Delete `bidder`extensions, then write it again with either `bidder` or `smartadserver` key, without unwanted elements.
+		// Delete `bidder` extensions, then write it again with either `bidder` or `smartadserver` key, without unwanted elements.
 		delete(completeExt, "bidder")
-		completeExt[impExtKey] = impSmartadserverExts[index]
+		completeExt[impExtKey] = pendingImpAndExt.ext
 
 		var errMarshal error
-		if imp.Ext, errMarshal = json.Marshal(completeExt); errMarshal != nil {
+		if pendingImpAndExt.imp.Ext, errMarshal = json.Marshal(completeExt); errMarshal != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: errMarshal.Error(),
 			})
 			continue
 		}
 
-		imps[index] = imp
+		imps = append(imps, pendingImpAndExt.imp)
 	}
 
 	// Only create the request if it has at least one correctly formatted impression
