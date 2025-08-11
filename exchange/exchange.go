@@ -502,8 +502,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 				errs = append(errs, cacheErrs...)
 			}
 
+			env := ""
+			if r.BidRequestWrapper.BidRequest.App != nil {
+				env = openrtb_ext.EnvAppValue
+			}
+			if r.RequestType == "amp" {
+				env = openrtb_ext.EnvAmpValue
+			}
+
 			if targData.includeWinners || targData.includeBidderKeys || targData.includeFormat {
-				targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
+				targData.setTargeting(auc, env, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
 			}
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, *r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)

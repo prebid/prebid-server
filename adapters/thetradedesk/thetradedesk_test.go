@@ -2,6 +2,7 @@ package thetradedesk
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"net/http"
 	"testing"
@@ -425,7 +426,7 @@ func TestTheTradeDeskAdapter_BuildEndpoint(t *testing.T) {
 			supplySourceId:   "",
 			defaultEndpoint:  "",
 			expectedEndpoint: "",
-			wantErr:          nil,
+			wantErr:          []error{errors.New("Either supplySourceId or a default endpoint must be provided")},
 		},
 	}
 
@@ -442,8 +443,155 @@ func TestTheTradeDeskAdapter_BuildEndpoint(t *testing.T) {
 			finalEndpoint, err := a.buildEndpointURL(tt.supplySourceId)
 			if tt.wantErr != nil {
 				assert.NotNil(t, err)
+				assert.Equal(t, tt.wantErr[0].Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
 			}
 			assert.Equal(t, tt.expectedEndpoint, finalEndpoint)
+		})
+	}
+}
+
+func TestResolveAuctionPriceMacros(t *testing.T) {
+	tests := []struct {
+		name         string
+		bid          *openrtb2.Bid
+		expectedNURL string
+		expectedAdM  string
+	}{
+		{
+			name: "nil_bid",
+			bid:  nil,
+		},
+		{
+			name: "no_macros",
+			bid: &openrtb2.Bid{
+				Price: 1.23,
+				NURL:  "http://example.com/nurl",
+				AdM:   "<div>Ad content</div>",
+			},
+			expectedNURL: "http://example.com/nurl",
+			expectedAdM:  "<div>Ad content</div>",
+		},
+		{
+			name: "macros_in_both_nurl_and_adm",
+			bid: &openrtb2.Bid{
+				Price: 1.50,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Ad content with price ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=1.5",
+			expectedAdM:  "<div>Ad content with price 1.5</div>",
+		},
+		{
+			name: "macro_only_in_nurl",
+			bid: &openrtb2.Bid{
+				Price: 2.75,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Ad content</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=2.75",
+			expectedAdM:  "<div>Ad content</div>",
+		},
+		{
+			name: "macro_only_in_adm",
+			bid: &openrtb2.Bid{
+				Price: 0.99,
+				NURL:  "http://example.com/nurl",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl",
+			expectedAdM:  "<div>Price: 0.99</div>",
+		},
+		{
+			name: "multiple_macros_in_same_field",
+			bid: &openrtb2.Bid{
+				Price: 3.14,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}&backup_price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}, Backup: ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=3.14&backup_price=3.14",
+			expectedAdM:  "<div>Price: 3.14, Backup: 3.14</div>",
+		},
+		{
+			name: "zero_price",
+			bid: &openrtb2.Bid{
+				Price: 0.0,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=0",
+			expectedAdM:  "<div>Price: 0</div>",
+		},
+		{
+			name: "very_small_price",
+			bid: &openrtb2.Bid{
+				Price: 0.001,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=0.001",
+			expectedAdM:  "<div>Price: 0.001</div>",
+		},
+		{
+			name: "large_price",
+			bid: &openrtb2.Bid{
+				Price: 999.999,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=999.999",
+			expectedAdM:  "<div>Price: 999.999</div>",
+		},
+		{
+			name: "integer_price",
+			bid: &openrtb2.Bid{
+				Price: 5.0,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=5",
+			expectedAdM:  "<div>Price: 5</div>",
+		},
+		{
+			name: "empty_nurl_and_adm",
+			bid: &openrtb2.Bid{
+				Price: 1.23,
+				NURL:  "",
+				AdM:   "",
+			},
+			expectedNURL: "",
+			expectedAdM:  "",
+		},
+		{
+			name: "case_sensitive_macro_not_replaced",
+			bid: &openrtb2.Bid{
+				Price: 1.50,
+				NURL:  "http://example.com/nurl?price=${auction_price}",
+				AdM:   "<div>Price: ${Auction_Price}</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=${auction_price}",
+			expectedAdM:  "<div>Price: ${Auction_Price}</div>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var testBid *openrtb2.Bid
+			if tt.bid != nil {
+				bidCopy := *tt.bid
+				testBid = &bidCopy
+			}
+
+			resolveAuctionPriceMacros(testBid)
+
+			if tt.bid == nil {
+				assert.Nil(t, testBid)
+				return
+			}
+
+			assert.Equal(t, tt.expectedNURL, testBid.NURL, "NURL should match expected value")
+			assert.Equal(t, tt.expectedAdM, testBid.AdM, "AdM should match expected value")
 		})
 	}
 }
