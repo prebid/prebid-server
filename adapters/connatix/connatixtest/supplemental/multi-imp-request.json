@@ -38,7 +38,8 @@
           "ext": {
             "bidder": {
               "placementId": "some-placement-id1"
-            }
+            },
+            "gpid": "test-gpid"
           }
         },
         {
@@ -55,8 +56,9 @@
             },
             "ext": {
                 "bidder": {
-                "placementId": "some-placement-id2"
-                }
+                    "placementId": "some-placement-id2"
+                },
+                "gpid": "test-gpid-2"
             }
         },
         {
@@ -74,7 +76,8 @@
             "ext": {
               "bidder": {
                 "placementId": 1
-              }
+              },
+              "gpid": "test-gpid-3"
             }
           }
       ]
@@ -108,7 +111,8 @@
                 "ext": {
                   "connatix": {
                     "placementId": "some-placement-id1"
-                  }
+                  },
+                  "gpid": "test-gpid"
                 }
               }
             ],
@@ -193,7 +197,8 @@
                 "ext": {
                   "connatix": {
                     "placementId": "some-placement-id2"
-                  }
+                  },
+                  "gpid": "test-gpid-2"
                 }
               }
             ],

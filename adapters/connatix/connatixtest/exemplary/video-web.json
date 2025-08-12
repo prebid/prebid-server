@@ -34,7 +34,8 @@
         "ext": {
           "bidder": {
             "placementId": "some-placement-id"
-          }
+          },
+          "gpid": "test-gpid-video-web"
         }
       }
     ]
@@ -68,7 +69,8 @@
               "ext": {
                 "connatix": {
                   "placementId": "some-placement-id"
-                }
+                },
+                "gpid": "test-gpid-video-web"
               }
             }
           ],

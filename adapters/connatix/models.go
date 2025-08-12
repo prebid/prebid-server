@@ -10,12 +10,12 @@ type adapter struct {
 
 type impExtIncoming struct {
 	Bidder openrtb_ext.ExtImpConnatix `json:"bidder"`
-	Gpid string `json:"gpid"`
+	Gpid   string                     `json:"gpid"`
 }
 
 type impExt struct {
 	Connatix impExtConnatix `json:"connatix"`
-	Gpid string `json:"gpid"`
+	Gpid     string         `json:"gpid"`
 }
 
 type impExtConnatix struct {
