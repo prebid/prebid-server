@@ -3,6 +3,9 @@ package rulesengine
 import (
 	"sync"
 	"sync/atomic"
+	"time"
+
+	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
 
 type accountID = string
@@ -11,20 +14,34 @@ type cacher interface {
 	Get(string) *cacheEntry
 	Set(string, *cacheEntry)
 	Delete(id accountID)
+	Expired(time.Time) bool
 }
 
 type cache struct {
 	sync.Mutex
-	m atomic.Value
+	m                atomic.Value
+	refreshFrequency time.Duration
+	t                timeutil.Time
 }
 
-func NewCache() *cache {
+func NewCache(refreshRateSeconds int) *cache {
 	var atomicMap atomic.Value
 	atomicMap.Store(make(map[accountID]*cacheEntry))
 
 	return &cache{
-		m: atomicMap,
+		m:                atomicMap,
+		refreshFrequency: time.Duration(refreshRateSeconds) * time.Second,
+		t:                &timeutil.RealTime{},
 	}
+}
+
+func (c *cache) Expired(coTimestamp time.Time) bool {
+	if c.refreshFrequency <= 0 {
+		return false
+	}
+	currentTime := c.t.Now()
+	delta := currentTime.Sub(coTimestamp)
+	return delta.Seconds() > c.refreshFrequency.Seconds()
 }
 
 // Get has been implemented to read from the cache without further synchronization
