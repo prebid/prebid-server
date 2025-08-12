@@ -17,43 +17,78 @@ import (
 )
 
 // Modules that need to be logged to need to be initialized here
-func New(analytics *config.Analytics) analytics.Runner {
-	modules := make(enabledAnalytics, 0)
-	if len(analytics.File.Filename) > 0 {
-		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
-			modules["filelogger"] = mod
-		} else {
-			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
-		}
+// buildFileLogger attempts to build the file logger analytics module.
+// Returns (nil, nil) when not configured.
+func buildFileLogger(cfg *config.Analytics) (analytics.Module, error) {
+	if cfg == nil || len(cfg.File.Filename) == 0 {
+		return nil, nil
+	}
+	mod, err := filesystem.NewFileLogger(cfg.File.Filename)
+	if err != nil {
+		return nil, err
+	}
+	return mod, nil
+}
+
+// buildPubstack attempts to build the pubstack analytics module.
+// Returns (nil, nil) when disabled.
+func buildPubstack(cfg *config.Analytics) (analytics.Module, error) {
+	if cfg == nil || !cfg.Pubstack.Enabled {
+		return nil, nil
+	}
+	mod, err := pubstack.NewModule(
+		clients.GetDefaultHttpInstance(),
+		cfg.Pubstack.ScopeId,
+		cfg.Pubstack.IntakeUrl,
+		cfg.Pubstack.ConfRefresh,
+		cfg.Pubstack.Buffers.EventCount,
+		cfg.Pubstack.Buffers.BufferSize,
+		cfg.Pubstack.Buffers.Timeout,
+		clock.New(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return mod, nil
+}
+
+// buildAgma attempts to build the agma analytics module.
+// Returns (nil, nil) when disabled.
+func buildAgma(cfg *config.Analytics) (analytics.Module, error) {
+	if cfg == nil || !cfg.Agma.Enabled {
+		return nil, nil
+	}
+	mod, err := agma.NewModule(
+		clients.GetDefaultHttpInstance(),
+		cfg.Agma,
+		clock.New(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return mod, nil
+}
+
+// New assembles the enabled analytics modules using dedicated builder helpers.
+func New(cfg *config.Analytics) analytics.Runner {
+	modules := make(enabledAnalytics)
+
+	if mod, err := buildFileLogger(cfg); err != nil {
+		glog.Fatalf("Could not initialize FileLogger for file %v :%v", cfg.File.Filename, err)
+	} else if mod != nil {
+		modules["filelogger"] = mod
 	}
 
-	if analytics.Pubstack.Enabled {
-		pubstackModule, err := pubstack.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Pubstack.ScopeId,
-			analytics.Pubstack.IntakeUrl,
-			analytics.Pubstack.ConfRefresh,
-			analytics.Pubstack.Buffers.EventCount,
-			analytics.Pubstack.Buffers.BufferSize,
-			analytics.Pubstack.Buffers.Timeout,
-			clock.New())
-		if err == nil {
-			modules["pubstack"] = pubstackModule
-		} else {
-			glog.Errorf("Could not initialize PubstackModule: %v", err)
-		}
+	if mod, err := buildPubstack(cfg); err != nil {
+		glog.Errorf("Could not initialize PubstackModule: %v", err)
+	} else if mod != nil {
+		modules["pubstack"] = mod
 	}
 
-	if analytics.Agma.Enabled {
-		agmaModule, err := agma.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Agma,
-			clock.New())
-		if err == nil {
-			modules["agma"] = agmaModule
-		} else {
-			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
-		}
+	if mod, err := buildAgma(cfg); err != nil {
+		glog.Errorf("Could not initialize Agma Analytics: %v", err)
+	} else if mod != nil {
+		modules["agma"] = mod
 	}
 
 	return modules
