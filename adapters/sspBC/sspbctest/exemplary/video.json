@@ -81,7 +81,7 @@
                         }
                     },
                     "requestInfo": {
-                        "PbsEntryPoint": "video"
+                        "PbsEntryPoint": ""
                     }
                 },
                 "impIDs":["slot"]
