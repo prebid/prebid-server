@@ -4915,6 +4915,11 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			file:        "sample-requests/hooks/auction.json",
 			planBuilder: hooksPlanBuilder,
 		},
+		{
+			description: "Assert modified bidresponse after exitpoint hook implementation",
+			file:        "sample-requests/hooks/auction_exitpoint.json",
+			planBuilder: mockPlanBuilder{exitpointPlan: makePlan[hookstage.Exitpoint](mockUpdateResponseHook{})},
+		},
 	}
 
 	for _, tc := range testCases {
