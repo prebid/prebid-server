@@ -15,5 +15,8 @@ capabilities:
       - banner
 userSync:
   iframe:
-    url: "https://ms-cookie-sync.presage.io/user-sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&source=prebids2s"
+    url: "https://ms-cookie-sync.presage.io/user-sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&source=prebids2s"
+    userMacro: "{{OGURY_UID}}"
+  redirect:
+    url: "https://ms-cookie-sync.presage.io/user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&partner=prebids2s"
     userMacro: "{{OGURY_UID}}"
