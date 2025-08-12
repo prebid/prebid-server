@@ -1,0 +1,14 @@
+endpoint: "https://us-east-ep.pinklion.io/pserver"
+maintainer:
+  email: "prebid@pinklion.io"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
