@@ -96,14 +96,6 @@ func preprocess(request *openrtb2.BidRequest) error {
 			return err
 		}
 
-		// Validate the bidder-specific configuration
-		var extImp openrtb_ext.ExtImpCpmstar
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
-			return &errortypes.BadInput{
-				Message: err.Error(),
-			}
-		}
-
 		// Create new extension object that preserves all original fields except 'bidder'
 		newExt := make(map[string]json.RawMessage)
 		for key, value := range originalExt {
