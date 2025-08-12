@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/hooks"
-	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
@@ -180,13 +179,13 @@ func TestCreateCacheRuleSet(t *testing.T) {
 	testCases := []struct {
 		name            string
 		in              *config.RuleSet
-		expectedRuleSet cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
+		expectedRuleSet cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]
 		expectedErr     error
 	}{
 		{
 			name:            "nil-ruleset-config",
 			in:              nil,
-			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{},
 			expectedErr:     errors.New("no rules engine configuration provided"),
 		},
 		{
@@ -194,7 +193,7 @@ func TestCreateCacheRuleSet(t *testing.T) {
 			in: &config.RuleSet{
 				ModelGroups: nil,
 			},
-			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{}},
 			expectedErr:     nil,
 		},
 		{
@@ -202,7 +201,7 @@ func TestCreateCacheRuleSet(t *testing.T) {
 			in: &config.RuleSet{
 				ModelGroups: []config.ModelGroup{},
 			},
-			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{}},
 			expectedErr:     nil,
 		},
 		{
@@ -218,7 +217,7 @@ func TestCreateCacheRuleSet(t *testing.T) {
 					},
 				},
 			},
-			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{}},
 			expectedErr:     errors.New("result function unknownResultFunction was not created"),
 		},
 		{
@@ -235,12 +234,12 @@ func TestCreateCacheRuleSet(t *testing.T) {
 					},
 				},
 			},
-			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-				modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+				modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 					{
-						tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-							Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
-							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+						tree: rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+							Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{},
+							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 								&ExcludeBidders{
 									Args: config.ResultFuncParams{
 										Bidders:    []string{"bidderA"},
@@ -273,7 +272,7 @@ func TestCreateCacheRuleSet(t *testing.T) {
 					},
 				},
 			},
-			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}},
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{}},
 			expectedErr:     errors.New("result function unknownResultFunction was not created"),
 		},
 		{
@@ -298,12 +297,12 @@ func TestCreateCacheRuleSet(t *testing.T) {
 					},
 				},
 			},
-			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-				modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+			expectedRuleSet: cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+				modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 					{
-						tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-							Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
-							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+						tree: rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+							Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{},
+							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 								&ExcludeBidders{
 									Args: config.ResultFuncParams{
 										Bidders:    []string{"bidderFoo"},
@@ -314,9 +313,9 @@ func TestCreateCacheRuleSet(t *testing.T) {
 						},
 					},
 					{
-						tree: rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-							Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
-							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+						tree: rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+							Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{},
+							DefaultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 								&IncludeBidders{
 									Args: config.ResultFuncParams{
 										Bidders:    []string{"bidderBar"},
