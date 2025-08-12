@@ -223,6 +223,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/tappx"
 	"github.com/prebid/prebid-server/v3/adapters/teads"
 	"github.com/prebid/prebid-server/v3/adapters/telaria"
+	"github.com/prebid/prebid-server/v3/adapters/teqblaze"
 	"github.com/prebid/prebid-server/v3/adapters/theadx"
 	"github.com/prebid/prebid-server/v3/adapters/thetradedesk"
 	"github.com/prebid/prebid-server/v3/adapters/tpmn"
@@ -487,6 +488,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
+		openrtb_ext.BidderTeqBlaze:          teqblaze.Builder,
 		openrtb_ext.BidderTheadx:            theadx.Builder,
 		openrtb_ext.BidderTheTradeDesk:      thetradedesk.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,
