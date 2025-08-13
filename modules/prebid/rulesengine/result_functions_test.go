@@ -117,7 +117,10 @@ func TestExcludeBiddersCall(t *testing.T) {
 				AllowedBidders: make(map[string]struct{}),
 			}
 
-			err := eb.Call(tt.req, result, rules.ResultFunctionMeta{})
+			payload := &hs.ProcessedAuctionRequestPayload{
+				Request: tt.req,
+			}
+			err := eb.Call(payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
 			assert.NotEmptyf(t, result.HookResult.ChangeSet, "change set is empty")
@@ -180,7 +183,11 @@ func TestIncludeBiddersCall(t *testing.T) {
 				AllowedBidders: make(map[string]struct{}),
 			}
 
-			err := ib.Call(tt.req, result, rules.ResultFunctionMeta{})
+			payload := &hs.ProcessedAuctionRequestPayload{
+				Request: tt.req,
+			}
+
+			err := ib.Call(payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
 			assert.Emptyf(t, result.HookResult.ChangeSet, "change set is empty")
