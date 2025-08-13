@@ -85,10 +85,11 @@ func preprocess(request *openrtb2.BidRequest) error {
 			}
 		}
 
-		var bidderExt adapters.ExtImpBidder
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		// Extract the "bidder" field from the already parsed extension
+		bidderRaw, exists := originalExt["bidder"]
+		if !exists {
 			return &errortypes.BadInput{
-				Message: err.Error(),
+				Message: "bidder field not found in impression extension",
 			}
 		}
 
@@ -106,7 +107,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 
 		// Add bidder configuration fields directly to the root level
 		var bidderConfig map[string]interface{}
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &bidderConfig); err != nil {
+		if err := jsonutil.Unmarshal(bidderRaw, &bidderConfig); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
