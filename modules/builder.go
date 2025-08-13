@@ -4,6 +4,7 @@ import (
 	fiftyonedegreesDevicedetection "github.com/prebid/prebid-server/v3/modules/fiftyonedegrees/devicedetection"
 	prebidOrtb2blocking "github.com/prebid/prebid-server/v3/modules/prebid/ortb2blocking"
 	prebidRulesengine "github.com/prebid/prebid-server/v3/modules/prebid/rulesengine"
+	scope3Rtd "github.com/prebid/prebid-server/v3/modules/scope3/rtd"
 )
 
 // builders returns mapping between module name and its builder
@@ -16,6 +17,9 @@ func builders() ModuleBuilders {
 		"prebid": {
 			"ortb2blocking": prebidOrtb2blocking.Builder,
 			"rulesengine":   prebidRulesengine.Builder,
+		},
+		"scope3": {
+			"rtd": scope3Rtd.Builder,
 		},
 	}
 }
