@@ -16,13 +16,14 @@ import (
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // Builder is the entry point for the module
 // This is called by Prebid Server to initialize the module
 func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error) {
 	var cfg Config
-	if err := json.Unmarshal(config, &cfg); err != nil {
+	if err := jsonutil.Unmarshal(config, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
@@ -134,7 +135,7 @@ func (m *Module) HandleRawAuctionHook(
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	// Parse the OpenRTB request
 	var bidRequest openrtb2.BidRequest
-	if err := json.Unmarshal(payload, &bidRequest); err != nil {
+	if err := jsonutil.Unmarshal(payload, &bidRequest); err != nil {
 		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
 	}
 
@@ -210,7 +211,7 @@ func (m *Module) HandleAuctionResponseHook(
 			}
 
 			var extMap map[string]interface{}
-			if err := json.Unmarshal(payload.BidResponse.Ext, &extMap); err != nil {
+			if err := jsonutil.Unmarshal(payload.BidResponse.Ext, &extMap); err != nil {
 				extMap = make(map[string]interface{})
 			}
 
@@ -247,7 +248,7 @@ func (m *Module) HandleAuctionResponseHook(
 				"segments": segments,
 			}
 
-			extResp, err := json.Marshal(extMap)
+			extResp, err := jsonutil.Marshal(extMap)
 			if err == nil {
 				payload.BidResponse.Ext = extResp
 			}
@@ -265,8 +266,17 @@ func (m *Module) HandleAuctionResponseHook(
 
 // fetchScope3Segments calls the Scope3 API and extracts segments
 func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.BidRequest) ([]string, error) {
+	// unmarshal user extension
+	var userExtension userExt
+	if bidRequest != nil && bidRequest.User != nil && bidRequest.User.Ext != nil {
+		if err := jsonutil.Unmarshal(bidRequest.User.Ext, &userExtension); err != nil {
+			// ignore error, set empty struct
+			userExtension = userExt{}
+		}
+	}
+
 	// Create cache key based on relevant user identifiers and site context
-	cacheKey := m.createCacheKey(bidRequest)
+	cacheKey := m.createCacheKey(bidRequest, &userExtension)
 
 	// Check cache first
 	if segments, found := m.cache.get(cacheKey, time.Duration(m.cfg.CacheTTL)*time.Second); found {
@@ -274,10 +284,10 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	}
 
 	// Enhance request with available user identifiers
-	m.enhanceRequestWithUserIDs(bidRequest)
+	m.enhanceRequestWithUserIDs(bidRequest, &userExtension)
 
 	// Marshal the bid request
-	requestBody, err := json.Marshal(bidRequest)
+	requestBody, err := jsonutil.Marshal(bidRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -309,13 +319,13 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	}
 
 	// Extract unique segments (exclude destination)
-	segmentMap := make(map[string]bool)
+	segmentMap := make(map[string]struct{})
 	for _, data := range scope3Resp.Data {
 		// Extract actual segments from impression-level data
 		for _, imp := range data.Imp {
 			if imp.Ext != nil && imp.Ext.Scope3 != nil {
 				for _, segment := range imp.Ext.Scope3.Segments {
-					segmentMap[segment.ID] = true
+					segmentMap[segment.ID] = struct{}{}
 				}
 			}
 		}
@@ -334,7 +344,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 }
 
 // createCacheKey generates a cache key based on user identifiers and site context
-func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
+func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest, userExtension *userExt) string {
 	hasher := md5.New()
 
 	// Include site/app information
@@ -347,27 +357,24 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 	}
 
 	// Include user identifiers if available
-	if bidRequest.User != nil && bidRequest.User.Ext != nil {
-		var userExtension userExt
-		if err := json.Unmarshal(bidRequest.User.Ext, &userExtension); err == nil {
-			// Include LiveRamp identifiers
-			for _, eid := range userExtension.Eids {
-				if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
-					hasher.Write([]byte("rampid:" + eid.UIDs[0].ID))
-				}
-			}
-
-			// Include other identifier types
-			if userExtension.RampID != "" {
-				hasher.Write([]byte("rampid:" + userExtension.RampID))
-			}
-			if userExtension.LiverampIDL != "" {
-				hasher.Write([]byte("ats:" + userExtension.LiverampIDL))
+	if userExtension != nil {
+		// Include LiveRamp identifiers
+		for _, eid := range userExtension.Eids {
+			if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
+				hasher.Write([]byte("rampid:" + eid.UIDs[0].ID))
 			}
 		}
 
+		// Include other identifier types
+		if userExtension.RampID != "" {
+			hasher.Write([]byte("rampid:" + userExtension.RampID))
+		}
+		if userExtension.LiverampIDL != "" {
+			hasher.Write([]byte("ats:" + userExtension.LiverampIDL))
+		}
+
 		// Include user ID if available
-		if bidRequest.User.ID != "" {
+		if bidRequest.User != nil && bidRequest.User.ID != "" {
 			hasher.Write([]byte("userid:" + bidRequest.User.ID))
 		}
 	}
@@ -377,7 +384,7 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 
 // enhanceRequestWithUserIDs adds available user identifiers to the request
 // This function checks for various user identifiers that may be available
-func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
+func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest, userExtension *userExt) {
 	if bidRequest.User == nil {
 		return
 	}
@@ -387,8 +394,7 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 		return
 	}
 
-	var userExtension userExt
-	if err := json.Unmarshal(bidRequest.User.Ext, &userExtension); err != nil {
+	if userExtension == nil {
 		return
 	}
 
@@ -421,7 +427,7 @@ func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest) {
 	atsLocations := []string{"liveramp_idl", "ats_envelope", "rampId_envelope"}
 	if bidRequest.Ext != nil {
 		var reqExt map[string]interface{}
-		if err := json.Unmarshal(bidRequest.Ext, &reqExt); err == nil {
+		if err := jsonutil.Unmarshal(bidRequest.Ext, &reqExt); err == nil {
 			for _, location := range atsLocations {
 				if atsEnvelope, ok := reqExt[location].(string); ok && atsEnvelope != "" {
 					// ATS envelope found at request level
@@ -459,6 +465,5 @@ type Scope3ExtData struct {
 }
 
 type Scope3Segment struct {
-	ID     string  `json:"id"`
-	Weight float64 `json:"weight,omitempty"`
+	ID string `json:"id"`
 }

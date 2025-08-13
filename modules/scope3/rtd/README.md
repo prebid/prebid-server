@@ -56,7 +56,9 @@ hooks:
           "enabled": true,
           "endpoint": "https://rtdp.scope3.com/amazonaps/rtii",
           "auth_key": "your-scope3-auth-key",
-          "timeout_ms": 1000
+          "timeout_ms": 1000,
+          "cache_ttl_seconds": 60,
+          "add_to_targeting": false
         }
       }
     }
@@ -72,7 +74,7 @@ hooks:
 - Adds segments to bid request targeting data
 - Thread-safe segment caching to handle repeated requests
 - Configurable timeout, endpoint, and cache TTL
-- Graceful error handling (doesn't fail auctions on API errors)  
+- Graceful error handling (doesn't fail auctions on API errors)
 - Integration with various user identity systems (LiveRamp, publisher IDs, etc.)
 - Efficient caching strategy for high-traffic scenarios
 
@@ -91,7 +93,7 @@ This module automatically detects and forwards available user identifiers from t
 
 - LiveRamp identifiers (when available from publisher implementations or identity providers)
 - Publisher first-party user IDs
-- Device identifiers 
+- Device identifiers
 - Encrypted identity envelopes
 
 
@@ -102,7 +104,7 @@ This module automatically detects and forwards available user identifiers from t
 
 2. **Encrypted Identity Envelopes**:
    - `user.ext.liveramp_idl` - ATS envelope location
-   - `user.ext.ats_envelope` - Alternative envelope location  
+   - `user.ext.ats_envelope` - Alternative envelope location
    - `user.ext.rampId_envelope` - Additional envelope location
    - `ext.liveramp_idl` - Request-level envelope
 
