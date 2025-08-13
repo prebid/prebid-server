@@ -74,7 +74,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 	// Example transformation:
 	// Input:  {"gpid": "/path", "bidder": {"placementId": 123}, "custom": "value"}
 	// Output: {"gpid": "/path", "placementId": 123, "custom": "value"}
-	for i := 0; i < len(request.Imp); i++ {
+	for i := range request.Imp {
 		var imp = &request.Imp[i]
 
 		// Parse the original extension into a generic map to preserve all fields
