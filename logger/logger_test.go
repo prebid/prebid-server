@@ -1,586 +1,613 @@
 package logger
 
 import (
+	"context"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// MockLogger is a mock implementation of the Logger interface for testing
-type MockLogger struct {
-	InfoCalls     [][]any
-	InfofCalls    []InfofCall
-	WarningCalls  [][]any
-	WarningfCalls []WarningfCall
-	ErrorCalls    [][]any
-	ErrorfCalls   []ErrorfCall
-	ExitfCalls    []ExitfCall
-	FatalCalls    [][]any
-	FatalfCalls   []FatalfCall
+// mockLogger is a test implementation of the Logger interface
+type mockLogger struct {
+	debugCalls    []logCall
+	infoCalls     []logCall
+	warnCalls     []logCall
+	errorCalls    []logCall
+	debugCtxCalls []logCtxCall
+	infoCtxCalls  []logCtxCall
+	warnCtxCalls  []logCtxCall
+	errorCtxCalls []logCtxCall
 }
 
-type InfofCall struct {
-	Format string
-	Args   []any
+type logCall struct {
+	msg  any
+	args []any
 }
 
-type WarningfCall struct {
-	Format string
-	Args   []any
+type logCtxCall struct {
+	ctx  context.Context
+	msg  any
+	args []any
 }
 
-type ErrorfCall struct {
-	Format string
-	Args   []any
+func (m *mockLogger) Debug(msg any, args ...any) {
+	m.debugCalls = append(m.debugCalls, logCall{msg: msg, args: args})
 }
 
-type ExitfCall struct {
-	Format string
-	Args   []any
+func (m *mockLogger) DebugContext(ctx context.Context, msg any, args ...any) {
+	m.debugCtxCalls = append(m.debugCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
 }
 
-type FatalfCall struct {
-	Format string
-	Args   []any
+func (m *mockLogger) Info(msg any, args ...any) {
+	m.infoCalls = append(m.infoCalls, logCall{msg: msg, args: args})
 }
 
-func (m *MockLogger) Info(args ...any) {
-	m.InfoCalls = append(m.InfoCalls, args)
+func (m *mockLogger) InfoContext(ctx context.Context, msg any, args ...any) {
+	m.infoCtxCalls = append(m.infoCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
 }
 
-func (m *MockLogger) Infof(format string, args ...any) {
-	m.InfofCalls = append(m.InfofCalls, InfofCall{Format: format, Args: args})
+func (m *mockLogger) Warn(msg any, args ...any) {
+	m.warnCalls = append(m.warnCalls, logCall{msg: msg, args: args})
 }
 
-func (m *MockLogger) Warning(args ...any) {
-	m.WarningCalls = append(m.WarningCalls, args)
+func (m *mockLogger) WarnContext(ctx context.Context, msg any, args ...any) {
+	m.warnCtxCalls = append(m.warnCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
 }
 
-func (m *MockLogger) Warningf(format string, args ...any) {
-	m.WarningfCalls = append(m.WarningfCalls, WarningfCall{Format: format, Args: args})
+func (m *mockLogger) Error(msg any, args ...any) {
+	m.errorCalls = append(m.errorCalls, logCall{msg: msg, args: args})
 }
 
-func (m *MockLogger) Error(args ...any) {
-	m.ErrorCalls = append(m.ErrorCalls, args)
+func (m *mockLogger) ErrorContext(ctx context.Context, msg any, args ...any) {
+	m.errorCtxCalls = append(m.errorCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
 }
 
-func (m *MockLogger) Errorf(format string, args ...any) {
-	m.ErrorfCalls = append(m.ErrorfCalls, ErrorfCall{Format: format, Args: args})
+func setupTest() {
+	// Reset global logger to default before each test
+	logger = NewSlogLogger()
 }
 
-func (m *MockLogger) Exitf(format string, args ...any) {
-	m.ExitfCalls = append(m.ExitfCalls, ExitfCall{Format: format, Args: args})
-}
-
-func (m *MockLogger) Fatal(args ...any) {
-	m.FatalCalls = append(m.FatalCalls, args)
-}
-
-func (m *MockLogger) Fatalf(format string, args ...any) {
-	m.FatalfCalls = append(m.FatalfCalls, FatalfCall{Format: format, Args: args})
-}
-
+// TestNew tests the New function with various configurations
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name        string
 		loggerType  string
 		depth       *int
-		expectedErr bool
+		expectError bool
+		errorMsg    string
 	}{
 		{
-			name:        "Valid default logger with nil depth",
-			loggerType:  "default",
+			name:        "slog logger",
+			loggerType:  "slog",
 			depth:       nil,
-			expectedErr: false,
+			expectError: false,
 		},
 		{
-			name:        "Valid default logger with valid depth",
-			loggerType:  "default",
-			depth:       intPtr(3),
-			expectedErr: false,
+			name:        "slog logger with depth",
+			loggerType:  "slog",
+			depth:       intPtr(2),
+			expectError: false,
 		},
 		{
-			name:        "Valid default logger with zero depth",
-			loggerType:  "default",
-			depth:       intPtr(0),
-			expectedErr: false,
+			name:        "glog logger",
+			loggerType:  "glog",
+			depth:       nil,
+			expectError: false,
 		},
 		{
-			name:        "Valid default logger with max depth",
-			loggerType:  "default",
-			depth:       intPtr(10),
-			expectedErr: false,
+			name:        "glog logger with depth",
+			loggerType:  "glog",
+			depth:       intPtr(5),
+			expectError: false,
 		},
 		{
-			name:        "Invalid logger type",
+			name:        "custom logger without instance",
+			loggerType:  "custom",
+			depth:       nil,
+			expectError: true,
+			errorMsg:    "custom logger type requires CustomLogger instance",
+		},
+		{
+			name:        "unsupported logger type",
 			loggerType:  "invalid",
 			depth:       nil,
-			expectedErr: true,
+			expectError: true,
+			errorMsg:    "unsupported logger type: invalid",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			setupTest()
+
 			err := New(tt.loggerType, tt.depth)
-			if (err != nil) != tt.expectedErr {
-				t.Errorf("New() error = %v, expectedErr %v", err, tt.expectedErr)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, GetCurrentLogger())
 			}
 		})
 	}
 }
 
+// TestNewWithConfig tests the NewWithConfig function
 func TestNewWithConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		config      *LoggerConfig
-		expectedErr bool
+		expectError bool
+		errorMsg    string
 	}{
 		{
-			name: "Valid config with default logger",
-			config: &LoggerConfig{
-				Type:  LoggerTypeDefault,
-				Depth: intPtr(2),
-			},
-			expectedErr: false,
+			name:        "nil config",
+			config:      nil,
+			expectError: true,
+			errorMsg:    "logger config is nil",
 		},
 		{
-			name: "Valid config with nil depth",
+			name: "slog config",
 			config: &LoggerConfig{
-				Type:  LoggerTypeDefault,
-				Depth: nil,
+				Type: LoggerTypeSlog,
 			},
-			expectedErr: false,
+			expectError: false,
 		},
 		{
-			name: "Valid config with negative depth (should use default)",
+			name: "glog config",
 			config: &LoggerConfig{
-				Type:  LoggerTypeDefault,
-				Depth: intPtr(-1),
+				Type:  LoggerTypeGlog,
+				Depth: intPtr(3),
 			},
-			expectedErr: false,
+			expectError: false,
 		},
 		{
-			name: "Valid config with depth > 10 (should use default)",
+			name: "custom config with logger",
 			config: &LoggerConfig{
-				Type:  LoggerTypeDefault,
-				Depth: intPtr(11),
+				Type:         LoggerTypeCustom,
+				CustomLogger: &mockLogger{},
 			},
-			expectedErr: false,
+			expectError: false,
 		},
 		{
-			name: "Invalid logger type",
+			name: "custom config without logger",
 			config: &LoggerConfig{
-				Type:  "invalid",
-				Depth: intPtr(2),
+				Type: LoggerTypeCustom,
 			},
-			expectedErr: true,
+			expectError: true,
+			errorMsg:    "custom logger type requires CustomLogger instance",
+		},
+		{
+			name: "unsupported type",
+			config: &LoggerConfig{
+				Type: LoggerType("unknown"),
+			},
+			expectError: true,
+			errorMsg:    "unsupported logger type: unknown",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			setupTest()
+
 			err := NewWithConfig(tt.config)
-			if (err != nil) != tt.expectedErr {
-				t.Errorf("NewWithConfig() error = %v, expectedErr %v", err, tt.expectedErr)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, GetCurrentLogger())
 			}
 		})
 	}
 }
 
-func TestNewWithConfig_ErrorMessage(t *testing.T) {
-	config := &LoggerConfig{
-		Type:  "unsupported",
-		Depth: intPtr(1),
-	}
+// TestSetCustomLogger tests the SetCustomLogger function
+func TestSetCustomLogger(t *testing.T) {
+	setupTest()
 
-	err := NewWithConfig(config)
-	if err == nil {
-		t.Fatal("Expected error for unsupported logger type")
-	}
+	customLogger := &mockLogger{}
+	SetCustomLogger(customLogger)
 
-	expectedMsg := "unsupported logger type: unsupported"
-	if err.Error() != expectedMsg {
-		t.Errorf("Expected error message '%s', got '%s'", expectedMsg, err.Error())
-	}
+	currentLogger := GetCurrentLogger()
+	assert.Equal(t, customLogger, currentLogger)
 }
 
-func TestLoggerMethods(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
+// TestGetCurrentLogger tests the GetCurrentLogger function
+func TestGetCurrentLogger(t *testing.T) {
+	setupTest()
 
-	// Set up mock logger
-	mockLogger := &MockLogger{}
-	logger = mockLogger
-
-	// Test Info
-	Info("test", "info")
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-	if len(mockLogger.InfoCalls[0]) != 2 || mockLogger.InfoCalls[0][0] != "test" || mockLogger.InfoCalls[0][1] != "info" {
-		t.Errorf("Info args not passed correctly: %v", mockLogger.InfoCalls[0])
-	}
-
-	// Test Infof
-	Infof("test %s", "info")
-	if len(mockLogger.InfofCalls) != 1 {
-		t.Errorf("Expected 1 Infof call, got %d", len(mockLogger.InfofCalls))
-	}
-
-	if mockLogger.InfofCalls[0].Format != "test %s" || len(mockLogger.InfofCalls[0].Args) != 1 || mockLogger.InfofCalls[0].Args[0].([]any)[0] != "info" {
-		t.Errorf("Infof args not passed correctly: %v", mockLogger.InfofCalls[0])
-	}
-
-	// Test Warning
-	Warning("test", "warning")
-	if len(mockLogger.WarningCalls) != 1 {
-		t.Errorf("Expected 1 Warning call, got %d", len(mockLogger.WarningCalls))
-	}
-	if len(mockLogger.WarningCalls[0]) != 2 || mockLogger.WarningCalls[0][0] != "test" || mockLogger.WarningCalls[0][1] != "warning" {
-		t.Errorf("Warning args not passed correctly: %v", mockLogger.WarningCalls[0])
-	}
-
-	// Test Warningf
-	Warningf("test %s", "warning")
-	if len(mockLogger.WarningfCalls) != 1 {
-		t.Errorf("Expected 1 Warningf call, got %d", len(mockLogger.WarningfCalls))
-	}
-	if mockLogger.WarningfCalls[0].Format != "test %s" || len(mockLogger.WarningfCalls[0].Args) != 1 || mockLogger.WarningfCalls[0].Args[0].([]any)[0] != "warning" {
-		t.Errorf("Warningf args not passed correctly: %v", mockLogger.WarningfCalls[0])
-	}
-
-	// Test Error
-	Error("test", "error")
-	if len(mockLogger.ErrorCalls) != 1 {
-		t.Errorf("Expected 1 Error call, got %d", len(mockLogger.ErrorCalls))
-	}
-	if len(mockLogger.ErrorCalls[0]) != 2 || mockLogger.ErrorCalls[0][0] != "test" || mockLogger.ErrorCalls[0][1] != "error" {
-		t.Errorf("Error args not passed correctly: %v", mockLogger.ErrorCalls[0])
-	}
-
-	// Test Errorf
-	Errorf("test %s", "error")
-	if len(mockLogger.ErrorfCalls) != 1 {
-		t.Errorf("Expected 1 Errorf call, got %d", len(mockLogger.ErrorfCalls))
-	}
-	if mockLogger.ErrorfCalls[0].Format != "test %s" || len(mockLogger.ErrorfCalls[0].Args) != 1 || mockLogger.ErrorfCalls[0].Args[0].([]any)[0] != "error" {
-		t.Errorf("Errorf args not passed correctly: %v", mockLogger.ErrorfCalls[0])
-	}
-
-	// Test Exitf
-	Exitf("test %s", "exit")
-	if len(mockLogger.ExitfCalls) != 1 {
-		t.Errorf("Expected 1 Exitf call, got %d", len(mockLogger.ExitfCalls))
-	}
-	if mockLogger.ExitfCalls[0].Format != "test %s" || len(mockLogger.ExitfCalls[0].Args) != 1 || mockLogger.ExitfCalls[0].Args[0].([]any)[0] != "exit" {
-		t.Errorf("Exitf args not passed correctly: %v", mockLogger.ExitfCalls[0])
-	}
-
-	// Test Fatal
-	Fatal("test", "fatal")
-	if len(mockLogger.FatalCalls) != 1 {
-		t.Errorf("Expected 1 Fatal call, got %d", len(mockLogger.FatalCalls))
-	}
-	if len(mockLogger.FatalCalls[0]) != 2 || mockLogger.FatalCalls[0][0] != "test" || mockLogger.FatalCalls[0][1] != "fatal" {
-		t.Errorf("Fatal args not passed correctly: %v", mockLogger.FatalCalls[0])
-	}
-
-	// Test Fatalf
-	Fatalf("test %s", "fatal")
-	if len(mockLogger.FatalfCalls) != 1 {
-		t.Errorf("Expected 1 Fatalf call, got %d", len(mockLogger.FatalfCalls))
-	}
-	if mockLogger.FatalfCalls[0].Format != "test %s" || len(mockLogger.FatalfCalls[0].Args) != 1 || mockLogger.FatalfCalls[0].Args[0].([]any)[0] != "fatal" {
-		t.Errorf("Fatalf args not passed correctly: %v", mockLogger.FatalfCalls[0])
-	}
+	currentLogger := GetCurrentLogger()
+	assert.NotNil(t, currentLogger)
+	assert.Implements(t, (*Logger)(nil), currentLogger)
 }
 
-func TestLoggerConfig(t *testing.T) {
-	depth := 5
-	config := &LoggerConfig{
-		Type:  LoggerTypeDefault,
-		Depth: &depth,
-	}
+// TestGlobalDebugFunctions tests the global Debug functions
+func TestGlobalDebugFunctions(t *testing.T) {
+	mock := &mockLogger{}
+	SetCustomLogger(mock)
 
-	if config.Type != LoggerTypeDefault {
-		t.Errorf("Expected Type to be %s, got %s", LoggerTypeDefault, config.Type)
-	}
-
-	if config.Depth == nil || *config.Depth != 5 {
-		t.Errorf("Expected Depth to be 5, got %v", config.Depth)
-	}
-}
-
-func TestDepthValidation(t *testing.T) {
 	tests := []struct {
-		name             string
-		inputDepth       *int
-		shouldUseDefault bool
+		name string
+		fn   func()
+		ctx  context.Context
 	}{
 		{
-			name:             "Nil depth should use default",
-			inputDepth:       nil,
-			shouldUseDefault: true,
+			name: "Debug",
+			fn: func() {
+				Debug("test debug", "key", "value")
+			},
 		},
 		{
-			name:             "Valid depth should be used",
-			inputDepth:       intPtr(5),
-			shouldUseDefault: false,
-		},
-		{
-			name:             "Zero depth should be valid",
-			inputDepth:       intPtr(0),
-			shouldUseDefault: false,
-		},
-		{
-			name:             "Max depth should be valid",
-			inputDepth:       intPtr(10),
-			shouldUseDefault: false,
+			name: "DebugContext",
+			fn: func() {
+				DebugContext(context.Background(), "test debug context", "key", "value")
+			},
+			ctx: context.Background(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := &LoggerConfig{
-				Type:  LoggerTypeDefault,
-				Depth: tt.inputDepth,
-			}
+			mock.debugCalls = nil
+			mock.debugCtxCalls = nil
 
-			err := NewWithConfig(config)
-			if err != nil {
-				t.Errorf("NewWithConfig() returned error: %v", err)
-			}
+			tt.fn()
 
-			if tt.shouldUseDefault {
-				if config.Depth == nil || *config.Depth != defaultDepth {
-					t.Errorf("Expected depth to be reset to default (%d), got %v", defaultDepth, config.Depth)
-				}
+			if tt.ctx != nil {
+				assert.Len(t, mock.debugCtxCalls, 1)
+				assert.Equal(t, "test debug context", mock.debugCtxCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.debugCtxCalls[0].args)
 			} else {
-				if config.Depth == nil || *config.Depth != *tt.inputDepth {
-					t.Errorf("Expected depth to remain %d, got %v", *tt.inputDepth, config.Depth)
-				}
+				assert.Len(t, mock.debugCalls, 1)
+				assert.Equal(t, "test debug", mock.debugCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.debugCalls[0].args)
 			}
 		})
 	}
 }
 
+// TestGlobalInfoFunctions tests the global Info functions
+func TestGlobalInfoFunctions(t *testing.T) {
+	mock := &mockLogger{}
+	SetCustomLogger(mock)
+
+	tests := []struct {
+		name string
+		fn   func()
+		ctx  context.Context
+	}{
+		{
+			name: "Info",
+			fn: func() {
+				Info("test info", "key", "value")
+			},
+		},
+		{
+			name: "InfoContext",
+			fn: func() {
+				InfoContext(context.Background(), "test info context", "key", "value")
+			},
+			ctx: context.Background(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock.infoCalls = nil
+			mock.infoCtxCalls = nil
+
+			tt.fn()
+
+			if tt.ctx != nil {
+				assert.Len(t, mock.infoCtxCalls, 1)
+				assert.Equal(t, "test info context", mock.infoCtxCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.infoCtxCalls[0].args)
+			} else {
+				assert.Len(t, mock.infoCalls, 1)
+				assert.Equal(t, "test info", mock.infoCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.infoCalls[0].args)
+			}
+		})
+	}
+}
+
+// TestGlobalWarnFunctions tests the global Warn functions
+func TestGlobalWarnFunctions(t *testing.T) {
+	mock := &mockLogger{}
+	SetCustomLogger(mock)
+
+	tests := []struct {
+		name string
+		fn   func()
+		ctx  context.Context
+	}{
+		{
+			name: "Warn",
+			fn: func() {
+				Warn("test warn", "key", "value")
+			},
+		},
+		{
+			name: "WarnContext",
+			fn: func() {
+				WarnContext(context.Background(), "test warn context", "key", "value")
+			},
+			ctx: context.Background(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock.warnCalls = nil
+			mock.warnCtxCalls = nil
+
+			tt.fn()
+
+			if tt.ctx != nil {
+				assert.Len(t, mock.warnCtxCalls, 1)
+				assert.Equal(t, "test warn context", mock.warnCtxCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.warnCtxCalls[0].args)
+			} else {
+				assert.Len(t, mock.warnCalls, 1)
+				assert.Equal(t, "test warn", mock.warnCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.warnCalls[0].args)
+			}
+		})
+	}
+}
+
+// TestGlobalErrorFunctions tests the global Error functions
+func TestGlobalErrorFunctions(t *testing.T) {
+	mock := &mockLogger{}
+	SetCustomLogger(mock)
+
+	tests := []struct {
+		name string
+		fn   func()
+		ctx  context.Context
+	}{
+		{
+			name: "Error",
+			fn: func() {
+				Error("test error", "key", "value")
+			},
+		},
+		{
+			name: "ErrorContext",
+			fn: func() {
+				ErrorContext(context.Background(), "test error context", "key", "value")
+			},
+			ctx: context.Background(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock.errorCalls = nil
+			mock.errorCtxCalls = nil
+
+			tt.fn()
+
+			if tt.ctx != nil {
+				assert.Len(t, mock.errorCtxCalls, 1)
+				assert.Equal(t, "test error context", mock.errorCtxCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.errorCtxCalls[0].args)
+			} else {
+				assert.Len(t, mock.errorCalls, 1)
+				assert.Equal(t, "test error", mock.errorCalls[0].msg)
+				assert.Equal(t, []any{"key", "value"}, mock.errorCalls[0].args)
+			}
+		})
+	}
+}
+
+// TestLoggerTypes tests the LoggerType constants
+func TestLoggerTypes(t *testing.T) {
+	assert.Equal(t, LoggerType("slog"), LoggerTypeSlog)
+	assert.Equal(t, LoggerType("glog"), LoggerTypeGlog)
+	assert.Equal(t, LoggerType("custom"), LoggerTypeCustom)
+}
+
+// TestDefaultDepth tests the default depth value
 func TestDefaultDepth(t *testing.T) {
-	if defaultDepth != 1 {
-		t.Errorf("Expected defaultDepth to be 1, got %d", defaultDepth)
+	assert.Equal(t, 1, defaultDepth)
+}
+
+// TestLoggerConfigDepthHandling tests depth handling in LoggerConfig
+func TestLoggerConfigDepthHandling(t *testing.T) {
+	tests := []struct {
+		name          string
+		config        *LoggerConfig
+		expectedDepth int
+	}{
+		{
+			name: "nil depth uses default",
+			config: &LoggerConfig{
+				Type: LoggerTypeGlog,
+			},
+			expectedDepth: defaultDepth,
+		},
+		{
+			name: "provided depth is used",
+			config: &LoggerConfig{
+				Type:  LoggerTypeGlog,
+				Depth: intPtr(5),
+			},
+			expectedDepth: 5,
+		},
+		{
+			name: "zero depth is preserved",
+			config: &LoggerConfig{
+				Type:  LoggerTypeGlog,
+				Depth: intPtr(0),
+			},
+			expectedDepth: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setupTest()
+
+			err := NewWithConfig(tt.config)
+			assert.NoError(t, err)
+
+			// For glog logger, we can verify the depth was set correctly
+			if tt.config.Type == LoggerTypeGlog {
+				glogLogger, ok := GetCurrentLogger().(*GlogLogger)
+				assert.True(t, ok)
+				assert.Equal(t, tt.expectedDepth, glogLogger.depth)
+			}
+		})
+	}
+}
+
+// TestConcurrentAccess tests concurrent access to global logger functions
+func TestConcurrentAccess(t *testing.T) {
+	setupTest()
+
+	const numGoroutines = 10
+	const messagesPerGoroutine = 5
+
+	done := make(chan bool, numGoroutines)
+	ctx := context.Background()
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			defer func() { done <- true }()
+
+			for j := 0; j < messagesPerGoroutine; j++ {
+				Debug("concurrent debug", "goroutine", id, "message", j)
+				Info("concurrent info", "goroutine", id, "message", j)
+				Warn("concurrent warn", "goroutine", id, "message", j)
+				Error("concurrent error", "goroutine", id, "message", j)
+
+				DebugContext(ctx, "concurrent debug context", "goroutine", id, "message", j)
+				InfoContext(ctx, "concurrent info context", "goroutine", id, "message", j)
+				WarnContext(ctx, "concurrent warn context", "goroutine", id, "message", j)
+				ErrorContext(ctx, "concurrent error context", "goroutine", id, "message", j)
+			}
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < numGoroutines; i++ {
+		<-done
+	}
+
+	// If we get here without panic, concurrent access is working
+	assert.True(t, true)
+}
+
+// TestLoggerSwitching tests switching between different logger types
+func TestLoggerSwitching(t *testing.T) {
+	// Start with slog
+	err := NewWithConfig(&LoggerConfig{Type: LoggerTypeSlog})
+	assert.NoError(t, err)
+	_, ok := GetCurrentLogger().(*SlogLogger)
+	assert.True(t, ok)
+
+	// Switch to glog
+	err = NewWithConfig(&LoggerConfig{Type: LoggerTypeGlog, Depth: intPtr(2)})
+	assert.NoError(t, err)
+	glogLogger, ok := GetCurrentLogger().(*GlogLogger)
+	assert.True(t, ok)
+	assert.Equal(t, 2, glogLogger.depth)
+
+	// Switch to custom
+	customLogger := &mockLogger{}
+	err = NewWithConfig(&LoggerConfig{Type: LoggerTypeCustom, CustomLogger: customLogger})
+	assert.NoError(t, err)
+	assert.Equal(t, customLogger, GetCurrentLogger())
+}
+
+// TestGlobalFunctionsWithVariousArgs tests global functions with various argument types
+func TestGlobalFunctionsWithVariousArgs(t *testing.T) {
+	mock := &mockLogger{}
+	SetCustomLogger(mock)
+
+	// Test with no args
+	Info("no args message")
+	assert.Len(t, mock.infoCalls, 1)
+	assert.Equal(t, "no args message", mock.infoCalls[0].msg)
+	assert.Nil(t, mock.infoCalls[0].args)
+
+	// Reset and test with multiple args
+	mock.infoCalls = nil
+	Info("with args", "key1", "value1", "key2", 42, "key3", true)
+	assert.Len(t, mock.infoCalls, 1)
+	assert.Equal(t, "with args", mock.infoCalls[0].msg)
+	assert.Equal(t, []any{"key1", "value1", "key2", 42, "key3", true}, mock.infoCalls[0].args)
+}
+
+// TestContextPassing tests that context is properly passed to context methods
+func TestContextPassing(t *testing.T) {
+	mock := &mockLogger{}
+	SetCustomLogger(mock)
+
+	ctx := context.WithValue(context.Background(), "testKey", "testValue")
+
+	InfoContext(ctx, "test message", "arg", "value")
+
+	assert.Len(t, mock.infoCtxCalls, 1)
+	assert.Equal(t, ctx, mock.infoCtxCalls[0].ctx)
+	assert.Equal(t, "test message", mock.infoCtxCalls[0].msg)
+	assert.Equal(t, []any{"arg", "value"}, mock.infoCtxCalls[0].args)
+}
+
+// TestNilContextHandling tests behavior with nil context
+func TestNilContextHandling(t *testing.T) {
+	mock := &mockLogger{}
+	SetCustomLogger(mock)
+
+	InfoContext(nil, "test message with nil context")
+
+	assert.Len(t, mock.infoCtxCalls, 1)
+	assert.Nil(t, mock.infoCtxCalls[0].ctx)
+	assert.Equal(t, "test message with nil context", mock.infoCtxCalls[0].msg)
+}
+
+// BenchmarkGlobalInfo benchmarks the global Info function
+func BenchmarkGlobalInfo(b *testing.B) {
+	setupTest()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Info("benchmark message", "iteration", i)
+	}
+}
+
+// BenchmarkGlobalInfoContext benchmarks the global InfoContext function
+func BenchmarkGlobalInfoContext(b *testing.B) {
+	setupTest()
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		InfoContext(ctx, "benchmark message", "iteration", i)
+	}
+}
+
+// BenchmarkLoggerSwitching benchmarks switching logger types
+func BenchmarkLoggerSwitching(b *testing.B) {
+	configs := []*LoggerConfig{
+		{Type: LoggerTypeSlog},
+		{Type: LoggerTypeGlog, Depth: intPtr(1)},
+		{Type: LoggerTypeCustom, CustomLogger: &mockLogger{}},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		config := configs[i%len(configs)]
+		NewWithConfig(config)
 	}
 }
 
 // Helper function to create int pointer
 func intPtr(i int) *int {
 	return &i
-}
-
-// Benchmark tests
-func BenchmarkNew(b *testing.B) {
-	depth := 2
-	for i := 0; i < b.N; i++ {
-		New("default", &depth)
-	}
-}
-
-func BenchmarkNewWithConfig(b *testing.B) {
-	config := &LoggerConfig{
-		Type:  LoggerTypeDefault,
-		Depth: intPtr(2),
-	}
-	for i := 0; i < b.N; i++ {
-		NewWithConfig(config)
-	}
-}
-
-func BenchmarkInfo(b *testing.B) {
-	mockLogger := &MockLogger{}
-	originalLogger := logger
-	logger = mockLogger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	for i := 0; i < b.N; i++ {
-		Info("test message")
-	}
-}
-
-func BenchmarkInfof(b *testing.B) {
-	mockLogger := &MockLogger{}
-	originalLogger := logger
-	logger = mockLogger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	for i := 0; i < b.N; i++ {
-		Infof("test message %d", i)
-	}
-}
-
-func TestSetCustomLogger(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	// Create mock logger
-	mockLogger := &MockLogger{}
-
-	// Test SetCustomLogger
-	SetCustomLogger(mockLogger)
-
-	// Verify the logger was set
-	if logger != mockLogger {
-		t.Error("SetCustomLogger did not set the logger correctly")
-	}
-
-	// Test that the logger works
-	Info("test message")
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-	if len(mockLogger.InfoCalls[0]) != 1 || mockLogger.InfoCalls[0][0] != "test message" {
-		t.Errorf("Info call arguments incorrect: %v", mockLogger.InfoCalls[0])
-	}
-}
-
-func TestGetCurrentLogger(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	// Test with default logger
-	defaultLogger := NewDefaultLogger(1)
-	logger = defaultLogger
-
-	currentLogger := GetCurrentLogger()
-	if currentLogger != defaultLogger {
-		t.Error("GetCurrentLogger did not return the correct logger")
-	}
-
-	// Test with custom logger
-	mockLogger := &MockLogger{}
-	logger = mockLogger
-
-	currentLogger = GetCurrentLogger()
-	if currentLogger != mockLogger {
-		t.Error("GetCurrentLogger did not return the correct custom logger")
-	}
-}
-
-func TestNewCustom(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	// Create mock logger
-	mockLogger := &MockLogger{}
-
-	// Test NewCustom
-	err := NewCustom(mockLogger)
-	if err != nil {
-		t.Errorf("NewCustom returned error: %v", err)
-	}
-
-	// Verify the logger was set
-	if logger != mockLogger {
-		t.Error("NewCustom did not set the logger correctly")
-	}
-
-	// Test that the logger works
-	Info("test message")
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-}
-
-func TestNewWithConfig_CustomLogger(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	// Test custom logger with instance
-	mockLogger := &MockLogger{}
-	config := &LoggerConfig{
-		Type:         LoggerTypeCustom,
-		CustomLogger: mockLogger,
-	}
-
-	err := NewWithConfig(config)
-	if err != nil {
-		t.Errorf("NewWithConfig returned error: %v", err)
-	}
-
-	if logger != mockLogger {
-		t.Error("NewWithConfig did not set the custom logger correctly")
-	}
-
-	// Test that the logger works
-	Info("test message")
-	if len(mockLogger.InfoCalls) != 1 {
-		t.Errorf("Expected 1 Info call, got %d", len(mockLogger.InfoCalls))
-	}
-}
-
-func TestNewWithConfig_CustomLoggerErrors(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	tests := []struct {
-		name          string
-		config        *LoggerConfig
-		expectedError string
-	}{
-		{
-			name: "Custom logger without instance or name",
-			config: &LoggerConfig{
-				Type: LoggerTypeCustom,
-			},
-			expectedError: "custom logger type requires either CustomLogger instance or CustomName",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := NewWithConfig(tt.config)
-			if err == nil {
-				t.Error("NewWithConfig should return error")
-			}
-			if err.Error() != tt.expectedError {
-				t.Errorf("Expected error '%s', got '%s'", tt.expectedError, err.Error())
-			}
-		})
-	}
-}
-
-func TestNew_CustomLoggerType(t *testing.T) {
-	// Save original logger
-	originalLogger := logger
-	defer func() {
-		logger = originalLogger
-	}()
-
-	// Test calling New with "custom" type should fail without proper setup
-	err := New("custom", nil)
-	if err == nil {
-		t.Error("New with 'custom' type should return error without proper setup")
-	}
-
-	expectedError := "custom logger type requires either CustomLogger instance or CustomName"
-	if err.Error() != expectedError {
-		t.Errorf("Expected error '%s', got '%s'", expectedError, err.Error())
-	}
 }

@@ -1,23 +1,28 @@
 package logger
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 var defaultDepth int = 1
 
-var logger Logger = NewDefaultLogger(defaultDepth)
+var logger Logger = NewSlogLogger()
 
 // LoggerType represents different logger implementations
 type LoggerType string
 
 const (
-	LoggerTypeDefault LoggerType = "default"
-	LoggerTypeCustom  LoggerType = "custom"
+	LoggerTypeSlog   LoggerType = "slog"
+	LoggerTypeGlog   LoggerType = "glog"
+	LoggerTypeCustom LoggerType = "custom"
 )
 
 // LoggerConfig holds configuration for different logger types
 type LoggerConfig struct {
-	Type         LoggerType
-	Depth        *int
+	Type  LoggerType
+	Depth *int
+
 	CustomLogger Logger // For custom logger instances
 }
 
@@ -34,6 +39,10 @@ func New(loggerType string, depth *int) error {
 // NewWithConfig initializes a logger based on the provided LoggerConfig and sets it as the active logger.
 // Returns an error if the configuration is invalid or logger initialization fails.
 func NewWithConfig(config *LoggerConfig) error {
+	if config == nil {
+		return fmt.Errorf("logger config is nil")
+	}
+
 	if config.Depth == nil {
 		config.Depth = &defaultDepth
 	}
@@ -41,21 +50,26 @@ func NewWithConfig(config *LoggerConfig) error {
 	var newLogger Logger
 
 	switch config.Type {
-	case LoggerTypeDefault:
-		newLogger = NewDefaultLogger(*config.Depth)
+	case LoggerTypeGlog:
+		newLogger = NewGlogLogger(*config.Depth)
+
+	case LoggerTypeSlog:
+		newLogger = NewSlogLogger()
+
 	case LoggerTypeCustom:
-		if config.CustomLogger != nil {
-			newLogger = config.CustomLogger
-		} else {
-			return fmt.Errorf("custom logger type requires either CustomLogger instance or CustomName")
+		if config.CustomLogger == nil {
+			return fmt.Errorf("custom logger type requires CustomLogger instance")
 		}
+
+		newLogger = config.CustomLogger
+
 	default:
 		return fmt.Errorf("unsupported logger type: %s", config.Type)
 	}
 
 	logger = newLogger
-
 	return nil
+
 }
 
 // SetCustomLogger directly sets a custom logger instance
@@ -63,52 +77,43 @@ func SetCustomLogger(customLogger Logger) {
 	logger = customLogger
 }
 
-// NewCustom creates a new custom logger configuration
-func NewCustom(customLogger Logger) error {
-	config := &LoggerConfig{
-		Type:         LoggerTypeCustom,
-		CustomLogger: customLogger,
-	}
-	return NewWithConfig(config)
-}
-
 // GetCurrentLogger returns the current logger instance
 func GetCurrentLogger() Logger {
 	return logger
 }
 
-func Info(args ...any) {
-	logger.Info(args...)
+// Debug level logging
+func Debug(msg any, args ...any) {
+	logger.Debug(msg, args...)
 }
 
-func Infof(format string, args ...any) {
-	logger.Infof(format, args)
+func DebugContext(ctx context.Context, msg any, args ...any) {
+	logger.DebugContext(ctx, msg, args...)
 }
 
-func Warning(args ...any) {
-	logger.Warning(args...)
+// Info level logging
+func Info(msg any, args ...any) {
+	logger.Info(msg, args...)
 }
 
-func Warningf(format string, args ...any) {
-	logger.Warningf(format, args)
+func InfoContext(ctx context.Context, msg any, args ...any) {
+	logger.InfoContext(ctx, msg, args...)
 }
 
-func Error(args ...any) {
-	logger.Error(args...)
+// Warn level logging
+func Warn(msg any, args ...any) {
+	logger.Warn(msg, args...)
 }
 
-func Errorf(format string, args ...any) {
-	logger.Errorf(format, args)
+func WarnContext(ctx context.Context, msg any, args ...any) {
+	logger.WarnContext(ctx, msg, args...)
 }
 
-func Exitf(format string, args ...any) {
-	logger.Exitf(format, args)
+// Error level logging
+func Error(msg any, args ...any) {
+	logger.Error(msg, args...)
 }
 
-func Fatal(args ...any) {
-	logger.Fatal(args...)
-}
-
-func Fatalf(format string, args ...any) {
-	logger.Fatalf(format, args)
+func ErrorContext(ctx context.Context, msg any, args ...any) {
+	logger.ErrorContext(ctx, msg, args...)
 }

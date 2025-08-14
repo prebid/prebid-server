@@ -2,37 +2,20 @@ package logger
 
 import "context"
 
-type (
-	PrintfLogger interface {
-		Info(args ...any)
-		Infof(format string, args ...any)
+type Logger interface {
+	// Debug level logging
+	Debug(msg any, args ...any)
+	DebugContext(ctx context.Context, msg any, args ...any)
 
-		Warning(args ...any)
-		Warningf(format string, args ...any)
+	// Info level logging
+	Info(msg any, args ...any)
+	InfoContext(ctx context.Context, msg any, args ...any)
 
-		Error(args ...any)
-		Errorf(format string, args ...any)
+	// Warn level logging
+	Warn(msg any, args ...any)
+	WarnContext(ctx context.Context, msg any, args ...any)
 
-		Exitf(format string, args ...any)
-
-		Fatal(args ...any)
-		Fatalf(format string, args ...any)
-	}
-	StructuredLogger interface {
-		Debugs(msg string, args ...any)
-		DebugsContext(ctx context.Context, msg string, args ...any)
-
-		Infos(msg string, args ...any)
-		InfosContext(ctx context.Context, msg string, args ...any)
-
-		Warns(msg string, args ...any)
-		WarnsContext(ctx context.Context, msg string, args ...any)
-
-		Errors(msg string, args ...any)
-		ErrorsContext(ctx context.Context, msg string, args ...any)
-	}
-	Logger interface {
-		PrintfLogger
-		StructuredLogger
-	}
-)
+	// Error level logging
+	Error(msg any, args ...any)
+	ErrorContext(ctx context.Context, msg any, args ...any)
+}
