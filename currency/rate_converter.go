@@ -2,13 +2,13 @@ package currency
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net/http"
 	"sync/atomic"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
@@ -83,9 +83,9 @@ func (rc *RateConverter) update() error {
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
-			logger.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
+			logger.Error(fmt.Sprintf("Error updating conversion rates, falling back to constant rates: %v", err))
 		} else {
-			logger.Errorf("Error updating conversion rates: %v", err)
+			logger.Error(fmt.Sprintf("Error updating conversion rates: %v", err))
 		}
 	}
 

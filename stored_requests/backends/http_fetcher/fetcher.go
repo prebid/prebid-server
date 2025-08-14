@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/prebid/prebid-server/v3/logger"
@@ -58,9 +59,10 @@ func NewFetcher(client *http.Client, endpoint string, useRfcCompliantBuilder boo
 	endpointURL, err := url.Parse(endpoint)
 
 	if err != nil {
-		logger.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
+		logger.Error(fmt.Sprintf(`Invalid endpoint "%s": %v`, endpoint, err))
+		os.Exit(1)
 	}
-	logger.Infof("Making http_fetcher for endpoint %v", endpoint)
+	logger.Info(fmt.Sprintf("Making http_fetcher for endpoint %v", endpoint))
 
 	return &HttpFetcher{
 		client:                 client,

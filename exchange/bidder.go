@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"math"
 	"math/rand"
@@ -20,13 +19,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
 	"github.com/prebid/prebid-server/v3/config/util"
 	"github.com/prebid/prebid-server/v3/currency"
 	"github.com/prebid/prebid-server/v3/exchange/entities"
 	"github.com/prebid/prebid-server/v3/experiment/adscert"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/version"
 
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -569,7 +568,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // Bidder interface.
 func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	if bidder.shouldRequest() {
-		return bidder.doRequestImpl(ctx, req, logger.Warningf, bidderRequestStartTime, tmaxAdjustments)
+		return bidder.doRequestImpl(ctx, req, logger.Warn, bidderRequestStartTime, tmaxAdjustments)
 	}
 	return &httpCallInfo{
 		request: req,

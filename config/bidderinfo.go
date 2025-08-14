@@ -3,12 +3,12 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
@@ -234,7 +234,8 @@ const (
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(err)
+		os.Exit(1)
 	}
 
 	bidderInfos := make(map[string][]byte)

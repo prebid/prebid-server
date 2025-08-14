@@ -3,6 +3,7 @@ package filesystem
 import (
 	"bytes"
 	"fmt"
+
 	cglog "github.com/chasex/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"

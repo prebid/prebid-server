@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"math/rand"
 	"net/url"
 	"runtime/debug"
@@ -28,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/v3/floors"
 	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -782,7 +782,7 @@ func (e *exchange) getAllBids(
 		bidderRunner := e.recoverSafely(bidderRequests, func(bidderRequest BidderRequest, conversions currency.Conversions) {
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidderRequest.BidderLabels.Adapter == "" {
-				logger.Errorf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName)
+				logger.Error(fmt.Sprintf("Exchange: bidlables for %s (%s) missing adapter string", bidderRequest.BidderName, bidderRequest.BidderCoreName))
 				bidderRequest.BidderLabels.Adapter = bidderRequest.BidderCoreName
 			}
 			brw := new(bidResponseWrapper)
@@ -917,9 +917,9 @@ func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
 					allBidders = sb.String()[:sb.Len()-1]
 				}
 
-				logger.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. "+
+				logger.Error(fmt.Sprintf("OpenRTB auction recovered panic from Bidder %s: %v. "+
 					"Account id: %s, All Bidders: %s, Stack trace is: %v",
-					bidderRequest.BidderCoreName, r, bidderRequest.BidderLabels.PubID, allBidders, string(debug.Stack()))
+					bidderRequest.BidderCoreName, r, bidderRequest.BidderLabels.PubID, allBidders, string(debug.Stack())))
 				e.me.RecordAdapterPanic(bidderRequest.BidderLabels)
 				// Let the master request know that there is no data here
 				brw := new(bidResponseWrapper)

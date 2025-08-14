@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"net/url"
 	"strings"
@@ -29,6 +28,7 @@ import (
 	"github.com/prebid/prebid-server/v3/exchange"
 	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/privacy"
@@ -293,7 +293,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err != nil && !isRejectErr {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		logger.Errorf("/openrtb2/amp Critical error: %v", err)
+		logger.Error(fmt.Sprintf("/openrtb2/amp Critical error: %v", err))
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -304,7 +304,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err := reqWrapper.RebuildRequest(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		logger.Errorf("/openrtb2/amp Critical error: %v", err)
+		logger.Error(fmt.Sprintf("/openrtb2/amp Critical error: %v", err))
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -368,7 +368,7 @@ func sendAmpResponse(
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
-						logger.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
+						logger.Error(fmt.Sprintf("/openrtb2/amp Critical error unpacking targets: %v", err))
 						ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
 						ao.Status = http.StatusInternalServerError
 						return labels, ao
@@ -468,7 +468,7 @@ func getExtBidResponse(
 			if extResponse.Debug != nil {
 				extBidResponse.Debug = extResponse.Debug
 			} else {
-				logger.Errorf("Test set on request but debug not present in response.")
+				logger.Error("Test set on request but debug not present in response.")
 				ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
 			}
 		}
@@ -478,7 +478,7 @@ func getExtBidResponse(
 		modules, warns, err := hookexecution.GetModulesJSON(stageOutcomes, reqWrapper.BidRequest, account)
 		if err != nil {
 			err := fmt.Errorf("Failed to get modules outcome: %s", err)
-			logger.Errorf(err.Error())
+			logger.Error(err.Error())
 			ao.Errors = append(ao.Errors, err)
 		} else if modules != nil {
 			extBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{Modules: modules}

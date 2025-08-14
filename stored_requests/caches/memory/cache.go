@@ -3,10 +3,12 @@ package memory
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/v3/logger"
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/coocood/freecache"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/stored_requests"
 )
 
@@ -19,10 +21,11 @@ import (
 func NewCache(size int, ttl int, dataType string) stored_requests.CacheJSON {
 	if ttl > 0 && size <= 0 {
 		// a positive ttl indicates "LRU" cache type, while unlimited size indicates an "unbounded" cache type
-		logger.Fatalf("unbounded in-memory %s cache with TTL not allowed. Config validation should have caught this. Failing fast because something is buggy.", dataType)
+		logger.Error(fmt.Sprintf("unbounded in-memory %s cache with TTL not allowed. Config validation should have caught this. Failing fast because something is buggy.", dataType))
+		os.Exit(1)
 	}
 	if size > 0 {
-		logger.Infof("Using a Stored %s in-memory cache. Max size: %d bytes. TTL: %d seconds.", dataType, size, ttl)
+		logger.Info(fmt.Sprintf("Using a Stored %s in-memory cache. Max size: %d bytes. TTL: %d seconds.", dataType, size, ttl))
 		return &cache{
 			dataType: dataType,
 			cache: &pbsLRUCache{
@@ -31,7 +34,7 @@ func NewCache(size int, ttl int, dataType string) stored_requests.CacheJSON {
 			},
 		}
 	} else {
-		logger.Infof("Using an unbounded Stored %s in-memory cache.", dataType)
+		logger.Info(fmt.Sprintf("Using an unbounded Stored %s in-memory cache.", dataType))
 		return &cache{
 			dataType: dataType,
 			cache:    &pbsSyncMap{&sync.Map{}},

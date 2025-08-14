@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net/http"
 	"net/url"
@@ -19,6 +18,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
@@ -364,7 +364,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if bidReq.Test == 1 {
 		err = setSeatNonBidRaw(bidReqWrapper, auctionResponse)
 		if err != nil {
-			logger.Errorf("Error setting seat non-bid: %v", err)
+			logger.Error(fmt.Sprintf("Error setting seat non-bid: %v", err))
 		}
 		bidResp.Ext = response.Ext
 	}
@@ -434,7 +434,7 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	w.WriteHeader(status)
 	vo.Status = status
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
-	logger.Errorf("/openrtb2/video Critical error: %v", errors)
+	logger.Error(fmt.Sprintf("/openrtb2/video Critical error: %v", errors))
 	vo.Errors = append(vo.Errors, errL...)
 }
 

@@ -1,13 +1,15 @@
 package info
 
 import (
-	"github.com/prebid/prebid-server/v3/logger"
+	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -18,22 +20,26 @@ var invalidBaseAdaptersOnlyMsg = []byte(`Invalid value for 'baseadaptersonly' qu
 func NewBiddersEndpoint(bidders config.BidderInfos) httprouter.Handle {
 	responseAll, err := prepareBiddersResponseAll(bidders)
 	if err != nil {
-		logger.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
+		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint all bidders response: %v", err))
+		os.Exit(1)
 	}
 
 	responseAllBaseOnly, err := prepareBiddersResponseAllBaseOnly(bidders)
 	if err != nil {
-		logger.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
+		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err))
+		os.Exit(1)
 	}
 
 	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders)
 	if err != nil {
-		logger.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
+		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint enabled only response: %v", err))
+		os.Exit(1)
 	}
 
 	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledOnlyBaseOnly(bidders)
 	if err != nil {
-		logger.Fatalf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
+		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err))
+		os.Exit(1)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -137,6 +143,6 @@ func writeResponse(w http.ResponseWriter, data []byte) {
 
 func writeWithErrorHandling(w http.ResponseWriter, data []byte) {
 	if _, err := w.Write(data); err != nil {
-		logger.Errorf("error writing response to /info/bidders: %v", err)
+		logger.Error(fmt.Sprintf("error writing response to /info/bidders: %v", err))
 	}
 }

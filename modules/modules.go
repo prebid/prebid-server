@@ -3,10 +3,10 @@ package modules
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
@@ -71,7 +71,7 @@ func (m *builder) Build(
 			}
 
 			if !isEnabled {
-				logger.Infof("Skip %s module, disabled.", id)
+				logger.Info(fmt.Sprintf("Skip %s module, disabled.", id))
 				continue
 			}
 

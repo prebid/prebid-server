@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"io"
 	"net/http"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/metrics"
 
 	"github.com/buger/jsonparser"

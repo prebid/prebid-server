@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"os"
 	"strings"
@@ -25,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/v3/floors"
 	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/metrics"
 	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
@@ -66,7 +66,8 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
-		logger.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
+		logger.Error(fmt.Sprintf("Failed to read directory %s: %v", schemaDirectory, err))
+		os.Exit(1)
 	}
 
 	bidderMap := openrtb_ext.BuildBidderMap()
@@ -76,7 +77,8 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		bidder := strings.TrimSuffix(file.Name(), ".json")
 		bidderName, isValid := bidderMap[bidder]
 		if !isValid {
-			logger.Fatalf("Schema exists for an unknown bidder: %s", bidder)
+			logger.Error(fmt.Sprintf("Schema exists for an unknown bidder: %s", bidder))
+			os.Exit(1)
 		}
 		data[bidder] = json.RawMessage(validator.Schema(bidderName))
 	}
@@ -88,7 +90,8 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 
 	response, err := jsonutil.Marshal(data)
 	if err != nil {
-		logger.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
+		logger.Error(fmt.Sprintf("Failed to marshal bidder param JSON-schema: %v", err))
+		os.Exit(1)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
@@ -133,7 +136,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	var readCertErr error
 	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
 	if readCertErr != nil {
-		logger.Infof("Could not read certificates file: %s \n", readCertErr.Error())
+		logger.Info(fmt.Sprintf("Could not read certificates file: %s \n", readCertErr.Error()))
 	}
 
 	generalHttpClient := &http.Client{
@@ -188,7 +191,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor}
 	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
-		logger.Fatalf("Failed to init hook modules: %v", err)
+		logger.Error(fmt.Sprintf("Failed to init hook modules: %v", err))
+		os.Exit(1)
 	}
 
 	// Metrics engine
@@ -202,7 +206,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
-		logger.Fatalf("Failed to create the bidder params validator. %v", err)
+		logger.Error(fmt.Sprintf("Failed to create the bidder params validator. %v", err))
+		os.Exit(1)
 	}
 
 	activeBidders := exchange.GetActiveBidders(cfg.BidderInfos)
@@ -224,7 +229,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 	adsCertSigner, err := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
 	if err != nil {
-		logger.Fatalf("Failed to create ads cert signer: %v", err)
+		logger.Error(fmt.Sprintf("Failed to create ads cert signer: %v", err))
+		os.Exit(1)
 	}
 
 	requestValidator := ortb.NewRequestValidator(activeBidders, disabledBidders, paramsValidator)
@@ -237,17 +243,20 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
-		logger.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
+		logger.Error(fmt.Sprintf("Failed to create the openrtb2 endpoint handler. %v", err))
+		os.Exit(1)
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
-		logger.Fatalf("Failed to create the amp endpoint handler. %v", err)
+		logger.Error(fmt.Sprintf("Failed to create the amp endpoint handler. %v", err))
+		os.Exit(1)
 	}
 
 	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, cacheClient, tmaxAdjustments)
 	if err != nil {
-		logger.Fatalf("Failed to create the video endpoint handler. %v", err)
+		logger.Error(fmt.Sprintf("Failed to create the video endpoint handler. %v", err))
+		os.Exit(1)
 	}
 
 	requestTimeoutHeaders := config.RequestTimeoutHeaders{}
@@ -312,11 +321,11 @@ func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {
 			switch endpointLower {
 			case "iframe":
 				if info.Syncer.IFrame == nil {
-					logger.Warningf("bidder %s supports iframe user sync, but doesn't have a default and must be configured by the host", name)
+					logger.Warn(fmt.Sprintf("bidder %s supports iframe user sync, but doesn't have a default and must be configured by the host", name))
 				}
 			case "redirect":
 				if info.Syncer.Redirect == nil {
-					logger.Warningf("bidder %s supports redirect user sync, but doesn't have a default and must be configured by the host", name)
+					logger.Warn(fmt.Sprintf("bidder %s supports redirect user sync, but doesn't have a default and must be configured by the host", name))
 				}
 			default:
 				return fmt.Errorf("failed to load bidder info for %s, user sync supported endpoint '%s' is unrecognized", name, endpoint)
@@ -367,13 +376,15 @@ func readDefaultRequestFromFile(defReqConfig config.DefReqConfig) []byte {
 
 	defaultRequestJSON, err := os.ReadFile(defReqConfig.FileSystem.FileName)
 	if err != nil {
-		logger.Fatalf("error reading default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
+		logger.Error(fmt.Sprintf("error reading default request from file %s: %v", defReqConfig.FileSystem.FileName, err))
+		os.Exit(1)
 		return []byte{}
 	}
 
 	// validate json is valid
 	if err := jsonutil.UnmarshalValid(defaultRequestJSON, &openrtb2model.BidRequest{}); err != nil {
-		logger.Fatalf("error parsing default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
+		logger.Error(fmt.Sprintf("error parsing default request from file %s: %v", defReqConfig.FileSystem.FileName, err))
+		os.Exit(1)
 		return []byte{}
 	}
 

@@ -5,12 +5,12 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/version"
 )
 
@@ -50,7 +50,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 		if endpoint.Gzip {
 			requestBody, err = compressToGZIP(payload)
 			if err != nil {
-				logger.Errorf("[agmaAnalytics] Compressing request failed %v", err)
+				logger.Error(fmt.Sprintf("[agmaAnalytics] Compressing request failed %v", err))
 				return err
 			}
 		} else {
@@ -59,7 +59,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.Url, bytes.NewBuffer(requestBody))
 		if err != nil {
-			logger.Errorf("[agmaAnalytics] Creating request failed %v", err)
+			logger.Error(fmt.Sprintf("[agmaAnalytics] Creating request failed %v", err))
 			return err
 		}
 
@@ -71,12 +71,12 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			logger.Errorf("[agmaAnalytics] Sending request failed %v", err)
+			logger.Error(fmt.Sprintf("[agmaAnalytics] Sending request failed %v", err))
 			return err
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			logger.Errorf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
+			logger.Error(fmt.Sprintf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK))
 			return fmt.Errorf("wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		}
 		return nil

@@ -3,10 +3,11 @@ package eventchannel
 import (
 	"bytes"
 	"fmt"
-	"github.com/prebid/prebid-server/v3/logger"
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 type Sender = func(payload []byte) error
@@ -29,7 +30,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			logger.Errorf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
+			logger.Error(fmt.Sprintf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK))
 			return fmt.Errorf("wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		}
 		return nil
