@@ -51,8 +51,8 @@ func (logger *GlogLogger) ErrorContext(ctx context.Context, msg any, args ...any
 	glog.ErrorContextDepthf(ctx, logger.depth, convertToString(msg, args...))
 }
 
-func NewGlogLogger(depth int) Logger {
+func NewGlogLogger() Logger {
 	return &GlogLogger{
-		depth: depth,
+		depth: 1,
 	}
 }

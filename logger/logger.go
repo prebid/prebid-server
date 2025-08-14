@@ -5,8 +5,6 @@ import (
 	"fmt"
 )
 
-var defaultDepth int = 1
-
 var logger Logger = NewSlogLogger()
 
 // LoggerType represents different logger implementations
@@ -20,17 +18,14 @@ const (
 
 // LoggerConfig holds configuration for different logger types
 type LoggerConfig struct {
-	Type  LoggerType
-	Depth *int
-
+	Type         LoggerType
 	CustomLogger Logger // For custom logger instances
 }
 
 // New initializes a logger configuration with the specified type and depth, and applies it using NewWithConfig.
 func New(loggerType string, depth *int) error {
 	config := &LoggerConfig{
-		Type:  LoggerType(loggerType),
-		Depth: depth,
+		Type: LoggerType(loggerType),
 	}
 
 	return NewWithConfig(config)
@@ -43,15 +38,11 @@ func NewWithConfig(config *LoggerConfig) error {
 		return fmt.Errorf("logger config is nil")
 	}
 
-	if config.Depth == nil {
-		config.Depth = &defaultDepth
-	}
-
 	var newLogger Logger
 
 	switch config.Type {
 	case LoggerTypeGlog:
-		newLogger = NewGlogLogger(*config.Depth)
+		newLogger = NewGlogLogger()
 
 	case LoggerTypeSlog:
 		newLogger = NewSlogLogger()

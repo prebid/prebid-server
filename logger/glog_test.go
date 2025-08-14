@@ -2,54 +2,14 @@ package logger
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGlogLogger_NewGlogLogger tests the NewGlogLogger constructor
-func TestGlogLogger_NewGlogLogger(t *testing.T) {
-	tests := []struct {
-		name  string
-		depth int
-	}{
-		{
-			name:  "positive depth",
-			depth: 5,
-		},
-		{
-			name:  "zero depth",
-			depth: 0,
-		},
-		{
-			name:  "negative depth",
-			depth: -1,
-		},
-		{
-			name:  "large depth",
-			depth: 100,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			logger := NewGlogLogger(tt.depth)
-
-			assert.NotNil(t, logger)
-			assert.Implements(t, (*Logger)(nil), logger)
-
-			// Type assertion to check internal state
-			glogLogger, ok := logger.(*GlogLogger)
-			assert.True(t, ok)
-			assert.Equal(t, tt.depth, glogLogger.depth)
-		})
-	}
-}
-
 // TestGlogLogger_Debug tests the Debug method
 func TestGlogLogger_Debug(t *testing.T) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 
 	tests := []struct {
 		name string
@@ -92,7 +52,7 @@ func TestGlogLogger_Debug(t *testing.T) {
 
 // TestGlogLogger_DebugContext tests the DebugContext method
 func TestGlogLogger_DebugContext(t *testing.T) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 
 	tests := []struct {
 		name string
@@ -137,7 +97,7 @@ func TestGlogLogger_DebugContext(t *testing.T) {
 
 // TestGlogLogger_Info tests the Info method
 func TestGlogLogger_Info(t *testing.T) {
-	logger := NewGlogLogger(2)
+	logger := NewGlogLogger()
 
 	tests := []struct {
 		name string
@@ -172,7 +132,7 @@ func TestGlogLogger_Info(t *testing.T) {
 
 // TestGlogLogger_InfoContext tests the InfoContext method
 func TestGlogLogger_InfoContext(t *testing.T) {
-	logger := NewGlogLogger(2)
+	logger := NewGlogLogger()
 
 	tests := []struct {
 		name string
@@ -205,7 +165,7 @@ func TestGlogLogger_InfoContext(t *testing.T) {
 
 // TestGlogLogger_Warn tests the Warn method
 func TestGlogLogger_Warn(t *testing.T) {
-	logger := NewGlogLogger(3)
+	logger := NewGlogLogger()
 
 	tests := []struct {
 		name string
@@ -235,7 +195,7 @@ func TestGlogLogger_Warn(t *testing.T) {
 
 // TestGlogLogger_WarnContext tests the WarnContext method
 func TestGlogLogger_WarnContext(t *testing.T) {
-	logger := NewGlogLogger(3)
+	logger := NewGlogLogger()
 	ctx := context.Background()
 
 	assert.NotPanics(t, func() {
@@ -249,7 +209,7 @@ func TestGlogLogger_WarnContext(t *testing.T) {
 
 // TestGlogLogger_Error tests the Error method
 func TestGlogLogger_Error(t *testing.T) {
-	logger := NewGlogLogger(4)
+	logger := NewGlogLogger()
 
 	tests := []struct {
 		name string
@@ -284,7 +244,7 @@ func TestGlogLogger_Error(t *testing.T) {
 
 // TestGlogLogger_ErrorContext tests the ErrorContext method
 func TestGlogLogger_ErrorContext(t *testing.T) {
-	logger := NewGlogLogger(4)
+	logger := NewGlogLogger()
 	ctx := context.Background()
 
 	assert.NotPanics(t, func() {
@@ -298,7 +258,7 @@ func TestGlogLogger_ErrorContext(t *testing.T) {
 
 // TestGlogLogger_InterfaceCompliance tests that GlogLogger implements the Logger interface
 func TestGlogLogger_InterfaceCompliance(t *testing.T) {
-	var logger Logger = NewGlogLogger(1)
+	var logger Logger = NewGlogLogger()
 	assert.NotNil(t, logger)
 
 	// Test that all interface methods are callable
@@ -316,31 +276,9 @@ func TestGlogLogger_InterfaceCompliance(t *testing.T) {
 	})
 }
 
-// TestGlogLogger_DifferentDepths tests logger behavior with different depth values
-func TestGlogLogger_DifferentDepths(t *testing.T) {
-	depths := []int{0, 1, 2, 5, 10}
-
-	for _, depth := range depths {
-		t.Run(fmt.Sprintf("depth_%d", depth), func(t *testing.T) {
-			logger := NewGlogLogger(depth)
-			glogLogger := logger.(*GlogLogger)
-
-			assert.Equal(t, depth, glogLogger.depth)
-
-			// Test that all methods work regardless of depth
-			assert.NotPanics(t, func() {
-				logger.Debug("test debug at depth %d", depth)
-				logger.Info("test info at depth %d", depth)
-				logger.Warn("test warn at depth %d", depth)
-				logger.Error("test error at depth %d", depth)
-			})
-		})
-	}
-}
-
 // TestGlogLogger_ConcurrentUsage tests concurrent usage of the logger
 func TestGlogLogger_ConcurrentUsage(t *testing.T) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 	ctx := context.Background()
 
 	// Run multiple goroutines concurrently
@@ -370,7 +308,7 @@ func TestGlogLogger_ConcurrentUsage(t *testing.T) {
 
 // TestGlogLogger_NilArgs tests behavior with nil arguments
 func TestGlogLogger_NilArgs(t *testing.T) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 
 	assert.NotPanics(t, func() {
 		logger.Debug("test with nil args", nil)
@@ -382,7 +320,7 @@ func TestGlogLogger_NilArgs(t *testing.T) {
 
 // TestGlogLogger_EmptyArgs tests behavior with empty argument slice
 func TestGlogLogger_EmptyArgs(t *testing.T) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 
 	assert.NotPanics(t, func() {
 		logger.Debug("test with empty args")
@@ -394,7 +332,7 @@ func TestGlogLogger_EmptyArgs(t *testing.T) {
 
 // BenchmarkGlogLogger_Debug benchmarks the Debug method
 func BenchmarkGlogLogger_Debug(b *testing.B) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -404,7 +342,7 @@ func BenchmarkGlogLogger_Debug(b *testing.B) {
 
 // BenchmarkGlogLogger_Info benchmarks the Info method
 func BenchmarkGlogLogger_Info(b *testing.B) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -414,7 +352,7 @@ func BenchmarkGlogLogger_Info(b *testing.B) {
 
 // BenchmarkGlogLogger_Error benchmarks the Error method
 func BenchmarkGlogLogger_Error(b *testing.B) {
-	logger := NewGlogLogger(1)
+	logger := NewGlogLogger()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

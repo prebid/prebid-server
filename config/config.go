@@ -1322,7 +1322,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("hooks.enabled", false)
 
 	v.SetDefault("logger.type", "slog")
-	v.SetDefault("logger.depth", 1)
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))

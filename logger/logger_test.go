@@ -157,8 +157,7 @@ func TestNewWithConfig(t *testing.T) {
 		{
 			name: "glog config",
 			config: &LoggerConfig{
-				Type:  LoggerTypeGlog,
-				Depth: intPtr(3),
+				Type: LoggerTypeGlog,
 			},
 			expectError: false,
 		},
@@ -412,60 +411,6 @@ func TestLoggerTypes(t *testing.T) {
 	assert.Equal(t, LoggerType("custom"), LoggerTypeCustom)
 }
 
-// TestDefaultDepth tests the default depth value
-func TestDefaultDepth(t *testing.T) {
-	assert.Equal(t, 1, defaultDepth)
-}
-
-// TestLoggerConfigDepthHandling tests depth handling in LoggerConfig
-func TestLoggerConfigDepthHandling(t *testing.T) {
-	tests := []struct {
-		name          string
-		config        *LoggerConfig
-		expectedDepth int
-	}{
-		{
-			name: "nil depth uses default",
-			config: &LoggerConfig{
-				Type: LoggerTypeGlog,
-			},
-			expectedDepth: defaultDepth,
-		},
-		{
-			name: "provided depth is used",
-			config: &LoggerConfig{
-				Type:  LoggerTypeGlog,
-				Depth: intPtr(5),
-			},
-			expectedDepth: 5,
-		},
-		{
-			name: "zero depth is preserved",
-			config: &LoggerConfig{
-				Type:  LoggerTypeGlog,
-				Depth: intPtr(0),
-			},
-			expectedDepth: 0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setupTest()
-
-			err := NewWithConfig(tt.config)
-			assert.NoError(t, err)
-
-			// For glog logger, we can verify the depth was set correctly
-			if tt.config.Type == LoggerTypeGlog {
-				glogLogger, ok := GetCurrentLogger().(*GlogLogger)
-				assert.True(t, ok)
-				assert.Equal(t, tt.expectedDepth, glogLogger.depth)
-			}
-		})
-	}
-}
-
 // TestConcurrentAccess tests concurrent access to global logger functions
 func TestConcurrentAccess(t *testing.T) {
 	setupTest()
@@ -501,28 +446,6 @@ func TestConcurrentAccess(t *testing.T) {
 
 	// If we get here without panic, concurrent access is working
 	assert.True(t, true)
-}
-
-// TestLoggerSwitching tests switching between different logger types
-func TestLoggerSwitching(t *testing.T) {
-	// Start with slog
-	err := NewWithConfig(&LoggerConfig{Type: LoggerTypeSlog})
-	assert.NoError(t, err)
-	_, ok := GetCurrentLogger().(*SlogLogger)
-	assert.True(t, ok)
-
-	// Switch to glog
-	err = NewWithConfig(&LoggerConfig{Type: LoggerTypeGlog, Depth: intPtr(2)})
-	assert.NoError(t, err)
-	glogLogger, ok := GetCurrentLogger().(*GlogLogger)
-	assert.True(t, ok)
-	assert.Equal(t, 2, glogLogger.depth)
-
-	// Switch to custom
-	customLogger := &mockLogger{}
-	err = NewWithConfig(&LoggerConfig{Type: LoggerTypeCustom, CustomLogger: customLogger})
-	assert.NoError(t, err)
-	assert.Equal(t, customLogger, GetCurrentLogger())
 }
 
 // TestGlobalFunctionsWithVariousArgs tests global functions with various argument types
@@ -596,7 +519,7 @@ func BenchmarkGlobalInfoContext(b *testing.B) {
 func BenchmarkLoggerSwitching(b *testing.B) {
 	configs := []*LoggerConfig{
 		{Type: LoggerTypeSlog},
-		{Type: LoggerTypeGlog, Depth: intPtr(1)},
+		{Type: LoggerTypeGlog},
 		{Type: LoggerTypeCustom, CustomLogger: &mockLogger{}},
 	}
 
