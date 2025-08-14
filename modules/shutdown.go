@@ -1,7 +1,9 @@
 package modules
 
 import (
-	"github.com/golang/glog"
+	"fmt"
+
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 // Shutdowner is an interface that defines a method for shutting down modules.
@@ -33,7 +35,7 @@ func NewShutdownModules(modules map[string]interface{}) *ShutdownModules {
 func (s *ShutdownModules) Shutdown() {
 	for _, module := range s.modules {
 		if err := module.Shutdown(); err != nil {
-			glog.Errorf("Error shutting down module: %v", err)
+			logger.Error(fmt.Sprintf("Error shutting down module: %v", err))
 		}
 	}
 	return

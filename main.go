@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -10,13 +12,13 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/router"
 	"github.com/prebid/prebid-server/v3/server"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/task"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
@@ -25,20 +27,24 @@ func init() {
 }
 
 func main() {
-	flag.Parse() // required for glog flags and testing package flags
+	flag.Parse() // required for di.Log flags and testing package flags
 
 	bidderInfoPath, err := filepath.Abs(infoDirectory)
 	if err != nil {
-		glog.Exitf("Unable to build configuration directory path: %v", err)
+		logger.Error(fmt.Sprintf("Unable to build configuration directory path: %v", err))
+		os.Exit(1)
 	}
 
 	bidderInfos, err := config.LoadBidderInfoFromDisk(bidderInfoPath)
 	if err != nil {
-		glog.Exitf("Unable to load bidder configurations: %v", err)
+		logger.Error(fmt.Sprintf("Unable to load bidder configurations: %v", err))
+		os.Exit(1)
 	}
+
 	cfg, err := loadConfig(bidderInfos)
 	if err != nil {
-		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
+		logger.Error(fmt.Sprintf("Configuration could not be loaded or did not pass validation: %v", err))
+		os.Exit(1)
 	}
 
 	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
@@ -51,7 +57,8 @@ func main() {
 
 	err = serve(cfg)
 	if err != nil {
-		glog.Exitf("prebid-server failed: %v", err)
+		logger.Error(fmt.Sprintf("prebid-server failed: %v", err))
+		os.Exit(1)
 	}
 }
 
@@ -79,7 +86,8 @@ func serve(cfg *config.Configuration) error {
 
 	corsRouter := router.SupportCORS(r)
 	if err := server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine); err != nil {
-		glog.Fatalf("prebid-server returned an error: %v", err)
+		logger.Error(fmt.Sprintf("prebid-server returned an error: %v", err))
+		os.Exit(1)
 	}
 
 	r.Shutdown()
