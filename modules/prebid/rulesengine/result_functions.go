@@ -73,18 +73,16 @@ func (eb *ExcludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, resul
 			excludedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
 		}
 	}
-
-	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(excludedBidders)
+	if len(excludedBidders) > 0 {
+		result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(excludedBidders)
+	}
 	return nil
 }
 
 func syncMatches(bidderName string, userSync fetchutil.IdFetcher, isSynced bool) bool {
 	uid, found, active := userSync.GetUID(bidderName)
-	if found {
-		syncValid := found && active && uid != ""
-		return syncValid == isSynced
-	}
-	return false
+	syncValid := found && active && uid != ""
+	return syncValid == isSynced
 }
 
 func (eb *ExcludeBidders) Name() string {
