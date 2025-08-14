@@ -58,7 +58,7 @@ type ResultFuncParams struct {
 	Bidders        []string `json:"bidders,omitempty"`
 	SeatNonBid     int      `json:"seatnonbid,omitempty"`
 	AnalyticsValue string   `json:"analyticsvalue,omitempty"`
-	IfSyncedId     bool     `json:"ifsyncedid,omitempty"`
+	IfSyncedId     *bool    `json:"ifsyncedid,omitempty"`
 }
 
 func CreateSchemaValidator(jsonSchemaFile string) (*gojsonschema.Schema, error) {

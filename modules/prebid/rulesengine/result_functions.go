@@ -5,14 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v3/util/fetchutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // ProcessedAuctionResultFunc is a type alias for a result function that runs in the processed auction request stage.
-type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]
+type ProcessedAuctionResultFunc = rules.ResultFunction[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]
 
 const (
 	ExcludeBiddersName = "excludeBidders"
@@ -60,14 +61,28 @@ type ExcludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the ExcludeBidders instance to the provided ChangeSet by creating a mutation.
-func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
+func (eb *ExcludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
 	excludedBidders := make(map[string]struct{})
 	for _, bidderName := range eb.Args.Bidders {
-		excludedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
-	}
 
-	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(excludedBidders)
+		if eb.Args.IfSyncedId != nil {
+			if syncMatches(bidderName, *payload.Usersyncs, *eb.Args.IfSyncedId) {
+				excludedBidders[bidderName] = struct{}{}
+			}
+		} else {
+			excludedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
+		}
+	}
+	if len(excludedBidders) > 0 {
+		result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(excludedBidders)
+	}
 	return nil
+}
+
+func syncMatches(bidderName string, userSync fetchutil.IdFetcher, isSynced bool) bool {
+	uid, found, active := userSync.GetUID(bidderName)
+	syncValid := found && active && uid != ""
+	return syncValid == isSynced
 }
 
 func (eb *ExcludeBidders) Name() string {
@@ -96,9 +111,16 @@ type IncludeBidders struct {
 }
 
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
-func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
+func (ib *IncludeBidders) Call(payload *hs.ProcessedAuctionRequestPayload, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
 	for _, bidderName := range ib.Args.Bidders {
-		result.AllowedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
+
+		if ib.Args.IfSyncedId != nil {
+			if syncMatches(bidderName, *payload.Usersyncs, *ib.Args.IfSyncedId) {
+				result.AllowedBidders[bidderName] = struct{}{}
+			}
+		} else {
+			result.AllowedBidders[bidderName] = struct{}{}
+		}
 	}
 	return nil
 }
