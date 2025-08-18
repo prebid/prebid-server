@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>smilewanted: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/smilewanted/smilewanted.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package smilewanted
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type adapter struct {
+        URI string
+}
+
+// ExtImpSmilewanted defines the contract for bidrequest.imp[i].ext.prebid.bidder.smilewanted
+type ExtImpSmilewanted struct {
+        ZoneId string `json:"zoneId"`
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+
+        // Extract zoneId from the first impression if available
+        var zoneId string
+        if len(request.Imp) &gt; 0 </span><span class="cov8" title="1">{
+                // Parse imp.ext
+                var bidderExt adapters.ExtImpBidder
+                if err := jsonutil.Unmarshal(request.Imp[0].Ext, &amp;bidderExt); err == nil </span><span class="cov8" title="1">{
+                        // Parse bidderExt.Bidder to get zoneId
+                        var smilewantedExt ExtImpSmilewanted
+                        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;smilewantedExt); err == nil </span><span class="cov8" title="1">{
+                                zoneId = smilewantedExt.ZoneId
+                        }</span>
+                }
+        }
+
+        // Build the endpoint URL with zoneId
+        <span class="cov8" title="1">endpoint := a.URI
+        if zoneId != "" </span><span class="cov8" title="1">{
+                endpoint = a.URI + zoneId
+        }</span>
+
+        <span class="cov8" title="1">request.AT = 1 //Defaulting to first price auction for all prebid requests
+
+        reqJSON, err := json.Marshal(request)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Json not encoded. err: %s", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        headers.Add("x-openrtb-version", "2.5")
+        headers.Add("sw-integration-type", "prebid_server")
+
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     endpoint,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }}, errs</span>
+}
+
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Bad server response: %s.", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidReq openrtb2.BidRequest
+        if err := jsonutil.Unmarshal(externalRequest.Body, &amp;bidReq); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+        sb := bidResp.SeatBid[0]
+        for i := 0; i &lt; len(sb.Bid); i++ </span><span class="cov8" title="1">{
+                bid := sb.Bid[i]
+                bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                        Bid:     &amp;bid,
+                        BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+                })
+        }</span>
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+// getMediaTypeForImp figures out which media type this bid is for.
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType <span class="cov8" title="1">{
+        mediaType := openrtb_ext.BidTypeBanner //default type
+        for _, imp := range imps </span><span class="cov8" title="1">{
+                if imp.ID == impId </span><span class="cov8" title="1">{
+                        if imp.Video != nil </span><span class="cov8" title="1">{
+                                mediaType = openrtb_ext.BidTypeVideo
+                        }</span>
+                        <span class="cov8" title="1">return mediaType</span>
+                }
+        }
+        <span class="cov8" title="1">return mediaType</span>
+}
+
+// Builder builds a new instance of the SmileWanted adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                URI: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
