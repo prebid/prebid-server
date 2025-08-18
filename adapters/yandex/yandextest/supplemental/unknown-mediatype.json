@@ -4,7 +4,7 @@
     "imp": [
       {
         "id": "imp_id",
-        "video": {
+        "audio": {
           "w": 100,
           "h": 200
         },
