@@ -35,16 +35,13 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 	}, nil
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	_ = reqInfo
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	if len(request.Imp) != 1 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ResetDigital adapter supports only one impression per request",
 		}}
 	}
-
-	errs := make([]error, 0, 1)
 
 	imp := request.Imp[0]
 	var bidderExt adapters.ExtImpBidder
@@ -104,10 +101,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}}
 	}
 
-	uri := a.endpoint
-	if resetDigitalExt.PlacementID != "" {
-		uri = fmt.Sprintf("%s?pid=%s", a.endpoint, resetDigitalExt.PlacementID)
-	}
+	uri := fmt.Sprintf("%s?pid=%s", a.endpoint, resetDigitalExt.PlacementID)
 
 	reqHeaders := baseHeaders.Clone()
 
@@ -121,10 +115,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		},
 	}
 
-	return reqs, errs
+	return reqs, nil
 }
 
-func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -160,8 +154,13 @@ func parseBidResponse(request *openrtb2.BidRequest, bidResp *openrtb2.BidRespons
 	var errs []error
 
 	if bidResp.Cur != "" {
-		bidResponse.Currency = bidResp.Cur
+    	bidResponse.Currency = bidResp.Cur
+	} else if len(request.Cur) > 0 && request.Cur[0] != "" {
+    	bidResponse.Currency = request.Cur[0]
+	} else {
+    	bidResponse.Currency = currencyUSD
 	}
+
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
@@ -195,34 +194,20 @@ func parseBidResponse(request *openrtb2.BidRequest, bidResp *openrtb2.BidRespons
 }
 
 func getBidType(bid openrtb2.Bid, request *openrtb2.BidRequest) (openrtb_ext.BidType, error) {
-	if bid.MType > 0 {
-		switch bid.MType {
-		case openrtb2.MarkupBanner:
-			return openrtb_ext.BidTypeBanner, nil
-		case openrtb2.MarkupVideo:
-			return openrtb_ext.BidTypeVideo, nil
-		case openrtb2.MarkupAudio:
-			return openrtb_ext.BidTypeAudio, nil
-		case openrtb2.MarkupNative:
-			return openrtb_ext.BidTypeNative, nil
-		}
-	}
-
-	if len(request.Imp) == 1 {
-		if request.Imp[0].ID != bid.ImpID {
-			return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
-		}
-		return getMediaType(request.Imp[0]), nil
-	}
-
-	for _, imp := range request.Imp {
-		if bid.ImpID == imp.ID {
-			return getMediaType(imp), nil
-		}
-	}
-
-	return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
+    if bid.MType > 0 {
+        switch bid.MType {
+        case openrtb2.MarkupBanner: return openrtb_ext.BidTypeBanner, nil
+        case openrtb2.MarkupVideo:  return openrtb_ext.BidTypeVideo, nil
+        case openrtb2.MarkupAudio:  return openrtb_ext.BidTypeAudio, nil
+        case openrtb2.MarkupNative: return openrtb_ext.BidTypeNative, nil
+        }
+    }
+    if request.Imp[0].ID != bid.ImpID {
+        return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
+    }
+    return getMediaType(request.Imp[0]), nil
 }
+
 
 func getMediaType(imp openrtb2.Imp) openrtb_ext.BidType {
 	switch {
