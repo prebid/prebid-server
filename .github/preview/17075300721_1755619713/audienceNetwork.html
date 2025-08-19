@@ -1,0 +1,569 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>audienceNetwork: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/audienceNetwork/facebook.go (87.5%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package audienceNetwork
+
+import (
+        "crypto/hmac"
+        "crypto/sha256"
+        "encoding/hex"
+        "encoding/json"
+        "errors"
+        "fmt"
+        "net/http"
+        "strings"
+
+        "github.com/buger/jsonparser"
+        "github.com/prebid/openrtb/v20/openrtb2"
+
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+        "github.com/prebid/prebid-server/v3/util/maputil"
+        "github.com/prebid/prebid-server/v3/util/ptrutil"
+)
+
+var supportedBannerHeights = map[int64]struct{}{
+        50:  {},
+        250: {},
+}
+
+type adapter struct {
+        uri        string
+        platformID string
+        appSecret  string
+}
+
+type facebookAdMarkup struct {
+        BidID string `json:"bid_id"`
+}
+
+type facebookReqExt struct {
+        PlatformID string `json:"platformid"`
+        AuthID     string `json:"authentication_id"`
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "No impressions provided",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if request.User == nil || request.User.BuyerUID == "" </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "Missing bidder token in 'user.buyeruid'",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if request.Site != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "Site impressions are not supported.",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">return a.buildRequests(request)</span>
+}
+
+func (a *adapter) buildRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        // Documentation suggests bid request splitting by impression so that each
+        // request only represents a single impression
+        reqs := make([]*adapters.RequestData, 0, len(request.Imp))
+        headers := http.Header{}
+        var errs []error
+
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        headers.Add("X-Fb-Pool-Routing-Token", request.User.BuyerUID)
+
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                // Make a copy of the request so that we don't change the original request which
+                // is shared across multiple threads
+                fbreq := *request
+                fbreq.Imp = []openrtb2.Imp{imp}
+
+                if err := a.modifyRequest(&amp;fbreq); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">body, err := json.Marshal(&amp;fbreq)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">body, err = modifyImpCustom(body, &amp;fbreq.Imp[0])
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">body, err = jsonutil.DropElement(body, "consented_providers_settings")
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        return reqs, errs
+                }</span>
+
+                <span class="cov8" title="1">reqs = append(reqs, &amp;adapters.RequestData{
+                        Method:  "POST",
+                        Uri:     a.uri,
+                        Body:    body,
+                        Headers: headers,
+                        ImpIDs:  openrtb_ext.GetImpIDs(fbreq.Imp),
+                })</span>
+        }
+
+        <span class="cov8" title="1">return reqs, errs</span>
+}
+
+// The authentication ID is a sha256 hmac hash encoded as a hex string, based on
+// the app secret and the ID of the bid request
+func (a *adapter) makeAuthID(req *openrtb2.BidRequest) string <span class="cov8" title="1">{
+        h := hmac.New(sha256.New, []byte(a.appSecret))
+        h.Write([]byte(req.ID))
+
+        return hex.EncodeToString(h.Sum(nil))
+}</span>
+
+func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error <span class="cov8" title="1">{
+        if len(out.Imp) != 1 </span><span class="cov0" title="0">{
+                panic("each bid request to facebook should only have a single impression")</span>
+        }
+
+        <span class="cov8" title="1">imp := &amp;out.Imp[0]
+        plmtId, pubId, err := extractPlacementAndPublisher(imp)
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+
+        // Every outgoing FAN request has a single impression, so we can safely use the unique
+        // impression ID as the FAN request ID. We need to make sure that we update the request
+        // ID *BEFORE* we generate the auth ID since its a hash based on the request ID
+        <span class="cov8" title="1">out.ID = imp.ID
+
+        reqExt := facebookReqExt{
+                PlatformID: a.platformID,
+                AuthID:     a.makeAuthID(out),
+        }
+
+        if out.Ext, err = json.Marshal(reqExt); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">imp.TagID = pubId + "_" + plmtId
+        imp.Ext = nil
+
+        if out.App != nil </span><span class="cov8" title="1">{
+                app := *out.App
+                app.Publisher = &amp;openrtb2.Publisher{ID: pubId}
+                out.App = &amp;app
+        }</span>
+
+        <span class="cov8" title="1">if err = modifyImp(imp); err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func modifyImp(out *openrtb2.Imp) error <span class="cov8" title="1">{
+        impType := resolveImpType(out)
+
+        if out.Instl == 1 &amp;&amp; impType != openrtb_ext.BidTypeBanner </span><span class="cov8" title="1">{
+                return &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner", out.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if impType == openrtb_ext.BidTypeBanner </span><span class="cov8" title="1">{
+                bannerCopy := *out.Banner
+                out.Banner = &amp;bannerCopy
+
+                if out.Instl == 1 </span><span class="cov8" title="1">{
+                        out.Banner.W = ptrutil.ToPtr[int64](0)
+                        out.Banner.H = ptrutil.ToPtr[int64](0)
+                        out.Banner.Format = nil
+                        return nil
+                }</span>
+
+                <span class="cov8" title="1">if out.Banner.H == nil </span><span class="cov8" title="1">{
+                        for _, f := range out.Banner.Format </span><span class="cov8" title="1">{
+                                if _, ok := supportedBannerHeights[f.H]; ok </span><span class="cov8" title="1">{
+                                        h := f.H
+                                        out.Banner.H = &amp;h
+                                        break</span>
+                                }
+                        }
+                        <span class="cov8" title="1">if out.Banner.H == nil </span><span class="cov8" title="1">{
+                                return &amp;errortypes.BadInput{
+                                        Message: fmt.Sprintf("imp #%s: banner height required", out.ID),
+                                }
+                        }</span>
+                }
+
+                <span class="cov8" title="1">if _, ok := supportedBannerHeights[*out.Banner.H]; !ok </span><span class="cov8" title="1">{
+                        return &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("imp #%s: only banner heights 50 and 250 are supported", out.ID),
+                        }
+                }</span>
+
+                <span class="cov8" title="1">out.Banner.W = ptrutil.ToPtr[int64](-1)
+                out.Banner.Format = nil</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(out.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return "", "", &amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var fbExt openrtb_ext.ExtImpFacebook
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;fbExt); err != nil </span><span class="cov0" title="0">{
+                return "", "", &amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if fbExt.PlacementId == "" </span><span class="cov8" title="1">{
+                return "", "", &amp;errortypes.BadInput{
+                        Message: "Missing placementId param",
+                }
+        }</span>
+
+        <span class="cov8" title="1">placementID := fbExt.PlacementId
+        publisherID := fbExt.PublisherId
+
+        // Support the legacy path with the caller was expected to pass in just placementId
+        // which was an underscore concatenated string with the publisherId and placementId.
+        // The new path for callers is to pass in the placementId and publisherId independently
+        // and the below code will prefix the placementId that we pass to FAN with the publisherId
+        // so that we can abstract the implementation details from the caller
+        toks := strings.Split(placementID, "_")
+        if len(toks) == 1 </span><span class="cov8" title="1">{
+                if publisherID == "" </span><span class="cov8" title="1">{
+                        return "", "", &amp;errortypes.BadInput{
+                                Message: "Missing publisherId param",
+                        }
+                }</span>
+
+                <span class="cov8" title="1">return placementID, publisherID, nil</span>
+        } else<span class="cov8" title="1"> if len(toks) == 2 </span><span class="cov8" title="1">{
+                publisherID = toks[0]
+                placementID = toks[1]
+        }</span> else<span class="cov0" title="0"> {
+                return "", "", &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Invalid placementId param '%s' and publisherId param '%s'", placementID, publisherID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return placementID, publisherID, nil</span>
+}
+
+// modifyImpCustom modifies the impression after it's marshalled to add a non-openrtb field.
+func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) <span class="cov8" title="1">{
+        impType := resolveImpType(imp)
+
+        // we only need to modify video and native impressions
+        if impType != openrtb_ext.BidTypeVideo &amp;&amp; impType != openrtb_ext.BidTypeNative </span><span class="cov8" title="1">{
+                return jsonData, nil
+        }</span>
+
+        <span class="cov8" title="1">var jsonMap map[string]interface{}
+        if err := jsonutil.Unmarshal(jsonData, &amp;jsonMap); err != nil </span><span class="cov0" title="0">{
+                return jsonData, err
+        }</span>
+
+        <span class="cov8" title="1">var impMap map[string]interface{}
+        if impSlice, ok := maputil.ReadEmbeddedSlice(jsonMap, "imp"); !ok </span><span class="cov0" title="0">{
+                return jsonData, errors.New("unable to find imp in json data")
+        }</span> else<span class="cov8" title="1"> if len(impSlice) == 0 </span><span class="cov0" title="0">{
+                return jsonData, errors.New("unable to find imp[0] in json data")
+        }</span> else<span class="cov8" title="1"> if impMap, ok = impSlice[0].(map[string]interface{}); !ok </span><span class="cov0" title="0">{
+                return jsonData, errors.New("unexpected type for imp[0] found in json data")
+        }</span>
+
+        <span class="cov8" title="1">switch impType </span>{
+        case openrtb_ext.BidTypeVideo:<span class="cov8" title="1">
+                videoMap, ok := maputil.ReadEmbeddedMap(impMap, "video")
+                if !ok </span><span class="cov0" title="0">{
+                        return jsonData, errors.New("unable to find imp[0].video in json data")
+                }</span>
+
+                // the openrtb library omits video.w/h if set to zero, so we need to force set those
+                // fields to zero post-serialization for the time being
+                <span class="cov8" title="1">videoMap["w"] = json.RawMessage("0")
+                videoMap["h"] = json.RawMessage("0")</span>
+
+        case openrtb_ext.BidTypeNative:<span class="cov8" title="1">
+                nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
+                if !ok </span><span class="cov0" title="0">{
+                        return jsonData, errors.New("unable to find imp[0].video in json data")
+                }</span>
+
+                // Set w/h to -1 for native impressions based on the facebook native spec.
+                // We have to set this post-serialization since these fields are not included
+                // in the OpenRTB 2.5 spec.
+                <span class="cov8" title="1">nativeMap["w"] = json.RawMessage("-1")
+                nativeMap["h"] = json.RawMessage("-1")
+
+                // The FAN adserver does not expect the native request payload, all that information
+                // is derived server side based on the placement ID. We need to remove these pieces of
+                // information manually since OpenRTB (and thus mxmCherry) never omit native.request
+                delete(nativeMap, "ver")
+                delete(nativeMap, "request")</span>
+        }
+
+        <span class="cov8" title="1">if jsonReEncoded, err := json.Marshal(jsonMap); err == nil </span><span class="cov8" title="1">{
+                return jsonReEncoded, nil
+        }</span> else<span class="cov0" title="0"> {
+                return nil, fmt.Errorf("unable to encode json data (%v)", err)
+        }</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                msg := response.Headers.Get("x-fb-an-errors")
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Unexpected status code %d with error message '%s'", response.StatusCode, msg),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">out := adapters.NewBidderResponseWithBidsCapacity(4)
+        var errs []error
+
+        for _, seatbid := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatbid.Bid </span><span class="cov8" title="1">{
+                        bid := seatbid.Bid[i]
+
+                        if bid.AdM == "" </span><span class="cov8" title="1">{
+                                errs = append(errs, &amp;errortypes.BadServerResponse{
+                                        Message: fmt.Sprintf("Bid %s missing 'adm'", bid.ID),
+                                })
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">var obj facebookAdMarkup
+                        if err := jsonutil.Unmarshal([]byte(bid.AdM), &amp;obj); err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, &amp;errortypes.BadServerResponse{
+                                        Message: err.Error(),
+                                })
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">if obj.BidID == "" </span><span class="cov8" title="1">{
+                                errs = append(errs, &amp;errortypes.BadServerResponse{
+                                        Message: fmt.Sprintf("bid %s missing 'bid_id' in 'adm'", bid.ID),
+                                })
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bid.AdID = obj.BidID
+                        bid.CrID = obj.BidID
+
+                        out.Bids = append(out.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bid,
+                                BidType: resolveBidType(&amp;bid, request),
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return out, errs</span>
+}
+
+func resolveBidType(bid *openrtb2.Bid, req *openrtb2.BidRequest) openrtb_ext.BidType <span class="cov8" title="1">{
+        for _, imp := range req.Imp </span><span class="cov8" title="1">{
+                if bid.ImpID == imp.ID </span><span class="cov8" title="1">{
+                        return resolveImpType(&amp;imp)
+                }</span>
+        }
+
+        <span class="cov0" title="0">panic(fmt.Sprintf("Invalid bid imp ID %s does not match any imp IDs from the original bid request", bid.ImpID))</span>
+}
+
+func resolveImpType(imp *openrtb2.Imp) openrtb_ext.BidType <span class="cov8" title="1">{
+        if imp.Banner != nil </span><span class="cov8" title="1">{
+                return openrtb_ext.BidTypeBanner
+        }</span>
+
+        <span class="cov8" title="1">if imp.Video != nil </span><span class="cov8" title="1">{
+                return openrtb_ext.BidTypeVideo
+        }</span>
+
+        <span class="cov8" title="1">if imp.Audio != nil </span><span class="cov0" title="0">{
+                return openrtb_ext.BidTypeAudio
+        }</span>
+
+        <span class="cov8" title="1">if imp.Native != nil </span><span class="cov8" title="1">{
+                return openrtb_ext.BidTypeNative
+        }</span>
+
+        // Required to satisfy compiler. Not reachable in practice due to validations performed in PBS-Core.
+        <span class="cov0" title="0">return openrtb_ext.BidTypeBanner</span>
+}
+
+// Builder builds a new instance of Facebook's Audience Network adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        if config.PlatformID == "" </span><span class="cov8" title="1">{
+                return nil, errors.New("PartnerID is not configured. Did you set adapters.facebook.platform_id in the app config?")
+        }</span>
+
+        <span class="cov8" title="1">if config.AppSecret == "" </span><span class="cov8" title="1">{
+                return nil, errors.New("AppSecret is not configured. Did you set adapters.facebook.app_secret in the app config?")
+        }</span>
+
+        <span class="cov8" title="1">bidder := &amp;adapter{
+                uri:        config.Endpoint,
+                platformID: config.PlatformID,
+                appSecret:  config.AppSecret,
+        }
+        return bidder, nil</span>
+}
+
+func (a *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        var (
+                rID   string
+                pubID string
+                err   error
+        )
+
+        // Note, the facebook adserver can only handle single impression requests, so we have to split multi-imp requests into
+        // multiple request. In order to ensure that every split request has a unique ID, the split request IDs are set to the
+        // corresponding imp's ID
+        rID, err = jsonparser.GetString(req.Body, "id")
+        if err != nil </span><span class="cov8" title="1">{
+                return &amp;adapters.RequestData{}, err
+        }</span>
+
+        // The publisher ID is expected in the app object
+        <span class="cov8" title="1">pubID, err = jsonparser.GetString(req.Body, "app", "publisher", "id")
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;adapters.RequestData{}, errors.New("path app.publisher.id not found in the request")
+        }</span>
+
+        <span class="cov8" title="1">uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&amp;app=%s&amp;auction=%s&amp;ortb_loss_code=2", a.platformID, pubID, rID)
+        timeoutReq := adapters.RequestData{
+                Method:  "GET",
+                Uri:     uri,
+                Body:    nil,
+                Headers: http.Header{},
+        }
+
+        return &amp;timeoutReq, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
