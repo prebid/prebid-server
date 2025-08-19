@@ -137,11 +137,11 @@ func TestGetBidType(t *testing.T) {
 			hasError: true,
 		},
 		{
-     		name: "Audio MType",
-     		bid: openrtb2.Bid{ MType: openrtb2.MarkupAudio },
-    		request:  &openrtb2.BidRequest{},
-    		expected: openrtb_ext.BidTypeAudio,
-   		  	hasError: false,
+			name:     "Audio MType",
+			bid:      openrtb2.Bid{MType: openrtb2.MarkupAudio},
+			request:  &openrtb2.BidRequest{},
+			expected: openrtb_ext.BidTypeAudio,
+			hasError: false,
 		},
 	}
 
@@ -579,44 +579,44 @@ func TestMakeBidsStatusRedirect(t *testing.T) {
 }
 
 func TestParseBidResponse_SeatFallback(t *testing.T) {
-    bidder, _ := Builder(openrtb_ext.BidderResetDigital, config.Adapter{Endpoint: "https://example.com"}, config.Server{})
-    req := &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID:"imp-1", Banner:&openrtb2.Banner{}}}}
-    resp := &adapters.ResponseData{
-        StatusCode: http.StatusOK,
-        Body: []byte(`{"id":"x","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1.2}]}],"cur":"USD"}`),
-    }
-    br, errs := bidder.MakeBids(req, nil, resp)
-    assert.Empty(t, errs)
-    assert.Equal(t, openrtb_ext.BidderName("resetdigital"), br.Bids[0].Seat)
+	bidder, _ := Builder(openrtb_ext.BidderResetDigital, config.Adapter{Endpoint: "https://example.com"}, config.Server{})
+	req := &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}}}
+	resp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"x","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1.2}]}],"cur":"USD"}`),
+	}
+	br, errs := bidder.MakeBids(req, nil, resp)
+	assert.Empty(t, errs)
+	assert.Equal(t, openrtb_ext.BidderName("resetdigital"), br.Bids[0].Seat)
 }
 
 func TestParseBidResponse_CurrencyFallback_RequestCur(t *testing.T) {
-    bidder, _ := Builder(openrtb_ext.BidderResetDigital, config.Adapter{Endpoint: "https://example.com"}, config.Server{})
-    req := &openrtb2.BidRequest{
-        Cur: []string{"EUR"},
-        Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
-    }
-    resp := &adapters.ResponseData{
-        StatusCode: http.StatusOK,
-        Body: []byte(`{"id":"x","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1.1}]}]}`),
-    }
-    br, errs := bidder.MakeBids(req, nil, resp)
-    assert.Empty(t, errs)
-    assert.Equal(t, "EUR", br.Currency)
+	bidder, _ := Builder(openrtb_ext.BidderResetDigital, config.Adapter{Endpoint: "https://example.com"}, config.Server{})
+	req := &openrtb2.BidRequest{
+		Cur: []string{"EUR"},
+		Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
+	}
+	resp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"x","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1.1}]}]}`),
+	}
+	br, errs := bidder.MakeBids(req, nil, resp)
+	assert.Empty(t, errs)
+	assert.Equal(t, "EUR", br.Currency)
 }
 
 func TestParseBidResponse_CurrencyFallback_DefaultUSD(t *testing.T) {
-    bidder, _ := Builder(openrtb_ext.BidderResetDigital, config.Adapter{Endpoint: "https://example.com"}, config.Server{})
-    req := &openrtb2.BidRequest{
-        Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
-    }
-    resp := &adapters.ResponseData{
-        StatusCode: http.StatusOK,
-        Body: []byte(`{"id":"x","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1.1}]}]}`),
-    }
-    br, errs := bidder.MakeBids(req, nil, resp)
-    assert.Empty(t, errs)
-    assert.Equal(t, "USD", br.Currency)
+	bidder, _ := Builder(openrtb_ext.BidderResetDigital, config.Adapter{Endpoint: "https://example.com"}, config.Server{})
+	req := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
+	}
+	resp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"x","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1.1}]}]}`),
+	}
+	br, errs := bidder.MakeBids(req, nil, resp)
+	assert.Empty(t, errs)
+	assert.Equal(t, "USD", br.Currency)
 }
 
 func TestBidPriceNegative(t *testing.T) {

@@ -154,13 +154,12 @@ func parseBidResponse(request *openrtb2.BidRequest, bidResp *openrtb2.BidRespons
 	var errs []error
 
 	if bidResp.Cur != "" {
-    	bidResponse.Currency = bidResp.Cur
+		bidResponse.Currency = bidResp.Cur
 	} else if len(request.Cur) > 0 && request.Cur[0] != "" {
-    	bidResponse.Currency = request.Cur[0]
+		bidResponse.Currency = request.Cur[0]
 	} else {
-    	bidResponse.Currency = currencyUSD
+		bidResponse.Currency = currencyUSD
 	}
-
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
@@ -194,20 +193,23 @@ func parseBidResponse(request *openrtb2.BidRequest, bidResp *openrtb2.BidRespons
 }
 
 func getBidType(bid openrtb2.Bid, request *openrtb2.BidRequest) (openrtb_ext.BidType, error) {
-    if bid.MType > 0 {
-        switch bid.MType {
-        case openrtb2.MarkupBanner: return openrtb_ext.BidTypeBanner, nil
-        case openrtb2.MarkupVideo:  return openrtb_ext.BidTypeVideo, nil
-        case openrtb2.MarkupAudio:  return openrtb_ext.BidTypeAudio, nil
-        case openrtb2.MarkupNative: return openrtb_ext.BidTypeNative, nil
-        }
-    }
-    if request.Imp[0].ID != bid.ImpID {
-        return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
-    }
-    return getMediaType(request.Imp[0]), nil
+	if bid.MType > 0 {
+		switch bid.MType {
+		case openrtb2.MarkupBanner:
+			return openrtb_ext.BidTypeBanner, nil
+		case openrtb2.MarkupVideo:
+			return openrtb_ext.BidTypeVideo, nil
+		case openrtb2.MarkupAudio:
+			return openrtb_ext.BidTypeAudio, nil
+		case openrtb2.MarkupNative:
+			return openrtb_ext.BidTypeNative, nil
+		}
+	}
+	if request.Imp[0].ID != bid.ImpID {
+		return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
+	}
+	return getMediaType(request.Imp[0]), nil
 }
-
 
 func getMediaType(imp openrtb2.Imp) openrtb_ext.BidType {
 	switch {
