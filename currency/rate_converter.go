@@ -52,13 +52,19 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		// read the entire response body to ensure full connection reuse if there's an
+		// invalid status code
+		if _, err := io.Copy(io.Discard, response.Body); err != nil {
+			glog.Errorf("Error draining conversion rates response body: %v", err)
+		}
+		response.Body.Close()
+	}()
 
 	if response.StatusCode >= 400 {
 		message := fmt.Sprintf("The currency rates request failed with status code %d", response.StatusCode)
 		return nil, &errortypes.BadServerResponse{Message: message}
 	}
-
-	defer response.Body.Close()
 
 	bytesJSON, err := io.ReadAll(response.Body)
 	if err != nil {
