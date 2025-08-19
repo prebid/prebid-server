@@ -51,7 +51,7 @@ type TimeoutBidder interface {
 	//
 	// Do note that if MakeRequests returns multiple requests, and more than one of these times out, MakeTimeoutNotice will be called
 	// once for each timed out request.
-	MakeTimeoutNotification(req *RequestData) (*RequestData, []error)
+	MakeTimeoutNotification(req *RequestData) (*RequestData, error)
 }
 
 // BidderResponse wraps the server's response with the list of bids and the currency used by the bidder.

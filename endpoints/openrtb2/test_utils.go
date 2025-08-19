@@ -1255,7 +1255,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		}
 	}
 
-	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
+	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), time.Second, mockCurrencyRatesServer.URL, time.Second)
 	mockCurrencyConverter.Run()
 
 	gdprPermsBuilder := fakePermissionsBuilder{
