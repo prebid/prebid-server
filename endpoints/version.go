@@ -2,9 +2,11 @@ package endpoints
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -14,7 +16,8 @@ const versionEndpointValueNotSet = "not-set"
 func NewVersionEndpoint(version, revision string) http.HandlerFunc {
 	response, err := prepareVersionEndpointResponse(version, revision)
 	if err != nil {
-		glog.Fatalf("error creating /version endpoint response: %v", err)
+		logger.Error(fmt.Sprintf("error creating /version endpoint response: %v", err))
+		os.Exit(1)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request) {
