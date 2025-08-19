@@ -27,11 +27,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // MakeRequests handles the OpenRTB bid request and returns адаптер.RequestData
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
-	// Defensive check: even if reviewer says avoid it, it's safe and prevents panics
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "No valid impressions for grid"}}
-	}
-
 	imp := request.Imp[0]
 
 	// Parse imp.ext
@@ -99,13 +94,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var typedBids []*adapters.TypedBid
+	var errs []error
 	for _, sb := range serverBidResponse.SeatBid {
 		for i := range sb.Bid {
 			mediaType, err := getMediaTypeForImp(sb.Bid[i])
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, err)
+				continue
 			}
-
 			typedBids = append(typedBids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: mediaType,
@@ -114,7 +110,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	if len(typedBids) == 0 {
-		return nil, nil
+		return nil, errs
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(typedBids))
