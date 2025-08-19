@@ -51,7 +51,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		successLabel: boolValues,
 	})
 
-	preloadLabelValuesForCounter(m.requestsStatus, map[string][]string{
+	preloadLabelValuesForCounter(m.requests, map[string][]string{
 		requestTypeLabel:   requestTypeValues,
 		requestStatusLabel: requestStatusValues,
 	})

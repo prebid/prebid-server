@@ -27,7 +27,7 @@ type Metrics struct {
 	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
 	prebidCacheWriteTimer        *prometheus.HistogramVec
-	requestsStatus               *prometheus.CounterVec
+	requests                     *prometheus.CounterVec
 	requestsSize                 *prometheus.HistogramVec
 	debugRequests                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
@@ -214,7 +214,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		[]string{successLabel},
 		cacheWriteTimeBuckets)
 
-	metrics.requestsStatus = newCounter(cfg, reg,
+	metrics.requests = newCounter(cfg, reg,
 		"requests",
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
@@ -670,7 +670,7 @@ func (m *Metrics) RecordConnectionClose(success bool) {
 }
 
 func (m *Metrics) RecordRequest(labels metrics.Labels) {
-	m.requestsStatus.With(prometheus.Labels{
+	m.requests.With(prometheus.Labels{
 		requestTypeLabel:   string(labels.RType),
 		requestStatusLabel: string(labels.RequestStatus),
 	}).Inc()
