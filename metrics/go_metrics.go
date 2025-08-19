@@ -355,6 +355,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		}
 	}
 
+	for _, endpoint := range EndpointTypes() {
+		newMetrics.RequestSizeByEndpoint[endpoint] = metrics.GetOrRegisterHistogram("requests.size."+string(endpoint), registry, metrics.NewUniformSample(1024))
+	}
+
 	for _, cacheRes := range CacheResults() {
 		newMetrics.StoredReqCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_request_cache_%s", string(cacheRes)), registry)
 		newMetrics.StoredImpCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_imp_cache_%s", string(cacheRes)), registry)

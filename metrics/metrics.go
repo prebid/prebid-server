@@ -199,7 +199,7 @@ func RequestTypes() []RequestType {
 	}
 }
 
-// The endpoint types
+// Endpoint type constants
 const (
 	EndpointAuction EndpointType = "auction"
 	EndpointVideo   EndpointType = "video"
@@ -218,16 +218,16 @@ func EndpointTypes() []EndpointType {
 func GetEndpointFromRequestType(requestType RequestType) EndpointType {
 	requestEndpoint := EndpointUnknown
 	switch requestType {
-	case ReqTypeAMP:
-		requestEndpoint = EndpointAmp
-	case ReqTypeVideo:
-		requestEndpoint = EndpointVideo
 	case ReqTypeORTB2Web:
 		fallthrough
 	case ReqTypeORTB2App:
 		fallthrough
 	case ReqTypeORTB2DOOH:
 		requestEndpoint = EndpointAuction
+	case ReqTypeAMP:
+		requestEndpoint = EndpointAmp
+	case ReqTypeVideo:
+		requestEndpoint = EndpointVideo
 	}
 	return requestEndpoint
 }
