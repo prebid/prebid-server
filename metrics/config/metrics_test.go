@@ -158,7 +158,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusBadInput].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BlockedApp", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusBlockedApp].Count(), 0)
 
-	VerifyMetrics(t, "RequestSizeByEndpoint.Auction", goEngine.RequestSizeByEndpoints[metrics.ReqTypeORTB2Web].Count(), 1024)
+	VerifyMetrics(t, "RequestSizeByEndpoint.Auction", goEngine.RequestSizeByEndpoint[metrics.EndpointAuction].Count(), 5)
+	VerifyMetrics(t, "RequestSizeByEndpoint.Auction", goEngine.RequestSizeByEndpoint[metrics.EndpointAuction].Max(), 1024)
 
 	VerifyMetrics(t, "ImpsTypeBanner", goEngine.ImpsTypeBanner.Count(), 5)
 	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 3)

@@ -146,6 +146,7 @@ func TestRequestMetric(t *testing.T) {
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
 		RequestStatus: requestStatus,
+		RequestSize:   1024,
 	})
 
 	expectedCount := float64(1)
@@ -155,6 +156,9 @@ func TestRequestMetric(t *testing.T) {
 			requestTypeLabel:   string(requestType),
 			requestStatusLabel: string(requestStatus),
 		})
+
+	histogram := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+	assertHistogram(t, "requests_endpoint_auction", histogram, 1, 1024)
 }
 
 func TestDebugRequestMetric(t *testing.T) {

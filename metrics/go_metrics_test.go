@@ -56,10 +56,9 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[ReqTypeVideo][RequestStatusBadInput])
 	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[ReqTypeVideo][RequestStatusErr])
 	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[ReqTypeVideo][RequestStatusNetworkErr])
-	ensureContains(t, registry, "requests.auction", m.RequestSizeByEndpoint[EndpointAuction])
-	ensureContains(t, registry, "requests.video", m.RequestSizeByEndpoint[EndpointVideo])
-	ensureContains(t, registry, "requests.amp", m.RequestSizeByEndpoint[EndpointAmp])
-	ensureContains(t, registry, "requests.unknown", m.RequestSizeByEndpoint[EndpointUnknown])
+	ensureContains(t, registry, "requests.size.auction", m.RequestSizeByEndpoint[EndpointAuction])
+	ensureContains(t, registry, "requests.size.video", m.RequestSizeByEndpoint[EndpointVideo])
+	ensureContains(t, registry, "requests.size.amp", m.RequestSizeByEndpoint[EndpointAmp])
 
 	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
 	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])

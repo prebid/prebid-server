@@ -125,7 +125,7 @@ const (
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
-	requestEndpoint      = "request_endpoint"
+	requestEndpointLabel = "request_endpoint"
 	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
@@ -222,7 +222,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.requestsSize = newHistogramVec(cfg, reg,
 		"request_size_bytes",
 		"Count that keeps track of incoming request size in bytes labeled by endpoint.",
-		[]string{requestTypeLabel}, requestSizeBuckets)
+		[]string{requestEndpointLabel}, requestSizeBuckets)
 
 	metrics.debugRequests = newCounterWithoutLabels(cfg, reg,
 		"debug_requests",
@@ -677,7 +677,7 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 
 	endpoint := metrics.GetEndpointFromRequestType(labels.RType)
 	m.requestsSize.With(prometheus.Labels{
-		requestTypeLabel: string(endpoint),
+		requestEndpointLabel: string(endpoint),
 	}).Observe(float64(labels.RequestSize))
 
 	if labels.CookieFlag == metrics.CookieFlagNo {
