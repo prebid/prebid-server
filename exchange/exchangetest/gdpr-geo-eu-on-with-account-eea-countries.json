@@ -1,7 +1,7 @@
 {
     "assume_gdpr_applies": true,
     "account_eea_countries": ["POL"],
-    "gdpr_enabled": true,
+    "gdpr_enforced": true,
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
