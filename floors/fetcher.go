@@ -275,7 +275,7 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(config config.AccountFloorFet
 		// read the entire response body to ensure full connection reuse if there's an
 		// invalid status code
 		if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
-			glog.Errorf("Error while draining fetched floor response body: %v", err)
+			glog.Errorf("error while draining fetched floor response body: %v", err)
 		}
 		httpResp.Body.Close()
 	}()

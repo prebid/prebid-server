@@ -144,7 +144,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:             &wellBehavedCache{},
 		cacheTime:         time.Duration(0),
 		gdprPermsBuilder:  gdprPermsBuilder,
-		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currencyConverter: currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0)),
 		gdprDefaultValue:  gdpr.SignalYes,
 		categoriesFetcher: categoriesFetcher,
 		bidIDGenerator:    &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false},
