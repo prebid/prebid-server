@@ -38,7 +38,7 @@ type Metrics struct {
 
 	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
-	RequestSizeByEndpoint map[string]metrics.Meter
+	RequestSizeByEndpoint map[EndpointType]metrics.Histogram
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
 	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
@@ -157,7 +157,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 	newMetrics := &Metrics{
 		MetricsRegistry:                registry,
 		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
-		RequestSizeByEndpoint:          make(map[string]metrics.Meter),
+		RequestSizeByEndpoint:          make(map[EndpointType]metrics.Histogram),
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
@@ -232,7 +232,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 	}
 
 	for _, t := range EndpointTypes() {
-		newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{},
+		newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{}
 	}
 
 	for _, c := range CacheResults() {
@@ -479,6 +479,8 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.nobid", adapterOrAccount, exchange), registry)
 	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
+	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
+	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
 		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner),
 		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo),
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
@@ -608,8 +610,7 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	}
 
 	// Request size by endpoint
-RequestSizeByEndpoint
-
+	me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
 
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)

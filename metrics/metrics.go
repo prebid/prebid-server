@@ -204,6 +204,7 @@ const (
 	EndpointAuction EndpointType = "auction"
 	EndpointVideo   EndpointType = "video"
 	EndpointAmp     EndpointType = "amp"
+	EndpointUnknown EndpointType = "unknown"
 )
 
 func EndpointTypes() []EndpointType {
@@ -212,6 +213,23 @@ func EndpointTypes() []EndpointType {
 		EndpointVideo,
 		EndpointAmp,
 	}
+}
+
+func GetEndpointFromRequestType(requestType RequestType) EndpointType {
+	requestEndpoint := EndpointUnknown
+	switch requestType {
+	case ReqTypeAMP:
+		requestEndpoint = EndpointAmp
+	case ReqTypeVideo:
+		requestEndpoint = EndpointVideo
+	case ReqTypeORTB2Web:
+		fallthrough
+	case ReqTypeORTB2App:
+		fallthrough
+	case ReqTypeORTB2DOOH:
+		requestEndpoint = EndpointAuction
+	}
+	return requestEndpoint
 }
 
 // The media types described in the "imp" json objects

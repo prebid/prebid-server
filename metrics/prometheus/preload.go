@@ -328,20 +328,3 @@ func cloneLabels(labels prometheus.Labels) prometheus.Labels {
 	}
 	return clone
 }
-
-func getEndpointFromRequestType(requestType metrics.RequestType) string {
-	requestEndpoint := "unknown"
-	switch requestType {
-	case metrics.ReqTypeAMP:
-		requestEndpoint = "amp"
-	case metrics.ReqTypeVideo:
-		requestEndpoint = "video"
-	case metrics.ReqTypeORTB2Web:
-		fallthrough
-	case metrics.ReqTypeORTB2App:
-		fallthrough
-	case metrics.ReqTypeORTB2DOOH:
-		requestEndpoint = "openrtb2"
-	}
-	return requestEndpoint
-}

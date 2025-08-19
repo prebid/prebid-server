@@ -134,7 +134,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		PubID:         metrics.PublisherUnknown,
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
-		EndpointType:  VIDEO_ENDPOINT,
 	}
 
 	debugQuery := r.URL.Query().Get("debug")
