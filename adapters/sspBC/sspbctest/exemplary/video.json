@@ -11,14 +11,12 @@
                     }
                 },
                 "secure": 1,
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        }
-                    ]
-                },
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "protocols": [2, 5],
+                    "w": 320,
+                    "h": 480
+                  },
                 "tagid": "ad-test1"
             }
         ],
@@ -49,14 +47,12 @@
                         "imp": [
                             {
                                 "id": "slot",
-                                "banner": {
-                                    "format": [
-                                        {
-                                            "w": 300,
-                                            "h": 250
-                                        }
-                                    ]
-                                },
+                                "video": {
+                                    "mimes": ["video/mp4"],
+                                    "protocols": [2, 5],
+                                    "w": 320,
+                                    "h": 480
+                                  },
                                 "tagid": "ad-test1",
                                 "secure": 1,
                                 "ext": {
@@ -91,10 +87,47 @@
                 "impIDs":["slot"]
             },
             "mockResponse": {
-                "status": 204,
-                "body": {}
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "seat": "sspbc-test",
+                            "bid": [
+                                {
+                                    "adm": "test-video-ad",
+                                    "id": "response-005",
+                                    "impid": "slot",
+                                    "price": 20,
+                                    "mtype": 2,
+                                    "w": 320,
+                                    "h": 480
+                                }
+                            ]
+                        }
+                    ]
+                }
             }
         }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "adm": "test-video-ad",
+                        "id": "response-005",
+                        "impid": "slot",
+                        "price": 20,
+                        "mtype": 2,
+                        "w": 320,
+                        "h": 480
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
 }
