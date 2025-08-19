@@ -13,6 +13,7 @@ type Labels struct {
 	PubID         string // exchange specific ID, so we cannot compile in values
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
+	RequestSize   int
 }
 
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
@@ -139,6 +140,8 @@ type DemandSource string
 // ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
 type ImpMediaType string
 
+type EndpointType string
+
 // RequestType : Request type enumeration
 type RequestType string
 
@@ -193,6 +196,21 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2DOOH,
 		ReqTypeAMP,
 		ReqTypeVideo,
+	}
+}
+
+// The endpoint types
+const (
+	EndpointAuction EndpointType = "auction"
+	EndpointVideo   EndpointType = "video"
+	EndpointAmp     EndpointType = "amp"
+)
+
+func EndpointTypes() []EndpointType {
+	return []EndpointType{
+		EndpointAuction,
+		EndpointVideo,
+		EndpointAmp,
 	}
 }
 

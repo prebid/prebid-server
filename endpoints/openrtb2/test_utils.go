@@ -56,11 +56,11 @@ import (
 // ----------------------
 const maxSize = 1024 * 256
 
-const (
-	AMP_ENDPOINT = iota
-	OPENRTB_ENDPOINT
-	VIDEO_ENDPOINT
-)
+//const (
+//	AMP_ENDPOINT = iota
+//	OPENRTB_ENDPOINT
+//	VIDEO_ENDPOINT
+//)
 
 type testCase struct {
 	// Common

@@ -149,7 +149,7 @@ func TestRequestMetric(t *testing.T) {
 	})
 
 	expectedCount := float64(1)
-	assertCounterVecValue(t, "", "requests", m.requests,
+	assertCounterVecValue(t, "", "requests", m.requestsStatus,
 		expectedCount,
 		prometheus.Labels{
 			requestTypeLabel:   string(requestType),

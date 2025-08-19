@@ -134,6 +134,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		PubID:         metrics.PublisherUnknown,
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
+		EndpointType:  AMP_ENDPOINT,
 	}
 	activityControl := privacy.ActivityControl{}
 

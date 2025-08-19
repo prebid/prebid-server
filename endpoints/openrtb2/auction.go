@@ -61,6 +61,11 @@ const secCookieDeprecation = "Sec-Cookie-Deprecation"
 const secBrowsingTopics = "Sec-Browsing-Topics"
 const observeBrowsingTopics = "Observe-Browsing-Topics"
 const observeBrowsingTopicsValue = "?1"
+const (
+	AMP_ENDPOINT = iota
+	OPENRTB_ENDPOINT
+	VIDEO_ENDPOINT
+)
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -179,6 +184,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		PubID:         metrics.PublisherUnknown,
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
+		EndpointType:  OPENRTB_ENDPOINT,
 	}
 
 	activityControl := privacy.ActivityControl{}
@@ -439,6 +445,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		errs = []error{err}
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	if limitedReqReader.N <= 0 {
 		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
