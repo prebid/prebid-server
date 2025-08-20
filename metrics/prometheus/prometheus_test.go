@@ -158,7 +158,7 @@ func TestRequestMetric(t *testing.T) {
 		})
 
 	histogram := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
-	assertHistogram(t, "requests_endpoint_auction", histogram, 1, 1024)
+	assertHistogram(t, "requests_size_auction", histogram, 1, 1024)
 }
 
 func TestDebugRequestMetric(t *testing.T) {

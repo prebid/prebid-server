@@ -125,7 +125,7 @@ const (
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
-	requestEndpointLabel = "request_endpoint"
+	requestEndpointLabel = "request_size"
 	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
