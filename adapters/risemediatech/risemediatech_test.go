@@ -36,7 +36,6 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "risemediatechtest", bidder)
 }
 
-// Table-driven test for parseImpExt
 func TestParseImpExt(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -61,7 +60,6 @@ func TestParseImpExt(t *testing.T) {
 	}
 }
 
-// Table-driven test for getBidType
 func TestGetBidType(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -88,7 +86,6 @@ func TestGetBidType(t *testing.T) {
 	}
 }
 
-// Table-driven test for MakeRequests error branches
 func TestMakeRequestsErrors(t *testing.T) {
 	a := &adapter{endpoint: "http://test-endpoint"}
 	baseImp := openrtb2.Imp{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"placementId":"abc"}}`)}
@@ -120,7 +117,6 @@ func TestMakeRequestsErrors(t *testing.T) {
 	}
 }
 
-// Table-driven test for MakeBids error branches
 func TestMakeBidsErrors(t *testing.T) {
 	a := &adapter{endpoint: "http://test-endpoint"}
 	validReq := &openrtb2.BidRequest{ID: "1"}

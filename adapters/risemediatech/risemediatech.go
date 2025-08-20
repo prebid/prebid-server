@@ -33,7 +33,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		// Validate banner
 		if imp.Banner != nil {
 			if imp.Banner.W == nil || imp.Banner.H == nil || *imp.Banner.W == 0 || *imp.Banner.H == 0 {
 				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: invalid banner dimensions", imp.ID)})
@@ -41,7 +40,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			}
 		}
 
-		// Validate video
 		if imp.Video != nil {
 			if len(imp.Video.MIMEs) == 0 {
 				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: missing or empty video.mimes", imp.ID)})
@@ -53,12 +51,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			}
 		}
 
-		// Setting bid floor if present
 		if impExt.BidFloor > 0 {
 			imp.BidFloor = impExt.BidFloor
 		}
 
-		// Check test mode
 		if impExt.TestMode == 1 {
 			setTestMode = true
 		}
