@@ -266,25 +266,13 @@ func (m *Module) HandleAuctionResponseHook(
 
 // fetchScope3Segments calls the Scope3 API and extracts segments
 func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.BidRequest) ([]string, error) {
-	// unmarshal user extension
-	var userExtension userExt
-	if bidRequest != nil && bidRequest.User != nil && bidRequest.User.Ext != nil {
-		if err := jsonutil.Unmarshal(bidRequest.User.Ext, &userExtension); err != nil {
-			// ignore error, set empty struct
-			userExtension = userExt{}
-		}
-	}
-
 	// Create cache key based on relevant user identifiers and site context
-	cacheKey := m.createCacheKey(bidRequest, &userExtension)
+	cacheKey := m.createCacheKey(bidRequest)
 
 	// Check cache first
 	if segments, found := m.cache.get(cacheKey, time.Duration(m.cfg.CacheTTL)*time.Second); found {
 		return segments, nil
 	}
-
-	// Enhance request with available user identifiers
-	m.enhanceRequestWithUserIDs(bidRequest, &userExtension)
 
 	// Marshal the bid request
 	requestBody, err := jsonutil.Marshal(bidRequest)
@@ -344,7 +332,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 }
 
 // createCacheKey generates a cache key based on user identifiers and site context
-func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest, userExtension *userExt) string {
+func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 	hasher := md5.New()
 
 	// Include site/app information
@@ -357,88 +345,32 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest, userExtension *
 	}
 
 	// Include user identifiers if available
-	if userExtension != nil {
-		// Include LiveRamp identifiers
-		for _, eid := range userExtension.Eids {
-			if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
-				hasher.Write([]byte("rampid:" + eid.UIDs[0].ID))
+	if bidRequest.User != nil && bidRequest.User.Ext != nil {
+		var userExtension userExt
+		if err := json.Unmarshal(bidRequest.User.Ext, &userExtension); err == nil {
+			// Include LiveRamp identifiers
+			for _, eid := range userExtension.Eids {
+				if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
+					hasher.Write([]byte("rampid:" + eid.UIDs[0].ID))
+				}
 			}
-		}
 
-		// Include other identifier types
-		if userExtension.RampID != "" {
-			hasher.Write([]byte("rampid:" + userExtension.RampID))
-		}
-		if userExtension.LiverampIDL != "" {
-			hasher.Write([]byte("ats:" + userExtension.LiverampIDL))
-		}
+			// Include other identifier types
+			if userExtension.RampID != "" {
+				hasher.Write([]byte("rampid:" + userExtension.RampID))
+			}
+			if userExtension.LiverampIDL != "" {
+				hasher.Write([]byte("ats:" + userExtension.LiverampIDL))
+			}
 
-		// Include user ID if available
-		if bidRequest.User != nil && bidRequest.User.ID != "" {
-			hasher.Write([]byte("userid:" + bidRequest.User.ID))
+			// Include user ID if available
+			if bidRequest.User != nil && bidRequest.User.ID != "" {
+				hasher.Write([]byte("userid:" + bidRequest.User.ID))
+			}
 		}
 	}
 
 	return hex.EncodeToString(hasher.Sum(nil))
-}
-
-// enhanceRequestWithUserIDs adds available user identifiers to the request
-// This function checks for various user identifiers that may be available
-func (m *Module) enhanceRequestWithUserIDs(bidRequest *openrtb2.BidRequest, userExtension *userExt) {
-	if bidRequest.User == nil {
-		return
-	}
-
-	// Check for existing user.ext data
-	if bidRequest.User.Ext == nil {
-		return
-	}
-
-	if userExtension == nil {
-		return
-	}
-
-	// Check for LiveRamp identifiers:
-	// Note: LiveRamp identifiers may be present from various sources including
-	// publisher implementations, other RTD modules, or identity providers
-
-	// 1. Check for LiveRamp EID in the standard eids array
-	for _, eid := range userExtension.Eids {
-		if eid.Source == "liveramp.com" {
-			// LiveRamp EID found - will be included in the API request
-			return
-		}
-	}
-
-	// 2. Check for direct rampid field (alternative location used by some publishers)
-	if userExtension.RampID != "" {
-		// RampID found in alternative location
-		return
-	}
-
-	// 3. Check for ATS envelope in various possible locations
-	// Publishers may store ATS envelopes in different extension fields
-	if userExtension.LiverampIDL != "" || userExtension.ATSEnvelope != "" || userExtension.RampIDEnvelope != "" {
-		// ATS envelope found - will be forwarded in the request
-		return
-	}
-
-	// 4. Check for ATS envelope in top-level request extensions
-	atsLocations := []string{"liveramp_idl", "ats_envelope", "rampId_envelope"}
-	if bidRequest.Ext != nil {
-		var reqExt map[string]interface{}
-		if err := jsonutil.Unmarshal(bidRequest.Ext, &reqExt); err == nil {
-			for _, location := range atsLocations {
-				if atsEnvelope, ok := reqExt[location].(string); ok && atsEnvelope != "" {
-					// ATS envelope found at request level
-					return
-				}
-			}
-		}
-	}
-
-	// No specific LiveRamp identifiers found, but other user identifiers
-	// (like user.id, device.ifa, etc.) will still be included in the request
 }
 
 // Response types for Scope3 API
