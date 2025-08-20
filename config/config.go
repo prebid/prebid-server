@@ -472,14 +472,18 @@ type Analytics struct {
 }
 
 type CurrencyConverter struct {
-	FetchURL             string `mapstructure:"fetch_url"`
-	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`
-	StaleRatesSeconds    int    `mapstructure:"stale_rates_seconds"`
+	FetchURL                 string `mapstructure:"fetch_url"`
+	FetchTimeoutMilliseconds int    `mapstructure:"fetch_timeout_ms"`
+	FetchIntervalSeconds     int    `mapstructure:"fetch_interval_seconds"`
+	StaleRatesSeconds        int    `mapstructure:"stale_rates_seconds"`
 }
 
 func (cfg *CurrencyConverter) validate(errs []error) []error {
 	if cfg.FetchIntervalSeconds < 0 {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
+	}
+	if cfg.FetchTimeoutMilliseconds < 0 {
+		errs = append(errs, fmt.Errorf("currency_converter.fetch_timeout_ms must be 0 or greater. Got %d", cfg.FetchTimeoutMilliseconds))
 	}
 	return errs
 }
@@ -959,6 +963,11 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client.throttle.enable_throttling", false)
+	v.SetDefault("http_client.throttle.simulate_throttling_only", false)
+	v.SetDefault("http_client.throttle.long_queue_wait_threshold_ms", 50)
+	v.SetDefault("http_client.throttle.short_queue_wait_threshold_ms", 10)
+	v.SetDefault("http_client.throttle.throttle_window", 1000)
 	v.SetDefault("http_client_cache.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client_cache.max_idle_connections", 10)
 	v.SetDefault("http_client_cache.max_idle_connections_per_host", 2)
@@ -1168,6 +1177,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
+	v.SetDefault("currency_converter.fetch_timeout_ms", 60000)      // 60 seconds
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("currency_converter.stale_rates_seconds", 0)
 	v.SetDefault("default_request.type", "")
