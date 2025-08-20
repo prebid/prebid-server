@@ -76,6 +76,7 @@ type Metrics struct {
 	adapterBidResponseValidationSizeWarn  *prometheus.CounterVec
 	adapterBidResponseSecureMarkupError   *prometheus.CounterVec
 	adapterBidResponseSecureMarkupWarn    *prometheus.CounterVec
+	adapterThrottled                      *prometheus.CounterVec
 
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
@@ -426,6 +427,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"adapter_response_validation_secure_warn",
 		"Count that tracks number of bids removed from bid response that had a invalid bidAdm (warn)",
 		[]string{adapterLabel, successLabel})
+
+	metrics.adapterThrottled = newCounter(cfg, reg,
+		"adapter_throttled",
+		"Count of requests throttled labeled by adapter.",
+		[]string{adapterLabel})
 
 	metrics.overheadTimer = newHistogramVec(cfg, reg,
 		"overhead_time_seconds",
@@ -1087,5 +1093,11 @@ func (m *Metrics) RecordModuleExecutionError(labels metrics.ModuleLabels) {
 func (m *Metrics) RecordModuleTimeout(labels metrics.ModuleLabels) {
 	m.moduleTimeouts[labels.Module].With(prometheus.Labels{
 		stageLabel: labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
+	m.adapterThrottled.With(prometheus.Labels{
+		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
 }

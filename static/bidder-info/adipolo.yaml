@@ -1,0 +1,11 @@
+aliasOf: xeworks
+endpoint: "http://rtb.adipolo.live?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+maintainer:
+  email: "smart@adipolo.com"
+userSync:
+  iframe:
+    url: "https://sync.adipolo.live/static/adisync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    userMacro: $UID
+  redirect:
+    url: "https://sync.adipolo.live/psync?t=s&e=0&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -41,7 +41,7 @@ type targetData struct {
 // The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
-func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap map[string]openrtb_ext.ExtMultiBid) {
+func (targData *targetData) setTargeting(auc *auction, env string, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap map[string]openrtb_ext.ExtMultiBid) {
 	for impId, topBidsPerImp := range auc.allBidsByBidder {
 		overallWinner := auc.winningBids[impId]
 		for originalBidderName, topBidsPerBidder := range topBidsPerImp {
@@ -96,8 +96,8 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 					targData.addKeys(targets, openrtb_ext.DealKey, topBid.Bid.DealID, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 
-				if isApp {
-					targData.addKeys(targets, openrtb_ext.EnvKey, openrtb_ext.EnvAppValue, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
+				if env != "" {
+					targData.addKeys(targets, openrtb_ext.EnvKey, env, targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)
 				}
 				if len(categoryMapping) > 0 {
 					targData.addKeys(targets, openrtb_ext.CategoryDurationKey, categoryMapping[topBid.Bid.ID], targetingBidderCode, isOverallWinner, truncateTargetAttr, bidHasDeal)

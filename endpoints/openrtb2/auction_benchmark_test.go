@@ -94,7 +94,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		nilMetrics,
 		infos,
 		gdprPermsBuilder,
-		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currency.NewRateConverter(&http.Client{}, 60*time.Second, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
