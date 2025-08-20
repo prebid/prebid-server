@@ -91,8 +91,9 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+
 	return &adapters.RequestData{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
@@ -128,7 +129,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 
 			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
+				Bid:     &bid,
 				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
