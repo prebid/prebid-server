@@ -42,14 +42,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
-	endpoint := a.endpoint
-	if request.Test == 1 {
-		endpoint = testEndpoint
-	}
-
 	return append(requestsToBidder, &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     endpoint + "?publisher_id=" + org,
+		Uri:     a.buildEndpoint(request.Test, org),
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -144,4 +139,14 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+// Helper func for building endpoint url
+func (a *adapter) buildEndpoint(testParam int8, org string) string {
+	endpoint := a.endpoint
+	if testParam == 1 {
+		endpoint = testEndpoint
+	}
+
+	return endpoint + "?publisher_id=" + org
 }
