@@ -6,89 +6,36 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/agma"
 	"github.com/prebid/prebid-server/v3/analytics/clients"
-	"github.com/prebid/prebid-server/v3/analytics/filesystem"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
 )
 
-// Modules that need to be logged to need to be initialized here
-// buildFileLogger attempts to build the file logger analytics module.
-// Returns (nil, nil) when not configured.
-func buildFileLogger(cfg *config.Analytics) (analytics.Module, error) {
-	if cfg == nil || len(cfg.File.Filename) == 0 {
-		return nil, nil
-	}
-	mod, err := filesystem.NewFileLogger(cfg.File.Filename)
-	if err != nil {
-		return nil, err
-	}
-	return mod, nil
-}
-
-// buildPubstack attempts to build the pubstack analytics module.
-// Returns (nil, nil) when disabled.
-func buildPubstack(cfg *config.Analytics) (analytics.Module, error) {
-	if cfg == nil || !cfg.Pubstack.Enabled {
-		return nil, nil
-	}
-	mod, err := pubstack.NewModule(
-		clients.GetDefaultHttpInstance(),
-		cfg.Pubstack.ScopeId,
-		cfg.Pubstack.IntakeUrl,
-		cfg.Pubstack.ConfRefresh,
-		cfg.Pubstack.Buffers.EventCount,
-		cfg.Pubstack.Buffers.BufferSize,
-		cfg.Pubstack.Buffers.Timeout,
-		clock.New(),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return mod, nil
-}
-
-// buildAgma attempts to build the agma analytics module.
-// Returns (nil, nil) when disabled.
-func buildAgma(cfg *config.Analytics) (analytics.Module, error) {
-	if cfg == nil || !cfg.Agma.Enabled {
-		return nil, nil
-	}
-	mod, err := agma.NewModule(
-		clients.GetDefaultHttpInstance(),
-		cfg.Agma,
-		clock.New(),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return mod, nil
-}
-
-// New assembles the enabled analytics modules using dedicated builder helpers.
 func New(cfg *config.Analytics) analytics.Runner {
 	modules := make(enabledAnalytics)
 
-	if mod, err := buildFileLogger(cfg); err != nil {
-		glog.Fatalf("Could not initialize FileLogger for file %v :%v", cfg.File.Filename, err)
-	} else if mod != nil {
-		modules["filelogger"] = mod
+	// Shared deps for all analytics module builders
+	deps := moduledeps.ModuleDeps{
+		HTTPClient: clients.GetDefaultHttpInstance(),
+		Clock:      clock.New(),
 	}
 
-	if mod, err := buildPubstack(cfg); err != nil {
-		glog.Errorf("Could not initialize PubstackModule: %v", err)
-	} else if mod != nil {
-		modules["pubstack"] = mod
-	}
-
-	if mod, err := buildAgma(cfg); err != nil {
-		glog.Errorf("Could not initialize Agma Analytics: %v", err)
-	} else if mod != nil {
-		modules["agma"] = mod
+	for vendor, moduleBuilders := range analytics.Builders() {
+		for moduleName, buildFn := range moduleBuilders {
+			raw := getRawConfigFor(vendor, moduleName, cfg)
+			m, err := buildFn(raw, deps)
+			if err != nil {
+				glog.Errorf("Could not initialize analytics module %s.%s: %v", vendor, moduleName, err)
+				continue
+			}
+			if m != nil {
+				// Keep legacy short key used by privacy/activities (e.g. "pubstack", "agma", "filelogger")
+				modules[moduleName] = m
+			}
+		}
 	}
 
 	return modules
@@ -244,4 +191,28 @@ func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, ada
 		newMap[adapterName] = val
 	}
 	return newMap
+}
+
+func getRawConfigFor(vendor, module string, cfg *config.Analytics) json.RawMessage {
+	if cfg == nil {
+		return nil
+	}
+	switch vendor {
+	case "prebid":
+		switch module {
+		case "filelogger":
+			if b, err := json.Marshal(cfg.File); err == nil {
+				return b
+			}
+		case "pubstack":
+			if b, err := json.Marshal(cfg.Pubstack); err == nil {
+				return b
+			}
+		case "agma":
+			if b, err := json.Marshal(cfg.Agma); err == nil {
+				return b
+			}
+		}
+	}
+	return nil
 }

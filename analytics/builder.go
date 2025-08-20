@@ -17,3 +17,7 @@ func builders() AnalyticsModuleBuilders {
 		},
 	}
 }
+
+func Builders() AnalyticsModuleBuilders {
+	return builders()
+}
