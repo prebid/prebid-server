@@ -458,6 +458,7 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 		bid          *openrtb2.Bid
 		expectedNURL string
 		expectedAdM  string
+		expectedBURL string
 	}{
 		{
 			name: "nil_bid",
@@ -469,9 +470,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 1.23,
 				NURL:  "http://example.com/nurl",
 				AdM:   "<div>Ad content</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=1.23&param2=abc",
 			},
 			expectedNURL: "http://example.com/nurl",
 			expectedAdM:  "<div>Ad content</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=1.23&param2=abc",
 		},
 		{
 			name: "macros_in_both_nurl_and_adm",
@@ -479,9 +482,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 1.50,
 				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
 				AdM:   "<div>Ad content with price ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
 			},
 			expectedNURL: "http://example.com/nurl?price=1.5",
 			expectedAdM:  "<div>Ad content with price 1.5</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=1.5&param2=abc",
 		},
 		{
 			name: "macro_only_in_nurl",
@@ -504,14 +509,24 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 			expectedAdM:  "<div>Price: 0.99</div>",
 		},
 		{
+			name: "macro_only_in_burl",
+			bid: &openrtb2.Bid{
+				Price: 0.99,
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
+			},
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=0.99&param2=abc",
+		},
+		{
 			name: "multiple_macros_in_same_field",
 			bid: &openrtb2.Bid{
 				Price: 3.14,
 				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}&backup_price=${AUCTION_PRICE}",
 				AdM:   "<div>Price: ${AUCTION_PRICE}, Backup: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=${AUCTION_PRICE}",
 			},
 			expectedNURL: "http://example.com/nurl?price=3.14&backup_price=3.14",
 			expectedAdM:  "<div>Price: 3.14, Backup: 3.14</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=3.14&param2=3.14",
 		},
 		{
 			name: "zero_price",
@@ -519,9 +534,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 0.0,
 				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
 				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
 			},
 			expectedNURL: "http://example.com/nurl?price=0",
 			expectedAdM:  "<div>Price: 0</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=0&param2=abc",
 		},
 		{
 			name: "very_small_price",
@@ -529,9 +546,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 0.001,
 				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
 				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
 			},
 			expectedNURL: "http://example.com/nurl?price=0.001",
 			expectedAdM:  "<div>Price: 0.001</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=0.001&param2=abc",
 		},
 		{
 			name: "large_price",
@@ -539,9 +558,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 999.999,
 				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
 				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
 			},
 			expectedNURL: "http://example.com/nurl?price=999.999",
 			expectedAdM:  "<div>Price: 999.999</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=999.999&param2=abc",
 		},
 		{
 			name: "integer_price",
@@ -549,9 +570,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 5.0,
 				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
 				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
 			},
 			expectedNURL: "http://example.com/nurl?price=5",
 			expectedAdM:  "<div>Price: 5</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=5&param2=abc",
 		},
 		{
 			name: "empty_nurl_and_adm",
@@ -559,9 +582,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 1.23,
 				NURL:  "",
 				AdM:   "",
+				BURL:  "",
 			},
 			expectedNURL: "",
 			expectedAdM:  "",
+			expectedBURL: "",
 		},
 		{
 			name: "case_sensitive_macro_not_replaced",
@@ -569,9 +594,11 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 				Price: 1.50,
 				NURL:  "http://example.com/nurl?price=${auction_price}",
 				AdM:   "<div>Price: ${Auction_Price}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${Auction_Price}&param2=abc",
 			},
 			expectedNURL: "http://example.com/nurl?price=${auction_price}",
 			expectedAdM:  "<div>Price: ${Auction_Price}</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=${Auction_Price}&param2=abc",
 		},
 	}
 
@@ -592,6 +619,7 @@ func TestResolveAuctionPriceMacros(t *testing.T) {
 
 			assert.Equal(t, tt.expectedNURL, testBid.NURL, "NURL should match expected value")
 			assert.Equal(t, tt.expectedAdM, testBid.AdM, "AdM should match expected value")
+			assert.Equal(t, tt.expectedBURL, testBid.BURL, "BRUL should match expected value")
 		})
 	}
 }
