@@ -1,31 +1,25 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "at": 1,
     "imp": [
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
-            "zoneId": "zone_code_test_display"
+            "zoneId": "testzone"
           }
         }
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://example.com/go/zone_code_test_display",
+        "uri": "http://example.com/go/testzone",
         "body": {
           "id": "test-request-id",
           "at": 1,
@@ -33,32 +27,28 @@
             {
               "id": "test-imp-id",
               "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
+                "w": 300,
+                "h": 250
               },
               "ext": {
                 "bidder": {
-                  "zoneId": "zone_code_test_display"
+                  "zoneId": "testzone"
                 }
               }
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
-        "status": 500
+        "status": 200,
+        "body": "invalid json response body"
       }
     }
   ],
-  "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info.",
+      "value": "Bad server response: expect { or n, but found \".",
       "comparison": "literal"
     }
   ]
