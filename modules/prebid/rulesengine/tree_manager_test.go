@@ -19,7 +19,7 @@ func TestTreeManagerShutdown(t *testing.T) {
 		requests: make(chan buildInstruction, 10),
 		monitor:  &treeManagerLogger{},
 	}
-	cache := NewCache()
+	cache := NewCache(0)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -192,7 +192,7 @@ func TestTreeManagerRun(t *testing.T) {
 				monitor:         logger,
 			}
 
-			cache := NewCache()
+			cache := NewCache(0)
 			cache.m.Store(tc.inStoredDataInCache)
 
 			// run
