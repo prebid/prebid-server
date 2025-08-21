@@ -347,7 +347,7 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 	// Include user identifiers if available
 	if bidRequest.User != nil && bidRequest.User.Ext != nil {
 		var userExtension userExt
-		if err := json.Unmarshal(bidRequest.User.Ext, &userExtension); err == nil {
+		if err := jsonutil.Unmarshal(bidRequest.User.Ext, &userExtension); err == nil {
 			// Include LiveRamp identifiers
 			for _, eid := range userExtension.Eids {
 				if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
