@@ -42,7 +42,8 @@
             "bidder": {
               "placementId": "some-placement-id",
               "viewabilityPercentage": 0.6
-            }
+            },
+            "gpid": "test-gpid"
           }
         }
       ]
@@ -78,7 +79,8 @@
                   "connatix": {
                     "placementId": "some-placement-id",
                     "viewabilityPercentage": 0.6
-                  }
+                  },
+                  "gpid": "test-gpid"
                 }
               }
             ],
