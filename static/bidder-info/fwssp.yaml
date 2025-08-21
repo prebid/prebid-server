@@ -13,3 +13,7 @@ capabilities:
   site:
     mediaTypes:
       - video
+userSync:
+  iframe:
+    url: "https://user-sync.fwmrm.net/ad/u?mode=pbs-user-sync&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&pbs_redirect={{.RedirectURL}}"
+    userMacro: "#{user.id}"
