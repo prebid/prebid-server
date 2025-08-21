@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
+	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -28,6 +29,8 @@ type permissionsImpl struct {
 	consent     string
 	gdprSignal  Signal
 	publisherID string
+
+	metrics metrics.MetricsEngine
 }
 
 // HostCookiesAllowed determines whether the host is allowed to set cookies on the user's device
@@ -199,7 +202,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 
 // getVendor retrieves the GVL vendor information for a particular bidder
 func (p *permissionsImpl) getVendor(ctx context.Context, vendorID uint16, pc parsedConsent) (api.Vendor, error) {
-	vendorList, err := p.fetchVendorList(ctx, pc.specVersion, pc.listVersion)
+	vendorList, err := p.fetchVendorList(ctx, pc.specVersion, pc.listVersion, p.metrics)
 	if err != nil {
 		return nil, err
 	}
