@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "test-request",
+    "imp": [
+      {
+        "id": "test-imp",
+        "video": {
+          "w": 1920,
+          "h": 1080,
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {}
+      }
+    ],
+    "app": {
+      "bundle": "app-bundle"
+    },
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "ua"
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error while decoding bidderExt.Bidder",
+      "comparison": "startswith"
+    }
+  ]
+}
