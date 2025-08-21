@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-empty",
+    "imp": [
+      {
+        "id": "test-imp-empty",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "EMPTY123",
+            "placementId": "empty-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "empty-site",
+      "domain": "empty.example.com",
+      "page": "https://empty.example.com/test"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/EMPTY123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-empty",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "empty-placement"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "EMPTY123",
+              "version": "v1"
+            }
+          },
+          
+          "ortb2": {
+            "id": "test-request-empty",
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 250,
+                      "w": 300
+                    }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "customerId": "EMPTY123",
+                    "placementId": "empty-placement"
+                  }
+                },
+                "id": "test-imp-empty"
+              }
+            ],
+            "site": {
+              "domain": "empty.example.com",
+              "id": "empty-site",
+              "page": "https://empty.example.com/test"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-empty"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": ""
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "failed to parse response as Contxtful relay or Prebid.js format",
+      "comparison": "literal"
+    }
+  ]
+} 
