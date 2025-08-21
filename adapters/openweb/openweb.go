@@ -18,8 +18,13 @@ import (
 )
 
 type adapter struct {
-	endpoint string
+	endpoint        string
+	testEndpointURL string
 }
+
+const (
+	testEndpoint = "https://pbs.openwebmp.com/pbs-test"
+)
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
 	org, err := checkExtAndExtractOrg(request)
@@ -39,7 +44,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 	return append(requestsToBidder, &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.endpoint + "?publisher_id=" + org,
+		Uri:     a.buildEndpoint(request.Test, org),
 		Body:    requestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -134,4 +139,14 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+// Helper func for building endpoint url
+func (a *adapter) buildEndpoint(testParam int8, org string) string {
+	endpoint := a.endpoint
+	if testParam == 1 {
+		endpoint = testEndpoint
+	}
+
+	return endpoint + "?publisher_id=" + org
 }
