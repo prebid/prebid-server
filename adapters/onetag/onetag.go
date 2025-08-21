@@ -34,7 +34,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	pubID := ""
-	for idx, imp := range request.Imp {
+	for _, imp := range request.Imp {
 		onetagExt, err := getImpressionExt(imp)
 		if err != nil {
 			return nil, []error{err}
@@ -52,7 +52,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				Message: "The publisher ID must not be empty",
 			}}
 		}
-		request.Imp[idx].Ext = onetagExt.Ext
 	}
 
 	url, err := a.buildEndpointURL(pubID)
