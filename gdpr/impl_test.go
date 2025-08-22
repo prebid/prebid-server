@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
@@ -883,8 +884,8 @@ func parseVendorListDataV2(t *testing.T, data string) vendorlist.VendorList {
 	return parsed
 }
 
-func listFetcher(specVersionLists map[uint16]map[uint16]vendorlist.VendorList) func(context.Context, uint16, uint16) (vendorlist.VendorList, error) {
-	return func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
+func listFetcher(specVersionLists map[uint16]map[uint16]vendorlist.VendorList) func(context.Context, uint16, uint16, metrics.MetricsEngine) (vendorlist.VendorList, error) {
+	return func(ctx context.Context, specVersion, listVersion uint16, metricsEngine metrics.MetricsEngine) (vendorlist.VendorList, error) {
 		if lists, ok := specVersionLists[specVersion]; ok {
 			if data, ok := lists[listVersion]; ok {
 				return data, nil
@@ -894,7 +895,7 @@ func listFetcher(specVersionLists map[uint16]map[uint16]vendorlist.VendorList) f
 	}
 }
 
-func failedListFetcher(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
+func failedListFetcher(ctx context.Context, specVersion, listVersion uint16, metricsEngine metrics.MetricsEngine) (vendorlist.VendorList, error) {
 	return nil, errors.New("vendor list can't be fetched")
 }
 

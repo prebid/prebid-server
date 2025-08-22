@@ -293,6 +293,12 @@ func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordGvlListRequest() {
+	for _, thisME := range *me {
+		thisME.RecordGvlListRequest()
+	}
+}
+
 func (me *MultiMetricsEngine) RecordAdsCertReq(success bool) {
 	for _, thisME := range *me {
 		thisME.RecordAdsCertReq(success)
@@ -511,6 +517,9 @@ func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) 
 }
 
 func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
+}
+
+func (me *NilMetricsEngine) RecordGvlListRequest() {
 }
 
 func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {
