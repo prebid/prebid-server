@@ -1,17 +1,7 @@
+aliasOf: 'teqblaze'
 endpoint: 'https://traffic1.rocketlab.ai/pserver'
 maintainer:
   email: 'support@rocketlab.ai'
-capabilities:
-  site:
-    mediaTypes:
-      - banner
-      - video
-      - native
-  app:
-    mediaTypes:
-      - banner
-      - video
-      - native
 userSync:
   redirect:
     url: 'https://usync.rocketlab.ai/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}'
