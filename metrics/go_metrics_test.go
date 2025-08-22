@@ -36,6 +36,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "setuid_requests.gdpr_blocked_host_cookie", m.SetUidStatusMeter[SetUidGDPRHostCookieBlocked])
 	ensureContains(t, registry, "setuid_requests.syncer_unknown", m.SetUidStatusMeter[SetUidSyncerUnknown])
 	ensureContains(t, registry, "stored_responses", m.StoredResponsesMeter)
+	ensureContains(t, registry, "stored_responses", m.GvlListRequestsMeter)
 
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)

@@ -35,11 +35,11 @@ type RequestInfo struct {
 }
 
 // NewPermissionsBuilder takes host config data used to configure the builder function it returns
-func NewPermissionsBuilder(cfg config.GDPR, gvlVendorIDs map[openrtb_ext.BidderName]uint16, vendorListFetcher VendorListFetcher, metricsEngine metrics.MetricsEngine) PermissionsBuilder {
+func NewPermissionsBuilder(cfg config.GDPR, gvlVendorIDs map[openrtb_ext.BidderName]uint16, vendorListFetcher VendorListFetcher, me metrics.MetricsEngine) PermissionsBuilder {
 	return func(tcf2Cfg TCF2ConfigReader, requestInfo RequestInfo) Permissions {
 		purposeEnforcerBuilder := NewPurposeEnforcerBuilder(tcf2Cfg)
 
-		return NewPermissions(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher, purposeEnforcerBuilder, requestInfo, metricsEngine)
+		return NewPermissions(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher, purposeEnforcerBuilder, requestInfo, me)
 	}
 }
 
