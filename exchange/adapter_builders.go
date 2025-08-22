@@ -187,7 +187,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/revcontent"
 	"github.com/prebid/prebid-server/v3/adapters/richaudience"
 	"github.com/prebid/prebid-server/v3/adapters/rise"
-	"github.com/prebid/prebid-server/v3/adapters/rocketlab"
 	"github.com/prebid/prebid-server/v3/adapters/roulax"
 	"github.com/prebid/prebid-server/v3/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/v3/adapters/rubicon"
