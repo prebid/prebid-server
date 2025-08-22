@@ -1,0 +1,95 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "div-banner-id",
+                "banner": {
+                    "topframe": 1,
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "networkId": "networkId"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://bid-test.sparteo.com/s2s-auction",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "div-banner-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ],
+                                "topframe": 1
+                            },
+                            "ext": {
+                                "sparteo": {
+                                    "params": {
+                                        "networkId": "networkId"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs": ["div-banner-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "sparteo",
+                            "bid": [
+                                {
+                                    "id": "137dd2bd-3015-407a-ab50-384aa2c706d7",
+                                    "impid": "div-banner-id",
+                                    "price": 0.10797,
+                                    "nurl": "https://dev.sparteo.com:4444/event/sparteo/0a98964d-1cf9-4802-93e9-c59c18f497fa?d=kyGjrlVurDF3FlG8d7juZXMzNlGoZA06b75fJDG9dyF3LTd9LzPxLRHzMzFzMfwfdlifNfF9L7AlLzreYS96MTH9JTP7NRdtNRU4LS8lYTPwZTMlLRPyYTUfJDGjdEPfNfFvdzGzJWA8Y6Qob75fJDG8YSF3FirvJWe9rEHtY7xoZW49JzKuLSFsFmBiFgnfZCV7JmMwYXG9ZW1uY70tNgP9MRPfJDGwrSF3Fle9rEBzGTMBGTGCGTGCZCV7JmMwYXG9ZW1uY70tGTMBMRP9MDUyQmBeZ7UjLiZzZXG7ZXFtrC1td7VyrlVyJWGoZCQobldjLiZzZXG7ZXGUb8MjdmZjdiGoZCQoblrDYW4uZXFfJDGfdmFfNfFfJDGuhWPfNfGjYlY4ZTi6ZD8iMCMeJTQeLRKtNWL9YS8iLzK8LTPwMzL7ZRYfJDGwhWPfNfGjYlY4ZTi6ZD8iMCMeJTQeLRKtNWL9YS8iLzK8LTPwMzL7ZRYfJDGib6LfNfGtYWMOUyFsFlQfFgnfrW4qbl06bfFsFmVib75fNfG8bltub6ruFfwfrWQ9FgnfZCVzh6QvdDFsFlAfrDF3WyGzd6HtY70tYl1tbW0uZXj9hXojdj0eXzUwFfwfd6MwJWMvbWGvJXB8YlZ8rEVyZV0jbXB9kV18LDFsFlrsb7GebDFsFmBfdy8fhWPtdlA9ZV0OPV1xLRHwFfwfdlV7ZW48ZV0BXzKwLDFsFlGoZD8vdEQaT6B9hW8KXzP8Fj9sFmByZWQzFgo2Flrsb7GebKxjrlVPdlVPdlViFgnxJDGobXBLZXZjbAByZVByZWPfNgKsFlMyZWAadCVyX7jtdDF3LS58MzYsFlGobCxeYlxjX6Bjdj0obXHfNgKsFlVzrCjtYXQjZA0yZXZjbmVjFgnwJgF5NSwfrljvrXMskV0yZXZjbmVadlA9hW1fNgKsFmrobj0yYXQjFgnwJgHyMSwfbWAyZ7juX6ByZWPfNgHuLRH8JDGfhWQadEGoY7UfNgHuLX9sFlGohSF3FlQorf8fYW4uZXFfJDGwbELfNjsfLzHwkRF8LDGrJDGwbXPfNjsfYlAublVyFj9sFlVsdyF3WyFzLRB5LgUwFfwfLzHwkRKwLDFsFgLwLEcxLgUfJDFzLRB5LTUwFj9sFlVtrDF3WyGfYW4uZXFfXSwfYlQzFgobFlAikW08bCjqZSFsFlAwdC4jkEVzFfwfZ6GoZDFsFl0lrC8jZCjeFfwfb74jrCAmFfwfb6BjbmcfJDGyhXMjFfwfdmVfhWMvbfFsFmMtYXG9YWQzZXG7ZXFfJDGzbWjsZXrebmQjZDFsFmVudmVskSGrJDGtYfF3ZlAsd7UsFlZ9dyF3WyGPYXMzVCeyb6VmhKZvdl8erDGrJDGydyF3LD55MSwfYlifNfFxLzriZRGfZD9zLRK8JTPwM7KtYWF8LD9zNRQeYTGgMzH7ZRdfJDGfdDF3LD5xJDGlrDF3FjBed6MUhEGvrWrnQl0ybWA9Fm9=",
+                                    "adm": "<script></script>",
+                                    "adomain": [
+                                        "testpage-ad"
+                                    ],
+                                    "crid": "banner_creative_test",
+                                    "w": 300,
+                                    "h": 250,
+                                    "ext": {
+                                        "ft": "passthrough",
+                                        "prebid": {
+                                            "type": "foobar"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "EUR"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "id": "test-request-id",
+            "bids": []
+        }
+    ]
+}

@@ -1064,8 +1064,8 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	module := "foobar"
 	stage1 := "entrypoint"
-	stage2 := "raw_auction"
-	stage3 := "processed_auction"
+	stage2 := "raw_auction_request"
+	stage3 := "processed_auction_request"
 
 	testCases := []struct {
 		description                string
