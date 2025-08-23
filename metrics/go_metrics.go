@@ -614,7 +614,9 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	}
 
 	// Request size by endpoint
-	me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
+	if labels.RequestSize > 0 {
+		me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
+	}
 
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)

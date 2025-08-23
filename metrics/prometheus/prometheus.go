@@ -675,10 +675,12 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		requestStatusLabel: string(labels.RequestStatus),
 	}).Inc()
 
-	endpoint := metrics.GetEndpointFromRequestType(labels.RType)
-	m.requestsSize.With(prometheus.Labels{
-		requestEndpointLabel: string(endpoint),
-	}).Observe(float64(labels.RequestSize))
+	if labels.RequestSize > 0 {
+		endpoint := metrics.GetEndpointFromRequestType(labels.RType)
+		m.requestsSize.With(prometheus.Labels{
+			requestEndpointLabel: string(endpoint),
+		}).Observe(float64(labels.RequestSize))
+	}
 
 	if labels.CookieFlag == metrics.CookieFlagNo {
 		m.requestsWithoutCookie.With(prometheus.Labels{
