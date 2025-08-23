@@ -170,7 +170,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
 	overheadTimeBuckets := []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
-	requestSizeBuckets := []float64{1000, 5000, 10000, 15000, 20000, 40000, 75000, 100000}
+	requestSizeBuckets := []float64{605.8, 682, 795.8, 922.4, 1757, 3359.2, 5025.4, 6136, 7502.5, 10689.7}
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
