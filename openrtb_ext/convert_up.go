@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/errortypes"
 )
 
 func ConvertUpTo26(r *RequestWrapper) error {
@@ -37,24 +38,24 @@ func ConvertUpTo26(r *RequestWrapper) error {
 // are no access errors.
 func convertUpEnsureExt(r *RequestWrapper) error {
 	if _, err := r.GetRequestExt(); err != nil {
-		return fmt.Errorf("req.ext is invalid: %v", err)
+		return &errortypes.BadInput{Message: fmt.Sprintf("req.ext is invalid: %v", err)}
 	}
 
 	if _, err := r.GetSourceExt(); err != nil {
-		return fmt.Errorf("req.source.ext is invalid: %v", err)
+		return &errortypes.BadInput{Message: fmt.Sprintf("req.source.ext is invalid: %v", err)}
 	}
 
 	if _, err := r.GetRegExt(); err != nil {
-		return fmt.Errorf("req.regs.ext is invalid: %v", err)
+		return &errortypes.BadInput{Message: fmt.Sprintf("req.regs.ext is invalid: %v", err)}
 	}
 
 	if _, err := r.GetUserExt(); err != nil {
-		return fmt.Errorf("req.user.ext is invalid: %v", err)
+		return &errortypes.BadInput{Message: fmt.Sprintf("req.user.ext is invalid: %v", err)}
 	}
 
 	for i, imp := range r.GetImp() {
 		if _, err := imp.GetImpExt(); err != nil {
-			return fmt.Errorf("imp[%v].imp.ext is invalid: %v", i, err)
+			return &errortypes.BadInput{Message: fmt.Sprintf("imp[%v].imp.ext is invalid: %v", i, err)}
 		}
 	}
 

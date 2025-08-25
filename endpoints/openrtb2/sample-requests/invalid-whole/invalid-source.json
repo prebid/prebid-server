@@ -38,6 +38,6 @@
       }
     ]
   },
-  "expectedReturnCode": 400,
+  "expectedReturnCode": 500,
   "expectedErrorMessage": "Invalid request: cannot unmarshal openrtb_ext.ExtAppPrebid.Source: expects \" or n, but found {"
 }  

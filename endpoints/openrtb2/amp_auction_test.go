@@ -1143,7 +1143,7 @@ func TestAmpDebug(t *testing.T) {
 			t.Fatalf("Error unmarshalling response: %s", err.Error())
 		}
 
-		if response.Targeting == nil || len(response.Targeting) == 0 {
+		if len(response.Targeting) == 0 {
 			t.Errorf("Bad response, no targeting data.\n Response was: %v", recorder.Body)
 		}
 		if len(response.Targeting) != 3 {

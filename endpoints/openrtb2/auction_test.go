@@ -509,8 +509,8 @@ func TestExplicitUserId(t *testing.T) {
 // processes aliases before it processes stored imps.  Changing that order
 // would probably cause this test to fail.
 func TestBadAliasRequests(t *testing.T) {
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON Document\n")
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON Document\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON in Default Request Settings: invalid character '\"' after object key:value pair at offset 51\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON in Incoming Request: invalid character '\"' after object key:value pair at offset 230\n")
 }
 
 // doBadAliasRequest() is a customized variation of doRequest(), above
@@ -1558,7 +1558,7 @@ func TestValidateExactlyOneInventoryType(t *testing.T) {
 		{
 			description:         "None provided - invalid",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
-			expectedError:       errors.New("One of request.site or request.app or request.dooh must be defined"),
+			expectedError:       &errortypes.BadInput{Message: "One of request.site or request.app or request.dooh must be defined"},
 		},
 		{
 			description: "Only site provided",
@@ -1587,7 +1587,7 @@ func TestValidateExactlyOneInventoryType(t *testing.T) {
 				Site: &openrtb2.Site{},
 				App:  &openrtb2.App{},
 			}},
-			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+			expectedError: &errortypes.BadInput{Message: "No more than one of request.site or request.app or request.dooh can be defined"},
 		},
 		{
 			description: "Two provided (site+dooh) - invalid",
@@ -1595,7 +1595,7 @@ func TestValidateExactlyOneInventoryType(t *testing.T) {
 				Site: &openrtb2.Site{},
 				DOOH: &openrtb2.DOOH{},
 			}},
-			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+			expectedError: &errortypes.BadInput{Message: "No more than one of request.site or request.app or request.dooh can be defined"},
 		},
 		{
 			description: "Two provided (app+dooh) - invalid",
@@ -1603,7 +1603,7 @@ func TestValidateExactlyOneInventoryType(t *testing.T) {
 				App:  &openrtb2.App{},
 				DOOH: &openrtb2.DOOH{},
 			}},
-			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+			expectedError: &errortypes.BadInput{Message: "No more than one of request.site or request.app or request.dooh can be defined"},
 		},
 		{
 			description: "Three provided - invalid",
@@ -1612,7 +1612,7 @@ func TestValidateExactlyOneInventoryType(t *testing.T) {
 				App:  &openrtb2.App{},
 				DOOH: &openrtb2.DOOH{},
 			}},
-			expectedError: errors.New("No more than one of request.site or request.app or request.dooh can be defined"),
+			expectedError: &errortypes.BadInput{Message: "No more than one of request.site or request.app or request.dooh can be defined"},
 		},
 	}
 
@@ -1715,7 +1715,7 @@ func TestValidateRequest(t *testing.T) {
 				},
 			},
 			givenIsAmp:        false,
-			expectedErrorList: []error{errors.New("ext.prebid.channel.name can't be empty")},
+			expectedErrorList: []error{&errortypes.BadInput{Message: "ext.prebid.channel.name can't be empty"}},
 		},
 		{
 			description: "AliasGVLID validation error",
@@ -1745,7 +1745,7 @@ func TestValidateRequest(t *testing.T) {
 				},
 			},
 			givenIsAmp:            false,
-			expectedErrorList:     []error{errors.New("request.ext.prebid.aliasgvlids. vendorId 1 refers to unknown bidder alias: pubmatic1")},
+			expectedErrorList:     []error{&errortypes.BadInput{Message: "request.ext.prebid.aliasgvlids. vendorId 1 refers to unknown bidder alias: pubmatic1"}},
 			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: appChannel, Version: ""},
 		},
 		{
@@ -1776,7 +1776,7 @@ func TestValidateRequest(t *testing.T) {
 				},
 			},
 			givenIsAmp:            false,
-			expectedErrorList:     []error{errors.New("request.ext.prebid.aliasgvlids. Invalid vendorId 0 for alias: yahoossp. Choose a different vendorId, or remove this entry.")},
+			expectedErrorList:     []error{&errortypes.BadInput{Message: "request.ext.prebid.aliasgvlids. Invalid vendorId 0 for alias: yahoossp. Choose a different vendorId, or remove this entry."}},
 			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: appChannel, Version: ""},
 		},
 		{
@@ -1836,9 +1836,7 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList: []error{
-				errors.New("request.site should include at least one of request.site.id or request.site.page."),
-			},
+			expectedErrorList: []error{&errortypes.BadInput{Message: "request.site should include at least one of request.site.id or request.site.page."}},
 		},
 		{
 			description: "Minimum required DOOH attributes missing",
@@ -1866,9 +1864,7 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList: []error{
-				errors.New("request.dooh should include at least one of request.dooh.id or request.dooh.venuetype."),
-			},
+			expectedErrorList: []error{&errortypes.BadInput{Message: "request.dooh should include at least one of request.dooh.id or request.dooh.venuetype."}},
 		},
 	}
 
@@ -2000,7 +1996,7 @@ func TestValidateTargeting(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
+			expectedError: &errortypes.BadInput{Message: `Price granularity error: range list must be ordered with increasing "max"`},
 		},
 		{
 			name: "mediatypepricegranularity-nil",
@@ -2083,7 +2079,7 @@ func TestValidateTargeting(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("Price granularity error: increment must be a nonzero positive number"),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: increment must be a nonzero positive number"},
 		},
 		{
 			name: "mediatypepricegranularity-banner-invalid",
@@ -2097,7 +2093,7 @@ func TestValidateTargeting(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: range list must be ordered with increasing \"max\""},
 		},
 		{
 			name: "mediatypepricegranularity-native-invalid",
@@ -2111,7 +2107,7 @@ func TestValidateTargeting(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: range list must be ordered with increasing \"max\""},
 		},
 		{
 			name: "mediatypepricegranularity-video-ok-banner-invalid",
@@ -2131,7 +2127,7 @@ func TestValidateTargeting(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: range list must be ordered with increasing \"max\""},
 		},
 		{
 			name: "mediatypepricegranularity-native-invalid-banner-ok",
@@ -2151,7 +2147,7 @@ func TestValidateTargeting(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("Price granularity error: range list must be ordered with increasing \"max\""),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: range list must be ordered with increasing \"max\""},
 		},
 	}
 
@@ -2173,21 +2169,21 @@ func TestValidatePriceGranularity(t *testing.T) {
 			givenPriceGranularity: &openrtb_ext.PriceGranularity{
 				Precision: nil,
 			},
-			expectedError: errors.New("Price granularity error: precision is required"),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: precision is required"},
 		},
 		{
 			description: "Precision is negative",
 			givenPriceGranularity: &openrtb_ext.PriceGranularity{
 				Precision: ptrutil.ToPtr(-1),
 			},
-			expectedError: errors.New("Price granularity error: precision must be non-negative"),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: precision must be non-negative"},
 		},
 		{
 			description: "Precision is too big",
 			givenPriceGranularity: &openrtb_ext.PriceGranularity{
 				Precision: ptrutil.ToPtr(20),
 			},
-			expectedError: errors.New("Price granularity error: precision of more than 15 significant figures is not supported"),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: precision of more than 15 significant figures is not supported"},
 		},
 		{
 			description: "price granularity ranges out of order",
@@ -2198,7 +2194,7 @@ func TestValidatePriceGranularity(t *testing.T) {
 					{Min: 0.0, Max: 1.0, Increment: 0.5},
 				},
 			},
-			expectedError: errors.New(`Price granularity error: range list must be ordered with increasing "max"`),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: range list must be ordered with increasing \"max\""},
 		},
 		{
 			description: "price granularity negative increment",
@@ -2208,7 +2204,7 @@ func TestValidatePriceGranularity(t *testing.T) {
 					{Min: 0.0, Max: 1.0, Increment: -0.1},
 				},
 			},
-			expectedError: errors.New("Price granularity error: increment must be a nonzero positive number"),
+			expectedError: &errortypes.BadInput{Message: "Price granularity error: increment must be a nonzero positive number"},
 		},
 		{
 			description: "price granularity correct",
@@ -2286,7 +2282,7 @@ func TestValidateOrFillChannel(t *testing.T) {
 				BidRequest: &openrtb2.BidRequest{App: &openrtb2.App{}, Ext: []byte(`{"prebid":{"channel": {"name": "", "version": ""}}}`)},
 			},
 			givenIsAmp:            false,
-			expectedError:         errors.New("ext.prebid.channel.name can't be empty"),
+			expectedError:         &errortypes.BadInput{Message: "ext.prebid.channel.name can't be empty"},
 			expectedChannelObject: nil,
 		},
 		{
@@ -2963,7 +2959,7 @@ func TestSChainInvalid(t *testing.T) {
 
 	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
-	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
+	expectedError := &errortypes.BadInput{Message: "request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder."}
 	assert.ElementsMatch(t, errL, []error{expectedError})
 }
 
@@ -3404,7 +3400,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 
 	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
-	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
+	expectedError := &errortypes.BadInput{Message: `request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`}
 	assert.ElementsMatch(t, errL, []error{expectedError})
 }
 
@@ -3470,7 +3466,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Bidders: []string{"a"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`),
+			expectedError: &errortypes.BadInput{Message: `request.ext.prebid.data.eidpermissions[1] missing required field: "source"`},
 		},
 		{
 			name: "invalid-duplicate-source",
@@ -3478,7 +3474,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`),
+			expectedError: &errortypes.BadInput{Message: `request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`},
 		},
 		{
 			name: "invalid-missing-bidders-nil",
@@ -3486,7 +3482,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB"},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
+			expectedError: &errortypes.BadInput{Message: `request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`},
 		},
 		{
 			name: "invalid-missing-bidders-empty",
@@ -3494,7 +3490,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
+			expectedError: &errortypes.BadInput{Message: `request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`},
 		},
 		{
 			name: "invalid-invalid-bidders",
@@ -3502,14 +3498,14 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"z"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
+			expectedError: &errortypes.BadInput{Message: `request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`},
 		},
 		{
 			name: "invalid-alias-case-sensitive",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"B"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+			expectedError: &errortypes.BadInput{Message: `request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`},
 		},
 	}
 
@@ -3798,7 +3794,7 @@ func TestParseGzipedRequest(t *testing.T) {
 				reqContentEnc:  "gzip",
 				maxReqSize:     10,
 				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
-				expectedErr:    "request size exceeded max size of 10 bytes.",
+				expectedErr:    "request size exceeded max size of 10 bytes",
 			},
 			{
 				desc:           "Gzip compression enabled, request size is within max request size",
@@ -4420,7 +4416,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid \n")},
+			expectedErrorList:         []error{&errortypes.BadInput{Message: "request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid \n"}},
 			hasStoredAuctionResponses: true,
 			storedBidResponses:        nil,
 		},
@@ -4605,7 +4601,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse")},
+			expectedErrorList:         []error{&errortypes.BadInput{Message: "request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse"}},
 			hasStoredAuctionResponses: false,
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "telaria": json.RawMessage(`{"test":true}`)}},
 		},
@@ -4635,7 +4631,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse")},
+			expectedErrorList:         []error{&errortypes.BadInput{Message: "request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse"}},
 			hasStoredAuctionResponses: false,
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`)}},
 		},
@@ -4665,7 +4661,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse")},
+			expectedErrorList:         []error{&errortypes.BadInput{Message: "request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse"}},
 			hasStoredAuctionResponses: false,
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "rubicon": json.RawMessage(`{"test":true}`)}},
 		},
@@ -4725,7 +4721,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse")},
+			expectedErrorList:         []error{&errortypes.BadInput{Message: "request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse"}},
 			hasStoredAuctionResponses: false,
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`), "telaria": json.RawMessage(`{"test":true}`)}},
 		},
@@ -4785,7 +4781,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse")},
+			expectedErrorList:         []error{&errortypes.BadInput{Message: "request validation failed. Stored bid responses are specified for imp Some-Imp-ID. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse"}},
 			hasStoredAuctionResponses: false,
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID": {"appnexus": json.RawMessage(`{"test":true}`)}},
 		},
@@ -4831,7 +4827,7 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			expectedErrorList:         []error{errors.New("request validation failed. Stored bid responses are specified for imp Some-Imp-ID2. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse")},
+			expectedErrorList:         []error{&errortypes.BadInput{Message: "request validation failed. Stored bid responses are specified for imp Some-Imp-ID2. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse"}},
 			hasStoredAuctionResponses: false,
 			storedBidResponses:        stored_responses.ImpBidderStoredResp{"Some-Imp-ID2": {"appnexus": json.RawMessage(`{"test":true}`)}},
 		},
@@ -5247,19 +5243,19 @@ func TestValidateAliases(t *testing.T) {
 			description:     "disabled bidder",
 			aliases:         map[string]string{"test": "rubicon"},
 			expectedAliases: nil,
-			expectedError:   errors.New("request.ext.prebid.aliases.test refers to disabled bidder: rubicon"),
+			expectedError:   &errortypes.BadInput{Message: "request.ext.prebid.aliases.test refers to disabled bidder: rubicon"},
 		},
 		{
 			description:     "coreBidderName not found",
 			aliases:         map[string]string{"test": "anyBidder"},
 			expectedAliases: nil,
-			expectedError:   errors.New("request.ext.prebid.aliases.test refers to unknown bidder: anyBidder"),
+			expectedError:   &errortypes.BadInput{Message: "request.ext.prebid.aliases.test refers to unknown bidder: anyBidder"},
 		},
 		{
 			description:     "alias name is coreBidder name",
 			aliases:         map[string]string{"appnexus": "appnexus"},
 			expectedAliases: nil,
-			expectedError:   errors.New("request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry."),
+			expectedError:   &errortypes.BadInput{Message: "request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry."},
 		},
 	}
 
@@ -6227,7 +6223,7 @@ func TestValidateUser(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: []error{errors.New("request.user.geo.accuracy must be a positive number")},
+			expectedErr: []error{&errortypes.BadInput{Message: "request.user.geo.accuracy must be a positive number"}},
 		},
 		{
 			name: "Invalid_user.ext.prebid_with_empty_buyeruids",
@@ -6238,7 +6234,7 @@ func TestValidateUser(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: []error{errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)},
+			expectedErr: []error{&errortypes.BadInput{Message: `request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`}},
 		},
 		{
 			name: "Invalid_user.eids_with_empty_id",
