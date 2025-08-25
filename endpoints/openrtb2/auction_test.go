@@ -82,7 +82,7 @@ func TestJsonSampleRequests(t *testing.T) {
 		},
 		{
 			"Asserts we return 500s on requests referencing accounts with malformed configs.",
-			"account-malformed",
+			"account-malformed/malformed-acct.json",
 		},
 		{
 			"Asserts we return 503s on requests with blocked apps.",

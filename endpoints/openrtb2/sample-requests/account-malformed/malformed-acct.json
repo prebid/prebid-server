@@ -61,5 +61,5 @@
     }
   },
   "expectedReturnCode": 500,
-  "expectedErrorMessage": "Invalid request: The prebid-server account config for account id \"malformed_acct\" is malformed. Please reach out to the prebid server host.\n"
+  "expectedErrorMessage": "Critical error while running the auction: The prebid-server account config for account id \"malformed_acct\" is malformed. Please reach out to the prebid server host."
 }

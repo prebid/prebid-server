@@ -50,5 +50,5 @@
   },
   "expectedReturnCode": 500,
   "expectedReturnCodeComment": "This should expect a 400 but at the time of unmarshall it was validating the values, as its being a badinput but prebid throwing it as unmarshall error",
-  "expectedErrorMessage": "Invalid request: request.device.ext.prebid.interstitial.minwidthperc must be a number between 0 and 100"
+  "expectedErrorMessage": "Critical error while running the auction: request.device.ext.prebid.interstitial.minwidthperc must be a number between 0 and 100"
 }

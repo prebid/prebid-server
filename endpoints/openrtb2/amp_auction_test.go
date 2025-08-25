@@ -164,7 +164,7 @@ func TestAccountErrors(t *testing.T) {
 		{
 			description: "Malformed account config",
 			storedReqID: "1",
-			filename:    "account-malformed/malformed-acct.json",
+			filename:    "account-malformed/malformed-acct-amp.json",
 		},
 	}
 

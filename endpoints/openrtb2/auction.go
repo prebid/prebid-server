@@ -193,7 +193,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
 	if errortypes.ContainsFatalError(errL) {
-		writeError(errL, w, &labels, req, deps.cfg)
+		writeError(errL, w, &labels, req, deps.cfg, &ao)
 		return
 	}
 
@@ -236,7 +236,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	err := deps.setIntegrationType(req, account)
 	if err != nil {
 		errL = append(errL, err)
-		writeError(errL, w, &labels, req, deps.cfg)
+		writeError(errL, w, &labels, req, deps.cfg, &ao)
 		return
 	}
 	secGPC := r.Header.Get("Sec-GPC")
@@ -278,16 +278,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
-		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
-			writeError([]error{err}, w, &labels, req, deps.cfg)
-			return
-		}
-		labels.RequestStatus = metrics.RequestStatusErr
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		glog.Errorf("/openrtb2/auction Critical error: %v", err)
-		ao.Status = http.StatusInternalServerError
-		ao.Errors = append(ao.Errors, err)
+		writeError([]error{err}, w, &labels, req, deps.cfg, &ao)
 		return
 	} else if isRejectErr {
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
@@ -1217,10 +1208,12 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 	if req.Site.ID == "" && req.Site.Page == "" {
 		return &errortypes.BadInput{Message: "request.site should include at least one of request.site.id or request.site.page."}
 	}
+
 	siteExt, err := req.GetSiteExt()
 	if err != nil {
-		return err
+		return &errortypes.BadInput{Message: fmt.Sprintf("request.site.ext is invalid: %v", err)}
 	}
+
 	siteAmp := siteExt.GetAmp()
 	if siteAmp != nil && (*siteAmp < 0 || *siteAmp > 1) {
 		return &errortypes.BadInput{Message: "request.site.ext.amp must be either 1, 0, or undefined"}
@@ -1241,7 +1234,11 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	_, err := req.GetAppExt()
-	return err
+	if err != nil {
+		return &errortypes.BadInput{Message: fmt.Sprintf("request.app.ext is invalid: %v", err)}
+	}
+
+	return nil
 }
 
 func (deps *endpointDeps) validateDOOH(req *openrtb_ext.RequestWrapper) error {
@@ -1935,7 +1932,7 @@ func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrappe
 	}
 }
 
-func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req *openrtb_ext.RequestWrapper, cfg *config.Configuration) {
+func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req *openrtb_ext.RequestWrapper, cfg *config.Configuration, ao *analytics.AuctionObject) {
 	if len(errs) == 0 {
 		return
 	}
@@ -1959,11 +1956,20 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req
 		}
 	}
 
+	if httpStatus == http.StatusInternalServerError {
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, errs...)
+	}
+
 	// Use legacy plain text format
 	if !shouldUseORTBErrorFormat(req, cfg) {
 		w.WriteHeader(httpStatus)
 		for _, err := range errs {
-			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
+			if httpStatus == http.StatusInternalServerError {
+				fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+			} else {
+				fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
+			}
 		}
 		return
 	}
