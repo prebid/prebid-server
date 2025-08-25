@@ -28,6 +28,7 @@ type Metrics struct {
 	impressions                  *prometheus.CounterVec
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
+	requestsSize                 *prometheus.HistogramVec
 	debugRequests                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
@@ -124,6 +125,7 @@ const (
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
+	requestEndpointLabel = "request_size"
 	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
@@ -168,6 +170,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
 	overheadTimeBuckets := []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
+	requestSizeBuckets := []float64{600, 700, 800, 900, 1000, 1500, 3000, 5000, 6000, 7500, 10000, 15000}
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
@@ -215,6 +218,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"requests",
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
+
+	metrics.requestsSize = newHistogramVec(cfg, reg,
+		"request_size_bytes",
+		"Count that keeps track of incoming request size in bytes labeled by endpoint.",
+		[]string{requestEndpointLabel}, requestSizeBuckets)
 
 	metrics.debugRequests = newCounterWithoutLabels(cfg, reg,
 		"debug_requests",
@@ -666,6 +674,13 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		requestTypeLabel:   string(labels.RType),
 		requestStatusLabel: string(labels.RequestStatus),
 	}).Inc()
+
+	if labels.RequestSize > 0 {
+		endpoint := metrics.GetEndpointFromRequestType(labels.RType)
+		m.requestsSize.With(prometheus.Labels{
+			requestEndpointLabel: string(endpoint),
+		}).Observe(float64(labels.RequestSize))
+	}
 
 	if labels.CookieFlag == metrics.CookieFlagNo {
 		m.requestsWithoutCookie.With(prometheus.Labels{

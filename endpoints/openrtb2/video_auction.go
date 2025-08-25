@@ -176,6 +176,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, []error{err}, &vo, &debugLog)
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	resolvedRequest := requestJson
 	if debugLog.DebugEnabledOrOverridden {
