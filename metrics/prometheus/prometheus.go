@@ -366,7 +366,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server that have stored responses")
 
 	metrics.gvlListRequests = newCounterWithoutLabels(cfg, reg,
-		"gvl_list_requests",
+		"gvl_requests",
 		"Count number of times GVL list is fetched")
 
 	metrics.adapterBids = newCounter(cfg, reg,

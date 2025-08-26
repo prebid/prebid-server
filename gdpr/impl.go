@@ -20,6 +20,7 @@ type permissionsImpl struct {
 	fetchVendorList        VendorListFetcher
 	gdprDefaultValue       string
 	hostVendorID           int
+	metrics                metrics.MetricsEngine
 	nonStandardPublishers  map[string]struct{}
 	purposeEnforcerBuilder PurposeEnforcerBuilder
 	vendorIDs              map[openrtb_ext.BidderName]uint16
@@ -29,8 +30,6 @@ type permissionsImpl struct {
 	consent     string
 	gdprSignal  Signal
 	publisherID string
-
-	metrics metrics.MetricsEngine
 }
 
 // HostCookiesAllowed determines whether the host is allowed to set cookies on the user's device

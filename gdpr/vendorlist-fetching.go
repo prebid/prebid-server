@@ -116,7 +116,7 @@ func newOccasionalSaver(timeout time.Duration) func(ctx context.Context, client 
 	}
 }
 
-func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors, metricsEngine metrics.MetricsEngine) uint16 {
+func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors, me metrics.MetricsEngine) uint16 {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		glog.Errorf("Failed to build GET %s request. Cookie syncs may be affected: %v", url, err)
@@ -137,11 +137,10 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver saveVen
 	}
 	if resp.StatusCode != http.StatusOK {
 		glog.Errorf("GET %s returned %d. Cookie syncs may be affected.", url, resp.StatusCode)
-		//metricsEngine.RecordVendorListFetch(fail)
+		me.RecordGvlListRequest()
 		return 0
 	}
-	// log GVL fetch metric here
-	//metricsEngine.RecordVendorListFetch(success)
+	me.RecordGvlListRequest()
 
 	var newList api.VendorList
 	newList, err = vendorlist2.ParseEagerly(respBody)
