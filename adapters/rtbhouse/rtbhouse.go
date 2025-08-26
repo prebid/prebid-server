@@ -81,6 +81,15 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			imp.BidFloor = bidFloor
 		}
 
+		// remove PAAPI signals from imp.Ext. RTB House pauses PAAPI support,
+		// the bidder should not get any PAAPI signals
+		newImpExt, err := clearAuctionEnvironment(&imp)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		imp.Ext = newImpExt
+
 		// Set the CUR of bid to BIDDER_CURRENCY after converting all floors
 		reqCopy.Cur = []string{BidderCurrency}
 		reqCopy.Imp = append(reqCopy.Imp, imp)
@@ -104,6 +113,29 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	requestsToBidder = append(requestsToBidder, requestToBidder)
 
 	return requestsToBidder, errs
+}
+
+func clearAuctionEnvironment(imp *openrtb2.Imp) (json.RawMessage, error) {
+	var objmap map[string]interface{}
+	err := json.Unmarshal(imp.Ext, &objmap)
+	if err != nil {
+		return nil, err
+	}
+
+	keysToDelete := []string{"ae", "igs", "paapi"}
+	for _, key := range keysToDelete {
+		_, exists := objmap[key]
+		if exists {
+			delete(objmap, key)
+		}
+	}
+
+	newImpExt, err := json.Marshal(objmap)
+	if err != nil {
+		return nil, err
+	}
+
+	return newImpExt, nil
 }
 
 func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpRTBHouse, error) {

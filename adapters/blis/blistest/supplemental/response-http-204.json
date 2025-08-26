@@ -1,0 +1,54 @@
+{
+    "mockBidRequest": {
+        "id": "test-req",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [{
+            "id": "test-imp",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 600
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "spid": "999"
+                }
+            }
+        }]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.endpoint/999",
+                "body": {
+                    "id": "test-req",
+                    "site": {
+                        "page": "prebid.org"
+                    },
+                    "imp": [{
+                        "id": "test-imp",
+                        "banner": {
+                            "format": [{
+                                "w": 300,
+                                "h": 600
+                            }]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "spid": "999"
+                            }
+                        }
+                    }]
+                },
+                "impIDs":["test-imp"]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {}
+            }
+        }
+    ]
+}
