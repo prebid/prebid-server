@@ -57,6 +57,12 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
+		if _, ok := hook.(hookstage.Exitpoint); ok {
+			added = true
+			stageName := hooks.StageExitpoint.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
+		}
+
 		if !added {
 			return nil, fmt.Errorf(`hook "%s" does not implement any supported hook interface`, id)
 		}
