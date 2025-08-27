@@ -1,5 +1,5 @@
 endpoint: "https://e.serverbid.com"
-extra_info: "{\"target_currency\": \"USD\"}"
+currency-accepted: "USD"
 geoscope:
   - USA
   - CAN
