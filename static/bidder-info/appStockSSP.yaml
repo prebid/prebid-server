@@ -1,0 +1,22 @@
+aliasOf: "teqblaze"
+endpoint: "https://#{REGION}#.al-ad.com/pserver"
+maintainer:
+  email: "sdksupport@app-stock.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://csync.al-ad.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://csync.al-ad.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"
