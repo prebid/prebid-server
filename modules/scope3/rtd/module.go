@@ -37,6 +37,22 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 		cfg.CacheTTL = 60 // 60 seconds default
 	}
 
+	// Set masking defaults
+	if cfg.Masking.Geo.LatLongPrecision == 0 && cfg.Masking.Enabled {
+		cfg.Masking.Geo.LatLongPrecision = 2 // 2 decimal places default (~1.1km precision)
+	}
+	if cfg.Masking.Enabled && len(cfg.Masking.User.PreserveEids) == 0 {
+		// Default to preserving common identity providers
+		cfg.Masking.User.PreserveEids = []string{"liveramp.com", "uidapi.com", "id5-sync.com"}
+	}
+	if cfg.Masking.Enabled {
+		// Set default preserve values
+		if !cfg.Masking.Geo.PreserveMetro && !cfg.Masking.Geo.PreserveZip && !cfg.Masking.Geo.PreserveCity {
+			cfg.Masking.Geo.PreserveMetro = true
+			cfg.Masking.Geo.PreserveZip = true
+		}
+	}
+
 	// Create HTTP client with optimized transport for high-frequency API calls
 	transport := &http.Transport{
 		MaxIdleConns:        100,              // Allow more idle connections for connection reuse
@@ -58,11 +74,38 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 
 // Config holds module configuration
 type Config struct {
-	Endpoint       string `json:"endpoint"`
-	AuthKey        string `json:"auth_key"`
-	Timeout        int    `json:"timeout_ms"`
-	CacheTTL       int    `json:"cache_ttl_seconds"` // Cache segments for this many seconds
-	AddToTargeting bool   `json:"add_to_targeting"`  // Add segments as individual targeting keys
+	Endpoint       string        `json:"endpoint"`
+	AuthKey        string        `json:"auth_key"`
+	Timeout        int           `json:"timeout_ms"`
+	CacheTTL       int           `json:"cache_ttl_seconds"` // Cache segments for this many seconds
+	AddToTargeting bool          `json:"add_to_targeting"`  // Add segments as individual targeting keys
+	Masking        MaskingConfig `json:"masking"`           // Privacy masking configuration
+}
+
+// MaskingConfig controls what user data is masked before sending to Scope3
+type MaskingConfig struct {
+	Enabled bool                `json:"enabled"`
+	Geo     GeoMaskingConfig    `json:"geo"`
+	User    UserMaskingConfig   `json:"user"`
+	Device  DeviceMaskingConfig `json:"device"`
+}
+
+// GeoMaskingConfig controls geographic data masking
+type GeoMaskingConfig struct {
+	PreserveMetro    bool `json:"preserve_metro"`     // DMA code (default: true)
+	PreserveZip      bool `json:"preserve_zip"`       // Postal code (default: true)
+	PreserveCity     bool `json:"preserve_city"`      // City name (default: false)
+	LatLongPrecision int  `json:"lat_long_precision"` // Decimal places for lat/long (0-4, default: 2)
+}
+
+// UserMaskingConfig controls user data masking
+type UserMaskingConfig struct {
+	PreserveEids []string `json:"preserve_eids"` // List of EID sources to preserve
+}
+
+// DeviceMaskingConfig controls device data masking
+type DeviceMaskingConfig struct {
+	PreserveMobileIds bool `json:"preserve_mobile_ids"` // Keep mobile advertising IDs (default: false)
 }
 
 // cacheEntry represents a cached segment response
@@ -274,8 +317,14 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 		return segments, nil
 	}
 
-	// Marshal the bid request
-	requestBody, err := jsonutil.Marshal(bidRequest)
+	// Apply privacy masking before sending to Scope3
+	requestToSend := bidRequest
+	if m.cfg.Masking.Enabled {
+		requestToSend = m.maskBidRequest(bidRequest)
+	}
+
+	// Marshal the (potentially masked) bid request
+	requestBody, err := jsonutil.Marshal(requestToSend)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +343,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("scope3 returned status %d", resp.StatusCode)
