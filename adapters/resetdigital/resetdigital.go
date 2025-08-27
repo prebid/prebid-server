@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"golang.org/x/text/currency"
 )
 
 const (
@@ -88,11 +90,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		reqCopy.Imp[0].TagID = resetDigitalExt.PlacementID
 	}
 
-	if len(request.Cur) == 0 || (len(request.Cur) == 1 && request.Cur[0] == "") {
-		reqCopy.Cur = []string{currencyUSD}
-	} else {
-		reqCopy.Cur = request.Cur
-	}
+	reqCopy.Cur = validateAndFilterCurrencies(request.Cur)
 
 	reqBody, err := json.Marshal(&reqCopy)
 	if err != nil {
@@ -155,10 +153,9 @@ func parseBidResponse(request *openrtb2.BidRequest, bidResp *openrtb2.BidRespons
 
 	if bidResp.Cur != "" {
 		bidResponse.Currency = bidResp.Cur
-	} else if len(request.Cur) > 0 && request.Cur[0] != "" {
-		bidResponse.Currency = request.Cur[0]
 	} else {
-		bidResponse.Currency = currencyUSD
+		cur := validateAndFilterCurrencies(request.Cur)
+		bidResponse.Currency = cur[0]
 	}
 
 	for _, seatBid := range bidResp.SeatBid {
@@ -209,6 +206,24 @@ func getBidType(bid openrtb2.Bid, request *openrtb2.BidRequest) (openrtb_ext.Bid
 		return "", fmt.Errorf("no matching impression found for ImpID: %s", bid.ImpID)
 	}
 	return getMediaType(request.Imp[0]), nil
+}
+
+func validateAndFilterCurrencies(currencies []string) []string {
+	valid := make([]string, 0, len(currencies))
+	for _, s := range currencies {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		s = strings.ToUpper(s)
+		if u, err := currency.ParseISO(s); err == nil {
+			valid = append(valid, u.String())
+		}
+	}
+	if len(valid) == 0 {
+		return []string{currencyUSD}
+	}
+	return valid
 }
 
 func getMediaType(imp openrtb2.Imp) openrtb_ext.BidType {

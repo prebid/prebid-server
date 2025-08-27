@@ -78,6 +78,65 @@ func TestGetMediaType(t *testing.T) {
 	}
 }
 
+func TestMakeBidsFallbackWithInvalidCurrency(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderResetDigital, config.Adapter{
+		Endpoint: "https://example.com",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	request := &openrtb2.BidRequest{
+		ID:  "test-request-id",
+		Cur: []string{"X"},
+		Imp: []openrtb2.Imp{
+			{
+				ID: "test-imp-id",
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
+						{W: 300, H: 250},
+					},
+				},
+			},
+		},
+	}
+
+	requestData := &adapters.RequestData{}
+
+	responseData := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body: []byte(`{
+			"id": "test-request-id",
+			"seatbid": [
+				{
+					"bid": [
+						{
+							"id": "test-bid-id",
+							"impid": "test-imp-id",
+							"price": 3.14,
+							"adm": "<div>test ad</div>",
+							"crid": "test-creative",
+							"w": 300,
+							"h": 250
+						}
+					],
+					"seat": "resetdigital"
+				}
+			]
+		}`),
+	}
+
+	bidResponse, errs := bidder.MakeBids(request, requestData, responseData)
+
+	assert.Empty(t, errs)
+	assert.NotNil(t, bidResponse)
+	assert.Equal(t, "USD", bidResponse.Currency, "Should fallback to USD when request.Cur contains invalid currency and response has no currency")
+	assert.Len(t, bidResponse.Bids, 1)
+	assert.Equal(t, "test-bid-id", bidResponse.Bids[0].Bid.ID)
+	assert.Equal(t, float64(3.14), bidResponse.Bids[0].Bid.Price)
+}
+
 func TestGetBidType(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -721,4 +780,225 @@ func TestBidPriceZero(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "price 0.000000 <= 0 filtered out")
 	assert.NotNil(t, bidResponse)
 	assert.Len(t, bidResponse.Bids, 0, "Bids with price 0 should be filtered")
+}
+
+func TestValidateAndFilterCurrencies(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "empty array",
+			input:    []string{},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "nil array",
+			input:    nil,
+			expected: []string{"USD"},
+		},
+		{
+			name:     "single empty string",
+			input:    []string{""},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "multiple empty strings",
+			input:    []string{"", ""},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "whitespace only strings",
+			input:    []string{"   ", "\t", "\n"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "single valid currency",
+			input:    []string{"EUR"},
+			expected: []string{"EUR"},
+		},
+		{
+			name:     "multiple valid currencies",
+			input:    []string{"USD", "EUR", "GBP"},
+			expected: []string{"USD", "EUR", "GBP"},
+		},
+		{
+			name:     "single invalid currency - edge case X",
+			input:    []string{"X"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "single invalid currency code",
+			input:    []string{"FOO"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "mixed valid and invalid currencies",
+			input:    []string{"USD", "INVALID", "EUR"},
+			expected: []string{"USD", "EUR"},
+		},
+		{
+			name:     "currencies with whitespace",
+			input:    []string{" USD ", "\tEUR\t", " GBP\n"},
+			expected: []string{"USD", "EUR", "GBP"},
+		},
+		{
+			name:     "mixed empty and valid currencies",
+			input:    []string{"", "USD", "", "EUR", ""},
+			expected: []string{"USD", "EUR"},
+		},
+		{
+			name:     "mixed empty, invalid, and valid currencies",
+			input:    []string{"", "INVALID", "USD", "FOO", "EUR", ""},
+			expected: []string{"USD", "EUR"},
+		},
+		{
+			name:     "lowercase currencies (should be normalized)",
+			input:    []string{"usd", "eur"},
+			expected: []string{"USD", "EUR"},
+		},
+		{
+			name:     "mixed case currencies",
+			input:    []string{"Usd", "EUR", "gbp"},
+			expected: []string{"USD", "EUR", "GBP"},
+		},
+		{
+			name:     "numeric currency codes",
+			input:    []string{"123", "456"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "special characters",
+			input:    []string{"US$", "EU@", "GB#"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "too short currency codes",
+			input:    []string{"US", "E"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "too long currency codes",
+			input:    []string{"USDD", "EURR"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "preserve order of valid currencies",
+			input:    []string{"GBP", "USD", "EUR"},
+			expected: []string{"GBP", "USD", "EUR"},
+		},
+		{
+			name:     "duplicate valid currencies",
+			input:    []string{"USD", "USD", "EUR"},
+			expected: []string{"USD", "USD", "EUR"},
+		},
+		{
+			name:     "common currencies",
+			input:    []string{"USD", "EUR", "GBP", "JPY", "CHF"},
+			expected: []string{"USD", "EUR", "GBP", "JPY", "CHF"},
+		},
+		{
+			name:     "cryptocurrency codes (should be invalid)",
+			input:    []string{"BTC", "ETH", "XRP"},
+			expected: []string{"USD"},
+		},
+		{
+			name:     "mixed valid and cryptocurrency",
+			input:    []string{"USD", "BTC", "EUR", "ETH"},
+			expected: []string{"USD", "EUR"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := validateAndFilterCurrencies(tt.input)
+			assert.Equal(t, tt.expected, result, "validateAndFilterCurrencies(%v) = %v, want %v", tt.input, result, tt.expected)
+		})
+	}
+}
+
+func TestCurrencyValidationInMakeRequests(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderResetDigital, config.Adapter{
+		Endpoint: "https://example.com",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	tests := []struct {
+		name        string
+		inputCur    []string
+		expectedCur []string
+		description string
+	}{
+		{
+			name:        "edge case from original issue - single X",
+			inputCur:    []string{"X"},
+			expectedCur: []string{"USD"},
+			description: "Invalid single character currency should default to USD",
+		},
+		{
+			name:        "edge case from original issue - multiple empty strings",
+			inputCur:    []string{"", ""},
+			expectedCur: []string{"USD"},
+			description: "Multiple empty strings should default to USD",
+		},
+		{
+			name:        "mixed valid and invalid currencies",
+			inputCur:    []string{"USD", "INVALID", "EUR", "", "GBP"},
+			expectedCur: []string{"USD", "EUR", "GBP"},
+			description: "Should filter out invalid currencies and preserve valid ones",
+		},
+		{
+			name:        "all invalid currencies",
+			inputCur:    []string{"FOO", "BAR", "123"},
+			expectedCur: []string{"USD"},
+			description: "All invalid currencies should default to USD",
+		},
+		{
+			name:        "whitespace currencies",
+			inputCur:    []string{"   ", "\t", "\n"},
+			expectedCur: []string{"USD"},
+			description: "Whitespace-only currencies should default to USD",
+		},
+		{
+			name:        "valid currencies with whitespace",
+			inputCur:    []string{" USD ", "\tEUR\t"},
+			expectedCur: []string{"USD", "EUR"},
+			description: "Valid currencies with whitespace should be trimmed and preserved",
+		},
+		{
+			name:        "case normalization",
+			inputCur:    []string{"usd", "Eur", "GBP"},
+			expectedCur: []string{"USD", "EUR", "GBP"},
+			description: "Currencies should be normalized to uppercase",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			imp := openrtb2.Imp{
+				ID:  "test-imp-id",
+				Ext: json.RawMessage(`{"bidder": {"placement_id": "test-placement"}}`),
+			}
+
+			request := &openrtb2.BidRequest{
+				ID:  "test-request-id",
+				Imp: []openrtb2.Imp{imp},
+				Cur: tt.inputCur,
+			}
+
+			reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+			assert.Empty(t, errs, "Should not have errors for currency validation")
+			assert.Len(t, reqs, 1, "Should generate one request")
+
+			var reqParsed openrtb2.BidRequest
+			err := json.Unmarshal(reqs[0].Body, &reqParsed)
+			assert.NoError(t, err, "Should be able to parse request body")
+			assert.Equal(t, tt.expectedCur, reqParsed.Cur, tt.description)
+		})
+	}
 }
