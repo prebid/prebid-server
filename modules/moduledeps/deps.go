@@ -3,6 +3,7 @@ package moduledeps
 import (
 	"net/http"
 
+	"github.com/benbjohnson/clock"
 	"github.com/prebid/prebid-server/v3/currency"
 )
 
@@ -11,4 +12,5 @@ import (
 type ModuleDeps struct {
 	HTTPClient    *http.Client
 	RateConvertor *currency.RateConverter
+	Clock         clock.Clock // added for analytics module builders
 }

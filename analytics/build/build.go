@@ -6,53 +6,35 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/agma"
 	"github.com/prebid/prebid-server/v3/analytics/clients"
-	"github.com/prebid/prebid-server/v3/analytics/filesystem"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
 )
 
-// Modules that need to be logged to need to be initialized here
-func New(analytics *config.Analytics) analytics.Runner {
-	modules := make(enabledAnalytics, 0)
-	if len(analytics.File.Filename) > 0 {
-		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
-			modules["filelogger"] = mod
-		} else {
-			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
-		}
+func New(cfg *config.Analytics) analytics.Runner {
+	modules := make(enabledAnalytics)
+
+	// Shared deps for all analytics module builders
+	deps := moduledeps.ModuleDeps{
+		HTTPClient: clients.GetDefaultHttpInstance(),
+		Clock:      clock.New(),
 	}
 
-	if analytics.Pubstack.Enabled {
-		pubstackModule, err := pubstack.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Pubstack.ScopeId,
-			analytics.Pubstack.IntakeUrl,
-			analytics.Pubstack.ConfRefresh,
-			analytics.Pubstack.Buffers.EventCount,
-			analytics.Pubstack.Buffers.BufferSize,
-			analytics.Pubstack.Buffers.Timeout,
-			clock.New())
-		if err == nil {
-			modules["pubstack"] = pubstackModule
-		} else {
-			glog.Errorf("Could not initialize PubstackModule: %v", err)
-		}
-	}
-
-	if analytics.Agma.Enabled {
-		agmaModule, err := agma.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Agma,
-			clock.New())
-		if err == nil {
-			modules["agma"] = agmaModule
-		} else {
-			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
+	for vendor, moduleBuilders := range analytics.Builders() {
+		for moduleName, buildFn := range moduleBuilders {
+			raw := getRawConfigFor(vendor, moduleName, cfg)
+			m, err := buildFn(raw, deps)
+			if err != nil {
+				glog.Errorf("Could not initialize analytics module %s.%s: %v", vendor, moduleName, err)
+				continue
+			}
+			if m != nil {
+				// Keep legacy short key used by privacy/activities (e.g. "pubstack", "agma", "filelogger")
+				modules[moduleName] = m
+			}
 		}
 	}
 
@@ -209,4 +191,28 @@ func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, ada
 		newMap[adapterName] = val
 	}
 	return newMap
+}
+
+func getRawConfigFor(vendor, module string, cfg *config.Analytics) json.RawMessage {
+	if cfg == nil {
+		return nil
+	}
+	switch vendor {
+	case "prebid":
+		switch module {
+		case "filelogger":
+			if b, err := json.Marshal(cfg.File); err == nil {
+				return b
+			}
+		case "pubstack":
+			if b, err := json.Marshal(cfg.Pubstack); err == nil {
+				return b
+			}
+		case "agma":
+			if b, err := json.Marshal(cfg.Agma); err == nil {
+				return b
+			}
+		}
+	}
+	return nil
 }
