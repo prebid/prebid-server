@@ -53,16 +53,52 @@
         },
         "body": {
           "adunit": "test-imp-id",
-          "consent_required": true,
-          "consent_string": "CO-X2XiO_eyUoAsAxBFRBECsA",
           "currency": "EUR",
           "ik": "test-request-id",
+          "ortb2": {
+            "at": 1,
+            "cur": ["EUR"],
+            "device": {
+              "ip": "123.123.123.123",
+              "ua": "test-user-agent"
+            },
+            "id": "test-request-id",
+            "imp": [
+              {
+                "banner": {
+                  "h": 50,
+                  "w": 320
+                },
+                "ext": {
+                  "bidder": {
+                    "apiKey": "test-api-key",
+                    "placement": "test-placement",
+                    "test": "1"
+                  }
+                },
+                "id": "test-imp-id"
+              }
+            ],
+            "regs": {
+              "ext": {
+                "gdpr": 1
+              }
+            },
+            "site": {
+              "domain": "example.com",
+              "page": "https://example.com/page"
+            },
+            "tmax": 500,
+            "user": {
+              "ext": {
+                "consent": "CO-X2XiO_eyUoAsAxBFRBECsA"
+              }
+            }
+          },
           "params": {
             "placement": "test-placement",
             "test": "1"
           },
-          "referer": "https://example.com/page",
-          "referer_canonical": "example.com",
           "request_id": "test-request-id",
           "timeout": 500
         },

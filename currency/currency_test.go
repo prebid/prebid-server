@@ -53,6 +53,7 @@ func TestGetAuctionCurrencyRates(t *testing.T) {
 
 		return NewRateConverter(
 			mockCurrencyClient,
+			60*time.Second,
 			"currency.fake.com",
 			24*time.Hour,
 		)

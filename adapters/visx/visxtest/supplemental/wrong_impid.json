@@ -52,7 +52,7 @@
 	  "mockResponse": {
 		  "status": 200,
 		  "body": {
-              "cur": ["USD"],
+              "cur": "USD",
 			  "seatbid": [{
 				  "seat": "51",
 				  "bid": [{
