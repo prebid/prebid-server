@@ -19,4 +19,4 @@ userSync:
     userMacro: "[UID]"
   iframe:
     url: "https://csync.al-ad.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
-    userMacro: "[UI]"
+    userMacro: "[UID]"
