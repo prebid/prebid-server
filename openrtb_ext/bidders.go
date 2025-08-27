@@ -19,7 +19,6 @@ var aliasBidderToParent map[BidderName]BidderName = map[BidderName]BidderName{}
 
 var coreBidderNames []BidderName = []BidderName{
 	Bidder33Across,
-	Bidder360PlayVid,
 	BidderAax,
 	BidderAceex,
 	BidderAcuityAds,
@@ -390,7 +389,6 @@ func IsPotentialBidder(name string) bool {
 // Please keep this list alphabetized to minimize merge conflicts.
 const (
 	Bidder33Across          BidderName = "33across"
-	Bidder360PlayVid        BidderName = "360playvid"
 	BidderAax               BidderName = "aax"
 	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
