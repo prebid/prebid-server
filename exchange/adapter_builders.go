@@ -36,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/adview"
 	"github.com/prebid/prebid-server/v3/adapters/adxcg"
 	"github.com/prebid/prebid-server/v3/adapters/adyoulike"
+	"github.com/prebid/prebid-server/v3/adapters/afront"
 	"github.com/prebid/prebid-server/v3/adapters/aidem"
 	"github.com/prebid/prebid-server/v3/adapters/aja"
 	"github.com/prebid/prebid-server/v3/adapters/akcelo"
@@ -223,6 +224,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/tappx"
 	"github.com/prebid/prebid-server/v3/adapters/teads"
 	"github.com/prebid/prebid-server/v3/adapters/telaria"
+	"github.com/prebid/prebid-server/v3/adapters/teqblaze"
 	"github.com/prebid/prebid-server/v3/adapters/theadx"
 	"github.com/prebid/prebid-server/v3/adapters/thetradedesk"
 	"github.com/prebid/prebid-server/v3/adapters/tpmn"
@@ -297,6 +299,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdView:            adview.Builder,
 		openrtb_ext.BidderAdxcg:             adxcg.Builder,
 		openrtb_ext.BidderAdyoulike:         adyoulike.Builder,
+		openrtb_ext.BidderAfront:            afront.Builder,
 		openrtb_ext.BidderAidem:             aidem.Builder,
 		openrtb_ext.BidderAJA:               aja.Builder,
 		openrtb_ext.BidderAkcelo:            akcelo.Builder,
@@ -487,6 +490,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
+		openrtb_ext.BidderTeqBlaze:          teqblaze.Builder,
 		openrtb_ext.BidderTheadx:            theadx.Builder,
 		openrtb_ext.BidderTheTradeDesk:      thetradedesk.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,

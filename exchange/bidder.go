@@ -9,11 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/http/httptrace"
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang/glog"
@@ -61,6 +64,10 @@ type AdaptedBidder interface {
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
 	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error)
+	// logHealthCheck registers a health check for the bidder. True for a healthy result, false for an unhealthy result.
+	logHealthCheck(success bool)
+	// shouldRequest returns true if a request should be made to the bidder.
+	shouldRequest() bool
 }
 
 // bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
@@ -98,7 +105,7 @@ const (
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
 func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo, endpointCompression string) AdaptedBidder {
-	return &BidderAdapter{
+	ba := &BidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
 		Client:     client,
@@ -108,8 +115,23 @@ func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 			DisableConnMetrics:  cfg.Metrics.Disabled.AdapterConnectionMetrics,
 			DebugInfo:           config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
 			EndpointCompression: endpointCompression,
+			ThrottleConfig: bidderAdapterThrottleConfig{
+				enabled:                 cfg.Client.Throttle.EnableThrottling,
+				simulateOnly:            cfg.Client.Throttle.SimulateThrottlingOnly,
+				longQueueWaitThreshold:  time.Duration(cfg.Client.Throttle.LongQueueWaitThresholdMS) * time.Millisecond,
+				shortQueueWaitThreshold: time.Duration(cfg.Client.Throttle.ShortQueueWaitThresholdMS) * time.Millisecond,
+				throttleWindow:          cfg.Client.Throttle.ThrottleWindow,
+			},
 		},
 	}
+	if ba.config.ThrottleConfig.throttleWindow <= 0 {
+		ba.config.ThrottleConfig.throttleWindow = 1000
+	}
+	// Precalculate bulk and delta values for health updates.
+	ba.config.ThrottleConfig.deltaValue = 1.0 / float64(ba.config.ThrottleConfig.throttleWindow)
+	ba.config.ThrottleConfig.bulkValue = 1.0 - ba.config.ThrottleConfig.deltaValue
+
+	return ba
 }
 
 func parseDebugInfo(info *config.DebugInfo) bool {
@@ -125,6 +147,8 @@ type BidderAdapter struct {
 	Client     *http.Client
 	me         metrics.MetricsEngine
 	config     bidderAdapterConfig
+	healthBits atomic.Uint64 // use atomic on this
+
 }
 
 type bidderAdapterConfig struct {
@@ -132,6 +156,22 @@ type bidderAdapterConfig struct {
 	DisableConnMetrics  bool
 	DebugInfo           config.DebugInfo
 	EndpointCompression string
+	ThrottleConfig      bidderAdapterThrottleConfig
+}
+
+type bidderAdapterThrottleConfig struct {
+	// Enables bidder throttling
+	enabled bool
+	// If enabled, we will only log that the bidder was to be throttled, but not actually throttle it.
+	simulateOnly bool
+	// Queue wait time that is considered unhealthy
+	longQueueWaitThreshold time.Duration
+	// Queue wait time that is short enough to be considered a healthy signal
+	shortQueueWaitThreshold time.Duration
+	// throttleWindow controls the speed that the throttling logic will react to changes in the health of the bidder.
+	throttleWindow int
+	bulkValue      float64
+	deltaValue     float64
 }
 
 func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, hookExecutor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
@@ -527,7 +567,13 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // doRequest makes a request, handles the response, and returns the data needed by the
 // Bidder interface.
 func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
-	return bidder.doRequestImpl(ctx, req, glog.Warningf, bidderRequestStartTime, tmaxAdjustments)
+	if bidder.shouldRequest() {
+		return bidder.doRequestImpl(ctx, req, glog.Warningf, bidderRequestStartTime, tmaxAdjustments)
+	}
+	return &httpCallInfo{
+		request: req,
+		err:     &errortypes.BidderThrottled{Message: fmt.Sprintf("Bidder %s is temporarily throttled", bidder.BidderName)},
+	}
 }
 
 func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
@@ -567,6 +613,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	httpCallStart := time.Now()
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
+		bidder.logHealthCheck(false)
 		if err == context.DeadlineExceeded {
 			err = &errortypes.Timeout{Message: err.Error()}
 			var corebidder adapters.Bidder = bidder.Bidder
@@ -589,6 +636,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			err:     err,
 		}
 	}
+	defer httpResp.Body.Close()
 
 	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
@@ -597,14 +645,17 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			err:     err,
 		}
 	}
-	defer httpResp.Body.Close()
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
+		if httpResp.StatusCode >= 500 {
+			bidder.logHealthCheck(false)
+		}
 		err = &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode),
 		}
 	}
 
+	bidder.logHealthCheck(true)
 	bidder.me.RecordBidderServerResponseTime(time.Since(httpCallStart))
 	return &httpCallInfo{
 		request: req,
@@ -620,14 +671,25 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
-	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
-	if toReq != nil && len(errL) == 0 {
+
+	toReq, errMakeTimeoutNotification := timeoutBidder.MakeTimeoutNotification(req)
+	if toReq != nil && errMakeTimeoutNotification == nil {
 		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
 		if err == nil {
 			httpReq.Header = req.Headers
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			if err == nil {
+				defer func() {
+					if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
+						glog.Errorf("TimeoutNotification: Draining response body failed %v", err)
+					}
+					httpResp.Body.Close()
+				}()
+			}
+
 			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 			bidder.me.RecordTimeoutNotice(success)
+
 			if bidder.config.Debug.TimeoutNotification.Log && !(bidder.config.Debug.TimeoutNotification.FailOnly && success) {
 				var msg string
 				if err == nil {
@@ -646,16 +708,15 @@ func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		}
 	} else if bidder.config.Debug.TimeoutNotification.Log {
-		reqJSON, err := jsonutil.Marshal(req)
+		reqJSON, errMarshal := jsonutil.Marshal(req)
 		var msg string
-		if err == nil {
-			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))
+		if errMarshal == nil {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errMarshal.Error(), string(reqJSON))
 		} else {
-			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errMakeTimeoutNotification.Error(), errMarshal.Error())
 		}
 		util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 	}
-
 }
 
 type httpCallInfo struct {
@@ -678,6 +739,17 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
 			connWaitTime := time.Since(connStart)
+			if info.Reused {
+				// If the connection was reused, this is the time we waited in the pool
+				if bidder.config.ThrottleConfig.longQueueWaitThreshold > 0 && connWaitTime > bidder.config.ThrottleConfig.longQueueWaitThreshold {
+					bidder.logHealthCheck(false) // Mark as unhealthy if wait was too long
+				} else if bidder.config.ThrottleConfig.shortQueueWaitThreshold > 0 && connWaitTime < bidder.config.ThrottleConfig.shortQueueWaitThreshold {
+					bidder.logHealthCheck(true) // Mark as healthy if wait was short
+					// Note if there is a short wait time for the pool, but the auction times out,
+					// we would mark the bidder as healthy once and unhealthy once, pushing the
+					// health to 0.5
+				}
+			}
 
 			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
 		},
@@ -784,4 +856,47 @@ var gzipWriterPool = sync.Pool{
 	New: func() interface{} {
 		return gzip.NewWriter(nil)
 	},
+}
+
+func (bidder *BidderAdapter) getHealth() float64 {
+	return math.Float64frombits(bidder.healthBits.Load())
+}
+
+const maxLoggingTries = 5
+
+// logHealthCheck registers a health check for the bidder. True for a healthy result, false for an unhealthy result.
+func (bidder *BidderAdapter) logHealthCheck(success bool) {
+	if !bidder.config.ThrottleConfig.enabled {
+		// Don't update health if throttling is not enabled
+		return
+	}
+	old := bidder.getHealth()
+	var newVal float64
+	if success {
+		newVal = bidder.config.ThrottleConfig.bulkValue * old
+	} else {
+		newVal = bidder.config.ThrottleConfig.bulkValue*old + bidder.config.ThrottleConfig.deltaValue
+	}
+	// There is a race condition where under heavy traffic multiple attempts to update health can happen at the same time.
+	// This will result in health changing slower than otherwise. This might be a good thing, as it will prevent
+	// the bidder's health from changing too quickly in these conditions.
+	bidder.healthBits.Store(math.Float64bits(newVal))
+}
+
+func (bidder *BidderAdapter) shouldRequest() bool {
+	if !bidder.config.ThrottleConfig.enabled {
+		return true
+	}
+	health := bidder.getHealth()
+	if health < 0.2 {
+		return true
+	}
+	// Probability of returning false ramps from 0 at 0.2 to 0.9 at 1.0
+	// Linear interpolation: p = (health - 0.2) / 0.8 * 0.9
+	p := ((health - 0.2) / 0.8) * 0.9
+	if rand.Float64() < p {
+		bidder.me.RecordAdapterThrottled(bidder.BidderName)
+		return bidder.config.ThrottleConfig.simulateOnly
+	}
+	return true
 }

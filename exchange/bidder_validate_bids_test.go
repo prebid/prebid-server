@@ -363,3 +363,12 @@ type mockAdaptedBidder struct {
 func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor, ruleToAdjustments openrtb_ext.AdjustmentsByDealID) ([]*entities.PbsOrtbSeatBid, extraBidderRespInfo, []error) {
 	return b.bidResponse, b.extraRespInfo, b.errorResponse
 }
+
+func (b *mockAdaptedBidder) logHealthCheck(success bool) {
+	// No-op
+}
+
+func (b *mockAdaptedBidder) shouldRequest() bool {
+	// Always return the healthy response.
+	return true
+}
