@@ -34,16 +34,10 @@ func TestResponseWithCurrencies(t *testing.T) {
 	assertCurrencyInBidResponse(t, "EUR", &currency)
 }
 
-func TestUpdateBidExtWithMeta(t *testing.T) {
+func TestUpdateBidExtMeta(t *testing.T) {
 	buyerId := "123"
 	dspId := "456"
 	bradId := "789"
-
-	bidExts := []*openrtb_ext.ExtBidPrebid{
-		nil,
-		{},
-		{Meta: &openrtb_ext.ExtBidPrebidMeta{}},
-	}
 
 	testCases := []struct {
 		ext             *oxBidExt
@@ -96,19 +90,17 @@ func TestUpdateBidExtWithMeta(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		for _, bidExt := range bidExts {
-			marshaledExt, _ := json.Marshal(bidExt)
-			bid := &openrtb2.Bid{Ext: marshaledExt}
+		marshaledExt, _ := json.Marshal(testCase.ext)
+		bid := &openrtb2.Bid{Ext: marshaledExt}
 
-			bid.Ext = updateBidExtWithMeta(bid, testCase.ext)
+		bid.Ext = updateBidExtMeta(bid)
 
-			var updatedExt *openrtb_ext.ExtBidPrebid
-			_ = jsonutil.Unmarshal(bid.Ext, &updatedExt)
+		var updatedExt *openrtb_ext.ExtBidPrebid
+		_ = jsonutil.Unmarshal(bid.Ext, &updatedExt)
 
-			assert.Equal(t, testCase.expectedBuyerId, updatedExt.Meta.NetworkID)
-			assert.Equal(t, testCase.expectedDspId, updatedExt.Meta.AdvertiserID)
-			assert.Equal(t, testCase.expectedBrandId, updatedExt.Meta.BrandID)
-		}
+		assert.Equal(t, testCase.expectedBuyerId, updatedExt.Meta.NetworkID)
+		assert.Equal(t, testCase.expectedDspId, updatedExt.Meta.AdvertiserID)
+		assert.Equal(t, testCase.expectedBrandId, updatedExt.Meta.BrandID)
 	}
 }
 

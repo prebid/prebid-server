@@ -240,13 +240,9 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	for _, sb := range bidResp.SeatBid {
-		var ext *oxBidExt
-		if sb.Ext != nil {
-			_ = jsonutil.Unmarshal(sb.Ext, &ext)
-		}
 		for i := range sb.Bid {
 			var bid = &sb.Bid[i]
-			bid.Ext = updateBidExtWithMeta(bid, ext)
+			bid.Ext = updateBidExtMeta(bid)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &sb.Bid[i],
 				BidType:  getBidType(sb.Bid[i].MType, sb.Bid[i].ImpID, internalRequest.Imp),
@@ -312,10 +308,16 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func updateBidExtWithMeta(bid *openrtb2.Bid, ext *oxBidExt) json.RawMessage {
-	if ext == nil {
+func updateBidExtMeta(bid *openrtb2.Bid) json.RawMessage {
+	if bid.Ext == nil {
 		return nil
 	}
+
+	var ext *oxBidExt
+	if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
+		return nil
+	}
+
 	buyerId := getBuyerIdFromExt(ext)
 	dspId := getDspIdFromExt(ext)
 	brandId := getBrandIdFromExt(ext)
@@ -325,26 +327,15 @@ func updateBidExtWithMeta(bid *openrtb2.Bid, ext *oxBidExt) json.RawMessage {
 
 	var extBidPrebid *openrtb_ext.ExtBidPrebid
 	_ = jsonutil.Unmarshal(bid.Ext, &extBidPrebid)
-
-	if extBidPrebid != nil {
-		if extBidPrebid.Meta != nil {
-			extBidPrebid.Meta.NetworkID = buyerId
-			extBidPrebid.Meta.AdvertiserID = dspId
-			extBidPrebid.Meta.BrandID = brandId
-		} else {
-			extBidPrebid.Meta = &openrtb_ext.ExtBidPrebidMeta{
-				NetworkID:    buyerId,
-				AdvertiserID: dspId,
-				BrandID:      brandId,
-			}
-		}
+	if extBidPrebid.Meta != nil {
+		extBidPrebid.Meta.NetworkID = buyerId
+		extBidPrebid.Meta.AdvertiserID = dspId
+		extBidPrebid.Meta.BrandID = brandId
 	} else {
-		extBidPrebid = &openrtb_ext.ExtBidPrebid{
-			Meta: &openrtb_ext.ExtBidPrebidMeta{
-				NetworkID:    buyerId,
-				AdvertiserID: dspId,
-				BrandID:      brandId,
-			},
+		extBidPrebid.Meta = &openrtb_ext.ExtBidPrebidMeta{
+			NetworkID:    buyerId,
+			AdvertiserID: dspId,
+			BrandID:      brandId,
 		}
 	}
 
