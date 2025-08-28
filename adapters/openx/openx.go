@@ -324,9 +324,7 @@ func updateBidExtWithMeta(bid *openrtb2.Bid, ext *oxBidExt) json.RawMessage {
 	}
 
 	var extBidPrebid *openrtb_ext.ExtBidPrebid
-	if bid.Ext != nil {
-		_ = jsonutil.Unmarshal(bid.Ext, &extBidPrebid)
-	}
+	_ = jsonutil.Unmarshal(bid.Ext, &extBidPrebid)
 
 	if extBidPrebid != nil {
 		if extBidPrebid.Meta != nil {
