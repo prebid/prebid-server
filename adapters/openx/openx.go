@@ -322,11 +322,10 @@ func updateBidExtWithMeta(bid *openrtb2.Bid, ext *oxBidExt) json.RawMessage {
 	if buyerId <= 0 && dspId <= 0 && brandId <= 0 {
 		return nil
 	}
+
 	var extBidPrebid *openrtb_ext.ExtBidPrebid
 	if bid.Ext != nil {
-		if err := jsonutil.Unmarshal(bid.Ext, &extBidPrebid); err != nil {
-			return nil
-		}
+		_ = jsonutil.Unmarshal(bid.Ext, &extBidPrebid)
 	}
 
 	if extBidPrebid != nil {
@@ -351,9 +350,9 @@ func updateBidExtWithMeta(bid *openrtb2.Bid, ext *oxBidExt) json.RawMessage {
 		}
 	}
 
-	marshalledExt, err := json.Marshal(&extBidPrebid)
+	marshaledExt, err := json.Marshal(&extBidPrebid)
 	if err == nil {
-		return marshalledExt
+		return marshaledExt
 	}
 	return nil
 }
