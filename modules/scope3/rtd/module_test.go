@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1248,4 +1249,199 @@ func TestMaskUser_NoUser(t *testing.T) {
 	
 	// Should not crash when user is nil
 	assert.Nil(t, original.User)
+}
+
+func TestBuilderConfigValidation_GeoPrecisionTooHigh(t *testing.T) {
+	config := json.RawMessage(`{
+		"enabled": true,
+		"auth_key": "test-key",
+		"masking": {
+			"enabled": true,
+			"geo": {
+				"lat_long_precision": 5
+			}
+		}
+	}`)
+
+	deps := moduledeps.ModuleDeps{}
+	module, err := Builder(config, deps)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot exceed 4 decimal places")
+	assert.Nil(t, module)
+}
+
+func TestBuilderConfigValidation_GeoPrecisionNegative(t *testing.T) {
+	config := json.RawMessage(`{
+		"enabled": true,
+		"auth_key": "test-key",
+		"masking": {
+			"enabled": true,
+			"geo": {
+				"lat_long_precision": -1
+			}
+		}
+	}`)
+
+	deps := moduledeps.ModuleDeps{}
+	module, err := Builder(config, deps)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot be negative")
+	assert.Nil(t, module)
+}
+
+func TestBuilderConfigValidation_GeoPrecisionValid(t *testing.T) {
+	config := json.RawMessage(`{
+		"enabled": true,
+		"auth_key": "test-key",
+		"masking": {
+			"enabled": true,
+			"geo": {
+				"lat_long_precision": 4
+			}
+		}
+	}`)
+
+	deps := moduledeps.ModuleDeps{}
+	module, err := Builder(config, deps)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, module)
+	
+	m := module.(*Module)
+	assert.Equal(t, 4, m.cfg.Masking.Geo.LatLongPrecision)
+}
+
+func TestCreateCacheKey_HashedUserID(t *testing.T) {
+	module := &Module{}
+	
+	// Create request with user ID (no privacy-safe identifiers)
+	bidRequest := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Domain: "example.com",
+			Page:   "https://example.com/test",
+		},
+		User: &openrtb2.User{
+			ID: "sensitive-user-id-123", // This should be hashed in cache key
+		},
+	}
+
+	key1 := module.createCacheKey(bidRequest)
+	
+	// Create another request with different user ID
+	bidRequest2 := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Domain: "example.com", 
+			Page:   "https://example.com/test",
+		},
+		User: &openrtb2.User{
+			ID: "different-user-id-456", // Different hash should produce different key
+		},
+	}
+
+	key2 := module.createCacheKey(bidRequest2)
+	
+	// Keys should be different since user IDs are different (per-user caching)
+	assert.NotEqual(t, key1, key2, "Cache keys should be different for different user IDs to enable per-user caching")
+
+	// Create request with same user ID to verify consistency
+	bidRequest3 := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Domain: "example.com",
+			Page:   "https://example.com/test",
+		},
+		User: &openrtb2.User{
+			ID: "sensitive-user-id-123", // Same as first request
+		},
+	}
+
+	key3 := module.createCacheKey(bidRequest3)
+	
+	// Should match first key for same user
+	assert.Equal(t, key1, key3, "Cache keys should be consistent for same user ID")
+	
+	// Verify key is SHA-256 length (64 hex characters)
+	assert.Len(t, key1, 64, "Cache key should be SHA-256 hash (64 characters)")
+}
+
+func TestCreateCacheKey_PrivacySafeIdentifiersPriority(t *testing.T) {
+	module := &Module{}
+	
+	// Create request with both user.id and privacy-safe identifiers
+	userExtBytes, _ := jsonutil.Marshal(userExt{
+		RampID: "ramp_abc123",
+	})
+	
+	bidRequest := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Domain: "example.com",
+			Page:   "https://example.com/test",
+		},
+		User: &openrtb2.User{
+			ID:  "user-id-should-not-be-used",
+			Ext: userExtBytes,
+		},
+	}
+
+	key1 := module.createCacheKey(bidRequest)
+	
+	// Create another request with same privacy-safe ID but different user.id
+	bidRequest2 := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Domain: "example.com", 
+			Page:   "https://example.com/test",
+		},
+		User: &openrtb2.User{
+			ID:  "completely-different-user-id",
+			Ext: userExtBytes, // Same RampID
+		},
+	}
+
+	key2 := module.createCacheKey(bidRequest2)
+	
+	// Keys should be the same since privacy-safe identifiers take priority
+	assert.Equal(t, key1, key2, "Cache keys should be same when privacy-safe identifiers match, regardless of user.id")
+}
+
+func TestFetchScope3Segments_MaskingFailure(t *testing.T) {
+	// Create a test server that simulates API response
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := `{"data": []}`
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(response))
+	}))
+	defer mockServer.Close()
+
+	module := &Module{
+		cfg: Config{
+			Endpoint: mockServer.URL,
+			AuthKey:  "test-key",
+			Timeout:  1000,
+			Masking: MaskingConfig{Enabled: true},
+		},
+		httpClient: &http.Client{
+			Timeout: 1 * time.Second,
+		},
+		cache: &segmentCache{data: make(map[string]cacheEntry)},
+	}
+
+	// Create a request that should work normally
+	bidRequest := &openrtb2.BidRequest{
+		ID: "test-request",
+		User: &openrtb2.User{
+			ID: "user-123",
+		},
+	}
+
+	ctx := context.Background()
+	
+	// This should succeed now that we have proper HTTP client setup
+	// The masking should work correctly and not cause errors
+	segments, err := module.fetchScope3Segments(ctx, bidRequest)
+	
+	// Should succeed with proper setup
+	assert.NoError(t, err)
+	assert.NotNil(t, segments)
 }

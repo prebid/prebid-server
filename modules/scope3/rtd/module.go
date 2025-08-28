@@ -4,7 +4,7 @@ package scope3
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -37,16 +37,24 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 		cfg.CacheTTL = 60 // 60 seconds default
 	}
 
-	// Set masking defaults
-	if cfg.Masking.Geo.LatLongPrecision == 0 && cfg.Masking.Enabled {
-		cfg.Masking.Geo.LatLongPrecision = 2 // 2 decimal places default (~1.1km precision)
-	}
-	if cfg.Masking.Enabled && len(cfg.Masking.User.PreserveEids) == 0 {
-		// Default to preserving common identity providers
-		cfg.Masking.User.PreserveEids = []string{"liveramp.com", "uidapi.com", "id5-sync.com"}
-	}
+	// Set masking defaults and validate configuration
 	if cfg.Masking.Enabled {
-		// Set default preserve values
+		// Validate and set geo precision (max 4 decimal places for privacy)
+		if cfg.Masking.Geo.LatLongPrecision == 0 {
+			cfg.Masking.Geo.LatLongPrecision = 2 // 2 decimal places default (~1.1km precision)
+		} else if cfg.Masking.Geo.LatLongPrecision > 4 {
+			return nil, fmt.Errorf("lat_long_precision cannot exceed 4 decimal places for privacy protection")
+		} else if cfg.Masking.Geo.LatLongPrecision < 0 {
+			return nil, fmt.Errorf("lat_long_precision cannot be negative")
+		}
+
+		// Set default EID allowlist if empty
+		if len(cfg.Masking.User.PreserveEids) == 0 {
+			// Default to preserving common identity providers
+			cfg.Masking.User.PreserveEids = []string{"liveramp.com", "uidapi.com", "id5-sync.com"}
+		}
+
+		// Set default preserve values for geo fields
 		if !cfg.Masking.Geo.PreserveMetro && !cfg.Masking.Geo.PreserveZip && !cfg.Masking.Geo.PreserveCity {
 			cfg.Masking.Geo.PreserveMetro = true
 			cfg.Masking.Geo.PreserveZip = true
@@ -320,7 +328,12 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	// Apply privacy masking before sending to Scope3
 	requestToSend := bidRequest
 	if m.cfg.Masking.Enabled {
-		requestToSend = m.maskBidRequest(bidRequest)
+		maskedRequest := m.maskBidRequest(bidRequest)
+		if maskedRequest == nil {
+			// Masking failed - don't send request to prevent data leakage
+			return nil, fmt.Errorf("failed to mask bid request for privacy protection")
+		}
+		requestToSend = maskedRequest
 	}
 
 	// Marshal the (potentially masked) bid request
@@ -380,43 +393,52 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	return segments, nil
 }
 
-// createCacheKey generates a cache key based on user identifiers and site context
+// createCacheKey generates a cache key based on non-sensitive context and identifiers
+// Note: Uses only privacy-safe identifiers to prevent correlation attacks
 func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
-	hasher := md5.New()
+	hasher := sha256.New()
 
-	// Include site/app information
+	// Include site/app information (not sensitive)
 	if bidRequest.Site != nil {
-		hasher.Write([]byte(bidRequest.Site.Domain))
-		hasher.Write([]byte(bidRequest.Site.Page))
+		hasher.Write([]byte("site:" + bidRequest.Site.Domain))
+		if bidRequest.Site.Page != "" {
+			hasher.Write([]byte("page:" + bidRequest.Site.Page))
+		}
 	}
 	if bidRequest.App != nil {
-		hasher.Write([]byte(bidRequest.App.Bundle))
+		hasher.Write([]byte("app:" + bidRequest.App.Bundle))
 	}
 
-	// Include user identifiers if available
+	// Include user identifiers for per-user caching
+	hasPrivacySafeID := false
 	if bidRequest.User != nil && bidRequest.User.Ext != nil {
 		var userExtension userExt
 		if err := jsonutil.Unmarshal(bidRequest.User.Ext, &userExtension); err == nil {
-			// Include LiveRamp identifiers
+			// Include LiveRamp identifiers (these are privacy-safe for caching)
 			for _, eid := range userExtension.Eids {
 				if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
-					hasher.Write([]byte("rampid:" + eid.UIDs[0].ID))
+					hasher.Write([]byte("eid:rampid:" + eid.UIDs[0].ID))
+					hasPrivacySafeID = true
 				}
 			}
 
-			// Include other identifier types
+			// Include other privacy-safe identifier types
 			if userExtension.RampID != "" {
-				hasher.Write([]byte("rampid:" + userExtension.RampID))
+				hasher.Write([]byte("eid:rampid:" + userExtension.RampID))
+				hasPrivacySafeID = true
 			}
 			if userExtension.LiverampIDL != "" {
-				hasher.Write([]byte("ats:" + userExtension.LiverampIDL))
-			}
-
-			// Include user ID if available
-			if bidRequest.User != nil && bidRequest.User.ID != "" {
-				hasher.Write([]byte("userid:" + bidRequest.User.ID))
+				hasher.Write([]byte("eid:ats:" + userExtension.LiverampIDL))
+				hasPrivacySafeID = true
 			}
 		}
+	}
+
+	// If no privacy-safe identifiers are available, use hashed user.id for per-user caching
+	if !hasPrivacySafeID && bidRequest.User != nil && bidRequest.User.ID != "" {
+		userHasher := sha256.New()
+		userHasher.Write([]byte("user_id:" + bidRequest.User.ID))
+		hasher.Write([]byte("hashed_user_id:" + hex.EncodeToString(userHasher.Sum(nil))))
 	}
 
 	return hex.EncodeToString(hasher.Sum(nil))

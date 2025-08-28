@@ -8,7 +8,8 @@ import (
 )
 
 // maskBidRequest creates a deep copy of the bid request with sensitive fields masked
-// according to the masking configuration
+// according to the masking configuration. Returns nil if masking fails to prevent
+// accidental exposure of sensitive data.
 func (m *Module) maskBidRequest(original *openrtb2.BidRequest) *openrtb2.BidRequest {
 	if !m.cfg.Masking.Enabled {
 		return original
@@ -17,14 +18,16 @@ func (m *Module) maskBidRequest(original *openrtb2.BidRequest) *openrtb2.BidRequ
 	// Create a deep copy by marshaling and unmarshaling
 	data, err := jsonutil.Marshal(original)
 	if err != nil {
-		// If marshaling fails, return original (shouldn't happen)
-		return original
+		// Never return unmasked data - this prevents potential data leakage
+		// The calling function should handle nil gracefully
+		return nil
 	}
 
 	var masked openrtb2.BidRequest
 	if err := jsonutil.Unmarshal(data, &masked); err != nil {
-		// If unmarshaling fails, return original (shouldn't happen)
-		return original
+		// Never return unmasked data - this prevents potential data leakage
+		// The calling function should handle nil gracefully
+		return nil
 	}
 
 	// Apply masking to different sections
