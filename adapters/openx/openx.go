@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -30,6 +31,12 @@ type openxReqExt struct {
 
 type openxRespExt struct {
 	FledgeAuctionConfigs map[string]json.RawMessage `json:"fledge_auction_configs,omitempty"`
+}
+
+type oxBidExt struct {
+	DspId   *string `json:"dsp_id,omitempty"`
+	BrandId *string `json:"brand_id,omitempty"`
+	BuyerId *string `json:"buyer_id,omitempty"`
 }
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -233,7 +240,13 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	for _, sb := range bidResp.SeatBid {
+		var ext *oxBidExt
+		if sb.Ext != nil {
+			_ = jsonutil.Unmarshal(sb.Ext, &ext)
+		}
 		for i := range sb.Bid {
+			var bid = &sb.Bid[i]
+			bid.Ext = updateBidExtWithMeta(bid, ext)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &sb.Bid[i],
 				BidType:  getBidType(sb.Bid[i].MType, sb.Bid[i].ImpID, internalRequest.Imp),
@@ -297,4 +310,74 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		bidderName: string(bidderName),
 	}
 	return bidder, nil
+}
+
+func updateBidExtWithMeta(bid *openrtb2.Bid, ext *oxBidExt) json.RawMessage {
+	if ext == nil {
+		return nil
+	}
+	buyerId := getBuyerIdFromExt(ext)
+	dspId := getDspIdFromExt(ext)
+	brandId := getBrandIdFromExt(ext)
+	if buyerId <= 0 && dspId <= 0 && brandId <= 0 {
+		return nil
+	}
+	var extBidPrebid *openrtb_ext.ExtBidPrebid
+	if bid.Ext != nil {
+		if err := jsonutil.Unmarshal(bid.Ext, &extBidPrebid); err != nil {
+			return nil
+		}
+	}
+
+	if extBidPrebid != nil {
+		if extBidPrebid.Meta != nil {
+			extBidPrebid.Meta.NetworkID = buyerId
+			extBidPrebid.Meta.AdvertiserID = dspId
+			extBidPrebid.Meta.BrandID = brandId
+		} else {
+			extBidPrebid.Meta = &openrtb_ext.ExtBidPrebidMeta{
+				NetworkID:    buyerId,
+				AdvertiserID: dspId,
+				BrandID:      brandId,
+			}
+		}
+	} else {
+		extBidPrebid = &openrtb_ext.ExtBidPrebid{
+			Meta: &openrtb_ext.ExtBidPrebidMeta{
+				NetworkID:    buyerId,
+				AdvertiserID: dspId,
+				BrandID:      brandId,
+			},
+		}
+	}
+
+	marshalledExt, err := json.Marshal(&extBidPrebid)
+	if err == nil {
+		return marshalledExt
+	}
+	return nil
+}
+
+func getBuyerIdFromExt(ext *oxBidExt) int {
+	if ext.BuyerId == nil {
+		return 0
+	}
+	buyerID, _ := strconv.Atoi(*ext.BuyerId)
+	return buyerID
+}
+
+func getDspIdFromExt(ext *oxBidExt) int {
+	if ext.DspId == nil {
+		return 0
+	}
+	dspId, _ := strconv.Atoi(*ext.DspId)
+	return dspId
+}
+
+func getBrandIdFromExt(ext *oxBidExt) int {
+	if ext.BrandId == nil {
+		return 0
+	}
+	brandId, _ := strconv.Atoi(*ext.BrandId)
+	return brandId
 }
