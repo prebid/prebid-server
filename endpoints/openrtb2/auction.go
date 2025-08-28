@@ -2011,7 +2011,6 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req
 	}
 }
 
-// Returns the account ID for the request
 // shouldUseORTBErrorFormat determines if ORTB error format should be used
 // based on request-level config or global config
 func shouldUseORTBErrorFormat(request *openrtb_ext.RequestWrapper, cfg *config.Configuration) bool {
@@ -2030,6 +2029,7 @@ func shouldUseORTBErrorFormat(request *openrtb_ext.RequestWrapper, cfg *config.C
 	return cfg != nil && cfg.ORTBErrorResponse
 }
 
+// Returns the account ID for the request
 func getAccountID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {

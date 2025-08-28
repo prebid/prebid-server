@@ -28,7 +28,6 @@
     "id":"some-request-id",
     "bidid":"test bid id",
     "cur": "USD",
-    "nbr":0,
     "seatbid": [
       {
         "bid": [

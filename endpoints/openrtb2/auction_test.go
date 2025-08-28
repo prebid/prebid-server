@@ -132,6 +132,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Assert request with bid adjustments defined is processing correctly",
 			"bidadjustments",
 		},
+		{
+			"Assert request with ORTB errors enabled is processing correctly",
+			"ortb-error-response",
+		},
 	}
 
 	for _, tc := range testSuites {
@@ -175,6 +179,7 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 		cfg.BlockedAppsLookup = test.Config.getBlockedAppLookup()
 		cfg.AccountRequired = test.Config.AccountRequired
 		cfg.AccountDefaults.PreferredMediaType = test.Config.PreferredMediaType
+		cfg.ORTBErrorResponse = test.Config.ORTBErrorResponse
 	}
 	cfg.MarshalAccountDefaults()
 	test.endpointType = OPENRTB_ENDPOINT
@@ -237,7 +242,13 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
 			err = jsonutil.UnmarshalValid([]byte(actualJsonBidResponse), &actualBidResponse)
 			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n actualJsonBidResponse: %s", testFile, err, actualJsonBidResponse) {
-				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
+				if expectedBidResponse.NBR != nil {
+					// assert nbr and ext.prebid.errors
+					assert.Equal(t, expectedBidResponse.NBR, actualBidResponse.NBR, "BidResponse.Nbr doesn't match expected. Test: %s\n", testFile)
+					assert.JSONEq(t, string(expectedBidResponse.Ext), string(actualBidResponse.Ext), "BidResponse.Ext doesn't match expected. Expected: %s Actual: %s Test: %s\n", string(expectedBidResponse.Ext), string(actualBidResponse.Ext), testFile)
+				} else {
+					assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
+				}
 			}
 		}
 	}
