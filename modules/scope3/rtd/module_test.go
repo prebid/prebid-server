@@ -1193,22 +1193,22 @@ func TestMaskGeo_UserGeoOnly(t *testing.T) {
 	module.maskGeo(original)
 
 	// Check user geo was masked
-	assert.Equal(t, "USA", original.User.Geo.Country) // preserved
-	assert.Equal(t, "NY", original.User.Geo.Region)   // preserved
-	assert.Equal(t, "", original.User.Geo.Metro)      // removed
-	assert.Equal(t, "", original.User.Geo.ZIP)        // removed
-	assert.InDelta(t, 40.71, *original.User.Geo.Lat, 0.001) // truncated
+	assert.Equal(t, "USA", original.User.Geo.Country)        // preserved
+	assert.Equal(t, "NY", original.User.Geo.Region)          // preserved
+	assert.Equal(t, "", original.User.Geo.Metro)             // removed
+	assert.Equal(t, "", original.User.Geo.ZIP)               // removed
+	assert.InDelta(t, 40.71, *original.User.Geo.Lat, 0.001)  // truncated
 	assert.InDelta(t, -74.00, *original.User.Geo.Lon, 0.001) // truncated
 }
 
 func TestTruncateCoordinate_EdgeCases(t *testing.T) {
 	module := &Module{}
-	
+
 	// Test precision out of range
 	assert.Equal(t, float64(0), module.truncateCoordinate(37.774929, -1))
 	assert.Equal(t, float64(0), module.truncateCoordinate(37.774929, 5))
 	assert.Equal(t, float64(0), module.truncateCoordinate(37.774929, 0))
-	
+
 	// Test zero coordinate
 	assert.Equal(t, float64(0), module.truncateCoordinate(0.0, 2))
 }
@@ -1227,7 +1227,7 @@ func TestMaskDevice_NoDevice(t *testing.T) {
 	}
 
 	module.maskDevice(original)
-	
+
 	// Should not crash when device is nil
 	assert.Nil(t, original.Device)
 }
@@ -1246,7 +1246,7 @@ func TestMaskUser_NoUser(t *testing.T) {
 	}
 
 	module.maskUser(original)
-	
+
 	// Should not crash when user is nil
 	assert.Nil(t, original.User)
 }
@@ -1308,14 +1308,14 @@ func TestBuilderConfigValidation_GeoPrecisionValid(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, module)
-	
+
 	m := module.(*Module)
 	assert.Equal(t, 4, m.cfg.Masking.Geo.LatLongPrecision)
 }
 
 func TestCreateCacheKey_HashedUserID(t *testing.T) {
 	module := &Module{}
-	
+
 	// Create request with user ID (no privacy-safe identifiers)
 	bidRequest := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{
@@ -1328,11 +1328,11 @@ func TestCreateCacheKey_HashedUserID(t *testing.T) {
 	}
 
 	key1 := module.createCacheKey(bidRequest)
-	
+
 	// Create another request with different user ID
 	bidRequest2 := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{
-			Domain: "example.com", 
+			Domain: "example.com",
 			Page:   "https://example.com/test",
 		},
 		User: &openrtb2.User{
@@ -1341,7 +1341,7 @@ func TestCreateCacheKey_HashedUserID(t *testing.T) {
 	}
 
 	key2 := module.createCacheKey(bidRequest2)
-	
+
 	// Keys should be different since user IDs are different (per-user caching)
 	assert.NotEqual(t, key1, key2, "Cache keys should be different for different user IDs to enable per-user caching")
 
@@ -1357,22 +1357,22 @@ func TestCreateCacheKey_HashedUserID(t *testing.T) {
 	}
 
 	key3 := module.createCacheKey(bidRequest3)
-	
+
 	// Should match first key for same user
 	assert.Equal(t, key1, key3, "Cache keys should be consistent for same user ID")
-	
+
 	// Verify key is SHA-256 length (64 hex characters)
 	assert.Len(t, key1, 64, "Cache key should be SHA-256 hash (64 characters)")
 }
 
 func TestCreateCacheKey_PrivacySafeIdentifiersPriority(t *testing.T) {
 	module := &Module{}
-	
+
 	// Create request with both user.id and privacy-safe identifiers
 	userExtBytes, _ := jsonutil.Marshal(userExt{
 		RampID: "ramp_abc123",
 	})
-	
+
 	bidRequest := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{
 			Domain: "example.com",
@@ -1385,11 +1385,11 @@ func TestCreateCacheKey_PrivacySafeIdentifiersPriority(t *testing.T) {
 	}
 
 	key1 := module.createCacheKey(bidRequest)
-	
+
 	// Create another request with same privacy-safe ID but different user.id
 	bidRequest2 := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{
-			Domain: "example.com", 
+			Domain: "example.com",
 			Page:   "https://example.com/test",
 		},
 		User: &openrtb2.User{
@@ -1399,7 +1399,7 @@ func TestCreateCacheKey_PrivacySafeIdentifiersPriority(t *testing.T) {
 	}
 
 	key2 := module.createCacheKey(bidRequest2)
-	
+
 	// Keys should be the same since privacy-safe identifiers take priority
 	assert.Equal(t, key1, key2, "Cache keys should be same when privacy-safe identifiers match, regardless of user.id")
 }
@@ -1419,7 +1419,7 @@ func TestFetchScope3Segments_MaskingFailure(t *testing.T) {
 			Endpoint: mockServer.URL,
 			AuthKey:  "test-key",
 			Timeout:  1000,
-			Masking: MaskingConfig{Enabled: true},
+			Masking:  MaskingConfig{Enabled: true},
 		},
 		httpClient: &http.Client{
 			Timeout: 1 * time.Second,
@@ -1436,11 +1436,11 @@ func TestFetchScope3Segments_MaskingFailure(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	
+
 	// This should succeed now that we have proper HTTP client setup
 	// The masking should work correctly and not cause errors
 	segments, err := module.fetchScope3Segments(ctx, bidRequest)
-	
+
 	// Should succeed with proper setup
 	assert.NoError(t, err)
 	assert.NotNil(t, segments)
