@@ -1939,19 +1939,24 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req
 
 	httpStatus := http.StatusInternalServerError
 	labels.RequestStatus = metrics.RequestStatusErr
+	foundStatus := false
 	for _, err := range errs {
-		erVal := errortypes.ReadCode(err)
-		if erVal == errortypes.BadInputErrorCode {
+		code := errortypes.ReadCode(err)
+		switch code {
+		case errortypes.BadInputErrorCode:
 			httpStatus = http.StatusBadRequest
 			labels.RequestStatus = metrics.RequestStatusBadInput
-			break
-		} else if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
+			foundStatus = true
+		case errortypes.BlockedAppErrorCode, errortypes.AccountDisabledErrorCode:
 			httpStatus = http.StatusServiceUnavailable
 			labels.RequestStatus = metrics.RequestStatusBlockedApp
-			break
-		} else if erVal == errortypes.MalformedAcctErrorCode {
+			foundStatus = true
+		case errortypes.MalformedAcctErrorCode:
 			httpStatus = http.StatusInternalServerError
 			labels.RequestStatus = metrics.RequestStatusAccountConfigErr
+			foundStatus = true
+		}
+		if foundStatus {
 			break
 		}
 	}
@@ -1964,51 +1969,69 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req
 	// Use legacy plain text format
 	if !shouldUseORTBErrorFormat(req, cfg) {
 		w.WriteHeader(httpStatus)
+		msgFmt := "Invalid request: %v\n"
+		if httpStatus == http.StatusInternalServerError {
+			msgFmt = "Critical error while running the auction: %v"
+		}
+
 		for _, err := range errs {
-			if httpStatus == http.StatusInternalServerError {
-				fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-			} else {
-				fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
-			}
+			fmt.Fprintf(w, msgFmt, err)
 		}
 		return
 	}
 
-	response := &openrtb2.BidResponse{}
-	if req != nil && req.BidRequest != nil {
-		response.ID = req.BidRequest.ID
-	}
+	response := buildORTBErrorResponse(req, errs)
 
-	// Set NBR code
-	var nbr openrtb3.NoBidReason
-	for _, err := range errs {
-		nbr = errortypes.GetNBRCodeFromError(err)
-		if nbr != openrtb3.NoBidUnknownError {
-			break
-		}
-	}
-	response.NBR = nbr.Ptr()
-
-	errMessages := make([]string, len(errs))
-	for i, err := range errs {
-		errMessages[i] = err.Error()
-	}
-
-	responseExt := &openrtb_ext.ExtBidResponse{
-		Prebid: &openrtb_ext.ExtResponsePrebid{
-			Errors: errMessages,
-		},
-	}
-	responseExtBytes, _ := jsonutil.Marshal(responseExt)
-	response.Ext = responseExtBytes
-
+	// Add headers
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
+
+	// Encode the response
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("Failed to encode ORTB error response: %v", err)
 	}
+}
+
+// buildORTBErrorResponse constructs an ORTB-compliant error BidResponse
+// including request ID (when available), NBR code and ext.prebid.errors.
+func buildORTBErrorResponse(req *openrtb_ext.RequestWrapper, errs []error) *openrtb2.BidResponse {
+	resp := &openrtb2.BidResponse{}
+	if req != nil && req.BidRequest != nil {
+		resp.ID = req.BidRequest.ID
+	}
+
+	// Determine first non-unknown NBR code
+	nbr := openrtb3.NoBidUnknownError
+	for _, err := range errs {
+		code := errortypes.GetNBRCodeFromError(err)
+		if code != openrtb3.NoBidUnknownError {
+			nbr = code
+			break
+		}
+	}
+	resp.NBR = nbr.Ptr()
+
+	// Collect error messages
+	errMessages := make([]string, len(errs))
+	for i, err := range errs {
+		errMessages[i] = err.Error()
+	}
+
+	// Build response.ext
+	responseExt := &openrtb_ext.ExtBidResponse{
+		Prebid: &openrtb_ext.ExtResponsePrebid{
+			Errors: errMessages,
+		},
+	}
+	responseExtBytes, marshalErr := jsonutil.Marshal(responseExt)
+	if marshalErr != nil {
+		glog.Errorf("Failed to create response extension while building ORTB error response: %v", marshalErr)
+	}
+	resp.Ext = responseExtBytes
+
+	return resp
 }
 
 // shouldUseORTBErrorFormat determines if ORTB error format should be used
