@@ -9,8 +9,8 @@ import (
 	base "github.com/prebid/prebid-server/v3/analytics/pubstack"
 )
 
-// Minimalny config dla modułu pubstack.
 type Config struct {
+	Enabled     bool   `mapstructure:"enabled" json:"enabled"`
 	ScopeId     string `mapstructure:"scopeId" json:"scopeId"`
 	IntakeUrl   string `mapstructure:"intakeUrl" json:"intakeUrl"`
 	ConfRefresh string `mapstructure:"confRefresh" json:"confRefresh"`
@@ -21,7 +21,6 @@ type Config struct {
 	} `mapstructure:"buffers" json:"buffers"`
 }
 
-// Builder konstruuje moduł pubstack na podstawie podmapy konfiga analytics.
 func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
 		return nil, nil
@@ -34,7 +33,10 @@ func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.
 		}
 	}
 
-	// Brak wymaganych pól => moduł wyłączony.
+	if !c.Enabled {
+		return nil, nil
+	}
+
 	if c.IntakeUrl == "" || c.ScopeId == "" {
 		return nil, nil
 	}
