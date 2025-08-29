@@ -332,6 +332,9 @@ func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
 }
 
 func getBuyerIdFromExt(ext *oxBidExt) int {
+	if ext.BuyerId == "" {
+		return 0
+	}
 	buyerId, err := strconv.Atoi(ext.BuyerId)
 	if err != nil {
 		return 0
@@ -340,6 +343,9 @@ func getBuyerIdFromExt(ext *oxBidExt) int {
 }
 
 func getDspIdFromExt(ext *oxBidExt) int {
+	if ext.DspId == "" {
+		return 0
+	}
 	dspId, err := strconv.Atoi(ext.DspId)
 	if err != nil {
 		return 0
@@ -348,6 +354,9 @@ func getDspIdFromExt(ext *oxBidExt) int {
 }
 
 func getBrandIdFromExt(ext *oxBidExt) int {
+	if ext.BrandId == "" {
+		return 0
+	}
 	brandId, err := strconv.Atoi(ext.BrandId)
 	if err != nil {
 		return 0
