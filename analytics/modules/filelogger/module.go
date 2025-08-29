@@ -4,8 +4,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/filesystem"
-	"github.com/prebid/prebid-server/v3/analytics/moduledeps"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
 
 // Config is the minimal configuration for the file logger analytics module.
@@ -32,5 +31,5 @@ func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.
 	if !c.Enabled {
 		return nil, nil
 	}
-	return filesystem.NewFileLogger(c.Filename)
+	return NewFileLogger(c.Filename)
 }

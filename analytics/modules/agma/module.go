@@ -4,8 +4,8 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/mitchellh/mapstructure"
 	"github.com/prebid/prebid-server/v3/analytics"
-	base "github.com/prebid/prebid-server/v3/analytics/agma"
 	"github.com/prebid/prebid-server/v3/analytics/moduledeps"
+	base "github.com/prebid/prebid-server/v3/analytics/modules/agma"
 	"github.com/prebid/prebid-server/v3/config"
 )
 

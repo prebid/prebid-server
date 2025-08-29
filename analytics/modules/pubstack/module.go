@@ -5,8 +5,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/moduledeps"
-	base "github.com/prebid/prebid-server/v3/analytics/pubstack"
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
 
 type Config struct {
@@ -41,7 +40,7 @@ func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.
 		return nil, nil
 	}
 
-	return base.NewModule(
+	return NewModule(
 		deps.HTTPClient,
 		c.ScopeId,
 		c.IntakeUrl,
