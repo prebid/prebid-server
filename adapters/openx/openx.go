@@ -324,21 +324,11 @@ func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
 		return nil
 	}
 
-	var extBidPrebid *openrtb_ext.ExtBidPrebid
-	_ = jsonutil.Unmarshal(bid.Ext, &extBidPrebid)
-	if extBidPrebid.Meta != nil {
-		extBidPrebid.Meta.NetworkID = dspId
-		extBidPrebid.Meta.AdvertiserID = buyerId
-		extBidPrebid.Meta.BrandID = brandId
-	} else {
-		extBidPrebid.Meta = &openrtb_ext.ExtBidPrebidMeta{
-			NetworkID:    dspId,
-			AdvertiserID: buyerId,
-			BrandID:      brandId,
-		}
+	return &openrtb_ext.ExtBidPrebidMeta{
+		NetworkID:    dspId,
+		AdvertiserID: buyerId,
+		BrandID:      brandId,
 	}
-
-	return extBidPrebid.Meta
 }
 
 func getBuyerIdFromExt(ext *oxBidExt) int {

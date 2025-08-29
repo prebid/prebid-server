@@ -2,6 +2,7 @@ package openx
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -39,65 +40,60 @@ func TestGetBidMeta(t *testing.T) {
 	bradId := "789"
 
 	testCases := []struct {
-		ext             *oxBidExt
-		expectedBuyerId int
-		expectedDspId   int
-		expectedBrandId int
+		ext          *oxBidExt
+		expectedMeta *openrtb_ext.ExtBidPrebidMeta
 	}{
 		{
 			&oxBidExt{BuyerId: &buyerId, DspId: &dspId, BrandId: &bradId},
-			123,
-			456,
-			789,
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 789},
 		},
 		{
 			&oxBidExt{BuyerId: &buyerId, DspId: &dspId},
-			123,
-			456,
-			0,
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
 		},
 		{
 			&oxBidExt{BuyerId: &buyerId, BrandId: &bradId},
-			123,
-			0,
-			789,
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 789},
 		},
 		{
 			&oxBidExt{DspId: &dspId, BrandId: &bradId},
-			0,
-			456,
-			789,
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 789},
 		},
 		{
 			&oxBidExt{BuyerId: &buyerId},
-			123,
-			0,
-			0,
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 0},
 		},
 		{
 			&oxBidExt{DspId: &dspId},
-			0,
-			456,
-			0,
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 0},
 		},
 		{
 			&oxBidExt{BrandId: &bradId},
-			0,
-			0,
-			789,
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 0, BrandID: 789},
 		},
 	}
 
 	for _, testCase := range testCases {
 		marshaledExt, _ := json.Marshal(testCase.ext)
 		bid := &openrtb2.Bid{Ext: marshaledExt}
-
-		upadtedMeta := getBidMeta(bid)
-
-		assert.Equal(t, testCase.expectedDspId, upadtedMeta.NetworkID)
-		assert.Equal(t, testCase.expectedBuyerId, upadtedMeta.AdvertiserID)
-		assert.Equal(t, testCase.expectedBrandId, upadtedMeta.BrandID)
+		updatedMeta := getBidMeta(bid)
+		assert.Equal(t, testCase.expectedMeta, updatedMeta)
 	}
+}
+
+func TestOpenxAdapter_MakeBids_BidsMeta(t *testing.T) {
+	responseBody := `{"id":"test-request-id","seatbid":[{"seat":"openx","bid":[{"id":"all-buyer-ext","impid":"all-buyer-ext-imp-id","price":0.5,"adm":"some-test-ad","crid":"crid_10","ext":{"dsp_id":"123","brand_id":"456","buyer_id":"789"},"h":90,"w":728,"mtype":1},{"id":"only-dspId","impid":"only-dspId-imp-id","price":0.6,"adm":"some-test-ad","crid":"crid_11","ext":{"dsp_id":"321"},"h":90,"w":728,"mtype":1}]}],"cur":"USD"}`
+	allBuyerMeta := &openrtb_ext.ExtBidPrebidMeta{NetworkID: 123, BrandID: 456, AdvertiserID: 789}
+	onlyDspIdMeta := &openrtb_ext.ExtBidPrebidMeta{NetworkID: 321}
+	response := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(responseBody),
+	}
+	adapter := &OpenxAdapter{bidderName: "", endpoint: ""}
+	bids, _ := adapter.MakeBids(&openrtb2.BidRequest{}, &adapters.RequestData{}, response)
+	assert.Equal(t, len(bids.Bids), 2)
+	assert.Equal(t, bids.Bids[0].BidMeta, allBuyerMeta)
+	assert.Equal(t, bids.Bids[1].BidMeta, onlyDspIdMeta)
 }
 
 func assertCurrencyInBidResponse(t *testing.T, expectedCurrency string, currency *string) {
