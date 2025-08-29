@@ -332,11 +332,11 @@ func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
 }
 
 func getBuyerIdFromExt(ext *oxBidExt) int {
-	buyerID, err := strconv.Atoi(ext.BuyerId)
+	buyerId, err := strconv.Atoi(ext.BuyerId)
 	if err != nil {
 		return 0
 	}
-	return buyerID
+	return buyerId
 }
 
 func getDspIdFromExt(ext *oxBidExt) int {
