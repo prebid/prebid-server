@@ -35,41 +35,45 @@ func TestResponseWithCurrencies(t *testing.T) {
 }
 
 func TestGetBidMeta(t *testing.T) {
-	buyerId := "123"
-	dspId := "456"
-	bradId := "789"
-
 	testCases := []struct {
 		ext          *oxBidExt
 		expectedMeta *openrtb_ext.ExtBidPrebidMeta
 	}{
 		{
-			&oxBidExt{BuyerId: &buyerId, DspId: &dspId, BrandId: &bradId},
+			&oxBidExt{BuyerId: "123", DspId: "456", BrandId: "789"},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 789},
 		},
 		{
-			&oxBidExt{BuyerId: &buyerId, DspId: &dspId},
+			&oxBidExt{BuyerId: "123", DspId: "456"},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
 		},
 		{
-			&oxBidExt{BuyerId: &buyerId, BrandId: &bradId},
+			&oxBidExt{BuyerId: "123", BrandId: "789"},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 789},
 		},
 		{
-			&oxBidExt{DspId: &dspId, BrandId: &bradId},
+			&oxBidExt{DspId: "456", BrandId: "789"},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 789},
 		},
 		{
-			&oxBidExt{BuyerId: &buyerId},
+			&oxBidExt{BuyerId: "123"},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 0},
 		},
 		{
-			&oxBidExt{DspId: &dspId},
+			&oxBidExt{DspId: "456"},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 0},
 		},
 		{
-			&oxBidExt{BrandId: &bradId},
+			&oxBidExt{BrandId: "789"},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 0, BrandID: 789},
+		},
+		{
+			&oxBidExt{BuyerId: "123", DspId: "456", BrandId: "badId"},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
+		},
+		{
+			&oxBidExt{BuyerId: "badId", DspId: "badId", BrandId: "badId"},
+			nil,
 		},
 	}
 
@@ -83,17 +87,49 @@ func TestGetBidMeta(t *testing.T) {
 
 func TestOpenxAdapter_MakeBids_BidsMeta(t *testing.T) {
 	responseBody := `{"id":"test-request-id","seatbid":[{"seat":"openx","bid":[{"id":"all-buyer-ext","impid":"all-buyer-ext-imp-id","price":0.5,"adm":"some-test-ad","crid":"crid_10","ext":{"dsp_id":"123","brand_id":"456","buyer_id":"789"},"h":90,"w":728,"mtype":1},{"id":"only-dspId","impid":"only-dspId-imp-id","price":0.6,"adm":"some-test-ad","crid":"crid_11","ext":{"dsp_id":"321"},"h":90,"w":728,"mtype":1}]}],"cur":"USD"}`
-	allBuyerMeta := &openrtb_ext.ExtBidPrebidMeta{NetworkID: 123, BrandID: 456, AdvertiserID: 789}
-	onlyDspIdMeta := &openrtb_ext.ExtBidPrebidMeta{NetworkID: 321}
 	response := &adapters.ResponseData{
 		StatusCode: http.StatusOK,
 		Body:       []byte(responseBody),
 	}
 	adapter := &OpenxAdapter{bidderName: "", endpoint: ""}
 	bids, _ := adapter.MakeBids(&openrtb2.BidRequest{}, &adapters.RequestData{}, response)
-	assert.Equal(t, len(bids.Bids), 2)
-	assert.Equal(t, bids.Bids[0].BidMeta, allBuyerMeta)
-	assert.Equal(t, bids.Bids[1].BidMeta, onlyDspIdMeta)
+	assert.Equal(t, *bids, adapters.BidderResponse{
+		Currency: "USD",
+		Bids: []*adapters.TypedBid{
+			{
+				Bid: &openrtb2.Bid{
+					ID:    "all-buyer-ext",
+					ImpID: "all-buyer-ext-imp-id",
+					Price: 0.5,
+					AdM:   "some-test-ad",
+					CrID:  "crid_10",
+					W:     728,
+					H:     90,
+					MType: 1,
+					Ext:   json.RawMessage(`{"dsp_id":"123","brand_id":"456","buyer_id":"789"}`),
+				},
+				BidMeta:  &openrtb_ext.ExtBidPrebidMeta{NetworkID: 123, BrandID: 456, AdvertiserID: 789},
+				BidType:  "banner",
+				BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 0, PrimaryCategory: ""},
+			},
+			{
+				Bid: &openrtb2.Bid{
+					ID:    "only-dspId",
+					ImpID: "only-dspId-imp-id",
+					Price: 0.6,
+					AdM:   "some-test-ad",
+					CrID:  "crid_11",
+					W:     728,
+					H:     90,
+					MType: 1,
+					Ext:   json.RawMessage(`{"dsp_id":"321"}`),
+				},
+				BidMeta:  &openrtb_ext.ExtBidPrebidMeta{NetworkID: 321},
+				BidType:  "banner",
+				BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 0, PrimaryCategory: ""},
+			},
+		},
+	})
 }
 
 func assertCurrencyInBidResponse(t *testing.T, expectedCurrency string, currency *string) {

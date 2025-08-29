@@ -34,9 +34,9 @@ type openxRespExt struct {
 }
 
 type oxBidExt struct {
-	DspId   *string `json:"dsp_id,omitempty"`
-	BrandId *string `json:"brand_id,omitempty"`
-	BuyerId *string `json:"buyer_id,omitempty"`
+	DspId   string `json:"dsp_id,omitempty"`
+	BrandId string `json:"brand_id,omitempty"`
+	BuyerId string `json:"buyer_id,omitempty"`
 }
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -332,25 +332,25 @@ func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
 }
 
 func getBuyerIdFromExt(ext *oxBidExt) int {
-	if ext.BuyerId == nil {
+	buyerID, err := strconv.Atoi(ext.BuyerId)
+	if err != nil {
 		return 0
 	}
-	buyerID, _ := strconv.Atoi(*ext.BuyerId)
 	return buyerID
 }
 
 func getDspIdFromExt(ext *oxBidExt) int {
-	if ext.DspId == nil {
+	dspId, err := strconv.Atoi(ext.DspId)
+	if err != nil {
 		return 0
 	}
-	dspId, _ := strconv.Atoi(*ext.DspId)
 	return dspId
 }
 
 func getBrandIdFromExt(ext *oxBidExt) int {
-	if ext.BrandId == nil {
+	brandId, err := strconv.Atoi(ext.BrandId)
+	if err != nil {
 		return 0
 	}
-	brandId, _ := strconv.Atoi(*ext.BrandId)
 	return brandId
 }
