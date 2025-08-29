@@ -58,14 +58,14 @@ type Configuration struct {
 	// StoredRequestsTimeout defines the number of milliseconds before a timeout occurs with stored requests fetch
 	StoredRequestsTimeout int `mapstructure:"stored_requests_timeout_ms"`
 
-	MaxRequestSize       int64             `mapstructure:"max_request_size"`
-	Analytics            Analytics         `mapstructure:"analytics"`
-	AMPTimeoutAdjustment int64             `mapstructure:"amp_timeout_adjustment_ms"`
-	GDPR                 GDPR              `mapstructure:"gdpr"`
-	CCPA                 CCPA              `mapstructure:"ccpa"`
-	LMT                  LMT               `mapstructure:"lmt"`
-	CurrencyConverter    CurrencyConverter `mapstructure:"currency_converter"`
-	DefReqConfig         DefReqConfig      `mapstructure:"default_request"`
+	MaxRequestSize       int64                  `mapstructure:"max_request_size"`
+	Analytics            map[string]interface{} `mapstructure:"analytics"`
+	AMPTimeoutAdjustment int64                  `mapstructure:"amp_timeout_adjustment_ms"`
+	GDPR                 GDPR                   `mapstructure:"gdpr"`
+	CCPA                 CCPA                   `mapstructure:"ccpa"`
+	LMT                  LMT                    `mapstructure:"lmt"`
+	CurrencyConverter    CurrencyConverter      `mapstructure:"currency_converter"`
+	DefReqConfig         DefReqConfig           `mapstructure:"default_request"`
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
@@ -451,11 +451,11 @@ type LMT struct {
 	Enforce bool `mapstructure:"enforce"`
 }
 
-type Analytics struct {
-	File     FileLogs      `mapstructure:"file"`
-	Agma     AgmaAnalytics `mapstructure:"agma"`
-	Pubstack Pubstack      `mapstructure:"pubstack"`
-}
+// type Analytics struct {
+// 	File     FileLogs      `mapstructure:"file"`
+// 	Agma     AgmaAnalytics `mapstructure:"agma"`
+// 	Pubstack Pubstack      `mapstructure:"pubstack"`
+// }
 
 type CurrencyConverter struct {
 	FetchURL             string `mapstructure:"fetch_url"`

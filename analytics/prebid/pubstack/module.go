@@ -1,47 +1,52 @@
 package pubstack
 
 import (
-	"encoding/json"
+	"github.com/benbjohnson/clock"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/analytics/moduledeps"
 	base "github.com/prebid/prebid-server/v3/analytics/pubstack"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
 
-// Config mirrors the existing top-level analytics.pubstack config subset needed to construct the module.
+// Minimalny config dla modułu pubstack.
 type Config struct {
-	ScopeId     string `json:"scopeId"`
-	IntakeUrl   string `json:"intakeUrl"`
-	ConfRefresh string `json:"confRefresh"`
+	ScopeId     string `mapstructure:"scopeId" json:"scopeId"`
+	IntakeUrl   string `mapstructure:"intakeUrl" json:"intakeUrl"`
+	ConfRefresh string `mapstructure:"confRefresh" json:"confRefresh"`
 	Buffers     struct {
-		EventCount int    `json:"eventCount"`
-		BufferSize string `json:"bufferSize"`
-		Timeout    string `json:"timeout"`
-	} `json:"buffers"`
+		EventCount int    `mapstructure:"eventCount" json:"eventCount"`
+		BufferSize string `mapstructure:"bufferSize" json:"bufferSize"`
+		Timeout    string `mapstructure:"timeout" json:"timeout"`
+	} `mapstructure:"buffers" json:"buffers"`
 }
 
-// Builder constructs the pubstack analytics module using provided config and dependencies.
-func Builder(raw json.RawMessage, deps moduledeps.ModuleDeps) (analytics.Module, error) {
+// Builder konstruuje moduł pubstack na podstawie podmapy konfiga analytics.
+func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
-		return nil, nil // cannot build without required deps; silently skip
+		return nil, nil
 	}
-	var cfg Config
-	if len(raw) > 0 {
-		if err := json.Unmarshal(raw, &cfg); err != nil {
+
+	var c Config
+	if cfg != nil {
+		if err := mapstructure.Decode(cfg, &c); err != nil {
 			return nil, err
 		}
 	}
-	if cfg.IntakeUrl == "" || cfg.ScopeId == "" {
+
+	// Brak wymaganych pól => moduł wyłączony.
+	if c.IntakeUrl == "" || c.ScopeId == "" {
 		return nil, nil
 	}
+
 	return base.NewModule(
 		deps.HTTPClient,
-		cfg.ScopeId,
-		cfg.IntakeUrl,
-		cfg.ConfRefresh,
-		cfg.Buffers.EventCount,
-		cfg.Buffers.BufferSize,
-		cfg.Buffers.Timeout,
-		deps.Clock,
+		c.ScopeId,
+		c.IntakeUrl,
+		c.ConfRefresh,
+		c.Buffers.EventCount,
+		c.Buffers.BufferSize,
+		c.Buffers.Timeout,
+		deps.Clock.(clock.Clock),
 	)
 }

@@ -1,10 +1,10 @@
 package analytics
 
 import (
-	"encoding/json"
-
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/benbjohnson/clock"
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/analytics/clients"
+	"github.com/prebid/prebid-server/v3/analytics/moduledeps"
 )
 
 //go:generate go run ./generator/buildergen.go
@@ -17,32 +17,44 @@ func NewBuilder() Builder {
 // AnalyticsModuleBuilders: map[vendor]map[module]AnalyticsModuleBuilderFn
 type AnalyticsModuleBuilders map[string]map[string]AnalyticsModuleBuilderFn
 
-// AnalyticsModuleBuilderFn – każdy moduł analityczny powinien eksportować symbol `Builder` o tej sygnaturze.
-// Zwraca analytics.Module.
-type AnalyticsModuleBuilderFn func(cfg json.RawMessage, deps moduledeps.ModuleDeps) (Module, error)
+type AnalyticsModuleBuilderFn func(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (Module, error)
 
-type Builder interface {
-	Build(cfg config.Analytics, deps moduledeps.ModuleDeps) (map[string]Module, error)
-}
+func New(cfg map[string]interface{}) analytics.Runner {
+	modules := make(enabledAnalytics)
 
-type builder struct {
-	builders AnalyticsModuleBuilders
-}
+	deps := moduledeps.ModuleDeps{
+		HTTPClient: clients.GetDefaultHttpInstance(),
+		Clock:      clock.New(),
+	}
 
-func (b *builder) Build(cfg config.Analytics, deps moduledeps.ModuleDeps) (map[string]Module, error) {
-	// TODO: włączanie po host/account, flagach enabled itd.
-
-	out := make(map[string]Module)
-
-	for vendor, moduleBuilders := range b.builders {
+	for vendor, moduleBuilders := range analytics.Builders() {
 		for moduleName, buildFn := range moduleBuilders {
-			m, err := buildFn(nil, deps)
+			dir := configDir(cfg, vendor, moduleName)
+			m, err := buildFn(dir, deps)
 			if err != nil {
-				return nil, err
+				glog.Errorf("Could not initialize analytics module %s.%s: %v", vendor, moduleName, err)
+				continue
 			}
-			out[vendor+"."+moduleName] = m
+			if m != nil {
+				modules[moduleName] = m
+			}
+		}
+	}
+	return modules
+}
+
+func configDir(root map[string]interface{}, vendor, module string) map[string]interface{} {
+	if root == nil {
+		return nil
+	}
+	if m, ok := root[module].(map[string]interface{}); ok {
+		return m
+	}
+	if v, ok := root[vendor].(map[string]interface{}); ok {
+		if m, ok := v[module].(map[string]interface{}); ok {
+			return m
 		}
 	}
 
-	return out, nil
+	return map[string]interface{}{}
 }

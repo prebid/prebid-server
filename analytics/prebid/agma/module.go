@@ -1,49 +1,54 @@
 package agma
 
 import (
-	"encoding/json"
-
 	"github.com/benbjohnson/clock"
+	"github.com/mitchellh/mapstructure"
 	"github.com/prebid/prebid-server/v3/analytics"
 	base "github.com/prebid/prebid-server/v3/analytics/agma"
+	"github.com/prebid/prebid-server/v3/analytics/moduledeps"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
 
-// Config reuses config.AgmaAnalytics structure fields needed for module construction.
 type Config struct {
-	Endpoint string `json:"endpoint"`
+	Enabled  bool   `mapstructure:"enabled" json:"enabled"`
+	Endpoint string `mapstructure:"endpoint" json:"endpoint"`
 	Buffers  struct {
-		EventCount int    `json:"eventCount"`
-		BufferSize string `json:"bufferSize"`
-		Timeout    string `json:"timeout"`
-	} `json:"buffers"`
-	Accounts []config.AgmaAnalyticsAccount `json:"accounts"`
+		EventCount int    `mapstructure:"eventCount" json:"eventCount"`
+		BufferSize string `mapstructure:"bufferSize" json:"bufferSize"`
+		Timeout    string `mapstructure:"timeout" json:"timeout"`
+	} `mapstructure:"buffers" json:"buffers"`
+	Accounts []config.AgmaAnalyticsAccount `mapstructure:"accounts" json:"accounts"`
 }
 
 // Builder builds the agma analytics module.
-func Builder(raw json.RawMessage, deps moduledeps.ModuleDeps) (analytics.Module, error) {
+func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
 		return nil, nil
 	}
-	var cfg Config
-	if len(raw) > 0 {
-		if err := json.Unmarshal(raw, &cfg); err != nil {
+
+	var c Config
+	if cfg != nil {
+		if err := mapstructure.Decode(cfg, &c); err != nil {
 			return nil, err
 		}
 	}
-	if cfg.Endpoint == "" || len(cfg.Accounts) == 0 {
+
+	if !c.Enabled {
 		return nil, nil
 	}
+	if c.Endpoint == "" {
+		return nil, nil
+	}
+
 	full := config.AgmaAnalytics{
 		Enabled:  true,
-		Endpoint: cfg.Endpoint,
+		Endpoint: c.Endpoint,
 		Buffers: config.AgmaAnalyticsBuffers{
-			EventCount: cfg.Buffers.EventCount,
-			BufferSize: cfg.Buffers.BufferSize,
-			Timeout:    cfg.Buffers.Timeout,
+			EventCount: c.Buffers.EventCount,
+			BufferSize: c.Buffers.BufferSize,
+			Timeout:    c.Buffers.Timeout,
 		},
-		Accounts: cfg.Accounts,
+		Accounts: c.Accounts,
 	}
 	return base.NewModule(deps.HTTPClient, full, deps.Clock.(clock.Clock))
 }

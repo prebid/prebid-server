@@ -3,48 +3,16 @@ package build
 import (
 	"encoding/json"
 
-	"github.com/benbjohnson/clock"
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/clients"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
 )
 
-func New(cfg *config.Analytics) analytics.Runner {
-	modules := make(enabledAnalytics)
-
-	// Shared deps for all analytics module builders
-	deps := moduledeps.ModuleDeps{
-		HTTPClient: clients.GetDefaultHttpInstance(),
-		Clock:      clock.New(),
-	}
-
-	for vendor, moduleBuilders := range analytics.Builders() {
-		for moduleName, buildFn := range moduleBuilders {
-			raw := getRawConfigFor(vendor, moduleName, cfg)
-			m, err := buildFn(raw, deps)
-			if err != nil {
-				glog.Errorf("Could not initialize analytics module %s.%s: %v", vendor, moduleName, err)
-				continue
-			}
-			if m != nil {
-				// Keep legacy short key used by privacy/activities (e.g. "pubstack", "agma", "filelogger")
-				modules[moduleName] = m
-			}
-		}
-	}
-
-	return modules
-}
-
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
-type enabledAnalytics map[string]analytics.Module
+type EnabledAnalytics map[string]analytics.Module
 
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -59,7 +27,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -75,19 +43,19 @@ func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.
 	}
 }
 
-func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
+func (ea EnabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	for _, module := range ea {
 		module.LogCookieSyncObject(cso)
 	}
 }
 
-func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
+func (ea EnabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 	for _, module := range ea {
 		module.LogSetUIDObject(so)
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -102,7 +70,7 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 	}
 }
 
-func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
 		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
@@ -112,7 +80,7 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 }
 
 // Shutdown - correctly shutdown all analytics modules and wait for them to finish
-func (ea enabledAnalytics) Shutdown() {
+func (ea EnabledAnalytics) Shutdown() {
 	for _, module := range ea {
 		module.Shutdown()
 	}
@@ -191,28 +159,4 @@ func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, ada
 		newMap[adapterName] = val
 	}
 	return newMap
-}
-
-func getRawConfigFor(vendor, module string, cfg *config.Analytics) json.RawMessage {
-	if cfg == nil {
-		return nil
-	}
-	switch vendor {
-	case "prebid":
-		switch module {
-		case "filelogger":
-			if b, err := json.Marshal(cfg.File); err == nil {
-				return b
-			}
-		case "pubstack":
-			if b, err := json.Marshal(cfg.Pubstack); err == nil {
-				return b
-			}
-		case "agma":
-			if b, err := json.Marshal(cfg.Agma); err == nil {
-				return b
-			}
-		}
-	}
-	return nil
 }
