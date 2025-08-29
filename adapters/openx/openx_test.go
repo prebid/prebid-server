@@ -2,7 +2,6 @@ package openx
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -34,7 +33,7 @@ func TestResponseWithCurrencies(t *testing.T) {
 	assertCurrencyInBidResponse(t, "EUR", &currency)
 }
 
-func TestUpdateBidExtMeta(t *testing.T) {
+func TestGetBidMeta(t *testing.T) {
 	buyerId := "123"
 	dspId := "456"
 	bradId := "789"
@@ -93,14 +92,11 @@ func TestUpdateBidExtMeta(t *testing.T) {
 		marshaledExt, _ := json.Marshal(testCase.ext)
 		bid := &openrtb2.Bid{Ext: marshaledExt}
 
-		bid.Ext = updateBidExtMeta(bid)
+		upadtedMeta := getBidMeta(bid)
 
-		var updatedExt *openrtb_ext.ExtBidPrebid
-		_ = jsonutil.Unmarshal(bid.Ext, &updatedExt)
-
-		assert.Equal(t, testCase.expectedBuyerId, updatedExt.Meta.NetworkID)
-		assert.Equal(t, testCase.expectedDspId, updatedExt.Meta.AdvertiserID)
-		assert.Equal(t, testCase.expectedBrandId, updatedExt.Meta.BrandID)
+		assert.Equal(t, testCase.expectedBuyerId, upadtedMeta.NetworkID)
+		assert.Equal(t, testCase.expectedDspId, upadtedMeta.AdvertiserID)
+		assert.Equal(t, testCase.expectedBrandId, upadtedMeta.BrandID)
 	}
 }
 

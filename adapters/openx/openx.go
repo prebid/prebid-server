@@ -241,12 +241,11 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			var bid = &sb.Bid[i]
-			bid.Ext = updateBidExtMeta(bid)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &sb.Bid[i],
 				BidType:  getBidType(sb.Bid[i].MType, sb.Bid[i].ImpID, internalRequest.Imp),
 				BidVideo: getBidVideo(&sb.Bid[i]),
+				BidMeta:  getBidMeta(&sb.Bid[i]),
 			})
 		}
 	}
@@ -308,7 +307,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func updateBidExtMeta(bid *openrtb2.Bid) json.RawMessage {
+func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
 	if bid.Ext == nil {
 		return nil
 	}
@@ -339,11 +338,7 @@ func updateBidExtMeta(bid *openrtb2.Bid) json.RawMessage {
 		}
 	}
 
-	marshaledExt, err := json.Marshal(&extBidPrebid)
-	if err == nil {
-		return marshaledExt
-	}
-	return nil
+	return extBidPrebid.Meta
 }
 
 func getBuyerIdFromExt(ext *oxBidExt) int {
