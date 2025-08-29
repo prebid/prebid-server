@@ -94,8 +94,8 @@ func TestGetBidMeta(t *testing.T) {
 
 		upadtedMeta := getBidMeta(bid)
 
-		assert.Equal(t, testCase.expectedBuyerId, upadtedMeta.NetworkID)
-		assert.Equal(t, testCase.expectedDspId, upadtedMeta.AdvertiserID)
+		assert.Equal(t, testCase.expectedDspId, upadtedMeta.NetworkID)
+		assert.Equal(t, testCase.expectedBuyerId, upadtedMeta.AdvertiserID)
 		assert.Equal(t, testCase.expectedBrandId, upadtedMeta.BrandID)
 	}
 }
