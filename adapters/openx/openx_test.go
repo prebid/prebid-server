@@ -34,7 +34,7 @@ func TestResponseWithCurrencies(t *testing.T) {
 	assertCurrencyInBidResponse(t, "EUR", &currency)
 }
 
-func TestGetBidMeta(t *testing.T) {
+func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 	testCases := []struct {
 		ext          *oxBidExt
 		expectedMeta *openrtb_ext.ExtBidPrebidMeta
@@ -85,7 +85,7 @@ func TestGetBidMeta(t *testing.T) {
 	}
 }
 
-func TestOpenxAdapter_MakeBids_BidsMeta(t *testing.T) {
+func TestOpenxAdapter_MakeBids(t *testing.T) {
 	responseBody := `{"id":"test-request-id","seatbid":[{"seat":"openx","bid":[{"id":"all-buyer-ext","impid":"all-buyer-ext-imp-id","price":0.5,"adm":"some-test-ad","crid":"crid_10","ext":{"dsp_id":"123","brand_id":"456","buyer_id":"789"},"h":90,"w":728,"mtype":1},{"id":"only-dspId","impid":"only-dspId-imp-id","price":0.6,"adm":"some-test-ad","crid":"crid_11","ext":{"dsp_id":"321"},"h":90,"w":728,"mtype":1}]}],"cur":"USD"}`
 	response := &adapters.ResponseData{
 		StatusCode: http.StatusOK,
@@ -93,7 +93,7 @@ func TestOpenxAdapter_MakeBids_BidsMeta(t *testing.T) {
 	}
 	adapter := &OpenxAdapter{bidderName: "", endpoint: ""}
 	bids, _ := adapter.MakeBids(&openrtb2.BidRequest{}, &adapters.RequestData{}, response)
-	assert.Equal(t, *bids, adapters.BidderResponse{
+	expectedBidderResponse := adapters.BidderResponse{
 		Currency: "USD",
 		Bids: []*adapters.TypedBid{
 			{
@@ -129,7 +129,8 @@ func TestOpenxAdapter_MakeBids_BidsMeta(t *testing.T) {
 				BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 0, PrimaryCategory: ""},
 			},
 		},
-	})
+	}
+	assert.Equal(t, expectedBidderResponse, *bids)
 }
 
 func assertCurrencyInBidResponse(t *testing.T, expectedCurrency string, currency *string) {
