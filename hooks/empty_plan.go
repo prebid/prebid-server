@@ -36,3 +36,7 @@ func (e EmptyPlanBuilder) PlanForAllProcessedBidResponsesStage(endpoint string, 
 func (e EmptyPlanBuilder) PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse] {
 	return nil
 }
+
+func (e EmptyPlanBuilder) PlanForExitpointStage(endpoint string, account *config.Account) Plan[hookstage.Exitpoint] {
+	return nil
+}

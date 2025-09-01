@@ -3,6 +3,7 @@ package eventchannel
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -27,7 +28,12 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		if err != nil {
 			return err
 		}
-		resp.Body.Close()
+		defer func() {
+			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+				glog.Errorf("[pubstack] Draining sender response body failed: %v", err)
+			}
+			resp.Body.Close()
+		}()
 
 		if resp.StatusCode != http.StatusOK {
 			logger.Error(fmt.Sprintf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK))

@@ -549,6 +549,7 @@ account_defaults:
           period_sec: 2000
           max_age_sec: 6000
           max_schema_dims: 10
+    bid_rounding: up
     bidadjustments:
         mediatype:
             '*':
@@ -722,6 +723,8 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 2000, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 6000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+
+	assert.Equal(t, RoundingModeUp, cfg.AccountDefaults.BidRounding)
 
 	// Assert the DSA was correctly unmarshalled and DefaultUnpacked was built correctly
 	expectedDSA := AccountDSA{

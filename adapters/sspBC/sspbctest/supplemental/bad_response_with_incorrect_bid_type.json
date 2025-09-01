@@ -18,7 +18,8 @@
                             "h": 250
                         }
                     ]
-                }
+                },
+                "tagid": "ad-test1"
             }
         ],
         "site": {
@@ -41,46 +42,50 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
+                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
                 "body": {
-                    "id": "test-request",
-                    "imp": [
-                        {
-                            "id": "005",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
+                    "bidRequest": {
+                        "id": "test-request",
+                        "imp": [
+                            {
+                                "id": "slot",
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 250
+                                        }
+                                    ]
+                                },
+                                "tagid": "ad-test1",
+                                "secure": 1,
+                                "ext": {
+                                    "bidder": {
+                                        "siteId": "237503",
+                                        "id": "005"
                                     }
-                                ]
-                            },
-                            "tagid": "slot",
-                            "secure": 1,
-                            "ext": {
-                                "data": {
-                                    "pbslot": "slot",
-                                    "pbsize": "300x250"
                                 }
                             }
-                        }
-                    ],
-                    "site": {
-                        "id": "237503",
-                        "domain": "test.page",
-                        "page": "https://test.page/",
-                        "ref": "https://test.referer/"
-                    },
-                    "user": {
-                        "ext": {
-                            "consent": "test_consent"
+                        ],
+                        "site": {
+                            "domain": "test.page",
+                            "page": "https://test.page/",
+                            "ref": "https://test.referer/"
                         },
-                        "buyeruid": "test_user"
-                    },
-                    "regs": {
-                        "ext": {
-                            "gdpr": 1
+                        "user": {
+                            "ext": {
+                                "consent": "test_consent"
+                            },
+                            "buyeruid": "test_user"
+                        },
+                        "regs": {
+                            "ext": {
+                                "gdpr": 1
+                            }
                         }
+                    },
+                    "requestInfo": {
+                        "PbsEntryPoint": ""
                     }
                 },
                 "impIDs":["slot"]
@@ -94,23 +99,26 @@
                         {
                             "bid": [
                                 {
-                                    "adm": "{\"bunch\":\"237503\",\"capping\":\"\",\"server\":\"s\",\"campaign\":\"c\",\"score\":\"1\",\"creations\":[{\"type\":\"image\",\"src\":\"https:\/\/bdr.wpcdn.pl\/tests\/test-300x250.png\",\"trackers\":{},\"width\":300,\"height\":250}],\"code\":\"1\",\"aabVendors\":false,\"slot\":\"005\",\"redir\":\"https:\/\/www.wp.pl\",\"wpclid\":\"1\"}",
+                                    "adm": "",
                                     "adomain": [
                                         "sspbc-test"
                                     ],
                                     "crid": "1234",
                                     "ext": {
-                                        "adlabel": "Reklama",
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
                                         "pubid": "431",
                                         "siteid": "237503",
                                         "slotid": "005",
-                                        "tagid": "slot"
+                                        "tagid": "ad-test1"
                                     },
                                     "w": 300,
                                     "h": 250,
                                     "id": "response-005",
-                                    "impid": "incorrect-imp-id",
-                                    "price": 20
+                                    "impid": "slot",
+                                    "price": 20,
+                                    "mtype": 0
                                 }
                             ],
                             "seat": "sspbc-test"
@@ -121,15 +129,9 @@
             }
         }
     ],
-    "expectedBidResponses": [
-        {
-            "currency": "USD",
-            "bids": []
-        }
-    ],
     "expectedMakeBidsErrors": [
         {
-            "value": "imp not found",
+            "value": "unsupported MType: 0.",
             "comparison": "literal"
         }
     ]

@@ -93,6 +93,7 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 		return nil, nil, []error{err}
 	}
 	defer httpResp.Body.Close()
+
 	requestData, impData, errs = unpackResponse(httpResp)
 	return
 }
@@ -143,6 +144,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 		}
 	}
 	defer httpResp.Body.Close()
+
 	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, []error{

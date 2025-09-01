@@ -1,6 +1,7 @@
 package currency
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 // RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
 	httpClient          httpClient
+	httpTimeout         time.Duration
 	staleRatesThreshold time.Duration
 	syncSourceURL       string
 	rates               atomic.Value // Should only hold Rates struct
@@ -27,11 +29,13 @@ type RateConverter struct {
 // NewRateConverter returns a new RateConverter
 func NewRateConverter(
 	httpClient httpClient,
+	httpTimeout time.Duration,
 	syncSourceURL string,
 	staleRatesThreshold time.Duration,
 ) *RateConverter {
 	return &RateConverter{
 		httpClient:          httpClient,
+		httpTimeout:         httpTimeout,
 		staleRatesThreshold: staleRatesThreshold,
 		syncSourceURL:       syncSourceURL,
 		rates:               atomic.Value{},
@@ -43,7 +47,10 @@ func NewRateConverter(
 
 // fetch allows to retrieve the currencies rates from the syncSourceURL provided
 func (rc *RateConverter) fetch() (*Rates, error) {
-	request, err := http.NewRequest("GET", rc.syncSourceURL, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), rc.httpTimeout)
+	defer cancel()
+
+	request, err := http.NewRequestWithContext(ctx, "GET", rc.syncSourceURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52,23 +59,29 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		// read the entire response body to ensure full connection reuse if there's an
+		// invalid status code
+		if _, err := io.Copy(io.Discard, response.Body); err != nil {
+			glog.Errorf("error draining conversion rates response body: %v", err)
+		}
+		response.Body.Close()
+	}()
 
 	if response.StatusCode >= 400 {
-		message := fmt.Sprintf("The currency rates request failed with status code %d", response.StatusCode)
+		message := fmt.Sprintf("the currency rates request failed with status code %d", response.StatusCode)
 		return nil, &errortypes.BadServerResponse{Message: message}
 	}
 
-	defer response.Body.Close()
-
 	bytesJSON, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("the currency rates request failed: %v", err)
 	}
 
 	updatedRates := &Rates{}
 	err = jsonutil.UnmarshalValid(bytesJSON, updatedRates)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("the currency rates request failed to parse json: %v", err)
 	}
 
 	return updatedRates, err

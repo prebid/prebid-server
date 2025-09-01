@@ -144,7 +144,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:             &wellBehavedCache{},
 		cacheTime:         time.Duration(0),
 		gdprPermsBuilder:  gdprPermsBuilder,
-		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currencyConverter: currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0)),
 		gdprDefaultValue:  gdpr.SignalYes,
 		categoriesFetcher: categoriesFetcher,
 		bidIDGenerator:    &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false},
@@ -1215,7 +1215,7 @@ func TestSetTargeting(t *testing.T) {
 	for _, test := range TargetingTests {
 		auc := &test.Auction
 		// Set rounded prices from the auction data
-		auc.setRoundedPrices(test.TargetData)
+		auc.setRoundedPrices(test.TargetData, config.Account{})
 		winningBids := make(map[string]*entities.PbsOrtbBid)
 		// Set winning bids from the auction data
 		for imp, bidsByBidder := range auc.allBidsByBidder {
