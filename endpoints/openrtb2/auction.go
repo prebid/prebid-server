@@ -572,10 +572,16 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return nil, nil, nil, nil, nil, nil, errs
 	}
 
+	_, isDebugEnabled, warnings := hookexecution.GetDebugContext(req.BidRequest, account)
+
 	hasStoredAuctionResponses := len(storedAuctionResponses) > 0
-	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredAuctionResponses, storedBidResponses, hasStoredBidRequest)
+	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredAuctionResponses, storedBidResponses, hasStoredBidRequest, isDebugEnabled, &warnings)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
+	}
+
+	for _, w := range warnings {
+		errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("%v", w)})
 	}
 
 	return
@@ -767,7 +773,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest, isDebugEnabled bool, warnings *[]error) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -824,7 +830,7 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
-		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases); err != nil {
+		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases, isDebugEnabled, warnings); err != nil {
 			return []error{err}
 		}
 
@@ -997,7 +1003,7 @@ func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
 	return err
 }
 
-func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string) error {
+func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string, isDebugEnabled bool, warnings *[]error) error {
 	if prebid == nil {
 		return nil
 	}
@@ -1018,7 +1024,14 @@ func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestP
 		}
 
 		if err := deps.validateBidders(eid.Bidders, deps.bidderMap, requestAliases); err != nil {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+			errValidate := fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+
+			if isDebugEnabled {
+				*warnings = append(*warnings, errValidate)
+				continue
+			}
+
+			return errValidate
 		}
 	}
 
