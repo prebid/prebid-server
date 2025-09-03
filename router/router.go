@@ -141,16 +141,16 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: defaultTransportDialContext(&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
+				Timeout:   time.Duration(cfg.Client.NetDialer.Timeout) * time.Second,
+				KeepAlive: time.Duration(cfg.Client.NetDialer.KeepAlive) * time.Second,
 			}),
 			MaxConnsPerHost:       cfg.Client.MaxConnsPerHost,
 			MaxIdleConns:          cfg.Client.MaxIdleConns,
 			MaxIdleConnsPerHost:   cfg.Client.MaxIdleConnsPerHost,
 			IdleConnTimeout:       time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
 			TLSClientConfig:       &tls.Config{RootCAs: certPool},
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
+			TLSHandshakeTimeout:   time.Duration(cfg.Client.TLSHandshakeTimeout) * time.Second,
+			ExpectContinueTimeout: time.Duration(cfg.Client.ExpectContinueTimeout) * time.Second,
 		},
 	}
 
@@ -158,15 +158,15 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: defaultTransportDialContext(&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
+				Timeout:   time.Duration(cfg.CacheClient.NetDialer.Timeout) * time.Second,
+				KeepAlive: time.Duration(cfg.CacheClient.NetDialer.KeepAlive) * time.Second,
 			}),
 			MaxConnsPerHost:       cfg.CacheClient.MaxConnsPerHost,
 			MaxIdleConns:          cfg.CacheClient.MaxIdleConns,
 			MaxIdleConnsPerHost:   cfg.CacheClient.MaxIdleConnsPerHost,
 			IdleConnTimeout:       time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
+			TLSHandshakeTimeout:   time.Duration(cfg.CacheClient.TLSHandshakeTimeout) * time.Second,
+			ExpectContinueTimeout: time.Duration(cfg.CacheClient.ExpectContinueTimeout) * time.Second,
 		},
 	}
 
@@ -174,15 +174,15 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: defaultTransportDialContext(&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
+				Timeout:   time.Duration(cfg.PriceFloors.Fetcher.HttpClient.NetDialer.Timeout) * time.Second,
+				KeepAlive: time.Duration(cfg.PriceFloors.Fetcher.HttpClient.NetDialer.KeepAlive) * time.Second,
 			}),
 			MaxConnsPerHost:       cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
 			MaxIdleConns:          cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
 			MaxIdleConnsPerHost:   cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
 			IdleConnTimeout:       time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
+			TLSHandshakeTimeout:   time.Duration(cfg.PriceFloors.Fetcher.HttpClient.TLSHandshakeTimeout) * time.Second,
+			ExpectContinueTimeout: time.Duration(cfg.PriceFloors.Fetcher.HttpClient.ExpectContinueTimeout) * time.Second,
 		},
 	}
 
