@@ -2,12 +2,115 @@ package rulesengine
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 	"github.com/stretchr/testify/assert"
 )
+
+// TestBuilderWithWorkingDir tests the Builder function by changing the working directory
+// to ensure the schema file can be found
+func TestBuilderWithWorkingDir(t *testing.T) {
+	// Save the current working directory
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get current working directory: %v", err)
+	}
+
+	// Change to the project root directory
+	err = os.Chdir(filepath.Join(origWd, "..", "..", ".."))
+	if err != nil {
+		t.Fatalf("Failed to change to project root directory: %v", err)
+	}
+
+	// Restore the original working directory when the test is done
+	defer func() {
+		err := os.Chdir(origWd)
+		if err != nil {
+			t.Fatalf("Failed to restore original working directory: %v", err)
+		}
+	}()
+
+	testCases := []struct {
+		name             string
+		config           json.RawMessage
+		deps             moduledeps.ModuleDeps
+		expectError      bool
+		expectedModuleOK bool
+	}{
+		{
+			name:             "empty-config",
+			config:           json.RawMessage(``),
+			deps:             moduledeps.ModuleDeps{},
+			expectError:      false,
+			expectedModuleOK: true,
+		},
+		{
+			name:             "nil-config",
+			config:           nil,
+			deps:             moduledeps.ModuleDeps{},
+			expectError:      false,
+			expectedModuleOK: true,
+		},
+		{
+			name:   "with-geoscope-data",
+			config: json.RawMessage(``),
+			deps: moduledeps.ModuleDeps{
+				Geoscope: map[string][]string{
+					"bidder1": {"USA", "CAN"},
+					"bidder2": {"GBR", "FRA"},
+				},
+			},
+			expectError:      false,
+			expectedModuleOK: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Call the Builder function directly
+			module, err := Builder(tc.config, tc.deps)
+
+			// Check for expected errors
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// For non-error cases, verify the module structure
+			if !tc.expectError && tc.expectedModuleOK {
+				// Verify the module is not nil
+				assert.NotNil(t, module)
+
+				// Type assertion to Module
+				m, ok := module.(Module)
+				assert.True(t, ok, "Expected module to be of type Module")
+
+				// Verify module components are initialized
+				assert.NotNil(t, m.Cache)
+				assert.NotNil(t, m.TreeManager)
+
+				// Check BidderConfigRuleSet
+				assert.NotNil(t, m.BidderConfigRuleSet)
+
+				// For cases with geoscope data, check more details
+				if len(tc.deps.Geoscope) > 0 {
+					assert.Len(t, m.BidderConfigRuleSet, 1)
+					assert.Equal(t, "Dynamic ruleset from geoscopes", m.BidderConfigRuleSet[0].name)
+					assert.Len(t, m.BidderConfigRuleSet[0].modelGroups, 1)
+					assert.Equal(t, 100, m.BidderConfigRuleSet[0].modelGroups[0].weight)
+					assert.Equal(t, "1.0", m.BidderConfigRuleSet[0].modelGroups[0].version)
+					assert.Equal(t, "bidderConfig", m.BidderConfigRuleSet[0].modelGroups[0].analyticsKey)
+				}
+			}
+		})
+	}
+}
 
 func TestExpired(t *testing.T) {
 	testCases := []struct {

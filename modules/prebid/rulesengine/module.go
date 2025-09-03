@@ -15,10 +15,11 @@ import (
 
 const fiveMinutes = time.Duration(300) * time.Second
 
+
 // Builder configures the rules engine module initiating an in-memory cache and kicking
 // off a go routine that builds tree structures that represent rule sets optimized for finding
 // a rule to applies for a given request.
-func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
+func Builder(_ json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error) {
 	schemaValidator, err := config.CreateSchemaValidator(config.RulesEngineSchemaFilePath)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,13 @@ func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
 
 	go tm.Run(c)
 
+	bidderConfigRuleSet, err := buildBidderConfigRuleSet(deps.Geoscope)
+	if err != nil {
+		return nil, err
+	}
+
 	return Module{
+		BidderConfigRuleSet: bidderConfigRuleSet,
 		Cache:       c,
 		TreeManager: &tm,
 	}, nil
@@ -44,6 +51,7 @@ func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
 type Module struct {
 	Cache       cacher
 	TreeManager *treeManager
+	BidderConfigRuleSet []cacheRuleSet[RequestWrapper, ProcessedAuctionHookResult]
 }
 
 // HandleProcessedAuctionHook updates field on openrtb2.BidRequest.
@@ -92,6 +100,9 @@ func (m Module) HandleProcessedAuctionHook(
 	}
 
 	ruleSets := co.ruleSetsForProcessedAuctionRequestStage
+	if co.generateRulesFromBidderConfig {
+		ruleSets = append(m.BidderConfigRuleSet, ruleSets...)
+	}
 
 	return handleProcessedAuctionHook(ruleSets, payload)
 }
