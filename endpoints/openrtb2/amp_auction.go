@@ -236,10 +236,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		errL = append(errL, errs...)
 	}
 
-	_, isDebugEnabled, warn := hookexecution.GetDebugContext(reqWrapper.BidRequest, account)
+	_, isDebugEnabled, _ := hookexecution.GetDebugContext(reqWrapper.BidRequest, account)
 
 	hasStoredAuctionResponses := len(storedAuctionResponses) > 0
-	errs := deps.validateRequest(account, r, reqWrapper, true, hasStoredAuctionResponses, storedBidResponses, false, isDebugEnabled, &warn)
+	errs := deps.validateRequest(account, r, reqWrapper, true, hasStoredAuctionResponses, storedBidResponses, false, isDebugEnabled)
 	errL = append(errL, errs...)
 	ao.Errors = append(ao.Errors, errs...)
 	if errortypes.ContainsFatalError(errs) {
@@ -259,10 +259,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	hookExecutor.SetAccount(account)
 
 	secGPC := r.Header.Get("Sec-GPC")
-
-	for _, w := range warn {
-		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("%v", w)})
-	}
 
 	warnings := errortypes.WarningOnly(errL)
 

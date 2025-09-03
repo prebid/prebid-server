@@ -308,9 +308,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL = append(errL, errs...)
 	}
 
-	_, isDebugEnabled, warn := hookexecution.GetDebugContext(bidReqWrapper.BidRequest, account)
+	_, isDebugEnabled, _ := hookexecution.GetDebugContext(bidReqWrapper.BidRequest, account)
 
-	errs := deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false, isDebugEnabled, &warn)
+	errs := deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false, isDebugEnabled)
 	errL = append(errL, errs...)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
@@ -318,10 +318,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	activityControl = privacy.NewActivityControl(&account.Privacy)
-
-	for _, w := range warn {
-		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("%v", w)})
-	}
 
 	warnings := errortypes.WarningOnly(errL)
 

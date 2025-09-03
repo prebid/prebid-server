@@ -572,16 +572,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return nil, nil, nil, nil, nil, nil, errs
 	}
 
-	_, isDebugEnabled, warnings := hookexecution.GetDebugContext(req.BidRequest, account)
+	_, isDebugEnabled, _ := hookexecution.GetDebugContext(req.BidRequest, account)
 
 	hasStoredAuctionResponses := len(storedAuctionResponses) > 0
-	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredAuctionResponses, storedBidResponses, hasStoredBidRequest, isDebugEnabled, &warnings)
+	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredAuctionResponses, storedBidResponses, hasStoredBidRequest, isDebugEnabled)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
-	}
-
-	for _, w := range warnings {
-		errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("%v", w)})
 	}
 
 	return
@@ -773,7 +769,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest, isDebugEnabled bool, warnings *[]error) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest, isDebugEnabled bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -830,7 +826,10 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
-		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases, isDebugEnabled, warnings); err != nil {
+		err, warns := deps.validateEidPermissions(reqPrebid.Data, requestAliases, isDebugEnabled)
+		errL = append(errL, warns...)
+
+		if err != nil {
 			return []error{err}
 		}
 
@@ -1003,39 +1002,41 @@ func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
 	return err
 }
 
-func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string, isDebugEnabled bool, warnings *[]error) error {
+func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string, isDebugEnabled bool) (error, []error) {
+	warnings := make([]error, 0)
+
 	if prebid == nil {
-		return nil
+		return nil, warnings
 	}
 
 	uniqueSources := make(map[string]struct{}, len(prebid.EidPermissions))
 	for i, eid := range prebid.EidPermissions {
 		if len(eid.Source) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i), warnings
 		}
 
 		if _, exists := uniqueSources[eid.Source]; exists {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i)
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i), warnings
 		}
 		uniqueSources[eid.Source] = struct{}{}
 
 		if len(eid.Bidders) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i), warnings
 		}
 
 		if err := deps.validateBidders(eid.Bidders, deps.bidderMap, requestAliases); err != nil {
 			errValidate := fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
 
 			if isDebugEnabled {
-				*warnings = append(*warnings, errValidate)
+				warnings = append(warnings, &errortypes.Warning{Message: fmt.Sprintf("%v", errValidate)})
 				continue
 			}
 
-			return errValidate
+			return errValidate, warnings
 		}
 	}
 
-	return nil
+	return nil, warnings
 }
 
 func (deps *endpointDeps) validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownRequestAliases map[string]string) error {
