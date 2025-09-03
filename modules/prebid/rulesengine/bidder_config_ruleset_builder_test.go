@@ -15,54 +15,54 @@ func TestBuild(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name              string
-		geoscopeConfig    map[string][]string
-		countryGroups     CountryGroups
-		nilRoot           bool
-		expectError       bool
-		expectedKeys      map[string][]string
+		name           string
+		geoscopeConfig map[string][]string
+		countryGroups  CountryGroups
+		nilRoot        bool
+		expectError    bool
+		expectedKeys   map[string][]string
 	}{
 		{
-			name:              "empty-geoscope-config",
-			geoscopeConfig:    map[string][]string{},
-			countryGroups:     testCountryGroups,
-			nilRoot:           false,
-			expectError:       false,
-            expectedKeys:      nil,
+			name:           "empty-geoscope-config",
+			geoscopeConfig: map[string][]string{},
+			countryGroups:  testCountryGroups,
+			nilRoot:        false,
+			expectError:    false,
+			expectedKeys:   nil,
 		},
 		{
-			name:              "nil-root-node",
-			geoscopeConfig:    map[string][]string{"bidder1": {"USA"}},
-			countryGroups:     testCountryGroups,
-			nilRoot:           true,
-			expectError:       false,
-            expectedKeys:      nil,
+			name:           "nil-root-node",
+			geoscopeConfig: map[string][]string{"bidder1": {"USA"}},
+			countryGroups:  testCountryGroups,
+			nilRoot:        true,
+			expectError:    false,
+			expectedKeys:   nil,
 		},
 		{
 			name: "global-directive-only",
 			geoscopeConfig: map[string][]string{
 				"bidder1": {"GLOBAL"},
 			},
-			countryGroups:     testCountryGroups,
-			nilRoot:           false,
-			expectError:       false,
-            expectedKeys:      map[string][]string{
-                "*": {},
-            },
+			countryGroups: testCountryGroups,
+			nilRoot:       false,
+			expectError:   false,
+			expectedKeys: map[string][]string{
+				"*": {},
+			},
 		},
 		{
 			name: "allow-list-with-groups",
 			geoscopeConfig: map[string][]string{
 				"bidder1": {"NORTH_AMERICA"},
 			},
-			countryGroups:     testCountryGroups,
-			nilRoot:           false,
-			expectError:       false,
-            expectedKeys:      map[string][]string{
-                "*": {"bidder1"},
-                "USA": {},
-                "CAN": {},
-                "MEX": {},
+			countryGroups: testCountryGroups,
+			nilRoot:       false,
+			expectError:   false,
+			expectedKeys: map[string][]string{
+				"*":   {"bidder1"},
+				"USA": {},
+				"CAN": {},
+				"MEX": {},
 			},
 		},
 		{
@@ -70,43 +70,43 @@ func TestBuild(t *testing.T) {
 			geoscopeConfig: map[string][]string{
 				"bidder1": {"!NORTH_AMERICA"},
 			},
-			countryGroups:     testCountryGroups,
-			nilRoot:           false,
-			expectError:       false,
-			expectedKeys:      map[string][]string{
-                "*": {},
-                "USA": {"bidder1"},
-                "CAN": {"bidder1"},
-                "MEX": {"bidder1"},
-            },
+			countryGroups: testCountryGroups,
+			nilRoot:       false,
+			expectError:   false,
+			expectedKeys: map[string][]string{
+				"*":   {},
+				"USA": {"bidder1"},
+				"CAN": {"bidder1"},
+				"MEX": {"bidder1"},
+			},
 		},
 		{
 			name: "allow-list-with-specific-countries",
 			geoscopeConfig: map[string][]string{
 				"bidder1": {"ESP", "GBR"},
 			},
-			countryGroups:     testCountryGroups,
-			nilRoot:           false,
-			expectError:       false,
-            expectedKeys:      map[string][]string{
-                "*": {"bidder1"},
-                "ESP": {},
-                "GBR": {},
-            },
+			countryGroups: testCountryGroups,
+			nilRoot:       false,
+			expectError:   false,
+			expectedKeys: map[string][]string{
+				"*":   {"bidder1"},
+				"ESP": {},
+				"GBR": {},
+			},
 		},
 		{
 			name: "block-list-with-specific-countries",
 			geoscopeConfig: map[string][]string{
 				"bidder1": {"!ESP", "!GBR"},
 			},
-			countryGroups:     testCountryGroups,
-			nilRoot:           false,
-			expectError:       false,
-            expectedKeys:      map[string][]string{
-                "*": {},
-                "ESP": {"bidder1"},
-                "GBR": {"bidder1"},
-            },
+			countryGroups: testCountryGroups,
+			nilRoot:       false,
+			expectError:   false,
+			expectedKeys: map[string][]string{
+				"*":   {},
+				"ESP": {"bidder1"},
+				"GBR": {"bidder1"},
+			},
 		},
 		{
 			name: "multiple-bidders-with-different-scopes",
@@ -116,21 +116,21 @@ func TestBuild(t *testing.T) {
 				"bidder3": {"ESP", "GBR"},
 				"bidder4": {"!JPN"},
 			},
-			countryGroups:     testCountryGroups,
-			nilRoot:           false,
-			expectError:       false,
-            expectedKeys:      map[string][]string{
-                "*":   {"bidder1", "bidder3"},
-                "USA": {"bidder3"},
-                "CAN": {"bidder3"},
-                "MEX": {"bidder3"},
-                "FRA": {"bidder1", "bidder2", "bidder3"},
-                "DEU": {"bidder1", "bidder2", "bidder3"},
-                "ITA": {"bidder1", "bidder2", "bidder3"},
-                "ESP": {"bidder1"},
-                "GBR": {"bidder1"},
-                "JPN": {"bidder1", "bidder3", "bidder4"},
-            },
+			countryGroups: testCountryGroups,
+			nilRoot:       false,
+			expectError:   false,
+			expectedKeys: map[string][]string{
+				"*":   {"bidder1", "bidder3"},
+				"USA": {"bidder3"},
+				"CAN": {"bidder3"},
+				"MEX": {"bidder3"},
+				"FRA": {"bidder1", "bidder2", "bidder3"},
+				"DEU": {"bidder1", "bidder2", "bidder3"},
+				"ITA": {"bidder1", "bidder2", "bidder3"},
+				"ESP": {"bidder1"},
+				"GBR": {"bidder1"},
+				"JPN": {"bidder1", "bidder3", "bidder4"},
+			},
 		},
 		// {
 		// 	name: "invalid-geoscope-returns-error",

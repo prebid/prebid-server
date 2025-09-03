@@ -11,7 +11,7 @@ import (
 )
 
 type CountryExclusions = map[string][]string
-type CountryGroups     = map[string][]string
+type CountryGroups = map[string][]string
 
 // defaultCountryGroups maps country group names to their member countries
 var defaultCountryGroups = CountryGroups{
@@ -115,7 +115,7 @@ func (b *bidderConfigRuleSetBuilder[T1, T2]) initializeCountryExclusions() Count
 				}
 			} else if _, exists := countryExclusions[geoscope]; !exists {
 				countryExclusions[geoscope] = []string{}
-			} 
+			}
 		}
 	}
 	countryExclusions["*"] = []string{}
@@ -215,37 +215,37 @@ func (b *bidderConfigRuleSetBuilder[T1, T2]) markBlockListExclusions(cfg parsedC
 }
 
 // includeCountryGroup checks if the geoscope annotation refers to an included country group
-func (b *bidderConfigRuleSetBuilder[T1, T2]) includedCountryGroup(geoscope string) (bool) {
+func (b *bidderConfigRuleSetBuilder[T1, T2]) includedCountryGroup(geoscope string) bool {
 	return b.countryGroups[geoscope] != nil
 }
 
 // excludedCountryGroup checks if the geoscope annotation refers to an excluded country group
-func (b *bidderConfigRuleSetBuilder[T1, T2]) excludedCountryGroup(geoscope string) (bool) {
+func (b *bidderConfigRuleSetBuilder[T1, T2]) excludedCountryGroup(geoscope string) bool {
 	return strings.HasPrefix(geoscope, "!") && b.countryGroups[geoscope[1:]] != nil
 }
 
 // includedSingleCountry checks if the geoscope annotation refers to an included country
-func (b *bidderConfigRuleSetBuilder[T1, T2]) includedSingleCountry(geoscope string) (bool) {
+func (b *bidderConfigRuleSetBuilder[T1, T2]) includedSingleCountry(geoscope string) bool {
 	return !strings.HasPrefix(geoscope, "!") && b.countryGroups[geoscope] == nil
 }
 
 // excludedSingleCountry checks if the geoscope annotation refers to an excluded country
-func (b *bidderConfigRuleSetBuilder[T1, T2]) excludedSingleCountry(geoscope string) (bool) {
+func (b *bidderConfigRuleSetBuilder[T1, T2]) excludedSingleCountry(geoscope string) bool {
 	return strings.HasPrefix(geoscope, "!") && b.countryGroups[geoscope] == nil
 }
 
 // countryInAGroup checks if the given country is part of any of the specified country groups
 func (b *bidderConfigRuleSetBuilder[T1, T2]) countryInAGroup(country string, groups []string) bool {
-    for _, groupName := range groups {
-        if countryList, exists := b.countryGroups[groupName]; exists {
-            for _, countryInGroup := range countryList {
-                if country == countryInGroup {
-                    return true
-                }
-            }
-        }
-    }
-    return false
+	for _, groupName := range groups {
+		if countryList, exists := b.countryGroups[groupName]; exists {
+			for _, countryInGroup := range countryList {
+				if country == countryInGroup {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // addTreeNodes adds the country exclusion nodes to the rules tree

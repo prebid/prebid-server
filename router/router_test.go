@@ -231,18 +231,18 @@ func TestBidderParamsCompactedOutput(t *testing.T) {
 
 func TestGetNormalizedGeoscopes(t *testing.T) {
 	testCases := []struct {
-		name                       string
-		bidderInfos                config.BidderInfos
-		expectedGeoscopes          map[string][]string
+		name              string
+		bidderInfos       config.BidderInfos
+		expectedGeoscopes map[string][]string
 	}{
 		{
-			name: "nil-bidder-infos",
-			bidderInfos: nil,
+			name:              "nil-bidder-infos",
+			bidderInfos:       nil,
 			expectedGeoscopes: map[string][]string{},
 		},
 		{
-			name: "empty-bidder-infos",
-			bidderInfos: config.BidderInfos{},
+			name:              "empty-bidder-infos",
+			bidderInfos:       config.BidderInfos{},
 			expectedGeoscopes: map[string][]string{},
 		},
 		{

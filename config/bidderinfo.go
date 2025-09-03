@@ -21,17 +21,19 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	AliasOf          string `yaml:"aliasOf" mapstructure:"aliasOf"`
-	Disabled         bool   `yaml:"disabled" mapstructure:"disabled"`
-	Endpoint         string `yaml:"endpoint" mapstructure:"endpoint"`
-	ExtraAdapterInfo string `yaml:"extra_info" mapstructure:"extra_info"`
+	AliasOf          string       `yaml:"aliasOf" mapstructure:"aliasOf"`
+	WhiteLabelOnly   bool         `yaml:"whiteLabelOnly" mapstructure:"whiteLabelOnly"`
+	Disabled         bool         `yaml:"disabled" mapstructure:"disabled"`
+	Endpoint         string       `yaml:"endpoint" mapstructure:"endpoint"`
+	ExtraAdapterInfo string       `yaml:"extra_info" mapstructure:"extra_info"`
+	OpenRTB          *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
 
 	Maintainer              *MaintainerInfo   `yaml:"maintainer" mapstructure:"maintainer"`
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" mapstructure:"capabilities"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug" mapstructure:"debug"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
-	Geoscope                []string		  `yaml:"geoscope" mapstructure:"geoscope"`
+	Geoscope                []string          `yaml:"geoscope" mapstructure:"geoscope"`
 
 	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
 
@@ -44,8 +46,7 @@ type BidderInfo struct {
 	PlatformID string `yaml:"platform_id" mapstructure:"platform_id"`
 	AppSecret  string `yaml:"app_secret" mapstructure:"app_secret"`
 	// EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
-	EndpointCompression string       `yaml:"endpointCompression" mapstructure:"endpointCompression"`
-	OpenRTB             *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
+	EndpointCompression string `yaml:"endpointCompression" mapstructure:"endpointCompression"`
 }
 
 type aliasNillableFields struct {
@@ -200,7 +201,7 @@ type SyncerEndpoint struct {
 }
 
 func (bi BidderInfo) IsEnabled() bool {
-	return !bi.Disabled
+	return !bi.WhiteLabelOnly && !bi.Disabled
 }
 
 // Defined returns true if at least one field exists, except for the supports field.
@@ -408,15 +409,24 @@ func (infos BidderInfos) validate(errs []error) []error {
 }
 
 func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
-	if len(aliasBidderInfo.AliasOf) > 0 {
-		if parentBidder, ok := infos[aliasBidderInfo.AliasOf]; ok {
-			if len(parentBidder.AliasOf) > 0 {
-				return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
-			}
-		} else {
-			return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
-		}
+	if aliasBidderInfo.AliasOf == "" {
+		return nil
 	}
+
+	if aliasBidderInfo.WhiteLabelOnly {
+		return fmt.Errorf("bidder: %s is an alias and cannot be set as white label only", bidderName)
+	}
+
+	parentBidder, parentBidderFound := infos[aliasBidderInfo.AliasOf]
+
+	if !parentBidderFound {
+		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+	}
+
+	if len(parentBidder.AliasOf) > 0 {
+		return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+	}
+
 	return nil
 }
 
@@ -586,39 +596,39 @@ func validatePlatformInfo(info *PlatformInfo) error {
 }
 
 func validateGeoscope(geoscope []string, bidderName string) error {
-    if len(geoscope) == 0 {
-        return nil
-    }
+	if len(geoscope) == 0 {
+		return nil
+	}
 
-    // ISO 3166-1 alpha-3 country codes are uppercase 3-letter codes
-    for i, code := range geoscope {
-        code = strings.ToUpper(strings.TrimSpace(code))
+	// ISO 3166-1 alpha-3 country codes are uppercase 3-letter codes
+	for i, code := range geoscope {
+		code = strings.ToUpper(strings.TrimSpace(code))
 
 		if code == "GLOBAL" || code == "EEA" {
 			continue
 		}
 
 		// Handle exclusion pattern with "!" prefix
-        exclusion := ""
-        if strings.HasPrefix(code, "!") {
-            exclusion = "!"
-            code = strings.TrimPrefix(code, "!")
-        }
+		exclusion := ""
+		if strings.HasPrefix(code, "!") {
+			exclusion = "!"
+			code = strings.TrimPrefix(code, "!")
+		}
 
-        if len(code) != 3 {
-            return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must be a 3-letter ISO 3166-1 alpha-3 country code",
-                i, code, exclusion, bidderName)
-        }
+		if len(code) != 3 {
+			return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must be a 3-letter ISO 3166-1 alpha-3 country code",
+				i, code, exclusion, bidderName)
+		}
 
-        for _, char := range code {
-            if char < 'A' || char > 'Z' {
-                return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must contain only uppercase letters A-Z",
-                    i, code, exclusion, bidderName)
-            }
-        }
-    }
+		for _, char := range code {
+			if char < 'A' || char > 'Z' {
+				return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must contain only uppercase letters A-Z",
+					i, code, exclusion, bidderName)
+			}
+		}
+	}
 
-    return nil
+	return nil
 }
 
 func validateSyncer(bidderInfo BidderInfo) error {

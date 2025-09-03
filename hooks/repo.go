@@ -21,6 +21,7 @@ type HookRepository interface {
 	GetRawBidderResponseHook(id string) (hookstage.RawBidderResponse, bool)
 	GetAllProcessedBidResponsesHook(id string) (hookstage.AllProcessedBidResponses, bool)
 	GetAuctionResponseHook(id string) (hookstage.AuctionResponse, bool)
+	GetExitpointHook(id string) (hookstage.Exitpoint, bool)
 }
 
 // NewHookRepository returns a new instance of the HookRepository interface.
@@ -49,6 +50,7 @@ type hookRepository struct {
 	rawBidderResponseHooks       map[string]hookstage.RawBidderResponse
 	allProcessedBidResponseHooks map[string]hookstage.AllProcessedBidResponses
 	auctionResponseHooks         map[string]hookstage.AuctionResponse
+	exitpointHooks               map[string]hookstage.Exitpoint
 }
 
 func (r *hookRepository) GetEntrypointHook(id string) (hookstage.Entrypoint, bool) {
@@ -77,6 +79,10 @@ func (r *hookRepository) GetAllProcessedBidResponsesHook(id string) (hookstage.A
 
 func (r *hookRepository) GetAuctionResponseHook(id string) (hookstage.AuctionResponse, bool) {
 	return getHook(r.auctionResponseHooks, id)
+}
+
+func (r *hookRepository) GetExitpointHook(id string) (hookstage.Exitpoint, bool) {
+	return getHook(r.exitpointHooks, id)
 }
 
 func (r *hookRepository) add(id string, hook interface{}) error {
@@ -128,6 +134,13 @@ func (r *hookRepository) add(id string, hook interface{}) error {
 	if h, ok := hook.(hookstage.AuctionResponse); ok {
 		hasAnyHooks = true
 		if r.auctionResponseHooks, err = addHook(r.auctionResponseHooks, h, id); err != nil {
+			return err
+		}
+	}
+
+	if h, ok := hook.(hookstage.Exitpoint); ok {
+		hasAnyHooks = true
+		if r.exitpointHooks, err = addHook(r.exitpointHooks, h, id); err != nil {
 			return err
 		}
 	}
