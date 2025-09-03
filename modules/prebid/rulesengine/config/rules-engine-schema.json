@@ -8,6 +8,10 @@
       "type": "boolean",
       "description": "pending"
     },
+    "generateRulesFromBidderConfig": {
+      "type": "boolean",
+      "description": "If true, rules will be generated from the bidder config. If false, all rules must be defined in the rulesets."
+    },
     "timestamp": {
       "type": "string",
       "description": "pending"
