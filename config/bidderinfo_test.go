@@ -1973,3 +1973,97 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 	}
 	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")
 }
+
+func TestValidateGeoscope(t *testing.T) {
+	testCases := []struct {
+		name       string
+		geoscope   []string
+		bidderName string
+		expectErr  bool
+		errMsg     string
+	}{
+		{
+			name:       "nil-geoscope",
+			geoscope:   nil,
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "empty-geoscope",
+			geoscope:   []string{},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-iso-codes",
+			geoscope:   []string{"USA", "CAN", "GBR"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-with-global-and-eea",
+			geoscope:   []string{"USA", "GLOBAL", "EEA"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-with-exclusions",
+			geoscope:   []string{"!USA", "!CAN"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "mixed-case-valid",
+			geoscope:   []string{"UsA", "can", "GbR"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "invalid-length",
+			geoscope:   []string{"USAA", "CAN"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: USAA for adapter: testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "invalid-exclusion-length",
+			geoscope:   []string{"USA", "!CANN"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 1: CANN for adapter: !testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "non-letter-characters",
+			geoscope:   []string{"US1", "CAN"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: US1 for adapter: testBidder - must contain only uppercase letters A-Z",
+		},
+		{
+			name:       "too-short-code",
+			geoscope:   []string{"US", "CAN"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: US for adapter: testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "whitespace-and-trimming",
+			geoscope:   []string{" USA ", "CAN"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateGeoscope(tc.geoscope, tc.bidderName)
+
+			if tc.expectErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
