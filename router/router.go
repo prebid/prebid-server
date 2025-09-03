@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -138,32 +139,50 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	generalHttpClient := &http.Client{
 		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment,
-			MaxConnsPerHost:     cfg.Client.MaxConnsPerHost,
-			MaxIdleConns:        cfg.Client.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
-			TLSClientConfig:     &tls.Config{RootCAs: certPool},
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: defaultTransportDialContext(&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}),
+			MaxConnsPerHost:       cfg.Client.MaxConnsPerHost,
+			MaxIdleConns:          cfg.Client.MaxIdleConns,
+			MaxIdleConnsPerHost:   cfg.Client.MaxIdleConnsPerHost,
+			IdleConnTimeout:       time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
+			TLSClientConfig:       &tls.Config{RootCAs: certPool},
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment,
-			MaxConnsPerHost:     cfg.CacheClient.MaxConnsPerHost,
-			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: defaultTransportDialContext(&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}),
+			MaxConnsPerHost:       cfg.CacheClient.MaxConnsPerHost,
+			MaxIdleConns:          cfg.CacheClient.MaxIdleConns,
+			MaxIdleConnsPerHost:   cfg.CacheClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:       time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
 
 	floorFechterHttpClient := &http.Client{
 		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment,
-			MaxConnsPerHost:     cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
-			MaxIdleConns:        cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: defaultTransportDialContext(&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}),
+			MaxConnsPerHost:       cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
+			MaxIdleConns:          cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
+			MaxIdleConnsPerHost:   cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:       time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
 
@@ -290,6 +309,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/optout", userSyncDeps.OptOut)
 
 	return r, nil
+}
+
+// Grabbing the same dialer context as the default transport uses
+func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+	return dialer.DialContext
 }
 
 // Shutdown closes any dependencies of the router that may need closing
