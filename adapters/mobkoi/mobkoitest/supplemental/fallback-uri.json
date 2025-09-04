@@ -28,8 +28,7 @@
         },
         "ext": {
           "bidder": {
-            "placementId": "placementId",
-            "integrationEndpoint": "https://adapter.config.bidder.endpoint.com/bid"
+            "placementId": "placementId"
           }
         }
       }
@@ -65,8 +64,7 @@
               },
               "ext": {
                 "bidder": {
-                  "placementId": "placementId",
-                  "integrationEndpoint": "https://adapter.config.bidder.endpoint.com/bid"
+                  "placementId": "placementId"
                 }
               }
             }
