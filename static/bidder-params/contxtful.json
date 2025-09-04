@@ -6,11 +6,13 @@
   "properties": {
     "placementId": {
       "type": "string",
-      "description": "Placement ID"
+      "description": "Placement ID",
+      "minLength": 1
     },
     "customerId": {
       "type": "string",
-      "description": "Customer ID used to build the endpoint URL"
+      "description": "Customer ID used to build the endpoint URL",
+      "minLength": 1
     }
   },
   "required": ["placementId", "customerId"]
