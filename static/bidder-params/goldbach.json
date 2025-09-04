@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Goldbach Adapter Params",
+  "description": "A schema which validates params accepted by the Goldbach adapter",
+
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Publisher Environment ID"
+    },
+    "slotId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Slot Id"
+    },
+    "customTargeting": {
+      "type": "object",
+      "description": "Custom Targeting Parameters",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    }
+  },
+  
+  "required": ["publisherId", "slotId"]
+}
