@@ -23,14 +23,14 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 		AllowedBidders: make(map[string]struct{}),
 	}
 
-	err := rules.Run(rw, &result)
+	err := rules.Run(&rw, &result)
 	assert.NoError(t, err, "unexpected error")
 	assert.NotEmptyf(t, result.HookResult.ChangeSet, "change set is empty")
 	assert.Len(t, result.HookResult.ChangeSet.Mutations(), 1)
 	assert.Equal(t, hs.MutationDelete, result.HookResult.ChangeSet.Mutations()[0].Type())
 }
 
-func BuildTestRules(t *testing.T) rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult] {
+func BuildTestRules(t *testing.T) rules.Tree[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult] {
 	devCountryFunc, errDevCountry := rules.NewDeviceCountryIn(json.RawMessage(`{"countries": ["JPN"]}`))
 	assert.NoError(t, errDevCountry, "unexpected error in NewDeviceCountryIn")
 	resFuncTrue, errNewIncludeBidders := NewIncludeBidders(json.RawMessage(`{"bidders": ["bidderA"]}`))
@@ -38,15 +38,15 @@ func BuildTestRules(t *testing.T) rules.Tree[openrtb_ext.RequestWrapper, Process
 	resFuncFalse, errNewExcludeBidders := NewExcludeBidders(json.RawMessage(`{"bidders": ["bidderB"]}`))
 	assert.NoError(t, errNewExcludeBidders, "unexpected error in NewExcludeBidders")
 
-	rules := rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
-		Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+	rules := rules.Tree[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{
+		Root: &rules.Node[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{
 			SchemaFunction: devCountryFunc,
-			Children: map[string]*rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+			Children: map[string]*rules.Node[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{
 				"true": {
-					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{resFuncTrue},
+					ResultFunctions: []rules.ResultFunction[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{resFuncTrue},
 				},
 				"false": {
-					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{resFuncFalse},
+					ResultFunctions: []rules.ResultFunction[hs.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{resFuncFalse},
 				},
 			},
 		},
@@ -56,7 +56,7 @@ func BuildTestRules(t *testing.T) rules.Tree[openrtb_ext.RequestWrapper, Process
 	return rules
 }
 
-func BuildTestRequestWrapper() *openrtb_ext.RequestWrapper {
+func BuildTestRequestWrapper() hs.ProcessedAuctionRequestPayload {
 	rw := &openrtb_ext.RequestWrapper{
 		BidRequest: &openrtb2.BidRequest{
 			Imp: []openrtb2.Imp{
@@ -84,5 +84,7 @@ func BuildTestRequestWrapper() *openrtb_ext.RequestWrapper {
 	reqExt, _ := rw.GetRequestExt()
 	reqExt.SetPrebid(extPrebid)
 
-	return rw
+	return hs.ProcessedAuctionRequestPayload{
+		Request: rw,
+	}
 }

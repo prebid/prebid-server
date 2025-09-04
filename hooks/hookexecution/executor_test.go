@@ -38,7 +38,10 @@ func TestEmptyHookExecutor(t *testing.T) {
 
 	entrypointBody, entrypointRejectErr := executor.ExecuteEntrypointStage(req, body)
 	rawAuctionBody, rawAuctionRejectErr := executor.ExecuteRawAuctionStage(body)
-	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
+	payload := hookstage.ProcessedAuctionRequestPayload{
+		Request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+	}
+	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(payload)
 	bidderRequestRejectErr := executor.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: bidderRequest}, "bidder-name")
 	executor.ExecuteAuctionResponseStage(&openrtb2.BidResponse{})
 
@@ -892,7 +895,10 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
 
-			err := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
+			payload := hookstage.ProcessedAuctionRequestPayload{
+				Request: &test.givenRequest,
+			}
+			err := exec.ExecuteProcessedAuctionStage(payload)
 
 			assert.Equal(ti, test.expectedErr, err, "Unexpected stage reject.")
 			assert.Equal(ti, test.expectedRequest, *test.givenRequest.BidRequest, "Incorrect request update.")
@@ -2372,8 +2378,11 @@ func TestInterStageContextCommunication(t *testing.T) {
 		},
 	}}, exec.moduleContexts, "Wrong module contexts after executing raw-auction hook.")
 
+	payload := hookstage.ProcessedAuctionRequestPayload{
+		Request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}},
+	}
 	// test that context added at the processed-auction stage merged with existing module contexts
-	err = exec.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
+	err = exec.ExecuteProcessedAuctionStage(payload)
 	assert.Nil(t, err, "Unexpected reject from processed-auction stage.")
 	assert.Equal(t, &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
 		"module-1": {
