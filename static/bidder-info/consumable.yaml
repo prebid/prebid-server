@@ -1,4 +1,9 @@
 endpoint: "https://e.serverbid.com"
+currency-accepted: "USD"
+geoscope:
+  - USA
+  - CAN
+  - MEX
 maintainer:
   email: "prebid@consumable.com"
 gvlVendorID: 591
