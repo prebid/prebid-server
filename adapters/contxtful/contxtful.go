@@ -266,14 +266,6 @@ func (a *adapter) processResponse(responseBody []byte, ctx *BidProcessingContext
 		return a.processPrebidJSBids(prebidBids, ctx)
 	}
 
-	// Handle trace format (acknowledges response, no bids)
-	var traceData []map[string]interface{}
-	if err := jsonutil.Unmarshal(responseBody, &traceData); err == nil && len(traceData) > 0 {
-		if _, exists := traceData[0]["traceId"]; exists {
-			return true // Trace acknowledged
-		}
-	}
-
 	return false
 }
 

@@ -89,15 +89,16 @@
       },
       "mockResponse": {
         "status": 200,
-        "body": "[{\"traceId\": \"simple-trace-test\"}]"
+        "body": [{"traceId": "simple-trace-test"}]
       }
     }
   ],
-  "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "failed to parse response as Contxtful relay or Prebid.js format",
-      "comparison": "literal"
+      "bids": [
+      ]
     }
+  ],
+  "expectedMakeBidsErrors": [
   ]
 } 
