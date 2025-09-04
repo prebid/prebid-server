@@ -235,10 +235,10 @@ func (me *MetricsEngineMock) RecordAdapterThrottled(adapterName openrtb_ext.Bidd
 	me.Called(adapterName)
 }
 
-func (me *MetricsEngineMock) RecordConnectionStart() {
+func (me *MetricsEngineMock) RecordConnectionWant() {
 	me.Called()
 }
 
-func (me *MetricsEngineMock) RecordConnectionEnd() {
+func (me *MetricsEngineMock) RecordConnectionGot() {
 	me.Called()
 }

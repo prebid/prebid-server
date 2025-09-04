@@ -75,8 +75,8 @@ func TestConnectionMetrics(t *testing.T) {
 		expectedOpenedErrorCount float64
 		expectedClosedCount      float64
 		expectedClosedErrorCount float64
-		expectedConnectionStarts float64
-		expectedConnectionEnds   float64
+		expectedConnectionWant   float64
+		expectedConnectionGot    float64
 	}{
 		{
 			description: "Open Success",
@@ -119,18 +119,18 @@ func TestConnectionMetrics(t *testing.T) {
 			expectedClosedErrorCount: 1,
 		},
 		{
-			description: "connection-started",
+			description: "connection-want",
 			testCase: func(m *Metrics) {
-				m.RecordConnectionStart()
+				m.RecordConnectionWant()
 			},
-			expectedConnectionStarts: 1,
+			expectedConnectionWant: 1,
 		},
 		{
-			description: "connection-ended",
+			description: "connection-got",
 			testCase: func(m *Metrics) {
-				m.RecordConnectionEnd()
+				m.RecordConnectionGot()
 			},
-			expectedConnectionEnds: 1,
+			expectedConnectionGot: 1,
 		},
 	}
 
@@ -151,10 +151,10 @@ func TestConnectionMetrics(t *testing.T) {
 			test.expectedClosedErrorCount, prometheus.Labels{
 				connectionErrorLabel: connectionCloseError,
 			})
-		assertCounterValue(t, test.description, "connectionStarts", m.connectionStarts,
-			test.expectedConnectionStarts)
-		assertCounterValue(t, test.description, "connectionEnds", m.connectionEnds,
-			test.expectedConnectionEnds)
+		assertCounterValue(t, test.description, "connectionWant", m.connectionWant,
+			test.expectedConnectionWant)
+		assertCounterValue(t, test.description, "connectionGot", m.connectionGot,
+			test.expectedConnectionGot)
 	}
 }
 
