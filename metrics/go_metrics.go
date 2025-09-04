@@ -37,6 +37,7 @@ type Metrics struct {
 	TLSHandshakeTimer              metrics.Timer
 	BidderServerResponseTimer      metrics.Timer
 	StoredResponsesMeter           metrics.Meter
+	GvlListRequestsMeter           metrics.Meter
 
 	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
@@ -186,6 +187,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		SetUidStatusMeter:              make(map[SetUidStatus]metrics.Meter),
 		SyncerSetsMeter:                make(map[string]map[SyncerSetUidStatus]metrics.Meter),
 		StoredResponsesMeter:           blankMeter,
+		GvlListRequestsMeter:           blankMeter,
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -307,6 +309,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
+	newMetrics.GvlListRequestsMeter = metrics.GetOrRegisterMeter("gvl_requests", registry)
 	newMetrics.OverheadTimer = makeOverheadTimerMetrics(registry)
 	newMetrics.BidderServerResponseTimer = metrics.GetOrRegisterTimer("bidder_server_response_time_seconds", registry)
 
@@ -631,6 +634,10 @@ func (me *Metrics) RecordStoredResponse(pubId string) {
 	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
 		me.getAccountMetrics(pubId).storedResponsesMeter.Mark(1)
 	}
+}
+
+func (me *Metrics) RecordGvlListRequest() {
+	me.GvlListRequestsMeter.Mark(1)
 }
 
 func (me *Metrics) RecordImps(labels ImpLabels) {
