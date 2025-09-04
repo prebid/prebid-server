@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type ShowheroesAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -28,7 +28,7 @@ type shExtImpBidder struct {
 
 // Builder builds a new instance of the Showheroes adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &ShowheroesAdapter{
+	return &adapter{
 		endpoint: config.Endpoint,
 	}, nil
 }
@@ -109,7 +109,7 @@ func getPrebidChannel(request *openrtb2.BidRequest) (string, string) {
 	return channelName, channelVersion
 }
 
-func (a *ShowheroesAdapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if err := validate(request); err != nil {
 		return nil, []error{err}
 	}
@@ -159,7 +159,7 @@ func (a *ShowheroesAdapter) MakeRequests(request *openrtb2.BidRequest, extra *ad
 	}, errors
 }
 
-func (a *ShowheroesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -176,15 +176,12 @@ func (a *ShowheroesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	bidderResponse.Currency = bidResponse.Cur
 
 	for _, seatBid := range bidResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bidType, err := getBidType(bid.MType)
-			if err != nil {
-				return nil, []error{err}
-			}
+		for i := range seatBid.Bid {
+			bid := &seatBid.Bid[i]
 
 			b := &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
+				Bid:     bid,
+				BidType: getBidType(bid.MType),
 			}
 			bidderResponse.Bids = append(bidderResponse.Bids, b)
 		}
@@ -193,13 +190,13 @@ func (a *ShowheroesAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	return bidderResponse, nil
 }
 
-func getBidType(markupType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
+func getBidType(markupType openrtb2.MarkupType) openrtb_ext.BidType {
 	switch markupType {
 	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner, nil
+		return openrtb_ext.BidTypeBanner
 	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
+		return openrtb_ext.BidTypeVideo
 	default:
-		return "", fmt.Errorf("unsupported mtype: %d", markupType)
+		return openrtb_ext.BidTypeVideo // default to video
 	}
 }

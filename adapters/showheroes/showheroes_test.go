@@ -62,27 +62,10 @@ func TestGetBidType(t *testing.T) {
 			expectedBidTypeId: openrtb_ext.BidTypeVideo,
 			wantErr:           false,
 		},
-		{
-			name: "invalid",
-			args: args{
-				markupType: openrtb2.MarkupNative, // Showheroes doesn't support native
-			},
-			expectedBidTypeId: "",
-			wantErr:           true,
-		},
-		{
-			name: "unknown",
-			args: args{
-				markupType: -1,
-			},
-			expectedBidTypeId: "",
-			wantErr:           true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bidType, err := getBidType(tt.args.markupType)
-			assert.Equal(t, tt.wantErr, err != nil)
+			bidType := getBidType(tt.args.markupType)
 			assert.Equal(t, tt.expectedBidTypeId, bidType)
 		})
 	}
@@ -334,17 +317,6 @@ func TestShowheroesAdapter_MakeBids(t *testing.T) {
 				},
 				Currency: "USD",
 			},
-		},
-		{
-			name: "invalid_markup_type",
-			args: args{
-				response: &adapters.ResponseData{
-					StatusCode: http.StatusOK,
-					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "showheroes", "bid":[{"mtype": 5, "id": "bid-id-invalid", "impid": "test-imp-id", "price": 0.50}]}], "bidid": "bid-request-invalid", "cur": "EUR"}`),
-				},
-			},
-			wantErr:  []error{fmt.Errorf("unsupported mtype: 5")},
-			wantResp: nil,
 		},
 		{
 			name: "no_content_response",
