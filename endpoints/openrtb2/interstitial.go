@@ -9,6 +9,9 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
+const defaultInterstitialMinWidthPerc = 50
+const defaultInterstitialMinHeightPerc = 40
+
 func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	unmarshalled := true
 	for _, imp := range req.GetImp() {
@@ -40,7 +43,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 }
 
 func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
-	var maxWidth, maxHeight, minWidth, minHeight int64
+	var maxWidth, maxHeight, minWidth, minHeight, minWidthPerc, minHeightPerc int64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.
 		return nil
@@ -57,8 +60,21 @@ func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openr
 		maxWidth = device.W
 		maxHeight = device.H
 	}
-	minWidth = (maxWidth * devExtPrebid.Interstitial.MinWidthPerc) / 100
-	minHeight = (maxHeight * devExtPrebid.Interstitial.MinHeightPerc) / 100
+	if devExtPrebid.Interstitial.MinWidthPerc > 0 {
+		minWidthPerc = devExtPrebid.Interstitial.MinWidthPerc
+	} else {
+		// Use default value if not specified
+		minWidthPerc = defaultInterstitialMinWidthPerc
+	}
+	if devExtPrebid.Interstitial.MinHeightPerc > 0 {
+		minHeightPerc = devExtPrebid.Interstitial.MinHeightPerc
+	} else {
+		// Use default value if not specified
+		minHeightPerc = defaultInterstitialMinHeightPerc
+	}
+	minWidth = (maxWidth * minWidthPerc) / 100
+	minHeight = (maxHeight * minHeightPerc) / 100
+
 	imp.Banner.Format = genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight)
 	if len(imp.Banner.Format) == 0 {
 		return &errortypes.BadInput{Message: fmt.Sprintf("Unable to set interstitial size list for Imp id=%s (No valid sizes between %dx%d and %dx%d)", imp.ID, minWidth, minHeight, maxWidth, maxHeight)}
