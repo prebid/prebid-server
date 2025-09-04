@@ -83,6 +83,21 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 		wantErr         bool
 	}{
 		{
+			name: "no_site_no_app",
+			args: args{
+				request: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{},
+							Ext:    json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
+						},
+					},
+				},
+				reqInfo: &adapters.ExtraRequestInfo{},
+			},
+			wantErr: true,
+		},
+		{
 			name: "site_without_page",
 			args: args{
 				request: &openrtb2.BidRequest{

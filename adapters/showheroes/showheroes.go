@@ -46,6 +46,12 @@ func validate(request *openrtb2.BidRequest) error {
 		}
 	}
 
+	if request.Site == nil && request.App == nil {
+		return &errortypes.BadInput{
+			Message: "request must contain a site or an app",
+		}
+	}
+
 	return nil
 }
 
