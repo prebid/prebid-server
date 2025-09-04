@@ -230,3 +230,11 @@ func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 func (me *MetricsEngineMock) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	me.Called(adapterName)
 }
+
+func (me *MetricsEngineMock) RecordConnectionDials() {
+	me.Called()
+}
+
+func (me *MetricsEngineMock) RecordConnectionDialTime(dialStartTime time.Duration) {
+	me.Called(dialStartTime)
+}

@@ -75,6 +75,7 @@ func TestConnectionMetrics(t *testing.T) {
 		expectedOpenedErrorCount float64
 		expectedClosedCount      float64
 		expectedClosedErrorCount float64
+		expectedConnectionDials  float64
 	}{
 		{
 			description: "Open Success",
@@ -116,6 +117,13 @@ func TestConnectionMetrics(t *testing.T) {
 			expectedClosedCount:      0,
 			expectedClosedErrorCount: 1,
 		},
+		{
+			description: "Connection dial started",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionDials()
+			},
+			expectedConnectionDials: 1,
+		},
 	}
 
 	for _, test := range testCases {
@@ -135,6 +143,8 @@ func TestConnectionMetrics(t *testing.T) {
 			test.expectedClosedErrorCount, prometheus.Labels{
 				connectionErrorLabel: connectionCloseError,
 			})
+		assertCounterValue(t, test.description, "connectionDials", m.connectionDials,
+			test.expectedConnectionDials)
 	}
 }
 
@@ -1403,6 +1413,38 @@ func TestTimeoutNotifications(t *testing.T) {
 			successLabel: requestFailed,
 		})
 
+}
+
+func TestRecordConnectionDialTime(t *testing.T) {
+	testCases := []struct {
+		description              string
+		inConnectionDialDuration time.Duration
+		expDuration              float64
+		expCount                 uint64
+	}{
+		{
+			description:              "five-second-connection-dial-time",
+			inConnectionDialDuration: time.Second * 5,
+			expDuration:              5,
+			expCount:                 1,
+		},
+		{
+			description: "zero-connection-dial-time",
+			expDuration: 0,
+			expCount:    1,
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordConnectionDialTime(test.inConnectionDialDuration)
+
+		m := dto.Metric{}
+		pm.connectionDialTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
 }
 
 func TestRecordDNSTime(t *testing.T) {

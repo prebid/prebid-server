@@ -729,7 +729,7 @@ type httpCallInfo struct {
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // the time from the connection request, to the connection creation.
 func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context {
-	var connStart, dnsStart, tlsStart time.Time
+	var connStart, dnsStart, tlsStart, dialStart time.Time
 
 	trace := &httptrace.ClientTrace{
 		// GetConn is called before a connection is created or retrieved from an idle pool
@@ -772,6 +772,18 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 			tlsHandshakeTime := time.Since(tlsStart)
 
 			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
+		},
+		// ConnectStart is called when a new connection's Dial begins.
+		ConnectStart: func(network, addr string) {
+			dialStart = time.Now()
+			bidder.me.RecordConnectionDials()
+		},
+		// ConnectDone is called when a new connection's Dial completes.
+		// The provided err indicates whether the connection completed
+		// successfully.
+		ConnectDone: func(network, addr string, err error) {
+			dialStartTime := time.Since(dialStart)
+			bidder.me.RecordConnectionDialTime(dialStartTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)

@@ -23,6 +23,8 @@ type Metrics struct {
 	connectionsClosed            prometheus.Counter
 	connectionsError             *prometheus.CounterVec
 	connectionsOpened            prometheus.Counter
+	connectionDials              prometheus.Counter
+	connectionDialTimer          prometheus.Histogram
 	cookieSync                   *prometheus.CounterVec
 	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
@@ -185,6 +187,15 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.connectionsOpened = newCounterWithoutLabels(cfg, reg,
 		"connections_opened",
 		"Count of successful connections opened to Prebid Server.")
+
+	metrics.connectionDials = newCounterWithoutLabels(cfg, reg,
+		"connections_dials",
+		"Count number of started dials to open a connection.")
+
+	metrics.connectionDialTimer = newHistogram(cfg, reg,
+		"connection_dial_time",
+		"Seconds connection dial lasted",
+		standardTimeBuckets)
 
 	metrics.tmaxTimeout = newCounterWithoutLabels(cfg, reg,
 		"tmax_timeout",
@@ -1100,4 +1111,12 @@ func (m *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	m.adapterThrottled.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
+}
+
+func (m *Metrics) RecordConnectionDials() {
+	m.connectionDials.Inc()
+}
+
+func (m *Metrics) RecordConnectionDialTime(dialStartTime time.Duration) {
+	m.connectionDialTimer.Observe(dialStartTime.Seconds())
 }
