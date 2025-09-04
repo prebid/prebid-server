@@ -100,6 +100,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		macros.NewStringIndexBasedReplacer(),
 		nil,
 		singleFormatBidders,
+		&exchange.NilGeoLocationResolver{},
 	)
 
 	endpoint, _ := NewEndpoint(
