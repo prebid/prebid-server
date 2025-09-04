@@ -13,8 +13,8 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack/eventchannel"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack/helpers"
+	"github.com/prebid/prebid-server/v3/analytics/modules/pubstack/eventchannel"
+	"github.com/prebid/prebid-server/v3/analytics/modules/pubstack/helpers"
 )
 
 type Configuration struct {
