@@ -451,12 +451,6 @@ type LMT struct {
 	Enforce bool `mapstructure:"enforce"`
 }
 
-// type Analytics struct {
-// 	File     FileLogs      `mapstructure:"file"`
-// 	Agma     AgmaAnalytics `mapstructure:"agma"`
-// 	Pubstack Pubstack      `mapstructure:"pubstack"`
-// }
-
 type CurrencyConverter struct {
 	FetchURL             string `mapstructure:"fetch_url"`
 	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`

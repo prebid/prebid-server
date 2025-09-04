@@ -4,7 +4,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/mitchellh/mapstructure"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/moduledeps"
+	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
 	base "github.com/prebid/prebid-server/v3/analytics/modules/agma"
 	"github.com/prebid/prebid-server/v3/config"
 )
@@ -21,7 +21,7 @@ type Config struct {
 }
 
 // Builder builds the agma analytics module.
-func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.Module, error) {
+func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
 		return nil, nil
 	}
@@ -43,7 +43,7 @@ func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.
 	full := config.AgmaAnalytics{
 		Enabled:  true,
 		Endpoint: c.Endpoint,
-		Buffers: config.AgmaAnalyticsBuffers{
+		Buffers: config.AgmaAnalyticsBuffer{
 			EventCount: c.Buffers.EventCount,
 			BufferSize: c.Buffers.BufferSize,
 			Timeout:    c.Buffers.Timeout,

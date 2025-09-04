@@ -4,7 +4,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
 )
 
 // Config is the minimal configuration for the file logger analytics module.
@@ -15,7 +15,7 @@ type Config struct {
 }
 
 // Builder builds the filelogger analytics module.
-func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.Module, error) {
+func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Module, error) {
 	var c Config
 	if cfg != nil {
 		if err := mapstructure.Decode(cfg, &c); err != nil {

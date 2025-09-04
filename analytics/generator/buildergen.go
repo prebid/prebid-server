@@ -64,7 +64,7 @@ func main() {
 		}
 
 		match := r.FindStringSubmatch(slashPath)
-		vendor := match[1]
+		vendor := "modules"
 		mod := match[2]
 
 		modules[vendor] = append(modules[vendor], mod)
