@@ -1899,6 +1899,14 @@ func TestStoredResponsesMetric(t *testing.T) {
 	}
 }
 
+func TestRecordGvlListRequest(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordGvlListRequest()
+
+	assertCounterValue(t, "Record instance of fetched GVL list", "success", m.gvlListRequests, 1.00)
+}
+
 func TestRecordAdsCertReqMetric(t *testing.T) {
 	testCases := []struct {
 		description                  string

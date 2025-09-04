@@ -496,6 +496,7 @@ type MetricsEngine interface {
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
+	RecordGvlListRequest()
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
 	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)
