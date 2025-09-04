@@ -1,9 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
+    "id": "test-zero-price-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "test-zero-price-imp-id",
         "banner": {
           "format": [
             {
@@ -14,25 +14,25 @@
         },
         "ext": {
           "bidder": {
-            "placement_id": "test-placement"
+            "placement_id": "test-zero-price-placement"
           }
         }
       }
     ],
     "site": {
-      "page": "https://example.com",
+      "page": "https://example.com/zero-price",
       "domain": "example.com"
     }
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://example.com?pid=test-placement",
+        "uri": "https://example.com?pid=test-zero-price-placement",
         "body": {
-          "id": "test-request-id",
+          "id": "test-zero-price-request-id",
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "test-zero-price-imp-id",
               "banner": {
                 "format": [
                   {
@@ -41,16 +41,16 @@
                   }
                 ]
               },
-              "tagid": "test-placement",
+              "tagid": "test-zero-price-placement",
               "ext": {
                 "bidder": {
-                  "placement_id": "test-placement"
+                  "placement_id": "test-zero-price-placement"
                 }
               }
             }
           ],
           "site": {
-            "page": "https://example.com",
+            "page": "https://example.com/zero-price",
             "domain": "example.com"
           },
           "cur": [
@@ -68,21 +68,21 @@
             "2.6"
           ]
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": ["test-zero-price-imp-id"]
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "test-zero-price-request-id",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "test-bid-id",
-                  "impid": "test-imp-id",
-                  "price": 3.14,
-                  "adm": "<div>test ad</div>",
-                  "crid": "test-creative-id",
+                  "id": "test-zero-price-bid-id",
+                  "impid": "test-zero-price-imp-id",
+                  "price": 0.0,
+                  "adm": "<div>test zero price ad</div>",
+                  "crid": "test-zero-price-creative-id",
                   "w": 300,
                   "h": 250,
                   "adomain": ["example.com"]
@@ -99,22 +99,13 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "test-bid-id",
-            "impid": "test-imp-id",
-            "price": 3.14,
-            "adm": "<div>test ad</div>",
-            "crid": "test-creative-id",
-            "w": 300,
-            "h": 250,
-            "adomain": ["example.com"]
-          },
-          "type": "banner",
-          "seat": "resetdigital"
-        }
-      ]
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "price 0.000000 <= 0 filtered out",
+      "comparison": "literal"
     }
   ]
 }
