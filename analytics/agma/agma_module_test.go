@@ -101,10 +101,15 @@ var mockValidAccounts = []config.AgmaAnalyticsAccount{
 
 type MockedSender struct {
 	mock.Mock
+	wg   sync.WaitGroup
+	wait bool
 }
 
 func (m *MockedSender) Send(payload []byte) error {
 	args := m.Called(payload)
+	if m.wait == true {
+		defer m.wg.Done()
+	}
 	return args.Error(0)
 }
 
@@ -719,17 +724,20 @@ func TestShutdownFlush(t *testing.T) {
 		},
 	}
 	mockedSender := new(MockedSender)
+	mockedSender.wg = sync.WaitGroup{}
+	mockedSender.wg.Add(1)
+	mockedSender.wait = true
 	mockedSender.On("Send", mock.Anything).Return(nil)
 	clockMock := clock.NewMock()
 	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
 	assert.NoError(t, err)
 
 	go logger.start()
+	defer func() { logger.sigTermCh <- syscall.SIGTERM }()
 	logger.LogAuctionObject(&mockValidAuctionObject)
 	logger.Shutdown()
 
-	time.Sleep(10 * time.Millisecond)
-
+	mockedSender.wg.Wait()
 	mockedSender.AssertCalled(t, "Send", mock.Anything)
 	mockedSender.AssertNumberOfCalls(t, "Send", 1)
 }
