@@ -227,7 +227,7 @@ func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer st
 			PlacementId:           ext.Bidder.PlacementId,
 			ViewabilityPercentage: ext.Bidder.ViewabilityPercentage,
 		},
-		Gpid: ext.Gpid,
+		GPID: ext.GPID,
 	}
 
 	var err error
