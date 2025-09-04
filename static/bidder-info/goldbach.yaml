@@ -1,6 +1,6 @@
 endpoint: "https://goldlayer-api.prod.gbads.net/openrtb/2.5/auction"
 maintainer:
-  email: "simon.aebli@goldbach.com"
+  email: "engineering@goldbach.com"
 gvlVendorID: 580
 capabilities:
   app:
