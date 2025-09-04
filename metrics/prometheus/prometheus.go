@@ -23,6 +23,8 @@ type Metrics struct {
 	connectionsClosed            prometheus.Counter
 	connectionsError             *prometheus.CounterVec
 	connectionsOpened            prometheus.Counter
+	connectionStarts             prometheus.Counter
+	connectionEnds               prometheus.Counter
 	cookieSync                   *prometheus.CounterVec
 	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
@@ -186,6 +188,14 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.connectionsOpened = newCounterWithoutLabels(cfg, reg,
 		"connections_opened",
 		"Count of successful connections opened to Prebid Server.")
+
+	metrics.connectionStarts = newCounterWithoutLabels(cfg, reg,
+		"connections_start",
+		"Count number of times a connection was started.")
+
+	metrics.connectionEnds = newCounterWithoutLabels(cfg, reg,
+		"connections_ends",
+		"Count number of times a connection was ended.")
 
 	metrics.tmaxTimeout = newCounterWithoutLabels(cfg, reg,
 		"tmax_timeout",
@@ -1109,4 +1119,12 @@ func (m *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	m.adapterThrottled.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
+}
+
+func (m *Metrics) RecordConnectionStart() {
+	m.connectionStarts.Inc()
+}
+
+func (m *Metrics) RecordConnectionEnd() {
+	m.connectionEnds.Inc()
 }

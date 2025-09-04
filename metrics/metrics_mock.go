@@ -234,3 +234,11 @@ func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 func (me *MetricsEngineMock) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	me.Called(adapterName)
 }
+
+func (me *MetricsEngineMock) RecordConnectionStart() {
+	me.Called()
+}
+
+func (me *MetricsEngineMock) RecordConnectionEnd() {
+	me.Called()
+}
