@@ -301,10 +301,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	if adapters.IsResponseStatusCodeNoContent(response) {
-		return nil, nil
-	}
-
 	// Extract domain for event URLs
 	domain := ""
 	if request.Site != nil && request.Site.Domain != "" {
