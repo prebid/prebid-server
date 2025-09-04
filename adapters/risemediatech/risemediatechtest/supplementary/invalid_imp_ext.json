@@ -1,0 +1,15 @@
+{
+    "mockBidRequest": {
+      "id": "test-invalid-imp-ext",
+      "imp": [
+        {
+          "id": "1",
+          "banner": { "w": 300, "h": 250 },
+          "ext": "not-a-valid-json"
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      { "value": "impID 1: invalid character", "comparison": "contains" }
+    ]
+  }

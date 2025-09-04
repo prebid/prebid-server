@@ -1,0 +1,20 @@
+{
+    "mockBidRequest": {
+      "id": "test-all-imps-invalid",
+      "imp": [
+        {
+          "id": "1",
+          "banner": { "h": 250 },
+          "ext": { "bidder": { "placementId": "abc" } }
+        },
+        {
+          "id": "2",
+          "video": { "w": 640, "h": 0, "mimes": ["video/mp4"] },
+          "ext": { "bidder": { "placementId": "def" } }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      { "value": "no valid impressions", "comparison": "contains" }
+    ]
+  }

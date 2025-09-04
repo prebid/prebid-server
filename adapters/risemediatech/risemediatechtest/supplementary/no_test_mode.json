@@ -1,0 +1,46 @@
+{
+  "mockBidRequest": {
+    "id": "no-test-mode",
+    "imp": [
+      {
+        "id": "imp-4",
+        "tagid": "tag-4",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.8
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dev-ads.risemediatech.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "no-test-mode",
+          "imp": [
+            {
+              "id": "imp-4",
+              "tagid": "tag-4",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "bidfloor": 0.8
+            }
+          ]
+        },
+        "impIDs": ["imp-4"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
