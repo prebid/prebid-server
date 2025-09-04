@@ -1,3 +1,6 @@
+disabled: true
+# We have the following regional endpoint domains: 'us-east' and 'eu' and 'apac'
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
 aliasOf: "teqblaze"
 endpoint: "https://#{REGION}#.al-ad.com/pserver"
 maintainer:
@@ -15,7 +18,7 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: "https://csync.al-ad.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    url: "https://csync.al-ad.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
   iframe:
     url: "https://csync.al-ad.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
