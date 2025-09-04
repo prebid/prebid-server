@@ -224,13 +224,9 @@ func createRequestPayload(request *openrtb2.BidRequest, validPlacements []string
 
 	// Ensure UID is written to ortb2.user.buyeruid with deep copy
 	if uid != "" {
-		if requestCopy.User == nil {
-			requestCopy.User = &openrtb2.User{}
-		} else {
-			// Create a deep copy of the User object to avoid modifying the original
-			userCopy := *requestCopy.User
-			requestCopy.User = &userCopy
-		}
+		// Create a deep copy of the User object to avoid modifying the original
+		userCopy := *requestCopy.User
+		requestCopy.User = &userCopy
 		requestCopy.User.BuyerUID = uid
 	}
 
