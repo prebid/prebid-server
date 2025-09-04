@@ -66,6 +66,7 @@ type hbResponseAd struct {
 	Price        string `json:"pr"`
 	AdM          string `json:"adm"`
 	CrID         string `json:"crid"`
+	Adomain      string `json:"adom,omitempty"`
 	Width        uint64 `json:"w,omitempty"`
 	Height       uint64 `json:"h,omitempty"`
 }
@@ -506,6 +507,10 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb2.BidRequest, 
 					CrID:  ad.CrID,
 					W:     int64(ad.Width),
 					H:     int64(ad.Height),
+				}
+
+				if ad.Adomain != "" {
+					bid.ADomain = []string{ad.Adomain}
 				}
 
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
