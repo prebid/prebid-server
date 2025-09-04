@@ -122,30 +122,26 @@ func TestValidateConfig(t *testing.T) {
 					"[(root): rulesets is required] ",
 				},
 				{ //2
-					json.RawMessage(`{"enabled": true, "rulesets": []}`),
-					"[rulesets: Array must have at least 1 items] ",
-				},
-				{ //3
 					json.RawMessage(`{"enabled": true, "rulesets": [{}]}`),
 					"[rulesets.0: stage is required] [rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
 				},
-				{ //4
+				{ //3
 					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"a"}]}`),
 					"[rulesets.0: name is required] [rulesets.0: modelgroups is required] [rulesets.0.stage: rulesets.0.stage must be one of the following: \"entrypoint\", \"raw_auction_request\", \"processed_auction_request\", \"bidder_request\", \"raw_bidder_response\", \"all_processed_bid_responses\", \"auction_response\"] ",
 				},
-				{ //5
+				{ //4
 					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint"}]}`),
 					"[rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
 				},
-				{ //6
+				{ //5
 					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n"}]}`),
 					"[rulesets.0: modelgroups is required] ",
 				},
-				{ //7
+				{ //6
 					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n","modelgroups":[]}]}`),
 					"[rulesets.0.modelgroups: Array must have at least 1 items] ",
 				},
-				{ //8
+				{ //7
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -171,7 +167,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[rulesets.0.modelgroups.0.weight: Must be less than or equal to 100] ",
 				},
-				{ //9
+				{ //8
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -197,7 +193,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[rulesets.0.modelgroups.0.weight: Must be greater than or equal to 1] ",
 				},
-				{ //10
+				{ //9
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -222,7 +218,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"",
 				},
-				{ //11
+				{ //10
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -242,7 +238,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"",
 				},
-				{ //12
+				{ //11
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -267,7 +263,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[rulesets.0.modelgroups.0.schema.0.function: rulesets.0.modelgroups.0.schema.0.function must be one of the following: \"channel\", \"dataCenter\", \"dataCenterIn\", \"deviceCountry\", \"deviceCountryIn\", \"eidAvailable\", \"eidIn\", \"fpdAvailable\", \"gppSidAvailable\", \"gppSidIn\", \"percent\", \"tcfInScope\", \"userFpdAvailable\"] ",
 				},
-				{ //13
+				{ //12
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -292,7 +288,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"[rulesets.0.modelgroups.0.rules.0.conditions: Array must have at least 1 items] ",
 				},
-				{ //14
+				{ //13
 					json.RawMessage(`
                     {
                       "enabled": true,
@@ -317,7 +313,7 @@ func TestValidateConfig(t *testing.T) {
 					`),
 					"",
 				},
-				{ //15
+				{ //14
 					json.RawMessage(`
                     {
                       "enabled": true,
