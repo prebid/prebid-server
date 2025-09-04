@@ -41,6 +41,7 @@ type Metrics struct {
 
 	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
+	RequestSizeByEndpoint map[EndpointType]metrics.Histogram
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
 	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
@@ -159,6 +160,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 	newMetrics := &Metrics{
 		MetricsRegistry:                registry,
 		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
+		RequestSizeByEndpoint:          make(map[EndpointType]metrics.Histogram),
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
@@ -232,6 +234,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
 		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
+		}
+	}
+
+	for _, t := range EndpointTypes() {
+		if t != EndpointAmp {
+			newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{}
 		}
 	}
 
@@ -356,6 +364,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		for stat := range statusMap {
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
+	}
+
+	for _, endpoint := range EndpointTypes() {
+		newMetrics.RequestSizeByEndpoint[endpoint] = metrics.GetOrRegisterHistogram("requests.size."+string(endpoint), registry, metrics.NewUniformSample(1024))
 	}
 
 	for _, cacheRes := range CacheResults() {
@@ -610,6 +622,11 @@ func (me *Metrics) RecordRequest(labels Labels) {
 			// OpenRTB endpoint
 			me.NoCookieMeter.Mark(1)
 		}
+	}
+
+	// Request size by endpoint
+	if labels.RequestSize > 0 && labels.RType != ReqTypeAMP {
+		me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
 	}
 
 	// Handle the account metrics now.
