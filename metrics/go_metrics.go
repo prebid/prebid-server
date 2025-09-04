@@ -670,7 +670,7 @@ func (me *Metrics) RecordConnectionClose(success bool) {
 }
 
 func (me *Metrics) RecordConnectionDials() {
-	me.ConnectionDialCounter.Dec(1)
+	me.ConnectionDialCounter.Inc(1)
 }
 
 func (me *Metrics) RecordConnectionDialTime(dialStartTime time.Duration) {
