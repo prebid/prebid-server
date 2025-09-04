@@ -193,7 +193,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count number of started dials to open a connection.")
 
 	metrics.connectionDialTimer = newHistogram(cfg, reg,
-		"connection_dial_time",
+		"connection_dial_time_seconds",
 		"Seconds connection dial lasted",
 		standardTimeBuckets)
 
