@@ -680,7 +680,7 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		requestStatusLabel: string(labels.RequestStatus),
 	}).Inc()
 
-	if labels.RequestSize > 0 {
+	if labels.RequestSize > 0 && labels.RType != metrics.ReqTypeAMP {
 		endpoint := metrics.GetEndpointFromRequestType(labels.RType)
 		m.requestsSize.With(prometheus.Labels{
 			requestEndpointLabel: string(endpoint),

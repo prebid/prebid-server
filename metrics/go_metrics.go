@@ -234,7 +234,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 	}
 
 	for _, t := range EndpointTypes() {
-		newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{}
+		if t != EndpointAmp {
+			newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{}
+		}
 	}
 
 	for _, c := range CacheResults() {
@@ -617,7 +619,7 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	}
 
 	// Request size by endpoint
-	if labels.RequestSize > 0 {
+	if labels.RequestSize > 0 && labels.RType != ReqTypeAMP {
 		me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
 	}
 
