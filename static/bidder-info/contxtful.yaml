@@ -3,7 +3,6 @@ maintainer:
 disabled: false
 endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid"
 
-platform_id: "5"
 capabilities:
   app:
     mediaTypes:
