@@ -228,3 +228,92 @@ func TestBidderParamsCompactedOutput(t *testing.T) {
 	// Assertions
 	assert.Equal(t, expectedFormattedResponse, recorder.Body.String())
 }
+
+func TestGetNormalizedGeoscopes(t *testing.T) {
+	testCases := []struct {
+		name              string
+		bidderInfos       config.BidderInfos
+		expectedGeoscopes map[string][]string
+	}{
+		{
+			name:              "nil-bidder-infos",
+			bidderInfos:       nil,
+			expectedGeoscopes: map[string][]string{},
+		},
+		{
+			name:              "empty-bidder-infos",
+			bidderInfos:       config.BidderInfos{},
+			expectedGeoscopes: map[string][]string{},
+		},
+		{
+			name: "bidder-with-no-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+				},
+			},
+			expectedGeoscopes: map[string][]string{},
+		},
+		{
+			name: "bidder-with-empty-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{},
+				},
+			},
+			expectedGeoscopes: map[string][]string{},
+		},
+		{
+			name: "bidder-with-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{"usa", "can"},
+				},
+			},
+			expectedGeoscopes: map[string][]string{
+				"bidder1": {"USA", "CAN"},
+			},
+		},
+		{
+			name: "multiple-bidders-with-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{"usa", "can"},
+				},
+				"bidder2": {
+					Disabled: false,
+					Geoscope: []string{"eu", "asia"},
+				},
+				"bidder3": {
+					Disabled: false,
+				},
+			},
+			expectedGeoscopes: map[string][]string{
+				"bidder1": {"USA", "CAN"},
+				"bidder2": {"EU", "ASIA"},
+			},
+		},
+		{
+			name: "mixed-case-geoscope-values",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{"UsA", "Can", "eu"},
+				},
+			},
+			expectedGeoscopes: map[string][]string{
+				"bidder1": {"USA", "CAN", "EU"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualGeoscopes := getNormalizedGeoscopes(tc.bidderInfos)
+			assert.Equal(t, tc.expectedGeoscopes, actualGeoscopes)
+		})
+	}
+}
