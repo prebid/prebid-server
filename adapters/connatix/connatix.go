@@ -227,6 +227,8 @@ func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer st
 		incomingExt = make(map[string]interface{})
 	}
 
+	delete(incomingExt, "bidder")
+
 	incomingExt["connatix"] = impExtConnatix{
 		PlacementId:           ext.Bidder.PlacementId,
 		ViewabilityPercentage: ext.Bidder.ViewabilityPercentage,
