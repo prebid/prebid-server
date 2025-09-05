@@ -155,11 +155,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		"Accept":       []string{"application/json"},
 	}
 
-	// Add privacy-related headers if available
-	if reqInfo != nil && reqInfo.GlobalPrivacyControlHeader != "" {
-		headers.Set("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
-	}
-
 	// Build dynamic endpoint URL and validate impressions
 	endpoint, validPlacements, customerId, endpointErrors := a.buildEndpointURL(request)
 	errors = append(errors, endpointErrors...)
