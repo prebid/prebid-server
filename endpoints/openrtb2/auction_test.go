@@ -3415,7 +3415,7 @@ func TestValidateEidPermissions(t *testing.T) {
 	testCases := []struct {
 		name           string
 		request        *openrtb_ext.ExtRequest
-		expectedError  error
+		expectedError  []error
 		isDebugEnabled bool
 	}{
 		{
@@ -3479,7 +3479,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Bidders: []string{"a"}},
 			}}}},
-			expectedError:  errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`)},
 			isDebugEnabled: false,
 		},
 		{
@@ -3488,7 +3488,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
-			expectedError:  errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`)},
 			isDebugEnabled: false,
 		},
 		{
@@ -3497,7 +3497,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB"},
 			}}}},
-			expectedError:  errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`)},
 			isDebugEnabled: false,
 		},
 		{
@@ -3506,7 +3506,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{}},
 			}}}},
-			expectedError:  errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`)},
 			isDebugEnabled: false,
 		},
 		{
@@ -3515,7 +3515,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"z"}},
 			}}}},
-			expectedError:  errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`)},
 			isDebugEnabled: false,
 		},
 		{
@@ -3524,7 +3524,7 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"z"}},
 			}}}},
-			expectedError:  nil,
+			expectedError:  []error{&errortypes.Warning{Message: `request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`}},
 			isDebugEnabled: true,
 		},
 		{
@@ -3532,7 +3532,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"B"}},
 			}}}},
-			expectedError:  errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`)},
 			isDebugEnabled: false,
 		},
 		{
@@ -3540,7 +3540,7 @@ func TestValidateEidPermissions(t *testing.T) {
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"B"}},
 			}}}},
-			expectedError:  nil,
+			expectedError:  []error{&errortypes.Warning{Message: `request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`}},
 			isDebugEnabled: true,
 		},
 	}
@@ -3548,7 +3548,7 @@ func TestValidateEidPermissions(t *testing.T) {
 	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result, _ := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases, test.isDebugEnabled)
+			result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases, test.isDebugEnabled)
 			assert.Equal(t, test.expectedError, result)
 		})
 	}

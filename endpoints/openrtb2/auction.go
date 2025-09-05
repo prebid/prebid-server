@@ -827,12 +827,11 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
-		err, warns := deps.validateEidPermissions(reqPrebid.Data, requestAliases, isDebugEnabled)
-		errL = append(errL, warns...)
-
-		if err != nil {
-			return []error{err}
+		errs := deps.validateEidPermissions(reqPrebid.Data, requestAliases, isDebugEnabled)
+		if errortypes.ContainsFatalError(errs) {
+			return errs
 		}
+		errL = append(errL, errs...)
 
 		if err := currency.ValidateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
@@ -1003,41 +1002,44 @@ func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
 	return err
 }
 
-func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string, isDebugEnabled bool) (error, []error) {
-	warnings := make([]error, 0)
+func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string, isDebugEnabled bool) []error {
+	var errs []error
 
 	if prebid == nil {
-		return nil, warnings
+		return errs
 	}
 
 	uniqueSources := make(map[string]struct{}, len(prebid.EidPermissions))
 	for i, eid := range prebid.EidPermissions {
 		if len(eid.Source) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i), warnings
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i))
+			continue
 		}
 
 		if _, exists := uniqueSources[eid.Source]; exists {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i), warnings
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i))
+			continue
 		}
 		uniqueSources[eid.Source] = struct{}{}
 
 		if len(eid.Bidders) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i), warnings
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i))
+			continue
 		}
 
 		if err := deps.validateBidders(eid.Bidders, deps.bidderMap, requestAliases); err != nil {
 			errValidate := fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
 
 			if isDebugEnabled {
-				warnings = append(warnings, &errortypes.Warning{Message: fmt.Sprintf("%v", errValidate)})
+				errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("%v", errValidate)})
 				continue
 			}
 
-			return errValidate, warnings
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err))
 		}
 	}
 
-	return nil, warnings
+	return errs
 }
 
 func (deps *endpointDeps) validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownRequestAliases map[string]string) error {
