@@ -222,15 +222,20 @@ func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer st
 		imp.BidFloor = convertedValue
 	}
 
-	impExt := impExt{
-		Connatix: impExtConnatix{
-			PlacementId:           ext.Bidder.PlacementId,
-			ViewabilityPercentage: ext.Bidder.ViewabilityPercentage,
-		},
+	var incomingExt map[string]interface{}
+	if err := jsonutil.Unmarshal(imp.Ext, &incomingExt); err != nil {
+		incomingExt = make(map[string]interface{})
+	}
+
+	delete(incomingExt, "bidder")
+
+	incomingExt["connatix"] = impExtConnatix{
+		PlacementId:           ext.Bidder.PlacementId,
+		ViewabilityPercentage: ext.Bidder.ViewabilityPercentage,
 	}
 
 	var err error
-	imp.Ext, err = json.Marshal(impExt)
+	imp.Ext, err = json.Marshal(incomingExt)
 
 	return err
 }
