@@ -1945,7 +1945,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req
 	for _, err := range errs {
 		code := errortypes.ReadCode(err)
 		switch code {
-		case errortypes.BadInputErrorCode:
+		case errortypes.BadInputErrorCode, errortypes.AcctRequiredErrorCode:
 			httpStatus = http.StatusBadRequest
 			labels.RequestStatus = metrics.RequestStatusBadInput
 			foundStatus = true
@@ -2119,7 +2119,7 @@ func getStringValueFromRequest(request []byte, key []string) (string, bool, erro
 		return "", false, err
 	}
 	if dataType != jsonparser.String {
-		return "", true, fmt.Errorf("%s must be a string", strings.Join(key, "."))
+		return "", true, &errortypes.BadInput{Message: fmt.Sprintf("%s must be a string", strings.Join(key, "."))}
 	}
 	return string(val), true, nil
 }

@@ -6,11 +6,11 @@ func GetNBRCodeFromError(err error) openrtb3.NoBidReason {
 	switch ReadCode(err) {
 	case TimeoutErrorCode, TmaxTimeoutErrorCode:
 		return openrtb3.NoBidInsufficientTime
-	case BadInputErrorCode, InvalidImpFirstPartyDataErrorCode:
+	case BadInputErrorCode, InvalidImpFirstPartyDataErrorCode, AcctRequiredErrorCode:
 		return openrtb3.NoBidInvalidRequest
 	case BlockedAppErrorCode, AccountDisabledErrorCode:
 		return openrtb3.NoBidBlockedPublisher
-	case AcctRequiredErrorCode, MalformedAcctErrorCode:
+	case MalformedAcctErrorCode:
 		fallthrough
 	case BadServerResponseErrorCode, FailedToRequestBidsErrorCode, BidderTemporarilyDisabledErrorCode, NoConversionRateErrorCode:
 		fallthrough

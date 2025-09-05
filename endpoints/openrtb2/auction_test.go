@@ -3006,7 +3006,7 @@ func TestSearchAccountID(t *testing.T) {
 			description:       "Publisher.ID not a string",
 			request:           []byte(`{"site":{"publisher":{"id":42}}}`),
 			expectedAccID:     "",
-			expectedError:     errors.New("site.publisher.id must be a string"),
+			expectedError:     &errortypes.BadInput{Message: "site.publisher.id must be a string"},
 			expectedIsAppReq:  false,
 			expectedIsDOOHReq: false,
 		},

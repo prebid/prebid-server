@@ -63,6 +63,6 @@
       }
     }
   },
-  "expectedReturnCode": 500,
-  "expectedErrorMessage": "Critical error while running the auction: Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host.\n"
 }
