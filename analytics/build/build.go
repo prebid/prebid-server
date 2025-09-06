@@ -3,7 +3,6 @@ package build
 import (
 	"encoding/json"
 
-	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"

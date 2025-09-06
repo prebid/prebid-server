@@ -20,7 +20,6 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/currency"
 	"github.com/prebid/prebid-server/v3/errortypes"
@@ -1409,7 +1408,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		accountFetcher,
 		cfg,
 		met,
-		analyticsBuild.New(&config.Analytics{}),
+		analytics.New(map[string]interface{}{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,

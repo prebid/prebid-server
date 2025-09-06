@@ -11,7 +11,7 @@ import (
 	"time"
 
 	openrtb2model "github.com/prebid/openrtb/v20/openrtb2"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	analytics "github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/currency"
 	"github.com/prebid/prebid-server/v3/endpoints"
@@ -195,7 +195,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 
-	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
+	analyticsRunner := analytics.New(cfg.Analytics)
 
 	// register the analytics runner for shutdown
 	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown)

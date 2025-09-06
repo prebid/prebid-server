@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
+	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/currency"
 	"github.com/prebid/prebid-server/v3/exchange"
@@ -110,7 +110,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		nilMetrics,
-		analyticsBuild.New(&config.Analytics{}),
+		analytics.New(map[string]interface{}{}),
 		map[string]string{},
 		[]byte{},
 		nil,
