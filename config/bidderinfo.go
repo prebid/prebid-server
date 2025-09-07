@@ -32,8 +32,8 @@ type BidderInfo struct {
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" mapstructure:"capabilities"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug" mapstructure:"debug"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
 	Geoscope                []string          `yaml:"geoscope" mapstructure:"geoscope"`
+	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
 
 	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
 
@@ -612,7 +612,7 @@ func validateGeoscope(geoscope []string, bidderName string) error {
 		exclusion := ""
 		if strings.HasPrefix(code, "!") {
 			exclusion = "!"
-			code = strings.TrimPrefix(code, "!")
+			code = code[1:]
 		}
 
 		if len(code) != 3 {
