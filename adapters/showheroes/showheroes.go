@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/version"
 )
 
 type adapter struct {
@@ -115,6 +116,29 @@ func getPrebidChannel(request *openrtb2.BidRequest) (string, string) {
 	return channelName, channelVersion
 }
 
+func setPBSVersion(request *openrtb2.BidRequest, pbsVersion string) {
+	if pbsVersion == "" {
+		return
+	}
+	source := request.Source
+	if source == nil {
+		source = &openrtb2.Source{}
+		request.Source = source
+	}
+
+	sourceExtMap := make(map[string]json.RawMessage)
+	if source.Ext != nil {
+		if err := jsonutil.Unmarshal(source.Ext, &sourceExtMap); err != nil {
+			// if we can't parse the existing ext, don't modify it
+			return
+		}
+	}
+	sourceExtMap["pbs"] = json.RawMessage(`{"pbsv":"` + pbsVersion + `", "pbsp": "go"}`)
+	if ext, err := json.Marshal(sourceExtMap); err == nil {
+		source.Ext = ext
+	}
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if err := validate(request); err != nil {
 		return nil, []error{err}
@@ -143,6 +167,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.Ext
 	if len(validImps) == 0 {
 		return nil, errors
 	}
+
+	setPBSVersion(request, version.Ver)
 
 	request.Imp = validImps
 	reqJSON, err := json.Marshal(request)
