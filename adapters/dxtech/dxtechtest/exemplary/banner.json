@@ -54,7 +54,7 @@
             "1.2.3.4"
           ],
           "X-Openrtb-Version": [
-            "2.5"
+            "2.6"
           ]
         },
         "uri": "https://ads.dxtech.ai/pbs?placement_id=placement123&publisher_id=pub123",
