@@ -1,7 +1,7 @@
 aliasOf: "xeworks"
 endpoint: "http://rtb.rbstsystems.live?pid={{.SourceId}}&host={{.Host}}&pbs=1"
 maintainer:
-  email: "elad@robust-apps.com"
+  email: "prebid@robust-apps.com"
 userSync:
   # robustApps supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.
