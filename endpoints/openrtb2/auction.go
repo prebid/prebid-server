@@ -442,6 +442,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		errs = []error{err}
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	if limitedReqReader.N <= 0 {
 		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
