@@ -7,15 +7,20 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/coocood/freecache"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -43,9 +48,9 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 		if cfg.Masking.Geo.LatLongPrecision == 0 {
 			cfg.Masking.Geo.LatLongPrecision = 2 // 2 decimal places default (~1.1km precision)
 		} else if cfg.Masking.Geo.LatLongPrecision > 4 {
-			return nil, fmt.Errorf("lat_long_precision cannot exceed 4 decimal places for privacy protection")
+			return nil, errors.New("lat_long_precision cannot exceed 4 decimal places for privacy protection")
 		} else if cfg.Masking.Geo.LatLongPrecision < 0 {
-			return nil, fmt.Errorf("lat_long_precision cannot be negative")
+			return nil, errors.New("lat_long_precision cannot be negative")
 		}
 
 		// Set default EID allowlist if empty
@@ -76,7 +81,7 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 			Timeout:   time.Duration(cfg.Timeout) * time.Millisecond,
 			Transport: transport,
 		},
-		cache: &segmentCache{data: make(map[string]cacheEntry)},
+		cache: freecache.NewCache(10 * 1024 * 1024),
 	}, nil
 }
 
@@ -116,18 +121,6 @@ type DeviceMaskingConfig struct {
 	PreserveMobileIds bool `json:"preserve_mobile_ids"` // Keep mobile advertising IDs (default: false)
 }
 
-// cacheEntry represents a cached segment response
-type cacheEntry struct {
-	segments  []string
-	timestamp time.Time
-}
-
-// segmentCache provides thread-safe caching of segment data
-type segmentCache struct {
-	mu   sync.RWMutex
-	data map[string]cacheEntry
-}
-
 type userExt struct {
 	Eids           []openrtb2.EID `json:"eids"`
 	RampID         string         `json:"rampid"`
@@ -136,32 +129,11 @@ type userExt struct {
 	RampIDEnvelope string         `json:"rampId_envelope"`
 }
 
-func (c *segmentCache) get(key string, ttl time.Duration) ([]string, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	entry, exists := c.data[key]
-	if !exists || time.Since(entry.timestamp) > ttl {
-		return nil, false
-	}
-	return entry.segments, true
-}
-
-func (c *segmentCache) set(key string, segments []string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.data[key] = cacheEntry{
-		segments:  segments,
-		timestamp: time.Now(),
-	}
-}
-
 // Module implements the Scope3 RTD module
 type Module struct {
 	cfg        Config
 	httpClient *http.Client
-	cache      *segmentCache
+	cache      *freecache.Cache
 }
 
 // HandleEntrypointHook initializes the module context with a sync.Map for storing segments
@@ -248,13 +220,14 @@ func (m *Module) HandleAuctionResponseHook(
 		}
 	}
 
+	var ret hookstage.HookResult[hookstage.AuctionResponsePayload]
+
 	if len(segments) == 0 {
-		return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
+		return ret, nil
 	}
 
 	// Add segments to the auction response
-	changeSet := hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
-	changeSet.AddMutation(
+	ret.ChangeSet.AddMutation(
 		func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
 			// Add Scope3 segments to the response ext so publisher can use them
 			if payload.BidResponse.Ext == nil {
@@ -310,19 +283,17 @@ func (m *Module) HandleAuctionResponseHook(
 		"ext",
 	)
 
-	return hookstage.HookResult[hookstage.AuctionResponsePayload]{
-		ChangeSet: changeSet,
-	}, nil
+	return ret, nil
 }
 
 // fetchScope3Segments calls the Scope3 API and extracts segments
 func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.BidRequest) ([]string, error) {
 	// Create cache key based on relevant user identifiers and site context
-	cacheKey := m.createCacheKey(bidRequest)
+	cacheKey := []byte(m.createCacheKey(bidRequest))
 
 	// Check cache first
-	if segments, found := m.cache.get(cacheKey, time.Duration(m.cfg.CacheTTL)*time.Second); found {
-		return segments, nil
+	if segments, err := m.cache.Get(cacheKey); err == nil {
+		return strings.Split(string(segments), ","), nil
 	}
 
 	// Apply privacy masking before sending to Scope3
@@ -331,7 +302,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 		maskedRequest := m.maskBidRequest(bidRequest)
 		if maskedRequest == nil {
 			// Masking failed - don't send request to prevent data leakage
-			return nil, fmt.Errorf("failed to mask bid request for privacy protection")
+			return nil, errors.New("failed to mask bid request for privacy protection")
 		}
 		requestToSend = maskedRequest
 	}
@@ -364,7 +335,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 
 	// Parse response
 	var scope3Resp Scope3Response
-	if err = json.NewDecoder(resp.Body).Decode(&scope3Resp); err != nil {
+	if err = jsoniter.ConfigCompatibleWithStandardLibrary.NewDecoder(resp.Body).Decode(&scope3Resp); err != nil {
 		return nil, err
 	}
 
@@ -372,9 +343,9 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	segmentMap := make(map[string]struct{})
 	for _, data := range scope3Resp.Data {
 		// Extract actual segments from impression-level data
-		for _, imp := range data.Imp {
+		for imp := range iterutil.SlicePointerValues(data.Imp) {
 			if imp.Ext != nil && imp.Ext.Scope3 != nil {
-				for _, segment := range imp.Ext.Scope3.Segments {
+				for _, segment := range (*imp).Ext.Scope3.Segments {
 					segmentMap[segment.ID] = struct{}{}
 				}
 			}
@@ -388,7 +359,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	}
 
 	// Cache the result
-	m.cache.set(cacheKey, segments)
+	m.cache.Set(cacheKey, []byte(strings.Join(segments, ",")), m.cfg.CacheTTL)
 
 	return segments, nil
 }

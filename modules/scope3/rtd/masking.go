@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -74,9 +75,9 @@ func (m *Module) filterEids(eids []openrtb2.EID) []openrtb2.EID {
 
 	// Filter eids to only include allowed sources
 	var filtered []openrtb2.EID
-	for _, eid := range eids {
+	for eid := range iterutil.SlicePointerValues(eids) {
 		if allowed[eid.Source] {
-			filtered = append(filtered, eid)
+			filtered = append(filtered, *eid)
 		}
 	}
 

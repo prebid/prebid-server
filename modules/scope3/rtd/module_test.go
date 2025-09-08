@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coocood/freecache"
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -126,28 +127,6 @@ func TestHTTPTransportOptimization(t *testing.T) {
 	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
 	assert.Equal(t, false, transport.DisableCompression)
 	assert.Equal(t, true, transport.ForceAttemptHTTP2)
-}
-
-func TestCacheOperations(t *testing.T) {
-	cache := &segmentCache{data: make(map[string]cacheEntry)}
-
-	// Test cache miss
-	segments, found := cache.get("test-key", time.Minute)
-	assert.False(t, found)
-	assert.Nil(t, segments)
-
-	// Test cache set and hit
-	testSegments := []string{"segment1", "segment2"}
-	cache.set("test-key", testSegments)
-
-	segments, found = cache.get("test-key", time.Minute)
-	assert.True(t, found)
-	assert.Equal(t, testSegments, segments)
-
-	// Test cache expiry
-	segments, found = cache.get("test-key", time.Nanosecond)
-	assert.False(t, found)
-	assert.Nil(t, segments)
 }
 
 func TestScope3APIIntegration(t *testing.T) {
@@ -1424,7 +1403,7 @@ func TestFetchScope3Segments_MaskingFailure(t *testing.T) {
 		httpClient: &http.Client{
 			Timeout: 1 * time.Second,
 		},
-		cache: &segmentCache{data: make(map[string]cacheEntry)},
+		cache: freecache.NewCache(10),
 	}
 
 	// Create a request that should work normally
