@@ -36,6 +36,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "setuid_requests.gdpr_blocked_host_cookie", m.SetUidStatusMeter[SetUidGDPRHostCookieBlocked])
 	ensureContains(t, registry, "setuid_requests.syncer_unknown", m.SetUidStatusMeter[SetUidSyncerUnknown])
 	ensureContains(t, registry, "stored_responses", m.StoredResponsesMeter)
+	ensureContains(t, registry, "gvl_requests", m.GvlListRequestsMeter)
 
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
@@ -56,6 +57,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[ReqTypeVideo][RequestStatusBadInput])
 	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[ReqTypeVideo][RequestStatusErr])
 	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[ReqTypeVideo][RequestStatusNetworkErr])
+	ensureContains(t, registry, "requests.size.auction", m.RequestSizeByEndpoint[EndpointAuction])
+	ensureContains(t, registry, "requests.size.video", m.RequestSizeByEndpoint[EndpointVideo])
 
 	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
 	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
@@ -85,6 +88,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "request_over_head_time.make-bidder-requests", m.OverheadTimer[MakeBidderRequests])
 	ensureContains(t, registry, "bidder_server_response_time_seconds", m.BidderServerResponseTimer)
 	ensureContains(t, registry, "tmax_timeout", m.TMaxTimeoutCounter)
+	ensureContains(t, registry, "connection_want", m.ConnectionWantCounter)
+	ensureContains(t, registry, "connection_got", m.ConnectionGotCounter)
 
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {
@@ -1064,8 +1069,8 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	module := "foobar"
 	stage1 := "entrypoint"
-	stage2 := "raw_auction"
-	stage3 := "processed_auction"
+	stage2 := "raw_auction_request"
+	stage3 := "processed_auction_request"
 
 	testCases := []struct {
 		description                string
