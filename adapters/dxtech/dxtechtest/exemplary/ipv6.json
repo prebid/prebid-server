@@ -50,7 +50,7 @@
             "2001:0000:130F:0000:0000:09C0:876A:130B"
           ],
           "X-Openrtb-Version": [
-            "2.5"
+            "2.6"
           ]
         },
         "uri": "https://ads.dxtech.ai/pbs?placement_id=placement123&publisher_id=pub123",

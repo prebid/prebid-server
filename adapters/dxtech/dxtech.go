@@ -1,7 +1,6 @@
 package dxtech
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
