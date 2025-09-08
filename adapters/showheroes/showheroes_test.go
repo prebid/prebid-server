@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -398,4 +399,21 @@ func TestShowheroesAdapter_MakeBids(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPbsSourceExt(t *testing.T) {
+	request := &openrtb2.BidRequest{}
+	setPBSVersion(request, "test_version")
+
+	source := request.Source
+	assert.NotNil(t, source)
+	assert.NotNil(t, source.Ext)
+
+	var sourceExtMap map[string]map[string]string
+	if err := jsonutil.Unmarshal(source.Ext, &sourceExtMap); err != nil {
+		t.Fatalf("failed to unmarshal source.ext: %v", err)
+	}
+
+	assert.Equal(t, "test_version", sourceExtMap["pbs"]["pbsv"])
+	assert.Equal(t, "go", sourceExtMap["pbs"]["pbsp"])
 }
