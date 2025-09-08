@@ -6,10 +6,12 @@
   "properties": {
     "publisherId": {
       "type": "string",
+      "minLength": 1,
       "description": "The publisher id"
     },
     "placementId": {
       "type": "string",
+      "minLength": 1,
       "description": "The placement id"
     }
   },
