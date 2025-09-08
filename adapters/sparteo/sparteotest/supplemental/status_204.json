@@ -1,0 +1,62 @@
+{
+    "mockBidRequest": {
+        "id": "request-id",
+        "imp": [
+            {
+                "id": "div-banner-id",
+                "banner": {
+                    "topframe": 1,
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "networkId": "networkId"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://bid-test.sparteo.com/s2s-auction",
+                "body": {
+                    "id": "request-id",
+                    "imp": [
+                        {
+                            "id": "div-banner-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ],
+                                "topframe": 1
+                            },
+                            "ext": {
+                                "sparteo": {
+                                    "params": {
+                                        "networkId": "networkId"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs": [
+                    "div-banner-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {}
+            }
+        }
+    ]
+}

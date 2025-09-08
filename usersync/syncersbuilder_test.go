@@ -269,6 +269,21 @@ func TestShouldCreateSyncer(t *testing.T) {
 			given:       config.BidderInfo{Disabled: true, Syncer: &config.Syncer{SupportCORS: &anyCORS}},
 			expected:    false,
 		},
+		{
+			description: "WhiteLabelOnly, No Syncer",
+			given:       config.BidderInfo{WhiteLabelOnly: true, Syncer: nil},
+			expected:    false,
+		},
+		{
+			description: "WhiteLabelOnly, Syncer",
+			given:       config.BidderInfo{WhiteLabelOnly: true, Syncer: &config.Syncer{Key: "anyKey"}},
+			expected:    false,
+		},
+		{
+			description: "WhiteLabelOnly, Syncer - Fully Loaded",
+			given:       config.BidderInfo{WhiteLabelOnly: true, Syncer: &config.Syncer{Key: "anyKey", Supports: anySupports, IFrame: anyEndpoint, Redirect: anyEndpoint, SupportCORS: &anyCORS}},
+			expected:    false,
+		},
 	}
 
 	for _, test := range testCases {

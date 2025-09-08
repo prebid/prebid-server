@@ -1,4 +1,4 @@
-package iterators
+package iterutil
 
 import (
 	"testing"
