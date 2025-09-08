@@ -38,7 +38,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "method": "GET",
+        "method": "POST",
         "headers": {
           "Referer": [
             "http://site.com/ref"
