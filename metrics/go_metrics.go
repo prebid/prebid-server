@@ -18,6 +18,8 @@ type Metrics struct {
 	TMaxTimeoutCounter             metrics.Counter
 	ConnectionAcceptErrorMeter     metrics.Meter
 	ConnectionCloseErrorMeter      metrics.Meter
+	ConnectionWantCounter          metrics.Counter
+	ConnectionGotCounter           metrics.Counter
 	ImpMeter                       metrics.Meter
 	AppRequestMeter                metrics.Meter
 	NoCookieMeter                  metrics.Meter
@@ -35,9 +37,11 @@ type Metrics struct {
 	TLSHandshakeTimer              metrics.Timer
 	BidderServerResponseTimer      metrics.Timer
 	StoredResponsesMeter           metrics.Meter
+	GvlListRequestsMeter           metrics.Meter
 
 	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
+	RequestSizeByEndpoint map[EndpointType]metrics.Histogram
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
 	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
@@ -156,9 +160,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 	newMetrics := &Metrics{
 		MetricsRegistry:                registry,
 		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
+		RequestSizeByEndpoint:          make(map[EndpointType]metrics.Histogram),
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
+		ConnectionWantCounter:          metrics.NilCounter{},
+		ConnectionGotCounter:           metrics.NilCounter{},
 		ImpMeter:                       blankMeter,
 		AppRequestMeter:                blankMeter,
 		DebugRequestMeter:              blankMeter,
@@ -182,6 +189,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		SetUidStatusMeter:              make(map[SetUidStatus]metrics.Meter),
 		SyncerSetsMeter:                make(map[string]map[SyncerSetUidStatus]metrics.Meter),
 		StoredResponsesMeter:           blankMeter,
+		GvlListRequestsMeter:           blankMeter,
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -226,6 +234,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
 		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
+		}
+	}
+
+	for _, t := range EndpointTypes() {
+		if t != EndpointAmp {
+			newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{}
 		}
 	}
 
@@ -285,6 +299,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
+	newMetrics.ConnectionWantCounter = metrics.GetOrRegisterCounter("connection_want", registry)
+	newMetrics.ConnectionGotCounter = metrics.GetOrRegisterCounter("connection_got", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 
 	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
@@ -301,6 +317,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
+	newMetrics.GvlListRequestsMeter = metrics.GetOrRegisterMeter("gvl_requests", registry)
 	newMetrics.OverheadTimer = makeOverheadTimerMetrics(registry)
 	newMetrics.BidderServerResponseTimer = metrics.GetOrRegisterTimer("bidder_server_response_time_seconds", registry)
 
@@ -347,6 +364,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		for stat := range statusMap {
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
+	}
+
+	for _, endpoint := range EndpointTypes() {
+		newMetrics.RequestSizeByEndpoint[endpoint] = metrics.GetOrRegisterHistogram("requests.size."+string(endpoint), registry, metrics.NewUniformSample(1024))
 	}
 
 	for _, cacheRes := range CacheResults() {
@@ -603,6 +624,11 @@ func (me *Metrics) RecordRequest(labels Labels) {
 		}
 	}
 
+	// Request size by endpoint
+	if labels.RequestSize > 0 && labels.RType != ReqTypeAMP {
+		me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
+	}
+
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)
@@ -625,6 +651,10 @@ func (me *Metrics) RecordStoredResponse(pubId string) {
 	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
 		me.getAccountMetrics(pubId).storedResponsesMeter.Mark(1)
 	}
+}
+
+func (me *Metrics) RecordGvlListRequest() {
+	me.GvlListRequestsMeter.Mark(1)
 }
 
 func (me *Metrics) RecordImps(labels ImpLabels) {
@@ -661,6 +691,14 @@ func (me *Metrics) RecordConnectionClose(success bool) {
 	} else {
 		me.ConnectionCloseErrorMeter.Mark(1)
 	}
+}
+
+func (me *Metrics) RecordConnectionWant() {
+	me.ConnectionWantCounter.Inc(1)
+}
+
+func (me *Metrics) RecordConnectionGot() {
+	me.ConnectionGotCounter.Inc(1)
 }
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible

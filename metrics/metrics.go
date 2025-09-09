@@ -13,6 +13,7 @@ type Labels struct {
 	PubID         string // exchange specific ID, so we cannot compile in values
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
+	RequestSize   int
 }
 
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
@@ -139,6 +140,8 @@ type DemandSource string
 // ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
 type ImpMediaType string
 
+type EndpointType string
+
 // RequestType : Request type enumeration
 type RequestType string
 
@@ -194,6 +197,40 @@ func RequestTypes() []RequestType {
 		ReqTypeAMP,
 		ReqTypeVideo,
 	}
+}
+
+// Endpoint type constants
+const (
+	EndpointAuction EndpointType = "auction"
+	EndpointVideo   EndpointType = "video"
+	EndpointAmp     EndpointType = "amp"
+)
+
+func EndpointTypes() []EndpointType {
+	return []EndpointType{
+		EndpointAuction,
+		EndpointVideo,
+		EndpointAmp,
+	}
+}
+
+func GetEndpointFromRequestType(requestType RequestType) EndpointType {
+	var requestEndpoint EndpointType
+
+	switch requestType {
+	case ReqTypeORTB2Web:
+		fallthrough
+	case ReqTypeORTB2App:
+		fallthrough
+	case ReqTypeORTB2DOOH:
+		requestEndpoint = EndpointAuction
+	case ReqTypeAMP:
+		requestEndpoint = EndpointAmp
+	case ReqTypeVideo:
+		requestEndpoint = EndpointVideo
+	}
+
+	return requestEndpoint
 }
 
 // The media types described in the "imp" json objects
@@ -459,6 +496,7 @@ type MetricsEngine interface {
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
+	RecordGvlListRequest()
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
 	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)
@@ -473,4 +511,6 @@ type MetricsEngine interface {
 	RecordModuleExecutionError(labels ModuleLabels)
 	RecordModuleTimeout(labels ModuleLabels)
 	RecordAdapterThrottled(adapterName openrtb_ext.BidderName)
+	RecordConnectionWant()
+	RecordConnectionGot()
 }
