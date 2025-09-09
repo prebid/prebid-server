@@ -361,7 +361,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEdge226:           edge226.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderDXKulture:         dxkulture.Builder,
-		openrtb_ext.BidderDXTech:         	 dxtech.Builder,
+		openrtb_ext.BidderDXTech:            dxtech.Builder,
 		openrtb_ext.BidderDriftPixel:        driftpixel.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,

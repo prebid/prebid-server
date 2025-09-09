@@ -169,4 +169,3 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	}
 	return headers
 }
-
