@@ -35,19 +35,13 @@ type bidExt struct {
 	Nativery bidExtNativery `json:"nativery"`
 }
 
-// Function used to  builds a new instance of the Nativery adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	// build bidder
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-// makeRequests creates HTTP requests for a given BidRequest and adapter configuration.
-// It generates requests for each ad exchange targeted by the BidRequest,
-// serializes the BidRequest into the request body, and sets the appropriate
-// HTTP headers and other parameters.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	reqCopy := *request
 	var errs []error
@@ -70,7 +64,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		// at the first impression set widgetId value
 		if i == 0 {
 			widgetId = nativeryExt.WidgetId
 		}
@@ -79,7 +72,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	reqCopy.Imp = validImps
-	// If all the requests were malformed, don't bother making a server call with no impressions.
 	if len(reqCopy.Imp) == 0 {
 		return nil, errs
 	}
@@ -112,14 +104,8 @@ func buildNativeryExt(imp *openrtb2.Imp) (openrtb_ext.ImpExtNativery, error) {
 	return nativeryExt, nil
 }
 
-// makebids handles the entire bidding process for a single BidRequest.
-// It creates and sends bid requests to multiple ad exchanges, receives
-// and parses responses, extracts bids and other relevant information,
-// and populates a BidderResponse object with the aggregated information.
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	// check if the response has no content
 	if adapters.IsResponseStatusCodeNoContent(response) {
-		// Extract nativery no content reason if is present
 		nativeryError := response.Headers.Get("X-Nativery-Error")
 		if nativeryError != "" {
 			return nil, []error{&errortypes.BadInput{
@@ -132,25 +118,21 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 
-	// check if the response has errors
 	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}
 
-	// handle response
 	var nativeryResponse openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(response.Body, &nativeryResponse); err != nil {
 		return nil, []error{err}
 	}
 
 	var errs []error
-	// create bidder with impressions length capacity
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 	for _, sb := range nativeryResponse.SeatBid {
 		for i := range sb.Bid {
 			bid := sb.Bid[i]
 
-			// should be data sended from nativery server to partecipate to the auction
 			var bidExt bidExt
 			if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
@@ -162,20 +144,17 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				errs = append(errs, err)
 				continue
 			}
-			// get metadata
 			bidMeta := buildBidMeta(string(bidType), bidExt.Nativery.BidAdvDomains)
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: bidType,
-				// metadata is encouraged
 				BidMeta: bidMeta,
 			})
 		}
 
 	}
 
-	// set bidder currency, EUR by default
 	if nativeryResponse.Cur != "" {
 		bidderResponse.Currency = nativeryResponse.Cur
 	} else {
@@ -185,7 +164,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 }
 
-// getMediaTypeForBid switch nativery type in bid type.
 func getMediaTypeForBid(bid *bidExt) (openrtb_ext.BidType, error) {
 	switch bid.Nativery.BidType {
 	case "native":
@@ -201,14 +179,12 @@ func getMediaTypeForBid(bid *bidExt) (openrtb_ext.BidType, error) {
 
 func buildBidMeta(mediaType string, advDomain []string) *openrtb_ext.ExtBidPrebidMeta {
 
-	//advertiserDomains and dchain are encouraged to implements
 	return &openrtb_ext.ExtBidPrebidMeta{
 		MediaType:         mediaType,
 		AdvertiserDomains: advDomain,
 	}
 }
 
-// splitRequests creates one HTTP request per Imp by deep-copying the original BidRequest
 func splitRequests(
 	imps []openrtb2.Imp,
 	request *openrtb2.BidRequest,
@@ -218,49 +194,39 @@ func splitRequests(
 ) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	// Pre-allocate slice to hold one RequestData per imp
 	resArr := make([]*adapters.RequestData, 0, len(imps))
 
-	// Prepare standard headers for all requests
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	// Marshal the nativery-specific extension once
 	nativeryExtJson, err := jsonutil.Marshal(requestExtNativery)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	// Make a shallow copy of the original request struct to use as a template
 	baseReq := *request
 
 	for _, imp := range imps {
-		// Clone the bidder-level ext map and inject the nativery JSON
 		extClone := maps.Clone(requestExt)
 		extClone["nativery"] = nativeryExtJson
 
-		// Start from the base request copy for this imp
 		reqCopy := baseReq
 
-		// Marshal the cloned ext back into JSON bytes
 		reqCopy.Ext, err = jsonutil.Marshal(extClone)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		// Replace the Imp array with a single-element slice for this imp
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		// Serialize this per-imp request to JSON
 		reqJSON, err := jsonutil.Marshal(&reqCopy)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		// Build the RequestData for this imp
 		resArr = append(resArr, &adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
@@ -288,7 +254,6 @@ func getRequestExt(ext jsonutil.RawMessage) (map[string]jsonutil.RawMessage, err
 func getNativeryExt(extMap map[string]jsonutil.RawMessage, isAMP int, widgetId string) (bidReqExtNativery, error) {
 	var nativeryExt bidReqExtNativery
 
-	// if ext.nativery already exists return it
 	if nativeryExtJson, exists := extMap["nativery"]; exists && len(nativeryExtJson) > 0 {
 		if err := jsonutil.Unmarshal(nativeryExtJson, &nativeryExt); err != nil {
 			return nativeryExt, err

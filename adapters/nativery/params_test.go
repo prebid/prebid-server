@@ -7,11 +7,6 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-// This file actually intends to test static/bidder-params/appnexus.json
-//
-// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.appnexus
-
-// TestValidParams makes sure that the appnexus schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -25,7 +20,6 @@ func TestValidParams(t *testing.T) {
 	}
 }
 
-// TestInvalidParams makes sure that the appnexus schema rejects all the imp.ext fields we don't support.
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
