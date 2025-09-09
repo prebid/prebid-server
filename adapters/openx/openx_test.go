@@ -40,6 +40,14 @@ func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 		expectedMeta *openrtb_ext.ExtBidPrebidMeta
 	}{
 		{
+			&openrtb2.Bid{Ext: json.RawMessage(`malformed`)},
+			nil,
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{}`)},
+			nil,
+		},
+		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789","buyer_id":"123"}`)},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 789},
 		},
