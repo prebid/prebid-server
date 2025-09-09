@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidParams(t *testing.T) {
@@ -48,4 +48,3 @@ func TestInvalidParams(t *testing.T) {
 		})
 	}
 }
-
