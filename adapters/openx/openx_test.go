@@ -36,51 +36,57 @@ func TestResponseWithCurrencies(t *testing.T) {
 
 func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 	testCases := []struct {
-		ext          *oxBidExt
+		bid          *openrtb2.Bid
 		expectedMeta *openrtb_ext.ExtBidPrebidMeta
 	}{
 		{
-			&oxBidExt{BuyerId: "123", DspId: "456", BrandId: "789"},
+			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789","buyer_id":"123"}`)},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 789},
 		},
 		{
-			&oxBidExt{BuyerId: "123", DspId: "456"},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
+			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"malformed","buyer_id":"123"}`)},
+			nil,
 		},
 		{
-			&oxBidExt{BuyerId: "123", BrandId: "789"},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 789},
-		},
-		{
-			&oxBidExt{DspId: "456", BrandId: "789"},
+			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789","buyer_id":"123-456"}`)},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 789},
 		},
 		{
-			&oxBidExt{BuyerId: "123"},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 0},
-		},
-		{
-			&oxBidExt{DspId: "456"},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 0},
-		},
-		{
-			&oxBidExt{BrandId: "789"},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 0, BrandID: 789},
-		},
-		{
-			&oxBidExt{BuyerId: "123", DspId: "456", BrandId: "badId"},
+			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123","dsp_id":"456"}`)},
 			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
 		},
 		{
-			&oxBidExt{BuyerId: "badId", DspId: "badId", BrandId: "badId"},
+			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123","brand_id":"789"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 789},
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 789},
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 0},
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 0},
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{"brand_id":"789"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 0, BrandID: 789},
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123","dsp_id":"456"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"malformed","dsp_id":"malformed","brand_id":"malformed"}`)},
 			nil,
 		},
 	}
 
 	for _, testCase := range testCases {
-		marshaledExt, _ := json.Marshal(testCase.ext)
-		bid := &openrtb2.Bid{Ext: marshaledExt}
-		updatedMeta := getBidMeta(bid)
+		updatedMeta := getBidMeta(testCase.bid)
 		assert.Equal(t, testCase.expectedMeta, updatedMeta)
 	}
 }
