@@ -69,38 +69,45 @@ func executeGroup[H any, P any](
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
-	resp := make(chan hookResponse[P], len(group.Hooks))
+	var rejectedOnce sync.Once
+	closeRejectedOnce := func() {
+		rejectedOnce.Do(func() {
+			close(rejected)
+		})
+	}
+	// Ensure the channel is closed when the function returns.
+	defer closeRejectedOnce()
+	hookResponses := make([]hookResponse[P], len(group.Hooks))
 
-	for _, hook := range group.Hooks {
+	for i, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
 		mCtx.HookImplCode = hook.Code
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
+		go func(hw hooks.HookWrapper[H], hookResp *hookResponse[P], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
-		}(hook, mCtx)
+			if executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, hookResp, rejected) {
+				// When the first hook rejects, close the channel to signal all other hooks to stop.
+				closeRejectedOnce()
+			}
+		}(hook, &hookResponses[i], mCtx)
 	}
 
-	go func() {
-		wg.Wait()
-		close(resp)
-	}()
-
-	hookResponses := collectHookResponses(resp, rejected)
+	wg.Wait()
 
 	return handleHookResponses(executionCtx, hookResponses, payload, metricEngine)
 }
 
+// executeHook executes a single hook and returns the rejected status.
 func executeHook[H any, P any](
 	moduleCtx hookstage.ModuleInvocationContext,
 	hw hooks.HookWrapper[H],
 	payload P,
 	hookHandler hookHandler[H, P],
 	timeout time.Duration,
-	resp chan<- hookResponse[P],
+	resp *hookResponse[P],
 	rejected <-chan struct{},
-) {
+) bool {
 	hookRespCh := make(chan hookResponse[P], 1)
 	startTime := time.Now()
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
@@ -126,30 +133,20 @@ func executeHook[H any, P any](
 	case res := <-hookRespCh:
 		res.HookID = hookId
 		res.ExecutionTime = time.Since(startTime)
-		resp <- res
+		*resp = res
+		return res.Result.Reject
 	case <-time.After(timeout):
-		resp <- hookResponse[P]{
+		*resp = hookResponse[P]{
 			Err:           TimeoutError{},
 			ExecutionTime: time.Since(startTime),
 			HookID:        hookId,
 			Result:        hookstage.HookResult[P]{},
 		}
+		return false
 	case <-rejected:
-		return
+		// In this path, rejected has already been reported; no need to report it again.
+		return false
 	}
-}
-
-func collectHookResponses[P any](resp <-chan hookResponse[P], rejected chan<- struct{}) []hookResponse[P] {
-	hookResponses := make([]hookResponse[P], 0)
-	for r := range resp {
-		hookResponses = append(hookResponses, r)
-		if r.Result.Reject {
-			close(rejected)
-			break
-		}
-	}
-
-	return hookResponses
 }
 
 func handleHookResponses[P any](
