@@ -1,0 +1,9 @@
+endpoint: "https://rtb.beardfleet.com/auction/bid?pid={{.PublisherID}}&tid={{.PlacementID}}"
+maintainer:
+  email: "info@bold-win.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
