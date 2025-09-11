@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/alitto/pond"
@@ -51,28 +52,46 @@ type PriceFloorFetcher struct {
 	time            timeutil.Time         // time interface to record request timings
 	metricEngine    metrics.MetricsEngine // Records malfunctions in dynamic fetch
 	maxRetries      int                   // Max number of retries for failing URLs
+	mu              sync.Mutex
 }
+
+var fetcherMutex sync.Mutex
 
 type FetchQueue []*fetchInfo
 
 func (fq FetchQueue) Len() int {
+	fetcherMutex.Lock()
+	defer fetcherMutex.Unlock()
+
 	return len(fq)
 }
 
 func (fq FetchQueue) Less(i, j int) bool {
+	fetcherMutex.Lock()
+	defer fetcherMutex.Unlock()
+
 	return fq[i].fetchTime < fq[j].fetchTime
 }
 
 func (fq FetchQueue) Swap(i, j int) {
+	fetcherMutex.Lock()
+	defer fetcherMutex.Unlock()
+
 	fq[i], fq[j] = fq[j], fq[i]
 }
 
 func (fq *FetchQueue) Push(element interface{}) {
+	fetcherMutex.Lock()
+	defer fetcherMutex.Unlock()
+
 	fetchInfo := element.(*fetchInfo)
 	*fq = append(*fq, fetchInfo)
 }
 
 func (fq *FetchQueue) Pop() interface{} {
+	fetcherMutex.Lock()
+	defer fetcherMutex.Unlock()
+
 	old := *fq
 	n := len(old)
 	fetchInfo := old[n-1]
@@ -82,6 +101,9 @@ func (fq *FetchQueue) Pop() interface{} {
 }
 
 func (fq *FetchQueue) Top() *fetchInfo {
+	fetcherMutex.Lock()
+	defer fetcherMutex.Unlock()
+
 	old := *fq
 	if len(old) == 0 {
 		return nil
@@ -187,6 +209,9 @@ func (f *PriceFloorFetcher) Stop() {
 		return
 	}
 
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	close(f.done)
 	f.pool.Stop()
 	close(f.configReceiver)
@@ -209,7 +234,9 @@ func (f *PriceFloorFetcher) Fetcher() {
 		select {
 		case fetchConfig := <-f.configReceiver:
 			if fetchConfig.refetchRequest {
+				f.mu.Lock()
 				heap.Push(&f.fetchQueue, &fetchConfig)
+				f.mu.Unlock()
 			} else {
 				if _, ok := f.fetchInProgress[fetchConfig.URL]; !ok {
 					f.fetchInProgress[fetchConfig.URL] = true
