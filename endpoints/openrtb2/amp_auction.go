@@ -236,8 +236,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		errL = append(errL, errs...)
 	}
 
+	_, isDebugEnabled, _ := hookexecution.GetDebugContext(reqWrapper.BidRequest, account)
+
 	hasStoredAuctionResponses := len(storedAuctionResponses) > 0
-	errs := deps.validateRequest(account, r, reqWrapper, true, hasStoredAuctionResponses, storedBidResponses, false)
+	errs := deps.validateRequest(account, r, reqWrapper, true, hasStoredAuctionResponses, storedBidResponses, false, isDebugEnabled)
 	errL = append(errL, errs...)
 	ao.Errors = append(ao.Errors, errs...)
 	if errortypes.ContainsFatalError(errs) {
@@ -258,6 +260,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	secGPC := r.Header.Get("Sec-GPC")
 
+	warnings := errortypes.WarningOnly(errL)
+
 	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          reqWrapper,
 		Account:                    *account,
@@ -275,6 +279,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		Warnings:                   warnings,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

@@ -309,7 +309,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL = append(errL, errs...)
 	}
 
-	errs := deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false)
+	_, isDebugEnabled, _ := hookexecution.GetDebugContext(bidReqWrapper.BidRequest, account)
+
+	errs := deps.validateRequest(account, r, bidReqWrapper, false, false, nil, false, isDebugEnabled)
 	errL = append(errL, errs...)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
