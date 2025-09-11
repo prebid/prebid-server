@@ -20,6 +20,8 @@ type Metrics struct {
 	ConnectionCloseErrorMeter      metrics.Meter
 	ConnectionDialCounter          metrics.Counter
 	ConnectionDialTimer            metrics.Timer
+	ConnectionWantCounter          metrics.Counter
+	ConnectionGotCounter           metrics.Counter
 	ImpMeter                       metrics.Meter
 	AppRequestMeter                metrics.Meter
 	NoCookieMeter                  metrics.Meter
@@ -41,6 +43,7 @@ type Metrics struct {
 
 	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
+	RequestSizeByEndpoint map[EndpointType]metrics.Histogram
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
 	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
@@ -159,11 +162,14 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 	newMetrics := &Metrics{
 		MetricsRegistry:                registry,
 		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
+		RequestSizeByEndpoint:          make(map[EndpointType]metrics.Histogram),
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
 		ConnectionDialCounter:          metrics.NilCounter{},
 		ConnectionDialTimer:            blankTimer,
+		ConnectionWantCounter:          metrics.NilCounter{},
+		ConnectionGotCounter:           metrics.NilCounter{},
 		ImpMeter:                       blankMeter,
 		AppRequestMeter:                blankMeter,
 		DebugRequestMeter:              blankMeter,
@@ -235,6 +241,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		}
 	}
 
+	for _, t := range EndpointTypes() {
+		if t != EndpointAmp {
+			newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{}
+		}
+	}
+
 	for _, c := range CacheResults() {
 		newMetrics.StoredReqCacheMeter[c] = blankMeter
 		newMetrics.StoredImpCacheMeter[c] = blankMeter
@@ -293,6 +305,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ConnectionDialCounter = metrics.GetOrRegisterCounter("connection_dial", registry)
 	newMetrics.ConnectionDialTimer = metrics.GetOrRegisterTimer("connection_dial_time_seconds", registry)
+	newMetrics.ConnectionWantCounter = metrics.GetOrRegisterCounter("connection_want", registry)
+	newMetrics.ConnectionGotCounter = metrics.GetOrRegisterCounter("connection_got", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 
 	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
@@ -356,6 +370,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		for stat := range statusMap {
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
+	}
+
+	for _, endpoint := range EndpointTypes() {
+		newMetrics.RequestSizeByEndpoint[endpoint] = metrics.GetOrRegisterHistogram("requests.size."+string(endpoint), registry, metrics.NewUniformSample(1024))
 	}
 
 	for _, cacheRes := range CacheResults() {
@@ -612,6 +630,11 @@ func (me *Metrics) RecordRequest(labels Labels) {
 		}
 	}
 
+	// Request size by endpoint
+	if labels.RequestSize > 0 && labels.RType != ReqTypeAMP {
+		me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
+	}
+
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)
@@ -682,6 +705,14 @@ func (me *Metrics) RecordConnectionDials() {
 
 func (me *Metrics) RecordConnectionDialTime(dialStartTime time.Duration) {
 	me.ConnectionDialTimer.Update(dialStartTime)
+}
+
+func (me *Metrics) RecordConnectionWant() {
+	me.ConnectionWantCounter.Inc(1)
+}
+
+func (me *Metrics) RecordConnectionGot() {
+	me.ConnectionGotCounter.Inc(1)
 }
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible

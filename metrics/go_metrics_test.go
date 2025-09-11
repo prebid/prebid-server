@@ -57,6 +57,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[ReqTypeVideo][RequestStatusBadInput])
 	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[ReqTypeVideo][RequestStatusErr])
 	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[ReqTypeVideo][RequestStatusNetworkErr])
+	ensureContains(t, registry, "requests.size.auction", m.RequestSizeByEndpoint[EndpointAuction])
+	ensureContains(t, registry, "requests.size.video", m.RequestSizeByEndpoint[EndpointVideo])
 
 	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
 	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
@@ -88,6 +90,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "tmax_timeout", m.TMaxTimeoutCounter)
 	ensureContains(t, registry, "connection_dial", m.ConnectionDialCounter)
 	ensureContains(t, registry, "connection_dial_time_seconds", m.ConnectionDialTimer)
+	ensureContains(t, registry, "connection_want", m.ConnectionWantCounter)
+	ensureContains(t, registry, "connection_got", m.ConnectionGotCounter)
 
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {

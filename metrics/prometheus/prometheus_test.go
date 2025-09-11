@@ -76,6 +76,8 @@ func TestConnectionMetrics(t *testing.T) {
 		expectedClosedCount      float64
 		expectedClosedErrorCount float64
 		expectedConnectionDials  float64
+		expectedConnectionWant   float64
+		expectedConnectionGot    float64
 	}{
 		{
 			description: "Open Success",
@@ -124,6 +126,20 @@ func TestConnectionMetrics(t *testing.T) {
 			},
 			expectedConnectionDials: 1,
 		},
+		{
+			description: "connection-want",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionWant()
+			},
+			expectedConnectionWant: 1,
+		},
+		{
+			description: "connection-got",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionGot()
+			},
+			expectedConnectionGot: 1,
+		},
 	}
 
 	for _, test := range testCases {
@@ -145,6 +161,10 @@ func TestConnectionMetrics(t *testing.T) {
 			})
 		assertCounterValue(t, test.description, "connectionDials", m.connectionDials,
 			test.expectedConnectionDials)
+		assertCounterValue(t, test.description, "connectionWant", m.connectionWant,
+			test.expectedConnectionWant)
+		assertCounterValue(t, test.description, "connectionGot", m.connectionGot,
+			test.expectedConnectionGot)
 	}
 }
 
@@ -156,6 +176,7 @@ func TestRequestMetric(t *testing.T) {
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
 		RequestStatus: requestStatus,
+		RequestSize:   1024,
 	})
 
 	expectedCount := float64(1)
@@ -165,6 +186,9 @@ func TestRequestMetric(t *testing.T) {
 			requestTypeLabel:   string(requestType),
 			requestStatusLabel: string(requestStatus),
 		})
+
+	histogram := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+	assertHistogram(t, "requests_size_auction", histogram, 1, 1024)
 }
 
 func TestDebugRequestMetric(t *testing.T) {

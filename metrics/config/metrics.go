@@ -396,6 +396,18 @@ func (me *MultiMetricsEngine) RecordConnectionDialTime(dialStartTime time.Durati
 	}
 }
 
+func (me *MultiMetricsEngine) RecordConnectionWant() {
+	for _, thisME := range *me {
+		thisME.RecordConnectionWant()
+	}
+}
+
+func (me *MultiMetricsEngine) RecordConnectionGot() {
+	for _, thisME := range *me {
+		thisME.RecordConnectionGot()
+	}
+}
+
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -583,4 +595,10 @@ func (me *NilMetricsEngine) RecordConnectionDials() {
 }
 
 func (me *NilMetricsEngine) RecordConnectionDialTime(dialStartTime time.Duration) {
+}
+
+func (me *NilMetricsEngine) RecordConnectionWant() {
+}
+
+func (me *NilMetricsEngine) RecordConnectionGot() {
 }

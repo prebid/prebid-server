@@ -242,3 +242,11 @@ func (me *MetricsEngineMock) RecordConnectionDials() {
 func (me *MetricsEngineMock) RecordConnectionDialTime(dialStartTime time.Duration) {
 	me.Called(dialStartTime)
 }
+
+func (me *MetricsEngineMock) RecordConnectionWant() {
+	me.Called()
+}
+
+func (me *MetricsEngineMock) RecordConnectionGot() {
+	me.Called()
+}
