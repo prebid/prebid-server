@@ -1,0 +1,104 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-trace",
+    "imp": [
+      {
+        "id": "test-imp-trace",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "TRACE123",
+            "placementId": "trace-placement-test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "trace-site",
+      "domain": "trace.example.com",
+      "page": "https://trace.example.com/test"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/TRACE123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-trace",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "trace-placement-test"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "TRACE123",
+              "version": "v1"
+            }
+          },
+          "ortb2": {
+            "id": "test-request-trace",
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 90,
+                      "w": 728
+                    }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "customerId": "TRACE123",
+                    "placementId": "trace-placement-test"
+                  }
+                },
+                "id": "test-imp-trace"
+              }
+            ],
+            "site": {
+              "domain": "trace.example.com",
+              "id": "trace-site",
+              "page": "https://trace.example.com/test"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-trace"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [{"traceId": "simple-trace-test"}]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+  ]
+} 
