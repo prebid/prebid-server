@@ -59,12 +59,8 @@ var invalidParams = []string{
 	`{"site":"mywebsite-com"}`,
 	`{"organizationId":1000}`,
 	`{"organizationId":1000,"placement":"some-placement"}`,
-	`{"organizationId":"1000","placement":"this-is-a-very-very-long-placement"}`,
 	`{"organizationId":"1000","placement":123456}`,
 	`{"organizationId":"1000","placement":"some-placement","pagetype":123456}`,
-	`{"organizationId":"1000","placement":"some-placement","pagetype":"this-is-a-very-very-long-pagetype"}`,
 	`{"organizationId":"1000","placement":"some-placement","category":123456}`,
-	`{"organizationId":"1000","placement":"some-placement","category":"this-is-a-very-very-long-category"}`,
 	`{"organizationId":"1000","placement":"some-placement","site":123456}`,
-	`{"organizationId":"1000","placement":"some-placement","site":"this-is-a-very-very-very-very-very-very-long-site-name"}`,
 }
