@@ -40,15 +40,19 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"productId": "inview", "zoneId": "zone1"}`,
+	`{"productId": "siab", "zoneId": "fakezoneid2"}`,
+	`{"productId": "inview", "zoneId": "zone1", "siteId": "foo.ba"}`,
 	`{"productId": "inview", "siteId": "fakesiteid1"}`,
-	`{"productId": "siab", "siteId": "fakesiteid2"}`,
-	`{"productId": "inview", "siteId": "foo.ba", "zoneId": "zone1"}`,
 }
 
 var invalidParams = []string{
 	`{"productId": "inview"}`,
+	`{"zoneId": "fakezoneid2"}`,
 	`{"siteId": "fakesiteid2"}`,
+	`{"productId": 123, "zoneId": "fakesiteid2"}`,
 	`{"productId": 123, "siteId": "fakesiteid2"}`,
+	`{"productId": "siab", "zoneId": 123}`,
 	`{"productId": "siab", "siteId": 123}`,
-	`{"productId": "siab", "siteId": "fakesiteid2", "zoneId": 123}`,
+	`{"productId": "siab", "zoneId": 123, "siteId": "fakesiteid2"}`,
 }
