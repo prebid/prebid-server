@@ -1,3 +1,5 @@
+endpoint: https://prebid.resetdigital.co
+endpointCompression: gzip
 maintainer:
   email: biddersupport@resetdigital.co
 
@@ -16,8 +18,6 @@ capabilities:
       - video
       - native
       - audio
-
-endpoint: https://prebid.resetdigital.co
 
 usersync:
   redirect:

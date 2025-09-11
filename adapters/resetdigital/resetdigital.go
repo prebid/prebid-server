@@ -60,12 +60,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}}
 	}
 
-	if resetDigitalExt.PlacementID == "" {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Missing required parameter 'placement_id'",
-		}}
-	}
-
 	reqCopy := openrtb2.BidRequest{
 		ID:     request.ID,
 		Source: request.Source,
