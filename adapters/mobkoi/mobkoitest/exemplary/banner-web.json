@@ -29,7 +29,7 @@
         "ext": {
           "bidder": {
             "placementId": "placementId",
-            "adServerBaseUrl": "http://dev.mobkoi.com"
+            "integrationEndpoint": "http://from.ext.bidder.mobkoi.com/bid"
           }
         }
       }
@@ -46,7 +46,7 @@
             "application/json"
           ]
         },
-        "uri": "http://dev.mobkoi.com/bid",
+        "uri": "http://from.ext.bidder.mobkoi.com/bid",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -66,7 +66,7 @@
               "ext": {
                 "bidder": {
                   "placementId": "placementId",
-                  "adServerBaseUrl": "http://dev.mobkoi.com"
+                  "integrationEndpoint": "http://from.ext.bidder.mobkoi.com/bid"
                 }
               }
             }
@@ -84,7 +84,12 @@
               "consent": "consent-string"
             }
           },
-          "tmax": 1000
+          "tmax": 1000,
+          "ext": {
+            "mobkoi": {
+              "integration_type": "pbs"
+            }
+          }
         },
         "impIDs": [
           "some-impression-id1"
