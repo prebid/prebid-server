@@ -11,3 +11,10 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  iframe:
+    url: https://ib.adnxs.com/getuid?https://prebid.cwi.re/v1/cookiesync?xandrId=$UID&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}
+    userMacro: $UID
+  redirect:
+    url: https://ib.adnxs.com/getuid?https://prebid.cwi.re/v1/cookiesync?xandrId=$UID&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}
+    userMacro: $UID
