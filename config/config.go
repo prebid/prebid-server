@@ -472,14 +472,18 @@ type Analytics struct {
 }
 
 type CurrencyConverter struct {
-	FetchURL             string `mapstructure:"fetch_url"`
-	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`
-	StaleRatesSeconds    int    `mapstructure:"stale_rates_seconds"`
+	FetchURL                 string `mapstructure:"fetch_url"`
+	FetchTimeoutMilliseconds int    `mapstructure:"fetch_timeout_ms"`
+	FetchIntervalSeconds     int    `mapstructure:"fetch_interval_seconds"`
+	StaleRatesSeconds        int    `mapstructure:"stale_rates_seconds"`
 }
 
 func (cfg *CurrencyConverter) validate(errs []error) []error {
 	if cfg.FetchIntervalSeconds < 0 {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
+	}
+	if cfg.FetchTimeoutMilliseconds < 0 {
+		errs = append(errs, fmt.Errorf("currency_converter.fetch_timeout_ms must be 0 or greater. Got %d", cfg.FetchTimeoutMilliseconds))
 	}
 	return errs
 }
@@ -1173,6 +1177,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
+	v.SetDefault("currency_converter.fetch_timeout_ms", 60000)      // 60 seconds
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("currency_converter.stale_rates_seconds", 0)
 	v.SetDefault("default_request.type", "")

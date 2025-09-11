@@ -160,7 +160,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
 	_, rejectErr := hookExecutor.ExecuteEntrypointStage(r, nilBody)
-	reqWrapper, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r)
+	reqWrapper, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r, labels)
 	ao.Errors = append(ao.Errors, errL...)
 	// Process reject after parsing amp request, so we can use reqWrapper.
 	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
@@ -412,10 +412,13 @@ func sendAmpResponse(
 	// nevertheless we will keep it as such for compatibility reasons.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
+	// Exitpoint will modify the response and set response headers according to hook implementation.
+	finalResponse := hookExecutor.ExecuteExitpointStage(ampResponse, w)
+
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
-	if err := enc.Encode(ampResponse); err != nil {
+	if err := enc.Encode(finalResponse); err != nil {
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
 	}
@@ -500,9 +503,9 @@ func getExtBidResponse(
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
+func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request, labels metrics.Labels) (req *openrtb_ext.RequestWrapper, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
 	// Load the stored request for the AMP ID.
-	reqNormal, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, e := deps.loadRequestJSONForAmp(httpRequest)
+	reqNormal, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, e := deps.loadRequestJSONForAmp(httpRequest, labels)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
@@ -533,7 +536,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 }
 
 // Load the stored OpenRTB request for an incoming AMP request, or return the errors found.
-func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
+func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request, labels metrics.Labels) (req *openrtb2.BidRequest, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
 	req = &openrtb2.BidRequest{}
 	errs = nil
 
@@ -556,6 +559,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	// The fetched config becomes the entire OpenRTB request
 	requestJSON := storedRequests[ampParams.StoredRequestID]
+	labels.RequestSize = len(requestJSON)
 	if err := jsonutil.UnmarshalValid(requestJSON, req); err != nil {
 		errs = []error{err}
 		return

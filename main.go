@@ -65,9 +65,10 @@ func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 }
 
 func serve(cfg *config.Configuration) error {
+	httpTimeout := time.Duration(cfg.CurrencyConverter.FetchTimeoutMilliseconds) * time.Millisecond
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
-	currencyConverter := currency.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, httpTimeout, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
 
 	currencyConverterTickerTask := task.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start()

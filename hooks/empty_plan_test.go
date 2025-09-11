@@ -18,4 +18,5 @@ func TestEmptyPlanBuilder(t *testing.T) {
 	assert.Len(t, planBuilder.PlanForRawBidderResponseStage(endpoint, nil), 0, message, StageRawBidderResponse)
 	assert.Len(t, planBuilder.PlanForAllProcessedBidResponsesStage(endpoint, nil), 0, message, StageAllProcessedBidResponses)
 	assert.Len(t, planBuilder.PlanForAuctionResponseStage(endpoint, nil), 0, message, StageAuctionResponse)
+	assert.Len(t, planBuilder.PlanForExitpointStage(endpoint, nil), 0, message, StageExitpoint)
 }

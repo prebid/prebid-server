@@ -636,6 +636,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			err:     err,
 		}
 	}
+	defer httpResp.Body.Close()
 
 	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
@@ -644,7 +645,6 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			err:     err,
 		}
 	}
-	defer httpResp.Body.Close()
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
 		if httpResp.StatusCode >= 500 {
@@ -671,14 +671,25 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
-	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
-	if toReq != nil && len(errL) == 0 {
+
+	toReq, errMakeTimeoutNotification := timeoutBidder.MakeTimeoutNotification(req)
+	if toReq != nil && errMakeTimeoutNotification == nil {
 		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
 		if err == nil {
 			httpReq.Header = req.Headers
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			if err == nil {
+				defer func() {
+					if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
+						glog.Errorf("TimeoutNotification: Draining response body failed %v", err)
+					}
+					httpResp.Body.Close()
+				}()
+			}
+
 			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 			bidder.me.RecordTimeoutNotice(success)
+
 			if bidder.config.Debug.TimeoutNotification.Log && !(bidder.config.Debug.TimeoutNotification.FailOnly && success) {
 				var msg string
 				if err == nil {
@@ -697,16 +708,15 @@ func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		}
 	} else if bidder.config.Debug.TimeoutNotification.Log {
-		reqJSON, err := jsonutil.Marshal(req)
+		reqJSON, errMarshal := jsonutil.Marshal(req)
 		var msg string
-		if err == nil {
-			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))
+		if errMarshal == nil {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errMarshal.Error(), string(reqJSON))
 		} else {
-			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errMakeTimeoutNotification.Error(), errMarshal.Error())
 		}
 		util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 	}
-
 }
 
 type httpCallInfo struct {
@@ -725,6 +735,7 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 		// GetConn is called before a connection is created or retrieved from an idle pool
 		GetConn: func(hostPort string) {
 			connStart = time.Now()
+			bidder.me.RecordConnectionWant()
 		},
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
@@ -742,6 +753,7 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 			}
 
 			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
+			bidder.me.RecordConnectionGot()
 		},
 		// DNSStart is called when a DNS lookup begins.
 		DNSStart: func(info httptrace.DNSStartInfo) {

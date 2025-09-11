@@ -52,6 +52,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdView,
 	BidderAdxcg,
 	BidderAdyoulike,
+	BidderAfront,
 	BidderAidem,
 	BidderAJA,
 	BidderAkcelo,
@@ -242,6 +243,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTappx,
 	BidderTeads,
 	BidderTelaria,
+	BidderTeqBlaze,
 	BidderTheadx,
 	BidderTheTradeDesk,
 	BidderTpmn,
@@ -421,6 +423,7 @@ const (
 	BidderAdView            BidderName = "adview"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
+	BidderAfront            BidderName = "afront"
 	BidderAidem             BidderName = "aidem"
 	BidderAJA               BidderName = "aja"
 	BidderAkcelo            BidderName = "akcelo"
@@ -611,6 +614,7 @@ const (
 	BidderTappx             BidderName = "tappx"
 	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"
+	BidderTeqBlaze          BidderName = "teqblaze"
 	BidderTheadx            BidderName = "theadx"
 	BidderTheTradeDesk      BidderName = "thetradedesk"
 	BidderTpmn              BidderName = "tpmn"
