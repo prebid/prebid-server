@@ -256,13 +256,7 @@ func validateVideoParams(video *openrtb2.Video, prod string) (*openrtb2.Video, e
 		}
 	}
 
-	if videoCopy.Placement == 0 {
-		videoCopy.Placement = 2
-	}
-
 	if prod == "instream" {
-		videoCopy.Placement = 1
-
 		if videoCopy.StartDelay == nil {
 			videoCopy.StartDelay = adcom1.StartDelay.Ptr(0)
 		}
