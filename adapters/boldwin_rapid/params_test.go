@@ -34,7 +34,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"pid": 1234, "pid": "967e42a4435b2ced033cc938"}`,
+	`{"pid": "1234", "tid": "967e42a4435b2ced033cc938"}`,
 }
 
 var invalidParams = []string{
@@ -45,5 +45,5 @@ var invalidParams = []string{
 	`true`,
 	`{"pid": "1234"}`,
 	`{"pid": 42}`,
-	`{"pid": "qwertyui", "pid": 456789}`,
+	`{"pid": "qwertyui", "tid": 456789}`,
 }

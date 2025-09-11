@@ -15,5 +15,6 @@
       "minLength": 1,
       "description": "Placement ID"
     }
-  }
+  },
+  "required": ["pid", "tid"]
 }

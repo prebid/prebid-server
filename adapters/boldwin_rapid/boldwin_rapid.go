@@ -16,7 +16,6 @@ import (
 )
 
 type adapter struct {
-	//endpoint string
 	endpoint *template.Template
 }
 
@@ -98,7 +97,7 @@ func (a *adapter) getHeaders(request *openrtb2.BidRequest) http.Header {
 		}
 
 		if len(request.Device.IP) > 0 {
-			headers.Set("X-Forwarded-For", request.Device.IP)
+			headers.Add("X-Forwarded-For", request.Device.IP)
 			headers.Add("IP", request.Device.IP)
 		}
 	}
