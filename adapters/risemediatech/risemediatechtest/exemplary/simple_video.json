@@ -1,0 +1,114 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "iPad"
+    },
+    "app": {
+      "id": "1",
+      "bundle": "com.risemediatech.videotestapp"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "tagid": "video-tag",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.75,
+            "testMode": 1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dev-ads.risemediatech.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "test-request-id",
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "iPad"
+          },
+          "app": {
+            "id": "1",
+            "bundle": "com.risemediatech.videotestapp"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "video-tag",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 1024,
+                "h": 576
+              },
+              "bidfloor": 0.75,
+              "ext": {
+                "bidder": {
+                  "bidfloor": 0.75,
+                  "testMode": 1
+                }
+              }
+            }
+          ],
+          "test": 1
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "risemediatech",
+              "bid": [
+                {
+                  "id": "test_bid_id",
+                  "impid": "test-imp-id",
+                  "price": 0.88,
+                  "adm": "<VAST version=\"3.0\"><Ad id=\"20001\" sequence=\"1\"><InLine><AdSystem version=\"4.0\"><![CDATA[RiseMediaTech]]></AdSystem><AdTitle><![CDATA[Test Video Ad]]></AdTitle><Impression><![CDATA[]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\"><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://cdn.risemediatech.com/test_ad.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough><![CDATA[https://risemediatech.com/clickthrough]]></ClickThrough></VideoClicks></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "cid": "video-campaign-001",
+                  "crid": "video-creative-abc",
+                  "dealid": "deal-999",
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test_bid_id",
+            "impid": "test-imp-id",
+            "price": 0.88,
+            "adm": "<VAST version=\"3.0\"><Ad id=\"20001\" sequence=\"1\"><InLine><AdSystem version=\"4.0\"><![CDATA[RiseMediaTech]]></AdSystem><AdTitle><![CDATA[Test Video Ad]]></AdTitle><Impression><![CDATA[]]></Impression><Creatives><Creative id=\"5480\" sequence=\"1\"><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile id=\"5246\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"600\" width=\"640\" height=\"360\" minBitrate=\"500\" maxBitrate=\"700\" scalable=\"1\" maintainAspectRatio=\"1\" codec=\"0\"><![CDATA[https://cdn.risemediatech.com/test_ad.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough><![CDATA[https://risemediatech.com/clickthrough]]></ClickThrough></VideoClicks></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "cid": "video-campaign-001",
+            "crid": "video-creative-abc",
+            "dealid": "deal-999",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
