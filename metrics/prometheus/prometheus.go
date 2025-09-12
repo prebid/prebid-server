@@ -23,6 +23,8 @@ type Metrics struct {
 	connectionsClosed            prometheus.Counter
 	connectionsError             *prometheus.CounterVec
 	connectionsOpened            prometheus.Counter
+	connectionDials              prometheus.Counter
+	connectionDialTimer          prometheus.Histogram
 	connectionWant               prometheus.Counter
 	connectionGot                prometheus.Counter
 	cookieSync                   *prometheus.CounterVec
@@ -81,6 +83,8 @@ type Metrics struct {
 	adapterBidResponseSecureMarkupError   *prometheus.CounterVec
 	adapterBidResponseSecureMarkupWarn    *prometheus.CounterVec
 	adapterThrottled                      *prometheus.CounterVec
+	adapterConnectionDials                *prometheus.CounterVec
+	adapterConnectionDialTime             *prometheus.HistogramVec
 
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
@@ -192,6 +196,14 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"connections_opened",
 		"Count of successful connections opened to Prebid Server.")
 
+	metrics.connectionDials = newCounterWithoutLabels(cfg, reg,
+		"connections_dials",
+		"Count number of started dials to open a connection.")
+
+	metrics.connectionDialTimer = newHistogram(cfg, reg,
+		"connection_dial_time_seconds",
+		"Seconds connection dial lasted",
+		standardTimeBuckets)
 	metrics.connectionWant = newCounterWithoutLabels(cfg, reg,
 		"connections_want",
 		"Count number of times client trace calls GetConn.")
@@ -427,6 +439,17 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		metrics.adapterConnectionWaitTime = newHistogramVec(cfg, reg,
 			"adapter_connection_wait",
 			"Seconds from when the connection was requested until it is either created or reused",
+			[]string{adapterLabel},
+			standardTimeBuckets)
+
+		metrics.adapterConnectionDials = newCounter(cfg, reg,
+			"adapter_connection_dials",
+			"Count number of started dials to open connections with adapter bidder endpoints.",
+			[]string{adapterLabel})
+
+		metrics.adapterConnectionDialTime = newHistogramVec(cfg, reg,
+			"adapter_connection_dial_time_seconds",
+			"Seconds adapter bidder connection dial lasted",
 			[]string{adapterLabel},
 			standardTimeBuckets)
 	}
@@ -1134,6 +1157,18 @@ func (m *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	m.adapterThrottled.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
+}
+
+func (m *Metrics) RecordAdapterConnectionDials(adapterName openrtb_ext.BidderName) {
+	m.adapterConnectionDials.With(prometheus.Labels{
+		adapterLabel: strings.ToLower(string(adapterName)),
+	}).Inc()
+}
+
+func (m *Metrics) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	m.adapterConnectionWaitTime.With(prometheus.Labels{
+		adapterLabel: strings.ToLower(string(adapterName)),
+	}).Observe(dialStartTime.Seconds())
 }
 
 func (m *Metrics) RecordConnectionWant() {

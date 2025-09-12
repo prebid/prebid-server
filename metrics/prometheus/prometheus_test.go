@@ -64,10 +64,12 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 31, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
+	assert.True(t, perAdapterCardinalityCount <= 33, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
+	adapterName := openrtb_ext.BidderName("anyName")
+	lowerCasedAdapterName := "anyname"
 	testCases := []struct {
 		description              string
 		testCase                 func(m *Metrics)
@@ -75,6 +77,9 @@ func TestConnectionMetrics(t *testing.T) {
 		expectedOpenedErrorCount float64
 		expectedClosedCount      float64
 		expectedClosedErrorCount float64
+		expectedConnectionDials  float64
+		expectedDialTime         float64
+		expectedDialTimerCalls   uint64
 		expectedConnectionWant   float64
 		expectedConnectionGot    float64
 	}{
@@ -119,6 +124,21 @@ func TestConnectionMetrics(t *testing.T) {
 			expectedClosedErrorCount: 1,
 		},
 		{
+			description: "Connection dial started",
+			testCase: func(m *Metrics) {
+				m.RecordAdapterConnectionDials(adapterName)
+			},
+			expectedConnectionDials: 1,
+		},
+		{
+			description: "Connection dial ended and was timed",
+			testCase: func(m *Metrics) {
+				m.RecordAdapterConnectionDialTime(adapterName, time.Second)
+			},
+			expectedDialTime:       1,
+			expectedDialTimerCalls: 1,
+		},
+		{
 			description: "connection-want",
 			testCase: func(m *Metrics) {
 				m.RecordConnectionWant()
@@ -151,6 +171,20 @@ func TestConnectionMetrics(t *testing.T) {
 			test.expectedClosedErrorCount, prometheus.Labels{
 				connectionErrorLabel: connectionCloseError,
 			})
+		assertCounterVecValue(t,
+			test.description,
+			"adapter[anyName]",
+			m.adapterConnectionDials,
+			test.expectedConnectionDials,
+			prometheus.Labels{adapterLabel: lowerCasedAdapterName},
+		)
+		histogram := getHistogramFromHistogramVec(m.adapterConnectionDialTime,
+			adapterLabel,
+			string(adapterName),
+		)
+		assert.Equal(t, test.expectedDialTimerCalls, histogram.GetSampleCount(), test.description)
+		assert.Equal(t, test.expectedDialTime, histogram.GetSampleSum(), test.description)
+
 		assertCounterValue(t, test.description, "connectionWant", m.connectionWant,
 			test.expectedConnectionWant)
 		assertCounterValue(t, test.description, "connectionGot", m.connectionGot,

@@ -103,6 +103,8 @@ type AdapterMetrics struct {
 	ConnCreated        metrics.Counter
 	ConnReused         metrics.Counter
 	ConnWaitTime       metrics.Timer
+	ConnDialCreated    metrics.Counter
+	ConnDialTime       metrics.Timer
 	BuyerUIDScrubbed   metrics.Meter
 	GDPRRequestBlocked metrics.Meter
 	ThrottledMeter     metrics.Meter
@@ -429,6 +431,8 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		newAdapter.ConnCreated = metrics.NilCounter{}
 		newAdapter.ConnReused = metrics.NilCounter{}
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
+		newAdapter.ConnDialCreated = metrics.NilCounter{}
+		newAdapter.ConnDialTime = &metrics.NilTimer{}
 	}
 	if !disabledMetrics.AdapterBuyerUIDScrubbed {
 		newAdapter.BuyerUIDScrubbed = blankMeter
@@ -504,6 +508,9 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
 	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
 	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
+	am.ConnDialCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connection_dials", adapterOrAccount, exchange), registry)
+	am.ConnDialTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_dial_time", adapterOrAccount, exchange), registry)
+
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -788,6 +795,14 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 		am.ConnCreated.Inc(1)
 	}
 	am.ConnWaitTime.Update(connWaitTime)
+}
+
+func (m *Metrics) RecordAdapterConnectionDials(adapterName openrtb_ext.BidderName) {
+	m.AdapterMetrics[strings.ToLower(string(adapterName))].ConnDialCreated.Inc(1)
+}
+
+func (m *Metrics) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	m.AdapterMetrics[strings.ToLower(string(adapterName))].ConnDialTime.Update(dialStartTime)
 }
 
 func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
