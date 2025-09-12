@@ -130,28 +130,28 @@ func TestConnectionMetrics(t *testing.T) {
 			},
 			expectedConnectionDials: 1,
 		},
-		//{
-		//	description: "Connection dial ended and was timed",
-		//	testCase: func(m *Metrics) {
-		//		m.RecordAdapterConnectionDialTime(adapterName, time.Second)
-		//	},
-		//	expectedDialTime:       1,
-		//	expectedDialTimerCalls: 1,
-		//},
-		//{
-		//	description: "connection-want",
-		//	testCase: func(m *Metrics) {
-		//		m.RecordConnectionWant()
-		//	},
-		//	expectedConnectionWant: 1,
-		//},
-		//{
-		//	description: "connection-got",
-		//	testCase: func(m *Metrics) {
-		//		m.RecordConnectionGot()
-		//	},
-		//	expectedConnectionGot: 1,
-		//},
+		{
+			description: "Connection dial ended and was timed",
+			testCase: func(m *Metrics) {
+				m.RecordAdapterConnectionDialTime(adapterName, time.Second)
+			},
+			expectedDialTime:       1,
+			expectedDialTimerCalls: 1,
+		},
+		{
+			description: "connection-want",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionWant()
+			},
+			expectedConnectionWant: 1,
+		},
+		{
+			description: "connection-got",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionGot()
+			},
+			expectedConnectionGot: 1,
+		},
 	}
 
 	for _, test := range testCases {
@@ -173,7 +173,6 @@ func TestConnectionMetrics(t *testing.T) {
 			})
 		assertCounterVecValue(t,
 			test.description,
-			//"adapter_connection_dials",
 			"adapter[anyName]",
 			m.adapterConnectionDials,
 			test.expectedConnectionDials,

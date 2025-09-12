@@ -18,8 +18,6 @@ type Metrics struct {
 	TMaxTimeoutCounter             metrics.Counter
 	ConnectionAcceptErrorMeter     metrics.Meter
 	ConnectionCloseErrorMeter      metrics.Meter
-	ConnectionDialCounter          metrics.Counter
-	ConnectionDialTimer            metrics.Timer
 	ConnectionWantCounter          metrics.Counter
 	ConnectionGotCounter           metrics.Counter
 	ImpMeter                       metrics.Meter
@@ -168,8 +166,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
-		ConnectionDialCounter:          metrics.NilCounter{},
-		ConnectionDialTimer:            blankTimer,
 		ConnectionWantCounter:          metrics.NilCounter{},
 		ConnectionGotCounter:           metrics.NilCounter{},
 		ImpMeter:                       blankMeter,
@@ -305,8 +301,6 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
-	newMetrics.ConnectionDialCounter = metrics.GetOrRegisterCounter("connection_dial", registry)
-	newMetrics.ConnectionDialTimer = metrics.GetOrRegisterTimer("connection_dial_time_seconds", registry)
 	newMetrics.ConnectionWantCounter = metrics.GetOrRegisterCounter("connection_want", registry)
 	newMetrics.ConnectionGotCounter = metrics.GetOrRegisterCounter("connection_got", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
