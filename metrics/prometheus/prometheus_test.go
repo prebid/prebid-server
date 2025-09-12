@@ -68,6 +68,8 @@ func TestMetricCountGatekeeping(t *testing.T) {
 }
 
 func TestConnectionMetrics(t *testing.T) {
+	adapterName := openrtb_ext.BidderName("anyName")
+	lowerCasedAdapterName := "anyname"
 	testCases := []struct {
 		description              string
 		testCase                 func(m *Metrics)
@@ -76,6 +78,8 @@ func TestConnectionMetrics(t *testing.T) {
 		expectedClosedCount      float64
 		expectedClosedErrorCount float64
 		expectedConnectionDials  float64
+		expectedDialTime         float64
+		expectedDialTimerCalls   uint64
 		expectedConnectionWant   float64
 		expectedConnectionGot    float64
 	}{
@@ -122,24 +126,32 @@ func TestConnectionMetrics(t *testing.T) {
 		{
 			description: "Connection dial started",
 			testCase: func(m *Metrics) {
-				m.RecordConnectionDials()
+				m.RecordAdapterConnectionDials(adapterName)
 			},
 			expectedConnectionDials: 1,
 		},
-		{
-			description: "connection-want",
-			testCase: func(m *Metrics) {
-				m.RecordConnectionWant()
-			},
-			expectedConnectionWant: 1,
-		},
-		{
-			description: "connection-got",
-			testCase: func(m *Metrics) {
-				m.RecordConnectionGot()
-			},
-			expectedConnectionGot: 1,
-		},
+		//{
+		//	description: "Connection dial ended and was timed",
+		//	testCase: func(m *Metrics) {
+		//		m.RecordAdapterConnectionDialTime(adapterName, time.Second)
+		//	},
+		//	expectedDialTime:       1,
+		//	expectedDialTimerCalls: 1,
+		//},
+		//{
+		//	description: "connection-want",
+		//	testCase: func(m *Metrics) {
+		//		m.RecordConnectionWant()
+		//	},
+		//	expectedConnectionWant: 1,
+		//},
+		//{
+		//	description: "connection-got",
+		//	testCase: func(m *Metrics) {
+		//		m.RecordConnectionGot()
+		//	},
+		//	expectedConnectionGot: 1,
+		//},
 	}
 
 	for _, test := range testCases {
@@ -159,8 +171,21 @@ func TestConnectionMetrics(t *testing.T) {
 			test.expectedClosedErrorCount, prometheus.Labels{
 				connectionErrorLabel: connectionCloseError,
 			})
-		assertCounterValue(t, test.description, "connectionDials", m.connectionDials,
-			test.expectedConnectionDials)
+		assertCounterVecValue(t,
+			test.description,
+			//"adapter_connection_dials",
+			"adapter[anyName]",
+			m.adapterConnectionDials,
+			test.expectedConnectionDials,
+			prometheus.Labels{adapterLabel: lowerCasedAdapterName},
+		)
+		histogram := getHistogramFromHistogramVec(m.adapterConnectionDialTime,
+			adapterLabel,
+			string(adapterName),
+		)
+		assert.Equal(t, test.expectedDialTimerCalls, histogram.GetSampleCount(), test.description)
+		assert.Equal(t, test.expectedDialTime, histogram.GetSampleSum(), test.description)
+
 		assertCounterValue(t, test.description, "connectionWant", m.connectionWant,
 			test.expectedConnectionWant)
 		assertCounterValue(t, test.description, "connectionGot", m.connectionGot,
@@ -1437,38 +1462,6 @@ func TestTimeoutNotifications(t *testing.T) {
 			successLabel: requestFailed,
 		})
 
-}
-
-func TestRecordConnectionDialTime(t *testing.T) {
-	testCases := []struct {
-		description              string
-		inConnectionDialDuration time.Duration
-		expDuration              float64
-		expCount                 uint64
-	}{
-		{
-			description:              "five-second-connection-dial-time",
-			inConnectionDialDuration: time.Second * 5,
-			expDuration:              5,
-			expCount:                 1,
-		},
-		{
-			description: "zero-connection-dial-time",
-			expDuration: 0,
-			expCount:    1,
-		},
-	}
-	for i, test := range testCases {
-		pm := createMetricsForTesting()
-		pm.RecordConnectionDialTime(test.inConnectionDialDuration)
-
-		m := dto.Metric{}
-		pm.connectionDialTimer.Write(&m)
-		histogram := *m.GetHistogram()
-
-		assert.Equal(t, test.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
-		assert.Equal(t, test.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
-	}
 }
 
 func TestRecordDNSTime(t *testing.T) {

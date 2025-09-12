@@ -145,6 +145,8 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
 	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
+	ensureContains(t, registry, name+".connection_dials", adapterMetrics.ConnDialCreated)
+	ensureContains(t, registry, name+".connection_dial_time", adapterMetrics.ConnDialTime)
 
 	ensureContains(t, registry, name+".response.validation.size.err", adapterMetrics.BidValidationCreativeSizeErrorMeter)
 	ensureContains(t, registry, name+".response.validation.size.warn", adapterMetrics.BidValidationCreativeSizeWarnMeter)

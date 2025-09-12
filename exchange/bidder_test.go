@@ -2085,8 +2085,8 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	mockMetricEngine.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 	mockMetricEngine.On("RecordOverheadTime", metrics.PreBidder, mock.Anything).Once()
 	mockMetricEngine.On("RecordBidderServerResponseTime", mock.Anything).Once()
-	mockMetricEngine.On("RecordConnectionDials").Once()
-	mockMetricEngine.On("RecordConnectionDialTime", mock.Anything).Once()
+	mockMetricEngine.On("RecordAdapterConnectionDials", mock.Anything).Once()
+	mockMetricEngine.On("RecordAdapterConnectionDialTime", mock.Anything, mock.Anything).Once()
 	mockMetricEngine.On("RecordConnectionWant").Once()
 	mockMetricEngine.On("RecordConnectionGot").Once()
 
