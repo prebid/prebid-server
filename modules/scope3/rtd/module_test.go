@@ -30,7 +30,7 @@ func TestBuilder(t *testing.T) {
 		"add_to_targeting": false
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	module, err := Builder(config, deps)
 
 	assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestBuilder(t *testing.T) {
 
 func TestBuilderInvalidConfig(t *testing.T) {
 	config := json.RawMessage(`invalid json`)
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 
 	module, err := Builder(config, deps)
 
@@ -90,7 +90,7 @@ func TestBuilderDefaults(t *testing.T) {
 		"auth_key": "test-key"
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	module, err := Builder(config, deps)
 
 	assert.NoError(t, err)
@@ -99,34 +99,6 @@ func TestBuilderDefaults(t *testing.T) {
 	assert.Equal(t, 1000, m.cfg.Timeout)
 	assert.Equal(t, 60, m.cfg.CacheTTL)
 	assert.Equal(t, false, m.cfg.AddToTargeting)
-}
-
-func TestHTTPTransportOptimization(t *testing.T) {
-	config := json.RawMessage(`{
-		"enabled": true,
-		"auth_key": "test-key",
-		"timeout_ms": 2000
-	}`)
-
-	deps := moduledeps.ModuleDeps{}
-	module, err := Builder(config, deps)
-
-	assert.NoError(t, err)
-	m := module.(*Module)
-
-	// Verify HTTP client configuration
-	assert.NotNil(t, m.httpClient)
-	assert.Equal(t, 2000*time.Millisecond, m.httpClient.Timeout)
-
-	// Verify transport is configured for high-frequency requests
-	transport, ok := m.httpClient.Transport.(*http.Transport)
-	require.True(t, ok, "Expected custom HTTP transport")
-
-	assert.Equal(t, 100, transport.MaxIdleConns)
-	assert.Equal(t, 10, transport.MaxIdleConnsPerHost)
-	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
-	assert.Equal(t, false, transport.DisableCompression)
-	assert.Equal(t, true, transport.ForceAttemptHTTP2)
 }
 
 func TestScope3APIIntegration(t *testing.T) {
@@ -173,7 +145,7 @@ func TestScope3APIIntegration(t *testing.T) {
 		"add_to_targeting": false
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	moduleInterface, err := Builder(config, deps)
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
@@ -251,7 +223,7 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 		"add_to_targeting": true
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	moduleInterface, err := Builder(config, deps)
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
@@ -369,7 +341,7 @@ func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
 		"add_to_targeting": true
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	moduleInterface, err := Builder(config, deps)
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
@@ -488,7 +460,7 @@ func TestScope3APIIntegrationWithExistingPrebidNoTargeting(t *testing.T) {
 		"add_to_targeting": true
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	moduleInterface, err := Builder(config, deps)
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
@@ -584,7 +556,7 @@ func TestScope3APIError(t *testing.T) {
 		"timeout_ms": 1000
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	moduleInterface, err := Builder(config, deps)
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
@@ -629,7 +601,7 @@ func TestBuilderWithMasking(t *testing.T) {
 		}
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	module, err := Builder(config, deps)
 
 	assert.NoError(t, err)
@@ -654,7 +626,7 @@ func TestBuilderMaskingDefaults(t *testing.T) {
 		}
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	module, err := Builder(config, deps)
 
 	assert.NoError(t, err)
@@ -1242,7 +1214,7 @@ func TestBuilderConfigValidation_GeoPrecisionTooHigh(t *testing.T) {
 		}
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	module, err := Builder(config, deps)
 
 	assert.Error(t, err)
@@ -1262,7 +1234,7 @@ func TestBuilderConfigValidation_GeoPrecisionNegative(t *testing.T) {
 		}
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	module, err := Builder(config, deps)
 
 	assert.Error(t, err)
@@ -1282,7 +1254,7 @@ func TestBuilderConfigValidation_GeoPrecisionValid(t *testing.T) {
 		}
 	}`)
 
-	deps := moduledeps.ModuleDeps{}
+	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
 	module, err := Builder(config, deps)
 
 	assert.NoError(t, err)

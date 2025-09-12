@@ -9,12 +9,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/coocood/freecache"
+	"github.com/golang/glog"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
@@ -66,20 +69,11 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 		}
 	}
 
-	// Create HTTP client with optimized transport for high-frequency API calls
-	transport := &http.Transport{
-		MaxIdleConns:        100,              // Allow more idle connections for connection reuse
-		MaxIdleConnsPerHost: 10,               // Allow multiple connections per host
-		IdleConnTimeout:     90 * time.Second, // Keep connections alive longer
-		DisableCompression:  false,            // Enable compression to reduce bandwidth
-		ForceAttemptHTTP2:   true,             // Use HTTP/2 when possible for better performance
-	}
-
 	return &Module{
 		cfg: cfg,
 		httpClient: &http.Client{
 			Timeout:   time.Duration(cfg.Timeout) * time.Millisecond,
-			Transport: transport,
+			Transport: deps.HTTPClient.Transport,
 		},
 		cache: freecache.NewCache(10 * 1024 * 1024),
 	}, nil
@@ -127,6 +121,33 @@ type userExt struct {
 	LiverampIDL    string         `json:"liveramp_idl"`
 	ATSEnvelope    string         `json:"ats_envelope"`
 	RampIDEnvelope string         `json:"rampId_envelope"`
+}
+
+// Response types for Scope3 API
+type Scope3Response struct {
+	Data []Scope3Data `json:"data"`
+}
+
+type Scope3Data struct {
+	Destination string          `json:"destination"`
+	Imp         []Scope3ImpData `json:"imp"`
+}
+
+type Scope3ImpData struct {
+	ID  string     `json:"id"`
+	Ext *Scope3Ext `json:"ext,omitempty"`
+}
+
+type Scope3Ext struct {
+	Scope3 *Scope3ExtData `json:"scope3"`
+}
+
+type Scope3ExtData struct {
+	Segments []Scope3Segment `json:"segments"`
+}
+
+type Scope3Segment struct {
+	ID string `json:"id"`
 }
 
 // Module implements the Scope3 RTD module
@@ -241,29 +262,19 @@ func (m *Module) HandleAuctionResponseHook(
 
 			// Add segments as individual targeting keys for GAM integration
 			if m.cfg.AddToTargeting {
-				if prebidMap, ok := extMap["prebid"].(map[string]interface{}); ok {
-					if targetingMap, ok := prebidMap["targeting"].(map[string]interface{}); ok {
-						// Add each segment as individual targeting key
-						for _, segment := range segments {
-							targetingMap[segment] = "true"
-						}
-					} else {
-						// Create targeting map with individual segment keys
-						newTargeting := make(map[string]interface{})
-						for _, segment := range segments {
-							newTargeting[segment] = "true"
-						}
-						prebidMap["targeting"] = newTargeting
-					}
-				} else {
-					// Create prebid map with targeting
-					newTargeting := make(map[string]interface{})
-					for _, segment := range segments {
-						newTargeting[segment] = "true"
-					}
-					extMap["prebid"] = map[string]interface{}{
-						"targeting": newTargeting,
-					}
+				prebidMap, ok := extMap["prebid"].(map[string]interface{})
+				if !ok {
+					prebidMap = make(map[string]interface{})
+					extMap["prebid"] = prebidMap
+				}
+				targetingMap, ok := prebidMap["targeting"].(map[string]interface{})
+				if !ok {
+					targetingMap = make(map[string]interface{})
+					prebidMap["targeting"] = targetingMap
+				}
+				// Add each segment as individual targeting key
+				for _, segment := range segments {
+					targetingMap[segment] = "true"
 				}
 			}
 
@@ -340,26 +351,26 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	}
 
 	// Extract unique segments (exclude destination)
-	segmentMap := make(map[string]struct{})
-	for _, data := range scope3Resp.Data {
+	segmentMap := make(map[string]bool)
+	for data := range iterutil.SlicePointerValues(scope3Resp.Data) {
 		// Extract actual segments from impression-level data
 		for imp := range iterutil.SlicePointerValues(data.Imp) {
 			if imp.Ext != nil && imp.Ext.Scope3 != nil {
-				for _, segment := range (*imp).Ext.Scope3.Segments {
-					segmentMap[segment.ID] = struct{}{}
+				for segment := range iterutil.SlicePointerValues(imp.Ext.Scope3.Segments) {
+					segmentMap[segment.ID] = true
 				}
 			}
 		}
 	}
 
 	// Convert to slice
-	segments := make([]string, 0, len(segmentMap))
-	for segment := range segmentMap {
-		segments = append(segments, segment)
-	}
+	segments := slices.AppendSeq(make([]string, 0, len(segmentMap)), maps.Keys(segmentMap))
 
 	// Cache the result
-	m.cache.Set(cacheKey, []byte(strings.Join(segments, ",")), m.cfg.CacheTTL)
+	err = m.cache.Set(cacheKey, []byte(strings.Join(segments, ",")), m.cfg.CacheTTL)
+	if err != nil {
+		glog.Infof("could not set segments in cache: %v", err)
+	}
 
 	return segments, nil
 }
@@ -386,7 +397,7 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 		var userExtension userExt
 		if err := jsonutil.Unmarshal(bidRequest.User.Ext, &userExtension); err == nil {
 			// Include LiveRamp identifiers (these are privacy-safe for caching)
-			for _, eid := range userExtension.Eids {
+			for eid := range iterutil.SlicePointerValues(userExtension.Eids) {
 				if eid.Source == "liveramp.com" && len(eid.UIDs) > 0 {
 					hasher.Write([]byte("eid:rampid:" + eid.UIDs[0].ID))
 					hasPrivacySafeID = true
@@ -413,31 +424,4 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 	}
 
 	return hex.EncodeToString(hasher.Sum(nil))
-}
-
-// Response types for Scope3 API
-type Scope3Response struct {
-	Data []Scope3Data `json:"data"`
-}
-
-type Scope3Data struct {
-	Destination string          `json:"destination"`
-	Imp         []Scope3ImpData `json:"imp"`
-}
-
-type Scope3ImpData struct {
-	ID  string     `json:"id"`
-	Ext *Scope3Ext `json:"ext,omitempty"`
-}
-
-type Scope3Ext struct {
-	Scope3 *Scope3ExtData `json:"scope3"`
-}
-
-type Scope3ExtData struct {
-	Segments []Scope3Segment `json:"segments"`
-}
-
-type Scope3Segment struct {
-	ID string `json:"id"`
 }
