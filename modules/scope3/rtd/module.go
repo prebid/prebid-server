@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/coocood/freecache"
@@ -78,6 +77,18 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 		cache: freecache.NewCache(10 * 1024 * 1024),
 	}, nil
 }
+
+const (
+	// keys for miCtx
+	asyncRequestKey = "scope3.AsyncRequest"
+)
+
+var (
+	// Declare hooks
+	_ hookstage.Entrypoint        = (*Module)(nil)
+	_ hookstage.RawAuctionRequest = (*Module)(nil)
+	_ hookstage.AuctionResponse   = (*Module)(nil)
+)
 
 // Config holds module configuration
 type Config struct {
@@ -166,7 +177,7 @@ func (m *Module) HandleEntrypointHook(
 	// Initialize module context with sync.Map for thread-safe segment storage
 	return hookstage.HookResult[hookstage.EntrypointPayload]{
 		ModuleContext: hookstage.ModuleContext{
-			"segments": &sync.Map{},
+			asyncRequestKey: m.NewAsyncRequest(payload.Request),
 		},
 	}, nil
 }
@@ -177,54 +188,46 @@ func (m *Module) HandleRawAuctionHook(
 	miCtx hookstage.ModuleInvocationContext,
 	payload hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	// Parse the OpenRTB request
-	var bidRequest openrtb2.BidRequest
-	if err := jsonutil.Unmarshal(payload, &bidRequest); err != nil {
-		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
-	}
+	var ret hookstage.HookResult[hookstage.RawAuctionRequestPayload]
+	analyticsNamePrefix := "HandleRawAuctionHook."
 
-	// Call Scope3 API
-	segments, err := m.fetchScope3Segments(ctx, &bidRequest)
-	if err != nil {
+	asyncRequest, ok := miCtx.ModuleContext[asyncRequestKey].(*AsyncRequest)
+	if !ok {
 		// Log error but don't fail the auction
-		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{
-			AnalyticsTags: hookanalytics.Analytics{
-				Activities: []hookanalytics.Activity{{
-					Name:   "scope3_fetch",
-					Status: hookanalytics.ActivityStatusError,
-					Results: []hookanalytics.Result{{
-						Status: hookanalytics.ResultStatusError,
-						Values: map[string]interface{}{"error": err.Error()},
-					}},
-				}},
-			},
-		}, nil
-	}
-
-	// Store segments in module context
-	if segmentStore, ok := miCtx.ModuleContext["segments"].(*sync.Map); ok {
-		segmentStore.Store("segments", segments)
-	}
-
-	// Store segments for later use - no mutation needed at this stage
-	changeSet := hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
-
-	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{
-		ChangeSet: changeSet,
-		AnalyticsTags: hookanalytics.Analytics{
+		ret.AnalyticsTags = hookanalytics.Analytics{
 			Activities: []hookanalytics.Activity{{
-				Name:   "scope3_fetch",
-				Status: hookanalytics.ActivityStatusSuccess,
+				Name:   analyticsNamePrefix + asyncRequestKey,
+				Status: hookanalytics.ActivityStatusError,
 				Results: []hookanalytics.Result{{
-					Status: hookanalytics.ResultStatusModify,
-					Values: map[string]interface{}{
-						"segments": segments,
-						"count":    len(segments),
-					},
+					Status: hookanalytics.ResultStatusError,
+					Values: map[string]interface{}{"error": "failed to get async request from module context"},
 				}},
 			}},
-		},
-	}, nil
+		}
+		return ret, nil
+	}
+
+	// Parse OpenRTB request here rather than HandleProcessedAuctionHook to get a copy to avoid parallel mutation issues
+	var bidRequest openrtb2.BidRequest
+	if err := jsonutil.Unmarshal(payload, &bidRequest); err != nil {
+		// Log error but don't fail the auction
+		ret.AnalyticsTags = hookanalytics.Analytics{
+			Activities: []hookanalytics.Activity{{
+				Name:   analyticsNamePrefix + "bidRequest.unmarshal",
+				Status: hookanalytics.ActivityStatusError,
+				Results: []hookanalytics.Result{{
+					Status: hookanalytics.ResultStatusError,
+					Values: map[string]interface{}{"error": err.Error()},
+				}},
+			}},
+		}
+		return ret, nil
+	}
+
+	// Start async request to Scope3
+	asyncRequest.fetchScope3SegmentsAsync(&bidRequest)
+
+	return ret, nil
 }
 
 // HandleAuctionResponseHook adds targeting data to the auction response
@@ -233,15 +236,50 @@ func (m *Module) HandleAuctionResponseHook(
 	miCtx hookstage.ModuleInvocationContext,
 	payload hookstage.AuctionResponsePayload,
 ) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
-	// Retrieve segments from module context
-	var segments []string
-	if segmentStore, ok := miCtx.ModuleContext["segments"].(*sync.Map); ok {
-		if val, ok := segmentStore.Load("segments"); ok {
-			segments = val.([]string)
+	analyticsNamePrefix := "HandleAuctionResponseHook."
+	var ret hookstage.HookResult[hookstage.AuctionResponsePayload]
+	asyncRequest, ok := miCtx.ModuleContext[asyncRequestKey].(*AsyncRequest)
+	if !ok {
+		// Log error but don't fail the auction
+		ret.AnalyticsTags = hookanalytics.Analytics{
+			Activities: []hookanalytics.Activity{{
+				Name:   analyticsNamePrefix + asyncRequestKey,
+				Status: hookanalytics.ActivityStatusError,
+				Results: []hookanalytics.Result{{
+					Status: hookanalytics.ResultStatusError,
+					Values: map[string]interface{}{"error": "failed to get async request from module context"},
+				}},
+			}},
 		}
+		return ret, nil
+	}
+	// Ensure we cancel the request context always to free resources
+	defer asyncRequest.Cancel()
+
+	// Check if a reqeuest was made
+	if asyncRequest.Done == nil {
+		return ret, nil
 	}
 
-	var ret hookstage.HookResult[hookstage.AuctionResponsePayload]
+	// Wait for the async request to complete
+	<-asyncRequest.Done
+
+	// Get results
+	segments, err := asyncRequest.Segments, asyncRequest.Err
+	if err != nil {
+		// Log error but don't fail the auction
+		ret.AnalyticsTags = hookanalytics.Analytics{
+			Activities: []hookanalytics.Activity{{
+				Name:   analyticsNamePrefix + "scope3_fetch",
+				Status: hookanalytics.ActivityStatusError,
+				Results: []hookanalytics.Result{{
+					Status: hookanalytics.ResultStatusError,
+					Values: map[string]interface{}{"error": err.Error()},
+				}},
+			}},
+		}
+		return ret, nil
+	}
 
 	if len(segments) == 0 {
 		return ret, nil
@@ -256,7 +294,7 @@ func (m *Module) HandleAuctionResponseHook(
 			}
 
 			var extMap map[string]interface{}
-			if err := jsonutil.Unmarshal(payload.BidResponse.Ext, &extMap); err != nil {
+			if err = jsonutil.Unmarshal(payload.BidResponse.Ext, &extMap); err != nil {
 				extMap = make(map[string]interface{})
 			}
 

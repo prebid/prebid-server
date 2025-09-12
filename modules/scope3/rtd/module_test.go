@@ -1,6 +1,7 @@
 package scope3
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func getTestModuleDeps(t *testing.T) moduledeps.ModuleDeps {
+	t.Helper()
+	return moduledeps.ModuleDeps{
+		HTTPClient: http.DefaultClient,
+	}
+}
+
+func getTestEntrypointPayload(t *testing.T) hookstage.EntrypointPayload {
+	body := []byte(`{}`)
+	return hookstage.EntrypointPayload{
+		Request: httptest.NewRequest(http.MethodPost, "/openrtb2/auction", bytes.NewBuffer(body)),
+		Body:    body,
+	}
+}
 
 func TestBuilder(t *testing.T) {
 	config := json.RawMessage(`{
@@ -60,12 +76,12 @@ func TestHandleEntrypointHook(t *testing.T) {
 	module := &Module{}
 	ctx := context.Background()
 	miCtx := hookstage.ModuleInvocationContext{}
-	payload := hookstage.EntrypointPayload{}
+	payload := getTestEntrypointPayload(t)
 
 	result, err := module.HandleEntrypointHook(ctx, miCtx, payload)
 
 	assert.NoError(t, err)
-	assert.NotNil(t, result.ModuleContext["segments"])
+	assert.NotNil(t, result.ModuleContext[asyncRequestKey])
 }
 
 func TestHandleAuctionResponseHook_NoSegments(t *testing.T) {
@@ -145,8 +161,7 @@ func TestScope3APIIntegration(t *testing.T) {
 		"add_to_targeting": false
 	}`)
 
-	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
-	moduleInterface, err := Builder(config, deps)
+	moduleInterface, err := Builder(config, getTestModuleDeps(t))
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
 
@@ -223,8 +238,7 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 		"add_to_targeting": true
 	}`)
 
-	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
-	moduleInterface, err := Builder(config, deps)
+	moduleInterface, err := Builder(config, getTestModuleDeps(t))
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
 
@@ -232,9 +246,9 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 	ctx := context.Background()
 
 	// Test entrypoint hook
-	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, hookstage.EntrypointPayload{})
+	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, getTestEntrypointPayload(t))
 	require.NoError(t, err)
-	assert.NotNil(t, entrypointResult.ModuleContext["segments"])
+	assert.NotNil(t, entrypointResult.ModuleContext[asyncRequestKey])
 
 	// Create test request payload
 	width := int64(300)
@@ -341,8 +355,7 @@ func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
 		"add_to_targeting": true
 	}`)
 
-	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
-	moduleInterface, err := Builder(config, deps)
+	moduleInterface, err := Builder(config, getTestModuleDeps(t))
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
 
@@ -350,9 +363,9 @@ func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
 	ctx := context.Background()
 
 	// Test entrypoint hook
-	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, hookstage.EntrypointPayload{})
+	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, getTestEntrypointPayload(t))
 	require.NoError(t, err)
-	assert.NotNil(t, entrypointResult.ModuleContext["segments"])
+	assert.NotNil(t, entrypointResult.ModuleContext[asyncRequestKey])
 
 	// Create test request payload
 	width := int64(300)
@@ -460,8 +473,7 @@ func TestScope3APIIntegrationWithExistingPrebidNoTargeting(t *testing.T) {
 		"add_to_targeting": true
 	}`)
 
-	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
-	moduleInterface, err := Builder(config, deps)
+	moduleInterface, err := Builder(config, getTestModuleDeps(t))
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
 
@@ -469,9 +481,9 @@ func TestScope3APIIntegrationWithExistingPrebidNoTargeting(t *testing.T) {
 	ctx := context.Background()
 
 	// Test entrypoint hook
-	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, hookstage.EntrypointPayload{})
+	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, getTestEntrypointPayload(t))
 	require.NoError(t, err)
-	assert.NotNil(t, entrypointResult.ModuleContext["segments"])
+	assert.NotNil(t, entrypointResult.ModuleContext[asyncRequestKey])
 
 	// Create test request payload
 	width := int64(300)
@@ -556,8 +568,7 @@ func TestScope3APIError(t *testing.T) {
 		"timeout_ms": 1000
 	}`)
 
-	deps := moduledeps.ModuleDeps{HTTPClient: http.DefaultClient}
-	moduleInterface, err := Builder(config, deps)
+	moduleInterface, err := Builder(config, getTestModuleDeps(t))
 	require.NoError(t, err)
 	module := moduleInterface.(*Module)
 
