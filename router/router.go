@@ -45,6 +45,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
+	_ "github.com/prebid/prebid-server/v3/analyticsmodules"
 	"github.com/rs/cors"
 )
 

@@ -7,6 +7,10 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
 )
 
+func init() {
+	analytics.Register("filelogger", Builder)
+}
+
 // Config is the minimal configuration for the file logger analytics module.
 // Empty Filename means the module is disabled.
 type Config struct {

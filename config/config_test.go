@@ -233,14 +233,20 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
-	cmpBools(t, "analytics.agma.enabled", false, cfg.Analytics.Agma.Enabled)
-	cmpStrings(t, "analytics.agma.endpoint.timeout", "2s", cfg.Analytics.Agma.Endpoint.Timeout)
-	cmpBools(t, "analytics.agma.endpoint.gzip", false, cfg.Analytics.Agma.Endpoint.Gzip)
-	cmpStrings(t, "analytics.agma.endppoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server", cfg.Analytics.Agma.Endpoint.Url)
-	cmpStrings(t, "analytics.agma.buffers.size", "2MB", cfg.Analytics.Agma.Buffers.BufferSize)
-	cmpInts(t, "analytics.agma.buffers.count", 100, cfg.Analytics.Agma.Buffers.EventCount)
-	cmpStrings(t, "analytics.agma.buffers.timeout", "15m", cfg.Analytics.Agma.Buffers.Timeout)
-	cmpInts(t, "analytics.agma.accounts", 0, len(cfg.Analytics.Agma.Accounts))
+	agma := getMap(cfg.Analytics, "agma")
+	agmaEndpoint := getMap(agma, "endpoint")
+	agmaBuffers := getMap(agma, "buffers")
+
+	cmpBools(t, "analytics.modules.agma.enabled", false, getBool(agma, "enabled"))
+	cmpStrings(t, "analytics.modules.agma.endpoint.timeout", "2s", getString(agmaEndpoint, "timeout"))
+	cmpBools(t, "analytics.modules.agma.endpoint.gzip", false, getBool(agmaEndpoint, "gzip"))
+	cmpStrings(t, "analytics.modules.agma.endpoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server", getString(agmaEndpoint, "url"))
+	cmpStrings(t, "analytics.modules.agma.buffers.size", "2MB", getString(agmaBuffers, "size"))
+	cmpInts(t, "analytics.modules.agma.buffers.count", 100, getInt(agmaBuffers, "count"))
+	cmpStrings(t, "analytics.modules.agma.buffers.timeout", "15m", getString(agmaBuffers, "timeout"))
+
+	accounts := getSliceMap(agma, "accounts")
+	cmpInts(t, "analytics.modules.agma.accounts", 0, len(accounts))
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
@@ -599,6 +605,75 @@ func cmpNils(t *testing.T, key string, a interface{}) {
 	assert.Nilf(t, a, "%s: %t != nil", key, a)
 }
 
+func getMap(m map[string]interface{}, key string) map[string]interface{} {
+	if m == nil {
+		return map[string]interface{}{}
+	}
+	if v, ok := m[key]; ok {
+		if mm, ok := v.(map[string]interface{}); ok {
+			return mm
+		}
+	}
+	return map[string]interface{}{}
+}
+
+func getSliceMap(m map[string]interface{}, key string) []map[string]interface{} {
+	v, ok := m[key]
+	if !ok {
+		return nil
+	}
+	switch s := v.(type) {
+	case []map[string]interface{}:
+		return s
+	case []interface{}:
+		out := make([]map[string]interface{}, 0, len(s))
+		for _, it := range s {
+			if mm, ok := it.(map[string]interface{}); ok {
+				out = append(out, mm)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func getString(m map[string]interface{}, key string) string {
+	if v, ok := m[key]; ok {
+		switch t := v.(type) {
+		case string:
+			return t
+		}
+	}
+	return ""
+}
+
+func getBool(m map[string]interface{}, key string) bool {
+	if v, ok := m[key]; ok {
+		switch t := v.(type) {
+		case bool:
+			return t
+		}
+	}
+	return false
+}
+
+func getInt(m map[string]interface{}, key string) int {
+	if v, ok := m[key]; ok {
+		switch t := v.(type) {
+		case int:
+			return t
+		case int32:
+			return int(t)
+		case int64:
+			return int(t)
+		case float64:
+			return int(t)
+		}
+	}
+	return 0
+}
+
 func TestFullConfig(t *testing.T) {
 	int8One := int8(1)
 
@@ -890,16 +965,25 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", 10, cfg.Experiment.AdCerts.Remote.SigningTimeoutMs)
 	cmpBools(t, "hooks.enabled", true, cfg.Hooks.Enabled)
 	cmpBools(t, "account_modules_metrics", true, cfg.Metrics.Disabled.AccountModulesMetrics)
-	cmpBools(t, "analytics.agma.enabled", true, cfg.Analytics.Agma.Enabled)
-	cmpStrings(t, "analytics.agma.endpoint.timeout", "5s", cfg.Analytics.Agma.Endpoint.Timeout)
-	cmpBools(t, "analytics.agma.endpoint.gzip", false, cfg.Analytics.Agma.Endpoint.Gzip)
-	cmpStrings(t, "analytics.agma.endpoint.url", "http://test.com", cfg.Analytics.Agma.Endpoint.Url)
-	cmpStrings(t, "analytics.agma.buffers.size", "10MB", cfg.Analytics.Agma.Buffers.BufferSize)
-	cmpInts(t, "analytics.agma.buffers.count", 111, cfg.Analytics.Agma.Buffers.EventCount)
-	cmpStrings(t, "analytics.agma.buffers.timeout", "5m", cfg.Analytics.Agma.Buffers.Timeout)
-	cmpStrings(t, "analytics.agma.accounts.0.publisher_id", "publisher-id", cfg.Analytics.Agma.Accounts[0].PublisherId)
-	cmpStrings(t, "analytics.agma.accounts.0.code", "agma-code", cfg.Analytics.Agma.Accounts[0].Code)
-	cmpStrings(t, "analytics.agma.accounts.0.site_app_id", "site-or-app-id", cfg.Analytics.Agma.Accounts[0].SiteAppId)
+	agma := getMap(cfg.Analytics, "agma")
+	agmaEndpoint := getMap(agma, "endpoint")
+	agmaBuffers := getMap(agma, "buffers")
+	agmaAccounts := getSliceMap(agma, "accounts")
+
+	cmpBools(t, "analytics.agma.enabled", true, getBool(agma, "enabled"))
+	cmpStrings(t, "analytics.modules.agma.endpoint.timeout", "5s", getString(agmaEndpoint, "timeout"))
+	cmpBools(t, "analytics.modules.agma.endpoint.gzip", false, getBool(agmaEndpoint, "gzip"))
+	cmpStrings(t, "analytics.modules.agma.endpoint.url", "http://test.com", getString(agmaEndpoint, "url"))
+	cmpStrings(t, "analytics.modules.agma.buffers.size", "10MB", getString(agmaBuffers, "size"))
+	cmpInts(t, "analytics.modules.agma.buffers.count", 111, getInt(agmaBuffers, "count"))
+	cmpStrings(t, "analytics.modules.agma.buffers.timeout", "5m", getString(agmaBuffers, "timeout"))
+
+	if assert.GreaterOrEqual(t, len(agmaAccounts), 1, "analytics.modules.agma.accounts length") {
+		first := agmaAccounts[0]
+		cmpStrings(t, "analytics.modules.agma.accounts.0.publisher_id", "publisher-id", getString(first, "publisher_id"))
+		cmpStrings(t, "analytics.modules.agma.accounts.0.code", "agma-code", getString(first, "code"))
+		cmpStrings(t, "analytics.modules.agma.accounts.0.site_app_id", "site-or-app-id", getString(first, "site_app_id"))
+	}
 }
 
 func TestValidateConfig(t *testing.T) {

@@ -5,8 +5,12 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
 )
+
+func init() {
+	analytics.Register("pubstack", Builder)
+}
 
 type Config struct {
 	Enabled     bool   `mapstructure:"enabled" json:"enabled"`
@@ -20,7 +24,7 @@ type Config struct {
 	} `mapstructure:"buffers" json:"buffers"`
 }
 
-func Builder(cfg map[string]interface{}, deps moduledeps.ModuleDeps) (analytics.Module, error) {
+func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
 		return nil, nil
 	}

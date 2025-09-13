@@ -1,19 +1,41 @@
 package analytics
 
-import (
-	agma "github.com/prebid/prebid-server/v3/analytics/modules/agma"
-	filelogger "github.com/prebid/prebid-server/v3/analytics/modules/filelogger"
-	pubstack "github.com/prebid/prebid-server/v3/analytics/modules/pubstack"
+import "sync"
+
+// Registry builders: vendor -> module -> builder
+var (
+	mu       sync.RWMutex
+	registry AnalyticsModuleBuilders = make(AnalyticsModuleBuilders)
 )
 
-// builders returns mapping between analytics module name and its builder
-// vendor and module names are chosen based on the module directory name
-func builders() AnalyticsModuleBuilders {
-	return AnalyticsModuleBuilders{
-		"agma":       agma.Builder,
-		"filelogger": filelogger.Builder,
-		"pubstack":   pubstack.Builder,
+// Register registers a module under the same vendor and module name (e.g., "agma").
+func Register(name string, b AnalyticsModuleBuilderFn) {
+	RegisterVendorModule(name, name, b)
+}
+
+// RegisterVendorModule allows registering a builder with vendor/module distinction.
+func RegisterVendorModule(vendor, module string, b AnalyticsModuleBuilderFn) {
+	mu.Lock()
+	defer mu.Unlock()
+	if registry[vendor] == nil {
+		registry[vendor] = make(map[string]AnalyticsModuleBuilderFn)
 	}
+	registry[vendor][module] = b
+}
+
+// builders returns a copy of the registered builders (for modules.go: NewBuilder()).
+func builders() AnalyticsModuleBuilders {
+	mu.RLock()
+	defer mu.RUnlock()
+	out := make(AnalyticsModuleBuilders, len(registry))
+	for vendor, mods := range registry {
+		cp := make(map[string]AnalyticsModuleBuilderFn, len(mods))
+		for name, fn := range mods {
+			cp[name] = fn
+		}
+		out[vendor] = cp
+	}
+	return out
 }
 
 func Builders() AnalyticsModuleBuilders {

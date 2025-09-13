@@ -5,9 +5,12 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
-	base "github.com/prebid/prebid-server/v3/analytics/modules/agma"
 	"github.com/prebid/prebid-server/v3/config"
 )
+
+func init() {
+	analytics.Register("agma", Builder)
+}
 
 type Config struct {
 	Enabled  bool   `mapstructure:"enabled" json:"enabled"`
@@ -41,8 +44,10 @@ func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Mod
 	}
 
 	full := config.AgmaAnalytics{
-		Enabled:  true,
-		Endpoint: c.Endpoint,
+		Enabled: true,
+		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+			Url: c.Endpoint,
+		},
 		Buffers: config.AgmaAnalyticsBuffer{
 			EventCount: c.Buffers.EventCount,
 			BufferSize: c.Buffers.BufferSize,
@@ -50,5 +55,5 @@ func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Mod
 		},
 		Accounts: c.Accounts,
 	}
-	return base.NewModule(deps.HTTPClient, full, deps.Clock.(clock.Clock))
+	return NewModule(deps.HTTPClient, full, deps.Clock.(clock.Clock))
 }
