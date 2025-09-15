@@ -23,8 +23,6 @@ type Metrics struct {
 	connectionsClosed            prometheus.Counter
 	connectionsError             *prometheus.CounterVec
 	connectionsOpened            prometheus.Counter
-	connectionDials              prometheus.Counter
-	connectionDialTimer          prometheus.Histogram
 	connectionWant               prometheus.Counter
 	connectionGot                prometheus.Counter
 	cookieSync                   *prometheus.CounterVec
@@ -196,14 +194,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"connections_opened",
 		"Count of successful connections opened to Prebid Server.")
 
-	metrics.connectionDials = newCounterWithoutLabels(cfg, reg,
-		"connections_dials",
-		"Count number of started dials to open a connection.")
-
-	metrics.connectionDialTimer = newHistogram(cfg, reg,
-		"connection_dial_time_seconds",
-		"Seconds connection dial lasted",
-		standardTimeBuckets)
 	metrics.connectionWant = newCounterWithoutLabels(cfg, reg,
 		"connections_want",
 		"Count number of times client trace calls GetConn.")
