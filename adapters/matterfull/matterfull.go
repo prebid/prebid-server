@@ -80,12 +80,10 @@ func compatImpression(imp *openrtb2.Imp) error {
 }
 
 func compatBannerImpression(imp *openrtb2.Imp) error {
-	// Create a copy of the banner, since imp is a shallow copy of the original.
-
-	bannerCopy := *imp.Banner
-	banner := &bannerCopy
 	//As banner.w/h are required fields for Matterfull platform - take the first format entry
-	if banner.W == nil || banner.H == nil {
+	if imp.Banner.W == nil || imp.Banner.H == nil {
+		bannerCopy := *imp.Banner
+		banner := &bannerCopy
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{Message: "Expected at least one banner.format entry or explicit w/h"}
 		}
@@ -124,7 +122,7 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("x-openrtb-version", "2.6")
 
 	url, err := adapter.buildEndpointURL(params)
 	if err != nil {
@@ -140,23 +138,20 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) *openrtb2.BidRequest {
-	bidRequest := *prebidBidRequest
-	bidRequest.Imp = imps
+	prebidBidRequest.Imp = imps
 
-	if bidRequest.Site != nil {
-		// Need to copy Site as Request is a shallow copy
-		siteCopy := *bidRequest.Site
-		bidRequest.Site = &siteCopy
-		bidRequest.Site.Publisher = nil
-		bidRequest.Site.Domain = ""
+	if prebidBidRequest.Site != nil {
+		siteCopy := *prebidBidRequest.Site
+		prebidBidRequest.Site = &siteCopy
+		prebidBidRequest.Site.Publisher = nil
+		prebidBidRequest.Site.Domain = ""
 	}
-	if bidRequest.App != nil {
-		// Need to copy App as Request is a shallow copy
-		appCopy := *bidRequest.App
-		bidRequest.App = &appCopy
-		bidRequest.App.Publisher = nil
+	if prebidBidRequest.App != nil {
+		appCopy := *prebidBidRequest.App
+		prebidBidRequest.App = &appCopy
+		prebidBidRequest.App.Publisher = nil
 	}
-	return &bidRequest
+	return prebidBidRequest
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
