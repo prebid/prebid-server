@@ -271,7 +271,7 @@ func TestGetBidType(t *testing.T) {
 			name: "Unknown MType falls back to impression lookup",
 			bid: openrtb2.Bid{
 				ImpID: "imp-1",
-				MType: openrtb2.MarkupType(99), // Unknown MType
+				MType: openrtb2.MarkupType(99),
 			},
 			request: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{
@@ -582,4 +582,170 @@ func TestParseBidResponseEdgeCases(t *testing.T) {
 			assert.Len(t, errs, test.expectErrs)
 		})
 	}
+}
+
+func TestSchainPassthrough(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderResetDigital, config.Adapter{
+		Endpoint: "https://example.com",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	tests := []struct {
+		name           string
+		request        *openrtb2.BidRequest
+		expectSchain   bool
+		expectedSchain *openrtb2.SupplyChain
+	}{
+		{
+			name: "Request with schain should pass it through",
+			request: &openrtb2.BidRequest{
+				ID: "test-request-id",
+				Source: &openrtb2.Source{
+					TID: "test-transaction-id",
+					SChain: &openrtb2.SupplyChain{
+						Complete: 1,
+						Ver:      "1.0",
+						Nodes: []openrtb2.SupplyChainNode{
+							{
+								ASI: "example.com",
+								SID: "12345",
+								HP:  openrtb2.Int8Ptr(1),
+								RID: "request-id-123",
+							},
+						},
+					},
+				},
+				Imp: []openrtb2.Imp{
+					{
+						ID:  "test-imp-id",
+						Ext: json.RawMessage(`{"bidder": {"placement_id": "test-placement"}}`),
+					},
+				},
+			},
+			expectSchain: true,
+			expectedSchain: &openrtb2.SupplyChain{
+				Complete: 1,
+				Ver:      "1.0",
+				Nodes: []openrtb2.SupplyChainNode{
+					{
+						ASI: "example.com",
+						SID: "12345",
+						HP:  openrtb2.Int8Ptr(1),
+						RID: "request-id-123",
+					},
+				},
+			},
+		},
+		{
+			name: "Request without schain should not include it",
+			request: &openrtb2.BidRequest{
+				ID: "test-request-id",
+				Source: &openrtb2.Source{
+					TID: "test-transaction-id",
+				},
+				Imp: []openrtb2.Imp{
+					{
+						ID:  "test-imp-id",
+						Ext: json.RawMessage(`{"bidder": {"placement_id": "test-placement"}}`),
+					},
+				},
+			},
+			expectSchain:   false,
+			expectedSchain: nil,
+		},
+		{
+			name: "Request without source should not include schain",
+			request: &openrtb2.BidRequest{
+				ID: "test-request-id",
+				Imp: []openrtb2.Imp{
+					{
+						ID:  "test-imp-id",
+						Ext: json.RawMessage(`{"bidder": {"placement_id": "test-placement"}}`),
+					},
+				},
+			},
+			expectSchain:   false,
+			expectedSchain: nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reqs, errs := bidder.MakeRequests(test.request, &adapters.ExtraRequestInfo{})
+
+			assert.Empty(t, errs)
+			assert.Len(t, reqs, 1)
+
+			var sentRequest openrtb2.BidRequest
+			err := json.Unmarshal(reqs[0].Body, &sentRequest)
+			assert.NoError(t, err)
+
+			if test.expectSchain {
+				assert.NotNil(t, sentRequest.Source)
+				assert.NotNil(t, sentRequest.Source.SChain)
+				assert.Equal(t, test.expectedSchain.Complete, sentRequest.Source.SChain.Complete)
+				assert.Equal(t, test.expectedSchain.Ver, sentRequest.Source.SChain.Ver)
+				assert.Len(t, sentRequest.Source.SChain.Nodes, len(test.expectedSchain.Nodes))
+				
+				if len(sentRequest.Source.SChain.Nodes) > 0 {
+					assert.Equal(t, test.expectedSchain.Nodes[0].ASI, sentRequest.Source.SChain.Nodes[0].ASI)
+					assert.Equal(t, test.expectedSchain.Nodes[0].SID, sentRequest.Source.SChain.Nodes[0].SID)
+					assert.Equal(t, test.expectedSchain.Nodes[0].HP, sentRequest.Source.SChain.Nodes[0].HP)
+					assert.Equal(t, test.expectedSchain.Nodes[0].RID, sentRequest.Source.SChain.Nodes[0].RID)
+				}
+			} else {
+				if sentRequest.Source != nil {
+					assert.Nil(t, sentRequest.Source.SChain)
+				}
+			}
+		})
+	}
+}
+
+func TestSourceFieldsPassthrough(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderResetDigital, config.Adapter{
+		Endpoint: "https://example.com",
+	}, config.Server{})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Source: &openrtb2.Source{
+			TID: "test-transaction-id",
+			FD:  openrtb2.Int8Ptr(1),
+			Ext: json.RawMessage(`{"custom": "data"}`),
+		},
+		Imp: []openrtb2.Imp{
+			{
+				ID:  "test-imp-id",
+				Ext: json.RawMessage(`{"bidder": {"placement_id": "test-placement"}}`),
+			},
+		},
+	}
+
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	assert.Empty(t, errs)
+	assert.Len(t, reqs, 1)
+
+	var sentRequest openrtb2.BidRequest
+	err := json.Unmarshal(reqs[0].Body, &sentRequest)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, sentRequest.Source)
+	assert.Equal(t, "test-transaction-id", sentRequest.Source.TID)
+	assert.Equal(t, openrtb2.Int8Ptr(1), sentRequest.Source.FD)
+	
+	var expectedExt, actualExt map[string]interface{}
+	err = json.Unmarshal([]byte(`{"custom": "data"}`), &expectedExt)
+	assert.NoError(t, err)
+	err = json.Unmarshal(sentRequest.Source.Ext, &actualExt)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedExt, actualExt)
 }
