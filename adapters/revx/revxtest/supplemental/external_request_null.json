@@ -1,0 +1,10 @@
+{
+  "mockBidRequest": null,
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "no impression objects provided in request",
+      "comparison": "literal"
+    }
+  ]
+}

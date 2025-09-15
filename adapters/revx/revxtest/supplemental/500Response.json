@@ -56,7 +56,7 @@
         "impIDs": ["imp-id"]
       },
       "mockResponse": {
-        "status": 400,
+        "status": 500,
         "body": "Invalid Request"
       }
     }
@@ -64,8 +64,8 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Received 400 Bad Request from endpoint",
-      "comparison": "startswith"
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
     }
   ]
 }

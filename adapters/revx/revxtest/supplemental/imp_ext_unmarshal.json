@@ -11,9 +11,7 @@
           "w": 300,
           "h": 250
         },
-        "ext": {
-          "bidder": "- malformed bidder ext -"
-        }
+        "ext": "- malformed bidder ext -"
       }
     ],
     "device": {
@@ -26,7 +24,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Publisher name missing",
+      "value": "invalid imp.ext: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

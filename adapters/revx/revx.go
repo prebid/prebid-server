@@ -27,6 +27,21 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // MakeRequests handles the OpenRTB bid request and returns адаптер.RequestData
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
+	if request == nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: "request cannot be nil",
+		})
+		return nil, errors
+	}
+
+	// Validate impression array
+	if len(request.Imp) == 0 {
+		errors = append(errors, &errortypes.BadInput{
+			Message: "no impression objects provided in request",
+		})
+		return nil, errors
+	}
+
 	imp := request.Imp[0]
 
 	// Parse imp.ext
@@ -76,7 +91,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		// ✅ Return error to log 400 metrics
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Received 400 Bad Request from endpoint: %s", a.endPoint),
 		}}
