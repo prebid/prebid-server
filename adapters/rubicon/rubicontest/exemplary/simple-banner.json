@@ -148,7 +148,17 @@
           }
         }
       }
-    ]
+    ],
+    "ext": {
+      "prebid": {
+        "multibid": [
+          {
+            "bidder": "rubicon",
+            "maxbids": 2
+          }
+        ]
+      }
+    }
   },
   "httpCalls": [
     {
@@ -338,7 +348,8 @@
                   },
                   "sourceapp": "000",
                   "version": "1.0"
-                }
+                },
+                "maxbids": 2
               }
             }
           ]

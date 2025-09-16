@@ -175,6 +175,10 @@ func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
 	me.Called(pubId)
 }
 
+func (me *MetricsEngineMock) RecordGvlListRequest() {
+	me.Called()
+}
+
 func (me *MetricsEngineMock) RecordAdsCertReq(success bool) {
 	me.Called(success)
 }
@@ -225,4 +229,16 @@ func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
 
 func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
+
+func (me *MetricsEngineMock) RecordConnectionWant() {
+	me.Called()
+}
+
+func (me *MetricsEngineMock) RecordConnectionGot() {
+	me.Called()
 }

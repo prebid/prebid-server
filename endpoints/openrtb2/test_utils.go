@@ -1255,7 +1255,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		}
 	}
 
-	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
+	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), time.Second, mockCurrencyRatesServer.URL, time.Second)
 	mockCurrencyConverter.Run()
 
 	gdprPermsBuilder := fakePermissionsBuilder{
@@ -1529,6 +1529,7 @@ type mockPlanBuilder struct {
 	rawBidderResponsePlan        hooks.Plan[hookstage.RawBidderResponse]
 	allProcessedBidResponsesPlan hooks.Plan[hookstage.AllProcessedBidResponses]
 	auctionResponsePlan          hooks.Plan[hookstage.AuctionResponse]
+	exitpointPlan                hooks.Plan[hookstage.Exitpoint]
 }
 
 func (m mockPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
@@ -1557,6 +1558,10 @@ func (m mockPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *confi
 
 func (m mockPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.AuctionResponse] {
 	return m.auctionResponsePlan
+}
+
+func (m mockPlanBuilder) PlanForExitpointStage(_ string, _ *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return m.exitpointPlan
 }
 
 func makePlan[H any](hook H) hooks.Plan[H] {
@@ -1741,4 +1746,21 @@ func (m mockUpdateHook) HandleRawAuctionHook(
 	_ hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+}
+
+type mockUpdateResponseHook struct{}
+
+func (e mockUpdateResponseHook) HandleExitpointHook(
+	_ context.Context,
+	_ hookstage.ModuleInvocationContext,
+	_ hookstage.ExitpointPaylaod) (hookstage.HookResult[hookstage.ExitpointPaylaod], error) {
+	c := hookstage.ChangeSet[hookstage.ExitpointPaylaod]{}
+	c.AddMutation(
+		func(payload hookstage.ExitpointPaylaod) (hookstage.ExitpointPaylaod, error) {
+			payload.Response = &openrtb2.BidResponse{ID: "modified-id"}
+			payload.W.Header().Set("Content-Type", "application/json")
+			return payload, nil
+		}, hookstage.MutationUpdate, "exitpoint", "bidResponse.json-response")
+
+	return hookstage.HookResult[hookstage.ExitpointPaylaod]{ChangeSet: c}, nil
 }
