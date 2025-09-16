@@ -1,0 +1,26 @@
+# We have the following regional endpoint domains: 
+# US East: us
+# US West: usw
+# EU: eu
+# APAC: apac
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: 'http://us.clydo.io/{{.PartnerId}}'
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: cto@clydo.io
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native

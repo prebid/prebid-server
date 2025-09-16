@@ -1,0 +1,114 @@
+{
+  "mockBidRequest": {
+    "id": "de825c88-282e-439a-bcf1-3108344f260c",
+    "imp": [{
+      "id": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+      "banner": {
+        "format": [{
+          "w": 320,
+          "h": 50
+        }],
+        "w": 320,
+        "h": 50
+      },
+      "bidfloor": 0.111,
+      "bidfloorcur": "USD",
+      "ext": {
+        "bidder": {
+          "partnerId": "rh7cnxlpvbjqU5ff"
+        }
+      }
+    }],
+    "app": {
+      "bundle": "com.bundle.app",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.bundle.app&hl=en",
+      "publisher": {
+        "id": "1122334444"
+      }
+    },
+    "device": {
+      "lmt": 0,
+      "ua": "test-ua",
+      "ip": "111.222.333.444",
+      "h": 2082,
+      "w": 1080,
+      "ifa": "eb6685ef-b9d0-48b9-a1c2-db7894790f93"
+    },
+    "user": {
+      "id": "f102c5fe-3d9e-4d14-89f3-8d55248246c7"
+    },
+    "tmax": 1000,
+    "regs": {
+      "ext": {
+        "coppa": 0,
+        "gdpr": 0,
+        "us_privacy": "1YN-"
+      }
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "headers": {
+        "Content-Type": ["application/json; charset=utf-8"],
+        "User-Agent": ["test-ua"],
+        "Accept": ["application/json"],
+        "X-Forwarded-For": ["111.222.333.444"],
+        "X-Openrtb-Version": ["2.5"]
+      },
+      "uri": "http://us.clydo.io/rh7cnxlpvbjqU5ff",
+      "body": {
+        "id": "de825c88-282e-439a-bcf1-3108344f260c",
+        "imp": [{
+          "id": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+          "banner": {
+            "format": [{
+              "w": 320,
+              "h": 50
+            }],
+            "w": 320,
+            "h": 50
+          },
+          "bidfloor": 0.111,
+          "bidfloorcur": "USD",
+          "ext": {
+            "partnerId": "rh7cnxlpvbjqU5ff"
+          }
+        }],
+        "app": {
+          "bundle": "com.bundle.app",
+          "storeurl": "https://play.google.com/store/apps/details?id=com.bundle.app&hl=en",
+          "publisher": {
+            "id": "1122334444"
+          }
+        },
+        "device": {
+          "lmt": 0,
+          "ua": "test-ua",
+          "ip": "111.222.333.444",
+          "h": 2082,
+          "w": 1080,
+          "ifa": "eb6685ef-b9d0-48b9-a1c2-db7894790f93"
+        },
+        "user": {
+          "id": "f102c5fe-3d9e-4d14-89f3-8d55248246c7"
+        },
+        "tmax": 1000,
+        "regs": {
+          "ext": {
+            "coppa": 0,
+            "gdpr": 0,
+            "us_privacy": "1YN-"
+          }
+        }
+      },
+      "impIDs": ["224b15d9-c927-4cf7-aee3-9bea24c6f3e3"]
+    },
+    "mockResponse": {
+      "status": 500
+    }
+  }],
+  "expectedMakeBidsErrors": [{
+    "value": "Unexpected status code: 500. Run with request.debug = 1 for more info.",
+    "comparison": "literal"
+  }]
+}
