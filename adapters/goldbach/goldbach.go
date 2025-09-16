@@ -33,8 +33,8 @@ type impExtAdapter struct {
 }
 
 type impExtGoldbachOutgoing struct {
-	Targetings map[string]jsonutil.StringOrStringArray `json:"targetings,omitempty"`
-	SlotID     string                                  `json:"slotId"`
+	Targetings map[string]jsonutil.ItemOrItemArray[string] `json:"targetings,omitempty"`
+	SlotID     string                                      `json:"slotId"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
