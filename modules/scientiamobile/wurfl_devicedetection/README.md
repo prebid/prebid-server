@@ -324,6 +324,43 @@ When `ext_caps` is set to `true`, the response will include all licensed capabil
 }
 ```
 
+### Building Docker images with WURFL support
+
+When building Prebid Server with the WURFL module using Docker, you need to install both compile-time and runtime WURFL dependencies.
+
+To build a Docker image with WURFL support:
+
+1. **Place the WURFL library package**: Copy the `libwurfl*.deb` package files into the `modules/scientiamobile/wurfl_devicedetection/libwurfl/` directory before building the Docker image.
+
+2. **Install compile-time dependencies**: In the build stage of your Dockerfile, before the `go build` command, add:
+
+   ```dockerfile
+   # Installing WURFL compile-time dependencies if libwurfl package is present
+   RUN if ls modules/scientiamobile/wurfl_devicedetection/libwurfl/libwurfl*.deb 1> /dev/null 2>&1; then \
+         dpkg -i modules/scientiamobile/wurfl_devicedetection/libwurfl/libwurfl*.deb; \
+       fi
+   ```
+
+   And build with the WURFL tag:
+
+   ```dockerfile
+   RUN go build -tags wurfl -mod=vendor -ldflags "-X github.com/prebid/prebid-server/v3/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/v3/version.Rev=`git rev-parse HEAD`" .
+   ```
+
+3. **Install runtime dependencies**: In the runtime stage, add the WURFL runtime dependencies:
+
+   ```dockerfile
+   # Installing WURFL runtime dependencies if libwurfl package is present
+   COPY modules/scientiamobile/wurfl_devicedetection/libwurfl/ /tmp/wurfl
+   RUN if ls /tmp/wurfl/libwurfl*.deb 1> /dev/null 2>&1; then \
+         dpkg -i /tmp/wurfl/libwurfl*.deb; \
+         apt-get update && \
+         apt-get install -y curl && \
+         apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
+         rm -rf /tmp/wurfl; \
+       fi
+   ```
+
 ## Maintainer
 
 <prebid@scientiamobile.com>
