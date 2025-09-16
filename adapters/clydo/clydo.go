@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type ClydoAdapter struct {
+type adapter struct {
 	endpoint *template.Template
 }
 
@@ -23,13 +23,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	if err != nil {
 		return nil, fmt.Errorf("Failed to parse endpoint url: %v", err)
 	}
-	bidder := &ClydoAdapter{
+	bidder := &adapter{
 		endpoint: template,
 	}
 	return bidder, nil
 }
 
-func (a *ClydoAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
 
@@ -45,7 +45,7 @@ func (a *ClydoAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *a
 	return requests, errors
 }
 
-func (a *ClydoAdapter) MakeBids(
+func (a *adapter) MakeBids(
 	request *openrtb2.BidRequest,
 	requestData *adapters.RequestData,
 	responseData *adapters.ResponseData,
@@ -75,7 +75,7 @@ func (a *ClydoAdapter) MakeBids(
 	return bidResponse, errors
 }
 
-func (a *ClydoAdapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
 	params, err := prepareExtParams(imp)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func prepareExtParams(imp openrtb2.Imp) (*openrtb_ext.ImpExtClydo, error) {
 	return &clydoImpExt, nil
 }
 
-func (a *ClydoAdapter) prepareEndpoint(params *openrtb_ext.ImpExtClydo) (string, error) {
+func (a *adapter) prepareEndpoint(params *openrtb_ext.ImpExtClydo) (string, error) {
 	partnerId := params.PartnerId
 	if partnerId == "" {
 		return "", &errortypes.BadInput{
