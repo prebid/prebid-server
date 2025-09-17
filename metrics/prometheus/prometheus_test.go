@@ -2,6 +2,7 @@ package prometheusmetrics
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -124,14 +125,14 @@ func TestConnectionMetrics(t *testing.T) {
 			expectedClosedErrorCount: 1,
 		},
 		{
-			description: "Connection dial started",
+			description: "connection-dial-started",
 			testCase: func(m *Metrics) {
 				m.RecordAdapterConnectionDials(adapterName)
 			},
 			expectedConnectionDials: 1,
 		},
 		{
-			description: "Connection dial ended and was timed",
+			description: "connection-dial-ended-and-was-timed",
 			testCase: func(m *Metrics) {
 				m.RecordAdapterConnectionDialTime(adapterName, time.Second)
 			},
@@ -178,10 +179,11 @@ func TestConnectionMetrics(t *testing.T) {
 			test.expectedConnectionDials,
 			prometheus.Labels{adapterLabel: lowerCasedAdapterName},
 		)
-		histogram := getHistogramFromHistogramVec(m.adapterConnectionDialTime,
+		histogram, found := getHistogramFromHistogramVec(m.adapterConnectionDialTime,
 			adapterLabel,
-			string(adapterName),
+			strings.ToLower(string(adapterName)),
 		)
+		assert.Equal(t, test.expectedDialTimerCalls > 0, found)
 		assert.Equal(t, test.expectedDialTimerCalls, histogram.GetSampleCount(), test.description)
 		assert.Equal(t, test.expectedDialTime, histogram.GetSampleSum(), test.description)
 
@@ -211,7 +213,8 @@ func TestRequestMetric(t *testing.T) {
 			requestStatusLabel: string(requestStatus),
 		})
 
-	histogram := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+	histogram, found := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+	assert.True(t, found)
 	assertHistogram(t, "requests_size_auction", histogram, 1, 1024)
 }
 
@@ -575,7 +578,8 @@ func TestRequestTimeMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		result := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
+		result, found := getHistogramFromHistogramVec(m.requestsTimer, requestTypeLabel, string(requestType))
+		assert.True(t, found)
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
 	}
 }
@@ -621,7 +625,8 @@ func TestRecordOverheadTimeMetric(t *testing.T) {
 	metric := createMetricsForTesting()
 	for _, test := range testCases {
 		metric.RecordOverheadTime(test.overheadType, time.Duration(test.timeInMs)*time.Millisecond)
-		resultingHistogram := getHistogramFromHistogramVec(metric.overheadTimer, overheadTypeLabel, test.overheadType.String())
+		resultingHistogram, found := getHistogramFromHistogramVec(metric.overheadTimer, overheadTypeLabel, test.overheadType.String())
+		assert.True(t, found)
 		assertHistogram(t, test.description, resultingHistogram, test.expectedCount, test.expectedSum)
 	}
 }
@@ -714,10 +719,11 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			metricsTimer = m.storedResponsesFetchTimer
 		}
 
-		result := getHistogramFromHistogramVec(
+		result, found := getHistogramFromHistogramVec(
 			metricsTimer,
 			storedDataFetchTypeLabel,
 			string(tt.fetchType))
+		assert.True(t, found)
 		assertHistogram(t, tt.description, result, 1, 0.5)
 	}
 }
@@ -895,7 +901,8 @@ func TestRecordAdapterPriceMetric(t *testing.T) {
 
 	expectedCount := uint64(1)
 	expectedSum := cpm
-	result := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, lowerCasedAdapterName)
+	result, found := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, lowerCasedAdapterName)
+	assert.True(t, found)
 	assertHistogram(t, "adapterPrices", result, expectedCount, expectedSum)
 }
 
@@ -1156,7 +1163,8 @@ func TestAdapterTimeMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		result := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, lowerCasedAdapterName)
+		result, found := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, lowerCasedAdapterName)
+		assert.Equal(t, test.expectedCount > 0, found)
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
 	}
 }
@@ -1391,12 +1399,14 @@ func TestPrebidCacheRequestTimeMetric(t *testing.T) {
 
 	successExpectedCount := uint64(1)
 	successExpectedSum := float64(0.1)
-	successResult := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "true")
+	successResult, found := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "true")
+	assert.True(t, found)
 	assertHistogram(t, "Success", successResult, successExpectedCount, successExpectedSum)
 
 	errorExpectedCount := uint64(1)
 	errorExpectedSum := float64(0.2)
-	errorResult := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "false")
+	errorResult, found := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "false")
+	assert.True(t, found)
 	assertHistogram(t, "Error", errorResult, errorExpectedCount, errorExpectedSum)
 }
 
@@ -1681,7 +1691,8 @@ func TestRecordAdapterConnections(t *testing.T) {
 			prometheus.Labels{adapterLabel: lowerCasedAdapterName})
 
 		// Assert connection wait time
-		histogram := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, lowerCasedAdapterName)
+		histogram, found := getHistogramFromHistogramVec(m.adapterConnectionWaitTime, adapterLabel, lowerCasedAdapterName)
+		assert.True(t, found)
 		assert.Equal(t, test.out.expectedConnWaitCount, histogram.GetSampleCount(), assertDesciptions[2])
 		assert.Equal(t, test.out.expectedConnWaitTime, histogram.GetSampleSum(), assertDesciptions[3])
 	}
@@ -1798,16 +1809,18 @@ func assertCounterVecValue(t *testing.T, description, name string, counterVec *p
 	assertCounterValue(t, description, name, counter, expected)
 }
 
-func getHistogramFromHistogramVec(histogram *prometheus.HistogramVec, labelKey, labelValue string) dto.Histogram {
+func getHistogramFromHistogramVec(histogram *prometheus.HistogramVec, labelKey, labelValue string) (dto.Histogram, bool) {
 	var result dto.Histogram
+	var found bool
 	processMetrics(histogram, func(m dto.Metric) {
 		for _, label := range m.GetLabel() {
 			if label.GetName() == labelKey && label.GetValue() == labelValue {
 				result = *m.GetHistogram()
+				found = true
 			}
 		}
 	})
-	return result
+	return result, found
 }
 
 func getHistogramFromHistogramVecByTwoKeys(histogram *prometheus.HistogramVec, label1Key, label1Value, label2Key, label2Value string) dto.Histogram {
@@ -2082,7 +2095,8 @@ func TestRecordModuleMetrics(t *testing.T) {
 			})
 
 			// now check that the values are correct
-			result := getHistogramFromHistogramVec(m.moduleDuration[module], stageLabel, stage)
+			result, found := getHistogramFromHistogramVec(m.moduleDuration[module], stageLabel, stage)
+			assert.True(t, found)
 			assertHistogram(t, fmt.Sprintf("module_%s_duration", module), result, 1, 0.001)
 			assertCounterVecValue(t, "Module calls performed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleCalls[module], 1, prometheus.Labels{stageLabel: stage})
 			assertCounterVecValue(t, "Module calls failed", fmt.Sprintf("%s metric recorded during %s stage", module, stage), m.moduleFailures[module], 1, prometheus.Labels{stageLabel: stage})

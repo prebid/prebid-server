@@ -432,16 +432,18 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			[]string{adapterLabel},
 			standardTimeBuckets)
 
-		metrics.adapterConnectionDials = newCounter(cfg, reg,
-			"adapter_connection_dials",
-			"Count number of started dials to open connections with adapter bidder endpoints.",
-			[]string{adapterLabel})
+		if !metrics.metricsDisabled.AdapterConnectionDialMetrics {
+			metrics.adapterConnectionDials = newCounter(cfg, reg,
+				"adapter_connection_dials",
+				"Count number of started dials to open connections with adapter bidder endpoints.",
+				[]string{adapterLabel})
 
-		metrics.adapterConnectionDialTime = newHistogramVec(cfg, reg,
-			"adapter_connection_dial_time_seconds",
-			"Seconds adapter bidder connection dial lasted",
-			[]string{adapterLabel},
-			standardTimeBuckets)
+			metrics.adapterConnectionDialTime = newHistogramVec(cfg, reg,
+				"adapter_connection_dial_time_seconds",
+				"Seconds adapter bidder connection dial lasted",
+				[]string{adapterLabel},
+				standardTimeBuckets)
+		}
 	}
 
 	metrics.adapterBidResponseValidationSizeError = newCounter(cfg, reg,
@@ -1156,7 +1158,7 @@ func (m *Metrics) RecordAdapterConnectionDials(adapterName openrtb_ext.BidderNam
 }
 
 func (m *Metrics) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
-	m.adapterConnectionWaitTime.With(prometheus.Labels{
+	m.adapterConnectionDialTime.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Observe(dialStartTime.Seconds())
 }
