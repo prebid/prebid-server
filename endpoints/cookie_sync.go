@@ -184,7 +184,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
 			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.config.UserSync.PriorityGroups,
+			PriorityGroups: c.findPriorityGroups(account.CookieSync),
 		},
 		Debug: request.Debug,
 		Limit: limit,
@@ -331,6 +331,15 @@ func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cooki
 	}
 
 	return request
+}
+
+func (c *cookieSyncEndpoint) findPriorityGroups(cookieSyncConfig config.CookieSync) [][]string {
+	// Account-level config takes precedence over global config, which will be deprecated in the future
+	// Use the existance of the account level boolean to determine if account-level config is present
+	if cookieSyncConfig.DefaultCoopSync != nil {
+		return cookieSyncConfig.PriorityGroups
+	}
+	return c.config.UserSync.PriorityGroups
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
