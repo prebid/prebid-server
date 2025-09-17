@@ -9,7 +9,7 @@ import (
 
 func TestCertsFromFilePoolExists(t *testing.T) {
 	// Load hardcoded certificates found in ssl.go
-	certPool := GetRootCAPool()
+	certPool := createCertPoolFromEmbedded()
 
 	// Assert loaded certificates by looking at the length of the subjects array of strings
 	subjects := certPool.Subjects()

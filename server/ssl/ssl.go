@@ -8,13 +8,18 @@ import (
 
 // from https://medium.com/@kelseyhightower/optimizing-docker-images-for-static-binaries-b5696e26eb07
 
-var pool *x509.CertPool
-
-func GetRootCAPool() *x509.CertPool {
-	if pool == nil {
-		pool = x509.NewCertPool()
-		pool.AppendCertsFromPEM(pemCerts)
+func CreateCertPool(useSystem bool) (*x509.CertPool, error) {
+	if useSystem {
+		return x509.SystemCertPool()
 	}
+
+	pool := createCertPoolFromEmbedded()
+	return pool, nil
+}
+
+func createCertPoolFromEmbedded() *x509.CertPool {
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(pemCerts)
 	return pool
 }
 

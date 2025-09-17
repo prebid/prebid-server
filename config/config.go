@@ -79,6 +79,8 @@ type Configuration struct {
 	AccountDefaults Account `mapstructure:"account_defaults"`
 	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
 	accountDefaultsJSON json.RawMessage
+	// CertsUseSystem will use the host OS certificates instead of embedded certs.
+	CertsUseSystem bool `mapstructure:"certificates_use_system"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
@@ -1226,7 +1228,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)
 
+	v.SetDefault("certificates_use_system", false)
 	v.SetDefault("certificates_file", "")
+
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
 	v.SetDefault("generate_request_id", false)
