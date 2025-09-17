@@ -797,7 +797,7 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 	am.ConnWaitTime.Update(connWaitTime)
 }
 
-func (m *Metrics) RecordAdapterConnectionDials(adapterName openrtb_ext.BidderName) {
+func (m *Metrics) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
 	m.AdapterMetrics[strings.ToLower(string(adapterName))].ConnDialCreated.Inc(1)
 }
 

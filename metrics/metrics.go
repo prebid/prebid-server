@@ -511,7 +511,7 @@ type MetricsEngine interface {
 	RecordModuleExecutionError(labels ModuleLabels)
 	RecordModuleTimeout(labels ModuleLabels)
 	RecordAdapterThrottled(adapterName openrtb_ext.BidderName)
-	RecordAdapterConnectionDials(adapterName openrtb_ext.BidderName)
+	RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName)
 	RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration)
 	RecordConnectionWant()
 	RecordConnectionGot()

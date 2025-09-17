@@ -784,7 +784,6 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context, dialMetricsDisa
 		// ConnectStart is called when a new connection's Dial begins.
 		trace.ConnectStart = func(network, addr string) {
 			dialStart = time.Now()
-			bidder.me.RecordAdapterConnectionDials(bidder.BidderName)
 		}
 		// ConnectDone is called when a new connection's Dial completes.
 		// The provided err indicates whether the connection completed
@@ -792,6 +791,10 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context, dialMetricsDisa
 		trace.ConnectDone = func(network, addr string, err error) {
 			dialStartTime := time.Since(dialStart)
 			bidder.me.RecordAdapterConnectionDialTime(bidder.BidderName, dialStartTime)
+
+			if err != nil {
+				bidder.me.RecordAdapterConnectionDialError(bidder.BidderName)
+			}
 		}
 	}
 

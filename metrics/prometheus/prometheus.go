@@ -1151,7 +1151,7 @@ func (m *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	}).Inc()
 }
 
-func (m *Metrics) RecordAdapterConnectionDials(adapterName openrtb_ext.BidderName) {
+func (m *Metrics) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
 	m.adapterConnectionDials.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
