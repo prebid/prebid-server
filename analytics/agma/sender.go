@@ -77,7 +77,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 		}
 		defer func() {
 			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-				glog.Errorf("[agmaAnalytics] Draining response body failed: %v", err)
+				logger.Error(fmt.Sprintf("[agmaAnalytics] Draining response body failed: %v", err))
 			}
 			resp.Body.Close()
 		}()

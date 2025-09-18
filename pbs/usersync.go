@@ -50,7 +50,7 @@ func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 		// read the entire response body to ensure full connection reuse if there's an
 		// error while decoding the json
 		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-			glog.Errorf("Captcha verify draining response body failed: %v", err)
+			logger.Error(fmt.Sprintf("Captcha verify draining response body failed: %v", err))
 		}
 		resp.Body.Close()
 	}()

@@ -63,7 +63,7 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 		// read the entire response body to ensure full connection reuse if there's an
 		// invalid status code
 		if _, err := io.Copy(io.Discard, response.Body); err != nil {
-			glog.Errorf("error draining conversion rates response body: %v", err)
+			logger.Error(fmt.Sprintf("error draining conversion rates response body: %v", err))
 		}
 		response.Body.Close()
 	}()

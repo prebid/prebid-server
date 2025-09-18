@@ -30,7 +30,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		}
 		defer func() {
 			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-				glog.Errorf("[pubstack] Draining sender response body failed: %v", err)
+				logger.Error(fmt.Sprintf("[pubstack] Draining sender response body failed: %v", err))
 			}
 			resp.Body.Close()
 		}()
