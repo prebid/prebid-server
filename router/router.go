@@ -141,8 +141,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: defaultTransportDialContext(&net.Dialer{
-				Timeout:   time.Duration(cfg.Client.NetDialer.Timeout) * time.Second,
-				KeepAlive: time.Duration(cfg.Client.NetDialer.KeepAlive) * time.Second,
+				Timeout:   time.Duration(cfg.Client.Dialer.TimeoutSeconds) * time.Second,
+				KeepAlive: time.Duration(cfg.Client.Dialer.KeepAliveSeconds) * time.Second,
 			}),
 			MaxConnsPerHost:       cfg.Client.MaxConnsPerHost,
 			MaxIdleConns:          cfg.Client.MaxIdleConns,
@@ -158,8 +158,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: defaultTransportDialContext(&net.Dialer{
-				Timeout:   time.Duration(cfg.CacheClient.NetDialer.Timeout) * time.Second,
-				KeepAlive: time.Duration(cfg.CacheClient.NetDialer.KeepAlive) * time.Second,
+				Timeout:   time.Duration(cfg.CacheClient.Dialer.TimeoutSeconds) * time.Second,
+				KeepAlive: time.Duration(cfg.CacheClient.Dialer.KeepAliveSeconds) * time.Second,
 			}),
 			MaxConnsPerHost:       cfg.CacheClient.MaxConnsPerHost,
 			MaxIdleConns:          cfg.CacheClient.MaxIdleConns,
@@ -174,8 +174,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: defaultTransportDialContext(&net.Dialer{
-				Timeout:   time.Duration(cfg.PriceFloors.Fetcher.HttpClient.NetDialer.Timeout) * time.Second,
-				KeepAlive: time.Duration(cfg.PriceFloors.Fetcher.HttpClient.NetDialer.KeepAlive) * time.Second,
+				Timeout:   time.Duration(cfg.PriceFloors.Fetcher.HttpClient.Dialer.TimeoutSeconds) * time.Second,
+				KeepAlive: time.Duration(cfg.PriceFloors.Fetcher.HttpClient.Dialer.KeepAliveSeconds) * time.Second,
 			}),
 			MaxConnsPerHost:       cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
 			MaxIdleConns:          cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
@@ -311,7 +311,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	return r, nil
 }
 
-// Grabbing the same dialer context as the default transport uses
+// defaultTransportDialContext returns the same dialer context as the default transport uses, copied from the library code.
 func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
 	return dialer.DialContext
 }
