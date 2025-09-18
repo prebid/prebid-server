@@ -584,8 +584,7 @@ type DisabledMetrics struct {
 	// that were created or reused.
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 
-	// True if we don't want to collect metrics on the number of adapter
-	// connection dials and the time said dial takes
+	// True if we don't want to collect metrics on dial time and dial errors
 	AdapterConnectionDialMetrics bool `mapstructure:"adapter_connection_dial_metrics"`
 
 	// True if we don't want to collect the per adapter buyer UID scrubbed metric

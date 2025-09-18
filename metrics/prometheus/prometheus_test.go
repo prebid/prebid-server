@@ -72,17 +72,17 @@ func TestConnectionMetrics(t *testing.T) {
 	adapterName := openrtb_ext.BidderName("anyName")
 	lowerCasedAdapterName := "anyname"
 	testCases := []struct {
-		description              string
-		testCase                 func(m *Metrics)
-		expectedOpenedCount      float64
-		expectedOpenedErrorCount float64
-		expectedClosedCount      float64
-		expectedClosedErrorCount float64
-		expectedConnectionDials  float64
-		expectedDialTime         float64
-		expectedDialTimerCalls   uint64
-		expectedConnectionWant   float64
-		expectedConnectionGot    float64
+		description                  string
+		testCase                     func(m *Metrics)
+		expectedOpenedCount          float64
+		expectedOpenedErrorCount     float64
+		expectedClosedCount          float64
+		expectedClosedErrorCount     float64
+		expectedConnectionDialErrors float64
+		expectedDialTime             float64
+		expectedDialTimerCalls       uint64
+		expectedConnectionWant       float64
+		expectedConnectionGot        float64
 	}{
 		{
 			description: "Open Success",
@@ -129,7 +129,7 @@ func TestConnectionMetrics(t *testing.T) {
 			testCase: func(m *Metrics) {
 				m.RecordAdapterConnectionDialError(adapterName)
 			},
-			expectedConnectionDials: 1,
+			expectedConnectionDialErrors: 1,
 		},
 		{
 			description: "connection-dial-ended-and-was-timed",
@@ -175,8 +175,8 @@ func TestConnectionMetrics(t *testing.T) {
 		assertCounterVecValue(t,
 			test.description,
 			"adapter[anyName]",
-			m.adapterConnectionDials,
-			test.expectedConnectionDials,
+			m.adapterConnectionDialErrors,
+			test.expectedConnectionDialErrors,
 			prometheus.Labels{adapterLabel: lowerCasedAdapterName},
 		)
 		histogram, found := getHistogramFromHistogramVec(m.adapterConnectionDialTime,

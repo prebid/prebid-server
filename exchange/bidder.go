@@ -159,7 +159,6 @@ type bidderAdapterConfig struct {
 	DebugInfo              config.DebugInfo
 	EndpointCompression    string
 	ThrottleConfig         bidderAdapterThrottleConfig
-	DialMetricsEnabled     bool
 }
 
 type bidderAdapterThrottleConfig struct {
@@ -785,6 +784,7 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context, dialMetricsDisa
 		trace.ConnectStart = func(network, addr string) {
 			dialStart = time.Now()
 		}
+
 		// ConnectDone is called when a new connection's Dial completes.
 		// The provided err indicates whether the connection completed
 		// successfully.

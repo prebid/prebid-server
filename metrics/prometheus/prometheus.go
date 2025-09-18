@@ -81,7 +81,7 @@ type Metrics struct {
 	adapterBidResponseSecureMarkupError   *prometheus.CounterVec
 	adapterBidResponseSecureMarkupWarn    *prometheus.CounterVec
 	adapterThrottled                      *prometheus.CounterVec
-	adapterConnectionDials                *prometheus.CounterVec
+	adapterConnectionDialErrors           *prometheus.CounterVec
 	adapterConnectionDialTime             *prometheus.HistogramVec
 
 	// Syncer Metrics
@@ -433,13 +433,13 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			standardTimeBuckets)
 
 		if !metrics.metricsDisabled.AdapterConnectionDialMetrics {
-			metrics.adapterConnectionDials = newCounter(cfg, reg,
-				"adapter_connection_dials",
-				"Count number of started dials to open connections with adapter bidder endpoints.",
+			metrics.adapterConnectionDialErrors = newCounter(cfg, reg,
+				"adapter_connection_dial_errors",
+				"Count when a connection dial returns an error.",
 				[]string{adapterLabel})
 
 			metrics.adapterConnectionDialTime = newHistogramVec(cfg, reg,
-				"adapter_connection_dial_time_seconds",
+				"adapter_connection_dial_time",
 				"Seconds adapter bidder connection dial lasted",
 				[]string{adapterLabel},
 				standardTimeBuckets)
@@ -1152,7 +1152,7 @@ func (m *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 }
 
 func (m *Metrics) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
-	m.adapterConnectionDials.With(prometheus.Labels{
+	m.adapterConnectionDialErrors.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
 }

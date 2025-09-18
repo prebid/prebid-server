@@ -185,7 +185,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 			adapterLabel: adapterValues,
 		})
 
-		preloadLabelValuesForCounter(m.adapterConnectionDials, map[string][]string{
+		preloadLabelValuesForCounter(m.adapterConnectionDialErrors, map[string][]string{
 			adapterLabel: adapterValues,
 		})
 
