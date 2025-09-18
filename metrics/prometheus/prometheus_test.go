@@ -75,6 +75,8 @@ func TestConnectionMetrics(t *testing.T) {
 		expectedOpenedErrorCount float64
 		expectedClosedCount      float64
 		expectedClosedErrorCount float64
+		expectedConnectionWant   float64
+		expectedConnectionGot    float64
 	}{
 		{
 			description: "Open Success",
@@ -116,6 +118,20 @@ func TestConnectionMetrics(t *testing.T) {
 			expectedClosedCount:      0,
 			expectedClosedErrorCount: 1,
 		},
+		{
+			description: "connection-want",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionWant()
+			},
+			expectedConnectionWant: 1,
+		},
+		{
+			description: "connection-got",
+			testCase: func(m *Metrics) {
+				m.RecordConnectionGot()
+			},
+			expectedConnectionGot: 1,
+		},
 	}
 
 	for _, test := range testCases {
@@ -135,6 +151,10 @@ func TestConnectionMetrics(t *testing.T) {
 			test.expectedClosedErrorCount, prometheus.Labels{
 				connectionErrorLabel: connectionCloseError,
 			})
+		assertCounterValue(t, test.description, "connectionWant", m.connectionWant,
+			test.expectedConnectionWant)
+		assertCounterValue(t, test.description, "connectionGot", m.connectionGot,
+			test.expectedConnectionGot)
 	}
 }
 
@@ -146,6 +166,7 @@ func TestRequestMetric(t *testing.T) {
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
 		RequestStatus: requestStatus,
+		RequestSize:   1024,
 	})
 
 	expectedCount := float64(1)
@@ -155,6 +176,9 @@ func TestRequestMetric(t *testing.T) {
 			requestTypeLabel:   string(requestType),
 			requestStatusLabel: string(requestStatus),
 		})
+
+	histogram := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+	assertHistogram(t, "requests_size_auction", histogram, 1, 1024)
 }
 
 func TestDebugRequestMetric(t *testing.T) {
@@ -1893,6 +1917,14 @@ func TestStoredResponsesMetric(t *testing.T) {
 		assertCounterVecValue(t, "", "account stored responses", m.accountStoredResponses, test.expectedAccountStoredResponsesCount, prometheus.Labels{accountLabel: "acct-id"})
 		assertCounterValue(t, "", "stored responses", m.storedResponses, test.expectedStoredResponsesCount)
 	}
+}
+
+func TestRecordGvlListRequest(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordGvlListRequest()
+
+	assertCounterValue(t, "Record instance of fetched GVL list", "success", m.gvlListRequests, 1.00)
 }
 
 func TestRecordAdsCertReqMetric(t *testing.T) {

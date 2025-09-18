@@ -293,6 +293,12 @@ func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordGvlListRequest() {
+	for _, thisME := range *me {
+		thisME.RecordGvlListRequest()
+	}
+}
+
 func (me *MultiMetricsEngine) RecordAdsCertReq(success bool) {
 	for _, thisME := range *me {
 		thisME.RecordAdsCertReq(success)
@@ -375,6 +381,18 @@ func (me *MultiMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 func (me *MultiMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterThrottled(adapter)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordConnectionWant() {
+	for _, thisME := range *me {
+		thisME.RecordConnectionWant()
+	}
+}
+
+func (me *MultiMetricsEngine) RecordConnectionGot() {
+	for _, thisME := range *me {
+		thisME.RecordConnectionGot()
 	}
 }
 
@@ -513,6 +531,9 @@ func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) 
 func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
 }
 
+func (me *NilMetricsEngine) RecordGvlListRequest() {
+}
+
 func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {
 
 }
@@ -556,4 +577,10 @@ func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 
 // RecordAdapterThrottled as a noop
 func (me *NilMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
+}
+
+func (me *NilMetricsEngine) RecordConnectionWant() {
+}
+
+func (me *NilMetricsEngine) RecordConnectionGot() {
 }

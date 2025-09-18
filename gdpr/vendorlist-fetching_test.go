@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -95,15 +96,17 @@ func TestFetcherThrottling(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordGvlListRequest").Times(3)
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), m, testURLMaker(server))
 
 	// Dynamically Load List 2 Successfully
-	_, errList1 := fetcher(context.Background(), 3, 2)
+	_, errList1 := fetcher(context.Background(), 3, 2, m)
 	assert.NoError(t, errList1)
 
 	// Fail To Load List 3 Due To Rate Limiting
 	// - The request is rate limited after dynamically list 2.
-	_, errList2 := fetcher(context.Background(), 3, 3)
+	_, errList2 := fetcher(context.Background(), 3, 3, m)
 	assert.EqualError(t, errList2, "gdpr vendor list spec version 3 list version 3 does not exist, or has not been loaded yet. Try again in a few minutes")
 }
 
@@ -118,8 +121,10 @@ func TestMalformedVendorlist(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
-	_, err := fetcher(context.Background(), 3, 1)
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordGvlListRequest").Times(3)
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), m, testURLMaker(server))
+	_, err := fetcher(context.Background(), 3, 1, m)
 
 	// Fetching should fail since vendor list could not be unmarshalled.
 	assert.Error(t, err)
@@ -131,8 +136,10 @@ func TestServerUrlInvalid(t *testing.T) {
 
 	invalidURLGenerator := func(uint16, uint16) string { return " http://invalid-url-has-leading-whitespace" }
 
-	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), invalidURLGenerator)
-	_, err := fetcher(context.Background(), 3, 1)
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordGvlListRequest").Times(2)
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), m, invalidURLGenerator)
+	_, err := fetcher(context.Background(), 3, 1, m)
 
 	assert.EqualError(t, err, "gdpr vendor list spec version 3 list version 1 does not exist, or has not been loaded yet. Try again in a few minutes")
 }
@@ -141,8 +148,10 @@ func TestServerUnavailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	server.Close()
 
-	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
-	_, err := fetcher(context.Background(), 3, 1)
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordGvlListRequest").Times(2)
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), m, testURLMaker(server))
+	_, err := fetcher(context.Background(), 3, 1, m)
 
 	assert.EqualError(t, err, "gdpr vendor list spec version 3 list version 1 does not exist, or has not been loaded yet. Try again in a few minutes")
 }
@@ -253,7 +262,9 @@ func TestPreloadCache(t *testing.T) {
 	defer server.Close()
 
 	s := make(saver, 0, 5)
-	preloadCache(context.Background(), server.Client(), testURLMaker(server), s.saveVendorLists)
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordGvlListRequest").Times(5)
+	preloadCache(context.Background(), server.Client(), testURLMaker(server), s.saveVendorLists, m)
 
 	expectedLoadedVersions := []versionInfo{
 		{specVersion: 2, listVersion: 2},
@@ -380,8 +391,10 @@ type testExpected struct {
 
 func runTest(t *testing.T, test test, server *httptest.Server) {
 	config := testConfig()
-	fetcher := NewVendorListFetcher(context.Background(), config, server.Client(), testURLMaker(server))
-	vendorList, err := fetcher(context.Background(), test.setup.specVersion, test.setup.listVersion)
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordGvlListRequest").Times(3)
+	fetcher := NewVendorListFetcher(context.Background(), config, server.Client(), m, testURLMaker(server))
+	vendorList, err := fetcher(context.Background(), test.setup.specVersion, test.setup.listVersion, m)
 
 	if test.expected.errorMessage != "" {
 		assert.EqualError(t, err, test.expected.errorMessage, test.description+":error")

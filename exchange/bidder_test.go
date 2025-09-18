@@ -2085,6 +2085,8 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	mockMetricEngine.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 	mockMetricEngine.On("RecordOverheadTime", metrics.PreBidder, mock.Anything).Once()
 	mockMetricEngine.On("RecordBidderServerResponseTime", mock.Anything).Once()
+	mockMetricEngine.On("RecordConnectionWant").Once()
+	mockMetricEngine.On("RecordConnectionGot").Once()
 
 	// Run requestBid using an http.Client with a mock handler
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, mockMetricEngine, openrtb_ext.BidderAppnexus, nil, "")
