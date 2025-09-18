@@ -18,6 +18,7 @@ const (
 	FailedToMarshalErrorCode
 	FailedToUnmarshalErrorCode
 	InvalidImpFirstPartyDataErrorCode
+	BidderBlockedByPrivacySettings
 	BidderTemporarilyThrottledErrorCode
 )
 

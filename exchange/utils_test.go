@@ -2454,6 +2454,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 		gdprAllowedBidders     []openrtb_ext.BidderName
 		expectedBidders        []openrtb_ext.BidderName
 		expectedBlockedBidders []openrtb_ext.BidderName
+		expectedErrors         []error
 	}{
 		{
 			description:            "gdpr enforced, one request allowed and one request blocked",
@@ -2461,6 +2462,10 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 			expectedBlockedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderRubicon},
+			expectedErrors: []error{&errortypes.Warning{
+				Message:     `bidder "rubicon" blocked by privacy settings`,
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			}},
 		},
 		{
 			description:            "gdpr enforced, two requests allowed and no requests blocked",
@@ -2528,7 +2533,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			bidders = append(bidders, req.BidderName)
 		}
 
-		assert.Empty(t, errs, test.description)
+		assert.Equal(t, test.expectedErrors, errs, test.description)
 		assert.ElementsMatch(t, bidders, test.expectedBidders, test.description)
 
 		for _, blockedBidder := range test.expectedBlockedBidders {
@@ -5121,6 +5126,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 		expectedDevice    openrtb2.Device
 		expectedSource    openrtb2.Source
 		expectedImpExt    json.RawMessage
+		expectedErrors    []error
 	}{
 		{
 			name:              "fetch_bids_request_with_one_bidder_allowed",
@@ -5140,6 +5146,10 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
 			expectedSource:    expectedSourceDefault,
+			expectedErrors: []error{&errortypes.Warning{
+				Message:     `bidder "appnexus" blocked by privacy settings`,
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			}},
 		},
 		{
 			name:              "transmit_ufpd_allowed",
@@ -5284,7 +5294,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			}
 
 			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, gdpr.SignalNo, false, map[string]float64{})
-			assert.Empty(t, errs)
+			assert.Equal(t, test.expectedErrors, errs)
 			assert.Len(t, bidderRequests, test.expectedReqNumber)
 
 			if test.expectedReqNumber == 1 {
