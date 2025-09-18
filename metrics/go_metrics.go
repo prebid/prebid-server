@@ -18,8 +18,6 @@ type Metrics struct {
 	TMaxTimeoutCounter             metrics.Counter
 	ConnectionAcceptErrorMeter     metrics.Meter
 	ConnectionCloseErrorMeter      metrics.Meter
-	ConnectionWantCounter          metrics.Counter
-	ConnectionGotCounter           metrics.Counter
 	ImpMeter                       metrics.Meter
 	AppRequestMeter                metrics.Meter
 	NoCookieMeter                  metrics.Meter
@@ -164,8 +162,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
-		ConnectionWantCounter:          metrics.NilCounter{},
-		ConnectionGotCounter:           metrics.NilCounter{},
 		ImpMeter:                       blankMeter,
 		AppRequestMeter:                blankMeter,
 		DebugRequestMeter:              blankMeter,
@@ -299,8 +295,6 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
-	newMetrics.ConnectionWantCounter = metrics.GetOrRegisterCounter("connection_want", registry)
-	newMetrics.ConnectionGotCounter = metrics.GetOrRegisterCounter("connection_got", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 
 	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
@@ -691,14 +685,6 @@ func (me *Metrics) RecordConnectionClose(success bool) {
 	} else {
 		me.ConnectionCloseErrorMeter.Mark(1)
 	}
-}
-
-func (me *Metrics) RecordConnectionWant() {
-	me.ConnectionWantCounter.Inc(1)
-}
-
-func (me *Metrics) RecordConnectionGot() {
-	me.ConnectionGotCounter.Inc(1)
 }
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible
