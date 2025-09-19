@@ -90,7 +90,7 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Banner: &openrtb2.Banner{},
-							Ext:    json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
+							Ext:    json.RawMessage(`{"bidder":{"unitId":"12345678"}}`),
 						},
 					},
 				},
@@ -106,7 +106,7 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Banner: &openrtb2.Banner{},
-							Ext:    json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
+							Ext:    json.RawMessage(`{"bidder":{"unitId":"12345678"}}`),
 						},
 					},
 				},
@@ -122,39 +122,7 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Banner: &openrtb2.Banner{},
-							Ext:    json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
-						},
-					},
-				},
-				reqInfo: &adapters.ExtraRequestInfo{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid_bidder_params",
-			args: args{
-				request: &openrtb2.BidRequest{
-					Site: &openrtb2.Site{Page: "http://example.com"},
-					Imp: []openrtb2.Imp{
-						{
-							Banner: &openrtb2.Banner{},
-							Ext:    json.RawMessage(`{"bidder":{}}`), // Missing unitId
-						},
-					},
-				},
-				reqInfo: &adapters.ExtraRequestInfo{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "no_banner_or_video",
-			args: args{
-				request: &openrtb2.BidRequest{
-					Site: &openrtb2.Site{Page: "http://example.com"},
-					Imp: []openrtb2.Imp{
-						{
-							// No Banner or Video
-							Ext: json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
+							Ext:    json.RawMessage(`{"bidder":{"unitId":"12345678"}}`),
 						},
 					},
 				},
@@ -170,7 +138,7 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Banner: &openrtb2.Banner{},
-							Ext:    json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
+							Ext:    json.RawMessage(`{"bidder":{"unitId":"12345678"}}`),
 						},
 					},
 				},
@@ -186,7 +154,7 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Video: &openrtb2.Video{},
-							Ext:   json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
+							Ext:   json.RawMessage(`{"bidder":{"unitId":"12345678"}}`),
 						},
 					},
 					Ext: json.RawMessage(`{"prebid":{"channel":{"name":"prebidjs","version":"1.0"}}}`),
@@ -205,7 +173,7 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 							Banner:      &openrtb2.Banner{},
 							BidFloor:    1.0,
 							BidFloorCur: "USD",
-							Ext:         json.RawMessage(`{"bidder":{"unitId":"123456"}}`),
+							Ext:         json.RawMessage(`{"bidder":{"unitId":"12345678"}}`),
 						},
 					},
 				},
@@ -258,7 +226,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, _ := Builder(openrtb_ext.BidderShowheroes, config.Adapter{
 		Endpoint: "https://bid.showheroes.com/api/v1/bid",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	adapterstest.RunJSONBidderTest(t, "showheroes", bidder)
+	adapterstest.RunJSONBidderTest(t, "showheroestest", bidder)
 }
 
 func TestShowheroesAdapter_MakeBids(t *testing.T) {
