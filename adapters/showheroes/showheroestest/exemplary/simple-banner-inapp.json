@@ -28,7 +28,7 @@
         },
         "ext": {
           "bidder": {
-            "unitId": "123456"
+            "unitId": "12345678"
           }
         }
       }
@@ -81,14 +81,14 @@
                 "w": 320,
                 "h": 50
               },
-              "displayManager": "prebidjs",
-              "displayManagerVer": "1.0",
+              "displaymanager": "prebidjs",
+              "displaymanagerver": "1.0",
               "ext": {
                 "bidder": {
-                  "unitId": "123456"
+                  "unitId": "12345678"
                 },
                 "params": {
-                  "unitId": "123456"
+                  "unitId": "12345678"
                 }
               }
             }

@@ -57,14 +57,8 @@ func validate(request *openrtb2.BidRequest) error {
 }
 
 func processImp(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
-	if imp.Banner == nil && imp.Video == nil {
-		return &errortypes.BadInput{
-			Message: "banner or video must be specified",
-		}
-	}
-
 	var bidderExt shExtImpBidder
-	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil || bidderExt.Bidder.UnitID == "" {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
 			Message: "Error parsing bidder params",
 		}

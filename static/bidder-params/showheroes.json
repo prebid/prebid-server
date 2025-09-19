@@ -6,7 +6,8 @@
   "properties": {
     "unitId": {
       "type": "string",
-      "description": "Unit ID"
+      "description": "Unit ID",
+      "minLength": 8
     }
   },
   "required": ["unitId"]

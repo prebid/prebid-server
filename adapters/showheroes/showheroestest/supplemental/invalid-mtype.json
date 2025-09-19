@@ -98,7 +98,7 @@
                   "impid": "test-imp-id",
                   "price": 0.1,
                   "crid": "creative-123",
-                  "adm": "<iframe src='https://creative-url.showheroes.com'></iframe>",
+                  "adm": "<VAST version='3.0'><Ad id='123'><InLine><AdSystem>ShowHeroes</AdSystem></InLine></Ad></VAST>",
                   "w": 300,
                   "h": 250,
                   "mtype": 5
@@ -110,10 +110,24 @@
       }
     }
   ],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "unsupported mtype: 5",
-      "comparison": "literal"
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "<VAST version='3.0'><Ad id='123'><InLine><AdSystem>ShowHeroes</AdSystem></InLine></Ad></VAST>",
+            "w": 300,
+            "h": 250,
+            "mtype": 5
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }
