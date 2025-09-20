@@ -5,11 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCertsFromFilePoolExists(t *testing.T) {
 	// Load hardcoded certificates found in ssl.go
-	certPool := createCertPoolFromEmbedded()
+	certPool, certErr := createCertPoolFromEmbedded()
+	require.NoError(t, certErr)
 
 	// Assert loaded certificates by looking at the length of the subjects array of strings
 	subjects := certPool.Subjects()

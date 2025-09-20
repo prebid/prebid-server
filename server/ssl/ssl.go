@@ -2,25 +2,33 @@ package ssl
 
 import (
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"os"
 )
 
 // from https://medium.com/@kelseyhightower/optimizing-docker-images-for-static-binaries-b5696e26eb07
 
+var (
+	ErrLoadEmbeddedCerts = errors.New("failed to load embedded certs")
+)
+
 func CreateCertPool(useSystem bool) (*x509.CertPool, error) {
 	if useSystem {
 		return x509.SystemCertPool()
 	}
 
-	pool := createCertPoolFromEmbedded()
-	return pool, nil
+	return createCertPoolFromEmbedded()
 }
 
-func createCertPoolFromEmbedded() *x509.CertPool {
+func createCertPoolFromEmbedded() (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
-	pool.AppendCertsFromPEM(pemCerts)
-	return pool
+
+	if ok := pool.AppendCertsFromPEM(pemCerts); !ok {
+		return pool, ErrLoadEmbeddedCerts
+	}
+
+	return pool, nil
 }
 
 // Appends certificates to the `x509.CertPool` from a `.pem` private local file. On many Linux
