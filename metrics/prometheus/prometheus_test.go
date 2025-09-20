@@ -81,8 +81,6 @@ func TestConnectionMetrics(t *testing.T) {
 		expectedConnectionDialErrors float64
 		expectedDialTime             float64
 		expectedDialTimerCalls       uint64
-		expectedConnectionWant       float64
-		expectedConnectionGot        float64
 	}{
 		{
 			description: "Open Success",
@@ -139,20 +137,6 @@ func TestConnectionMetrics(t *testing.T) {
 			expectedDialTime:       1,
 			expectedDialTimerCalls: 1,
 		},
-		{
-			description: "connection-want",
-			testCase: func(m *Metrics) {
-				m.RecordConnectionWant()
-			},
-			expectedConnectionWant: 1,
-		},
-		{
-			description: "connection-got",
-			testCase: func(m *Metrics) {
-				m.RecordConnectionGot()
-			},
-			expectedConnectionGot: 1,
-		},
 	}
 
 	for _, test := range testCases {
@@ -186,11 +170,6 @@ func TestConnectionMetrics(t *testing.T) {
 		assert.Equal(t, test.expectedDialTimerCalls > 0, found)
 		assert.Equal(t, test.expectedDialTimerCalls, histogram.GetSampleCount(), test.description)
 		assert.Equal(t, test.expectedDialTime, histogram.GetSampleSum(), test.description)
-
-		assertCounterValue(t, test.description, "connectionWant", m.connectionWant,
-			test.expectedConnectionWant)
-		assertCounterValue(t, test.description, "connectionGot", m.connectionGot,
-			test.expectedConnectionGot)
 	}
 }
 

@@ -737,7 +737,6 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context, dialMetricsDisa
 		// GetConn is called before a connection is created or retrieved from an idle pool
 		GetConn: func(hostPort string) {
 			connStart = time.Now()
-			bidder.me.RecordConnectionWant()
 		},
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
@@ -755,7 +754,6 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context, dialMetricsDisa
 			}
 
 			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
-			bidder.me.RecordConnectionGot()
 		},
 		// DNSStart is called when a DNS lookup begins.
 		DNSStart: func(info httptrace.DNSStartInfo) {
