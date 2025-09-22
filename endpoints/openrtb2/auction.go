@@ -383,10 +383,13 @@ func sendAuctionResponse(
 
 	w.Header().Set("Content-Type", "application/json")
 
+	// Exitpoint will modify the response and set response headers according to hook implementation.
+	finalResponse := hookExecutor.ExecuteExitpointStage(response, w)
+
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
-	if err := enc.Encode(response); err != nil {
+	if err := enc.Encode(finalResponse); err != nil {
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
@@ -440,6 +443,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		errs = []error{err}
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	if limitedReqReader.N <= 0 {
 		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
@@ -1052,7 +1056,10 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 	for alias, bidderName := range aliases {
 		normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidderName)
 		coreBidderName := normalisedBidderName.String()
-		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidderName]; isCoreBidderDisabled {
+		if disabledMessage, isCoreBidderDisabled := deps.disabledBidders[coreBidderName]; isCoreBidderDisabled {
+			if exchange.IsBidderDisabledDueToWhiteLabelOnly(disabledMessage) {
+				return fmt.Errorf("request.ext.prebid.aliases.%s refers to a bidder that cannot be aliased: %s", alias, bidderName)
+			}
 			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, bidderName)
 		}
 

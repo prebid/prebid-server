@@ -4915,6 +4915,11 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			file:        "sample-requests/hooks/auction.json",
 			planBuilder: hooksPlanBuilder,
 		},
+		{
+			description: "Assert modified bidresponse after exitpoint hook implementation",
+			file:        "sample-requests/hooks/auction_exitpoint.json",
+			planBuilder: mockPlanBuilder{exitpointPlan: makePlan[hookstage.Exitpoint](mockUpdateResponseHook{})},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -5220,9 +5225,18 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 }
 
 func TestValidateAliases(t *testing.T) {
+	// This test runs against a real list of bidders, so we must use real bidder names for core bidders,
+	// but can use test values for the alias names.
 	deps := &endpointDeps{
-		disabledBidders: map[string]string{"rubicon": "rubicon"},
-		bidderMap:       map[string]openrtb_ext.BidderName{"appnexus": openrtb_ext.BidderName("appnexus")},
+		disabledBidders: map[string]string{
+			"rubicon":  "rubicon is disabled",
+			"appnexus": `Bidder "appnexus" can only be aliased and cannot be used directly.`, // exact wording needed to recognize white label only adapter error state
+		},
+		bidderMap: map[string]openrtb_ext.BidderName{
+			"appnexus": openrtb_ext.BidderName("appnexus"),
+			"rubicon":  openrtb_ext.BidderName("rubicon"),
+			"openx":    openrtb_ext.BidderName("openx"),
+		},
 	}
 
 	testCases := []struct {
@@ -5232,15 +5246,15 @@ func TestValidateAliases(t *testing.T) {
 		expectedError   error
 	}{
 		{
-			description:     "valid case",
-			aliases:         map[string]string{"test": "appnexus"},
-			expectedAliases: map[string]string{"test": "appnexus"},
+			description:     "valid",
+			aliases:         map[string]string{"test": "openx"},
+			expectedAliases: map[string]string{"test": "openx"},
 			expectedError:   nil,
 		},
 		{
-			description:     "valid case - case insensitive",
-			aliases:         map[string]string{"test": "Appnexus"},
-			expectedAliases: map[string]string{"test": "appnexus"},
+			description:     "valid - case insensitive",
+			aliases:         map[string]string{"test": "OpenX"},
+			expectedAliases: map[string]string{"test": "openx"},
 			expectedError:   nil,
 		},
 		{
@@ -5257,9 +5271,15 @@ func TestValidateAliases(t *testing.T) {
 		},
 		{
 			description:     "alias name is coreBidder name",
-			aliases:         map[string]string{"appnexus": "appnexus"},
+			aliases:         map[string]string{"openx": "openx"},
 			expectedAliases: nil,
-			expectedError:   errors.New("request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry."),
+			expectedError:   errors.New("request.ext.prebid.aliases.openx defines a no-op alias. Choose a different alias, or remove this entry."),
+		},
+		{
+			description:     "white label only bidder cannot be aliased",
+			aliases:         map[string]string{"test": "appnexus"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to a bidder that cannot be aliased: appnexus"),
 		},
 	}
 
@@ -5269,7 +5289,7 @@ func TestValidateAliases(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, testCase.expectedError, err)
 			} else {
-				assert.ObjectsAreEqualValues(testCase.expectedAliases, map[string]string{"test": "appnexus"})
+				assert.Equal(t, testCase.expectedAliases, testCase.aliases)
 			}
 		})
 	}

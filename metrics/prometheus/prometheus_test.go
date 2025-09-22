@@ -146,6 +146,7 @@ func TestRequestMetric(t *testing.T) {
 	m.RecordRequest(metrics.Labels{
 		RType:         requestType,
 		RequestStatus: requestStatus,
+		RequestSize:   1024,
 	})
 
 	expectedCount := float64(1)
@@ -155,6 +156,9 @@ func TestRequestMetric(t *testing.T) {
 			requestTypeLabel:   string(requestType),
 			requestStatusLabel: string(requestStatus),
 		})
+
+	histogram := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+	assertHistogram(t, "requests_size_auction", histogram, 1, 1024)
 }
 
 func TestDebugRequestMetric(t *testing.T) {
@@ -1893,6 +1897,14 @@ func TestStoredResponsesMetric(t *testing.T) {
 		assertCounterVecValue(t, "", "account stored responses", m.accountStoredResponses, test.expectedAccountStoredResponsesCount, prometheus.Labels{accountLabel: "acct-id"})
 		assertCounterValue(t, "", "stored responses", m.storedResponses, test.expectedStoredResponsesCount)
 	}
+}
+
+func TestRecordGvlListRequest(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordGvlListRequest()
+
+	assertCounterValue(t, "Record instance of fetched GVL list", "success", m.gvlListRequests, 1.00)
 }
 
 func TestRecordAdsCertReqMetric(t *testing.T) {
