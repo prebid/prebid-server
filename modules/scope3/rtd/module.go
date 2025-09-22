@@ -9,10 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"maps"
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coocood/freecache"
@@ -75,6 +77,11 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 			Transport: deps.HTTPClient.Transport,
 		},
 		cache: freecache.NewCache(10 * 1024 * 1024),
+		sha256Pool: &sync.Pool{
+			New: func() any {
+				return sha256.New()
+			},
+		},
 	}, nil
 }
 
@@ -166,6 +173,8 @@ type Module struct {
 	cfg        Config
 	httpClient *http.Client
 	cache      *freecache.Cache
+	// sha256Pool provides a pool of reusable SHA-256 hash instances for performance
+	sha256Pool *sync.Pool
 }
 
 // HandleEntrypointHook initializes the module context with a sync.Map for storing segments
@@ -256,13 +265,18 @@ func (m *Module) HandleAuctionResponseHook(
 	// Ensure we cancel the request context always to free resources
 	defer asyncRequest.Cancel()
 
-	// Check if a reqeuest was made
+	// Check if a request was made
 	if asyncRequest.Done == nil {
 		return ret, nil
 	}
 
 	// Wait for the async request to complete
-	<-asyncRequest.Done
+	select {
+	case <-asyncRequest.Done:
+		// Continue with processing
+	case <-ctx.Done():
+		return ret, nil // Context cancelled, exit gracefully
+	}
 
 	// Get results
 	segments, err := asyncRequest.Segments, asyncRequest.Err
@@ -416,7 +430,9 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 // createCacheKey generates a cache key based on non-sensitive context and identifiers
 // Note: Uses only privacy-safe identifiers to prevent correlation attacks
 func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
-	hasher := sha256.New()
+	hasher := m.sha256Pool.Get().(hash.Hash)
+	hasher.Reset()
+	defer m.sha256Pool.Put(hasher)
 
 	// Include site/app information (not sensitive)
 	if bidRequest.Site != nil {
@@ -456,7 +472,10 @@ func (m *Module) createCacheKey(bidRequest *openrtb2.BidRequest) string {
 
 	// If no privacy-safe identifiers are available, use hashed user.id for per-user caching
 	if !hasPrivacySafeID && bidRequest.User != nil && bidRequest.User.ID != "" {
-		userHasher := sha256.New()
+		userHasher := m.sha256Pool.Get().(hash.Hash)
+		userHasher.Reset()
+		defer m.sha256Pool.Put(userHasher)
+
 		userHasher.Write([]byte("user_id:" + bidRequest.User.ID))
 		hasher.Write([]byte("hashed_user_id:" + hex.EncodeToString(userHasher.Sum(nil))))
 	}

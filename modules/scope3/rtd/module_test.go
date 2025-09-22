@@ -3,6 +3,7 @@ package scope3
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -1276,7 +1277,13 @@ func TestBuilderConfigValidation_GeoPrecisionValid(t *testing.T) {
 }
 
 func TestCreateCacheKey_HashedUserID(t *testing.T) {
-	module := &Module{}
+	module := &Module{
+		sha256Pool: &sync.Pool{
+			New: func() any {
+				return sha256.New()
+			},
+		},
+	}
 
 	// Create request with user ID (no privacy-safe identifiers)
 	bidRequest := &openrtb2.BidRequest{
@@ -1328,7 +1335,13 @@ func TestCreateCacheKey_HashedUserID(t *testing.T) {
 }
 
 func TestCreateCacheKey_PrivacySafeIdentifiersPriority(t *testing.T) {
-	module := &Module{}
+	module := &Module{
+		sha256Pool: &sync.Pool{
+			New: func() any {
+				return sha256.New()
+			},
+		},
+	}
 
 	// Create request with both user.id and privacy-safe identifiers
 	userExtBytes, _ := jsonutil.Marshal(userExt{
@@ -1387,6 +1400,11 @@ func TestFetchScope3Segments_MaskingFailure(t *testing.T) {
 			Timeout: 1 * time.Second,
 		},
 		cache: freecache.NewCache(10),
+		sha256Pool: &sync.Pool{
+			New: func() any {
+				return sha256.New()
+			},
+		},
 	}
 
 	// Create a request that should work normally

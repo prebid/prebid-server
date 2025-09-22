@@ -77,6 +77,8 @@ func (m *Module) filterEids(eids []openrtb2.EID) []openrtb2.EID {
 	var filtered []openrtb2.EID
 	for eid := range iterutil.SlicePointerValues(eids) {
 		if allowed[eid.Source] {
+			// Intentionally copy the EID struct to create a new filtered slice
+			// that's independent of the original data
 			filtered = append(filtered, *eid)
 		}
 	}

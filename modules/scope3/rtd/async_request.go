@@ -2,6 +2,7 @@ package scope3
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -41,7 +42,12 @@ func (m *Module) NewAsyncRequest(req *http.Request) *AsyncRequest {
 func (ar *AsyncRequest) fetchScope3SegmentsAsync(request *openrtb2.BidRequest) {
 	ar.Done = make(chan struct{})
 	go func() {
-		defer close(ar.Done)
+		defer func() {
+			if r := recover(); r != nil {
+				ar.Err = fmt.Errorf("panic in async request: %v", r)
+			}
+			close(ar.Done)
+		}()
 		ar.Segments, ar.Err = ar.Module.fetchScope3Segments(ar.Context, request)
 	}()
 }
