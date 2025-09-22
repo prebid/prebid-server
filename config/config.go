@@ -125,11 +125,14 @@ type PriceFloorFetcher struct {
 const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
-	MaxConnsPerHost     int          `mapstructure:"max_connections_per_host"`
-	MaxIdleConns        int          `mapstructure:"max_idle_connections"`
-	MaxIdleConnsPerHost int          `mapstructure:"max_idle_connections_per_host"`
-	IdleConnTimeout     int          `mapstructure:"idle_connection_timeout_seconds"`
-	Throttle            HTTPThrottle `mapstructure:"throttle"`
+	MaxConnsPerHost       int          `mapstructure:"max_connections_per_host"`
+	MaxIdleConns          int          `mapstructure:"max_idle_connections"`
+	MaxIdleConnsPerHost   int          `mapstructure:"max_idle_connections_per_host"`
+	IdleConnTimeout       int          `mapstructure:"idle_connection_timeout_seconds"`
+	TLSHandshakeTimeout   int          `mapstructure:"tls_handshake_timeout_seconds"`
+	ExpectContinueTimeout int          `mapstructure:"expect_continue_timeout_seconds"`
+	Dialer                Dialer       `mapstructure:"dialer"`
+	Throttle              HTTPThrottle `mapstructure:"throttle"`
 }
 
 type HTTPThrottle struct {
@@ -143,6 +146,11 @@ type HTTPThrottle struct {
 	ShortQueueWaitThresholdMS int `mapstructure:"short_queue_wait_threshold_ms"`
 	// ThrottleWindow controls the speed that the throttling logic will react to changes in the health of the bidder.
 	ThrottleWindow int `mapstructure:"throttle_window"`
+}
+
+type Dialer struct {
+	TimeoutSeconds   int `mapstructure:"timeout_seconds"`
+	KeepAliveSeconds int `mapstructure:"keep_alive_seconds"`
 }
 
 func (cfg *Configuration) validate(v *viper.Viper) []error {
@@ -973,6 +981,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client.tls_handshake_timeout_seconds", 10)
+	v.SetDefault("http_client.expect_continue_timeout_seconds", 1)
+	v.SetDefault("http_client.dialer.timeout_seconds", 30)
+	v.SetDefault("http_client.dialer.keep_alive_seconds", 15)
 	v.SetDefault("http_client.throttle.enable_throttling", false)
 	v.SetDefault("http_client.throttle.simulate_throttling_only", false)
 	v.SetDefault("http_client.throttle.long_queue_wait_threshold_ms", 50)
@@ -982,6 +994,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("http_client_cache.max_idle_connections", 10)
 	v.SetDefault("http_client_cache.max_idle_connections_per_host", 2)
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client_cache.tls_handshake_timeout_seconds", 10)
+	v.SetDefault("http_client_cache.expect_continue_timeout_seconds", 1)
+	v.SetDefault("http_client_cache.dialer.timeout_seconds", 30)
+	v.SetDefault("http_client_cache.dialer.keep_alive_seconds", 15)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
@@ -1236,6 +1252,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections", 40)
 	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections_per_host", 2)
 	v.SetDefault("price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("price_floors.fetcher.http_client.tls_handshake_timeout_seconds", 10)
+	v.SetDefault("price_floors.fetcher.http_client.expect_continue_timeout_seconds", 1)
+	v.SetDefault("price_floors.fetcher.http_client.dialer.timeout_seconds", 30)
+	v.SetDefault("price_floors.fetcher.http_client.dialer.keep_alive_seconds", 15)
 	v.SetDefault("price_floors.fetcher.max_retries", 10)
 
 	v.SetDefault("account_defaults.events_enabled", false)
