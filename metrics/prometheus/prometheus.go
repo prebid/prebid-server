@@ -432,7 +432,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 				"adapter_connection_dial_time",
 				"Seconds adapter bidder connection dial lasted",
 				[]string{adapterLabel},
-				standardTimeBuckets)
+				append(prometheus.DefBuckets, 15, 30))
 		}
 	}
 
