@@ -1,5 +1,4 @@
 endpoint: "https://e.serverbid.com"
-currency-accepted: "USD"
 geoscope:
   - USA
   - CAN
