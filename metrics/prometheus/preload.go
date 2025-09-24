@@ -185,13 +185,15 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 			adapterLabel: adapterValues,
 		})
 
-		preloadLabelValuesForCounter(m.adapterConnectionDialErrors, map[string][]string{
-			adapterLabel: adapterValues,
-		})
+		if !m.metricsDisabled.AdapterConnectionDialMetrics {
+			preloadLabelValuesForCounter(m.adapterConnectionDialErrors, map[string][]string{
+				adapterLabel: adapterValues,
+			})
 
-		preloadLabelValuesForHistogram(m.adapterConnectionDialTime, map[string][]string{
-			adapterLabel: adapterValues,
-		})
+			preloadLabelValuesForHistogram(m.adapterConnectionDialTime, map[string][]string{
+				adapterLabel: adapterValues,
+			})
+		}
 	}
 
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
