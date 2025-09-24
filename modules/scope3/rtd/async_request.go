@@ -26,14 +26,29 @@ type (
 	}
 )
 
-// NewAsyncRequest creates a new AsyncRequest object
-// The request's context is used to create a cancellable context for the async request and, which spans multiple hooks
-func (m *Module) NewAsyncRequest(req *http.Request) *AsyncRequest {
-	ret := &AsyncRequest{
-		Module: m,
-	}
+// getAsyncRequest gets an AsyncRequest from the pool and initializes it
+// The request's context is used to create a cancellable context for the async request, which spans multiple hooks
+func (m *Module) getAsyncRequest(req *http.Request) *AsyncRequest {
+	ret := m.asyncRequestPool.Get().(*AsyncRequest)
+	ret.Module = m
 	ret.Context, ret.Cancel = context.WithCancel(req.Context())
 	return ret
+}
+
+// putAsyncRequest resets an AsyncRequest and puts it back into the pool
+func (m *Module) putAsyncRequest(ar *AsyncRequest) {
+	ar.reset()
+	m.asyncRequestPool.Put(ar)
+}
+
+// reset resets the AsyncRequest so it can be reused
+func (ar *AsyncRequest) reset() {
+	ar.Module = nil
+	ar.Context = nil
+	ar.Cancel = nil
+	ar.Done = nil
+	ar.Segments = nil
+	ar.Err = nil
 }
 
 // fetchScope3SegmentsAsync starts a goroutine to fetch Scope3 segments and immediately returns
