@@ -225,8 +225,23 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "account_defaults.privacy.topicsdomain", "", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
 	cmpBools(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
 	cmpInts(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
+	cmpBools(t, "account_defaults.geolocation.enabled", false, cfg.AccountDefaults.GeoLocation.Enabled)
 
 	cmpBools(t, "account_defaults.events.enabled", false, cfg.AccountDefaults.Events.Enabled)
+
+	cmpBools(t, "geolocation.enabled", false, cfg.GeoLocation.Enabled)
+	cmpStrings(t, "geolocation.type", "maxmind", cfg.GeoLocation.Type)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.max_connections_per_host", 0, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.max_idle_connections", 40, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxIdleConns)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.max_idle_connections_per_host", 2, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.idle_connection_timeout_seconds", 60, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.IdleConnTimeout)
+	cmpStrings(t, "geolocation.maxmind.remote_file_syncer.download_url", "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", cfg.GeoLocation.Maxmind.RemoteFileSyncer.DownloadURL)
+	cmpStrings(t, "geolocation.maxmind.remote_file_syncer.save_filepath", "/var/tmp/prebid/GeoLite2-City.tar.gz", cfg.GeoLocation.Maxmind.RemoteFileSyncer.SaveFilePath)
+	cmpStrings(t, "geolocation.maxmind.remote_file_syncer.tmp_filepath", "/var/tmp/prebid/tmp/GeoLite2-City.tar.gz", cfg.GeoLocation.Maxmind.RemoteFileSyncer.TmpFilePath)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.retry_count", 3, cfg.GeoLocation.Maxmind.RemoteFileSyncer.RetryCount)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.retry_interval_ms", 3000, cfg.GeoLocation.Maxmind.RemoteFileSyncer.RetryIntervalMillis)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.timeout_ms", 300000, cfg.GeoLocation.Maxmind.RemoteFileSyncer.TimeoutMillis)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.update_interval_ms", 0, cfg.GeoLocation.Maxmind.RemoteFileSyncer.UpdateIntervalMillis)
 
 	cmpBools(t, "hooks.enabled", false, cfg.Hooks.Enabled)
 	cmpStrings(t, "validations.banner_creative_max_size", "skip", cfg.Validations.BannerCreativeMaxSize)
@@ -531,6 +546,23 @@ price_floors:
         max_idle_connections_per_host: 2
         idle_connection_timeout_seconds: 10
       max_retries: 5
+geolocation:
+    enabled: false
+    type: maxmind
+    maxmind:
+        remote_file_syncer:
+            http_client:
+                max_connections_per_host: 0
+                max_idle_connections: 40
+                max_idle_connections_per_host: 2
+                idle_connection_timeout_seconds: 60
+            download_url: "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz"
+            save_filepath: "/var/tmp/prebid/GeoLite2-City.tar.gz"
+            tmp_filepath: "/var/tmp/prebid/tmp/GeoLite2-City.tar.gz"
+            retry_count: 3
+            retry_interval_ms: 3000
+            timeout_ms: 300000
+            update_interval_ms: 0
 account_defaults:
     events:
         enabled: true
@@ -579,6 +611,8 @@ account_defaults:
             cookiedeprecation:
                 enabled: true
                 ttl_sec: 86400
+    geolocation:
+        enabled: false
 tmax_adjustments:
   enabled: true
   bidder_response_duration_min_ms: 700
@@ -948,6 +982,21 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "analytics.agma.accounts.0.publisher_id", "publisher-id", cfg.Analytics.Agma.Accounts[0].PublisherId)
 	cmpStrings(t, "analytics.agma.accounts.0.code", "agma-code", cfg.Analytics.Agma.Accounts[0].Code)
 	cmpStrings(t, "analytics.agma.accounts.0.site_app_id", "site-or-app-id", cfg.Analytics.Agma.Accounts[0].SiteAppId)
+
+	cmpBools(t, "account_defaults.geolocation.enabled", false, cfg.GeoLocation.Enabled)
+	cmpBools(t, "geolocation.enabled", false, cfg.GeoLocation.Enabled)
+	cmpStrings(t, "geolocation.type", "maxmind", cfg.GeoLocation.Type)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.max_connections_per_host", 0, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxConnsPerHost)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.max_idle_connections", 40, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxIdleConns)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.max_idle_connections_per_host", 2, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxIdleConnsPerHost)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.http_client.idle_connection_timeout_seconds", 60, cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.IdleConnTimeout)
+	cmpStrings(t, "geolocation.maxmind.remote_file_syncer.download_url", "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", cfg.GeoLocation.Maxmind.RemoteFileSyncer.DownloadURL)
+	cmpStrings(t, "geolocation.maxmind.remote_file_syncer.save_filepath", "/var/tmp/prebid/GeoLite2-City.tar.gz", cfg.GeoLocation.Maxmind.RemoteFileSyncer.SaveFilePath)
+	cmpStrings(t, "geolocation.maxmind.remote_file_syncer.tmp_filepath", "/var/tmp/prebid/tmp/GeoLite2-City.tar.gz", cfg.GeoLocation.Maxmind.RemoteFileSyncer.TmpFilePath)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.retry_count", 3, cfg.GeoLocation.Maxmind.RemoteFileSyncer.RetryCount)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.retry_interval_ms", 3000, cfg.GeoLocation.Maxmind.RemoteFileSyncer.RetryIntervalMillis)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.timeout_ms", 300000, cfg.GeoLocation.Maxmind.RemoteFileSyncer.TimeoutMillis)
+	cmpInts(t, "geolocation.maxmind.remote_file_syncer.update_interval_ms", 0, cfg.GeoLocation.Maxmind.RemoteFileSyncer.UpdateIntervalMillis)
 }
 
 func TestValidateConfig(t *testing.T) {

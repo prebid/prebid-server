@@ -24,6 +24,8 @@ import (
 	"github.com/prebid/prebid-server/v3/experiment/adscert"
 	"github.com/prebid/prebid-server/v3/floors"
 	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/geolocation"
+	"github.com/prebid/prebid-server/v3/geolocation/maxmind"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/metrics"
@@ -39,6 +41,7 @@ import (
 	storedRequestsConf "github.com/prebid/prebid-server/v3/stored_requests/config"
 	"github.com/prebid/prebid-server/v3/usersync"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/remotefilesyncer"
 	"github.com/prebid/prebid-server/v3/util/uuidutil"
 	"github.com/prebid/prebid-server/v3/version"
 
@@ -249,10 +252,46 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	requestValidator := ortb.NewRequestValidator(activeBidders, disabledBidders, paramsValidator)
 	priceFloorFetcher := floors.NewPriceFloorFetcher(cfg.PriceFloors, floorFechterHttpClient, r.MetricsEngine)
 
+	var geolocationService geolocation.GeoLocation
+	if cfg.GeoLocation.Enabled {
+		switch cfg.GeoLocation.Type {
+		case maxmind.Vendor:
+			maxmindGeo := &maxmind.GeoLocation{}
+			maxmindSyncerHttpClient := &http.Client{
+				Transport: &http.Transport{
+					Proxy:               http.ProxyFromEnvironment,
+					MaxConnsPerHost:     cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxConnsPerHost,
+					MaxIdleConns:        cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxIdleConns,
+					MaxIdleConnsPerHost: cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.MaxIdleConnsPerHost,
+					IdleConnTimeout:     time.Duration(cfg.GeoLocation.Maxmind.RemoteFileSyncer.HttpClient.IdleConnTimeout) * time.Second,
+				},
+			}
+			maxmindSyncer, err := remotefilesyncer.NewRemoteFileSyncer(remotefilesyncer.Options{
+				Processor:      maxmindGeo,
+				Client:         maxmindSyncerHttpClient,
+				DownloadURL:    cfg.GeoLocation.Maxmind.RemoteFileSyncer.DownloadURL,
+				SaveFilePath:   cfg.GeoLocation.Maxmind.RemoteFileSyncer.SaveFilePath,
+				TmpFilePath:    cfg.GeoLocation.Maxmind.RemoteFileSyncer.TmpFilePath,
+				RetryCount:     cfg.GeoLocation.Maxmind.RemoteFileSyncer.RetryCount,
+				RetryInterval:  time.Duration(cfg.GeoLocation.Maxmind.RemoteFileSyncer.RetryIntervalMillis) * time.Millisecond,
+				Timeout:        time.Duration(cfg.GeoLocation.Maxmind.RemoteFileSyncer.TimeoutMillis) * time.Millisecond,
+				UpdateInterval: time.Duration(cfg.GeoLocation.Maxmind.RemoteFileSyncer.UpdateIntervalMillis) * time.Millisecond,
+			})
+			if err != nil {
+				return nil, err
+			}
+			_ = maxmindSyncer.Start()
+			geolocationService = maxmindGeo
+		default:
+			return nil, fmt.Errorf("Unknown geolocation type: %s", cfg.GeoLocation.Type)
+		}
+	}
+	geolocationResolver := exchange.NewGeoLocationResolver(geolocationService)
+
 	tmaxAdjustments := exchange.ProcessTMaxAdjustments(cfg.TmaxAdjustments)
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)
 	macroReplacer := macros.NewStringIndexBasedReplacer()
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher, singleFormatAdapters)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher, singleFormatAdapters, geolocationResolver)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {

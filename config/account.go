@@ -54,6 +54,7 @@ type Account struct {
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
 	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
+	GeoLocation             AccountGeoLocation                          `mapstructure:"geolocation" json:"geolocation"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -362,6 +363,14 @@ type PrivacySandbox struct {
 type CookieDeprecation struct {
 	Enabled bool `mapstructure:"enabled"`
 	TTLSec  int  `mapstructure:"ttl_sec"`
+}
+
+type AccountGeoLocation struct {
+	Enabled bool `mapstructure:"enabled" json:"enabled,omitempty"`
+}
+
+func (g *AccountGeoLocation) IsGeoLocationEnabled() bool {
+	return g.Enabled
 }
 
 // AccountDSA represents DSA configuration

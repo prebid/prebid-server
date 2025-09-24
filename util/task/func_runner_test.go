@@ -2,6 +2,7 @@ package task
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -25,4 +26,17 @@ func TestNewTickerTaskFromFunc(t *testing.T) {
 	err := task.runner.Run()
 	assert.NoError(t, err)
 	assert.Equal(t, 1, runCount)
+}
+
+func TestNewFuncRunner(t *testing.T) {
+	var count int64
+
+	runner := NewFuncRunner(func() error {
+		atomic.AddInt64(&count, 1)
+		return nil
+	})
+
+	err := runner.Run()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
 }

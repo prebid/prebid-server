@@ -85,6 +85,8 @@ type exchange struct {
 	priceFloorEnabled        bool
 	priceFloorFetcher        floors.FloorFetcher
 	singleFormatBidders      map[openrtb_ext.BidderName]struct{}
+	geoLocationEnabled       bool
+	geoLocationResolver      GeoLocationResolver
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -136,7 +138,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, requestValidator ortb.RequestValidator, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher, singleFormatBidders map[openrtb_ext.BidderName]struct{}) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, requestValidator ortb.RequestValidator, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, macroReplacer macros.Replacer, priceFloorFetcher floors.FloorFetcher, singleFormatBidders map[openrtb_ext.BidderName]struct{}, geoLocationResolver GeoLocationResolver) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -185,6 +187,8 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		priceFloorEnabled:        cfg.PriceFloors.Enabled,
 		priceFloorFetcher:        priceFloorFetcher,
 		singleFormatBidders:      singleFormatBidders,
+		geoLocationEnabled:       cfg.GeoLocation.Enabled,
+		geoLocationResolver:      geoLocationResolver,
 	}
 }
 
@@ -250,6 +254,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
 	if err != nil {
 		return nil, err
+	}
+
+	if e.geoLocationEnabled {
+		_ = EnrichGeoLocation(ctx, r.BidRequestWrapper, r.Account, e.geoLocationResolver)
 	}
 
 	// ensure prebid object always exists

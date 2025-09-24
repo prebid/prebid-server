@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"net/http"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/geolocation/countrycodemapper"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/router"
 	"github.com/prebid/prebid-server/v3/server"
@@ -55,10 +57,17 @@ func main() {
 	}
 }
 
+// CountryCodeData will be packaged into the binary file at compile time.
+//
+//go:embed country-codes.csv
+var CountryCodeData string
+
 const configFileName = "pbs"
 const infoDirectory = "./static/bidder-info"
 
 func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
+	countrycodemapper.Load(CountryCodeData)
+
 	v := viper.New()
 	config.SetupViper(v, configFileName, bidderInfos)
 	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
