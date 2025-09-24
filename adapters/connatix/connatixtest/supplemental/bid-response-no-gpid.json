@@ -38,8 +38,7 @@
           "ext": {
             "bidder": {
               "placementId": "some-placement-id"
-            },
-            "gpid": "test-gpid"
+            }
           }
         }
       ]
@@ -74,7 +73,7 @@
                   "connatix": {
                     "placementId": "some-placement-id"
                   },
-                  "gpid": "test-gpid"
+                  "gpid": ""
                 }
               }
             ],
@@ -100,19 +99,10 @@
           ]
         },
         "mockResponse": {
-          "status": 200,
-          "body": {
-            "id": "some-response-id",
-            "seatbid": {}
-          }
+          "status": 204,
+          "body": null
         }
       }
     ],
-    "expectedBidResponses": [],
-    "expectedMakeBidsErrors": [
-        {
-            "value": "cannot unmarshal openrtb2.BidResponse.SeatBid: decode slice: expect [ or n, but found {",
-            "comparison": "literal"
-        }
-    ]
+    "expectedBidResponses": []
   }

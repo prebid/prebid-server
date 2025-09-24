@@ -36,7 +36,8 @@
           "ext": {
             "bidder": {
               "placementId": "some-placement-id"
-            }
+            },
+            "gpid": "test-gpid"
           }
         }
       ],
