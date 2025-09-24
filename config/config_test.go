@@ -600,6 +600,7 @@ analytics:
     - code: agma-code
       publisher_id: publisher-id
       site_app_id: site-or-app-id
+certificates_use_system: true
 `)
 
 func cmpStrings(t *testing.T, key, expected, actual string) {
@@ -948,6 +949,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "analytics.agma.accounts.0.publisher_id", "publisher-id", cfg.Analytics.Agma.Accounts[0].PublisherId)
 	cmpStrings(t, "analytics.agma.accounts.0.code", "agma-code", cfg.Analytics.Agma.Accounts[0].Code)
 	cmpStrings(t, "analytics.agma.accounts.0.site_app_id", "site-or-app-id", cfg.Analytics.Agma.Accounts[0].SiteAppId)
+	cmpBools(t, "certificates_use_system", true, cfg.CertsUseSystem)
 }
 
 func TestValidateConfig(t *testing.T) {
