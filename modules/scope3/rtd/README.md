@@ -25,7 +25,7 @@ hooks:
           enabled: true         # Enable field masking before sending to Scope3
           geo:
             preserve_metro: true      # Preserve DMA code (default: true)
-            preserve_zip: true        # Preserve postal code (default: true)  
+            preserve_zip: true        # Preserve postal code (default: true)
             preserve_city: false      # Preserve city name (default: false)
             lat_long_precision: 2     # Lat/long decimal places: 0-4 (default: 2)
           user:
@@ -98,7 +98,7 @@ hooks:
 ## Environment Variables
 - `SCOPE3_API_KEY`: Your Scope3 API key for authentication
 
-## Privacy Protection
+## Privacy Protection {#privacy-protection}
 
 This module includes comprehensive privacy masking to protect user data while preserving targeting capabilities. When masking is enabled, sensitive user information is removed or anonymized before being sent to the Scope3 API.
 
@@ -238,7 +238,7 @@ masking:
 
 **GDPR Compliance**
 - Removes direct identifiers by default
-- Configurable to meet legitimate interest requirements  
+- Configurable to meet legitimate interest requirements
 - Supports privacy-by-design principles
 
 **CCPA Compliance**
@@ -297,7 +297,7 @@ This module automatically detects and forwards available user identifiers from t
    - Other standard OpenRTB identifiers
 
 ### How It Works
-The module forwards the complete bid request with all available user identifiers to the Scope3 API. Scope3's system can then utilize whatever identifiers are available for audience segmentation, whether they are resolved identifiers or encrypted envelopes that Scope3 may be able to process.
+The module forwards any fields that are not masked from the bid request to the Scope3 API (please see the [Privacy Protection](#privacy-protection) section for more details). Scope3's system can then utilize whatever identifiers are available for audience segmentation, whether they are resolved identifiers or encrypted envelopes that Scope3 may be able to process.
 
 **Note**: The effectiveness of different identifier types depends on Scope3's integration capabilities and partnerships.
 
