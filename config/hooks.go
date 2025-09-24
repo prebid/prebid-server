@@ -47,4 +47,7 @@ type ABTest struct {
 	// LogAnalyticsTag specifies whether module execution result will get noted in the analytics log
 	// The default value (nil) will enable writing results to the analytics log, the same as if the value "true" is set
 	LogAnalyticsTag *bool `mapstructure:"log_analytics_tag" json:"log_analytics_tag"`
+	// AdServerTargeting specifies the targeting keyword name to be added to the bid response
+	// The keyword will have value "1" if module was run, "0" if it was skipped
+	AdServerTargeting string `mapstructure:"adserver_targeting" json:"adserver_targeting"`
 }

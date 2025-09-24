@@ -4256,7 +4256,8 @@ func TestExecuteExitpointStage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := NewHookExecutor(tt.fields.planBuilder, tt.fields.endpoint, tt.fields.metricEngine)
+			abTests := NewABTests(&config.Configuration{})
+			e := NewHookExecutor(tt.fields.planBuilder, tt.fields.endpoint, tt.fields.metricEngine, abTests)
 			e.SetAccount(tt.fields.account)
 			e.SetActivityControl(tt.fields.activityControl)
 			newResponse := e.ExecuteExitpointStage(tt.args.response, tt.args.w)
@@ -5314,5 +5315,84 @@ func (e TestMultipleHooksUpdatePayloadBuilder) PlanForExitpointStage(_ string, _
 				{Module: "module-2", Code: "json-response", Hook: mockUpdateResponseAgainHook{}},
 			},
 		},
+	}
+}
+
+func TestGetABTestTargetingKeywords(t *testing.T) {
+	testCases := []struct {
+		description       string
+		hostConfiguration *config.Configuration
+		expectedKeywords  map[string]string
+	}{
+		{
+			description: "No targeting keywords configured",
+			hostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:    "module-1",
+								Enabled:       ptr(true),
+								PercentActive: ptr(uint16(100)),
+							},
+						},
+					},
+				},
+			},
+			expectedKeywords: map[string]string{},
+		},
+		{
+			description: "Module with targeting keyword configured - run",
+			hostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:        "module-1",
+								Enabled:           ptr(true),
+								PercentActive:     ptr(uint16(100)),
+								AdServerTargeting: "hb_ab_module1",
+							},
+						},
+					},
+				},
+			},
+			expectedKeywords: map[string]string{
+				"hb_ab_module1": "1",
+			},
+		},
+		{
+			description: "Module with targeting keyword configured - skip",
+			hostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:        "module-1",
+								Enabled:           ptr(true),
+								PercentActive:     ptr(uint16(0)),
+								AdServerTargeting: "hb_ab_module1",
+							},
+						},
+					},
+				},
+			},
+			expectedKeywords: map[string]string{
+				"hb_ab_module1": "0",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			exec := NewHookExecutor(hooks.EmptyPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(test.hostConfiguration))
+
+			keywords := exec.GetABTestTargetingKeywords()
+
+			assert.Equal(t, test.expectedKeywords, keywords)
+		})
 	}
 }
