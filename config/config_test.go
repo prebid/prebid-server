@@ -158,12 +158,28 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_debug", true, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", true, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_connection_dial_metrics", true, cfg.Metrics.Disabled.AdapterConnectionDialMetrics)
 	cmpBools(t, "adapter_buyeruid_scrubbed", true, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", false, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "", cfg.PemCertsFile)
 	cmpInts(t, "stored_requests_timeout_ms", 50, cfg.StoredRequestsTimeout)
 	cmpBools(t, "stored_requests.filesystem.enabled", false, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
+	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
+	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
+	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "accounts.filesystem.enabled", false, cfg.Accounts.Files.Enabled)
+	cmpStrings(t, "accounts.filesystem.directorypath", "./stored_requests/data/by_id", cfg.Accounts.Files.Path)
+	cmpStrings(t, "accounts.http.endpoint", "", cfg.Accounts.HTTP.Endpoint)
+	cmpBools(t, "accounts.http.use_rfc3986_compliant_request_builder", false, cfg.Accounts.HTTP.UseRfcCompliantBuilder)
+	cmpStrings(t, "accounts.in_memory_cache.type", "none", cfg.Accounts.InMemoryCache.Type)
+	cmpInts(t, "accounts.in_memory_cache.ttl_seconds", 0, cfg.Accounts.InMemoryCache.TTL)
+	cmpInts(t, "accounts.in_memory_cache.size_bytes", 0, cfg.Accounts.InMemoryCache.Size)
+	cmpBools(t, "accounts.cache_events.enabled", false, cfg.Accounts.CacheEvents.Enabled)
+	cmpStrings(t, "accounts.cache_events.endpoint", "", cfg.Accounts.CacheEvents.Endpoint)
+	cmpStrings(t, "accounts.http_events.endpoint", "", cfg.Accounts.HTTPEvents.Endpoint)
+	cmpInts(t, "accounts.http_events.refresh_rate_seconds", 0, int(cfg.Accounts.HTTPEvents.RefreshRate))
+	cmpInts(t, "accounts.http_events.timeout_ms", 0, int(cfg.Accounts.HTTPEvents.Timeout))
 	cmpBools(t, "auto_gen_source_tid", true, cfg.AutoGenSourceTID)
 	cmpBools(t, "generate_bid_id", false, cfg.GenerateBidID)
 	cmpStrings(t, "experiment.adscert.mode", "off", cfg.Experiment.AdCerts.Mode)
@@ -223,6 +239,8 @@ func TestDefaults(t *testing.T) {
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 0, cfg.TmaxAdjustments.BidderResponseDurationMin)
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 0, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 0, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+
+	cmpInts(t, "tmax_default", 0, cfg.TmaxDefault)
 
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
@@ -345,6 +363,24 @@ func TestDefaults(t *testing.T) {
 
 // When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
 var fullConfig = []byte(`
+accounts:
+  filesystem:
+    enabled: true
+    directorypath: "./example_directory"
+  http:
+    endpoint: "https://prebid.org"
+    use_rfc3986_compliant_request_builder: true
+  in_memory_cache:
+    type: "lru"
+    ttl_seconds: 300
+    size_bytes: 1000
+  cache_events:
+    enabled: true
+    endpoint: "https://prebid.org"
+  http_events:
+    endpoint: "https://prebid.org"
+    refresh_rate_seconds: 300
+    timeout_ms: 100
 gdpr:
   host_vendor_id: 15
   default_value: "1"
@@ -448,6 +484,7 @@ metrics:
     account_debug: false
     account_stored_responses: false
     adapter_connections_metrics: true
+    adapter_connection_dial_metrics: true
     adapter_buyeruid_scrubbed: false
     adapter_gdpr_request_blocked: true
     account_modules_metrics: true
@@ -514,6 +551,7 @@ account_defaults:
           period_sec: 2000
           max_age_sec: 6000
           max_schema_dims: 10
+    bid_rounding: up
     bidadjustments:
         mediatype:
             '*':
@@ -546,6 +584,7 @@ tmax_adjustments:
   bidder_response_duration_min_ms: 700
   bidder_network_latency_buffer_ms: 100
   pbs_response_preparation_duration_ms: 100
+tmax_default: 600
 analytics:
   agma:
     enabled: true
@@ -615,6 +654,21 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "auction_timeouts_ms.default", 50, int(cfg.AuctionTimeouts.Default))
 	cmpInts(t, "auction_timeouts_ms.max", 123, int(cfg.AuctionTimeouts.Max))
 	cmpInts(t, "stored_request_timeout_ms", 75, cfg.StoredRequestsTimeout)
+	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
+	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
+	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "accounts.filesystem.enabled", true, cfg.Accounts.Files.Enabled)
+	cmpStrings(t, "accounts.filesystem.directorypath", "./example_directory", cfg.Accounts.Files.Path)
+	cmpStrings(t, "accounts.http.endpoint", "https://prebid.org", cfg.Accounts.HTTP.Endpoint)
+	cmpBools(t, "accounts.http.use_rfc3986_compliant_request_builder", true, cfg.Accounts.HTTP.UseRfcCompliantBuilder)
+	cmpStrings(t, "accounts.in_memory_cache.type", "lru", cfg.Accounts.InMemoryCache.Type)
+	cmpInts(t, "accounts.in_memory_cache.ttl_seconds", 300, cfg.Accounts.InMemoryCache.TTL)
+	cmpInts(t, "accounts.in_memory_cache.size_bytes", 1000, cfg.Accounts.InMemoryCache.Size)
+	cmpBools(t, "accounts.cache_events.enabled", true, cfg.Accounts.CacheEvents.Enabled)
+	cmpStrings(t, "accounts.cache_events.endpoint", "https://prebid.org", cfg.Accounts.CacheEvents.Endpoint)
+	cmpStrings(t, "accounts.http_events.endpoint", "https://prebid.org", cfg.Accounts.HTTPEvents.Endpoint)
+	cmpInts(t, "accounts.http_events.refresh_rate_seconds", 300, int(cfg.Accounts.HTTPEvents.RefreshRate))
+	cmpInts(t, "accounts.http_events.timeout_ms", 100, int(cfg.Accounts.HTTPEvents.Timeout))
 	cmpStrings(t, "cache.scheme", "http", cfg.CacheURL.Scheme)
 	cmpStrings(t, "cache.host", "prebidcache.net", cfg.CacheURL.Host)
 	cmpStrings(t, "cache.query", "uuid=%PBS_CACHE_UUID%", cfg.CacheURL.Query)
@@ -644,6 +698,7 @@ func TestFullConfig(t *testing.T) {
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_response_duration_min_ms", 700, cfg.TmaxAdjustments.BidderResponseDurationMin)
 	cmpUnsignedInts(t, "tmax_adjustments.bidder_network_latency_buffer_ms", 100, cfg.TmaxAdjustments.BidderNetworkLatencyBuffer)
 	cmpUnsignedInts(t, "tmax_adjustments.pbs_response_preparation_duration_ms", 100, cfg.TmaxAdjustments.PBSResponsePreparationDuration)
+	cmpInts(t, "tmax_default", 600, cfg.TmaxDefault)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", true, cfg.PriceFloors.Enabled)
@@ -670,6 +725,8 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 2000, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 6000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+
+	assert.Equal(t, RoundingModeUp, cfg.AccountDefaults.BidRounding)
 
 	// Assert the DSA was correctly unmarshalled and DefaultUnpacked was built correctly
 	expectedDSA := AccountDSA{
@@ -863,6 +920,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_debug", false, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", false, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_connection_dial_metrics", true, cfg.Metrics.Disabled.AdapterConnectionDialMetrics)
 	cmpBools(t, "adapter_buyeruid_scrubbed", false, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", true, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "/etc/ssl/cert.pem", cfg.PemCertsFile)

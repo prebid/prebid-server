@@ -23,6 +23,15 @@ const (
 	ChannelDOOH  ChannelType = "dooh"
 )
 
+type BidRoundingMode string
+
+const (
+	RoundingModeDown      BidRoundingMode = "down"
+	RoundingModeTrue      BidRoundingMode = "true"
+	RoundingModeTimeSplit BidRoundingMode = "timesplit"
+	RoundingModeUp        BidRoundingMode = "up"
+)
+
 // Account represents a publisher account configuration
 type Account struct {
 	ID                      string                                      `mapstructure:"id" json:"id"`
@@ -41,8 +50,10 @@ type Account struct {
 	Validations             Validations                                 `mapstructure:"validations" json:"validations"`
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
+	BidRounding             BidRoundingMode                             `mapstructure:"bid_rounding" json:"bid_rounding,omitempty"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
+	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
 	MaxImpressions          int                                         `mapstructure:"max_impressions" json:"max_impressions"`
 }
 
