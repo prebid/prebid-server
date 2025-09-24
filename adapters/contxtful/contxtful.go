@@ -292,6 +292,10 @@ func (a *adapter) processPrebidJSBids(prebidBids []ContxtfulExchangeBid, ctx *Bi
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if adapters.IsResponseStatusCodeNoContent(response) {
+		return nil, nil
+	}
+
 	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
 		return nil, []error{err}
 	}

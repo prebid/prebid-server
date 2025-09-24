@@ -94,10 +94,5 @@
       }
     }
   ],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Unexpected status code: 204. Run with request.debug = 1 for more info",
-      "comparison": "literal"
-    }
-  ]
+  "expectedBidResponses": []
 } 
