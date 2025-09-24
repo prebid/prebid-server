@@ -43,12 +43,7 @@ func (m *Module) putAsyncRequest(ar *AsyncRequest) {
 
 // reset resets the AsyncRequest so it can be reused
 func (ar *AsyncRequest) reset() {
-	ar.Module = nil
-	ar.Context = nil
-	ar.Cancel = nil
-	ar.Done = nil
-	ar.Segments = nil
-	ar.Err = nil
+	*ar = AsyncRequest{}
 }
 
 // fetchScope3SegmentsAsync starts a goroutine to fetch Scope3 segments and immediately returns
