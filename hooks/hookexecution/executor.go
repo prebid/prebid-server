@@ -48,6 +48,7 @@ type HookStageExecutor interface {
 	SetAccount(account *config.Account)
 	SetActivityControl(activityControl privacy.ActivityControl)
 	GetOutcomes() []StageOutcome
+	GetABTestTargetingKeywords() map[string]string
 }
 
 type hookExecutor struct {
@@ -430,6 +431,10 @@ func (e *hookExecutor) pushStageOutcome(outcome StageOutcome) {
 	e.stageOutcomes = append(e.stageOutcomes, outcome)
 }
 
+func (e *hookExecutor) GetABTestTargetingKeywords() map[string]string {
+	return e.abTests.GetTargetingKeywords()
+}
+
 func applyABTestPlan[T any](ab *ABTests, plan hooks.Plan[T]) hooks.Plan[T] {
 	var p hooks.Plan[T]
 	for _, group := range plan {
@@ -486,4 +491,8 @@ func (executor EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidRes
 
 func (executor EmptyHookExecutor) ExecuteExitpointStage(response any, _ http.ResponseWriter) any {
 	return response
+}
+
+func (executor EmptyHookExecutor) GetABTestTargetingKeywords() map[string]string {
+	return map[string]string{}
 }

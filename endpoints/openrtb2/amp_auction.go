@@ -398,6 +398,15 @@ func sendAmpResponse(
 			}
 		}
 	}
+
+	// Add A/B test targeting keywords to targeting
+	abTestTargeting := hookExecutor.GetABTestTargetingKeywords()
+	for keyword, value := range abTestTargeting {
+		if _, exists := targets[keyword]; !exists {
+			targets[keyword] = value
+		}
+	}
+
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
 	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, auctionResponse, reqWrapper, account, ao, errs)

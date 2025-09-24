@@ -13,23 +13,25 @@ import (
 
 type (
 	ABTests struct {
-		config     *config.Configuration
-		account    *config.Account
-		accountID  string
-		runMap     map[string]bool
-		logMap     map[string]bool
-		loggedMap  map[string]bool
-		planLoaded bool
-		mu         sync.Mutex
+		config       *config.Configuration
+		account      *config.Account
+		accountID    string
+		runMap       map[string]bool
+		logMap       map[string]bool
+		loggedMap    map[string]bool
+		targetingMap map[string]string
+		planLoaded   bool
+		mu           sync.Mutex
 	}
 )
 
 func NewABTests(cfg *config.Configuration) *ABTests {
 	abTester := ABTests{
-		config:    cfg,
-		runMap:    make(map[string]bool),
-		logMap:    make(map[string]bool),
-		loggedMap: make(map[string]bool),
+		config:       cfg,
+		runMap:       make(map[string]bool),
+		logMap:       make(map[string]bool),
+		loggedMap:    make(map[string]bool),
+		targetingMap: make(map[string]string),
 	}
 
 	return &abTester
@@ -128,6 +130,10 @@ func (t *ABTests) planHost() {
 			t.setLogged(module, false)
 		}
 
+		if abtest.AdServerTargeting != "" {
+			t.targetingMap[module] = abtest.AdServerTargeting
+		}
+
 		if !t.containsAccount(abtest.Accounts) {
 			t.runMap[abtest.ModuleCode] = false
 			continue
@@ -156,6 +162,7 @@ func (t *ABTests) planAccount() {
 
 		if abtest.Enabled == nil || !*abtest.Enabled {
 			delete(t.runMap, abtest.ModuleCode)
+			delete(t.targetingMap, abtest.ModuleCode)
 			continue
 		}
 
@@ -167,6 +174,10 @@ func (t *ABTests) planAccount() {
 
 		if lat {
 			t.setLogged(module, false)
+		}
+
+		if abtest.AdServerTargeting != "" {
+			t.targetingMap[module] = abtest.AdServerTargeting
 		}
 
 		pa := uint16(100)
@@ -202,4 +213,24 @@ func (t *ABTests) setLogged(module string, val bool) {
 	defer t.mu.Unlock()
 
 	t.loggedMap[module] = val
+}
+
+func (t *ABTests) GetTargetingKeywords() map[string]string {
+	if !t.planLoaded {
+		t.planHost()
+		t.planAccount()
+		t.planLoaded = true
+	}
+
+	result := make(map[string]string)
+	for module, keyword := range t.targetingMap {
+		if keyword != "" {
+			value := "0"
+			if t.runMap[module] {
+				value = "1"
+			}
+			result[keyword] = value
+		}
+	}
+	return result
 }
