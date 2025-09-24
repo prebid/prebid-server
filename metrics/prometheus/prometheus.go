@@ -26,7 +26,6 @@ type Metrics struct {
 	cookieSync                   *prometheus.CounterVec
 	setUid                       *prometheus.CounterVec
 	impressions                  *prometheus.CounterVec
-	impressionsDropped           prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
 	requestsSize                 *prometheus.HistogramVec
@@ -211,10 +210,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"impressions_requests",
 		"Count of requested impressions to Prebid Server labeled by type.",
 		[]string{isBannerLabel, isVideoLabel, isAudioLabel, isNativeLabel})
-
-	metrics.impressionsDropped = newCounterWithoutLabels(cfg, reg,
-		"impressions_dropped",
-		"Number of impressions dropped by server")
 
 	metrics.prebidCacheWriteTimer = newHistogramVec(cfg, reg,
 		"prebidcache_write_time_seconds",
@@ -751,10 +746,6 @@ func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
 		isAudioLabel:  strconv.FormatBool(labels.AudioImps),
 		isNativeLabel: strconv.FormatBool(labels.NativeImps),
 	}).Inc()
-}
-
-func (me *Metrics) RecordImpsDropped(imps int) {
-	me.impressionsDropped.Add(float64(imps))
 }
 
 func (m *Metrics) RecordRequestTime(labels metrics.Labels, length time.Duration) {

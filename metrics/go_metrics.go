@@ -54,9 +54,6 @@ type Metrics struct {
 	ImpsTypeAudio  metrics.Meter
 	ImpsTypeNative metrics.Meter
 
-	// Number of impression dropped by the server over max allowed in the request
-	ImpsDropped metrics.Meter
-
 	// Notification timeout metrics
 	TimeoutNotificationSuccess metrics.Meter
 	TimeoutNotificationFailure metrics.Meter
@@ -197,8 +194,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		ImpsTypeAudio:  blankMeter,
 		ImpsTypeNative: blankMeter,
 
-		ImpsDropped: blankMeter,
-
 		TimeoutNotificationSuccess: blankMeter,
 		TimeoutNotificationFailure: blankMeter,
 
@@ -308,7 +303,6 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
 	newMetrics.ImpsTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
 	newMetrics.ImpsTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
-	newMetrics.ImpsDropped = metrics.GetOrRegisterMeter("imps_dropped", registry)
 
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
@@ -678,10 +672,6 @@ func (me *Metrics) RecordImps(labels ImpLabels) {
 	if labels.NativeImps {
 		me.ImpsTypeNative.Mark(int64(1))
 	}
-}
-
-func (me *Metrics) RecordImpsDropped(imps int) {
-	me.ImpsDropped.Mark(int64(imps))
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {

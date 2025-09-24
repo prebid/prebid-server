@@ -507,7 +507,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	if account.MaxImpressions > 0 && len(impInfo) > account.MaxImpressions {
-		deps.metricsEngine.RecordImpsDropped(len(impInfo))
+		labels.RequestStatus = metrics.RequestStatusTooManyImps
 		errs = []error{fmt.Errorf("max allowed number of impressions is %d", account.MaxImpressions)}
 		return
 	}
