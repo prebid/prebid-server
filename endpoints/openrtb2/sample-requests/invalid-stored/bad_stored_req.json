@@ -23,5 +23,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: expect { or n, but found"
+  "expectedErrorMessage": "Invalid request: ext.prebid.storedrequest.id refers to Stored Request 3 which contains Invalid JSON: invalid character '}' after top-level value at offset 135"
 }

@@ -192,7 +192,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	setBrowsingTopicsHeader(w, r)
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels, hookExecutor)
-	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+	if errortypes.ContainsFatalError(errL) {
+		writeError(errL, w, &labels, req, deps.cfg, &ao)
 		return
 	}
 
@@ -235,7 +236,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	err := deps.setIntegrationType(req, account)
 	if err != nil {
 		errL = append(errL, err)
-		writeError(errL, w, &labels)
+		writeError(errL, w, &labels, req, deps.cfg, &ao)
 		return
 	}
 	secGPC := r.Header.Get("Sec-GPC")
@@ -277,16 +278,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.SeatNonBid = auctionResponse.GetSeatNonBid()
 	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
 	if err != nil && !isRejectErr {
-		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
-			writeError([]error{err}, w, &labels)
-			return
-		}
-		labels.RequestStatus = metrics.RequestStatusErr
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		glog.Errorf("/openrtb2/auction Critical error: %v", err)
-		ao.Status = http.StatusInternalServerError
-		ao.Errors = append(ao.Errors, err)
+		writeError([]error{err}, w, &labels, req, deps.cfg, &ao)
 		return
 	} else if isRejectErr {
 		labels, ao = rejectAuctionRequest(*rejectErr, w, hookExecutor, req.BidRequest, account, labels, ao)
@@ -421,7 +413,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
 	if reqContentEncoding != "" {
 		if !deps.cfg.Compression.Request.IsSupported(reqContentEncoding) {
-			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEncoding)}
+			errs = []error{&errortypes.BadInput{Message: fmt.Sprintf("Content-Encoding of type %s is not supported", reqContentEncoding)}}
 			return
 		} else {
 			r, err = getCompressionEnabledReader(httpRequest.Body, reqContentEncoding)
@@ -451,7 +443,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		if _, err := limitedReqReader.R.Read(make([]byte, 1)); err != io.EOF {
 			// Discard the rest of the request body so that the connection can be reused.
 			io.Copy(io.Discard, httpRequest.Body)
-			errs = []error{fmt.Errorf("request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
+			errs = []error{&errortypes.BadInput{Message: fmt.Sprintf("request size exceeded max size of %d bytes", deps.cfg.MaxRequestSize)}}
 			return
 		}
 	}
@@ -534,7 +526,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
-		errs = []error{err}
+		errs = []error{&errortypes.BadInput{Message: err.Error()}}
 		return
 	}
 
@@ -771,15 +763,15 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
-		return []error{errors.New("request missing required field: \"id\"")}
+		return []error{&errortypes.BadInput{Message: "request missing required field: \"id\""}}
 	}
 
 	if req.TMax < 0 {
-		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)}
+		return []error{&errortypes.BadInput{Message: fmt.Sprintf("request.tmax must be nonnegative. Got %d", req.TMax)}}
 	}
 
 	if req.LenImp() < 1 {
-		return []error{errors.New("request.imp must contain at least one element.")}
+		return []error{&errortypes.BadInput{Message: "request.imp must contain at least one element."}}
 	}
 
 	if len(req.Cur) > 1 {
@@ -921,7 +913,9 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 	for i, imp := range req.GetImp() {
 		// check for unique imp id
 		if firstIndex, ok := impIDs[imp.ID]; ok {
-			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, i, imp.ID))
+			errL = append(errL, &errortypes.BadInput{
+				Message: fmt.Sprintf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, i, imp.ID),
+			})
 		}
 		impIDs[imp.ID] = i
 
@@ -969,7 +963,9 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 	uniqueBidders := make(map[string]struct{})
 	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
 		if adjustmentFactor <= 0 {
-			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor),
+			}
 		}
 
 		bidderName := bidderToAdjust
@@ -979,14 +975,18 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 		}
 
 		if _, exists := uniqueBidders[bidderName]; exists {
-			return fmt.Errorf("cannot have multiple bidders that differ only in case style")
+			return &errortypes.BadInput{
+				Message: "cannot have multiple bidders that differ only in case style",
+			}
 		} else {
 			uniqueBidders[bidderName] = struct{}{}
 		}
 
 		if _, isBidder := deps.bidderMap[bidderName]; !isBidder {
 			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
-				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
+				return &errortypes.BadInput{
+					Message: fmt.Sprintf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust),
+				}
 			}
 		}
 	}
@@ -1006,20 +1006,20 @@ func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestP
 	uniqueSources := make(map[string]struct{}, len(prebid.EidPermissions))
 	for i, eid := range prebid.EidPermissions {
 		if len(eid.Source) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
+			return &errortypes.BadInput{Message: fmt.Sprintf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)}
 		}
 
 		if _, exists := uniqueSources[eid.Source]; exists {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i)
+			return &errortypes.BadInput{Message: fmt.Sprintf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i)}
 		}
 		uniqueSources[eid.Source] = struct{}{}
 
 		if len(eid.Bidders) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)
+			return &errortypes.BadInput{Message: fmt.Sprintf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)}
 		}
 
 		if err := deps.validateBidders(eid.Bidders, deps.bidderMap, requestAliases); err != nil {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+			return &errortypes.BadInput{Message: fmt.Sprintf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)}
 		}
 	}
 
@@ -1046,7 +1046,9 @@ func (deps *endpointDeps) validateBidders(bidders []string, knownBidders map[str
 
 func (deps *endpointDeps) parseBidExt(req *openrtb_ext.RequestWrapper) error {
 	if _, err := req.GetRequestExt(); err != nil {
-		return fmt.Errorf("request.ext is invalid: %v", err)
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("request.ext is invalid: %v", err),
+		}
 	}
 	return nil
 }
@@ -1057,17 +1059,19 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 		coreBidderName := normalisedBidderName.String()
 		if disabledMessage, isCoreBidderDisabled := deps.disabledBidders[coreBidderName]; isCoreBidderDisabled {
 			if exchange.IsBidderDisabledDueToWhiteLabelOnly(disabledMessage) {
-				return fmt.Errorf("request.ext.prebid.aliases.%s refers to a bidder that cannot be aliased: %s", alias, bidderName)
+				return &errortypes.BadInput{Message: fmt.Sprintf("request.ext.prebid.aliases.%s refers to a bidder that cannot be aliased: %s", alias, bidderName)}
 			}
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, bidderName)
+			return &errortypes.BadInput{Message: fmt.Sprintf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, bidderName)}
 		}
 
 		if _, isCoreBidder := deps.bidderMap[coreBidderName]; !isCoreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, bidderName)
+			return &errortypes.BadInput{Message: fmt.Sprintf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, bidderName)}
 		}
 
 		if alias == coreBidderName {
-			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias),
+			}
 		}
 		aliases[alias] = coreBidderName
 	}
@@ -1078,11 +1082,15 @@ func (deps *endpointDeps) validateAliasesGVLIDs(aliasesGVLIDs map[string]uint16,
 	for alias, vendorId := range aliasesGVLIDs {
 
 		if _, aliasExist := aliases[alias]; !aliasExist {
-			return fmt.Errorf("request.ext.prebid.aliasgvlids. vendorId %d refers to unknown bidder alias: %s", vendorId, alias)
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("request.ext.prebid.aliasgvlids. vendorId %d refers to unknown bidder alias: %s", vendorId, alias),
+			}
 		}
 
 		if vendorId < 1 {
-			return fmt.Errorf("request.ext.prebid.aliasgvlids. Invalid vendorId %d for alias: %s. Choose a different vendorId, or remove this entry.", vendorId, alias)
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("request.ext.prebid.aliasgvlids. Invalid vendorId %d for alias: %s. Choose a different vendorId, or remove this entry.", vendorId, alias),
+			}
 		}
 	}
 	return nil
@@ -1102,7 +1110,9 @@ func validateRequestExt(req *openrtb_ext.RequestWrapper) []error {
 
 	if prebid.Cache != nil {
 		if prebid.Cache.Bids == nil && prebid.Cache.VastXML == nil {
-			return []error{errors.New(`request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)}
+			return []error{&errortypes.BadInput{
+				Message: `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+			}}
 		}
 	}
 
@@ -1172,21 +1182,21 @@ func validateTargeting(t *openrtb_ext.ExtRequestTargeting) error {
 
 func validatePriceGranularity(pg *openrtb_ext.PriceGranularity) error {
 	if pg.Precision == nil {
-		return errors.New("Price granularity error: precision is required")
+		return &errortypes.BadInput{Message: "Price granularity error: precision is required"}
 	} else if *pg.Precision < 0 {
-		return errors.New("Price granularity error: precision must be non-negative")
+		return &errortypes.BadInput{Message: "Price granularity error: precision must be non-negative"}
 	} else if *pg.Precision > openrtb_ext.MaxDecimalFigures {
-		return fmt.Errorf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)
+		return &errortypes.BadInput{Message: fmt.Sprintf("Price granularity error: precision of more than %d significant figures is not supported", openrtb_ext.MaxDecimalFigures)}
 	}
 
 	var prevMax float64 = 0
 	for _, gr := range pg.Ranges {
 		if gr.Max <= prevMax {
-			return errors.New(`Price granularity error: range list must be ordered with increasing "max"`)
+			return &errortypes.BadInput{Message: `Price granularity error: range list must be ordered with increasing "max"`}
 		}
 
 		if gr.Increment <= 0.0 {
-			return errors.New("Price granularity error: increment must be a nonzero positive number")
+			return &errortypes.BadInput{Message: "Price granularity error: increment must be a nonzero positive number"}
 		}
 		prevMax = gr.Max
 	}
@@ -1199,15 +1209,17 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	if req.Site.ID == "" && req.Site.Page == "" {
-		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
+		return &errortypes.BadInput{Message: "request.site should include at least one of request.site.id or request.site.page."}
 	}
+
 	siteExt, err := req.GetSiteExt()
 	if err != nil {
-		return err
+		return &errortypes.BadInput{Message: fmt.Sprintf("request.site.ext is invalid: %v", err)}
 	}
+
 	siteAmp := siteExt.GetAmp()
 	if siteAmp != nil && (*siteAmp < 0 || *siteAmp > 1) {
-		return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
+		return &errortypes.BadInput{Message: "request.site.ext.amp must be either 1, 0, or undefined"}
 	}
 
 	return nil
@@ -1225,7 +1237,11 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	_, err := req.GetAppExt()
-	return err
+	if err != nil {
+		return &errortypes.BadInput{Message: fmt.Sprintf("request.app.ext is invalid: %v", err)}
+	}
+
+	return nil
 }
 
 func (deps *endpointDeps) validateDOOH(req *openrtb_ext.RequestWrapper) error {
@@ -1234,7 +1250,7 @@ func (deps *endpointDeps) validateDOOH(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	if req.DOOH.ID == "" && len(req.DOOH.VenueType) == 0 {
-		return errors.New("request.dooh should include at least one of request.dooh.id or request.dooh.venuetype.")
+		return &errortypes.BadInput{Message: "request.dooh should include at least one of request.dooh.id or request.dooh.venuetype."}
 	}
 
 	return nil
@@ -1249,7 +1265,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
 	if req.User.Geo != nil && req.User.Geo.Accuracy < 0 {
-		return append(errL, errors.New("request.user.geo.accuracy must be a positive number"))
+		return append(errL, &errortypes.BadInput{Message: "request.user.geo.accuracy must be a positive number"})
 	}
 
 	if req.User.Consent != "" {
@@ -1263,21 +1279,25 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 	userExt, err := req.GetUserExt()
 	if err != nil {
-		return append(errL, fmt.Errorf("request.user.ext object is not valid: %v", err))
+		return append(errL, &errortypes.BadInput{Message: fmt.Sprintf("request.user.ext object is not valid: %v", err)})
 	}
 
 	// Check if the buyeruids are valid
 	prebid := userExt.GetPrebid()
 	if prebid != nil {
 		if len(prebid.BuyerUIDs) < 1 {
-			return append(errL, errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`))
+			return append(errL, &errortypes.BadInput{
+				Message: `request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`,
+			})
 		}
 		for bidderName := range prebid.BuyerUIDs {
 			normalizedCoreBidder, _ := deps.normalizeBidderName(bidderName)
 			coreBidder := normalizedCoreBidder.String()
 			if _, ok := deps.bidderMap[coreBidder]; !ok {
 				if _, ok := aliases[bidderName]; !ok {
-					return append(errL, fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases", bidderName))
+					return append(errL, &errortypes.BadInput{
+						Message: fmt.Sprintf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases", bidderName),
+					})
 				}
 			}
 		}
@@ -1368,7 +1388,7 @@ func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []er
 
 	reqGDPR := req.BidRequest.Regs.GDPR
 	if reqGDPR != nil && *reqGDPR != 0 && *reqGDPR != 1 {
-		return append(errL, errors.New("request.regs.gdpr must be either 0 or 1"))
+		return append(errL, &errortypes.BadInput{Message: "request.regs.gdpr must be either 0 or 1"})
 	}
 	return errL
 }
@@ -1381,16 +1401,16 @@ func validateDevice(device *openrtb2.Device) error {
 	// The following fields were previously uints in the OpenRTB library we use, but have
 	// since been changed to ints. We decided to maintain the non-negative check.
 	if device.W < 0 {
-		return errors.New("request.device.w must be a positive number")
+		return &errortypes.BadInput{Message: "request.device.w must be a positive number"}
 	}
 	if device.H < 0 {
-		return errors.New("request.device.h must be a positive number")
+		return &errortypes.BadInput{Message: "request.device.h must be a positive number"}
 	}
 	if device.PPI < 0 {
-		return errors.New("request.device.ppi must be a positive number")
+		return &errortypes.BadInput{Message: "request.device.ppi must be a positive number"}
 	}
 	if device.Geo != nil && device.Geo.Accuracy < 0 {
-		return errors.New("request.device.geo.accuracy must be a positive number")
+		return &errortypes.BadInput{Message: "request.device.geo.accuracy must be a positive number"}
 	}
 	return nil
 }
@@ -1425,7 +1445,6 @@ func validateOrFillCookieDeprecation(httpReq *http.Request, req *openrtb_ext.Req
 }
 
 func validateExactlyOneInventoryType(reqWrapper *openrtb_ext.RequestWrapper) error {
-
 	// Prep for mutual exclusion check
 	invTypeNumMatches := 0
 	if reqWrapper.Site != nil {
@@ -1439,13 +1458,18 @@ func validateExactlyOneInventoryType(reqWrapper *openrtb_ext.RequestWrapper) err
 	}
 
 	if invTypeNumMatches == 0 {
-		return errors.New("One of request.site or request.app or request.dooh must be defined")
-	} else if invTypeNumMatches >= 2 {
-		return errors.New("No more than one of request.site or request.app or request.dooh can be defined")
-	} else {
-		return nil
+		return &errortypes.BadInput{
+			Message: "One of request.site or request.app or request.dooh must be defined",
+		}
 	}
 
+	if invTypeNumMatches >= 2 {
+		return &errortypes.BadInput{
+			Message: "No more than one of request.site or request.app or request.dooh can be defined",
+		}
+	}
+
+	return nil
 }
 
 func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
@@ -1458,7 +1482,7 @@ func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) e
 	if requestPrebid == nil || requestPrebid.Channel == nil {
 		fillChannel(reqWrapper, isAmp)
 	} else if requestPrebid.Channel.Name == "" {
-		return errors.New("ext.prebid.channel.name can't be empty")
+		return &errortypes.BadInput{Message: "ext.prebid.channel.name can't be empty"}
 	}
 	return nil
 }
@@ -1645,7 +1669,8 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	}
 	type jNode map[string]*JsonNode
 	docErrdoc := &jNode{}
-	docErr := jsonutil.UnmarshalValid(testJSON, docErrdoc)
+	// TODO: Check if we can replace this with jsoniter and check if it throws the same error
+	docErr := json.Unmarshal(testJSON, docErrdoc)
 	if uerror, ok := docErr.(*json.SyntaxError); ok {
 		err := fmt.Sprintf("%s at offset %v", uerror.Error(), uerror.Offset)
 		return true, err
@@ -1730,11 +1755,11 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(resolvedRequest)
 			if hasErr {
-				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
+				err = &errortypes.BadInput{Message: fmt.Sprintf("Invalid JSON in Incoming Request: %s", Err)}
 			} else {
 				hasErr, Err = getJsonSyntaxError(deps.defReqJSON)
 				if hasErr {
-					err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
+					err = &errortypes.BadInput{Message: fmt.Sprintf("Invalid JSON in Default Request Settings: %s", Err)}
 				}
 			}
 			return nil, nil, []error{err}
@@ -1754,11 +1779,11 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 			if err != nil {
 				hasErr, errMessage := getJsonSyntaxError(impData.Imp)
 				if hasErr {
-					err = fmt.Errorf("Invalid JSON in Imp[%d] of Incoming Request: %s", i, errMessage)
+					err = &errortypes.BadInput{Message: fmt.Sprintf("Invalid JSON in Imp[%d] of Incoming Request: %s", i, errMessage)}
 				} else {
 					hasErr, errMessage = getJsonSyntaxError(storedImps[impData.ImpExtPrebid.StoredRequest.ID])
 					if hasErr {
-						err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impData.ImpExtPrebid.StoredRequest.ID, errMessage)
+						err = &errortypes.BadInput{Message: fmt.Sprintf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impData.ImpExtPrebid.StoredRequest.ID, errMessage)}
 					}
 				}
 				return nil, nil, []error{err}
@@ -1786,7 +1811,7 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 			impId, err := jsonparser.GetString(impData.Imp, "id")
 			if err != nil {
 				if err == jsonparser.KeyPathNotFoundError {
-					err = fmt.Errorf("request.imp[%d] missing required field: \"id\"\n", i)
+					err = &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] missing required field: \"id\"\n", i)}
 				}
 				return nil, nil, []error{err}
 			}
@@ -1844,7 +1869,7 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 		return "", false, err
 	}
 	if dataType != jsonparser.String {
-		return "", true, errors.New("ext.prebid.storedrequest.id must be a string")
+		return "", true, &errortypes.BadInput{Message: "ext.prebid.storedrequest.id must be a string"}
 	}
 	return string(storedRequestId), true, nil
 }
@@ -1910,32 +1935,124 @@ func setDoNotTrackImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrappe
 	}
 }
 
-// Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) bool {
-	var rc bool = false
-	if len(errs) > 0 {
-		httpStatus := http.StatusBadRequest
-		metricsStatus := metrics.RequestStatusBadInput
+func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req *openrtb_ext.RequestWrapper, cfg *config.Configuration, ao *analytics.AuctionObject) {
+	if len(errs) == 0 {
+		return
+	}
+
+	httpStatus := http.StatusInternalServerError
+	labels.RequestStatus = metrics.RequestStatusErr
+	foundStatus := false
+	for _, err := range errs {
+		code := errortypes.ReadCode(err)
+		switch code {
+		case errortypes.BadInputErrorCode, errortypes.AcctRequiredErrorCode:
+			httpStatus = http.StatusBadRequest
+			labels.RequestStatus = metrics.RequestStatusBadInput
+			foundStatus = true
+		case errortypes.BlockedAppErrorCode, errortypes.AccountDisabledErrorCode:
+			httpStatus = http.StatusServiceUnavailable
+			labels.RequestStatus = metrics.RequestStatusBlockedApp
+			foundStatus = true
+		case errortypes.MalformedAcctErrorCode:
+			httpStatus = http.StatusInternalServerError
+			labels.RequestStatus = metrics.RequestStatusAccountConfigErr
+			foundStatus = true
+		}
+		if foundStatus {
+			break
+		}
+	}
+
+	if httpStatus == http.StatusInternalServerError {
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, errs...)
+	}
+
+	// Use legacy plain text format
+	if !shouldUseORTBErrorFormat(req, cfg) {
+		w.WriteHeader(httpStatus)
+		msgFmt := "Invalid request: %v\n"
+		if httpStatus == http.StatusInternalServerError {
+			msgFmt = "Critical error while running the auction: %v"
+		}
+
 		for _, err := range errs {
-			erVal := errortypes.ReadCode(err)
-			if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
-				httpStatus = http.StatusServiceUnavailable
-				metricsStatus = metrics.RequestStatusBlockedApp
-				break
-			} else if erVal == errortypes.MalformedAcctErrorCode {
-				httpStatus = http.StatusInternalServerError
-				metricsStatus = metrics.RequestStatusAccountConfigErr
-				break
+			fmt.Fprintf(w, msgFmt, err)
+		}
+		return
+	}
+
+	response := buildORTBErrorResponse(req, errs)
+
+	// Add headers
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpStatus)
+
+	// Encode the response
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(response); err != nil {
+		glog.Errorf("Failed to encode ORTB error response: %v", err)
+	}
+}
+
+// buildORTBErrorResponse constructs an ORTB-compliant error BidResponse
+// including request ID (when available), NBR code and ext.prebid.errors.
+func buildORTBErrorResponse(req *openrtb_ext.RequestWrapper, errs []error) *openrtb2.BidResponse {
+	resp := &openrtb2.BidResponse{}
+	if req != nil && req.BidRequest != nil {
+		resp.ID = req.BidRequest.ID
+	}
+
+	// Determine first non-unknown NBR code
+	nbr := openrtb3.NoBidUnknownError
+	for _, err := range errs {
+		code := errortypes.GetNBRCodeFromError(err)
+		if code != openrtb3.NoBidUnknownError {
+			nbr = code
+			break
+		}
+	}
+	resp.NBR = nbr.Ptr()
+
+	// Collect error messages
+	errMessages := make([]string, len(errs))
+	for i, err := range errs {
+		errMessages[i] = err.Error()
+	}
+
+	// Build response.ext
+	responseExt := &openrtb_ext.ExtBidResponse{
+		Prebid: &openrtb_ext.ExtResponsePrebid{
+			Errors: errMessages,
+		},
+	}
+	responseExtBytes, marshalErr := jsonutil.Marshal(responseExt)
+	if marshalErr != nil {
+		glog.Errorf("Failed to create response extension while building ORTB error response: %v", marshalErr)
+	}
+	resp.Ext = responseExtBytes
+
+	return resp
+}
+
+// shouldUseORTBErrorFormat determines if ORTB error format should be used
+// based on request-level config or global config
+func shouldUseORTBErrorFormat(request *openrtb_ext.RequestWrapper, cfg *config.Configuration) bool {
+	// First check request-level config
+	if request != nil {
+		reqExt, err := request.GetRequestExt()
+		if err == nil && reqExt != nil {
+			prebid := reqExt.GetPrebid()
+			if prebid != nil && prebid.ORTBErrors != nil {
+				return *prebid.ORTBErrors
 			}
 		}
-		w.WriteHeader(httpStatus)
-		labels.RequestStatus = metricsStatus
-		for _, err := range errs {
-			fmt.Fprintf(w, "Invalid request: %s\n", err.Error())
-		}
-		rc = true
 	}
-	return rc
+
+	// Fall back to global config if not specified in request
+	return cfg != nil && cfg.ORTBErrorResponse
 }
 
 // Returns the account ID for the request
@@ -2003,17 +2120,17 @@ func getStringValueFromRequest(request []byte, key []string) (string, bool, erro
 		return "", false, err
 	}
 	if dataType != jsonparser.String {
-		return "", true, fmt.Errorf("%s must be a string", strings.Join(key, "."))
+		return "", true, &errortypes.BadInput{Message: fmt.Sprintf("%s must be a string", strings.Join(key, "."))}
 	}
 	return string(val), true, nil
 }
 
 func storedRequestErrorChecker(requestJson []byte, storedRequests map[string]json.RawMessage, storedBidRequestId string) []error {
 	if hasErr, syntaxErr := getJsonSyntaxError(requestJson); hasErr {
-		return []error{fmt.Errorf("Invalid JSON in Incoming Request: %s", syntaxErr)}
+		return []error{&errortypes.BadInput{Message: fmt.Sprintf("Invalid JSON in Incoming Request: %s", syntaxErr)}}
 	}
 	if hasErr, syntaxErr := getJsonSyntaxError(storedRequests[storedBidRequestId]); hasErr {
-		return []error{fmt.Errorf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, syntaxErr)}
+		return []error{&errortypes.BadInput{Message: fmt.Sprintf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, syntaxErr)}}
 	}
 	return nil
 }
