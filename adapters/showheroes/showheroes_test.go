@@ -216,16 +216,13 @@ func TestShowheroesAdapter_MakeRequests(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	_, err := Builder(openrtb_ext.BidderShowheroes, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderShowheroes, config.Adapter{
 		Endpoint: "https://bid.showheroes.com/api/v1/bid",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	}, config.Server{})
 	if err != nil {
 		t.Fatalf("Builder returned unexpected error %v", err)
 	}
 
-	bidder, _ := Builder(openrtb_ext.BidderShowheroes, config.Adapter{
-		Endpoint: "https://bid.showheroes.com/api/v1/bid",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	adapterstest.RunJSONBidderTest(t, "showheroestest", bidder)
 }
 

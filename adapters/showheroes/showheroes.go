@@ -103,7 +103,7 @@ func getPrebidChannel(request *openrtb2.BidRequest) (string, string) {
 	var channelVersion string
 	reqExt := &openrtb_ext.ExtRequest{}
 
-	if err := jsonutil.Unmarshal(request.Ext, &reqExt); err == nil && reqExt.Prebid.Channel != nil {
+	if err := jsonutil.Unmarshal(request.Ext, reqExt); err == nil && reqExt.Prebid.Channel != nil {
 		channelName = reqExt.Prebid.Channel.Name
 		channelVersion = reqExt.Prebid.Channel.Version
 	}
