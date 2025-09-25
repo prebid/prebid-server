@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderClydo, config.Adapter{
-		Endpoint: "http://us.clydo.io/{{.PartnerId}}"},
+		Endpoint: "http://{{.Region}}.clydo.io/{{.PartnerId}}"},
 		config.Server{ExternalUrl: "http://hosturl.com"})
 
 	if buildErr != nil {

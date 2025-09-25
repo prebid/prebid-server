@@ -71,7 +71,9 @@
           "bidfloor": 0.111,
           "bidfloorcur": "USD",
           "ext": {
-            "partnerId": "rh7cnxlpvbjqU5ff"
+            "bidder": {
+              "partnerId": "rh7cnxlpvbjqU5ff"
+            }
           }
         }],
         "app": {

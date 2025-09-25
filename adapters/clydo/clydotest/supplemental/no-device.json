@@ -21,7 +21,8 @@
       "bidfloorcur": "USD",
       "ext": {
         "bidder": {
-          "partnerId": "rh7cnxlpvbjqU5ff"
+          "partnerId": "rh7cnxlpvbjqU5ff",
+          "region": "us"
         }
       }
     }],

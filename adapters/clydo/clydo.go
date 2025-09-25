@@ -41,7 +41,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 		requests = append(requests, reqData)
 	}
-	// fmt.Println(errors)
 	return requests, errors
 }
 
@@ -61,8 +60,6 @@ func (a *adapter) MakeBids(
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	if response.Cur != "" {
 		bidResponse.Currency = response.Cur
-	} else {
-		bidResponse.Currency = "USD"
 	}
 
 	bidTypeMap, err := buildBidTypeMap(request.Imp)
@@ -84,7 +81,7 @@ func (a *adapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp)
 	if err != nil {
 		return nil, err
 	}
-	body, err := prepareBody(request, imp, params)
+	body, err := prepareBody(request, imp)
 	if err != nil {
 		return nil, err
 	}
@@ -131,20 +128,23 @@ func (a *adapter) prepareEndpoint(params *openrtb_ext.ImpExtClydo) (string, erro
 		}
 	}
 
-	endpointParams := macros.EndpointTemplateParams{PartnerId: partnerId}
+	region := params.Region
+	if region == "" {
+		region = "us"
+	}
+
+	endpointParams := macros.EndpointTemplateParams{
+		PartnerId: partnerId,
+		Region:    region,
+	}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func prepareBody(request *openrtb2.BidRequest, imp openrtb2.Imp, params *openrtb_ext.ImpExtClydo) ([]byte, error) {
+func prepareBody(request *openrtb2.BidRequest, imp openrtb2.Imp) ([]byte, error) {
 	reqCopy := *request
 	reqCopy.Imp = []openrtb2.Imp{imp}
 
-	extJSON, err := prepareExt(params)
-	if err != nil {
-		return nil, err
-	}
-
-	reqCopy.Imp[0].Ext = extJSON
+	reqCopy.Imp[0].Ext = imp.Ext
 
 	body, err := jsonutil.Marshal(&reqCopy)
 	if err != nil {
@@ -154,54 +154,39 @@ func prepareBody(request *openrtb2.BidRequest, imp openrtb2.Imp, params *openrtb
 	return body, nil
 }
 
-func prepareExt(impExt *openrtb_ext.ImpExtClydo) ([]byte, error) {
-	extJSON, err := jsonutil.Marshal(impExt)
-	if err != nil {
-		return nil, err
-	}
-
-	return extJSON, nil
-}
-
 func prepareHeaders(request *openrtb2.BidRequest) (http.Header, error) {
-	baseHeaders := []struct {
-		key, value string
-	}{
-		{"X-OpenRTB-Version", "2.5"},
-		{"Accept", "application/json"},
-		{"Content-Type", "application/json; charset=utf-8"},
+	allHeaders := map[string]string{
+		"X-OpenRTB-Version": "2.5",
+		"Accept":            "application/json",
+		"Content-Type":      "application/json; charset=utf-8",
 	}
-
-	deviceHeaders, err := collectDeviceHeaders(request)
+	
+	allHeaders, err := appendDeviceHeaders(allHeaders, request)
 	if err != nil {
 		return nil, err
 	}
-
-	allHeaders := append(baseHeaders, deviceHeaders...)
 
 	headers := make(http.Header)
-	for _, kv := range allHeaders {
-		headers.Add(kv.key, kv.value)
+	for k, v := range allHeaders {
+		headers.Add(k, v)
 	}
 
 	return headers, nil
 }
 
-func collectDeviceHeaders(request *openrtb2.BidRequest) ([]struct{ key, value string }, error) {
+func appendDeviceHeaders(headers map[string]string, request *openrtb2.BidRequest) (map[string]string, error) {
 	if request.Device == nil {
 		return nil, &errortypes.BadInput{Message: "Failed to get device headers"}
 	}
 
-	var headers []struct{ key, value string }
-
 	if ipv6 := request.Device.IPv6; ipv6 != "" {
-		headers = append(headers, struct{ key, value string }{"X-Forwarded-For", ipv6})
+		headers["X-Forwarded-For"] = ipv6
 	}
 	if ip := request.Device.IP; ip != "" {
-		headers = append(headers, struct{ key, value string }{"X-Forwarded-For", ip})
+		headers["X-Forwarded-For"] = ip
 	}
 	if ua := request.Device.UA; ua != "" {
-		headers = append(headers, struct{ key, value string }{"User-Agent", ua})
+		headers["User-Agent"] = ua
 	}
 
 	return headers, nil
@@ -255,7 +240,6 @@ func prepareSeatBids(seatBids []openrtb2.SeatBid, bidTypeMap map[string]openrtb_
 		for i := range seatBid.Bid {
 			bid := &seatBid.Bid[i]
 			bidType := getMediaTypeForBid(bid, bidTypeMap)
-			fmt.Println(bidType)
 			typedBids = append(typedBids, &adapters.TypedBid{
 				Bid:     bid,
 				BidType: bidType,
@@ -286,9 +270,8 @@ func buildBidTypeMap(imps []openrtb2.Imp) (map[string]openrtb_ext.BidType, error
 }
 
 func getMediaTypeForBid(bid *openrtb2.Bid, bidTypeMap map[string]openrtb_ext.BidType) openrtb_ext.BidType {
-	// if mediaType, ok := bidTypeMap[bid.ImpID]; ok {
-	// 	return mediaType, nil
-	// }
-	mediaType := bidTypeMap[bid.ImpID]
-	return mediaType
+	if mediaType, ok := bidTypeMap[bid.ImpID]; ok {
+		return mediaType
+	}
+	return openrtb_ext.BidTypeBanner
 }

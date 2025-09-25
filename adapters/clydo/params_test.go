@@ -37,9 +37,16 @@ var validParams = []string{
 	`{"partnerId": "rxeMfUb992Ocxm9C"}`,
 	`{"partnerId": "jDrTOH0ADArSEqrR"}`,
 	`{"partnerId": "MZP6aFUyHqjoqMCs"}`,
+	`{"partnerId": "rxeMfUb992Ocxm9C", "region": "us"}`,
+	`{"partnerId": "rxeMfUb992Ocxm9C", "region": "usw"}`,
+	`{"partnerId": "jDrTOH0ADArSEqrR", "region": "eu"}`,
+	`{"partnerId": "MZP6aFUyHqjoqMCs", "region": "apac"}`,
 }
 
 var invalidParams = []string{
 	`{"partnerId": ""}`,
 	`{"partnerId": 111}`,
+	`{"partnerId": "rxeMfUb992Ocxm9C", "region": "uswest"}`,
+	`{"partnerId": "rxeMfUb992Ocxm9C", "region": "europa"}`,
+	`{"partnerId": "rxeMfUb992Ocxm9C", "region": "singapore"}`,
 }

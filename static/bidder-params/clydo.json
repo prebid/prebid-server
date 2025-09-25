@@ -9,6 +9,11 @@
       "type": "string",
       "description": "Partner ID",
       "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "description": "Regional endpoint identifier (us, usw, eu, apac)",
+      "enum": ["us", "usw", "eu", "apac"]
     }
   },
 
