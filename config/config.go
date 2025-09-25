@@ -79,6 +79,8 @@ type Configuration struct {
 	AccountDefaults Account `mapstructure:"account_defaults"`
 	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
 	accountDefaultsJSON json.RawMessage
+	// CertsUseSystem will use the host OS certificates instead of embedded certs.
+	CertsUseSystem bool `mapstructure:"certificates_use_system"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
@@ -592,6 +594,9 @@ type DisabledMetrics struct {
 	// that were created or reused.
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 
+	// True if we don't want to collect metrics on dial time and dial errors
+	AdapterConnectionDialMetrics bool `mapstructure:"adapter_connection_dial_metrics"`
+
 	// True if we don't want to collect the per adapter buyer UID scrubbed metric
 	AdapterBuyerUIDScrubbed bool `mapstructure:"adapter_buyeruid_scrubbed"`
 
@@ -993,6 +998,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.account_stored_responses", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
+	v.SetDefault("metrics.disabled_metrics.adapter_connection_dial_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_buyeruid_scrubbed", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
@@ -1246,7 +1252,9 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)
 
+	v.SetDefault("certificates_use_system", false)
 	v.SetDefault("certificates_file", "")
+
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
 	v.SetDefault("generate_request_id", false)

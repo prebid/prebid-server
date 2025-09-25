@@ -384,6 +384,18 @@ func (me *MultiMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderN
 	}
 }
 
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnectionDialError(adapterName)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnectionDialTime(adapterName, dialStartTime)
+	}
+}
+
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -565,4 +577,10 @@ func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 
 // RecordAdapterThrottled as a noop
 func (me *NilMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
+}
+
+func (me *NilMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+}
+
+func (me *NilMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
 }
