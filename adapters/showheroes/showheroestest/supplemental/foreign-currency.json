@@ -1,0 +1,92 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "cur": ["USD"],
+        "site": {
+            "page": "https://usa.site/url"
+        },
+        "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "bidfloor": 1.0,
+            "bidfloorcur": "USD",
+            "ext": {
+                "bidder": {
+                    "unitId": "12345678"
+                }
+            }
+        }],
+        "ext": {
+            "prebid": {
+                "currency": {
+                    "rates": {
+                        "EUR": {
+                            "USD": 0.5
+                        },
+                        "USD": {
+                            "EUR": 2.0
+                        }
+                    },
+                    "usepbsrates": false
+                }
+            }
+        }
+    },
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "https://bid.showheroes.com/api/v1/bid",
+            "body": {
+                "id": "test-request-id",
+                "cur": ["USD"],
+                "site": {
+                    "page": "https://usa.site/url"
+                },
+                "imp": [{
+                    "id": "test-imp-id",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "bidfloor": 2.0,
+                    "bidfloorcur": "EUR",
+                    "ext": {
+                        "bidder": {
+                            "unitId": "12345678"
+                        },
+                        "params": {
+                            "unitId": "12345678"
+                        }
+                    }
+                }],
+                "ext": {
+                    "prebid": {
+                        "currency": {
+                            "rates": {
+                                "EUR": {
+                                    "USD": 0.5
+                                },
+                                "USD": {
+                                    "EUR": 2.0
+                                }
+                            },
+                            "usepbsrates": false
+                        }
+                    }
+                }
+            },
+            "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+            "status": 204,
+            "body": {}
+        }
+    }],
+    "expectedBidResponses": []
+}
