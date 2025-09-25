@@ -5,26 +5,20 @@
       {
         "id": "123654",
         "banner": {
-          "format": [
-            {
-              "w": 320,
-              "h": 250
-            },
-            {
-              "w": 320,
-              "h": 300
-            }
-          ],
           "w": 320,
           "h": 250
         },
         "ext": {
           "bidder": {
-            "placement_id": "7819"
+            "group_id": "7819",
+            "adSlots":["slot1, slot2"]
           }
         }
       }
-    ]
+    ],
+    "app": {
+      "domain": "www.example.com"
+    }
   },
 
   "httpCalls": [
@@ -33,13 +27,17 @@
         "uri": "https://pbs.nextmillmedia.com/openrtb2/auction",
         "body":{
           "id": "testid",
+          "app": {
+            "domain": "www.example.com"
+          },
           "ext": {
             "nextMillennium": {
-              "nm_version": "v1.0.1"
+              "adSlots":["slot1, slot2"],
+              "nm_version":"v1.0.1"
             },
             "prebid": {
               "storedrequest": {
-                "id": "7819"
+                "id": "g7819;320x250;www.example.com"
               },
               "server": {
                 "datacenter": "2",
@@ -51,16 +49,6 @@
           "imp": [
             {
               "banner": {
-                "format": [
-                  {
-                    "h": 250,
-                    "w": 320
-                  },
-                  {
-                    "h": 300,
-                    "w": 320
-                  }
-                ],
                 "h": 250,
                 "w": 320
               },
@@ -68,7 +56,7 @@
                 "nextMillennium": {},
                 "prebid": {
                   "storedrequest": {
-                    "id": "7819"
+                    "id": "g7819;320x250;www.example.com"
                   }
                 }
               },
