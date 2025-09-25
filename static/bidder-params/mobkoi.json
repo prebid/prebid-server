@@ -8,10 +8,10 @@
       "type": "string",
       "description": "Placement ID"
     },
-    "adServerBaseUrl": {
+    "integrationEndpoint": {
       "type": "string",
-      "description": "Mobkoi's ad server url",
-      "pattern": "^https?://[^.]+\\.mobkoi\\.com$"
+      "description": "Mobkoi's integration endpoint URL",
+      "pattern": "^https?://[^.]+\\.mobkoi\\.com(/.*)?$"
     }
   }
 }
