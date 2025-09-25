@@ -1,0 +1,80 @@
+{
+  "mockBidRequest": {
+    "id": "test-empty-request-id",
+    "imp": [
+      {
+        "id": "test-empty-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-no-bids-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/empty",
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=test-no-bids-placement",
+        "body": {
+          "id": "test-empty-request-id",
+          "imp": [
+            {
+              "id": "test-empty-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "test-no-bids-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "test-no-bids-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com/empty",
+            "domain": "example.com"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-OpenRTB-Version": [
+            "2.6"
+          ]
+        },
+        "impIDs": ["test-empty-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
