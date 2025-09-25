@@ -45,6 +45,9 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 	if cfg.CacheTTL == 0 {
 		cfg.CacheTTL = 60 // 60 seconds default
 	}
+	if cfg.CacheSize == 0 {
+		cfg.CacheSize = 10 * 1024 * 1024 // 10MB
+	}
 
 	// Set masking defaults and validate configuration
 	if cfg.Masking.Enabled {
@@ -76,10 +79,15 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 			Timeout:   time.Duration(cfg.Timeout) * time.Millisecond,
 			Transport: deps.HTTPClient.Transport,
 		},
-		cache: freecache.NewCache(10 * 1024 * 1024),
+		cache: freecache.NewCache(cfg.CacheSize),
 		sha256Pool: &sync.Pool{
 			New: func() any {
 				return sha256.New()
+			},
+		},
+		asyncRequestPool: &sync.Pool{
+			New: func() any {
+				return &AsyncRequest{}
 			},
 		},
 	}, nil
@@ -103,6 +111,7 @@ type Config struct {
 	AuthKey        string        `json:"auth_key"`
 	Timeout        int           `json:"timeout_ms"`
 	CacheTTL       int           `json:"cache_ttl_seconds"` // Cache segments for this many seconds
+	CacheSize      int           `json:"cache_size"`        // Maximum size of segment cache in bytes
 	AddToTargeting bool          `json:"add_to_targeting"`  // Add segments as individual targeting keys
 	Masking        MaskingConfig `json:"masking"`           // Privacy masking configuration
 }
@@ -175,6 +184,8 @@ type Module struct {
 	cache      *freecache.Cache
 	// sha256Pool provides a pool of reusable SHA-256 hash instances for performance
 	sha256Pool *sync.Pool
+	// asyncRequestPool provides a pool of reusable AsyncRequest objects for performance
+	asyncRequestPool *sync.Pool
 }
 
 // HandleEntrypointHook initializes the module context with a sync.Map for storing segments
@@ -186,7 +197,7 @@ func (m *Module) HandleEntrypointHook(
 	// Initialize module context with sync.Map for thread-safe segment storage
 	return hookstage.HookResult[hookstage.EntrypointPayload]{
 		ModuleContext: hookstage.ModuleContext{
-			asyncRequestKey: m.NewAsyncRequest(payload.Request),
+			asyncRequestKey: m.getAsyncRequest(payload.Request),
 		},
 	}, nil
 }
@@ -263,7 +274,10 @@ func (m *Module) HandleAuctionResponseHook(
 		return ret, nil
 	}
 	// Ensure we cancel the request context always to free resources
-	defer asyncRequest.Cancel()
+	defer func() {
+		asyncRequest.Cancel()
+		m.putAsyncRequest(asyncRequest)
+	}()
 
 	// Check if a request was made
 	if asyncRequest.Done == nil {
