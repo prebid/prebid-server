@@ -1,16 +1,9 @@
-# static/bidder-info/revx.yaml
-
 endpoint:  "https://prebid-use.atomex.net"
 
 maintainer:
   email: prebidsupport@revx.io
 
 gvlVendorID: 375  
-gdpr:
-  enabled: true
-  consent_required: true
-  default_value: 0  # Default to 'no consent' if not provided
-  vendor_id: 100  # Vendor ID for your GDPR configuration
 capabilities:
   app:
     mediaTypes:

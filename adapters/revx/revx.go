@@ -27,35 +27,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // MakeRequests handles the OpenRTB bid request and returns адаптер.RequestData
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
-	if request == nil {
-		errors = append(errors, &errortypes.BadInput{
-			Message: "request cannot be nil",
-		})
-		return nil, errors
-	}
-
-	// Validate impression array
-	if len(request.Imp) == 0 {
-		errors = append(errors, &errortypes.BadInput{
-			Message: "no impression objects provided in request",
-		})
-		return nil, errors
-	}
-
-	imp := request.Imp[0]
-
-	// Parse imp.ext
-	var bidderExt adapters.ExtImpBidder
-	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		errors = append(errors, &errortypes.BadInput{Message: fmt.Sprintf("invalid imp.ext: %s", err)})
-		return nil, errors
-	}
-
-	var revxExt openrtb_ext.ExtImpRevX
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &revxExt); err != nil {
-		errors = append(errors, &errortypes.BadInput{Message: "Publisher name missing"})
-		return nil, errors
-	}
 
 	// Build headers
 	headers := http.Header{}
