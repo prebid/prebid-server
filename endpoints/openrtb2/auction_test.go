@@ -1873,7 +1873,7 @@ func TestValidateRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
+		errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, test.givenIsAmp, false, nil, false, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 
 		if len(errorList) == 0 {
@@ -2757,7 +2757,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false, false)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -2808,7 +2808,7 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false, false)
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
@@ -2862,7 +2862,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false, false)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -2914,7 +2914,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false, false)
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -2961,7 +2961,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false, false)
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3402,7 +3402,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
+	errL := deps.validateRequest(nil, nil, &openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false, false)
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -3413,48 +3413,56 @@ func TestValidateEidPermissions(t *testing.T) {
 	knownAliases := map[string]string{"b": "b"}
 
 	testCases := []struct {
-		name          string
-		request       *openrtb_ext.ExtRequest
-		expectedError error
+		name           string
+		request        *openrtb_ext.ExtRequest
+		expectedError  []error
+		isDebugEnabled bool
 	}{
 		{
-			name:          "valid-empty-ext",
-			request:       &openrtb_ext.ExtRequest{},
-			expectedError: nil,
+			name:           "valid-empty-ext",
+			request:        &openrtb_ext.ExtRequest{},
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
-			name:          "valid-nil-ext.prebid.data",
-			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{}},
-			expectedError: nil,
+			name:           "valid-nil-ext.prebid.data",
+			request:        &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{}},
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
-			name:          "valid-empty-ext.prebid.data",
-			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{}}},
-			expectedError: nil,
+			name:           "valid-empty-ext.prebid.data",
+			request:        &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{}}},
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
-			name:          "valid-nil-ext.prebid.data.eidpermissions",
-			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: nil}}},
-			expectedError: nil,
+			name:           "valid-nil-ext.prebid.data.eidpermissions",
+			request:        &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: nil}}},
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
-			name:          "valid-none",
-			request:       &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{}}}},
-			expectedError: nil,
+			name:           "valid-none",
+			request:        &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{}}}},
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
 			name: "valid-one",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
-			expectedError: nil,
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
 			name: "valid-one-case-insensitive",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"A"}},
 			}}}},
-			expectedError: nil,
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
 			name: "valid-many",
@@ -3462,7 +3470,8 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"a"}},
 			}}}},
-			expectedError: nil,
+			expectedError:  nil,
+			isDebugEnabled: false,
 		},
 		{
 			name: "invalid-missing-source",
@@ -3470,7 +3479,8 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Bidders: []string{"a"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] missing required field: "source"`)},
+			isDebugEnabled: false,
 		},
 		{
 			name: "invalid-duplicate-source",
@@ -3478,7 +3488,8 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceA", Bidders: []string{"a"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] duplicate entry with field: "source"`)},
+			isDebugEnabled: false,
 		},
 		{
 			name: "invalid-missing-bidders-nil",
@@ -3486,7 +3497,8 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB"},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`)},
+			isDebugEnabled: false,
 		},
 		{
 			name: "invalid-missing-bidders-empty",
@@ -3494,29 +3506,49 @@ func TestValidateEidPermissions(t *testing.T) {
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] missing or empty required field: "bidders"`)},
+			isDebugEnabled: false,
 		},
 		{
-			name: "invalid-invalid-bidders",
+			name: "invalid-invalid-bidders-with-debug-disabled",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"a"}},
 				{Source: "sourceB", Bidders: []string{"z"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`)},
+			isDebugEnabled: false,
 		},
 		{
-			name: "invalid-alias-case-sensitive",
+			name: "valid-invalid-bidders-with-debug-enabled",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"a"}},
+				{Source: "sourceB", Bidders: []string{"z"}},
+			}}}},
+			expectedError:  []error{&errortypes.Warning{Message: `request.ext.prebid.data.eidpermissions[1] contains unrecognized bidder "z"`}},
+			isDebugEnabled: true,
+		},
+		{
+			name: "invalid-alias-case-sensitive-with-debug-disabled",
 			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "sourceA", Bidders: []string{"B"}},
 			}}}},
-			expectedError: errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`),
+			expectedError:  []error{errors.New(`request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`)},
+			isDebugEnabled: false,
+		},
+		{
+			name: "valid-alias-case-sensitive-with-debug-enabled",
+			request: &openrtb_ext.ExtRequest{Prebid: openrtb_ext.ExtRequestPrebid{Data: &openrtb_ext.ExtRequestPrebidData{EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+				{Source: "sourceA", Bidders: []string{"B"}},
+			}}}},
+			expectedError:  []error{&errortypes.Warning{Message: `request.ext.prebid.data.eidpermissions[0] contains unrecognized bidder "B"`}},
+			isDebugEnabled: true,
 		},
 	}
 
 	endpoint := &endpointDeps{bidderMap: knownBidders, normalizeBidderName: fakeNormalizeBidderName}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
+			result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases, test.isDebugEnabled)
 			assert.Equal(t, test.expectedError, result)
 		})
 	}
@@ -4839,7 +4871,7 @@ func TestValidateStoredResp(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
+			errorList := deps.validateRequest(test.givenAccount, test.givenHttpRequest, test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false, false)
 			assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 		})
 	}
@@ -5848,7 +5880,7 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errs := deps.validateRequest(test.givenAccount, test.httpReq, test.reqWrapper, false, false, stored_responses.ImpBidderStoredResp{}, false)
+		errs := deps.validateRequest(test.givenAccount, test.httpReq, test.reqWrapper, false, false, stored_responses.ImpBidderStoredResp{}, false, false)
 		assert.Equal(t, test.wantErrs, errs)
 		test.reqWrapper.RebuildRequest()
 		deviceExt, err := test.reqWrapper.GetDeviceExt()
