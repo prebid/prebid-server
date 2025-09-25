@@ -437,6 +437,8 @@ var testEndpointTemplateParams = macros.EndpointTemplateParams{
 	SourceId:    "anySourceID",
 	AdUnit:      "anyAdUnit",
 	MediaType:   "MediaType",
+	Region:      "anyRegion",
+	PartnerId:   "anyPartnerId",
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
