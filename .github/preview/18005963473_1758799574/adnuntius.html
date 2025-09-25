@@ -1,0 +1,685 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>adnuntius: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/adnuntius/adnuntius.go (90.1%)</option>
+				
+				<option value="file1">github.com/prebid/prebid-server/v3/adapters/adnuntius/adnuntius_utils.go (93.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package adnuntius
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+
+        "strconv"
+        "strings"
+
+        "github.com/buger/jsonparser"
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+        "github.com/prebid/prebid-server/v3/util/timeutil"
+)
+
+const defaultNetwork = "default"
+const defaultSite = "unknown"
+const minutesInHour = 60
+
+// Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                time:      &amp;timeutil.RealTime{},
+                endpoint:  config.Endpoint,
+                extraInfo: config.ExtraAdapterInfo,
+        }
+
+        return bidder, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        return a.generateRequests(*request)
+}</span>
+
+func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var requestData []*adapters.RequestData
+        networkAdunitMap := make(map[string][]adnRequestAdunit)
+        headers := setHeaders(ortbRequest)
+        var noCookies bool = false
+
+        for _, imp := range ortbRequest.Imp </span><span class="cov8" title="1">{
+
+                var bidderExt adapters.ExtImpBidder
+                if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                        return nil, []error{&amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
+                        }}
+                }</span>
+                <span class="cov8" title="1">var adnuntiusExt openrtb_ext.ImpExtAdnunitus
+                if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;adnuntiusExt); err != nil </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
+                        }}
+                }</span>
+
+                <span class="cov8" title="1">if adnuntiusExt.NoCookies </span><span class="cov8" title="1">{
+                        noCookies = true
+                }</span>
+
+                <span class="cov8" title="1">network := defaultNetwork
+                if adnuntiusExt.Network != "" </span><span class="cov8" title="1">{
+                        network = adnuntiusExt.Network
+                }</span>
+
+                // Remove when we support video.
+                <span class="cov8" title="1">if imp.Video != nil </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only native and banner", imp.ID),
+                        }}
+                }</span>
+
+                <span class="cov8" title="1">if imp.Banner != nil </span><span class="cov8" title="1">{
+                        adUnit := generateAdUnit(imp, adnuntiusExt, "banner")
+                        adUnit.AdType = ""
+
+                        networkAdunitMap[network] = append(
+                                networkAdunitMap[network],
+                                adUnit)
+                }</span>
+
+                <span class="cov8" title="1">if imp.Native != nil </span><span class="cov8" title="1">{
+                        adUnit := generateAdUnit(imp, adnuntiusExt, "native")
+                        adUnit.AdType = "NATIVE"
+                        nativeRequest := json.RawMessage{}
+
+                        if err := jsonutil.Unmarshal([]byte(imp.Native.Request), &amp;nativeRequest); err != nil </span><span class="cov0" title="0">{
+                                return nil, []error{&amp;errortypes.BadInput{
+                                        Message: fmt.Sprintf("Error unmarshalling Native: %s", err.Error()),
+                                }}
+                        }</span>
+
+                        <span class="cov8" title="1">adUnit.NativeRequest.Ortb = nativeRequest
+                        networkAdunitMap[network] = append(
+                                networkAdunitMap[network],
+                                adUnit)</span>
+                }
+
+        }
+
+        <span class="cov8" title="1">endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("failed to parse URL: %s", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">site := defaultSite
+        if ortbRequest.Site != nil &amp;&amp; ortbRequest.Site.Page != "" </span><span class="cov8" title="1">{
+                site = ortbRequest.Site.Page
+        }</span>
+
+        <span class="cov8" title="1">extSite, err := getSiteExtAsKv(&amp;ortbRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{fmt.Errorf("failed to parse site Ext: %v", err)}
+        }</span>
+
+        <span class="cov8" title="1">var extUser openrtb_ext.ExtUser
+        if ortbRequest.User != nil &amp;&amp; ortbRequest.User.Ext != nil </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(ortbRequest.User.Ext, &amp;extUser); err != nil </span><span class="cov0" title="0">{
+                        return nil, []error{fmt.Errorf("failed to parse Ext User: %v", err)}
+                }</span>
+        }
+
+        <span class="cov8" title="1">for _, networkAdunits := range networkAdunitMap </span><span class="cov8" title="1">{
+
+                adnuntiusRequest := adnRequest{
+                        AdUnits:   networkAdunits,
+                        Context:   site,
+                        KeyValues: extSite.Data,
+                }
+
+                // Will change when our adserver can accept multiple user IDS
+                if extUser.Eids != nil &amp;&amp; len(extUser.Eids) &gt; 0 </span><span class="cov8" title="1">{
+                        if len(extUser.Eids[0].UIDs) &gt; 0 </span><span class="cov8" title="1">{
+                                adnuntiusRequest.MetaData.Usi = extUser.Eids[0].UIDs[0].ID
+                        }</span>
+                }
+
+                <span class="cov8" title="1">ortbUser := ortbRequest.User
+                if ortbUser != nil </span><span class="cov8" title="1">{
+                        ortbUserId := ortbRequest.User.ID
+                        if ortbUserId != "" </span><span class="cov8" title="1">{
+                                adnuntiusRequest.MetaData.Usi = ortbRequest.User.ID
+                        }</span>
+                }
+
+                <span class="cov8" title="1">adnJson, err := json.Marshal(adnuntiusRequest)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, []error{&amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Error unmarshalling adnuntius request: %s", err.Error()),
+                        }}
+                }</span>
+
+                <span class="cov8" title="1">requestData = append(requestData, &amp;adapters.RequestData{
+                        Method:  http.MethodPost,
+                        Uri:     endpoint,
+                        Body:    adnJson,
+                        Headers: headers,
+                        ImpIDs:  openrtb_ext.GetImpIDs(ortbRequest.Imp),
+                })</span>
+
+        }
+
+        <span class="cov8" title="1">return requestData, nil</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Status code: %d, Request malformed", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Status code: %d, Something went wrong with your request", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var adnResponse AdnResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;adnResponse); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse, bidErr := generateBidResponse(&amp;adnResponse, request)
+        if bidErr != nil </span><span class="cov8" title="1">{
+                return nil, bidErr
+        }</span>
+
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adnResponse.AdUnits))
+        var currency string
+        adunitMap := map[string]AdUnit{}
+        adunitMediaTypeMap := map[string][]AdUnit{}
+
+        /* Check the ad unit response to see if there are any multi ad  */
+        for _, adnRespAdunit := range adnResponse.AdUnits </span><span class="cov8" title="1">{
+                result := strings.Split(adnRespAdunit.TargetId, ":")
+                if adnRespAdunit.MatchedAdCount &gt; 0 </span><span class="cov8" title="1">{
+                        adunitMediaTypeMap[result[0]] = append(adunitMediaTypeMap[result[0]], adnRespAdunit)
+                }</span>
+        }
+
+        /* Compare price if there are multiple media types */
+        <span class="cov8" title="1">for targetId, mappedAdunit := range adunitMediaTypeMap </span><span class="cov8" title="1">{
+                highestBidAtIndex := 0
+                if len(mappedAdunit) &gt; 1 </span><span class="cov8" title="1">{
+                        for index := range mappedAdunit </span><span class="cov8" title="1">{
+                                if mappedAdunit[index].Ads[0].Bid.Amount &gt; mappedAdunit[highestBidAtIndex].Ads[0].Bid.Amount </span><span class="cov8" title="1">{
+                                        highestBidAtIndex = index
+                                }</span>
+                        }
+                }
+                <span class="cov8" title="1">adunitMap[targetId] = mappedAdunit[highestBidAtIndex]</span>
+        }
+
+        <span class="cov8" title="1">for _, imp := range request.Imp </span><span class="cov8" title="1">{
+
+                auId, _, _, err := jsonparser.Get(imp.Ext, "bidder", "auId")
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, []error{&amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("Error at Bidder auId: %s", err.Error()),
+                        }}
+                }</span>
+
+                <span class="cov8" title="1">targetID := fmt.Sprintf("%s-%s", string(auId), imp.ID)
+
+                adunit := adunitMap[targetID]
+
+                if len(adunit.Ads) &gt; 0 </span><span class="cov8" title="1">{
+
+                        ad := adunit.Ads[0]
+                        html := adunit.Html
+                        var mType openrtb2.MarkupType = openrtb2.MarkupBanner
+                        var native []byte
+
+                        currency = ad.Bid.Currency
+                        if adunit.NativeJson != nil </span><span class="cov8" title="1">{
+                                nativeJson, _, _, nativeErr := jsonparser.Get(adunit.NativeJson, "ortb")
+                                if nativeErr != nil </span><span class="cov8" title="1">{
+                                        return nil, []error{&amp;errortypes.BadServerResponse{
+                                                Message: fmt.Sprintf("Failed to parse native json where imp id=%s", imp.ID),
+                                        }}
+                                }</span>
+                                <span class="cov8" title="1">native = nativeJson</span>
+                        }
+
+                        <span class="cov8" title="1">if native != nil </span><span class="cov8" title="1">{
+                                html = string(native)
+                                mType = openrtb2.MarkupNative
+                        }</span>
+
+                        <span class="cov8" title="1">adBid, err := generateAdResponse(ad, imp, html, mType, request)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     adBid,
+                                BidType: convertMarkupTypeToBidType(mType),
+                        })
+
+                        for _, deal := range adunit.Deals </span><span class="cov8" title="1">{
+                                mType = 1
+                                dealBid, err := generateAdResponse(deal, imp, deal.Html, mType, request)
+                                if err != nil </span><span class="cov0" title="0">{
+                                        return nil, err
+                                }</span>
+
+                                <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                        Bid:     dealBid,
+                                        BidType: convertMarkupTypeToBidType(mType),
+                                })</span>
+                        }
+                }
+        }
+        <span class="cov8" title="1">bidResponse.Currency = currency
+        return bidResponse, nil</span>
+}
+
+func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, mType openrtb2.MarkupType, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) <span class="cov8" title="1">{
+        creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
+        if widthErr != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Value of width: %s is not a string", ad.CreativeWidth),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">creativeHeight, heightErr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
+        if heightErr != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Value of height: %s is not a string", ad.CreativeHeight),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var adnuntiusExt openrtb_ext.ImpExtAdnunitus
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;adnuntiusExt); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Error unmarshalling ExtImpValues: %s", err.Error()),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">price := ad.Bid.Amount
+        if adnuntiusExt.BidType != "" </span><span class="cov8" title="1">{
+                if strings.EqualFold(string(adnuntiusExt.BidType), "net") </span><span class="cov8" title="1">{
+                        price = ad.NetBid.Amount
+                }</span>
+                <span class="cov8" title="1">if strings.EqualFold(string(adnuntiusExt.BidType), "gross") </span><span class="cov8" title="1">{
+                        price = ad.GrossBid.Amount
+                }</span>
+        }
+
+        <span class="cov8" title="1">extJson, err := generateReturnExt(ad, request)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Error extracting Ext: %s", err.Error()),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bid := openrtb2.Bid{
+                ID:      ad.AdId,
+                ImpID:   imp.ID,
+                W:       creativeWidth,
+                H:       creativeHeight,
+                AdID:    ad.AdId,
+                DealID:  ad.DealID,
+                CID:     ad.LineItemId,
+                CrID:    ad.CreativeId,
+                Price:   price * 1000,
+                AdM:     html,
+                MType:   mType,
+                ADomain: ad.AdvertiserDomains,
+                Ext:     extJson,
+        }
+
+        return &amp;bid, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package adnuntius
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type RequestExt struct {
+        Bidder adnRequestAdunit `json:"bidder"`
+}
+
+func setHeaders(ortbRequest openrtb2.BidRequest) http.Header <span class="cov8" title="1">{
+
+        headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        if ortbRequest.Device != nil </span><span class="cov8" title="1">{
+                if ortbRequest.Device.IP != "" </span><span class="cov8" title="1">{
+                        headers.Add("X-Forwarded-For", ortbRequest.Device.IP)
+                }</span>
+                <span class="cov8" title="1">if ortbRequest.Device.UA != "" </span><span class="cov8" title="1">{
+                        headers.Add("user-agent", ortbRequest.Device.UA)
+                }</span>
+        }
+        <span class="cov8" title="1">return headers</span>
+}
+
+func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) <span class="cov8" title="1">{
+        uri, err := url.Parse(a.endpoint)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+        }</span>
+
+        <span class="cov8" title="1">gdpr, consent, err := getGDPR(&amp;ortbRequest)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", []error{fmt.Errorf("failed to parse GDPR information: %v", err)}
+        }</span>
+
+        <span class="cov8" title="1">if gdpr != "" </span><span class="cov8" title="1">{
+                extraInfoURI, err := url.Parse(a.extraInfo)
+                if err != nil </span><span class="cov0" title="0">{
+                        return "", []error{fmt.Errorf("invalid extraInfo URL: %v", err)}
+                }</span>
+                <span class="cov8" title="1">uri = extraInfoURI</span>
+        }
+
+        <span class="cov8" title="1">if !noCookies </span><span class="cov8" title="1">{
+                var deviceExt extDeviceAdnuntius
+                if ortbRequest.Device != nil &amp;&amp; ortbRequest.Device.Ext != nil </span><span class="cov8" title="1">{
+                        if err := jsonutil.Unmarshal(ortbRequest.Device.Ext, &amp;deviceExt); err != nil </span><span class="cov0" title="0">{
+                                return "", []error{fmt.Errorf("failed to parse device ext: %v", err)}
+                        }</span>
+                }
+
+                <span class="cov8" title="1">if deviceExt.NoCookies </span><span class="cov8" title="1">{
+                        noCookies = true
+                }</span>
+        }
+
+        <span class="cov8" title="1">_, offset := a.time.Now().Zone()
+        tzo := -offset / minutesInHour
+
+        q := uri.Query()
+        if gdpr != "" </span><span class="cov8" title="1">{
+                q.Set("gdpr", gdpr)
+        }</span>
+
+        <span class="cov8" title="1">if consent != "" </span><span class="cov8" title="1">{
+                q.Set("consentString", consent)
+        }</span>
+
+        <span class="cov8" title="1">if noCookies </span><span class="cov8" title="1">{
+                q.Set("noCookies", "true")
+        }</span>
+
+        <span class="cov8" title="1">q.Set("tzo", strconv.Itoa(tzo))
+        q.Set("format", "prebidServer")
+
+        // Set the query params to the URI
+        uri.RawQuery = q.Encode()
+
+        // Return the correctly formatted URL
+        return uri.String(), nil</span>
+}
+
+func getImpSizes(imp openrtb2.Imp, bidType string) [][]int64 <span class="cov8" title="1">{
+        if bidType == "banner" </span><span class="cov8" title="1">{
+                if imp.Banner != nil </span><span class="cov8" title="1">{
+                        if len(imp.Banner.Format) &gt; 0 </span><span class="cov8" title="1">{
+                                sizes := make([][]int64, len(imp.Banner.Format))
+                                for i, format := range imp.Banner.Format </span><span class="cov8" title="1">{
+                                        sizes[i] = []int64{format.W, format.H}
+                                }</span>
+
+                                <span class="cov8" title="1">return sizes</span>
+                        } else<span class="cov8" title="1"> if imp.Banner.W != nil &amp;&amp; imp.Banner.H != nil </span><span class="cov8" title="1">{
+                                size := make([][]int64, 1)
+                                size[0] = []int64{*imp.Banner.W, *imp.Banner.H}
+                                return size
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func getSiteExtAsKv(request *openrtb2.BidRequest) (siteExt, []error) <span class="cov8" title="1">{
+        var extSite siteExt
+        if request.Site != nil &amp;&amp; request.Site.Ext != nil </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(request.Site.Ext, &amp;extSite); err != nil </span><span class="cov0" title="0">{
+                        return extSite, []error{fmt.Errorf("failed to parse site ext in Adnuntius: %v", err)}
+                }</span>
+        }
+        <span class="cov8" title="1">return extSite, nil</span>
+}
+
+func getGDPR(request *openrtb2.BidRequest) (string, string, error) <span class="cov8" title="1">{
+
+        gdpr := ""
+        var extRegs openrtb_ext.ExtRegs
+        if request.Regs != nil &amp;&amp; request.Regs.Ext != nil </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(request.Regs.Ext, &amp;extRegs); err != nil </span><span class="cov8" title="1">{
+                        return "", "", fmt.Errorf("failed to parse ExtRegs in Adnuntius GDPR check: %v", err)
+                }</span>
+                <span class="cov8" title="1">if extRegs.GDPR != nil &amp;&amp; (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) </span><span class="cov8" title="1">{
+                        gdpr = strconv.Itoa(int(*extRegs.GDPR))
+                }</span>
+        }
+
+        <span class="cov8" title="1">consent := ""
+        if request.User != nil &amp;&amp; request.User.Ext != nil </span><span class="cov8" title="1">{
+                var extUser openrtb_ext.ExtUser
+                if err := jsonutil.Unmarshal(request.User.Ext, &amp;extUser); err != nil </span><span class="cov8" title="1">{
+                        return "", "", fmt.Errorf("failed to parse ExtUser in Adnuntius GDPR check: %v", err)
+                }</span>
+                <span class="cov8" title="1">consent = extUser.Consent</span>
+        }
+
+        <span class="cov8" title="1">return gdpr, consent, nil</span>
+}
+
+func generateReturnExt(ad Ad, request *openrtb2.BidRequest) (json.RawMessage, error) <span class="cov8" title="1">{
+        // We always force the publisher to render
+        var adRender int8 = 0
+
+        var requestRegsExt *openrtb_ext.ExtRegs
+        if request.Regs != nil &amp;&amp; request.Regs.Ext != nil </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(request.Regs.Ext, &amp;requestRegsExt); err != nil </span><span class="cov0" title="0">{
+
+                        return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if ad.Advertiser.Name != "" &amp;&amp; requestRegsExt != nil &amp;&amp; requestRegsExt.DSA != nil </span><span class="cov8" title="1">{
+                legalName := ad.Advertiser.Name
+                if ad.Advertiser.LegalName != "" </span><span class="cov8" title="1">{
+                        legalName = ad.Advertiser.LegalName
+                }</span>
+                <span class="cov8" title="1">ext := &amp;openrtb_ext.ExtBid{
+                        DSA: &amp;openrtb_ext.ExtBidDSA{
+                                AdRender: &amp;adRender,
+                                Paid:     legalName,
+                                Behalf:   legalName,
+                        },
+                }
+
+                returnExt, err := jsonutil.Marshal(ext)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("Failed to parse Ext information in Adnuntius: %v", err)
+                }</span>
+
+                <span class="cov8" title="1">return returnExt, nil</span>
+        }
+        <span class="cov8" title="1">return nil, nil</span>
+}
+
+func generateAdUnit(imp openrtb2.Imp, adnuntiusExt openrtb_ext.ImpExtAdnunitus, bidType string) adnRequestAdunit <span class="cov8" title="1">{
+        adUnit := adnRequestAdunit{
+                AuId:       adnuntiusExt.Auid,
+                TargetId:   fmt.Sprintf("%s-%s:%s", adnuntiusExt.Auid, imp.ID, bidType),
+                Dimensions: getImpSizes(imp, bidType),
+        }
+
+        if adnuntiusExt.MaxDeals &gt; 0 </span><span class="cov8" title="1">{
+                adUnit.MaxDeals = adnuntiusExt.MaxDeals
+        }</span>
+
+        <span class="cov8" title="1">if adnuntiusExt.Targeting.Category != nil </span><span class="cov8" title="1">{
+                adUnit.Category = adnuntiusExt.Targeting.Category
+        }</span>
+
+        <span class="cov8" title="1">if adnuntiusExt.Targeting.Segments != nil </span><span class="cov8" title="1">{
+                adUnit.Segments = adnuntiusExt.Targeting.Segments
+        }</span>
+
+        <span class="cov8" title="1">if adnuntiusExt.Targeting.Keywords != nil </span><span class="cov8" title="1">{
+                adUnit.Keywords = adnuntiusExt.Targeting.Keywords
+        }</span>
+
+        <span class="cov8" title="1">if adnuntiusExt.Targeting.KeyValues != nil </span><span class="cov8" title="1">{
+                adUnit.KeyValues = adnuntiusExt.Targeting.KeyValues
+        }</span>
+
+        <span class="cov8" title="1">if adnuntiusExt.Targeting.AdUnitMatchingLabel != nil </span><span class="cov8" title="1">{
+                adUnit.AdUnitMatchingLabel = adnuntiusExt.Targeting.AdUnitMatchingLabel
+        }</span>
+
+        <span class="cov8" title="1">return adUnit</span>
+}
+
+func convertMarkupTypeToBidType(markupType openrtb2.MarkupType) openrtb_ext.BidType <span class="cov8" title="1">{
+        switch markupType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative</span>
+        }
+        <span class="cov0" title="0">return openrtb_ext.BidTypeBanner</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
