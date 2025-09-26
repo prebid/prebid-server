@@ -42,6 +42,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/akcelo"
 	"github.com/prebid/prebid-server/v3/adapters/algorix"
 	"github.com/prebid/prebid-server/v3/adapters/alkimi"
+	alliance_gravity "github.com/prebid/prebid-server/v3/adapters/alliance_gravity"
 	"github.com/prebid/prebid-server/v3/adapters/amx"
 	"github.com/prebid/prebid-server/v3/adapters/apacdex"
 	"github.com/prebid/prebid-server/v3/adapters/appnexus"
@@ -305,6 +306,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAkcelo:            akcelo.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAlkimi:            alkimi.Builder,
+		openrtb_ext.BidderAllianceGravity:   alliance_gravity.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
