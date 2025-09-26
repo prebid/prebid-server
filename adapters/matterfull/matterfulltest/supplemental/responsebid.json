@@ -70,9 +70,5 @@
 
   ],
   "expectedMakeBidsErrors": [
-    {
-        "value": "Invalid SeatBids count: 0",
-        "comparison": "literal"
-      }
     ]
 }
