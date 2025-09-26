@@ -103,13 +103,13 @@ func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfull, error) {
 			Message: err.Error(),
 		}
 	}
-	var MatterfullExt openrtb_ext.ExtImpMatterfull
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &MatterfullExt); err != nil {
+	var matterfullExt openrtb_ext.ExtImpMatterfull
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &matterfullExt); err != nil {
 		return openrtb_ext.ExtImpMatterfull{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	return MatterfullExt, nil
+	return matterfullExt, nil
 }
 
 func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) (*adapters.RequestData, error) {
@@ -138,23 +138,28 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) *openrtb2.BidRequest {
-	prebidBidRequest.Imp = imps
 
-	if prebidBidRequest.Site != nil {
-		siteCopy := *prebidBidRequest.Site
-		prebidBidRequest.Site = &siteCopy
-		prebidBidRequest.Site.Publisher = nil
-		prebidBidRequest.Site.Domain = ""
+	reqCopy := *prebidBidRequest
+	newBidRequest := &reqCopy
+	newBidRequest.Imp = imps
+
+	if newBidRequest.Site != nil {
+		siteCopy := *newBidRequest.Site
+		newBidRequest.Site = &siteCopy
+		newBidRequest.Site.Publisher = nil
+		newBidRequest.Site.Domain = ""
 	}
-	if prebidBidRequest.App != nil {
-		appCopy := *prebidBidRequest.App
-		prebidBidRequest.App = &appCopy
-		prebidBidRequest.App.Publisher = nil
+
+	if newBidRequest.App != nil {
+		appCopy := *newBidRequest.App
+		newBidRequest.App = &appCopy
+		newBidRequest.App.Publisher = nil
 	}
-	return prebidBidRequest
+
+	return newBidRequest
 }
 
-// Builds enpoint url based on adapter-specific pub settings from imp.ext
+// Builds endpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfull) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: params.PublisherID}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
@@ -162,33 +167,35 @@ func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfull) (
 
 // MakeBids translates Matterfull bid response to prebid-server specific format
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
-	if response.StatusCode != http.StatusOK {
-		msg = fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
-		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 
+	if response.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
+		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
+
 	var bidResp openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
-		msg = fmt.Sprintf("Bad server response: %d", err)
-		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
-	}
-	if len(bidResp.SeatBid) != 1 {
-		var msg = fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
+		msg := fmt.Sprintf("Bad server response: %v", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 
-	seatBid := bidResp.SeatBid[0]
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(seatBid.Bid))
-	for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     bid,
-			BidType: getMediaTypeForImpID(bid.ImpID, internalRequest.Imp),
-		})
+	if len(bidResp.SeatBid) == 0 {
+		return nil, nil
 	}
+
+	bidResponse := adapters.NewBidderResponse()
+	for _, seatBid := range bidResp.SeatBid {
+		for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     bid,
+				BidType: getMediaTypeForImpID(bid.ImpID, internalRequest.Imp),
+			})
+		}
+	}
+
 	return bidResponse, nil
 }
 
