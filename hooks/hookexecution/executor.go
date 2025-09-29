@@ -387,14 +387,14 @@ func (e *hookExecutor) ExecuteExitpointStage(response any, w http.ResponseWriter
 		ctx context.Context,
 		moduleCtx hookstage.ModuleInvocationContext,
 		hook hookstage.Exitpoint,
-		payload hookstage.ExitpointPaylaod,
-	) (hookstage.HookResult[hookstage.ExitpointPaylaod], error) {
+		payload hookstage.ExitpointPayload,
+	) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
 		return hook.HandleExitpointHook(ctx, moduleCtx, payload)
 	}
 
 	stageName := hooks.StageExitpoint.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.ExitpointPaylaod{W: w, Response: response}
+	payload := hookstage.ExitpointPayload{W: w, Response: response}
 
 	outcome, payload, context, _ := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityExitpoint
