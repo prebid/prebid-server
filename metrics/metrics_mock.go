@@ -235,10 +235,10 @@ func (me *MetricsEngineMock) RecordAdapterThrottled(adapterName openrtb_ext.Bidd
 	me.Called(adapterName)
 }
 
-func (me *MetricsEngineMock) RecordConnectionWant() {
+func (me *MetricsEngineMock) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
 	me.Called()
 }
 
-func (me *MetricsEngineMock) RecordConnectionGot() {
-	me.Called()
+func (me *MetricsEngineMock) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	me.Called(adapterName, dialStartTime)
 }

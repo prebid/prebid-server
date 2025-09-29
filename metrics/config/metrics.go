@@ -384,15 +384,15 @@ func (me *MultiMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderN
 	}
 }
 
-func (me *MultiMetricsEngine) RecordConnectionWant() {
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
 	for _, thisME := range *me {
-		thisME.RecordConnectionWant()
+		thisME.RecordAdapterConnectionDialError(adapterName)
 	}
 }
 
-func (me *MultiMetricsEngine) RecordConnectionGot() {
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordConnectionGot()
+		thisME.RecordAdapterConnectionDialTime(adapterName, dialStartTime)
 	}
 }
 
@@ -579,8 +579,8 @@ func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 func (me *NilMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
 }
 
-func (me *NilMetricsEngine) RecordConnectionWant() {
+func (me *NilMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
 }
 
-func (me *NilMetricsEngine) RecordConnectionGot() {
+func (me *NilMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
 }
