@@ -130,7 +130,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
 	// local file system
-	certPool := ssl.GetRootCAPool()
+	certPool, certPoolCreateErr := ssl.CreateCertPool(cfg.CertsUseSystem)
+	if certPoolCreateErr != nil {
+		glog.Infof("Could not load root certificates: %s \n", certPoolCreateErr.Error())
+	}
+
 	var readCertErr error
 	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
 	if readCertErr != nil {
@@ -301,6 +305,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		ExternalUrl:      cfg.ExternalURL,
 		RecaptchaSecret:  cfg.RecaptchaSecret,
 		PriorityGroups:   cfg.UserSync.PriorityGroups,
+		CertPool:         certPool,
 	}
 
 	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, analyticsRunner, accounts, r.MetricsEngine))
