@@ -135,7 +135,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	// local file system
 	certPool, certPoolCreateErr := ssl.CreateCertPool(cfg.CertsUseSystem)
 	if certPoolCreateErr != nil {
-		glog.Infof("Could not load root certificates: %s \n", certPoolCreateErr.Error())
+		logger.Info(fmt.Sprintf("Could not load root certificates: %s \n", certPoolCreateErr.Error()))
 	}
 
 	var readCertErr error
