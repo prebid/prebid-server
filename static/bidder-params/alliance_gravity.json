@@ -3,5 +3,12 @@
   "title": "Alliance Gravity Adapter Params",
   "description": "A schema which validates params accepted by the Alliance Gravity adapter",
   "type": "object",
-  "properties": {}
+  "properties": {
+    "srid": {
+      "type": "string",
+      "description": "Stored request ID"
+    }
+  },
+
+  "required": ["srid"]
 }

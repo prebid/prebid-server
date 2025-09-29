@@ -3,6 +3,7 @@ package alliance_gravity
 import (
   "fmt"
   "net/http"
+	"encoding/json"
 
   "github.com/prebid/openrtb/v20/openrtb2"
   "github.com/prebid/prebid-server/v3/adapters"
@@ -16,7 +17,7 @@ type adapter struct {
   endpoint string
 }
 
-// Builder builds a new instance of the {bidder} adapter for the given bidder with the given config.
+
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
     endpoint: config.Endpoint,
@@ -24,9 +25,56 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
   return bidder, nil
 }
 
+func generateImps(imps []openrtb2.Imp) ([]openrtb2.Imp, error) {
+	var generatedImps []openrtb2.Imp
+	for _, imp := range imps {
+		var bidderExt adapters.ExtImpBidder
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			return nil, &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+
+		var allianceGravityExt openrtb_ext.ExtImpAllianceGravity
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &allianceGravityExt); err != nil {
+			return nil, &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+
+		bidderExt.Bidder = json.RawMessage(`{}`)
+		bidderExt.Prebid = &openrtb_ext.ExtImpPrebid{
+			StoredRequest: &openrtb_ext.ExtStoredRequest{
+				ID: allianceGravityExt.SrID,
+			},
+		}
+
+		bidderExtJSON, err := jsonutil.Marshal(bidderExt)
+		if err != nil {
+			return nil, &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+
+		impCopy := imp
+		impCopy.Ext = bidderExtJSON
+
+		generatedImps = append(generatedImps, impCopy)
+	}
+	return generatedImps, nil
+}
+
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var generatedImps, err = generateImps(request.Imp)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	request.Imp = generatedImps
+
 	requestJSON, err := jsonutil.Marshal(request)
+
   if err != nil {
     return nil, []error{err}
   }
