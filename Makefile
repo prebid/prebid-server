@@ -30,10 +30,6 @@ build: test
 image:
 	docker build -t prebid-server .
 
-# wurfl-image will build a docker image with WURFL support
-wurfl-image:
-	docker build  --build-arg GO_BUILD_TAGS="-tags wurfl" -t prebid-server .
-
 # format runs format
 format:
 	./scripts/format.sh -f true
