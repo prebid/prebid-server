@@ -1,6 +1,5 @@
-#endpoint: "https:/prebid-server.agrvt.com"
-endpoint: "http://REGION.example.com/openrtb2"
-endpointCompression: gzip
+#endpoint: "https://prebid-server.agrvt.com"
+endpoint: "https://durbuy.ngrok.io/openrtb2/auction"
 maintainer:
   email: produit@alliancegravity.com
 gvlVendorID: 501
