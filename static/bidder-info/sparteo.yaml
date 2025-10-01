@@ -13,7 +13,7 @@ capabilities:
       - banner
       - video
       - native
-endpoint: "https://bid.sparteo.com/s2s-auction"
+endpoint: "https://bid.sparteo.com/s2s-auction?network_id={{.NetworkId}}&{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
 userSync:
   iframe:
     url: "https://sync.sparteo.com/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect_url={{.RedirectURL}}"
