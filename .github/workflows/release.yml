@@ -129,14 +129,24 @@ jobs:
         run: |
           docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
       - name: Login to docker Hub
+        id: login
         if: contains(inputs.debug, 'false')
-        uses: docker/login-action@v2.1.0
+        uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Publish to docker Hub
         run: |
-          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
+          if [ ${{ steps.login.outcome }} -eq 'success' ] && [ ${{ steps.login.conclusion }} -eq 'success' ]; then
+            docker push docker.io/prebid/prebid-server:<an-image>
+            if [[ $? -eq 0 ]]; then
+              docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
+              if [[ $? -ne 0 ]]; then
+                  echo "docker push failed for "${{ needs.publish-tag.outputs.releaseTag }}
+                  exit 1
+              fi
+            fi
+          fi
 
   publish-release:
     name: Publish release
