@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "The Exco Adapter Params",
+  "description": "A schema which validates params accepted by Exco adapter",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A unique account identifier provided by EX.CO."
+    },
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Publisher ID provided by EX.CO."
+    },
+    "tagId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A unique Tag ID (supply id) identifier provided by EX.CO."
+    }
+  },
+  "required": ["accountId", "publisherId", "tagId"]
+}

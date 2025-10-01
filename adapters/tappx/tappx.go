@@ -19,7 +19,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-const TAPPX_BIDDER_VERSION = "1.5"
+const TAPPX_BIDDER_VERSION = "1.6"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -35,6 +35,7 @@ type Bidder struct {
 
 type Ext struct {
 	Bidder `json:"bidder"`
+	GPID   string `json:"gpid,omitempty"`
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
