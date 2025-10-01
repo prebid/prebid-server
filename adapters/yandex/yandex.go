@@ -70,10 +70,7 @@ func (a *adapter) MakeRequests(requestData *openrtb2.BidRequest, requestInfo *ad
 		errors   []error
 	)
 
-	var referer string
-	if requestData.Site != nil {
-		referer = requestData.Site.Page
-	}
+	referer := getReferer(requestData)
 	currency := getCurrency(requestData)
 
 	for i := range requestData.Imp {
@@ -312,6 +309,18 @@ func addNonEmptyQueryParams(url *url.URL, queryMap map[string]string) {
 	}
 
 	url.RawQuery = query.Encode()
+}
+
+func getReferer(request *openrtb2.BidRequest) string {
+	if request.Site == nil {
+		return ""
+	}
+
+	if request.Site.Page != "" {
+		return request.Site.Page
+	}
+
+	return request.Site.Domain
 }
 
 func getCurrency(request *openrtb2.BidRequest) string {
