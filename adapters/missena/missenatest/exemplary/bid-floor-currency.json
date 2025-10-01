@@ -56,7 +56,9 @@
                     "referer_canonical": "publisher.com",
                     "request_id": "test-request-id",
                     "timeout": 500,
+                    "version": "prebid-server@unknown",
                     "params": {
+                        "apiKey": "test-api-key",
                         "formats": ["banner"],
                         "placement": "sticky"
                     }

@@ -57,12 +57,14 @@
           "currency": "EUR",
           "ik": "test-request-id",
           "params": {
+            "apiKey": "test-api-key",
             "placement": "test-placement"
           },
           "referer": "https://example.com/page",
           "referer_canonical": "example.com",
           "request_id": "test-request-id",
-          "timeout": 500
+          "timeout": 500,
+          "version": "prebid-server@unknown"
         },
         "impIDs": ["test-imp-id"]
       },

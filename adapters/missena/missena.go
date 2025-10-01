@@ -75,6 +75,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
+func getVersionString() string {
+	if version.Ver == "" {
+		return version.VerUnknown
+	}
+	return version.Ver
+}
+
 func getCurrency(currencies []string) (string, error) {
 	eurAvailable := false
 	for _, cur := range currencies {
@@ -169,7 +176,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 			Sample:    params.Sample,
 			Settings:  params.Settings,
 		},
-		Version: version.Ver,
+		Version: fmt.Sprintf("prebid-server@%s", getVersionString()),
 	}
 
 	body, err := jsonutil.Marshal(missenaRequest)
