@@ -360,7 +360,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 	}
 
-	analytics := analyticsBuild.New(&config.Analytics{})
+	analytics := analyticsBuild.New(map[string]interface{}{})
 	metrics := &metricsConf.NilMetricsEngine{}
 
 	for _, test := range testCases {
@@ -394,7 +394,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 
 func TestSetUIDPriorityEjection(t *testing.T) {
 	decoder := usersync.Base64Decoder{}
-	analytics := analyticsBuild.New(&config.Analytics{})
+	analytics := analyticsBuild.New(map[string]interface{}{})
 	syncersByBidder := map[string]string{
 		"pubmatic":             "pubmatic",
 		"syncer1":              "syncer1",
@@ -1369,7 +1369,7 @@ func TestOptedOut(t *testing.T) {
 	cookie.SetOptOut(true)
 	addCookie(request, cookie)
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
-	analytics := analyticsBuild.New(&config.Analytics{})
+	analytics := analyticsBuild.New(map[string]interface{}{})
 	metrics := &metricsConf.NilMetricsEngine{}
 	response := doRequest(request, analytics, metrics, syncersBidderNameToKey, true, false, false, false, 0, nil, "")
 

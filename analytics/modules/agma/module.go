@@ -1,17 +1,17 @@
 package agma
 
 import (
-	"github.com/benbjohnson/clock"
+	"encoding/json"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
-	base "github.com/prebid/prebid-server/v3/analytics/modules/agma"
 	"github.com/prebid/prebid-server/v3/config"
 )
 
 type Config struct {
-	Enabled  bool   `mapstructure:"enabled" json:"enabled"`
-	Endpoint string `mapstructure:"endpoint" json:"endpoint"`
+	Enabled  bool                             `mapstructure:"enabled" json:"enabled"`
+	Endpoint config.AgmaAnalyticsHttpEndpoint `mapstructure:"endpoint" json:"endpoint"`
 	Buffers  struct {
 		EventCount int    `mapstructure:"eventCount" json:"eventCount"`
 		BufferSize string `mapstructure:"bufferSize" json:"bufferSize"`
@@ -21,7 +21,7 @@ type Config struct {
 }
 
 // Builder builds the agma analytics module.
-func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Module, error) {
+func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
 		return nil, nil
 	}
@@ -36,7 +36,7 @@ func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Mod
 	if !c.Enabled {
 		return nil, nil
 	}
-	if c.Endpoint == "" {
+	if c.Endpoint.Url == "" {
 		return nil, nil
 	}
 
@@ -50,5 +50,5 @@ func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Mod
 		},
 		Accounts: c.Accounts,
 	}
-	return base.NewModule(deps.HTTPClient, full, deps.Clock.(clock.Clock))
+	return NewModule(deps.HTTPClient, full, deps.Clock)
 }

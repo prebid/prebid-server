@@ -1,6 +1,8 @@
 package filelogger
 
 import (
+	"encoding/json"
+
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/prebid/prebid-server/v3/analytics"
@@ -15,7 +17,7 @@ type Config struct {
 }
 
 // Builder builds the filelogger analytics module.
-func Builder(cfg map[string]interface{}, deps analyticsdeps.Deps) (analytics.Module, error) {
+func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error) {
 	var c Config
 	if cfg != nil {
 		if err := mapstructure.Decode(cfg, &c); err != nil {

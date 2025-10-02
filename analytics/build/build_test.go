@@ -82,14 +82,14 @@ func (m *sampleModule) LogNotificationEventObject(ne *analytics.NotificationEven
 func (m *sampleModule) Shutdown() { *m.count++ }
 
 func initAnalytics(count *int) analytics.Runner {
-	modules := make(enabledAnalytics, 0)
+	modules := make(EnabledAnalytics, 0)
 	modules["sampleModule"] = &sampleModule{count}
 	return &modules
 }
 
 func TestNewPBSAnalytics(t *testing.T) {
-	pbsAnalytics := New(&config.Analytics{})
-	instance := pbsAnalytics.(enabledAnalytics)
+	pbsAnalytics := New(map[string]interface{}{})
+	instance := pbsAnalytics.(EnabledAnalytics)
 
 	assert.Equal(t, len(instance), 0)
 }
@@ -97,7 +97,7 @@ func TestNewPBSAnalytics(t *testing.T) {
 func TestPBSAnalyticsShutdown(t *testing.T) {
 	countA := 0
 	countB := 0
-	modules := make(enabledAnalytics, 0)
+	modules := make(EnabledAnalytics, 0)
 	modules["sampleModuleA"] = &sampleModule{count: &countA}
 	modules["sampleModuleB"] = &sampleModule{count: &countB}
 
@@ -114,80 +114,69 @@ func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 		}
 	}
 	defer os.RemoveAll(TEST_DIR)
-	mod := New(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
-	switch modType := mod.(type) {
-	case enabledAnalytics:
-		if len(enabledAnalytics(modType)) != 1 {
-			t.Fatalf("Failed to add analytics module")
-		}
-	default:
-		t.Fatalf("Failed to initialize analytics module")
-	}
-
-	pbsAnalytics := New(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
-	instance := pbsAnalytics.(enabledAnalytics)
-
+	mod := New(map[string]interface{}{
+		"filelogger": map[string]interface{}{
+			"enabled":  true,
+			"filename": TEST_DIR + "/test",
+		},
+	})
+	instance := mod.(EnabledAnalytics)
 	assert.Equal(t, len(instance), 1)
 }
 
 func TestNewPBSAnalytics_Pubstack(t *testing.T) {
-	pbsAnalyticsWithoutError := New(&config.Analytics{
-		Pubstack: config.Pubstack{
-			Enabled:   true,
-			ScopeId:   "scopeId",
-			IntakeUrl: "https://pubstack.io/intake",
-			Buffers: config.PubstackBuffer{
-				BufferSize: "100KB",
-				EventCount: 0,
-				Timeout:    "30s",
+	pbsAnalyticsWithoutError := New(map[string]interface{}{
+		"pubstack": map[string]interface{}{
+			"enabled":     true,
+			"scopeId":     "scopeId",
+			"intakeUrl":   "https://pubstack.io/intake",
+			"confRefresh": "2h",
+			"buffers": map[string]interface{}{
+				"bufferSize": "100KB",
+				"eventCount": 0,
+				"timeout":    "30s",
 			},
-			ConfRefresh: "2h",
 		},
 	})
-	instanceWithoutError := pbsAnalyticsWithoutError.(enabledAnalytics)
-
+	instanceWithoutError := pbsAnalyticsWithoutError.(EnabledAnalytics)
 	assert.Equal(t, len(instanceWithoutError), 1)
 
-	pbsAnalyticsWithError := New(&config.Analytics{
-		Pubstack: config.Pubstack{
-			Enabled: true,
+	pbsAnalyticsWithError := New(map[string]interface{}{
+		"pubstack": map[string]interface{}{
+			"enabled": true,
 		},
 	})
-	instanceWithError := pbsAnalyticsWithError.(enabledAnalytics)
+	instanceWithError := pbsAnalyticsWithError.(EnabledAnalytics)
 	assert.Equal(t, len(instanceWithError), 0)
 }
 
 func TestNewModuleHttp(t *testing.T) {
-	agmaAnalyticsWithoutError := New(&config.Analytics{
-		Agma: config.AgmaAnalytics{
-			Enabled: true,
-			Endpoint: config.AgmaAnalyticsHttpEndpoint{
-				Url:     "http://localhost:8080",
-				Timeout: "1s",
+	agmaAnalyticsWithoutError := New(map[string]interface{}{
+		"agma": map[string]interface{}{
+			"enabled": true,
+			"endpoint": map[string]interface{}{
+				"url":     "http://localhost:8080",
+				"timeout": "1s",
 			},
-			Buffers: config.AgmaAnalyticsBuffer{
-				BufferSize: "100KB",
-				EventCount: 50,
-				Timeout:    "30s",
+			"buffers": map[string]interface{}{
+				"bufferSize": "100KB",
+				"eventCount": 50,
+				"timeout":    "30s",
 			},
-			Accounts: []config.AgmaAnalyticsAccount{
-				{
-					PublisherId: "123",
-					Code:        "abc",
-				},
+			"accounts": []map[string]interface{}{
+				{"publisher_id": "123", "code": "abc"},
 			},
 		},
 	})
-	instanceWithoutError := agmaAnalyticsWithoutError.(enabledAnalytics)
-
+	instanceWithoutError := agmaAnalyticsWithoutError.(EnabledAnalytics)
 	assert.Equal(t, len(instanceWithoutError), 1)
 
-	agmaAnalyticsWithError := New(&config.Analytics{
-		Agma: config.AgmaAnalytics{
-			Enabled: true,
+	agmaAnalyticsWithError := New(map[string]interface{}{
+		"agma": map[string]interface{}{
+			"enabled": true,
 		},
 	})
-	instanceWithError := agmaAnalyticsWithError.(enabledAnalytics)
+	instanceWithError := agmaAnalyticsWithError.(EnabledAnalytics)
 	assert.Equal(t, len(instanceWithError), 0)
 }
 
@@ -436,7 +425,7 @@ func TestLogObject(t *testing.T) {
 	tests := []struct {
 		description           string
 		givenRequestWrapper   *openrtb_ext.RequestWrapper
-		givenEnabledAnalytics enabledAnalytics
+		givenEnabledAnalytics EnabledAnalytics
 		givenActivityControl  bool
 		givenAuctionObject    *analytics.AuctionObject
 		givenAmpObject        *analytics.AmpObject
@@ -446,7 +435,7 @@ func TestLogObject(t *testing.T) {
 	}{
 		{
 			description:           "Multiple analytics modules, clone from evaluate activities, should expect both to have their information to be logged only -- auction",
-			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &mockAnalytics{}},
+			givenEnabledAnalytics: EnabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &mockAnalytics{}},
 			givenActivityControl:  true,
 			givenAuctionObject: &analytics.AuctionObject{
 				Status:   http.StatusOK,
@@ -467,7 +456,7 @@ func TestLogObject(t *testing.T) {
 		},
 		{
 			description:           "Multiple analytics modules, no clone from evaluate activities, should expect both to have their information to be logged only -- amp",
-			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &mockAnalytics{}},
+			givenEnabledAnalytics: EnabledAnalytics{"adapter1": &mockAnalytics{}, "adapter2": &mockAnalytics{}},
 			givenActivityControl:  false,
 			givenAmpObject: &analytics.AmpObject{
 				Status:          http.StatusOK,
@@ -488,7 +477,7 @@ func TestLogObject(t *testing.T) {
 		},
 		{
 			description:           "Single analytics module, clone from evaluate activities, should expect both to have their information to be logged only -- amp",
-			givenEnabledAnalytics: enabledAnalytics{"adapter1": &mockAnalytics{}},
+			givenEnabledAnalytics: EnabledAnalytics{"adapter1": &mockAnalytics{}},
 			givenActivityControl:  true,
 			givenAuctionObject: &analytics.AuctionObject{
 				Status:   http.StatusOK,
@@ -506,7 +495,7 @@ func TestLogObject(t *testing.T) {
 		},
 		{
 			description:           "Single analytics module, adapter name not found, expect entire analytics object to be nil -- video",
-			givenEnabledAnalytics: enabledAnalytics{"unknownAdapter": &mockAnalytics{}},
+			givenEnabledAnalytics: EnabledAnalytics{"unknownAdapter": &mockAnalytics{}},
 			givenActivityControl:  true,
 			givenVideoObject: &analytics.VideoObject{
 				Status:   http.StatusOK,
