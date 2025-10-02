@@ -79,10 +79,29 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
     return nil, []error{err}
   }
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	if request.Device != nil {
+		if request.Device.UA != "" {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		} else if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+		if request.Site != nil {
+			headers.Add("Referer", request.Site.Page)
+		}
+	}
+
   requestData := &adapters.RequestData{
     Method:  "POST",
     Uri:     a.endpoint,
     Body:    requestJSON,
+		Headers: headers,
     ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
   }
 
