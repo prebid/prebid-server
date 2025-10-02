@@ -26,6 +26,7 @@ type msqParameters struct {
 	DSA     interface{}          `json:"dsa,omitempty"`
 	Support msqSupport           `json:"tech"`
 	Test    bool                 `json:"test"`
+	UserUID string               `json:"user_uid,omitempty"`
 }
 
 type msqResponseBidsVideo struct {
@@ -128,6 +129,9 @@ func initMsqParams(request *openrtb2.BidRequest) (msqParams msqParameters) {
 		ConsentString:   (parserGDPR{}).getValue("consent_string", request),
 	}
 	msqParams.DSA = (parserDSA{}).getValue(request)
+	if request.User != nil && len(request.User.BuyerUID) > 0 {
+		msqParams.UserUID = request.User.BuyerUID
+	}
 
 	return
 }
