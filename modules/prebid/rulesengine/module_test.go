@@ -93,19 +93,6 @@ func TestBuilderWithWorkingDir(t *testing.T) {
 				// Verify module components are initialized
 				assert.NotNil(t, m.Cache)
 				assert.NotNil(t, m.TreeManager)
-
-				// Check BidderConfigRuleSet
-				assert.NotNil(t, m.BidderConfigRuleSet)
-
-				// For cases with geoscope data, check more details
-				if len(tc.deps.Geoscope) > 0 {
-					assert.Len(t, m.BidderConfigRuleSet, 1)
-					assert.Equal(t, "Dynamic ruleset from geoscopes", m.BidderConfigRuleSet[0].name)
-					assert.Len(t, m.BidderConfigRuleSet[0].modelGroups, 1)
-					assert.Equal(t, 100, m.BidderConfigRuleSet[0].modelGroups[0].weight)
-					assert.Equal(t, "1.0", m.BidderConfigRuleSet[0].modelGroups[0].version)
-					assert.Equal(t, "bidderConfig", m.BidderConfigRuleSet[0].modelGroups[0].analyticsKey)
-				}
 			}
 		})
 	}

@@ -7,6 +7,120 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMergeCountryGroups(t *testing.T) {
+	defaultCountryGroups := CountryGroups{
+		"EEA":           []string{"FRA", "DEU", "ITA"},
+		"NORTH_AMERICA": []string{"USA", "CAN", "MEX"},
+		"NORDIC":        []string{"FIN", "NOR", "SWE"},
+	}
+
+	testCases := []struct {
+		name           string
+		defaults       CountryGroups
+		setDefinitions CountryGroups
+		expected       CountryGroups
+	}{
+		{
+			name:           "nil-set-definitions",
+			defaults:       defaultCountryGroups,
+			setDefinitions: nil,
+			expected: CountryGroups{
+				"EEA":           []string{"FRA", "DEU", "ITA"},
+				"NORTH_AMERICA": []string{"USA", "CAN", "MEX"},
+				"NORDIC":        []string{"FIN", "NOR", "SWE"},
+			},
+		},
+		{
+			name:           "empty-set-definitions",
+			defaults:       defaultCountryGroups,
+			setDefinitions: CountryGroups{},
+			expected: CountryGroups{
+				"EEA":           []string{"FRA", "DEU", "ITA"},
+				"NORTH_AMERICA": []string{"USA", "CAN", "MEX"},
+				"NORDIC":        []string{"FIN", "NOR", "SWE"},
+			},
+		},
+		{
+			name:     "override-existing-group",
+			defaults: defaultCountryGroups,
+			setDefinitions: CountryGroups{
+				"EEA": []string{"ESP", "PRT", "GRC"},
+			},
+			expected: CountryGroups{
+				"EEA":           []string{"ESP", "PRT", "GRC"},
+				"NORTH_AMERICA": []string{"USA", "CAN", "MEX"},
+				"NORDIC":        []string{"FIN", "NOR", "SWE"},
+			},
+		},
+		{
+			name:     "add-new-group",
+			defaults: defaultCountryGroups,
+			setDefinitions: CountryGroups{
+				"ASIA": []string{"JPN", "KOR", "CHN"},
+			},
+			expected: CountryGroups{
+				"EEA":           []string{"FRA", "DEU", "ITA"},
+				"NORTH_AMERICA": []string{"USA", "CAN", "MEX"},
+				"NORDIC":        []string{"FIN", "NOR", "SWE"},
+				"ASIA":          []string{"JPN", "KOR", "CHN"},
+			},
+		},
+		{
+			name:     "empty-defaults",
+			defaults: CountryGroups{},
+			setDefinitions: CountryGroups{
+				"ASIA": []string{"JPN", "KOR", "CHN"},
+			},
+			expected: CountryGroups{
+				"ASIA": []string{"JPN", "KOR", "CHN"},
+			},
+		},
+		{
+			name:     "multiple-operations",
+			defaults: defaultCountryGroups,
+			setDefinitions: CountryGroups{
+				"EEA":    []string{"ESP", "PRT"},
+				"ASIA":   []string{"JPN", "KOR"},
+				"AFRICA": []string{"ZAF", "EGY", "NGA"},
+			},
+			expected: CountryGroups{
+				"EEA":           []string{"ESP", "PRT"},
+				"NORTH_AMERICA": []string{"USA", "CAN", "MEX"},
+				"NORDIC":        []string{"FIN", "NOR", "SWE"},
+				"ASIA":          []string{"JPN", "KOR"},
+				"AFRICA":        []string{"ZAF", "EGY", "NGA"},
+			},
+		},
+		{
+			name:     "empty-slice-in-set-definitions",
+			defaults: defaultCountryGroups,
+			setDefinitions: CountryGroups{
+				"EMPTY_GROUP": []string{},
+			},
+			expected: CountryGroups{
+				"EEA":           []string{"FRA", "DEU", "ITA"},
+				"NORTH_AMERICA": []string{"USA", "CAN", "MEX"},
+				"NORDIC":        []string{"FIN", "NOR", "SWE"},
+				"EMPTY_GROUP":   []string{},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := mergeCountryGroups(tc.defaults, tc.setDefinitions)
+
+			assert.Len(t, result, len(tc.expected), "Result should have the expected number of groups")
+
+			for groupName, expectedCountries := range tc.expected {
+				actualCountries, exists := result[groupName]
+				assert.True(t, exists, "Group %s should exist in result", groupName)
+				assert.ElementsMatch(t, expectedCountries, actualCountries)
+			}
+		})
+	}
+}
+
 func TestBuild(t *testing.T) {
 	// Define test groups
 	testCountryGroups := CountryGroups{

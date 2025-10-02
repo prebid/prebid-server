@@ -25,6 +25,7 @@ func Builder(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, erro
 	tm := treeManager{
 		done:            make(chan struct{}),
 		requests:        make(chan buildInstruction),
+		geoscopes:       deps.Geoscope,
 		schemaValidator: schemaValidator,
 		monitor:         &treeManagerLogger{},
 	}
@@ -38,23 +39,16 @@ func Builder(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, erro
 
 	go tm.Run(c)
 
-	bidderConfigRuleSet, err := buildBidderConfigRuleSet(deps.Geoscope)
-	if err != nil {
-		return nil, err
-	}
-
 	return Module{
-		BidderConfigRuleSet: bidderConfigRuleSet,
-		Cache:               c,
-		TreeManager:         &tm,
+		Cache:       c,
+		TreeManager: &tm,
 	}, nil
 }
 
 // Module represents the rules engine module
 type Module struct {
-	Cache               cacher
-	TreeManager         *treeManager
-	BidderConfigRuleSet []cacheRuleSet[RequestWrapper, ProcessedAuctionHookResult]
+	Cache       cacher
+	TreeManager *treeManager
 }
 
 // HandleProcessedAuctionHook updates field on openrtb2.BidRequest.
@@ -102,12 +96,7 @@ func (m Module) HandleProcessedAuctionHook(
 		}, nil
 	}
 
-	ruleSets := co.ruleSetsForProcessedAuctionRequestStage
-	if co.generateRulesFromBidderConfig {
-		ruleSets = append(m.BidderConfigRuleSet, ruleSets...)
-	}
-
-	return handleProcessedAuctionHook(ruleSets, payload)
+	return handleProcessedAuctionHook(co.ruleSetsForProcessedAuctionRequestStage, payload)
 }
 
 // Shutdown signals the module to stop processing and waits for the tree manager to finish

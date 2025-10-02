@@ -139,7 +139,7 @@ func TestBuildBidderConfigRuleSet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ruleSets, err := buildBidderConfigRuleSet(tc.geoscopes)
+			ruleSets, err := buildBidderConfigRuleSet(tc.geoscopes, nil)
 
 			if tc.expectError {
 				assert.Error(t, err)

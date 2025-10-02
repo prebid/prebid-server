@@ -18,6 +18,7 @@ func TestNewCacheEntry(t *testing.T) {
 		inCfg                   *config.PbRulesEngine
 		inCfgRaw                *json.RawMessage
 		expectEmptyRulesetArray bool
+		expectedRulesetCount    int
 		expectedErr             error
 	}{
 		{
@@ -48,7 +49,7 @@ func TestNewCacheEntry(t *testing.T) {
 			expectedErr:             nil,
 		},
 		{
-			name: "ruleset-with-wrong-stage",
+			name: "static-ruleset-with-wrong-stage",
 			inCfg: &config.PbRulesEngine{
 				RuleSets: []config.RuleSet{
 					{Stage: "wrong-stage"},
@@ -79,7 +80,17 @@ func TestNewCacheEntry(t *testing.T) {
 			expectEmptyRulesetArray: true,
 		},
 		{
-			name: "single-ruleset-entry-right-stage",
+			name: "dynamic-ruleset",
+			inCfg: &config.PbRulesEngine{
+				GenerateRulesFromBidderConfig: true,
+				RuleSets:                      []config.RuleSet{},
+			},
+			inCfgRaw:                getValidJsonConfig(),
+			expectedRulesetCount:    1,
+			expectEmptyRulesetArray: false,
+		},
+		{
+			name: "single-static-ruleset",
 			inCfg: &config.PbRulesEngine{
 				RuleSets: []config.RuleSet{
 					{
@@ -98,10 +109,35 @@ func TestNewCacheEntry(t *testing.T) {
 				},
 			},
 			inCfgRaw:                getValidJsonConfig(),
+			expectedRulesetCount:    1,
 			expectEmptyRulesetArray: false,
 		},
 		{
-			name: "Multiple-ruleset-entries-some-with-the-wrong-stage",
+			name: "single-static-ruleset-with-dynamic-ruleset",
+			inCfg: &config.PbRulesEngine{
+				GenerateRulesFromBidderConfig: true,
+				RuleSets: []config.RuleSet{
+					{
+						Stage: hooks.StageProcessedAuctionRequest,
+						ModelGroups: []config.ModelGroup{
+							{
+								Default: []config.Result{
+									{
+										Func: ExcludeBiddersName,
+										Args: json.RawMessage(`{"bidders": ["bidderA"], "seatNonBid": 111}`),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			inCfgRaw:                getValidJsonConfig(),
+			expectedRulesetCount:    2,
+			expectEmptyRulesetArray: false,
+		},
+		{
+			name: "multiple-static-rulesets-some-with-the-wrong-stage",
 			inCfg: &config.PbRulesEngine{
 				RuleSets: []config.RuleSet{
 					{Stage: "wrong-stage"},
@@ -121,6 +157,7 @@ func TestNewCacheEntry(t *testing.T) {
 				},
 			},
 			inCfgRaw:                getValidJsonConfig(),
+			expectedRulesetCount:    1,
 			expectEmptyRulesetArray: false,
 		},
 		{
@@ -141,7 +178,7 @@ func TestNewCacheEntry(t *testing.T) {
 						},
 					},
 					{
-						Stage: "processed_auction",
+						Stage: hooks.StageProcessedAuctionRequest,
 						ModelGroups: []config.ModelGroup{
 							{
 								Default: []config.Result{
@@ -156,18 +193,20 @@ func TestNewCacheEntry(t *testing.T) {
 				},
 			},
 			inCfgRaw:                getValidJsonConfig(),
+			expectedRulesetCount:    2,
 			expectEmptyRulesetArray: false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			cacheEntry, err := NewCacheEntry(tc.inCfg, tc.inCfgRaw)
+			cacheEntry, err := NewCacheEntry(tc.inCfg, tc.inCfgRaw, map[string][]string{})
 
 			if tc.expectEmptyRulesetArray {
 				assert.Empty(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage)
 			} else {
 				assert.NotEmpty(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage)
+				assert.Len(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage, tc.expectedRulesetCount)
 			}
 
 			assert.Equal(t, tc.expectedErr, err)

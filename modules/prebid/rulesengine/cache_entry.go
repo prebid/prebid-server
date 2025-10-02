@@ -17,7 +17,6 @@ type hash = string
 
 type cacheEntry struct {
 	enabled                                 bool
-	generateRulesFromBidderConfig           bool
 	timestamp                               time.Time
 	hashedConfig                            hash
 	ruleSetsForProcessedAuctionRequestStage []cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]
@@ -36,7 +35,7 @@ type cacheModelGroup[T1 any, T2 any] struct {
 // NewCacheEntry creates a new cache object for the given configuration
 // It builds the tree structures for the rule sets for the processed auction request stage
 // and stores them in the cache object
-func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEntry, error) {
+func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage, geoscopes map[string][]string) (cacheEntry, error) {
 	if cfg == nil {
 		return cacheEntry{}, errors.New("no rules engine configuration provided")
 	}
@@ -47,10 +46,17 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 	}
 
 	newCacheObj := cacheEntry{
-		enabled:                       cfg.Enabled,
-		generateRulesFromBidderConfig: cfg.GenerateRulesFromBidderConfig,
-		timestamp:                     time.Now(),
-		hashedConfig:                  idHash,
+		enabled:      cfg.Enabled,
+		timestamp:    time.Now(),
+		hashedConfig: idHash,
+	}
+
+	if cfg.GenerateRulesFromBidderConfig {
+		bidderConfigRuleSet, err := buildBidderConfigRuleSet(geoscopes, cfg.SetDefinitions)
+		if err != nil {
+			return cacheEntry{}, err
+		}
+		newCacheObj.ruleSetsForProcessedAuctionRequestStage = bidderConfigRuleSet
 	}
 
 	for _, ruleSet := range cfg.RuleSets {

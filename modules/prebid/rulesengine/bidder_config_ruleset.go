@@ -6,7 +6,7 @@ import (
 
 // buildBidderConfigRuleSet builds a dynamic ruleset based on the geoscope annotations in the
 // static bidder-info bidder YAML files
-func buildBidderConfigRuleSet(geoscopes map[string][]string) ([]cacheRuleSet[RequestWrapper, ProcessedAuctionHookResult], error) {
+func buildBidderConfigRuleSet(geoscopes map[string][]string, setDefinitions map[string][]string) ([]cacheRuleSet[RequestWrapper, ProcessedAuctionHookResult], error) {
 	crs := cacheRuleSet[RequestWrapper, ProcessedAuctionHookResult]{
 		name: "Dynamic ruleset from geoscopes",
 		modelGroups: []cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]{
@@ -18,7 +18,7 @@ func buildBidderConfigRuleSet(geoscopes map[string][]string) ([]cacheRuleSet[Req
 		},
 	}
 
-	builder := NewBidderConfigRuleSetBuilder[RequestWrapper, ProcessedAuctionHookResult](geoscopes)
+	builder := NewBidderConfigRuleSetBuilder[RequestWrapper, ProcessedAuctionHookResult](geoscopes, setDefinitions)
 
 	tree, err := rules.NewTree[RequestWrapper, ProcessedAuctionHookResult](builder)
 	if err != nil {

@@ -35,12 +35,31 @@ type parsedConfig struct {
 
 // NewBidderConfigRuleSetBuilder creates a new instance of bidderConfigRuleSetBuilder
 func NewBidderConfigRuleSetBuilder[T1 RequestWrapper, T2 ProcessedAuctionHookResult](
-	geoscopeConfig map[string][]string,
+	geoscopeConfig map[string][]string, setDefinitions map[string][]string,
 ) *bidderConfigRuleSetBuilder[T1, T2] {
+
 	return &bidderConfigRuleSetBuilder[T1, T2]{
-		countryGroups:  defaultCountryGroups,
+		countryGroups:  mergeCountryGroups(defaultCountryGroups, setDefinitions),
 		geoscopeConfig: geoscopeConfig,
 	}
+}
+
+// mergeCountryGroups merges the default country groups with any account-defined set definitions
+func mergeCountryGroups(defaults, setDefinitions CountryGroups) CountryGroups {
+	countryGroups := make(CountryGroups, len(defaults))
+	for k, v := range defaults {
+		copied := make([]string, len(v))
+		copy(copied, v)
+		countryGroups[k] = copied
+	}
+	if setDefinitions != nil {
+		for k, v := range setDefinitions {
+			copied := make([]string, len(v))
+			copy(copied, v)
+			countryGroups[k] = copied
+		}
+	}
+	return countryGroups
 }
 
 // bidderConfigRuleSetBuilder builds a dynamic rule set based on the geoscope annotations in the

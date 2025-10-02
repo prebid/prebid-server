@@ -12,6 +12,16 @@
       "type": "boolean",
       "description": "If true, rules will be generated from the bidder config. If false, all rules must be defined in the rulesets."
     },
+    "setDefinitions": {
+      "type": "object",
+      "description": "A map of set names to arrays of strings. Used to define custom sets for use in rules.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
     "timestamp": {
       "type": "string",
       "description": "pending"
