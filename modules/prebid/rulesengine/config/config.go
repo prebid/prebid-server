@@ -16,11 +16,15 @@ const RulesEngineSchemaFile = "rules-engine-schema.json"
 const RulesEngineSchemaFilePath = "modules/prebid/rulesengine/config/" + RulesEngineSchemaFile
 
 type PbRulesEngine struct {
-	Enabled                       bool                `json:"enabled,omitempty"`
-	GenerateRulesFromBidderConfig bool                `json:"generateRulesFromBidderConfig,omitempty"`
-	SetDefinitions                map[string][]string `json:"setDefinitions,omitempty"`
-	Timestamp                     string              `json:"timestamp,omitempty"`
-	RuleSets                      []RuleSet           `json:"rulesets,omitempty"`
+	Enabled                       bool           `json:"enabled,omitempty"`
+	GenerateRulesFromBidderConfig bool           `json:"generateRulesFromBidderConfig,omitempty"`
+	SetDefinitions                SetDefinitions `json:"setDefinitions,omitempty"`
+	Timestamp                     string         `json:"timestamp,omitempty"`
+	RuleSets                      []RuleSet      `json:"rulesets,omitempty"`
+}
+
+type SetDefinitions struct {
+	CountryGroups map[string][]string `json:"countryGroups,omitempty"`
 }
 
 type RuleSet struct {

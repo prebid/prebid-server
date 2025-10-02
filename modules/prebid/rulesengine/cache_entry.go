@@ -52,7 +52,7 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage, geoscopes
 	}
 
 	if cfg.GenerateRulesFromBidderConfig {
-		bidderConfigRuleSet, err := buildBidderConfigRuleSet(geoscopes, cfg.SetDefinitions)
+		bidderConfigRuleSet, err := buildBidderConfigRuleSet(geoscopes, cfg.SetDefinitions.CountryGroups)
 		if err != nil {
 			return cacheEntry{}, err
 		}

@@ -14,13 +14,18 @@
     },
     "setDefinitions": {
       "type": "object",
-      "description": "A map of set names to arrays of strings. Used to define custom sets for use in rules.",
-      "additionalProperties": {
-        "type": "array",
-        "items": {
-          "type": "string"
+      "properties": {
+        "countryGroups": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "timestamp": {
       "type": "string",
