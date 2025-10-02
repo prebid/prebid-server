@@ -125,9 +125,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Build image
-        run: |
-          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
       - name: Login to docker Hub
         id: login
         if: contains(inputs.debug, 'false')
@@ -135,17 +132,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Publish to docker Hub
+      - name: Build image and publish to docker Hub
+        if: steps.login.outcome == 'success' && steps.login.conclusion == 'success'
         run: |
-          if [ ${{ steps.login.outcome }} -eq 'success' ] && [ ${{ steps.login.conclusion }} -eq 'success' ]; then
-            docker push docker.io/prebid/prebid-server:<an-image>
-            if [[ $? -eq 0 ]]; then
-              docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
-              if [[ $? -ne 0 ]]; then
-                  echo "docker push failed for "${{ needs.publish-tag.outputs.releaseTag }}
-                  exit 1
-              fi
-            fi
+          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
+          docker push docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }}
+          if [[ $? -ne 0 ]]; then
+            echo "docker push failed for "${{ needs.publish-tag.outputs.releaseTag }}
+            exit 1
           fi
 
   publish-release:
