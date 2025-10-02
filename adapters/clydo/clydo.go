@@ -160,7 +160,7 @@ func prepareHeaders(request *openrtb2.BidRequest) (http.Header, error) {
 		"Accept":            "application/json",
 		"Content-Type":      "application/json; charset=utf-8",
 	}
-	
+
 	allHeaders, err := appendDeviceHeaders(allHeaders, request)
 	if err != nil {
 		return nil, err
