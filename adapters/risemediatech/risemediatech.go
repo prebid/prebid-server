@@ -33,24 +33,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		if imp.Banner != nil {
-			if imp.Banner.W == nil || imp.Banner.H == nil || *imp.Banner.W == 0 || *imp.Banner.H == 0 {
-				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: invalid banner dimensions", imp.ID)})
-				continue
-			}
-		}
-
-		if imp.Video != nil {
-			if len(imp.Video.MIMEs) == 0 {
-				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: missing or empty video.mimes", imp.ID)})
-				continue
-			}
-			if imp.Video.W == nil || imp.Video.H == nil || *imp.Video.W == 0 || *imp.Video.H == 0 {
-				errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("impID %s: missing or invalid video width/height", imp.ID)})
-				continue
-			}
-		}
-
 		if impExt.BidFloor > 0 {
 			imp.BidFloor = impExt.BidFloor
 		}
@@ -66,13 +48,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, append(errs, &errortypes.BadInput{Message: "no valid impressions"})
 	}
 
-	modifiedRequest := *request
-	modifiedRequest.Imp = validImps
+	request.Imp = validImps
 	if setTestMode {
-		modifiedRequest.Test = 1
+		request.Test = 1
 	}
 
-	reqJSON, err := jsonutil.Marshal(modifiedRequest)
+	reqJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -80,8 +61,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers := http.Header{}
 	headers.Set("Content-Type", "application/json;charset=utf-8")
 	headers.Set("Accept", "application/json")
-	headers.Set("User-Agent", "prebid-server")
-	headers.Set("X-Prebid", "true")
 
 	return []*adapters.RequestData{
 		{
@@ -89,17 +68,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			Uri:     a.endpoint,
 			Body:    reqJSON,
 			Headers: headers,
-			ImpIDs:  extractImpIDs(validImps),
+			ImpIDs:  openrtb_ext.GetImpIDs(validImps),
 		},
 	}, errs
-}
-
-func extractImpIDs(imps []openrtb2.Imp) []string {
-	ids := make([]string, len(imps))
-	for i := range imps {
-		ids[i] = imps[i].ID
-	}
-	return ids
 }
 
 func parseImpExt(ext jsonutil.RawMessage) (openrtb_ext.ExtImpRiseMediaTech, error) {
