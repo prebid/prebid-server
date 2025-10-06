@@ -16,8 +16,8 @@ type CountryGroups = map[string][]string
 // defaultCountryGroups maps country group names to their member countries
 var defaultCountryGroups = CountryGroups{
 	"EEA": []string{
-		"AND", "AUT", "BEL", "BGR", "CHE", "CYP", "CZE", "DEU", "DNK", "EST", "ESP",
-		"FIN", "FRA", "GBR", "GRC", "HRV", "HUN", "IRL", "ISL", "ITA", "LIE",
+		"AUT", "BEL", "BGR", "CYP", "CZE", "DEU", "DNK", "EST", "ESP",
+		"FIN", "FRA", "GRC", "HRV", "HUN", "IRL", "ISL", "ITA", "LIE",
 		"LTU", "LUX", "LVA", "MLT", "NLD", "NOR", "POL", "PRT", "ROU",
 		"SWE", "SVN", "SVK",
 	},
@@ -50,13 +50,13 @@ func mergeCountryGroups(defaults, setDefinitions CountryGroups) CountryGroups {
 	for k, v := range defaults {
 		copied := make([]string, len(v))
 		copy(copied, v)
-		countryGroups[k] = copied
+		countryGroups[strings.ToUpper(k)] = copied
 	}
 	if setDefinitions != nil {
 		for k, v := range setDefinitions {
 			copied := make([]string, len(v))
 			copy(copied, v)
-			countryGroups[k] = copied
+			countryGroups[strings.ToUpper(k)] = copied
 		}
 	}
 	return countryGroups

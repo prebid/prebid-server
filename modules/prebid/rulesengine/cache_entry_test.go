@@ -420,7 +420,7 @@ func getValidJsonConfig() *json.RawMessage {
 	rv := json.RawMessage(`
   {
     "enabled": true,
-    "generateRulesFromBidderConfig": true,
+    "generate_rules_from_bidderconfig": true,
     "timestamp": "20250131 00:00:00",
     "rulesets": [
       {

@@ -17,14 +17,14 @@ const RulesEngineSchemaFilePath = "modules/prebid/rulesengine/config/" + RulesEn
 
 type PbRulesEngine struct {
 	Enabled                       bool           `json:"enabled,omitempty"`
-	GenerateRulesFromBidderConfig bool           `json:"generateRulesFromBidderConfig,omitempty"`
-	SetDefinitions                SetDefinitions `json:"setDefinitions,omitempty"`
+	GenerateRulesFromBidderConfig bool           `json:"generate_rules_from_bidderconfig,omitempty"`
+	SetDefinitions                SetDefinitions `json:"set_definitions,omitempty"`
 	Timestamp                     string         `json:"timestamp,omitempty"`
 	RuleSets                      []RuleSet      `json:"rulesets,omitempty"`
 }
 
 type SetDefinitions struct {
-	CountryGroups map[string][]string `json:"countryGroups,omitempty"`
+	CountryGroups map[string][]string `json:"country_groups,omitempty"`
 }
 
 type RuleSet struct {

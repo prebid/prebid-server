@@ -8,14 +8,14 @@
       "type": "boolean",
       "description": "pending"
     },
-    "generateRulesFromBidderConfig": {
+    "generate_rules_from_bidderconfig": {
       "type": "boolean",
       "description": "If true, rules will be generated from the bidder config. If false, all rules must be defined in the rulesets."
     },
-    "setDefinitions": {
+    "set_definitions": {
       "type": "object",
       "properties": {
-        "countryGroups": {
+        "country_groups": {
           "type": "object",
           "additionalProperties": {
             "type": "array",

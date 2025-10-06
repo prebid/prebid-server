@@ -353,7 +353,7 @@ func TestValidateConfig(t *testing.T) {
 			config: json.RawMessage(`
 			{
 				"enabled": true,
-				"setDefinitions": {
+				"set_definitions": {
 					"invalid": {
 						"EEA": ["FRA"]
 					}
@@ -372,15 +372,15 @@ func TestValidateConfig(t *testing.T) {
 				]
 			}
 			`),
-			expectedError: "[setDefinitions: Additional property invalid is not allowed] ",
+			expectedError: "[set_definitions: Additional property invalid is not allowed] ",
 		},
 		{
 			name: "invalid-set-definitions-valid-property-invalid-value",
 			config: json.RawMessage(`
 			{
 				"enabled": true,
-				"setDefinitions": {
-					"countryGroups": {
+				"set_definitions": {
+					"country_groups": {
 						"EEA": [123]
 					}
 				},
@@ -398,7 +398,7 @@ func TestValidateConfig(t *testing.T) {
 				]
 			}
 			`),
-			expectedError: "[setDefinitions.countryGroups.EEA.0: Invalid type. Expected: string, given: integer] ",
+			expectedError: "[set_definitions.country_groups.EEA.0: Invalid type. Expected: string, given: integer] ",
 		},
 		{
 			name:          "valid-config",
@@ -530,9 +530,9 @@ func getValidJsonConfig() json.RawMessage {
 	return json.RawMessage(`
   {
     "enabled": true,
-    "generateRulesFromBidderConfig": true,
-	"setDefinitions": {
-		"countryGroups": {
+    "generate_rules_from_bidderconfig": true,
+	"set_definitions": {
+		"country_groups": {
 			"CUSTOM_GROUP": ["USA", "CAN"]
 		}
 	},
