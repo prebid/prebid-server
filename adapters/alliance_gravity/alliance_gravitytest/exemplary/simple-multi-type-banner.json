@@ -1,0 +1,153 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "id": "site-id",
+      "page": "criteo.com"
+    },
+    "device": {
+      "os": "android",
+      "ip": "1.2.3.4",
+      "ua": "random user agent"
+    },
+    "imp": [
+      {
+        "id": "imp-id-123",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 300,
+          "h": 250
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "srid": "12341234"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://endpoint",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Referer": [
+            "criteo.com"
+          ],
+          "User-Agent": [
+            "random user agent"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "id": "site-id",
+            "page": "criteo.com"
+          },
+          "device": {
+            "os": "android",
+            "ip": "1.2.3.4",
+            "ua": "random user agent"
+          },
+          "imp": [
+            {
+              "id": "imp-id-123",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 300,
+                "h": 250
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {},
+                "prebid": {
+                  "storedrequest": {
+                    "id": "12341234"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["imp-id-123"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "currency": "EUR",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-slot-id",
+                  "impid": "imp-id-123",
+                  "price": 0.1,
+                  "crid": "creative-123",
+                  "adm": "<h1>test ad</h1>",
+                  "h": 250,
+                  "w": 300,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-slot-id",
+            "impid": "imp-id-123",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "<h1>test ad</h1>",
+            "h": 250,
+            "w": 300,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+       "banner": {
+          "w": 728, 
+          "h": 90
+        },
+        "ext": {
+          "bidder": {
+            "srid": "1234"
+          }
+        }
+      }
+    ],
+    "site": {}
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://endpoint",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "w": 728, 
+                "h": 90
+              },
+              "ext": {
+                "bidder": {},
+                "prebid": {
+                  "storedrequest": {
+                    "id": "1234"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {}
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "testalias",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-banner",
+                "crid": "crid_10",
+                "h": 90,
+                "w": 728,
+                "ext": {
+                }
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
