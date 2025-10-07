@@ -59,6 +59,9 @@
           ],
           "X-Forwarded-For": [
             "123.123.123.123"
+          ],
+          "Cookie": [
+            "uids=awesome-user"
           ]
         },
         "uri": "http://endpoint",

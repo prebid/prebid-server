@@ -51,6 +51,9 @@
           ],
           "X-Forwarded-For": [
             "1.2.3.4"
+          ],
+          "Cookie": [
+            "uids=grvt-id"
           ]
         },
         "body": {

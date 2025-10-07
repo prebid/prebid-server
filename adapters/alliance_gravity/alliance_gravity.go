@@ -97,6 +97,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
+	if request.User != nil && request.User.BuyerUID != "" {
+		headers.Add("Cookie", "uids="+request.User.BuyerUID)
+	}
+
 	requestData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
