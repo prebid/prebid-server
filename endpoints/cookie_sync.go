@@ -333,11 +333,10 @@ func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cooki
 	return request
 }
 
-func (c *cookieSyncEndpoint) findPriorityGroups(cookieSyncConfig config.CookieSync) [][]string {
+func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.CookieSync) [][]string {
 	// Account-level config takes precedence over global config, which will be deprecated in the future
-	// Use the existance of the account level boolean to determine if account-level config is present
-	if cookieSyncConfig.DefaultCoopSync != nil {
-		return cookieSyncConfig.PriorityGroups
+	if accountCookieSyncConfig.DefaultCoopSync != nil {
+		return accountCookieSyncConfig.PriorityGroups
 	}
 	return c.config.UserSync.PriorityGroups
 }
