@@ -1,0 +1,391 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>waardex: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/waardex/waardex.go (80.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package waardex
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "strconv"
+        "text/template"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/macros"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type waardexAdapter struct {
+        EndpointTemplate *template.Template
+}
+
+// MakeRequests prepares request information for prebid-server core
+func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        errs := make([]error, 0, len(request.Imp))
+        if len(request.Imp) == 0 </span><span class="cov0" title="0">{
+                errs = append(errs, newBadInputError("No impression in the bid request"))
+                return nil, errs
+        }</span>
+        <span class="cov8" title="1">imps, impExts, err := getImpressionsInfo(request.Imp)
+        if len(imps) == 0 </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">errs = append(errs, err...)
+
+        pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
+        if len(dispErrors) &gt; 0 </span><span class="cov0" title="0">{
+                errs = append(errs, dispErrors...)
+        }</span>
+        <span class="cov8" title="1">if len(pub2impressions) == 0 </span><span class="cov0" title="0">{
+                return nil, errs
+        }</span>
+        <span class="cov8" title="1">result := make([]*adapters.RequestData, 0, len(pub2impressions))
+        for k, imps := range pub2impressions </span><span class="cov8" title="1">{
+                bidRequest, err := adapter.buildAdapterRequest(request, &amp;k, imps)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span> else<span class="cov8" title="1"> {
+                        result = append(result, bidRequest)
+                }</span>
+        }
+        <span class="cov8" title="1">return result, errs</span>
+}
+
+// getImpressionsInfo checks each impression for validity and returns a copy for each impression with corresponding exts
+func getImpressionsInfo(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext.ExtImpWaardex, []error) <span class="cov8" title="1">{
+        impsCount := len(imps)
+        errors := make([]error, 0, impsCount)
+        resImps := make([]openrtb2.Imp, 0, impsCount)
+        resImpExts := make([]openrtb_ext.ExtImpWaardex, 0, impsCount)
+
+        for _, imp := range imps </span><span class="cov8" title="1">{
+                impExt, err := getImpressionExt(&amp;imp)
+                if err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">if err := validateImpression(&amp;imp, impExt); err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">resImps = append(resImps, imp)
+                resImpExts = append(resImpExts, *impExt)</span>
+        }
+        <span class="cov8" title="1">return resImps, resImpExts, errors</span>
+}
+
+func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpWaardex) error <span class="cov8" title="1">{
+        if impExt.ZoneId &lt; 1 </span><span class="cov0" title="0">{
+                return newBadInputError(fmt.Sprintf("Invalid zoneId value: %d. Ignoring imp id=%s", impExt.ZoneId, imp.ID))
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Group impressions by Waardex-specific parameter `zoneId`
+func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaardex) (map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp, []error) <span class="cov8" title="1">{
+        res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
+        errors := make([]error, 0)
+        for idx := range imps </span><span class="cov8" title="1">{
+                imp := imps[idx]
+                imp.Ext = nil
+                impExt := impsExt[idx]
+                if res[impExt] == nil </span><span class="cov8" title="1">{
+                        res[impExt] = make([]openrtb2.Imp, 0)
+                }</span>
+                <span class="cov8" title="1">if isMultiFormatImp(&amp;imp) </span><span class="cov8" title="1">{
+                        splImps := splitMultiFormatImp(&amp;imp)
+                        res[impExt] = append(res[impExt], splImps...)
+                }</span> else<span class="cov8" title="1"> {
+                        res[impExt] = append(res[impExt], imp)
+                }</span>
+        }
+        <span class="cov8" title="1">return res, errors</span>
+}
+
+func isMultiFormatImp(imp *openrtb2.Imp) bool <span class="cov8" title="1">{
+        count := 0
+        if imp.Video != nil </span><span class="cov8" title="1">{
+                count++
+        }</span>
+        <span class="cov8" title="1">if imp.Audio != nil </span><span class="cov0" title="0">{
+                count++
+        }</span>
+        <span class="cov8" title="1">if imp.Banner != nil </span><span class="cov8" title="1">{
+                count++
+        }</span>
+        <span class="cov8" title="1">if imp.Native != nil </span><span class="cov0" title="0">{
+                count++
+        }</span>
+        <span class="cov8" title="1">return count &gt; 1</span>
+}
+
+func splitMultiFormatImp(imp *openrtb2.Imp) []openrtb2.Imp <span class="cov8" title="1">{
+        splitImps := make([]openrtb2.Imp, 0, 4)
+        if imp.Banner != nil </span><span class="cov8" title="1">{
+                impCopy := *imp
+                impCopy.Video = nil
+                impCopy.Native = nil
+                impCopy.Audio = nil
+                splitImps = append(splitImps, impCopy)
+        }</span>
+        <span class="cov8" title="1">if imp.Video != nil </span><span class="cov8" title="1">{
+                impCopy := *imp
+                impCopy.Banner = nil
+                impCopy.Native = nil
+                impCopy.Audio = nil
+                splitImps = append(splitImps, impCopy)
+        }</span>
+        <span class="cov8" title="1">return splitImps</span>
+}
+
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpWaardex, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }
+        }</span>
+        <span class="cov8" title="1">var waardexExt openrtb_ext.ExtImpWaardex
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;waardexExt); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: err.Error(),
+                }
+        }</span>
+        <span class="cov8" title="1">return &amp;waardexExt, nil</span>
+}
+
+func (adapter *waardexAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpWaardex, imps []openrtb2.Imp) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        newBidRequest := createBidRequest(prebidBidRequest, params, imps)
+        reqJSON, err := json.Marshal(newBidRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        headers.Add("x-openrtb-version", "2.5")
+
+        url, err := adapter.buildEndpointURL(params)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     url,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil</span>
+}
+
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpWaardex, imps []openrtb2.Imp) *openrtb2.BidRequest <span class="cov8" title="1">{
+        bidRequest := *prebidBidRequest
+        bidRequest.Imp = imps
+        if bidRequest.Site != nil </span><span class="cov8" title="1">{
+                // Need to copy Site as Request is a shallow copy
+                siteCopy := *bidRequest.Site
+                bidRequest.Site = &amp;siteCopy
+                bidRequest.Site.Publisher = nil
+        }</span>
+        <span class="cov8" title="1">if bidRequest.App != nil </span><span class="cov8" title="1">{
+                // Need to copy App as Request is a shallow copy
+                appCopy := *bidRequest.App
+                bidRequest.App = &amp;appCopy
+                bidRequest.App.Publisher = nil
+        }</span>
+        <span class="cov8" title="1">return &amp;bidRequest</span>
+}
+
+// Builds endpoint url based on adapter-specific pub settings from imp.ext
+func (adapter *waardexAdapter) buildEndpointURL(params *openrtb_ext.ExtImpWaardex) (string, error) <span class="cov8" title="1">{
+        endpointParams := macros.EndpointTemplateParams{ZoneID: strconv.Itoa(params.ZoneId)}
+        return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
+}</span>
+
+// MakeBids translates Waardex bid response to prebid-server specific format
+func (adapter *waardexAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return nil, []error{
+                        newBadServerResponseError(fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)),
+                }
+        }</span>
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{
+                        newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if len(bidResp.SeatBid) != 1 </span><span class="cov0" title="0">{
+                return nil, []error{
+                        newBadServerResponseError(fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))),
+                }
+        }</span>
+
+        <span class="cov8" title="1">seatBid := bidResp.SeatBid[0]
+        bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+        bidResponse.Currency = bidResp.Cur
+        for i := 0; i &lt; len(seatBid.Bid); i++ </span><span class="cov8" title="1">{
+                bid := seatBid.Bid[i]
+                bidType, err := getMediaTypeForBid(&amp;bid)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, []error{err}
+                }</span>
+                <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                        Bid:     &amp;bid,
+                        BidType: bidType,
+                })</span>
+        }
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+// getMediaTypeForImp figures out which media type this bid is for
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupAudio:<span class="cov0" title="0">
+                return openrtb_ext.BidTypeAudio, nil</span>
+        case openrtb2.MarkupNative:<span class="cov0" title="0">
+                return openrtb_ext.BidTypeNative, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        default:<span class="cov0" title="0">
+                return "", &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Unsupported MType %d", bid.MType),
+                }</span>
+        }
+}
+
+func newBadInputError(message string) error <span class="cov0" title="0">{
+        return &amp;errortypes.BadInput{
+                Message: message,
+        }
+}</span>
+
+func newBadServerResponseError(message string) error <span class="cov0" title="0">{
+        return &amp;errortypes.BadServerResponse{
+                Message: message,
+        }
+}</span>
+
+// Builder builds a new instance of the waardex adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">bidder := &amp;waardexAdapter{
+                EndpointTemplate: urlTemplate,
+        }
+        return bidder, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
