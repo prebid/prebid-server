@@ -97,8 +97,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unable to unmarshal ext for bid test-bid-123",
-      "comparison": "literal"
+      "value": "^unable to unmarshal ext for bid:",
+      "comparison": "regex"
     },
     {
       "value": "no valid bids found in response",

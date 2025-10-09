@@ -20,7 +20,7 @@ type adapter struct {
 type requestExtAdapter struct {
 	Goldbach requestExtGoldbach `json:"goldbach"`
 
-	*openrtb_ext.ExtRequest `json:",inline,omitempty"`
+	*openrtb_ext.ExtRequest `json:"inline,omitempty"`
 }
 
 type requestExtGoldbach struct {
@@ -33,8 +33,8 @@ type impExtAdapter struct {
 }
 
 type impExtGoldbachOutgoing struct {
-	Targetings map[string]jsonutil.ItemOrItemArray[string] `json:"targetings,omitempty"`
-	SlotID     string                                      `json:"slotId"`
+	Targetings map[string][]string `json:"targetings,omitempty"`
+	SlotID     string              `json:"slotId"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -55,7 +55,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var requestExt requestExtAdapter
 	if request.Ext != nil {
 		if err := jsonutil.Unmarshal(request.Ext, &requestExt); err != nil {
-			errs = append(errs, fmt.Errorf("unable to unmarshal request.ext: %v", err))
+			errs = append(errs, &errortypes.FailedToUnmarshal{Message: fmt.Errorf("unable to unmarshal request.ext: %w", err).Error()})
 		}
 	}
 
@@ -72,7 +72,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	if len(publisherImps) == 0 {
-		errs = append(errs, errors.New("no publisher ID found in impressions"))
+		errs = append(errs, &errortypes.BadInput{Message: "no publisher ID found in impressions"})
 	}
 
 	// create a separate request for each publisher
@@ -85,7 +85,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		resJSON, err := jsonutil.Marshal(&requestPublisher)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("unable to marshal request: %v", err))
+			errs = append(errs, &errortypes.FailedToMarshal{Message: fmt.Errorf("unable to marshal request: %w", err).Error()})
 			continue
 		}
 
@@ -121,7 +121,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	var resp openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(httpRes.Body, &resp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unable to unmarshal response: %s", err),
+			Message: fmt.Errorf("unable to unmarshal response: %w", err).Error(),
 		}}
 	}
 
@@ -160,15 +160,20 @@ func buildImp(imp openrtb2.Imp) (string, openrtb2.Imp, error) {
 		return "", openrtb2.Imp{}, err
 	}
 
+	targetings := make(map[string][]string)
+	for key, value := range impExt.CustomTargeting {
+		targetings[key] = value
+	}
+
 	imp.Ext, err = jsonutil.Marshal(&impExtAdapter{
 		Goldbach: impExtGoldbachOutgoing{
-			Targetings: impExt.CustomTargeting,
+			Targetings: targetings,
 			SlotID:     impExt.SlotID,
 		},
 	})
 
 	if err != nil {
-		return "", openrtb2.Imp{}, fmt.Errorf("unable to marshal imp.ext: %v", err)
+		return "", openrtb2.Imp{}, &errortypes.FailedToMarshal{Message: fmt.Errorf("unable to marshal imp.ext: %w", err).Error()}
 	}
 
 	return impExt.PublisherID, imp, nil
@@ -178,14 +183,14 @@ func extractImpExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtGoldbach, error) {
 	var extImpBidder adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &extImpBidder); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "unable to unmarshal imp.ext",
+			Message: fmt.Errorf("unable to unmarshal imp.ext: %w", err).Error(),
 		}
 	}
 
 	var goldbachExt openrtb_ext.ImpExtGoldbach
 	if err := jsonutil.Unmarshal(extImpBidder.Bidder, &goldbachExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "unable to unmarshal imp.ext.bidder",
+			Message: fmt.Errorf("unable to unmarshal imp.ext.bidder: %w", err).Error(),
 		}
 	}
 
@@ -210,7 +215,7 @@ func buildRequest(request openrtb2.BidRequest, publisherID string, imps *[]openr
 		ExtRequest: requestExt.ExtRequest,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to marshal request.ext: %v", err)
+		return nil, &errortypes.FailedToMarshal{Message: fmt.Errorf("unable to marshal request.ext: %w", err).Error()}
 	}
 
 	request.Ext = requestPublisherExt
@@ -221,11 +226,11 @@ func buildRequest(request openrtb2.BidRequest, publisherID string, imps *[]openr
 func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	var extBid openrtb_ext.ExtBid
 	if err := jsonutil.Unmarshal(bid.Ext, &extBid); err != nil {
-		return "", fmt.Errorf("unable to unmarshal ext for bid %v", bid.ID)
+		return "", &errortypes.FailedToUnmarshal{Message: fmt.Errorf("unable to unmarshal ext for bid: %w", err).Error()}
 	}
 
 	if extBid.Prebid == nil || len(extBid.Prebid.Type) == 0 {
-		return "", fmt.Errorf("no media type for bid %v", bid.ID)
+		return "", &errortypes.BadInput{Message: fmt.Sprintf("no media type for bid %v", bid.ID)}
 	}
 
 	return extBid.Prebid.Type, nil

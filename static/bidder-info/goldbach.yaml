@@ -1,4 +1,5 @@
 endpoint: "https://goldlayer-api.prod.gbads.net/openrtb/2.5/auction"
+endpointCompression: true
 maintainer:
   email: "engineering@goldbach.com"
 gvlVendorID: 580

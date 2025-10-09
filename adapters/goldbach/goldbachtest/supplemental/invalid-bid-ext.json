@@ -22,8 +22,8 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "unable to unmarshal imp.ext",
-      "comparison": "literal"
+      "value": "^unable to unmarshal imp.ext:",
+      "comparison": "regex"
     },
     {
       "value": "no publisher ID found in impressions",
