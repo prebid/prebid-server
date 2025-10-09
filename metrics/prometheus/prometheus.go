@@ -28,6 +28,7 @@ type Metrics struct {
 	impressions                  *prometheus.CounterVec
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
+	requestsSize                 *prometheus.HistogramVec
 	debugRequests                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
@@ -53,6 +54,7 @@ type Metrics struct {
 	privacyLMT                   *prometheus.CounterVec
 	privacyTCF                   *prometheus.CounterVec
 	storedResponses              prometheus.Counter
+	gvlListRequests              prometheus.Counter
 	storedResponsesFetchTimer    *prometheus.HistogramVec
 	storedResponsesErrors        *prometheus.CounterVec
 	adsCertRequests              *prometheus.CounterVec
@@ -77,6 +79,8 @@ type Metrics struct {
 	adapterBidResponseSecureMarkupError   *prometheus.CounterVec
 	adapterBidResponseSecureMarkupWarn    *prometheus.CounterVec
 	adapterThrottled                      *prometheus.CounterVec
+	adapterConnectionDialErrors           *prometheus.CounterVec
+	adapterConnectionDialTime             *prometheus.HistogramVec
 
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
@@ -124,6 +128,7 @@ const (
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
+	requestEndpointLabel = "request_size"
 	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
@@ -168,6 +173,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
 	overheadTimeBuckets := []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
+	requestSizeBuckets := []float64{100, 500, 750, 1000, 2000, 4000, 7000, 10000, 15000, 20000, 50000, 75000}
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
@@ -215,6 +221,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"requests",
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
+
+	metrics.requestsSize = newHistogramVec(cfg, reg,
+		"request_size_bytes",
+		"Count that keeps track of incoming request size in bytes labeled by endpoint.",
+		[]string{requestEndpointLabel}, requestSizeBuckets)
 
 	metrics.debugRequests = newCounterWithoutLabels(cfg, reg,
 		"debug_requests",
@@ -364,6 +375,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"stored_responses",
 		"Count of total requests to Prebid Server that have stored responses")
 
+	metrics.gvlListRequests = newCounterWithoutLabels(cfg, reg,
+		"gvl_requests",
+		"Count number of times GVL list is fetched")
+
 	metrics.adapterBids = newCounter(cfg, reg,
 		"adapter_bids",
 		"Count of bids labeled by adapter and markup delivery type (adm or nurl).",
@@ -406,6 +421,19 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			"Seconds from when the connection was requested until it is either created or reused",
 			[]string{adapterLabel},
 			standardTimeBuckets)
+
+		if !metrics.metricsDisabled.AdapterConnectionDialMetrics {
+			metrics.adapterConnectionDialErrors = newCounter(cfg, reg,
+				"adapter_connection_dial_errors",
+				"Count when a connection dial returns an error.",
+				[]string{adapterLabel})
+
+			metrics.adapterConnectionDialTime = newHistogramVec(cfg, reg,
+				"adapter_connection_dial_time",
+				"Seconds adapter bidder connection dial lasted",
+				[]string{adapterLabel},
+				append(prometheus.DefBuckets, 15, 30))
+		}
 	}
 
 	metrics.adapterBidResponseValidationSizeError = newCounter(cfg, reg,
@@ -667,6 +695,13 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		requestStatusLabel: string(labels.RequestStatus),
 	}).Inc()
 
+	if labels.RequestSize > 0 && labels.RType != metrics.ReqTypeAMP {
+		endpoint := metrics.GetEndpointFromRequestType(labels.RType)
+		m.requestsSize.With(prometheus.Labels{
+			requestEndpointLabel: string(endpoint),
+		}).Observe(float64(labels.RequestSize))
+	}
+
 	if labels.CookieFlag == metrics.CookieFlagNo {
 		m.requestsWithoutCookie.With(prometheus.Labels{
 			requestTypeLabel: string(labels.RType),
@@ -698,6 +733,10 @@ func (m *Metrics) RecordStoredResponse(pubId string) {
 			accountLabel: pubId,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordGvlListRequest() {
+	m.gvlListRequests.Inc()
 }
 
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
@@ -1100,4 +1139,16 @@ func (m *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	m.adapterThrottled.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Inc()
+}
+
+func (m *Metrics) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+	m.adapterConnectionDialErrors.With(prometheus.Labels{
+		adapterLabel: strings.ToLower(string(adapterName)),
+	}).Inc()
+}
+
+func (m *Metrics) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	m.adapterConnectionDialTime.With(prometheus.Labels{
+		adapterLabel: strings.ToLower(string(adapterName)),
+	}).Observe(dialStartTime.Seconds())
 }
