@@ -1,6 +1,10 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "app": {
+      "bundle": "com.example.app",
+      "name": "Test App"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -12,28 +16,13 @@
             }
           ]
         },
-        "bidfloor": 1.00,
-        "bidfloorcur": "EUR",
         "ext": {
           "bidder": {
-            "publisherId": "12345",
-            "bidfloor": 2.00
+            "publisherId": "app-publisher-123"
           }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "currency": {
-          "rates": {
-            "EUR": {
-              "USD": 0.05
-            }
-          },
-          "usepbsrates": false
-        }
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -44,6 +33,10 @@
           "cur": [
             "USD"
           ],
+          "app": {
+            "bundle": "com.example.app",
+            "name": "Test App"
+          },
           "imp": [
             {
               "banner": {
@@ -54,12 +47,9 @@
                   }
                 ]
               },
-              "bidfloor": 0.05,
-              "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
-                  "publisherId": "12345",
-                  "bidfloor": 2
+                  "publisherId": "app-publisher-123"
                 }
               },
               "id": "test-imp-id"
@@ -67,23 +57,11 @@
           ],
           "site": {
             "publisher": {
-              "id": "12345"
-            }
-          },
-          "ext": {
-            "prebid": {
-              "currency": {
-                "rates": {
-                  "EUR": {
-                    "USD": 0.05
-                  }
-                },
-                "usepbsrates": false
-              }
+              "id": "app-publisher-123"
             }
           }
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

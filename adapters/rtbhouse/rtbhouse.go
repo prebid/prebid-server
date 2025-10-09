@@ -45,14 +45,23 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 	reqCopy := *openRTBRequest
 	reqCopy.Imp = []openrtb2.Imp{}
+
+	var publisherId string
+
 	for _, imp := range openRTBRequest.Imp {
+		rtbhouseExt, err := getImpressionExt(imp)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		// Extract publisherId from the first impression that has one
+		if publisherId == "" && rtbhouseExt.PublisherId != "" {
+			publisherId = rtbhouseExt.PublisherId
+		}
+
 		var bidFloorCur = imp.BidFloorCur
 		var bidFloor = imp.BidFloor
 		if bidFloorCur == "" && bidFloor == 0 {
-			rtbhouseExt, err := getImpressionExt(imp)
-			if err != nil {
-				return nil, []error{err}
-			}
 			if rtbhouseExt.BidFloor > 0 {
 				bidFloor = rtbhouseExt.BidFloor
 				bidFloorCur = BidderCurrency
@@ -90,9 +99,31 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		}
 		imp.Ext = newImpExt
 
+		// Remove PMP from impression
+		imp.PMP = nil
+
 		// Set the CUR of bid to BIDDER_CURRENCY after converting all floors
 		reqCopy.Cur = []string{BidderCurrency}
 		reqCopy.Imp = append(reqCopy.Imp, imp)
+	}
+
+	// Set publisher ID in site.publisher.id if we found one
+	if publisherId != "" {
+		if reqCopy.Site == nil {
+			reqCopy.Site = &openrtb2.Site{}
+		} else {
+			// Create a copy of the site to avoid modifying the original request
+			siteCopy := *reqCopy.Site
+			reqCopy.Site = &siteCopy
+		}
+		if reqCopy.Site.Publisher == nil {
+			reqCopy.Site.Publisher = &openrtb2.Publisher{}
+		} else {
+			// Create a copy of the publisher to avoid modifying the original request
+			publisherCopy := *reqCopy.Site.Publisher
+			reqCopy.Site.Publisher = &publisherCopy
+		}
+		reqCopy.Site.Publisher.ID = publisherId
 	}
 
 	openRTBRequestJSON, err := json.Marshal(reqCopy)

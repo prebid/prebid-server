@@ -12,28 +12,22 @@
             }
           ]
         },
-        "bidfloor": 1.00,
-        "bidfloorcur": "EUR",
+        "pmp": {
+          "deals": [
+            {
+              "id": "deal-id-1",
+              "bidfloor": 5.00,
+              "bidfloorcur": "USD"
+            }
+          ]
+        },
         "ext": {
           "bidder": {
-            "publisherId": "12345",
-            "bidfloor": 2.00
+            "publisherId": "12345"
           }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "currency": {
-          "rates": {
-            "EUR": {
-              "USD": 0.05
-            }
-          },
-          "usepbsrates": false
-        }
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -54,12 +48,9 @@
                   }
                 ]
               },
-              "bidfloor": 0.05,
-              "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
-                  "publisherId": "12345",
-                  "bidfloor": 2
+                  "publisherId": "12345"
                 }
               },
               "id": "test-imp-id"
@@ -68,18 +59,6 @@
           "site": {
             "publisher": {
               "id": "12345"
-            }
-          },
-          "ext": {
-            "prebid": {
-              "currency": {
-                "rates": {
-                  "EUR": {
-                    "USD": 0.05
-                  }
-                },
-                "usepbsrates": false
-              }
             }
           }
         },
