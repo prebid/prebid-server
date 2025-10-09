@@ -58,9 +58,10 @@ type Account struct {
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
 type CookieSync struct {
-	DefaultLimit    *int  `mapstructure:"default_limit" json:"default_limit"`
-	MaxLimit        *int  `mapstructure:"max_limit" json:"max_limit"`
-	DefaultCoopSync *bool `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+	DefaultLimit    *int       `mapstructure:"default_limit" json:"default_limit"`
+	MaxLimit        *int       `mapstructure:"max_limit" json:"max_limit"`
+	DefaultCoopSync *bool      `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+	PriorityGroups  [][]string `mapstructure:"priority_groups" json:"priority_groups"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration
