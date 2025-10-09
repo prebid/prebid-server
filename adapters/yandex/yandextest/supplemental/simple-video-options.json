@@ -29,7 +29,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://bs-metadsp.yandex.ru/prebid/123?imp-id=456&ssp-id=10500&target-ref=example.com",
+                "uri": "https://bs-metadsp.yandex.ru/prebid/123?imp-id=456&ssp-id=10500&target-ref=http%3A%2F%2Fexample.com",
                 "headers": {
                     "Accept": ["application/json"],
                     "Accept-Language": ["en"],

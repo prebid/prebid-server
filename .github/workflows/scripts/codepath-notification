@@ -18,3 +18,4 @@ openx: prebid@openx.com
 adapters/ix|imp_ix|ix.json|ix.yaml: pdu-supply-prebid@indexexchange.com
 medianet: prebid@media.net
 gumgum: prebid@gumgum.com
+kargo: kraken@kargo.com
