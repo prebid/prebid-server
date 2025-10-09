@@ -111,10 +111,11 @@ func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		Client:     client,
 		me:         me,
 		config: bidderAdapterConfig{
-			Debug:               cfg.Debug,
-			DisableConnMetrics:  cfg.Metrics.Disabled.AdapterConnectionMetrics,
-			DebugInfo:           config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
-			EndpointCompression: endpointCompression,
+			Debug:                  cfg.Debug,
+			DisableConnMetrics:     cfg.Metrics.Disabled.AdapterConnectionMetrics,
+			DisableConnDialMetrics: cfg.Metrics.Disabled.AdapterConnectionDialMetrics,
+			DebugInfo:              config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
+			EndpointCompression:    endpointCompression,
 			ThrottleConfig: bidderAdapterThrottleConfig{
 				enabled:                 cfg.Client.Throttle.EnableThrottling,
 				simulateOnly:            cfg.Client.Throttle.SimulateThrottlingOnly,
@@ -152,11 +153,12 @@ type BidderAdapter struct {
 }
 
 type bidderAdapterConfig struct {
-	Debug               config.Debug
-	DisableConnMetrics  bool
-	DebugInfo           config.DebugInfo
-	EndpointCompression string
-	ThrottleConfig      bidderAdapterThrottleConfig
+	Debug                  config.Debug
+	DisableConnMetrics     bool
+	DisableConnDialMetrics bool
+	DebugInfo              config.DebugInfo
+	EndpointCompression    string
+	ThrottleConfig         bidderAdapterThrottleConfig
 }
 
 type bidderAdapterThrottleConfig struct {
@@ -596,7 +598,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	// If adapter connection metrics are not disabled, add the client trace
 	// to get complete connection info into our metrics
 	if !bidder.config.DisableConnMetrics {
-		ctx = bidder.addClientTrace(ctx)
+		ctx = bidder.addClientTrace(ctx, bidder.config.DisableConnDialMetrics)
 	}
 	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(bidderRequestStartTime))
 
@@ -728,14 +730,13 @@ type httpCallInfo struct {
 // This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // the time from the connection request, to the connection creation.
-func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context {
-	var connStart, dnsStart, tlsStart time.Time
+func (bidder *BidderAdapter) addClientTrace(ctx context.Context, dialMetricsDisabled bool) context.Context {
+	var connStart, dnsStart, tlsStart, dialStart time.Time
 
 	trace := &httptrace.ClientTrace{
 		// GetConn is called before a connection is created or retrieved from an idle pool
 		GetConn: func(hostPort string) {
 			connStart = time.Now()
-			bidder.me.RecordConnectionWant()
 		},
 		// GotConn is called after a successful connection is obtained
 		GotConn: func(info httptrace.GotConnInfo) {
@@ -753,7 +754,6 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 			}
 
 			bidder.me.RecordAdapterConnections(bidder.BidderName, info.Reused, connWaitTime)
-			bidder.me.RecordConnectionGot()
 		},
 		// DNSStart is called when a DNS lookup begins.
 		DNSStart: func(info httptrace.DNSStartInfo) {
@@ -776,6 +776,26 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
 		},
 	}
+
+	if !dialMetricsDisabled {
+		// ConnectStart is called when a new connection's Dial begins.
+		trace.ConnectStart = func(network, addr string) {
+			dialStart = time.Now()
+		}
+
+		// ConnectDone is called when a new connection's Dial completes.
+		// The provided err indicates whether the connection completed
+		// successfully.
+		trace.ConnectDone = func(network, addr string, err error) {
+			dialStartTime := time.Since(dialStart)
+			bidder.me.RecordAdapterConnectionDialTime(bidder.BidderName, dialStartTime)
+
+			if err != nil {
+				bidder.me.RecordAdapterConnectionDialError(bidder.BidderName)
+			}
+		}
+	}
+
 	return httptrace.WithClientTrace(ctx, trace)
 }
 

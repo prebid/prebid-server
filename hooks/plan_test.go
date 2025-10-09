@@ -982,7 +982,7 @@ type fakeExitpointHook struct{}
 func (f fakeExitpointHook) HandleExitpointHook(
 	_ context.Context,
 	_ hookstage.ModuleInvocationContext,
-	_ hookstage.ExitpointPaylaod,
-) (hookstage.HookResult[hookstage.ExitpointPaylaod], error) {
-	return hookstage.HookResult[hookstage.ExitpointPaylaod]{}, nil
+	_ hookstage.ExitpointPayload,
+) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	return hookstage.HookResult[hookstage.ExitpointPayload]{}, nil
 }
