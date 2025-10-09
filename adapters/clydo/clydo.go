@@ -33,8 +33,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var requests []*adapters.RequestData
 	var errors []error
 
+	impIds, err := prepareImpIds(request)
+	if err != nil {
+		return nil, append(errors, err)
+	}
+
+	headers, err := prepareHeaders(request)
+	if err != nil {
+		return nil, append(errors, err)
+	}
+
 	for _, imp := range request.Imp {
-		reqData, err := a.prepareRequest(request, imp)
+		reqData, err := a.prepareRequest(request, imp, impIds, headers)
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -72,7 +82,7 @@ func (a *adapter) MakeBids(
 	return bidResponse, errors
 }
 
-func (a *adapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, impIds []string, headers http.Header) (*adapters.RequestData, error) {
 	params, err := prepareExtParams(imp)
 	if err != nil {
 		return nil, err
@@ -82,15 +92,6 @@ func (a *adapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp)
 		return nil, err
 	}
 	body, err := prepareBody(request, imp)
-	if err != nil {
-		return nil, err
-	}
-	headers, err := prepareHeaders(request)
-	if err != nil {
-		return nil, err
-	}
-
-	impIds, err := prepareImpIds(request)
 	if err != nil {
 		return nil, err
 	}
@@ -143,8 +144,6 @@ func (a *adapter) prepareEndpoint(params *openrtb_ext.ImpExtClydo) (string, erro
 func prepareBody(request *openrtb2.BidRequest, imp openrtb2.Imp) ([]byte, error) {
 	reqCopy := *request
 	reqCopy.Imp = []openrtb2.Imp{imp}
-
-	reqCopy.Imp[0].Ext = imp.Ext
 
 	body, err := jsonutil.Marshal(&reqCopy)
 	if err != nil {
