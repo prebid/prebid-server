@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>goldbach: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/goldbach/goldbach.go (93.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package goldbach
+
+import (
+        "errors"
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+type requestExtAdapter struct {
+        Goldbach requestExtGoldbach `json:"goldbach"`
+
+        *openrtb_ext.ExtRequest `json:"inline,omitempty"`
+}
+
+type requestExtGoldbach struct {
+        PublisherID  string `json:"publisherId"`
+        MockResponse *bool  `json:"mockResponse,omitempty"`
+}
+
+type impExtAdapter struct {
+        Goldbach impExtGoldbachOutgoing `json:"goldbach"`
+}
+
+type impExtGoldbachOutgoing struct {
+        Targetings map[string][]string `json:"targetings,omitempty"`
+        SlotID     string              `json:"slotId"`
+}
+
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        if config.Endpoint == "" </span><span class="cov8" title="1">{
+                return nil, errors.New("missing endpoint adapter parameter")
+        }</span>
+
+        <span class="cov8" title="1">bidder := &amp;adapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil</span>
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var reqs []*adapters.RequestData
+        var errs []error
+
+        var requestExt requestExtAdapter
+        if request.Ext != nil </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(request.Ext, &amp;requestExt); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, &amp;errortypes.FailedToUnmarshal{Message: fmt.Errorf("unable to unmarshal request.ext: %w", err).Error()})
+                }</span>
+        }
+
+        // group impressions by publisher ID
+        <span class="cov8" title="1">publisherImps := make(map[string][]openrtb2.Imp)
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                publisherID, impCopy, err := buildImp(imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">publisherImps[publisherID] = append(publisherImps[publisherID], impCopy)</span>
+        }
+
+        <span class="cov8" title="1">if len(publisherImps) == 0 </span><span class="cov8" title="1">{
+                errs = append(errs, &amp;errortypes.BadInput{Message: "no valid impression found"})
+        }</span>
+
+        // create a separate request for each publisher
+        <span class="cov8" title="1">for publisherID, imps := range publisherImps </span><span class="cov8" title="1">{
+                requestPublisher, err := buildRequest(*request, publisherID, &amp;imps, &amp;requestExt)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">resJSON, err := jsonutil.Marshal(&amp;requestPublisher)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, &amp;errortypes.FailedToMarshal{Message: fmt.Errorf("unable to marshal request: %w", err).Error()})
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">headers := http.Header{}
+                headers.Add("Content-Type", "application/json;charset=utf-8")
+                headers.Add("Accept", "application/json")
+
+                req := &amp;adapters.RequestData{
+                        Method:  "POST",
+                        Uri:     a.endpoint,
+                        Body:    resJSON,
+                        Headers: headers,
+                        ImpIDs:  openrtb_ext.GetImpIDs(requestPublisher.Imp),
+                }
+
+                reqs = append(reqs, req)</span>
+        }
+
+        <span class="cov8" title="1">return reqs, errs</span>
+}
+
+func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if httpRes.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if httpRes.StatusCode != http.StatusCreated </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var resp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(httpRes.Body, &amp;resp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Errorf("unable to unmarshal response: %w", err).Error(),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponse()
+        bidderResponse.Currency = resp.Cur
+
+        var errs []error
+        for _, sb := range resp.SeatBid </span><span class="cov8" title="1">{
+                for i := range sb.Bid </span><span class="cov8" title="1">{
+                        bidType, err := getBidMediaType(&amp;sb.Bid[i])
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;sb.Bid[i],
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">if len(bidderResponse.Bids) == 0 </span><span class="cov8" title="1">{
+                errs = append(errs, &amp;errortypes.BadServerResponse{
+                        Message: "no valid bids found in response",
+                })
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">return bidderResponse, errs</span>
+}
+
+func buildImp(imp openrtb2.Imp) (string, openrtb2.Imp, error) <span class="cov8" title="1">{
+        impExt, err := extractImpExt(&amp;imp)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", openrtb2.Imp{}, err
+        }</span>
+
+        <span class="cov8" title="1">targetings := make(map[string][]string)
+        for key, value := range impExt.CustomTargeting </span><span class="cov8" title="1">{
+                targetings[key] = value
+        }</span>
+
+        <span class="cov8" title="1">imp.Ext, err = jsonutil.Marshal(&amp;impExtAdapter{
+                Goldbach: impExtGoldbachOutgoing{
+                        Targetings: targetings,
+                        SlotID:     impExt.SlotID,
+                },
+        })
+
+        if err != nil </span><span class="cov0" title="0">{
+                return "", openrtb2.Imp{}, &amp;errortypes.FailedToMarshal{Message: fmt.Errorf("unable to marshal imp.ext: %w", err).Error()}
+        }</span>
+
+        <span class="cov8" title="1">return impExt.PublisherID, imp, nil</span>
+}
+
+func extractImpExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtGoldbach, error) <span class="cov8" title="1">{
+        var extImpBidder adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;extImpBidder); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Errorf("unable to unmarshal imp.ext: %w", err).Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var goldbachExt openrtb_ext.ImpExtGoldbach
+        if err := jsonutil.Unmarshal(extImpBidder.Bidder, &amp;goldbachExt); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Errorf("unable to unmarshal imp.ext.bidder: %w", err).Error(),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if len(goldbachExt.PublisherID) == 0 || len(goldbachExt.SlotID) == 0 </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "publisherId and slotId are required",
+                }
+        }</span>
+        <span class="cov8" title="1">return &amp;goldbachExt, nil</span>
+}
+
+func buildRequest(request openrtb2.BidRequest, publisherID string, imps *[]openrtb2.Imp, requestExt *requestExtAdapter) (*openrtb2.BidRequest, error) <span class="cov8" title="1">{
+        request.Imp = *imps
+        request.ID = fmt.Sprintf("%s_%s", request.ID, publisherID)
+
+        // Set the publisher ID in the request.ext
+        requestPublisherExt, err := jsonutil.Marshal(&amp;requestExtAdapter{
+                Goldbach: requestExtGoldbach{
+                        PublisherID:  publisherID,
+                        MockResponse: requestExt.Goldbach.MockResponse,
+                },
+                ExtRequest: requestExt.ExtRequest,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.FailedToMarshal{Message: fmt.Errorf("unable to marshal request.ext: %w", err).Error()}
+        }</span>
+
+        <span class="cov8" title="1">request.Ext = requestPublisherExt
+
+        return &amp;request, nil</span>
+}
+
+func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        var extBid openrtb_ext.ExtBid
+        if err := jsonutil.Unmarshal(bid.Ext, &amp;extBid); err != nil </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.FailedToUnmarshal{Message: fmt.Errorf("unable to unmarshal ext for bid: %w", err).Error()}
+        }</span>
+
+        <span class="cov8" title="1">if extBid.Prebid == nil || len(extBid.Prebid.Type) == 0 </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.BadInput{Message: fmt.Sprintf("no media type for bid %v", bid.ID)}
+        }</span>
+
+        <span class="cov8" title="1">return extBid.Prebid.Type, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
