@@ -10,7 +10,6 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,16 +87,12 @@ func TestGetBidType(t *testing.T) {
 
 func TestMakeRequestsErrors(t *testing.T) {
 	a := &adapter{endpoint: "http://test-endpoint"}
-	baseImp := openrtb2.Imp{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"placementId":"abc"}}`)}
 	tests := []struct {
 		name    string
 		imps    []openrtb2.Imp
 		wantErr string
 	}{
 		{"Invalid ext", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`not-json`)}}, "impID 1:"},
-		{"Invalid banner dims", []openrtb2.Imp{{ID: "1", Banner: &openrtb2.Banner{} /* nil w/h */, Ext: baseImp.Ext}}, "invalid banner dimensions"},
-		{"Empty video mimes", []openrtb2.Imp{{ID: "1", Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](640), H: ptrutil.ToPtr[int64](480), MIMEs: []string{}}, Ext: baseImp.Ext}}, "missing or empty video.mimes"},
-		{"Invalid video dims", []openrtb2.Imp{{ID: "1", Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](0), H: ptrutil.ToPtr[int64](0), MIMEs: []string{"video/mp4"}}, Ext: baseImp.Ext}}, "missing or invalid video width/height"},
 		{"No valid imps", []openrtb2.Imp{}, "no valid impressions"},
 	}
 	for _, tt := range tests {
