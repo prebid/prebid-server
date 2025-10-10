@@ -2138,13 +2138,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enforce: spec.EnforceLMT,
 		},
 		GDPR: config.GDPR{
-			// Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
 			EEACountries:    eeac,
 			EEACountriesMap: eeacMap,
-			// TCF2: config.TCF2{
-			// 	Enabled: spec.GDPREnabled,
-			// },
 		},
 	}
 	bidIdGenerator := &fakeBidIDGenerator{}
