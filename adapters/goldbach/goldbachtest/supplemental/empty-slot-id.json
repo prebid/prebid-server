@@ -31,7 +31,7 @@
       "comparison": "literal"
     },
     {
-      "value": "no publisher ID found in impressions",
+      "value": "no valid impression found",
       "comparison": "literal"
     }
   ]

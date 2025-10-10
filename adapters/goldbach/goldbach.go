@@ -72,7 +72,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	if len(publisherImps) == 0 {
-		errs = append(errs, &errortypes.BadInput{Message: "no publisher ID found in impressions"})
+		errs = append(errs, &errortypes.BadInput{Message: "no valid impression found"})
 	}
 
 	// create a separate request for each publisher
