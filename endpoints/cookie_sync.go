@@ -409,12 +409,15 @@ func parseBidderFilter(filter *cookieSyncRequestFilter) (usersync.BidderFilter, 
 
 func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpStatus int, privacyInfo privacyInfo) {
 	http.Error(w, err.Error(), httpStatus)
-	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
-		Status:       httpStatus,
-		Errors:       []error{err},
-		BidderStatus: []*analytics.CookieSyncBidder{},
-	},
-		privacyInfo.activityControl, privacyInfo.gdprAnalyticsPolicy)
+	c.pbsAnalytics.LogCookieSyncObject(
+		&analytics.CookieSyncObject{
+			Status:       httpStatus,
+			Errors:       []error{err},
+			BidderStatus: []*analytics.CookieSyncBidder{},
+		},
+		privacyInfo.activityControl,
+		privacyInfo.gdprAnalyticsPolicy,
+	)
 }
 
 func combineErrors(errs []error) error {
@@ -499,10 +502,14 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		response.Debug = debugInfo
 	}
 
-	c.pbsAnalytics.LogCookieSyncObject(&analytics.CookieSyncObject{
-		Status:       http.StatusOK,
-		BidderStatus: mapBidderStatusToAnalytics(response.BidderStatus),
-	}, privacyInfo.activityControl, privacyInfo.gdprAnalyticsPolicy)
+	c.pbsAnalytics.LogCookieSyncObject(
+		&analytics.CookieSyncObject{
+			Status:       http.StatusOK,
+			BidderStatus: mapBidderStatusToAnalytics(response.BidderStatus),
+		},
+		privacyInfo.activityControl,
+		privacyInfo.gdprAnalyticsPolicy,
+	)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -663,17 +670,17 @@ func (p usersyncPrivacy) ActivityAllowsUserSync(bidder string) bool {
 }
 
 // TODO: can this be deleted?
-func (p usersyncPrivacy) ActivityAllowAnalytics(name string) bool {
-	return p.activityControl.Allow(
-		privacy.ActivityReportAnalytics,
-		privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name},
-		privacy.ActivityRequest{}) // TODO: is this correct?
-}
+// func (p usersyncPrivacy) ActivityAllowAnalytics(name string) bool {
+// 	return p.activityControl.Allow(
+// 		privacy.ActivityReportAnalytics,
+// 		privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name},
+// 		privacy.ActivityRequest{}) // TODO: is this correct?
+// }
 
-// TODO: can this be deleted?
-func (p usersyncPrivacy) GDPRAllowsAnalytics(name string) bool {
-	return p.gdprAnalyticsPolicy.Allow(name)
-}
+// // TODO: can this be deleted?
+// func (p usersyncPrivacy) GDPRAllowsAnalytics(name string) bool {
+// 	return p.gdprAnalyticsPolicy.Allow(name)
+// }
 
 func (p usersyncPrivacy) GDPRInScope() bool {
 	return p.gdprSignal == gdpr.SignalYes
@@ -686,7 +693,6 @@ func extractPrivacyInfo(p usersync.Privacy) privacyInfo {
 			activityControl:     privacy.ActivityControl{},
 		}
 	}
-
 	v, ok := p.(usersyncPrivacy)
 	if !ok {
 		return privacyInfo{

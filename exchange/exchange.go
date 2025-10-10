@@ -313,17 +313,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
-	// Retrieve EEA countries configuration from either host or account settings
-	// eeaCountries := selectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
-
-	// // Make our best guess if GDPR applies
-	// gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
-	// gdprSignal, err := getGDPR(r.BidRequestWrapper)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// channelEnabled := r.TCF2Config.ChannelEnabled(channelTypeMap[r.LegacyLabels.RType])
-	// gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	dsaWriter := dsa.Writer{
 		Config:      r.Account.Privacy.DSA,
 		GDPRInScope: r.GDPREnforced,

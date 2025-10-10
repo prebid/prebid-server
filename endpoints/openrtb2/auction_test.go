@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -6029,3 +6030,302 @@ func sortUserData(user *openrtb2.User) {
 		}
 	}
 }
+
+func TestProcessGDPR(t *testing.T) {
+	testCases := []struct {
+		name                        string
+		req                         *openrtb_ext.RequestWrapper
+		accountGDPR                 config.AccountGDPR
+		requestType                 metrics.RequestType
+		cfg                         *config.Configuration
+		expectedGDPREnforced        bool
+		expectedGDPRSignal          gdpr.Signal
+		expectedAnalyticsPolicyType string
+		expectedErrorCount          int
+		mockPolicyBuilder           func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy
+	}{
+		{
+			name: "gdpr-not-enforced-no-signal",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeAMP,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        false,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "AllowAllAnalytics",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &gdpr.AllowAllAnalytics{}
+			},
+		},
+		{
+			name: "gdpr-enforced-with-signal-yes",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "consent-string",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
+		},
+		{
+			name: "gdpr-enforced-with-eea-country",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "FRA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
+		},
+		{
+			name: "gdpr-not-enforced-with-non-eea-country",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "USA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        false,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "AllowAllAnalytics",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &gdpr.AllowAllAnalytics{}
+			},
+		},
+		{
+			name: "gdpr-with-gpp-string",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+						GPP:  "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
+		},
+		{
+			name: "gdpr-with-invalid-gpp-string",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+						GPP:  "invalid-gpp-string",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          1,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
+		},
+		{
+			name: "gdpr-with-account-eea-countries",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "ITA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{
+				EEACountries: []string{"ITA", "ESP"},
+			},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "1",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
+		},
+		{
+			name: "gdpr-disabled-tcf2",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeAMP,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: false,
+					},
+				},
+			},
+			expectedGDPREnforced:        false,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "AllowAllAnalytics",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &gdpr.AllowAllAnalytics{}
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			deps := &endpointDeps{
+				cfg:                      tc.cfg,
+				gdprPrivacyPolicyBuilder: tc.mockPolicyBuilder,
+			}
+
+			analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(
+				tc.req,
+				tc.accountGDPR,
+				tc.requestType,
+			)
+
+			assert.Equal(t, tc.expectedGDPREnforced, gdprEnforced)
+			assert.Equal(t, tc.expectedGDPRSignal, gdprSignal)
+			assert.Len(t, gdprErrs, tc.expectedErrorCount)
+
+			if tc.expectedAnalyticsPolicyType == "AllowAllAnalytics" {
+				assert.IsType(t, &gdpr.AllowAllAnalytics{}, analyticsPolicy, "Analytics policy should be AllowAllAnalytics")
+			} else {
+				mockPolicy, ok := analyticsPolicy.(*mockGDPRPolicy)
+				assert.True(t, ok, "Analytics policy should be mockGDPRPolicy")
+				if ok {
+					assert.Equal(t, tc.expectedAnalyticsPolicyType, mockPolicy.policyType, "Policy type should match expected")
+				}
+			}
+
+			assert.NotNil(t, tcf2Config)
+		})
+	}
+}
+
+// mockGDPRPolicy is a test helper for mocking GDPR privacy policies
+type mockGDPRPolicy struct {
+	policyType string
+}
+
+func (m *mockGDPRPolicy) Allow(name string) bool {
+	return true
+}
+
+func (m *mockGDPRPolicy) SetContext(ctx context.Context) {}

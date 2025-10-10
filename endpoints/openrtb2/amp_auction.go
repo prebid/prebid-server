@@ -14,7 +14,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
@@ -26,7 +25,6 @@ import (
 	"github.com/prebid/prebid-server/v3/amp"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/dsa"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
 	"github.com/prebid/prebid-server/v3/gdpr"
@@ -260,43 +258,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	hookExecutor.SetActivityControl(activityControl)
 	hookExecutor.SetAccount(account)
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
-	var gdprErrs []error
-	var gpp gpplib.GppContainer
-	if reqWrapper.Regs != nil && len(reqWrapper.Regs.GPP) > 0 {
-		gpp, gdprErrs = gpplib.Parse(reqWrapper.Regs.GPP)
-	}
-
-	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
-
-	// Make our best guess if GDPR applies
-	gdprDefaultValue := exchange.ParseGDPRDefaultValue(reqWrapper, deps.cfg.GDPR.DefaultValue, eeaCountries)
-	gdprSignal, err := exchange.GetGDPR(reqWrapper)
-	if err != nil {
-		gdprErrs = append(gdprErrs, err)
-	}
-	consent, err := exchange.GetConsent(reqWrapper, gpp)
-	if err != nil {
-		gdprErrs = append(gdprErrs, err)
-	}
-	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType])
-	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
-	if gdprEnforced {
-		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
-		analyticsPolicy.SetContext(ctx)
-	}
-	dsaWriter := dsa.Writer{
-		Config:      account.Privacy.DSA,
-		GDPRInScope: gdprEnforced,
-	}
+	analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(reqWrapper, account.GDPR, labels.RType)
+	analyticsPolicy.SetContext(ctx)
 	errL = append(errL, gdprErrs...)
-	if err := dsaWriter.Write(reqWrapper); err != nil {
-		errL = append(errL, err)
-		writeError(errL, w, &labels)
-		return
-	}
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -317,6 +281,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/usersync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
 )
@@ -1146,7 +1147,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{},
 					Success: true,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1168,7 +1169,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{},
 					Success: true,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1189,7 +1190,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1210,7 +1211,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{errors.New("The bidder name provided is not supported by Prebid Server")},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1231,7 +1232,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{errors.New(`"f" query param is invalid. must be "b" or "i"`)},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1252,7 +1253,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{errors.New("GDPR consent is required when gdpr signal equals 1")},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1273,7 +1274,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{errors.New("The gdpr_consent string prevents cookies from being saved")},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1295,7 +1296,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{errCookieSyncAccountInvalid},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1317,7 +1318,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{errCookieSyncAccountConfigMalformed},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 		{
@@ -1339,7 +1340,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Errors:  []error{errCookieSyncAccountConfigMalformed},
 					Success: false,
 				}
-				a.On("LogSetUIDObject", &expected).Once()
+				a.On("LogSetUIDObject", &expected, mock.Anything, mock.Anything).Once()
 			},
 		},
 	}
@@ -1672,6 +1673,14 @@ type fakePermissionsBuilder struct {
 
 func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
 	return fpb.permissions
+}
+
+type fakeAnalyticsPolicyBuilder struct {
+	policy gdpr.PrivacyPolicy
+}
+
+func (fapb fakeAnalyticsPolicyBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+	return fapb.policy
 }
 
 type fakeTCF2ConfigBuilder struct {

@@ -144,7 +144,6 @@ func TestGetConsent(t *testing.T) {
 		giveUser    *openrtb2.User
 		giveGPP     gpplib.GppContainer
 		wantConsent string
-		wantError   bool
 	}{
 		{
 			description: "User Consent is not empty",
@@ -189,14 +188,8 @@ func TestGetConsent(t *testing.T) {
 				},
 			}
 
-			result, err := GetConsent(&req, tt.giveGPP)
+			result := GetConsent(&req, tt.giveGPP)
 			assert.Equal(t, tt.wantConsent, result, tt.description)
-
-			if tt.wantError {
-				assert.NotNil(t, err, tt.description)
-			} else {
-				assert.Nil(t, err, tt.description)
-			}
 		})
 	}
 }

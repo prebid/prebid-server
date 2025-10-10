@@ -16,7 +16,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
@@ -27,7 +26,6 @@ import (
 	accountService "github.com/prebid/prebid-server/v3/account"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/dsa"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
 	"github.com/prebid/prebid-server/v3/gdpr"
@@ -312,43 +310,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
-	var gdprErrs []error
-	var gpp gpplib.GppContainer
-	if bidReqWrapper.Regs != nil && len(bidReqWrapper.Regs.GPP) > 0 {
-		gpp, gdprErrs = gpplib.Parse(bidReqWrapper.Regs.GPP)
-	}
-
-	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, account.GDPR.EEACountries)
-
-	// Make our best guess if GDPR applies
-	gdprDefaultValue := exchange.ParseGDPRDefaultValue(bidReqWrapper, deps.cfg.GDPR.DefaultValue, eeaCountries)
-	gdprSignal, err := exchange.GetGDPR(bidReqWrapper)
-	if err != nil {
-		gdprErrs = append(gdprErrs, err)
-	}
-	consent, err := exchange.GetConsent(bidReqWrapper, gpp)
-	if err != nil {
-		gdprErrs = append(gdprErrs, err)
-	}
-	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[labels.RType])
-	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
-	if gdprEnforced {
-		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
-		analyticsPolicy.SetContext(ctx)
-	}
-	dsaWriter := dsa.Writer{
-		Config:      account.Privacy.DSA,
-		GDPRInScope: gdprEnforced,
-	}
+	analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(bidReqWrapper, account.GDPR, labels.RType)
+	analyticsPolicy.SetContext(ctx)
 	errL = append(errL, gdprErrs...)
-	if err := dsaWriter.Write(bidReqWrapper); err != nil {
-		errL = append(errL, err)
-		writeError(errL, w, &labels)
-		return
-	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	if errs := deps.setFieldsImplicitly(r, bidReqWrapper, account); len(errs) > 0 {
@@ -378,8 +342,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TCF2Config:                 tcf2Config,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 		Activities:                 activityControl,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

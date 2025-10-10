@@ -28,13 +28,12 @@ func GetGDPR(req *openrtb_ext.RequestWrapper) (gdpr.Signal, error) {
 }
 
 // GetConsent will pull the consent string from an openrtb request
-func GetConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string, err error) {
+func GetConsent(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) (consent string) {
 	if i := gppPolicy.IndexOfSID(gpp, gppConstants.SectionTCFEU2); i >= 0 {
-		consent = gpp.Sections[i].GetValue()
-		return
+		return gpp.Sections[i].GetValue()
 	}
 	if req.User != nil {
-		return req.User.Consent, nil
+		return req.User.Consent
 	}
 	return
 }

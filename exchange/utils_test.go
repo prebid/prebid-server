@@ -2382,6 +2382,8 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 				privacyConfig.GDPR.TCF2,
 				accountConfig.GDPR,
 			),
+			GDPRSignal:   test.gdprSignal,
+			GDPREnforced: test.gdprEnforced,
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
@@ -2477,6 +2479,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 			Account:           accountConfig,
 			TCF2Config:        gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR),
+			GDPREnforced:      test.gdprEnforced,
 		}
 
 		gdprPermissionsBuilder := fakePermissionsBuilder{
