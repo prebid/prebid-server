@@ -1,0 +1,16 @@
+endpoint: "http://sa-lb.deliverimp.com/pserver"
+maintainer:
+  email: "ssp@nuba.io"
+gvlVendorID: null
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
