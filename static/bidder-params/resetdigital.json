@@ -10,5 +10,6 @@
       "minLength": 1
     }
   },
+  "required": ["placement_id"],
   "additionalProperties": false
 }

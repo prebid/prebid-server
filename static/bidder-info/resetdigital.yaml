@@ -2,9 +2,7 @@ endpoint: https://prebid.resetdigital.co
 endpointCompression: gzip
 maintainer:
   email: biddersupport@resetdigital.co
-
 gvlVendorID: 1162
-
 capabilities:
   site:
     mediaTypes:
