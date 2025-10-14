@@ -87,6 +87,7 @@
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
+                                    "mtype": 2,
                                     "ext": {
                                         "prebid": {
                                             "type": "video"
@@ -115,6 +116,7 @@
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
+                        "mtype": 2,
                         "ext": {
                             "prebid": {
                                 "type": "video"

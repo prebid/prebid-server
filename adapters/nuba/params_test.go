@@ -15,7 +15,7 @@ func TestValidParams(t *testing.T) {
 
 	for _, p := range validParams {
 		if err := validator.Validate(openrtb_ext.BidderNuba, json.RawMessage(p)); err != nil {
-			t.Errorf("Schema rejected valid params: %s", p)
+			t.Errorf("Schema rejected valid params: %s: %s", p, err)
 		}
 	}
 }

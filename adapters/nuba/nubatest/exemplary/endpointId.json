@@ -91,6 +91,7 @@
                                     "dealid": "test_dealid",
                                     "w": 300,
                                     "h": 250,
+                                    "mtype": 1,
                                     "ext": {
                                         "prebid": {
                                             "type": "banner"
@@ -118,6 +119,7 @@
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
+                        "mtype": 1,
                         "w": 300,
                         "h": 250,
                         "ext": {
