@@ -115,7 +115,7 @@
             "ref": "http://site.com/ref"
           }
         },
-        "impIDs":["test-imp-id"]
+        "impIDs":["test-imp-id", "test2-imp-id", "test3-imp-id"]
       },
       "mockResponse": {
         "status": 200,
