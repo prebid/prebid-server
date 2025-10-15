@@ -2071,11 +2071,6 @@ func (deps *endpointDeps) processGDPR(req *openrtb_ext.RequestWrapper, accountGD
 	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, accountGDPR)
 
 	var gdprErrs []error
-	var gpp gpplib.GppContainer
-	if req.Regs != nil && len(req.Regs.GPP) > 0 {
-		gpp, gdprErrs = gpplib.Parse(req.Regs.GPP)
-	}
-	consent := exchange.GetConsent(req, gpp)
 
 	// Retrieve EEA countries configuration from either host or account settings
 	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, accountGDPR.EEACountries)

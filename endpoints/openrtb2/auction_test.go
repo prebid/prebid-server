@@ -6403,14 +6403,14 @@ func TestValidateUser(t *testing.T) {
 
 func TestProcessGDPR(t *testing.T) {
 	testCases := []struct {
-		name                        string
-		req                         *openrtb_ext.RequestWrapper
-		accountGDPR                 config.AccountGDPR
-		requestType                 metrics.RequestType
-		cfg                         *config.Configuration
-		expectedGDPREnforced        bool
-		expectedGDPRSignal          gdpr.Signal
-		expectedErrorCount          int
+		name                 string
+		req                  *openrtb_ext.RequestWrapper
+		accountGDPR          config.AccountGDPR
+		requestType          metrics.RequestType
+		cfg                  *config.Configuration
+		expectedGDPREnforced bool
+		expectedGDPRSignal   gdpr.Signal
+		expectedErrorCount   int
 	}{
 		{
 			name: "gdpr-not-enforced-no-signal",
@@ -6429,9 +6429,9 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced:        false,
-			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedErrorCount:          0,
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
 		},
 		{
 			name: "gdpr-enforced-with-signal-yes",
@@ -6457,9 +6457,9 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced:        true,
-			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedErrorCount:          0,
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
 		},
 		{
 			name: "gdpr-enforced-with-eea-country",
@@ -6484,9 +6484,9 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced:        true,
-			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedErrorCount:          0,
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
 		},
 		{
 			name: "gdpr-not-enforced-with-non-eea-country",
@@ -6511,9 +6511,9 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced:        false,
-			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedErrorCount:          0,
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
 		},
 		{
 			name: "gdpr-with-gpp-string",
@@ -6537,35 +6537,9 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced:        true,
-			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedErrorCount:          0,
-		},
-		{
-			name: "gdpr-with-invalid-gpp-string",
-			req: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Regs: &openrtb2.Regs{
-						GDPR: ptrutil.ToPtr[int8](1),
-						GPP:  "invalid-gpp-string",
-					},
-				},
-			},
-			accountGDPR: config.AccountGDPR{},
-			requestType: metrics.ReqTypeORTB2Web,
-			cfg: &config.Configuration{
-				GDPR: config.GDPR{
-					Enabled:      true,
-					DefaultValue: "0",
-					EEACountries: []string{"FRA", "DEU"},
-					TCF2: config.TCF2{
-						Enabled: true,
-					},
-				},
-			},
-			expectedGDPREnforced:        true,
-			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedErrorCount:          1,
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
 		},
 		{
 			name: "gdpr-with-account-eea-countries",
@@ -6592,9 +6566,9 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced:        true,
-			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedErrorCount:          0,
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
 		},
 		{
 			name: "gdpr-disabled-tcf2",
@@ -6617,9 +6591,9 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced:        false,
-			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedErrorCount:          0,
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
 		},
 	}
 
