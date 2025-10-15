@@ -28,7 +28,6 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/prebid_cache_client"
@@ -54,7 +53,6 @@ func NewVideoEndpoint(
 	cfg *config.Configuration,
 	met metrics.MetricsEngine,
 	analyticsRunner analytics.Runner,
-	gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -85,7 +83,6 @@ func NewVideoEndpoint(
 		cfg,
 		met,
 		analyticsRunner,
-		gdprAnalyticsPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -124,10 +121,6 @@ func NewVideoEndpoint(
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
-
-	// create an allow all analytics policy object
-	var analyticsPolicy gdpr.PrivacyPolicy
-	analyticsPolicy = &gdpr.AllowAllAnalytics{}
 
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
@@ -168,7 +161,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogVideoObject(&vo, activityControl, analyticsPolicy)
+		deps.analytics.LogVideoObject(&vo, activityControl)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -311,8 +304,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(bidReqWrapper, account.GDPR, labels.RType)
-	analyticsPolicy.SetContext(ctx)
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(bidReqWrapper, account.GDPR, labels.RType)
 	errL = append(errL, gdprErrs...)
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).

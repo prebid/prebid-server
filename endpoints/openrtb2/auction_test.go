@@ -6410,9 +6410,7 @@ func TestProcessGDPR(t *testing.T) {
 		cfg                         *config.Configuration
 		expectedGDPREnforced        bool
 		expectedGDPRSignal          gdpr.Signal
-		expectedAnalyticsPolicyType string
 		expectedErrorCount          int
-		mockPolicyBuilder           func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy
 	}{
 		{
 			name: "gdpr-not-enforced-no-signal",
@@ -6433,11 +6431,7 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        false,
 			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedAnalyticsPolicyType: "AllowAllAnalytics",
 			expectedErrorCount:          0,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &gdpr.AllowAllAnalytics{}
-			},
 		},
 		{
 			name: "gdpr-enforced-with-signal-yes",
@@ -6465,11 +6459,7 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        true,
 			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedAnalyticsPolicyType: "mockPolicy",
 			expectedErrorCount:          0,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &mockGDPRPolicy{policyType: "mockPolicy"}
-			},
 		},
 		{
 			name: "gdpr-enforced-with-eea-country",
@@ -6496,11 +6486,7 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        true,
 			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedAnalyticsPolicyType: "mockPolicy",
 			expectedErrorCount:          0,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &mockGDPRPolicy{policyType: "mockPolicy"}
-			},
 		},
 		{
 			name: "gdpr-not-enforced-with-non-eea-country",
@@ -6527,11 +6513,7 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        false,
 			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedAnalyticsPolicyType: "AllowAllAnalytics",
 			expectedErrorCount:          0,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &gdpr.AllowAllAnalytics{}
-			},
 		},
 		{
 			name: "gdpr-with-gpp-string",
@@ -6557,11 +6539,7 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        true,
 			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedAnalyticsPolicyType: "mockPolicy",
 			expectedErrorCount:          0,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &mockGDPRPolicy{policyType: "mockPolicy"}
-			},
 		},
 		{
 			name: "gdpr-with-invalid-gpp-string",
@@ -6587,11 +6565,7 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        true,
 			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedAnalyticsPolicyType: "mockPolicy",
 			expectedErrorCount:          1,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &mockGDPRPolicy{policyType: "mockPolicy"}
-			},
 		},
 		{
 			name: "gdpr-with-account-eea-countries",
@@ -6620,11 +6594,7 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        true,
 			expectedGDPRSignal:          gdpr.SignalAmbiguous,
-			expectedAnalyticsPolicyType: "mockPolicy",
 			expectedErrorCount:          0,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &mockGDPRPolicy{policyType: "mockPolicy"}
-			},
 		},
 		{
 			name: "gdpr-disabled-tcf2",
@@ -6649,22 +6619,17 @@ func TestProcessGDPR(t *testing.T) {
 			},
 			expectedGDPREnforced:        false,
 			expectedGDPRSignal:          gdpr.SignalYes,
-			expectedAnalyticsPolicyType: "AllowAllAnalytics",
 			expectedErrorCount:          0,
-			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
-				return &gdpr.AllowAllAnalytics{}
-			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			deps := &endpointDeps{
-				cfg:                      tc.cfg,
-				gdprPrivacyPolicyBuilder: tc.mockPolicyBuilder,
+				cfg: tc.cfg,
 			}
 
-			analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(
+			tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(
 				tc.req,
 				tc.accountGDPR,
 				tc.requestType,
@@ -6673,29 +6638,7 @@ func TestProcessGDPR(t *testing.T) {
 			assert.Equal(t, tc.expectedGDPREnforced, gdprEnforced)
 			assert.Equal(t, tc.expectedGDPRSignal, gdprSignal)
 			assert.Len(t, gdprErrs, tc.expectedErrorCount)
-
-			if tc.expectedAnalyticsPolicyType == "AllowAllAnalytics" {
-				assert.IsType(t, &gdpr.AllowAllAnalytics{}, analyticsPolicy, "Analytics policy should be AllowAllAnalytics")
-			} else {
-				mockPolicy, ok := analyticsPolicy.(*mockGDPRPolicy)
-				assert.True(t, ok, "Analytics policy should be mockGDPRPolicy")
-				if ok {
-					assert.Equal(t, tc.expectedAnalyticsPolicyType, mockPolicy.policyType, "Policy type should match expected")
-				}
-			}
-
 			assert.NotNil(t, tcf2Config)
 		})
 	}
 }
-
-// mockGDPRPolicy is a test helper for mocking GDPR privacy policies
-type mockGDPRPolicy struct {
-	policyType string
-}
-
-func (m *mockGDPRPolicy) Allow(name string) bool {
-	return true
-}
-
-func (m *mockGDPRPolicy) SetContext(ctx context.Context) {}
