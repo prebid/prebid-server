@@ -1,0 +1,206 @@
+# Example configuration for the Traffic Shaping module
+# This module allows dynamic control of bidders and ad sizes per placement
+
+hooks:
+  enabled: true
+  
+  # Module configuration
+  modules:
+    mile:
+      trafficshaping:
+        enabled: true
+        # URL of the remote traffic shaping configuration
+        endpoint: "https://rtd.mile.so/ts-static/0OsUhO/US/m-ios/safari/ts.json"
+        # Configuration refresh interval in milliseconds (default: 30000, minimum: 1000)
+        refresh_ms: 30000
+        # HTTP request timeout in milliseconds (default: 1000, minimum: 100)
+        request_timeout_ms: 1000
+        # Enable user ID vendor filtering (default: false)
+        prune_user_ids: false
+        # Salt for deterministic sampling (default: "pbs")
+        sample_salt: "pbs"
+        # Optional: Only apply shaping for specific countries (ISO 3166-1 alpha-2)
+        allowed_countries: ["US", "CA"]
+  
+  # Host-level execution plan (always executed)
+  host_execution_plan:
+    endpoints:
+      /openrtb2/auction:
+        stages:
+          processed_auction_request:
+            groups:
+              - timeout: 50
+                hook_sequence:
+                  - module_code: mile.trafficshaping
+                    hook_impl_code: default
+  
+  # Default account-level execution plan (can be overridden per account)
+  default_account_execution_plan:
+    endpoints:
+      /openrtb2/auction:
+        stages:
+          processed_auction_request:
+            groups:
+              - timeout: 50
+                hook_sequence:
+                  - module_code: mile.trafficshaping
+                    hook_impl_code: default
+      
+      # Optional: Enable for AMP endpoint
+      /openrtb2/amp:
+        stages:
+          processed_auction_request:
+            groups:
+              - timeout: 50
+                hook_sequence:
+                  - module_code: mile.trafficshaping
+                    hook_impl_code: default
+      
+      # Optional: Enable for Video endpoint
+      /openrtb2/video:
+        stages:
+          processed_auction_request:
+            groups:
+              - timeout: 50
+                hook_sequence:
+                  - module_code: mile.trafficshaping
+                    hook_impl_code: default
+
+---
+# Example Account-Specific Configuration
+# This can be stored in the account's stored request configuration
+
+{
+  "hooks": {
+    "modules": {
+      "mile": {
+        "trafficshaping": {
+          # Override endpoint for this account
+          "endpoint": "https://account-specific.example.com/config.json",
+          # Override user ID filtering
+          "prune_user_ids": true,
+          # Override allowed countries
+          "allowed_countries": ["US"]
+        }
+      }
+    }
+  }
+}
+
+---
+# Example Remote Configuration Format
+# The module fetches this JSON from the configured endpoint
+
+{
+  "meta": {
+    "createdAt": 1760334911
+  },
+  "response": {
+    "schema": {
+      "fields": ["gpID"]
+    },
+    # Percentage of auctions to skip shaping (0-100)
+    "skipRate": 10,
+    # List of allowed user ID vendors (used when prune_user_ids is enabled)
+    "userIdVendors": [
+      "33acrossId",
+      "criteoId",
+      "hadronId",
+      "idl_env",
+      "index",
+      "magnite",
+      "medianet",
+      "openx",
+      "pubcid",
+      "pubmatic",
+      "sovrn",
+      "tdid",
+      "uid2"
+    ],
+    # Traffic shaping rules per GPID
+    "values": {
+      # GPID from imp.ext.gpid or imp.ext.data.adserver.adslot
+      "21804848220,22690441817/ATD_RecipeReader/ATD_320x100_M_MH_RP#ATD_RR_Mobile_MH_RP": {
+        # Allowed bidders and their allowed sizes
+        "amx": {
+          "320x50": 1
+        },
+        "conversant": {
+          "320x50": 1
+        },
+        "gourmetads": {
+          "320x50": 1
+        },
+        "gumgum": {
+          "320x50": 1
+        },
+        "kueezrtb": {
+          "320x50": 1
+        },
+        "medianet": {
+          "320x50": 1
+        },
+        "ogury": {
+          "320x50": 1
+        },
+        "onetag": {
+          "320x50": 1
+        },
+        "rise": {
+          "320x50": 1
+        },
+        "rubicon": {
+          "320x50": 1
+        },
+        "sovrn": {
+          "320x50": 1
+        },
+        "vidazoo": {
+          "320x50": 1
+        }
+      },
+      "21804848220,22690441817/ATD_RecipeReader/ATD_320x50_M_Footer#fi-ash-1717070237-3361": {
+        "adagio": {
+          "320x50": 1
+        },
+        "amx": {
+          "320x50": 1
+        },
+        "conversant": {
+          "320x50": 1
+        },
+        "gourmetads": {
+          "320x50": 1
+        },
+        "gumgum": {
+          "320x50": 1
+        },
+        "kueezrtb": {
+          "320x50": 1
+        },
+        "medianet": {
+          "320x50": 1
+        },
+        "ogury": {
+          "320x50": 1
+        },
+        "onetag": {
+          "320x50": 1
+        },
+        "rise": {
+          "320x50": 1
+        },
+        "rubicon": {
+          "320x50": 1
+        },
+        "seedtag": {
+          "320x50": 1
+        },
+        "vidazoo": {
+          "320x50": 1
+        }
+      }
+    }
+  }
+}
+

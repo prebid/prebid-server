@@ -2,6 +2,7 @@ package modules
 
 import (
 	fiftyonedegreesDevicedetection "github.com/prebid/prebid-server/v3/modules/fiftyonedegrees/devicedetection"
+	mileTrafficshaping "github.com/prebid/prebid-server/v3/modules/mile/trafficshaping"
 	prebidOrtb2blocking "github.com/prebid/prebid-server/v3/modules/prebid/ortb2blocking"
 	prebidRulesengine "github.com/prebid/prebid-server/v3/modules/prebid/rulesengine"
 	scope3Rtd "github.com/prebid/prebid-server/v3/modules/scope3/rtd"
@@ -13,6 +14,9 @@ func builders() ModuleBuilders {
 	return ModuleBuilders{
 		"fiftyonedegrees": {
 			"devicedetection": fiftyonedegreesDevicedetection.Builder,
+		},
+		"mile": {
+			"trafficshaping": mileTrafficshaping.Builder,
 		},
 		"prebid": {
 			"ortb2blocking": prebidOrtb2blocking.Builder,

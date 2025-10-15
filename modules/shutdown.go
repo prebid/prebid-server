@@ -36,5 +36,4 @@ func (s *ShutdownModules) Shutdown() {
 			glog.Errorf("Error shutting down module: %v", err)
 		}
 	}
-	return
 }

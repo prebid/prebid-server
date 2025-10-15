@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "createdAt": 1760345713
+  },
+  "response": {
+    "schema": {
+      "fields": ["gpID"]
+    },
+    "skipRate": 100,
+    "userIdVendors": [
+      "pubcid",
+      "tdid",
+      "uid2",
+      "criteoId",
+      "openx",
+      "pubmatic"
+    ],
+    "values": {
+      "/homepage/top-banner": {
+        "appnexus": {
+          "300x250": 1,
+          "728x90": 1
+        },
+        "pubmatic": {
+          "300x250": 1,
+          "728x90": 1
+        }
+      }
+    }
+  }
+}
+
+
