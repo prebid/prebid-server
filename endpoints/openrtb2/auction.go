@@ -2101,7 +2101,6 @@ func (deps *endpointDeps) processGDPR(req *openrtb_ext.RequestWrapper, accountGD
 	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	if gdprEnforced {
 		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
-		// analyticsPolicy.SetContext(ctx)
 	}
 
 	return analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs
