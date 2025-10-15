@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -20,16 +21,16 @@ type PrivacyPolicyBuilder func(TCF2ConfigReader, Signal, string) PrivacyPolicy
 
 // NewAnalyticsPolicyBuilder returns an PrivacyPolicyBuilder that has all global dependencies needed
 // to build a request-specific analytics privacy policy
-func NewAnalyticsPolicyBuilder(cfg config.GDPR, gvlVendorIDs map[openrtb_ext.BidderName]uint16, vendorListFetcher VendorListFetcher) PrivacyPolicyBuilder {
+func NewAnalyticsPolicyBuilder(cfg config.GDPR, gvlVendorIDs map[openrtb_ext.BidderName]uint16, vendorListFetcher VendorListFetcher, me metrics.MetricsEngine) PrivacyPolicyBuilder {
 	return func(tcf2Cfg TCF2ConfigReader, gdprSignal Signal, consent string) PrivacyPolicy {
 		purposeEnforcerBuilder := NewPurposeEnforcerBuilder(tcf2Cfg)
 
-		return NewAnalyticsPolicy(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher, purposeEnforcerBuilder, gdprSignal, consent)
+		return NewAnalyticsPolicy(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher, purposeEnforcerBuilder, gdprSignal, consent, me)
 	}
 }
 
 // NewAnalyticsPolicy returns a request-specific analytics privacy policy
-func NewAnalyticsPolicy(cfg config.GDPR, tcf2Cfg TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher, purposeEnforcerBuilder PurposeEnforcerBuilder, gdprSignal Signal, consent string) PrivacyPolicy {
+func NewAnalyticsPolicy(cfg config.GDPR, tcf2Cfg TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher, purposeEnforcerBuilder PurposeEnforcerBuilder, gdprSignal Signal, consent string, metricsEngine metrics.MetricsEngine) PrivacyPolicy {
 	if !cfg.Enabled {
 		return &AllowAllAnalytics{}
 	}
@@ -41,6 +42,7 @@ func NewAnalyticsPolicy(cfg config.GDPR, tcf2Cfg TCF2ConfigReader, vendorIDs map
 		cfg:                    tcf2Cfg,
 		consent:                consent,
 		gdprSignal:             SignalNormalize(gdprSignal, cfg.DefaultValue),
+		metrics:                metricsEngine,
 	}
 }
 
@@ -52,6 +54,7 @@ type analyticsPolicy struct {
 	fetchVendorList        VendorListFetcher
 	purposeEnforcerBuilder PurposeEnforcerBuilder
 	vendorIDs              map[openrtb_ext.BidderName]uint16
+	metrics                metrics.MetricsEngine
 	// request-specific
 	cfg        TCF2ConfigReader
 	consent    string
@@ -103,7 +106,7 @@ func (ap *analyticsPolicy) defaultPermissions() (allow bool) {
 
 // getVendor retrieves the GVL vendor information for a particular bidder
 func (ap *analyticsPolicy) getVendor(ctx context.Context, vendorID uint16, pc parsedConsent) (api.Vendor, error) {
-	vendorList, err := ap.fetchVendorList(ctx, pc.specVersion, pc.listVersion)
+	vendorList, err := ap.fetchVendorList(ctx, pc.specVersion, pc.listVersion, ap.metrics)
 	if err != nil {
 		return nil, err
 	}

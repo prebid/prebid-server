@@ -36,11 +36,11 @@
         "ext": {}
       }
     },
-    
+
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "http://ortb.richaudience.com/ortb/?bidder=pbs",
+          "uri": "https://ortb.richaudience.com/ortb/?bidder=pbs",
           "headers": {
             "Content-Type": ["application/json;charset=utf-8"],
             "Accept": ["application/json"],
@@ -109,7 +109,7 @@
         }
       }
     ],
-  
+
     "expectedBidResponses": [
       {
         "currency": "USD",

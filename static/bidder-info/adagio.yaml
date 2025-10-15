@@ -1,0 +1,25 @@
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain.
+# Replace the `REGION` by one of the value below:
+# - For AMER: las => (https://mp-las.4dex.io/pbserver and https://u-las.4dex.io/pbserver/usync.html)
+# - For EMEA: ams => (https://mp-ams.4dex.io/pbserver and https://u-amx.4dex.io/pbserver/usync.html)
+# - For APAC: tyo => (https://mp-tyo.4dex.io/pbserver and https://u-tyo.4dex.io/pbserver/usync.html)
+# And set disabled to `false`.
+endpoint: "https://mp-REGION.4dex.io/pbserver"
+userSync:
+  iframe:
+    url: "https://u-REGION.4dex.io/pbserver/usync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "{UID}"
+disabled: true
+
+endpointCompression: gzip
+maintainer:
+  email: dev@adagio.io
+gvlVendorID: 617
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native

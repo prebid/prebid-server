@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,8 +34,9 @@ func TestNewAnalyticsPolicy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tcf2Cfg := &mockTCF2ConfigReader{}
 			vendorIDs := map[openrtb_ext.BidderName]uint16{}
+			mockMetrics := &metrics.MetricsEngineMock{}
 
-			vendorListFetcher := func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
+			vendorListFetcher := func(ctx context.Context, specVersion, listVersion uint16, metrics metrics.MetricsEngine) (vendorlist.VendorList, error) {
 				return nil, nil
 			}
 			purposeEnforcerBuilder := NewPurposeEnforcerBuilder(tcf2Cfg)
@@ -43,7 +45,7 @@ func TestNewAnalyticsPolicy(t *testing.T) {
 				Enabled: tt.gdprEnabled,
 			}
 
-			policy := NewAnalyticsPolicy(gdprConfig, tcf2Cfg, vendorIDs, vendorListFetcher, purposeEnforcerBuilder, SignalYes, "some-consent")
+			policy := NewAnalyticsPolicy(gdprConfig, tcf2Cfg, vendorIDs, vendorListFetcher, purposeEnforcerBuilder, SignalYes, "some-consent", mockMetrics)
 
 			assert.NotNil(t, policy)
 			assert.IsType(t, tt.expectType, policy)

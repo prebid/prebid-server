@@ -14,3 +14,5 @@ userSync:
   redirect:
     url: "https://sync.colossusssp.com/pbs.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
+openrtb:
+  version: 2.6

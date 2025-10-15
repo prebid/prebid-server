@@ -47,6 +47,7 @@ endpointCompression: GZIP
 openrtb:
   version: 2.6
   gpp-supported: true
+  multiformat-supported: false
 endpoint: https://endpoint.com
 disabled: false
 extra_info: extra-info
@@ -122,12 +123,15 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 }
 
 func TestProcessBidderInfo(t *testing.T) {
+	falseValue := false
+
 	testCases := []struct {
 		description         string
 		bidderInfos         map[string][]byte
 		expectedBidderInfos BidderInfos
 		expectError         string
 	}{
+
 		{
 			description: "Valid bidder info",
 			bidderInfos: map[string][]byte{
@@ -205,8 +209,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -256,8 +261,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -285,6 +291,9 @@ func TestProcessBidderInfo(t *testing.T) {
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
+
+	trueValue := true
+
 	parentWithSyncerKey := BidderInfo{
 		AppSecret: "app-secret",
 		Capabilities: &CapabilitiesInfo{
@@ -313,8 +322,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: true,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: true,
-			Version:      "2.6",
+			GPPSupported:         true,
+			Version:              "2.6",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "123",
 		Syncer: &Syncer{
@@ -360,8 +370,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: false,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: false,
-			Version:      "2.5",
+			GPPSupported:         false,
+			Version:              "2.5",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "456",
 		Syncer: &Syncer{
@@ -668,54 +679,53 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 }
 
 func TestValidateAliases(t *testing.T) {
-	testCase := struct {
-		description  string
-		bidderInfos  BidderInfos
-		expectErrors []error
+	testCases := []struct {
+		name        string
+		bidderName  string
+		bidderInfo  BidderInfo
+		bidderInfos BidderInfos
+		expectedErr error
 	}{
-		description: "invalid aliases",
-		bidderInfos: BidderInfos{
-			"bidderA": BidderInfo{
-				Endpoint: "http://bidderA.com/openrtb2",
-				Maintainer: &MaintainerInfo{
-					Email: "maintainer@bidderA.com",
-				},
-				Capabilities: &CapabilitiesInfo{
-					Site: &PlatformInfo{
-						MediaTypes: []openrtb_ext.BidType{
-							openrtb_ext.BidTypeVideo,
-						},
-					},
-				},
-				AliasOf: "bidderB",
-			},
-			"bidderB": BidderInfo{
-				Endpoint: "http://bidderA.com/openrtb2",
-				Maintainer: &MaintainerInfo{
-					Email: "maintainer@bidderA.com",
-				},
-				Capabilities: &CapabilitiesInfo{
-					Site: &PlatformInfo{
-						MediaTypes: []openrtb_ext.BidType{
-							openrtb_ext.BidTypeVideo,
-						},
-					},
-				},
-				AliasOf: "bidderC",
-			},
+		{
+			name:        "not-alias",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{},
+			bidderInfos: BidderInfos{},
+			expectedErr: nil,
 		},
-		expectErrors: []error{
-			errors.New("bidder: bidderB cannot be an alias of an alias: bidderA"),
-			errors.New("bidder: bidderC not found for an alias: bidderB"),
+		{
+			name:        "alias-not-found",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "nonexistent"},
+			bidderInfos: BidderInfos{},
+			expectedErr: errors.New("bidder: nonexistent not found for an alias: b"), // does this make sense? should it be reversed?
+		},
+		{
+			name:        "alias-of-alias",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "a"},
+			bidderInfos: BidderInfos{"a": BidderInfo{AliasOf: "foo"}},
+			expectedErr: errors.New("bidder: a cannot be an alias of an alias: b"), // does this make sense? should it be reversed?
+		},
+		{
+			name:        "whitelabelonly",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "a", WhiteLabelOnly: true},
+			bidderInfos: BidderInfos{"a": BidderInfo{}},
+			expectedErr: errors.New("bidder: b is an alias and cannot be set as white label only"),
 		},
 	}
 
-	var errs []error
-	for bidderName, bidderInfo := range testCase.bidderInfos {
-		errs = append(errs, validateAliases(bidderInfo, testCase.bidderInfos, bidderName))
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := validateAliases(test.bidderInfo, test.bidderInfos, test.bidderName)
+			if test.expectedErr == nil {
+				assert.NoError(t, result)
+			} else {
+				assert.EqualError(t, result, test.expectedErr.Error())
+			}
+		})
 	}
-
-	assert.ElementsMatch(t, errs, testCase.expectErrors)
 }
 
 func TestBidderInfoValidationNegative(t *testing.T) {
@@ -1552,6 +1562,42 @@ func TestSyncerEndpointOverride(t *testing.T) {
 	}
 }
 
+func TestBidderInfoIsEnabled(t *testing.T) {
+	testCases := []struct {
+		name     string
+		bidder   BidderInfo
+		expected bool
+	}{
+		{
+			name:     "enabled",
+			bidder:   BidderInfo{Disabled: false},
+			expected: true,
+		},
+		{
+			name:     "enabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: false, WhiteLabelOnly: true},
+			expected: false,
+		},
+		{
+			name:     "disabled",
+			bidder:   BidderInfo{Disabled: true},
+			expected: false,
+		},
+		{
+			name:     "disabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: true, WhiteLabelOnly: true},
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.bidder.IsEnabled()
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
 func TestSyncerDefined(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -1887,7 +1933,7 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
-
+	falseValue := false
 	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
 	require.NoError(t, err)
 
@@ -1934,8 +1980,9 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			},
 			EndpointCompression: "GZIP",
 			OpenRTB: &OpenRTBInfo{
-				GPPSupported: true,
-				Version:      "2.6",
+				GPPSupported:         true,
+				Version:              "2.6",
+				MultiformatSupported: &falseValue,
 			},
 			Disabled:         false,
 			ExtraAdapterInfo: "extra-info",

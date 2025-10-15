@@ -393,10 +393,13 @@ func sendAuctionResponse(
 
 	w.Header().Set("Content-Type", "application/json")
 
+	// Exitpoint will modify the response and set response headers according to hook implementation.
+	finalResponse := hookExecutor.ExecuteExitpointStage(response, w)
+
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
-	if err := enc.Encode(response); err != nil {
+	if err := enc.Encode(finalResponse); err != nil {
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
@@ -450,6 +453,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		errs = []error{err}
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	if limitedReqReader.N <= 0 {
 		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
@@ -561,7 +565,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		errs = append(errs, errsL...)
 	}
 
-	if err := ortb.SetDefaults(req); err != nil {
+	if err := ortb.SetDefaults(req, deps.cfg.TmaxDefault); err != nil {
 		errs = []error{err}
 		return
 	}
@@ -1062,7 +1066,10 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 	for alias, bidderName := range aliases {
 		normalisedBidderName, _ := openrtb_ext.NormalizeBidderName(bidderName)
 		coreBidderName := normalisedBidderName.String()
-		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidderName]; isCoreBidderDisabled {
+		if disabledMessage, isCoreBidderDisabled := deps.disabledBidders[coreBidderName]; isCoreBidderDisabled {
+			if exchange.IsBidderDisabledDueToWhiteLabelOnly(disabledMessage) {
+				return fmt.Errorf("request.ext.prebid.aliases.%s refers to a bidder that cannot be aliased: %s", alias, bidderName)
+			}
 			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, bidderName)
 		}
 
@@ -1288,23 +1295,64 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	}
 
 	// Check Universal User ID
-	for eidIndex, eid := range req.User.EIDs {
-		if eid.Source == "" {
-			return append(errL, fmt.Errorf("request.user.eids[%d] missing required field: \"source\"", eidIndex))
-		}
+	if len(req.User.EIDs) > 0 {
 
-		if len(eid.UIDs) == 0 {
-			return append(errL, fmt.Errorf("request.user.eids[%d].uids must contain at least one element or be undefined", eidIndex))
-		}
+		validEids, eidErrors := validateEIDs(req.User.EIDs)
 
-		for uidIndex, uid := range eid.UIDs {
-			if uid.ID == "" {
-				return append(errL, fmt.Errorf("request.user.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex))
-			}
+		if len(eidErrors) > 0 {
+			errL = append(errL, eidErrors...)
 		}
+		req.User.EIDs = validEids
 	}
 
 	return errL
+}
+
+func validateEIDs(eids []openrtb2.EID) ([]openrtb2.EID, []error) {
+	var errorsList []error
+	validEIDs := make([]openrtb2.EID, 0, len(eids))
+
+	for eidIndex, eid := range eids {
+		if eid.Source == "" {
+			errorsList = append(errorsList, &errortypes.Warning{
+				Message:     fmt.Sprintf("request.user.eids[%d] removed due to missing source", eidIndex),
+				WarningCode: errortypes.InvalidUserEIDsWarningCode,
+			})
+			continue
+		}
+		validUIDs, uidErrors := validateUIDs(eid.UIDs, eidIndex)
+		errorsList = append(errorsList, uidErrors...)
+
+		if len(validUIDs) > 0 {
+			eid.UIDs = validUIDs
+			validEIDs = append(validEIDs, eid)
+		} else {
+			errorsList = append(errorsList, &errortypes.Warning{
+				Message:     fmt.Sprintf("request.user.eids[%d] (source: %s) removed due to empty uids", eidIndex, eid.Source),
+				WarningCode: errortypes.InvalidUserEIDsWarningCode,
+			})
+		}
+	}
+
+	return validEIDs, errorsList
+}
+
+func validateUIDs(uids []openrtb2.UID, eidIndex int) ([]openrtb2.UID, []error) {
+	var validUIDs []openrtb2.UID
+	var uidErrors []error
+
+	for uidIndex, uid := range uids {
+		if uid.ID != "" {
+			validUIDs = append(validUIDs, uid)
+		} else {
+			uidErrors = append(uidErrors, &errortypes.Warning{
+				Message:     fmt.Sprintf("request.user.eids[%d].uids[%d] removed due to empty ids", eidIndex, uidIndex),
+				WarningCode: errortypes.InvalidUserUIDsWarningCode,
+			})
+		}
+	}
+
+	return validUIDs, uidErrors
 }
 
 func validateRegs(req *openrtb_ext.RequestWrapper, gpp gpplib.GppContainer) []error {

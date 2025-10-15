@@ -1148,13 +1148,48 @@ func TestVideoEndpointAppendBidderNames(t *testing.T) {
 }
 
 func TestFormatTargetingKey(t *testing.T) {
-	res := formatTargetingKey(openrtb_ext.HbCategoryDurationKey, "appnexus")
-	assert.Equal(t, "hb_pb_cat_dur_appnex", res, "Tergeting key constructed incorrectly")
+	res := formatTargetingKey(openrtb_ext.CategoryDurationKey, "appnexus")
+	assert.Equal(t, "_pb_cat_dur_appnexus", res, "Tergeting key constructed incorrectly")
 }
 
 func TestFormatTargetingKeyLongKey(t *testing.T) {
-	res := formatTargetingKey(openrtb_ext.HbpbConstantKey, "20.00")
-	assert.Equal(t, "hb_pb_20.00", res, "Tergeting key constructed incorrectly")
+	res := formatTargetingKey(openrtb_ext.PbKey, "20.00")
+	assert.Equal(t, "_pb_20.00", res, "Tergeting key constructed incorrectly")
+}
+
+func TestFindTargetingByKey(t *testing.T) {
+	tests := []struct {
+		name             string
+		targetingMap     map[string]string
+		keyWithoutPrefix string
+		expectedResult   string
+	}{
+		{
+			name: "Correct match",
+			targetingMap: map[string]string{
+				"hb_key": "hb_key12345454",
+			},
+			keyWithoutPrefix: "_key12345454",
+			expectedResult:   "hb_key12345454",
+		},
+		{
+			name: "Dismatching",
+			targetingMap: map[string]string{
+				"hb_key": "hb_key12345454",
+			},
+			keyWithoutPrefix: "12345454",
+			expectedResult:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := findTargetingByKey(tt.targetingMap, tt.keyWithoutPrefix)
+			if result != tt.expectedResult {
+				t.Errorf("expected %v, got %v", tt.expectedResult, result)
+			}
+		})
+	}
 }
 
 func TestVideoAuctionResponseHeaders(t *testing.T) {

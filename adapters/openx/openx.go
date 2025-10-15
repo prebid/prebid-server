@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -30,6 +31,12 @@ type openxReqExt struct {
 
 type openxRespExt struct {
 	FledgeAuctionConfigs map[string]json.RawMessage `json:"fledge_auction_configs,omitempty"`
+}
+
+type oxBidExt struct {
+	DspId   int    `json:"dsp_id,string,omitempty"`
+	BrandId int    `json:"brand_id,string,omitempty"`
+	BuyerId string `json:"buyer_id,omitempty"`
 }
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -236,8 +243,9 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &sb.Bid[i],
-				BidType:  getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidType:  getBidType(sb.Bid[i].MType, sb.Bid[i].ImpID, internalRequest.Imp),
 				BidVideo: getBidVideo(&sb.Bid[i]),
+				BidMeta:  getBidMeta(&sb.Bid[i]),
 			})
 		}
 	}
@@ -252,6 +260,19 @@ func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
 	return &openrtb_ext.ExtBidPrebidVideo{
 		PrimaryCategory: primaryCategory,
 		Duration:        int(bid.Dur),
+	}
+}
+
+func getBidType(mtype openrtb2.MarkupType, impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	switch mtype {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
+	default:
+		return getMediaTypeForImp(impId, imps)
 	}
 }
 
@@ -284,4 +305,37 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		bidderName: string(bidderName),
 	}
 	return bidder, nil
+}
+
+func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
+	if bid.Ext == nil {
+		return nil
+	}
+
+	var ext *oxBidExt
+	if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
+		return nil
+	}
+
+	buyerId := getBuyerIdFromExt(ext)
+	if buyerId <= 0 && ext.DspId <= 0 && ext.BrandId <= 0 {
+		return nil
+	}
+
+	return &openrtb_ext.ExtBidPrebidMeta{
+		NetworkID:    ext.DspId,
+		AdvertiserID: buyerId,
+		BrandID:      ext.BrandId,
+	}
+}
+
+func getBuyerIdFromExt(ext *oxBidExt) int {
+	if ext.BuyerId == "" {
+		return 0
+	}
+	buyerId, err := strconv.Atoi(ext.BuyerId)
+	if err != nil {
+		return 0
+	}
+	return buyerId
 }
