@@ -73,7 +73,7 @@ func TestGetGDPR(t *testing.T) {
 					Regs: tt.giveRegs,
 				},
 			}
-			result, err := getGDPR(&req)
+			result, err := GetGDPR(&req)
 			assert.Equal(t, tt.wantGDPR, result)
 
 			if tt.wantError {
@@ -85,13 +85,65 @@ func TestGetGDPR(t *testing.T) {
 	}
 }
 
+func TestEnforceGDPR(t *testing.T) {
+	tests := []struct {
+		name            string
+		giveSignal      gdpr.Signal
+		giveDefault     gdpr.Signal
+		giveChannelFlag bool
+		wantResult      bool
+	}{
+		{
+			name:            "gdpr-applies-with-yes-signal-and-channel-enabled",
+			giveSignal:      gdpr.SignalYes,
+			giveDefault:     gdpr.SignalYes,
+			giveChannelFlag: true,
+			wantResult:      true,
+		},
+		{
+			name:            "gdpr-does-not-apply-with-no-signal-and-channel-enabled",
+			giveSignal:      gdpr.SignalNo,
+			giveDefault:     gdpr.SignalYes,
+			giveChannelFlag: true,
+			wantResult:      false,
+		},
+		{
+			name:            "gdpr-applies-with-ambiguous-signal-and-default-yes-with-channel-enabled",
+			giveSignal:      gdpr.SignalAmbiguous,
+			giveDefault:     gdpr.SignalYes,
+			giveChannelFlag: true,
+			wantResult:      true,
+		},
+		{
+			name:            "gdpr-does-not-apply-with-ambiguous-signal-and-default-no-with-channel-enabled",
+			giveSignal:      gdpr.SignalAmbiguous,
+			giveDefault:     gdpr.SignalNo,
+			giveChannelFlag: true,
+			wantResult:      false,
+		},
+		{
+			name:            "gdpr-does-not-apply-with-yes-signal-and-channel-disabled",
+			giveSignal:      gdpr.SignalYes,
+			giveDefault:     gdpr.SignalYes,
+			giveChannelFlag: false,
+			wantResult:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := EnforceGDPR(tt.giveSignal, tt.giveDefault, tt.giveChannelFlag)
+			assert.Equal(t, tt.wantResult, result)
+		})
+	}
+}
+
 func TestGetConsent(t *testing.T) {
 	tests := []struct {
 		description string
 		giveUser    *openrtb2.User
 		giveGPP     gpplib.GppContainer
 		wantConsent string
-		wantError   bool
 	}{
 		{
 			description: "User Consent is not empty",
@@ -136,16 +188,30 @@ func TestGetConsent(t *testing.T) {
 				},
 			}
 
-			result, err := getConsent(&req, tt.giveGPP)
+			result := GetConsent(&req, tt.giveGPP)
 			assert.Equal(t, tt.wantConsent, result, tt.description)
-
-			if tt.wantError {
-				assert.NotNil(t, err, tt.description)
-			} else {
-				assert.Nil(t, err, tt.description)
-			}
 		})
 	}
+}
+
+var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "1YNY"}
+var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
+
+type mockGPPSection struct {
+	sectionID gppConstants.SectionID
+	value     string
+}
+
+func (ms mockGPPSection) GetID() gppConstants.SectionID {
+	return ms.sectionID
+}
+
+func (ms mockGPPSection) GetValue() string {
+	return ms.value
+}
+
+func (ms mockGPPSection) Encode(bool) []byte {
+	return nil
 }
 
 func TestSelectEEACountries(t *testing.T) {
@@ -201,28 +267,120 @@ func TestSelectEEACountries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			result := selectEEACountries(tt.hostEEACountries, tt.accountEEACountries)
+			result := SelectEEACountries(tt.hostEEACountries, tt.accountEEACountries)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-var upsv1Section mockGPPSection = mockGPPSection{sectionID: 6, value: "1YNY"}
-var tcf1Section mockGPPSection = mockGPPSection{sectionID: 2, value: "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}
+func TestParseGDPRDefaultValue(t *testing.T) {
+	tests := []struct {
+		name        string
+		giveRequest *openrtb_ext.RequestWrapper
+		giveDefault string
+		giveEEA     []string
+		wantResult  gdpr.Signal
+	}{
+		{
+			name: "geo-nil-cfg-default-0",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: nil,
+					},
+				},
+			},
+			giveDefault: "0",
+			giveEEA:     []string{"DEU", "FRA"},
+			wantResult:  gdpr.SignalNo,
+		},
+		{
+			name: "user-geo-present-eea-empty",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: &openrtb2.Geo{Country: "DEU"},
+					},
+				},
+			},
+			giveDefault: "0",
+			giveEEA:     []string{},
+			wantResult:  gdpr.SignalNo,
+		},
+		{
+			name: "user-geo-present-geo-country-in-eea",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: &openrtb2.Geo{Country: "DEU"},
+					},
+				},
+			},
+			giveDefault: "0",
+			giveEEA:     []string{"DEU", "FRA"},
+			wantResult:  gdpr.SignalYes,
+		},
+		{
+			name: "user-geo-present-geo-country-not-in-eea-but-properly-formatted",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: &openrtb2.Geo{Country: "USA"},
+					},
+				},
+			},
+			giveDefault: "1",
+			giveEEA:     []string{"DEU", "FRA"},
+			wantResult:  gdpr.SignalNo,
+		},
+		{
+			name: "user-geo-present-geo-country-not-in-eea-but-improperly-formatted",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: &openrtb2.Geo{Country: "US"},
+					},
+				},
+			},
+			giveDefault: "1",
+			giveEEA:     []string{"DEU", "FRA"},
+			wantResult:  gdpr.SignalYes,
+		},
+		{
+			name: "device-geo-present-country-not-in-eea",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{Country: "USA"},
+					},
+				},
+			},
+			giveDefault: "1",
+			giveEEA:     []string{"DEU", "FRA"},
+			wantResult:  gdpr.SignalNo,
+		},
+		{
+			name: "user-and-device-geo-present-user-geo-country-selected",
+			giveRequest: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: &openrtb2.Geo{Country: "DEU"},
+					},
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{Country: "USA"},
+					},
+				},
+			},
+			giveDefault: "0",
+			giveEEA:     []string{"DEU", "FRA"},
+			wantResult:  gdpr.SignalYes,
+		},
+	}
 
-type mockGPPSection struct {
-	sectionID gppConstants.SectionID
-	value     string
-}
-
-func (ms mockGPPSection) GetID() gppConstants.SectionID {
-	return ms.sectionID
-}
-
-func (ms mockGPPSection) GetValue() string {
-	return ms.value
-}
-
-func (ms mockGPPSection) Encode(bool) []byte {
-	return nil
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ParseGDPRDefaultValue(tt.giveRequest, tt.giveDefault, tt.giveEEA)
+			assert.Equal(t, tt.wantResult, result)
+		})
+	}
 }

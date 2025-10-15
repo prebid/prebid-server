@@ -92,6 +92,7 @@ func NewEndpoint(
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
 	analyticsRunner analytics.Runner,
+	gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -120,6 +121,7 @@ func NewEndpoint(
 		cfg,
 		metricsEngine,
 		analyticsRunner,
+		gdprAnalyticsPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -143,6 +145,7 @@ type endpointDeps struct {
 	cfg                       *config.Configuration
 	metricsEngine             metrics.MetricsEngine
 	analytics                 analytics.Runner
+	gdprPrivacyPolicyBuilder  gdpr.PrivacyPolicyBuilder
 	disabledBidders           map[string]string
 	defaultRequest            bool
 	defReqJSON                []byte
@@ -165,6 +168,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// to compute the auction timeout.
 	start := time.Now()
 
+	// create an allow all analytics policy object
+	var analyticsPolicy gdpr.PrivacyPolicy
+	analyticsPolicy = &gdpr.AllowAllAnalytics{}
+
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
 
 	ao := analytics.AuctionObject{
@@ -185,7 +192,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAuctionObject(&ao, activityControl)
+		deps.analytics.LogAuctionObject(&ao, activityControl, analyticsPolicy)
 	}()
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
@@ -202,8 +209,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
@@ -217,6 +222,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
+
+	analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(req, account.GDPR, labels.RType)
+	analyticsPolicy.SetContext(ctx)
+	errL = append(errL, gdprErrs...)
 
 	// Read Usersyncs/Cookie
 	decoder := usersync.Base64Decoder{}
@@ -260,6 +269,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	defer func() {
@@ -2058,4 +2069,39 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// processGDPR handles GDPR signal processing and policy building.
+// It returns the created privacy policy (if GDPR is enforced) and any errors encountered.
+func (deps *endpointDeps) processGDPR(req *openrtb_ext.RequestWrapper, accountGDPR config.AccountGDPR, requestType metrics.RequestType) (
+	gdpr.PrivacyPolicy, gdpr.TCF2ConfigReader, gdpr.Signal, bool, []error) {
+	var analyticsPolicy gdpr.PrivacyPolicy
+	analyticsPolicy = &gdpr.AllowAllAnalytics{}
+
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, accountGDPR)
+
+	var gdprErrs []error
+	var gpp gpplib.GppContainer
+	if req.Regs != nil && len(req.Regs.GPP) > 0 {
+		gpp, gdprErrs = gpplib.Parse(req.Regs.GPP)
+	}
+
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, accountGDPR.EEACountries)
+
+	// Make our best guess if GDPR applies
+	gdprDefaultValue := exchange.ParseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := exchange.GetGDPR(req)
+	if err != nil {
+		gdprErrs = append(gdprErrs, err)
+	}
+	consent := exchange.GetConsent(req, gpp)
+
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[requestType])
+	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	if gdprEnforced {
+		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
+	}
+
+	return analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs
 }

@@ -65,6 +65,7 @@ func NewAmpEndpoint(
 	cfg *config.Configuration,
 	metricsEngine metrics.MetricsEngine,
 	analyticsRunner analytics.Runner,
+	gdprAnalyticsPolicyBuilder gdpr.PrivacyPolicyBuilder,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
@@ -94,6 +95,7 @@ func NewAmpEndpoint(
 		cfg,
 		metricsEngine,
 		analyticsRunner,
+		gdprAnalyticsPolicyBuilder,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
@@ -118,6 +120,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// to compute the auction timeout.
 	start := time.Now()
 
+	// create an allow all analytics policy object
+	var analyticsPolicy gdpr.PrivacyPolicy
+	analyticsPolicy = &gdpr.AllowAllAnalytics{}
+
 	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAmp, deps.metricsEngine)
 
 	ao := analytics.AmpObject{
@@ -125,8 +131,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Errors:    make([]error, 0),
 		StartTime: start,
 	}
-
-	// Set this as an AMP request in Metrics.
 
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
@@ -140,7 +144,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
-		deps.analytics.LogAmpObject(&ao, activityControl)
+		deps.analytics.LogAmpObject(&ao, activityControl, analyticsPolicy)
 	}()
 
 	// Add AMP headers
@@ -249,12 +253,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
 	hookExecutor.SetAccount(account)
+
+	analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(reqWrapper, account.GDPR, labels.RType)
+	analyticsPolicy.SetContext(ctx)
+	errL = append(errL, gdprErrs...)
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -275,6 +281,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
