@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>dxtech: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/dxtech/dxtech.go (97.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package dxtech
+
+import (
+        "fmt"
+        "net/http"
+        "net/url"
+
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+)
+
+var markupTypeToBidType = map[openrtb2.MarkupType]openrtb_ext.BidType{
+        openrtb2.MarkupBanner: openrtb_ext.BidTypeBanner,
+        openrtb2.MarkupVideo:  openrtb_ext.BidTypeVideo,
+}
+
+type adapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the DXTech adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        impressions := request.Imp
+
+        adapterRequests := make([]*adapters.RequestData, 0, len(impressions))
+        var errs []error
+
+        for _, impression := range impressions </span><span class="cov8" title="1">{
+                impExt, err := parseExt(&amp;impression)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">request.Imp = []openrtb2.Imp{impression}
+                body, err := jsonutil.Marshal(request)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if request.Test == 1 </span><span class="cov8" title="1">{
+                        impExt.PublisherId = "test"
+                }</span>
+
+                <span class="cov8" title="1">params := url.Values{}
+                params.Add("publisher_id", impExt.PublisherId)
+                params.Add("placement_id", impExt.PlacementId)
+
+                adapterRequests = append(adapterRequests, &amp;adapters.RequestData{
+                        Method:  http.MethodPost,
+                        Uri:     a.endpoint + "?" + params.Encode(),
+                        Body:    body,
+                        Headers: getHeaders(request),
+                        ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+                })</span>
+        }
+
+        <span class="cov8" title="1">request.Imp = impressions
+        return adapterRequests, errs</span>
+}
+
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(response) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var ortbResponse openrtb2.BidResponse
+        err := jsonutil.Unmarshal(response.Body, &amp;ortbResponse)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: "Bad Server Response",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidErrors []error
+
+        bidderResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+        for _, seatBid := range ortbResponse.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := seatBid.Bid[i]
+                        bidType, err := getBidType(&amp;bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                bidErrors = append(bidErrors, err)
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bid,
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidderResponse, bidErrors</span>
+}
+
+func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        if bidType, ok := markupTypeToBidType[bid.MType]; ok </span><span class="cov8" title="1">{
+                return bidType, nil
+        }</span>
+        <span class="cov8" title="1">return "", &amp;errortypes.BadServerResponse{
+                Message: fmt.Sprintf("Unsupported MType %d", bid.MType),
+        }</span>
+}
+
+func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDXTech, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">impExt := openrtb_ext.ExtImpDXTech{}
+        err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;impExt)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return &amp;impExt, nil</span>
+}
+
+func getHeaders(request *openrtb2.BidRequest) http.Header <span class="cov8" title="1">{
+        headers := http.Header{}
+        headers.Set("Content-Type", "application/json;charset=utf-8")
+        headers.Set("Accept", "application/json")
+        headers.Set("X-Openrtb-Version", "2.6")
+
+        if request.Site != nil </span><span class="cov8" title="1">{
+                if request.Site.Ref != "" </span><span class="cov8" title="1">{
+                        headers.Set("Referer", request.Site.Ref)
+                }</span>
+                <span class="cov8" title="1">if request.Site.Domain != "" </span><span class="cov8" title="1">{
+                        headers.Set("Origin", request.Site.Domain)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if request.Device != nil </span><span class="cov8" title="1">{
+                if len(request.Device.UA) &gt; 0 </span><span class="cov8" title="1">{
+                        headers.Set("User-Agent", request.Device.UA)
+                }</span>
+
+                <span class="cov8" title="1">if len(request.Device.IPv6) &gt; 0 </span><span class="cov8" title="1">{
+                        headers.Set("X-Forwarded-For", request.Device.IPv6)
+                }</span>
+
+                <span class="cov8" title="1">if len(request.Device.IP) &gt; 0 </span><span class="cov8" title="1">{
+                        headers.Set("X-Forwarded-For", request.Device.IP)
+                }</span>
+        }
+        <span class="cov8" title="1">return headers</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
