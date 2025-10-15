@@ -80,9 +80,7 @@ func processImp(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
 		return nil
 	}
 
-	// convert the bid floor to EUR
 	currency := imp.BidFloorCur
-	// default currency according to the openRTB is USD
 	if currency == "" {
 		currency = "USD"
 	}
@@ -123,7 +121,6 @@ func setPBSVersion(request *openrtb2.BidRequest, pbsVersion string) {
 	sourceExtMap := make(map[string]json.RawMessage)
 	if source.Ext != nil {
 		if err := jsonutil.Unmarshal(source.Ext, &sourceExtMap); err != nil {
-			// if we can't parse the existing ext, don't modify it
 			return
 		}
 	}
@@ -142,15 +139,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.Ext
 
 	prebidChannelName, channelVersion := getPrebidChannel(request)
 
-	// pre-process the imps
 	for _, imp := range request.Imp {
 		if err := processImp(&imp, extra); err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		// if display manager is not set and request came from prebid.js
-		// store it and its version
 		if imp.DisplayManager == "" {
 			imp.DisplayManager = prebidChannelName
 			imp.DisplayManagerVer = channelVersion
@@ -223,6 +217,6 @@ func getBidType(markupType openrtb2.MarkupType) openrtb_ext.BidType {
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo
 	default:
-		return openrtb_ext.BidTypeVideo // default to video
+		return openrtb_ext.BidTypeVideo
 	}
 }
