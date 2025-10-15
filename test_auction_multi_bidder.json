@@ -1,0 +1,125 @@
+{
+  "id": "test-auction-traffic-shaping",
+  "imp": [
+    {
+      "id": "test-imp-1",
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 728,
+            "h": 90
+          }
+        ]
+      },
+      "ext": {
+        "gpid": "/homepage/top-banner",
+        "data": {
+          "adserver": {
+            "adslot": "/homepage/top-banner"
+          }
+        },
+        "prebid": {
+          "bidder": {
+            "appnexus": {
+              "placementId": 13144370
+            },
+            "pubmatic": {
+              "publisherId": "156209",
+              "adSlot": "test-adslot-1"
+            },
+            "openx": {
+              "unit": "540393169",
+              "delDomain": "test-d.openx.net"
+            },
+            "criteo": {
+              "networkId": 123
+            }
+          }
+        }
+      }
+    }
+  ],
+  "site": {
+    "domain": "example.com",
+    "page": "http://example.com/test-page",
+    "publisher": {
+      "id": "pub123"
+    }
+  },
+  "device": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "ip": "127.0.0.1",
+    "devicetype": 2,
+    "os": "macOS",
+    "geo": {
+      "country": "IN"
+    }
+  },
+  "user": {
+    "id": "test-user-1",
+    "ext": {
+      "eids": [
+        {
+          "source": "uidapi.com",
+          "uids": [
+            {
+              "id": "test-uid2-id",
+              "atype": 3
+            }
+          ]
+        },
+        {
+          "source": "pubcid.org",
+          "uids": [
+            {
+              "id": "test-pubcid",
+              "atype": 1
+            }
+          ]
+        },
+        {
+          "source": "adserver.org",
+          "uids": [
+            {
+              "id": "test-tdid",
+              "atype": 1,
+              "ext": {
+                "rtiPartner": "TDID"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tmax": 1000,
+  "at": 1,
+  "cur": [
+    "USD"
+  ],
+  "regs": {
+    "ext": {
+      "gdpr": 0
+    }
+  },
+  "ext": {
+    "prebid": {
+      "debug": true,
+      "targeting": {
+        "pricegranularity": {
+          "precision": 2,
+          "ranges": [
+            {
+              "max": 20,
+              "increment": 0.1
+            }
+          ]
+        }
+      }
+    }
+  }
+}
