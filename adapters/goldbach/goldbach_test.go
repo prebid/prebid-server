@@ -10,14 +10,6 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	_, buildErr := Builder(
-		openrtb_ext.BidderGoldbach,
-		config.Adapter{},
-		config.Server{},
-	)
-
-	require.Error(t, buildErr)
-
 	bidder, buildErr := Builder(
 		openrtb_ext.BidderGoldbach,
 		config.Adapter{

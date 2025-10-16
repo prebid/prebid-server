@@ -1,7 +1,6 @@
 package goldbach
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -38,10 +37,6 @@ type impExtGoldbachOutgoing struct {
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	if config.Endpoint == "" {
-		return nil, errors.New("missing endpoint adapter parameter")
-	}
-
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -77,7 +72,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// create a separate request for each publisher
 	for publisherID, imps := range publisherImps {
-		requestPublisher, err := buildRequest(*request, publisherID, &imps, &requestExt)
+		requestPublisher, err := buildRequest(*request, publisherID, imps, &requestExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -202,8 +197,8 @@ func extractImpExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtGoldbach, error) {
 	return &goldbachExt, nil
 }
 
-func buildRequest(request openrtb2.BidRequest, publisherID string, imps *[]openrtb2.Imp, requestExt *requestExtAdapter) (*openrtb2.BidRequest, error) {
-	request.Imp = *imps
+func buildRequest(request openrtb2.BidRequest, publisherID string, imps []openrtb2.Imp, requestExt *requestExtAdapter) (*openrtb2.BidRequest, error) {
+	request.Imp = imps
 	request.ID = fmt.Sprintf("%s_%s", request.ID, publisherID)
 
 	// Set the publisher ID in the request.ext
