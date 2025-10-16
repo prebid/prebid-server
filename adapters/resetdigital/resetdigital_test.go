@@ -161,8 +161,8 @@ func TestGetMediaType(t *testing.T) {
 			expected: openrtb_ext.BidTypeNative,
 		},
 		{
-			name: "No media type defaults to banner",
-			imp:  openrtb2.Imp{},
+			name:     "No media type defaults to banner",
+			imp:      openrtb2.Imp{},
 			expected: openrtb_ext.BidTypeBanner,
 		},
 	}
@@ -689,7 +689,7 @@ func TestSchainPassthrough(t *testing.T) {
 				assert.Equal(t, test.expectedSchain.Complete, sentRequest.Source.SChain.Complete)
 				assert.Equal(t, test.expectedSchain.Ver, sentRequest.Source.SChain.Ver)
 				assert.Len(t, sentRequest.Source.SChain.Nodes, len(test.expectedSchain.Nodes))
-				
+
 				if len(sentRequest.Source.SChain.Nodes) > 0 {
 					assert.Equal(t, test.expectedSchain.Nodes[0].ASI, sentRequest.Source.SChain.Nodes[0].ASI)
 					assert.Equal(t, test.expectedSchain.Nodes[0].SID, sentRequest.Source.SChain.Nodes[0].SID)
@@ -741,7 +741,7 @@ func TestSourceFieldsPassthrough(t *testing.T) {
 	assert.NotNil(t, sentRequest.Source)
 	assert.Equal(t, "test-transaction-id", sentRequest.Source.TID)
 	assert.Equal(t, openrtb2.Int8Ptr(1), sentRequest.Source.FD)
-	
+
 	var expectedExt, actualExt map[string]interface{}
 	err = json.Unmarshal([]byte(`{"custom": "data"}`), &expectedExt)
 	assert.NoError(t, err)
