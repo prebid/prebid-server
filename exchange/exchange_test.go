@@ -6526,61 +6526,6 @@ func TestGetBidderPreferredMediaType(t *testing.T) {
 	}
 }
 
-func TestIsEEACountry(t *testing.T) {
-	eeaCountries := []string{"FRA", "DEU", "ITA", "ESP", "NLD"}
-
-	tests := []struct {
-		name     string
-		country  string
-		eeaList  []string
-		expected bool
-	}{
-		{
-			name:     "Country_in_EEA",
-			country:  "FRA",
-			eeaList:  eeaCountries,
-			expected: true,
-		},
-		{
-			name:     "Country_in_EEA_lowercase",
-			country:  "fra",
-			eeaList:  eeaCountries,
-			expected: true,
-		},
-		{
-			name:     "Country_not_in_EEA",
-			country:  "USA",
-			eeaList:  eeaCountries,
-			expected: false,
-		},
-		{
-			name:     "Empty_country_string",
-			country:  "",
-			eeaList:  eeaCountries,
-			expected: false,
-		},
-		{
-			name:     "EEA_list_is_empty",
-			country:  "FRA",
-			eeaList:  []string{},
-			expected: false,
-		},
-		{
-			name:     "EEA_list_is_nil",
-			country:  "FRA",
-			eeaList:  nil,
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isEEACountry(tt.country, tt.eeaList)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 type mockRequestValidator struct {
 	errors []error
 }

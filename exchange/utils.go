@@ -113,7 +113,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	consent := GetConsent(req, gpp)
+	consent := gdpr.GetConsent(req, gpp)
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, requestAliases, ChannelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
