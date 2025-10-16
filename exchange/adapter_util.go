@@ -3,6 +3,7 @@ package exchange
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
@@ -110,7 +111,6 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]string {
 	removed := map[string]string{
 		"lifestreet":      `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-		"adagio":          `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 		"somoaudience":    `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
 		"yssp":            `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 		"andbeyondmedia":  `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
@@ -136,11 +136,18 @@ func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, inf
 	disabledBidders := removed
 
 	for name, info := range infos {
-		if info.Disabled {
+		if info.WhiteLabelOnly {
+			msg := fmt.Sprintf(`Bidder "%s" can only be aliased and cannot be used directly.`, name)
+			disabledBidders[name] = msg
+		} else if info.Disabled {
 			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, name)
 			disabledBidders[name] = msg
 		}
 	}
 
 	return disabledBidders
+}
+
+func IsBidderDisabledDueToWhiteLabelOnly(disabledMessage string) bool {
+	return strings.HasSuffix(disabledMessage, "can only be aliased and cannot be used directly.")
 }

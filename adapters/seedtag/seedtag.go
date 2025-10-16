@@ -57,11 +57,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, []error{err}
 	}
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
 	requestData := &adapters.RequestData{
-		Method: http.MethodPost,
-		Uri:    a.endpoint,
-		Body:   requestJSON,
-		ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
+		Method:  http.MethodPost,
+		Uri:     a.endpoint,
+		Body:    requestJSON,
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, errors

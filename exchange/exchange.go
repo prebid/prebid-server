@@ -14,9 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/privacy"
-
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/adservertargeting"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
@@ -33,7 +30,9 @@ import (
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/prebid_cache_client"
+	"github.com/prebid/prebid-server/v3/privacy"
 	"github.com/prebid/prebid-server/v3/stored_requests"
 	"github.com/prebid/prebid-server/v3/stored_responses"
 	"github.com/prebid/prebid-server/v3/usersync"
@@ -269,9 +268,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	cacheInstructions := getExtCacheInstructions(requestExtPrebid)
 
-	targData := getExtTargetData(requestExtPrebid, cacheInstructions)
+	targData, warning := getExtTargetData(requestExtPrebid, cacheInstructions, r.Account)
 	if targData != nil {
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
+	}
+
+	for _, w := range warning {
+		r.Warnings = append(r.Warnings, w)
 	}
 
 	// Get currency rates conversions for the auction
@@ -445,7 +448,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExtPrebid.Targeting != nil && requestExtPrebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, *requestExtPrebid.Targeting, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &seatNonBidBuilder)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, *requestExtPrebid.Targeting, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &seatNonBidBuilder, r.Account)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -477,7 +480,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.Imp), targData.preferDeals)
 			auc.validateAndUpdateMultiBid(adapterBids, targData.preferDeals, r.Account.DefaultBidLimit)
-			auc.setRoundedPrices(*targData)
+			auc.setRoundedPrices(*targData, r.Account)
 
 			if requestExtPrebid.SupportDeals {
 				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, multiBidMap)
@@ -499,8 +502,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 				errs = append(errs, cacheErrs...)
 			}
 
+			env := ""
+			if r.BidRequestWrapper.BidRequest.App != nil {
+				env = openrtb_ext.EnvAppValue
+			}
+			if r.RequestType == "amp" {
+				env = openrtb_ext.EnvAmpValue
+			}
+
 			if targData.includeWinners || targData.includeBidderKeys || targData.includeFormat {
-				targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
+				targData.setTargeting(auc, env, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
 			}
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, *r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)
@@ -1017,7 +1028,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBidBuilder *SeatNonBidBuilder) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBidBuilder *SeatNonBidBuilder, account config.Account) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -1101,7 +1112,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 
 			// TODO: consider should we remove bids with zero duration here?
 
-			priceBucket = GetPriceBucket(*bid.Bid, *targData)
+			priceBucket = GetPriceBucket(*bid.Bid, *targData, account)
 
 			newDur, err := findDurationRange(duration, targeting.DurationRangeSec)
 			if err != nil {

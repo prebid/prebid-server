@@ -96,6 +96,7 @@ type HTTPEvents struct {
 func (e *HTTPEvents) fetchAll() {
 	ctx, cancel := e.ctxProducer()
 	defer cancel()
+
 	resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
 	if respObj, ok := e.parse(e.Endpoint, resp, err); ok &&
 		(len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 || len(respObj.StoredResponses) > 0 || len(respObj.Accounts) > 0) {

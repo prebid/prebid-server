@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -129,7 +130,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
 	// local file system
-	certPool := ssl.GetRootCAPool()
+	certPool, certPoolCreateErr := ssl.CreateCertPool(cfg.CertsUseSystem)
+	if certPoolCreateErr != nil {
+		glog.Infof("Could not load root certificates: %s \n", certPoolCreateErr.Error())
+	}
+
 	var readCertErr error
 	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
 	if readCertErr != nil {
@@ -138,32 +143,50 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	generalHttpClient := &http.Client{
 		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment,
-			MaxConnsPerHost:     cfg.Client.MaxConnsPerHost,
-			MaxIdleConns:        cfg.Client.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
-			TLSClientConfig:     &tls.Config{RootCAs: certPool},
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: defaultTransportDialContext(&net.Dialer{
+				Timeout:   time.Duration(cfg.Client.Dialer.TimeoutSeconds) * time.Second,
+				KeepAlive: time.Duration(cfg.Client.Dialer.KeepAliveSeconds) * time.Second,
+			}),
+			MaxConnsPerHost:       cfg.Client.MaxConnsPerHost,
+			MaxIdleConns:          cfg.Client.MaxIdleConns,
+			MaxIdleConnsPerHost:   cfg.Client.MaxIdleConnsPerHost,
+			IdleConnTimeout:       time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
+			TLSClientConfig:       &tls.Config{RootCAs: certPool},
+			TLSHandshakeTimeout:   time.Duration(cfg.Client.TLSHandshakeTimeout) * time.Second,
+			ExpectContinueTimeout: time.Duration(cfg.Client.ExpectContinueTimeout) * time.Second,
 		},
 	}
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment,
-			MaxConnsPerHost:     cfg.CacheClient.MaxConnsPerHost,
-			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: defaultTransportDialContext(&net.Dialer{
+				Timeout:   time.Duration(cfg.CacheClient.Dialer.TimeoutSeconds) * time.Second,
+				KeepAlive: time.Duration(cfg.CacheClient.Dialer.KeepAliveSeconds) * time.Second,
+			}),
+			MaxConnsPerHost:       cfg.CacheClient.MaxConnsPerHost,
+			MaxIdleConns:          cfg.CacheClient.MaxIdleConns,
+			MaxIdleConnsPerHost:   cfg.CacheClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:       time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
+			TLSHandshakeTimeout:   time.Duration(cfg.CacheClient.TLSHandshakeTimeout) * time.Second,
+			ExpectContinueTimeout: time.Duration(cfg.CacheClient.ExpectContinueTimeout) * time.Second,
 		},
 	}
 
 	floorFechterHttpClient := &http.Client{
 		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment,
-			MaxConnsPerHost:     cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
-			MaxIdleConns:        cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: defaultTransportDialContext(&net.Dialer{
+				Timeout:   time.Duration(cfg.PriceFloors.Fetcher.HttpClient.Dialer.TimeoutSeconds) * time.Second,
+				KeepAlive: time.Duration(cfg.PriceFloors.Fetcher.HttpClient.Dialer.KeepAliveSeconds) * time.Second,
+			}),
+			MaxConnsPerHost:       cfg.PriceFloors.Fetcher.HttpClient.MaxConnsPerHost,
+			MaxIdleConns:          cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConns,
+			MaxIdleConnsPerHost:   cfg.PriceFloors.Fetcher.HttpClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:       time.Duration(cfg.PriceFloors.Fetcher.HttpClient.IdleConnTimeout) * time.Second,
+			TLSHandshakeTimeout:   time.Duration(cfg.PriceFloors.Fetcher.HttpClient.TLSHandshakeTimeout) * time.Second,
+			ExpectContinueTimeout: time.Duration(cfg.PriceFloors.Fetcher.HttpClient.ExpectContinueTimeout) * time.Second,
 		},
 	}
 
@@ -186,7 +209,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor}
-	repo, moduleStageNames, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
+	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
@@ -198,7 +221,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
 
 	// register the analytics runner for shutdown
-	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown)
+	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
@@ -211,8 +234,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
-	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, gdpr.VendorListURLMaker)
-	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher)
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, r.MetricsEngine, gdpr.VendorListURLMaker)
+	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher, r.MetricsEngine)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
@@ -282,6 +305,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		ExternalUrl:      cfg.ExternalURL,
 		RecaptchaSecret:  cfg.RecaptchaSecret,
 		PriorityGroups:   cfg.UserSync.PriorityGroups,
+		CertPool:         certPool,
 	}
 
 	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, analyticsRunner, accounts, r.MetricsEngine))
@@ -290,6 +314,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/optout", userSyncDeps.OptOut)
 
 	return r, nil
+}
+
+// defaultTransportDialContext returns the same dialer context as the default transport uses, copied from the library code.
+func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+	return dialer.DialContext
 }
 
 // Shutdown closes any dependencies of the router that may need closing

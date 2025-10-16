@@ -23,6 +23,15 @@ const (
 	ChannelDOOH  ChannelType = "dooh"
 )
 
+type BidRoundingMode string
+
+const (
+	RoundingModeDown      BidRoundingMode = "down"
+	RoundingModeTrue      BidRoundingMode = "true"
+	RoundingModeTimeSplit BidRoundingMode = "timesplit"
+	RoundingModeUp        BidRoundingMode = "up"
+)
+
 // Account represents a publisher account configuration
 type Account struct {
 	ID                      string                                      `mapstructure:"id" json:"id"`
@@ -41,15 +50,18 @@ type Account struct {
 	Validations             Validations                                 `mapstructure:"validations" json:"validations"`
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
+	BidRounding             BidRoundingMode                             `mapstructure:"bid_rounding" json:"bid_rounding,omitempty"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
+	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
 type CookieSync struct {
-	DefaultLimit    *int  `mapstructure:"default_limit" json:"default_limit"`
-	MaxLimit        *int  `mapstructure:"max_limit" json:"max_limit"`
-	DefaultCoopSync *bool `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+	DefaultLimit    *int       `mapstructure:"default_limit" json:"default_limit"`
+	MaxLimit        *int       `mapstructure:"max_limit" json:"max_limit"`
+	DefaultCoopSync *bool      `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+	PriorityGroups  [][]string `mapstructure:"priority_groups" json:"priority_groups"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration

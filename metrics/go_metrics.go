@@ -35,9 +35,11 @@ type Metrics struct {
 	TLSHandshakeTimer              metrics.Timer
 	BidderServerResponseTimer      metrics.Timer
 	StoredResponsesMeter           metrics.Meter
+	GvlListRequestsMeter           metrics.Meter
 
 	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
+	RequestSizeByEndpoint map[EndpointType]metrics.Histogram
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
 	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
@@ -99,8 +101,11 @@ type AdapterMetrics struct {
 	ConnCreated        metrics.Counter
 	ConnReused         metrics.Counter
 	ConnWaitTime       metrics.Timer
+	ConnDialErrors     metrics.Counter
+	ConnDialTime       metrics.Timer
 	BuyerUIDScrubbed   metrics.Meter
 	GDPRRequestBlocked metrics.Meter
+	ThrottledMeter     metrics.Meter
 
 	BidValidationCreativeSizeErrorMeter metrics.Meter
 	BidValidationCreativeSizeWarnMeter  metrics.Meter
@@ -155,6 +160,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 	newMetrics := &Metrics{
 		MetricsRegistry:                registry,
 		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
+		RequestSizeByEndpoint:          make(map[EndpointType]metrics.Histogram),
 		ConnectionCounter:              metrics.NilCounter{},
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
@@ -181,6 +187,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		SetUidStatusMeter:              make(map[SetUidStatus]metrics.Meter),
 		SyncerSetsMeter:                make(map[string]map[SyncerSetUidStatus]metrics.Meter),
 		StoredResponsesMeter:           blankMeter,
+		GvlListRequestsMeter:           blankMeter,
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -225,6 +232,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
 		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
+		}
+	}
+
+	for _, t := range EndpointTypes() {
+		if t != EndpointAmp {
+			newMetrics.RequestSizeByEndpoint[t] = &metrics.NilHistogram{}
 		}
 	}
 
@@ -300,6 +313,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
+	newMetrics.GvlListRequestsMeter = metrics.GetOrRegisterMeter("gvl_requests", registry)
 	newMetrics.OverheadTimer = makeOverheadTimerMetrics(registry)
 	newMetrics.BidderServerResponseTimer = metrics.GetOrRegisterTimer("bidder_server_response_time_seconds", registry)
 
@@ -346,6 +360,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		for stat := range statusMap {
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
+	}
+
+	for _, endpoint := range EndpointTypes() {
+		newMetrics.RequestSizeByEndpoint[endpoint] = metrics.GetOrRegisterHistogram("requests.size."+string(endpoint), registry, metrics.NewUniformSample(1024))
 	}
 
 	for _, cacheRes := range CacheResults() {
@@ -401,11 +419,14 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		BidsReceivedMeter: blankMeter,
 		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+		ThrottledMeter:    blankMeter,
 	}
 	if !disabledMetrics.AdapterConnectionMetrics {
 		newAdapter.ConnCreated = metrics.NilCounter{}
 		newAdapter.ConnReused = metrics.NilCounter{}
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
+		newAdapter.ConnDialErrors = metrics.NilCounter{}
+		newAdapter.ConnDialTime = &metrics.NilTimer{}
 	}
 	if !disabledMetrics.AdapterBuyerUIDScrubbed {
 		newAdapter.BuyerUIDScrubbed = blankMeter
@@ -481,6 +502,9 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
 	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
 	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
+	am.ConnDialErrors = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connection_dial_err", adapterOrAccount, exchange), registry)
+	am.ConnDialTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_dial_time", adapterOrAccount, exchange), registry)
+
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -490,6 +514,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
 	am.BuyerUIDScrubbed = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.buyeruid_scrubbed", adapterOrAccount, exchange), registry)
 	am.GDPRRequestBlocked = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.gdpr_request_blocked", adapterOrAccount, exchange), registry)
+	am.ThrottledMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.throttled", adapterOrAccount, exchange), registry)
 
 	am.BidValidationCreativeSizeErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.size.err", adapterOrAccount, exchange), registry)
 	am.BidValidationCreativeSizeWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.size.warn", adapterOrAccount, exchange), registry)
@@ -600,6 +625,11 @@ func (me *Metrics) RecordRequest(labels Labels) {
 		}
 	}
 
+	// Request size by endpoint
+	if labels.RequestSize > 0 && labels.RType != ReqTypeAMP {
+		me.RequestSizeByEndpoint[GetEndpointFromRequestType(labels.RType)].Update(int64(labels.RequestSize))
+	}
+
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)
@@ -622,6 +652,10 @@ func (me *Metrics) RecordStoredResponse(pubId string) {
 	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
 		me.getAccountMetrics(pubId).storedResponsesMeter.Mark(1)
 	}
+}
+
+func (me *Metrics) RecordGvlListRequest() {
+	me.GvlListRequestsMeter.Mark(1)
 }
 
 func (me *Metrics) RecordImps(labels ImpLabels) {
@@ -747,6 +781,14 @@ func (me *Metrics) RecordAdapterConnections(adapterName openrtb_ext.BidderName,
 		am.ConnCreated.Inc(1)
 	}
 	am.ConnWaitTime.Update(connWaitTime)
+}
+
+func (m *Metrics) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+	m.AdapterMetrics[strings.ToLower(string(adapterName))].ConnDialErrors.Inc(1)
+}
+
+func (m *Metrics) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	m.AdapterMetrics[strings.ToLower(string(adapterName))].ConnDialTime.Update(dialStartTime)
 }
 
 func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
@@ -1163,4 +1205,15 @@ func (me *Metrics) getModuleMetric(labels ModuleLabels) (*ModuleMetrics, error) 
 	}
 
 	return mm, nil
+}
+
+func (me *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
+	adapterStr := adapterName.String()
+	am, ok := me.AdapterMetrics[strings.ToLower(adapterStr)]
+	if !ok {
+		glog.Errorf("Trying to log adapter throttled metric for %s: adapter not found", adapterStr)
+		return
+	}
+
+	am.ThrottledMeter.Mark(1)
 }

@@ -1,0 +1,61 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "div-banner-id",
+                "banner": {
+                    "topframe": 1,
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": "not an object"
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+        "expectedRequest": {
+            "uri": "https://bid-test.sparteo.com/s2s-auction",
+            "body": {
+                "id": "test-request-id",
+                "imp": [
+                    {
+                        "id": "div-banner-id",
+                        "banner": {
+                            "topframe": 1,
+                            "format": [
+                                {
+                                    "w": 300,
+                                    "h": 250
+                                }
+                            ]
+                        },
+                        "ext": {
+                            "bidder": "not an object"
+                        }
+                    }
+                ]
+            },
+            "ImpIDs": ["div-banner-id"]
+        }}
+    ],
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "^ignoring imp id=div-banner-id, error while decoding impExt",
+            "comparison": "regex"
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Unexpected status code: 0. Run with request.debug = 1 for more info",
+            "comparison": "literal"
+        }
+    ]
+}
