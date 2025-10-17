@@ -32,7 +32,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 	return bidder, nil
 }
 
-func (a adapter) buildEndpointURL(boldwinExt openrtb_ext.ImpExtBoldwinRapid) (string, error) {
+func (a *adapter) buildEndpointURL(boldwinExt openrtb_ext.ImpExtBoldwinRapid) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		PublisherID: boldwinExt.Pid,
 		PlacementID: boldwinExt.Tid,
@@ -93,11 +93,11 @@ func (a *adapter) getHeaders(request *openrtb2.BidRequest) http.Header {
 		}
 
 		if len(request.Device.IPv6) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
+			headers.Set("X-Forwarded-For", request.Device.IPv6)
 		}
 
 		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
+			headers.Set("X-Forwarded-For", request.Device.IP)
 			headers.Add("IP", request.Device.IP)
 		}
 	}
@@ -108,7 +108,7 @@ func (a *adapter) getHeaders(request *openrtb2.BidRequest) http.Header {
 func (a *adapter) makeRequest(request *openrtb2.BidRequest, endpoint string) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	headers := a.getHeaders(request)
