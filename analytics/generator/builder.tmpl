@@ -3,19 +3,16 @@ package analytics
 import (
 {{- if .Imports }}
 {{- range .Imports }}
-    modules{{ .Module | Title }} "github.com/prebid/prebid-server/v3/analytics/modules/{{ .Module }}"
+    modules{{ . | Title }} "github.com/prebid/prebid-server/v3/analytics/modules/{{ . }}"
 {{- end }}
 {{- end }}
 )
 
 // builders returns mapping between analytics module name and its builder.
-// Since we no longer use vendor directories, we hardcode "modules" instead.
 func builders() AnalyticsModuleBuilders {
     return AnalyticsModuleBuilders{
-        "modules": {
-            {{- range $module := .Vendors.modules }}
-            "{{$module}}": modules{{$module | Title}}.Builder,
-            {{- end }}
-        },
+        {{- range .Modules }}
+        "{{ . }}": modules{{ . | Title }}.Builder,
+        {{- end }}
     }
 }

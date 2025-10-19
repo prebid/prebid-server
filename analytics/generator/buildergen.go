@@ -22,13 +22,11 @@ var (
 )
 
 type Import struct {
-	Vendor string
 	Module string
 }
 
 type Data struct {
-	Vendors map[string][]string
-	Imports []Import
+	Modules []string
 }
 
 func TitleASCII(s string) string {
@@ -43,13 +41,12 @@ func TitleASCII(s string) string {
 }
 
 func main() {
-	modules := make(map[string][]string)
+	modSet := make(map[string]struct{})
 
 	err := filepath.WalkDir("./", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-
 		if d.IsDir() && (path == "./generator" || path == "generator") {
 			return fs.SkipDir
 		}
@@ -58,43 +55,26 @@ func main() {
 		}
 
 		slashPath := filepath.ToSlash(strings.TrimPrefix(path, "./"))
-
 		if !r.MatchString(slashPath) {
 			return nil
 		}
 
 		match := r.FindStringSubmatch(slashPath)
-		vendor := "modules"
 		mod := match[2]
-
-		modules[vendor] = append(modules[vendor], mod)
+		modSet[mod] = struct{}{}
 		return nil
 	})
 	if err != nil {
 		panic(fmt.Sprintf("walk error: %v", err))
 	}
 
-	for v, list := range modules {
-		sort.Strings(list)
-		modules[v] = list
+	modules := make([]string, 0, len(modSet))
+	for m := range modSet {
+		modules = append(modules, m)
 	}
+	sort.Strings(modules)
 
-	imports := make([]Import, 0)
-	for v, list := range modules {
-		for _, m := range list {
-			imports = append(imports, Import{Vendor: v, Module: m})
-		}
-	}
-
-	// Keep import order stable
-	sort.Slice(imports, func(i, j int) bool {
-		if imports[i].Vendor == imports[j].Vendor {
-			return imports[i].Module < imports[j].Module
-		}
-		return imports[i].Vendor < imports[j].Vendor
-	})
-
-	data := Data{Vendors: modules, Imports: imports}
+	data := Data{Modules: modules}
 
 	t, err := template.New(tmplName).
 		Funcs(template.FuncMap{"Title": TitleASCII}).
