@@ -1,6 +1,7 @@
 package kobler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
@@ -33,6 +34,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
+type RequestExt struct {
+	Kobler *KoblerRequestExt `json:"kobler,omitempty"`
+}
+
+type KoblerRequestExt struct {
+	PageViewId string `json:"page_view_id,omitempty"`
+}
+
 func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
 	var errors []error
@@ -43,6 +52,20 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 
 	if !slices.Contains(sanitizedRequest.Cur, supportedCurrency) {
 		sanitizedRequest.Cur = append(sanitizedRequest.Cur, supportedCurrency)
+	}
+
+	if reqInfo.PageViewId != "" {
+		var ext RequestExt
+		ext.Kobler = &KoblerRequestExt{
+			reqInfo.PageViewId,
+		}
+		jsonExt, err := json.Marshal(ext)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+
+		sanitizedRequest.Ext = jsonExt
 	}
 
 	for i := range sanitizedRequest.Imp {

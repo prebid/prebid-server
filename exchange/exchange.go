@@ -225,7 +225,7 @@ type AuctionRequest struct {
 	TmaxAdjustments         *TmaxAdjustmentsPreprocessed
 }
 
-// BidderRequest holds the bidder specific request and all other
+// BidderRequest holds the bidder-specific request and all other
 // information needed to process that bidder request.
 type BidderRequest struct {
 	BidRequest            *openrtb2.BidRequest
@@ -235,6 +235,7 @@ type BidderRequest struct {
 	BidderStoredResponses map[string]json.RawMessage
 	IsRequestAlias        bool
 	ImpReplaceImpId       map[string]bool
+	PageViewId            string
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog *DebugLog) (*AuctionResponse, error) {
@@ -797,6 +798,7 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
+			reqInfo.PageViewId = bidderRequest.PageViewId
 
 			if len(liveAdaptersPreferredMediaType) > 0 {
 				if mtype, found := liveAdaptersPreferredMediaType[bidder.BidderName]; found {
