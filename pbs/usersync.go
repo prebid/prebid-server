@@ -51,7 +51,7 @@ func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 		// read the entire response body to ensure full connection reuse if there's an
 		// error while decoding the json
 		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-			logger.Error(fmt.Sprintf("Captcha verify draining response body failed: %v", err))
+			logger.Error("Captcha verify draining response body failed: %v", err)
 		}
 		resp.Body.Close()
 	}()
@@ -79,7 +79,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 
 	err := deps.VerifyRecaptcha(rr)
 	if err != nil {
-		logger.Info(fmt.Sprintf("Opt Out failed recaptcha: %v", err))
+		logger.Info("Opt Out failed recaptcha: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

@@ -458,7 +458,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		syncTypes := tf.ForBidder(syncerChoice.Bidder)
 		sync, err := syncerChoice.Syncer.GetSync(syncTypes, m)
 		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err))
+			logger.Error("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
 			continue
 		}
 

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -91,7 +90,7 @@ func (fq *FetchQueue) Top() *fetchInfo {
 }
 
 func workerPanicHandler(p interface{}) {
-	logger.Error(fmt.Sprintf("floor fetcher worker panicked: %v", p))
+	logger.Error("floor fetcher worker panicked: %v", p)
 }
 
 func NewPriceFloorFetcher(config config.PriceFloors, httpClient *http.Client, metricEngine metrics.MetricsEngine) *PriceFloorFetcher {
@@ -166,7 +165,7 @@ func (f *PriceFloorFetcher) worker(fetchConfig fetchInfo) {
 		}
 		floorData, err := json.Marshal(floorData)
 		if err != nil {
-			logger.Error(fmt.Sprintf("Error while marshaling fetched floor data for url %s", fetchConfig.AccountFloorFetch.URL))
+			logger.Error("Error while marshaling fetched floor data for url %s", fetchConfig.AccountFloorFetch.URL)
 		} else {
 			f.SetWithExpiry(fetchConfig.AccountFloorFetch.URL, floorData, cacheExpiry)
 		}
@@ -234,23 +233,23 @@ func (f *PriceFloorFetcher) Fetcher() {
 func (f *PriceFloorFetcher) fetchAndValidate(config config.AccountFloorFetch) (*openrtb_ext.PriceFloorRules, int) {
 	floorResp, maxAge, err := f.fetchFloorRulesFromURL(config)
 	if floorResp == nil || err != nil {
-		logger.Error(fmt.Sprintf("Error while fetching floor data from URL: %s, reason : %s", config.URL, err.Error()))
+		logger.Error("Error while fetching floor data from URL: %s, reason : %s", config.URL, err.Error())
 		return nil, 0
 	}
 
 	if len(floorResp) > (config.MaxFileSizeKB * 1024) {
-		logger.Error(fmt.Sprintf("Received invalid floor data from URL: %s, reason : floor file size is greater than MaxFileSize", config.URL))
+		logger.Error("Received invalid floor data from URL: %s, reason : floor file size is greater than MaxFileSize", config.URL)
 		return nil, 0
 	}
 
 	var priceFloors openrtb_ext.PriceFloorRules
 	if err = json.Unmarshal(floorResp, &priceFloors.Data); err != nil {
-		logger.Error(fmt.Sprintf("Received invalid price floor json from URL: %s", config.URL))
+		logger.Error("Received invalid price floor json from URL: %s", config.URL)
 		return nil, 0
 	}
 
 	if err := validateRules(config, &priceFloors); err != nil {
-		logger.Error(fmt.Sprintf("Validation failed for floor JSON from URL: %s, reason: %s", config.URL, err.Error()))
+		logger.Error("Validation failed for floor JSON from URL: %s, reason: %s", config.URL, err.Error())
 		return nil, 0
 	}
 
@@ -276,7 +275,7 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(config config.AccountFloorFet
 		// read the entire response body to ensure full connection reuse if there's an
 		// invalid status code
 		if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
-			logger.Error(fmt.Sprintf("error while draining fetched floor response body: %v", err))
+			logger.Error("error while draining fetched floor response body: %v", err)
 		}
 		httpResp.Body.Close()
 	}()
@@ -289,10 +288,10 @@ func (f *PriceFloorFetcher) fetchFloorRulesFromURL(config config.AccountFloorFet
 	if maxAgeStr := httpResp.Header.Get("max-age"); maxAgeStr != "" {
 		maxAge, err = strconv.Atoi(maxAgeStr)
 		if err != nil {
-			logger.Error(fmt.Sprintf("max-age in header is malformed for url %s", config.URL))
+			logger.Error("max-age in header is malformed for url %s", config.URL)
 		}
 		if maxAge <= config.Period || maxAge > math.MaxInt32 {
-			logger.Error(fmt.Sprintf("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, config.Period, math.MaxInt32))
+			logger.Error("Invalid max-age = %s provided, value should be valid integer and should be within (%v, %v)", maxAgeStr, config.Period, math.MaxInt32)
 		}
 	}
 

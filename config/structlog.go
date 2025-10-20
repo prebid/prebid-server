@@ -10,7 +10,7 @@ import (
 	logInternal "github.com/prebid/prebid-server/v3/logger"
 )
 
-type logMsg func(any, ...interface{})
+type logMsg func(string, ...interface{})
 
 var mapregex = regexp.MustCompile(`mapstructure:"([^"]+)"`)
 var blocklistregexp = []*regexp.Regexp{
@@ -31,22 +31,22 @@ func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	case reflect.Map:
 		logMapWithLogger(v, prefix, logger)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		logger(fmt.Sprintf("%s: %d", prefix, v.Int()))
+		logger("%s: %d", prefix, v.Int())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		logger(fmt.Sprintf("%s: %d", prefix, v.Uint()))
+		logger("%s: %d", prefix, v.Uint())
 	case reflect.Float32, reflect.Float64:
-		logger(fmt.Sprintf("%s: %f", prefix, v.Float()))
+		logger("%s: %f", prefix, v.Float())
 	case reflect.Bool:
-		logger(fmt.Sprintf("%s: %t", prefix, v.Bool()))
+		logger("%s: %t", prefix, v.Bool())
 	default:
 		// logString, by using v.String(), will not fail, and indicate what additional cases we need to handle
-		logger(fmt.Sprintf("%s: %s", prefix, v.String()))
+		logger("%s: %s", prefix, v.String())
 	}
 }
 
 func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Struct {
-		logInternal.Error(fmt.Sprintf("LogStruct called on type %s, whuch is not a struct!", v.Type().String()))
+		logInternal.Error("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
 		logger("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
 		os.Exit(1)
 	}
@@ -56,19 +56,19 @@ func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 		if allowedName(fieldname) {
 			logGeneralWithLogger(v.Field(i), extendPrefix(prefix, fieldname), logger)
 		} else {
-			logger(fmt.Sprintf("%s.%s: <REDACTED>", prefix, fieldname))
+			logger("%s.%s: <REDACTED>", prefix, fieldname)
 		}
 	}
 }
 
 func logMapWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Map {
-		logger(fmt.Sprintf("LogMap called on type %s, whuch is not a map!", v.Type().String()))
+		logger("LogMap called on type %s, whuch is not a map!", v.Type().String())
 		os.Exit(1)
 	}
 	for _, k := range v.MapKeys() {
 		if k.Kind() == reflect.String && !allowedName(k.String()) {
-			logger(fmt.Sprintf("%s: <REDACTED>", extendMapPrefix(prefix, k.String())))
+			logger("%s: <REDACTED>", extendMapPrefix(prefix, k.String()))
 		} else {
 			// Use Sprintf("%v", k.Interface) to handle non-string keys. Should not be possible to have a key
 			// too complex to represent by %v.

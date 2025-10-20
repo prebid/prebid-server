@@ -365,7 +365,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if bidReq.Test == 1 {
 		err = setSeatNonBidRaw(bidReqWrapper, auctionResponse)
 		if err != nil {
-			logger.Error(fmt.Sprintf("Error setting seat non-bid: %v", err))
+			logger.Error("Error setting seat non-bid: %v", err)
 		}
 		bidResp.Ext = response.Ext
 	}
@@ -435,7 +435,7 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	w.WriteHeader(status)
 	vo.Status = status
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
-	logger.Error(fmt.Sprintf("/openrtb2/video Critical error: %v", errors))
+	logger.Error("/openrtb2/video Critical error: %v", errors)
 	vo.Errors = append(vo.Errors, errL...)
 }
 

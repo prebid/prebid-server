@@ -213,7 +213,7 @@ func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheR
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
-		logger.Error(fmt.Sprintf("Error(s) updating vast: %v", errs))
+		logger.Error("Error(s) updating vast: %v", errs)
 		return nil, errs
 	}
 

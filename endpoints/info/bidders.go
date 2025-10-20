@@ -1,9 +1,7 @@
 package info
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 
@@ -20,26 +18,22 @@ var invalidBaseAdaptersOnlyMsg = []byte(`Invalid value for 'baseadaptersonly' qu
 func NewBiddersEndpoint(bidders config.BidderInfos) httprouter.Handle {
 	responseAll, err := prepareBiddersResponseAll(bidders)
 	if err != nil {
-		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint all bidders response: %v", err))
-		os.Exit(1)
+		logger.Fatal("error creating /info/bidders endpoint all bidders response: %v", err)
 	}
 
 	responseAllBaseOnly, err := prepareBiddersResponseAllBaseOnly(bidders)
 	if err != nil {
-		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err))
-		os.Exit(1)
+		logger.Fatal("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
 	}
 
 	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders)
 	if err != nil {
-		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint enabled only response: %v", err))
-		os.Exit(1)
+		logger.Fatal("error creating /info/bidders endpoint enabled only response: %v", err)
 	}
 
 	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledOnlyBaseOnly(bidders)
 	if err != nil {
-		logger.Error(fmt.Sprintf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err))
-		os.Exit(1)
+		logger.Fatal("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -143,6 +137,6 @@ func writeResponse(w http.ResponseWriter, data []byte) {
 
 func writeWithErrorHandling(w http.ResponseWriter, data []byte) {
 	if _, err := w.Write(data); err != nil {
-		logger.Error(fmt.Sprintf("error writing response to /info/bidders: %v", err))
+		logger.Error("error writing response to /info/bidders: %v", err)
 	}
 }

@@ -108,12 +108,12 @@ func (x deviceInfoExtractor) getValue(results Results, propertyName deviceInfoPr
 
 	hasValues, err := results.HasValues(string(propertyName))
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to check if a matched value exists for property %s.\n", propertyName))
+		logger.Error("Failed to check if a matched value exists for property %s.\n", propertyName)
 		return ""
 	}
 
 	if !hasValues {
-		logger.Warn(fmt.Sprintf("Property %s does not have a matched value.\n", propertyName))
+		logger.Warn("Property %s does not have a matched value.\n", propertyName)
 		return "Unknown"
 	}
 

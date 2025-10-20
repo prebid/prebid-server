@@ -1,7 +1,6 @@
 package hookexecution
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/prebid/prebid-server/v3/config"
@@ -31,7 +30,7 @@ func (ctx executionContext) getModuleContext(moduleName string) hookstage.Module
 	if ctx.account != nil {
 		cfg, err := ctx.account.Hooks.Modules.ModuleConfig(moduleName)
 		if err != nil {
-			logger.Warn(fmt.Sprintf("Failed to get account config for %s module: %s", moduleName, err))
+			logger.Warn("Failed to get account config for %s module: %s", moduleName, err)
 		}
 
 		moduleInvocationCtx.AccountID = ctx.accountID

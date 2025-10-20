@@ -683,7 +683,7 @@ func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			if err == nil {
 				defer func() {
 					if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
-						loggerI.Error(fmt.Sprintf("TimeoutNotification: Draining response body failed %v", err))
+						loggerI.Error("TimeoutNotification: Draining response body failed %v", err)
 					}
 					httpResp.Body.Close()
 				}()

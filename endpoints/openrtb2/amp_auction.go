@@ -293,7 +293,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err != nil && !isRejectErr {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		logger.Error(fmt.Sprintf("/openrtb2/amp Critical error: %v", err))
+		logger.Error("/openrtb2/amp Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -304,7 +304,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err := reqWrapper.RebuildRequest(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		logger.Error(fmt.Sprintf("/openrtb2/amp Critical error: %v", err))
+		logger.Error("/openrtb2/amp Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -368,7 +368,7 @@ func sendAmpResponse(
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
-						logger.Error(fmt.Sprintf("/openrtb2/amp Critical error unpacking targets: %v", err))
+						logger.Error("/openrtb2/amp Critical error unpacking targets: %v", err)
 						ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
 						ao.Status = http.StatusInternalServerError
 						return labels, ao

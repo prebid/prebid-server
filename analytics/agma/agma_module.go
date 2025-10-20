@@ -3,7 +3,6 @@ package agma
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -224,7 +223,7 @@ func (l *AgmaLogger) LogAuctionObject(event *analytics.AuctionObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeAuction, code, event.StartTime)
 	if err != nil {
-		logger.Error(fmt.Sprintf("[AgmaAnalytics] Error serializing auction object: %v", err))
+		logger.Error("[AgmaAnalytics] Error serializing auction object: %v", err)
 		return
 	}
 	l.bufferCh <- data
@@ -240,7 +239,7 @@ func (l *AgmaLogger) LogAmpObject(event *analytics.AmpObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeAmp, code, event.StartTime)
 	if err != nil {
-		logger.Error(fmt.Sprintf("[AgmaAnalytics] Error serializing amp object: %v", err))
+		logger.Error("[AgmaAnalytics] Error serializing amp object: %v", err)
 		return
 	}
 	l.bufferCh <- data
@@ -256,7 +255,7 @@ func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeVideo, code, event.StartTime)
 	if err != nil {
-		logger.Error(fmt.Sprintf("[AgmaAnalytics] Error serializing video object: %v", err))
+		logger.Error("[AgmaAnalytics] Error serializing video object: %v", err)
 		return
 	}
 	l.bufferCh <- data

@@ -71,7 +71,7 @@ func (m *builder) Build(
 			}
 
 			if !isEnabled {
-				logger.Info(fmt.Sprintf("Skip %s module, disabled.", id))
+				logger.Info("Skip %s module, disabled.", id)
 				continue
 			}
 

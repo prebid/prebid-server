@@ -108,8 +108,8 @@ func executeHook[H any, P any](
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Error(fmt.Sprintf("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
-					hw.Module, hw.Code, r, string(debug.Stack())))
+				logger.Error("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
+					hw.Module, hw.Code, r, string(debug.Stack()))
 			}
 		}()
 

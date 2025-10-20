@@ -2,8 +2,6 @@ package build
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
 
 	"github.com/benbjohnson/clock"
 	"github.com/prebid/prebid-server/v3/analytics"
@@ -25,8 +23,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
 			modules["filelogger"] = mod
 		} else {
-			logger.Error(fmt.Sprintf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err))
-			os.Exit(1)
+			logger.Fatal("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
 	}
 
@@ -43,7 +40,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["pubstack"] = pubstackModule
 		} else {
-			logger.Error(fmt.Sprintf("Could not initialize PubstackModule: %v", err))
+			logger.Error("Could not initialize PubstackModule: %v", err)
 		}
 	}
 
@@ -55,7 +52,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["agma"] = agmaModule
 		} else {
-			logger.Error(fmt.Sprintf("Could not initialize Agma Anayltics: %v", err))
+			logger.Error("Could not initialize Agma Anayltics: %v", err)
 		}
 	}
 

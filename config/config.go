@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -107,8 +106,6 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
-	// Logger provides a way to specify logger type
-	Logger Logger `mapstructure:"logger"`
 }
 
 type Admin struct {
@@ -748,12 +745,6 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 	return errs
 }
 
-type Logger struct {
-	// the type of logger: default or alternative
-	Type  string `mapstructure:"type"`
-	Depth *int   `mapstructure:"depth"`
-}
-
 // New uses viper to get our server configurations.
 func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
@@ -765,13 +756,8 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 		return nil, err
 	}
 
-	if err := logger.New(c.Logger.Type, c.Logger.Depth); err != nil {
-		return nil, err
-	}
-
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		logger.Error(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
-		os.Exit(1)
+		logger.Fatal("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES)
 
 		return nil, err
 	}
@@ -905,7 +891,7 @@ func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) 
 func (cfg *Configuration) MarshalAccountDefaults() error {
 	var err error
 	if cfg.accountDefaultsJSON, err = jsonutil.Marshal(cfg.AccountDefaults); err != nil {
-		logger.Warn(fmt.Sprintf("converting %+v to json: %v", cfg.AccountDefaults, err))
+		logger.Warn("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
 }

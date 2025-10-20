@@ -284,7 +284,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.RequestStatus = metrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		logger.Error(fmt.Sprintf("/openrtb2/auction Critical error: %v", err))
+		logger.Error("/openrtb2/auction Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -295,7 +295,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	err = setSeatNonBidRaw(req, auctionResponse)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error setting seat non-bid: %v", err))
+		logger.Error("Error setting seat non-bid: %v", err)
 	}
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
 }
@@ -463,7 +463,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
-			logger.Error(fmt.Sprintf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err))
+			logger.Error("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
 		}
 		return
 	}
@@ -511,7 +511,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
-			logger.Error(fmt.Sprintf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err))
+			logger.Error("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
 		}
 		return
 	}

@@ -2,7 +2,6 @@ package memory
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/coocood/freecache"
@@ -53,14 +52,14 @@ func (m *pbsLRUCache) Get(id string) (json.RawMessage, bool) {
 		return val, true
 	}
 	if err != freecache.ErrNotFound {
-		logger.Error(fmt.Sprintf("unexpected error from freecache: %v", err))
+		logger.Error("unexpected error from freecache: %v", err)
 	}
 	return val, false
 }
 
 func (m *pbsLRUCache) Set(id string, value json.RawMessage) {
 	if err := m.Cache.Set([]byte(id), value, m.ttlSeconds); err != nil {
-		logger.Error(fmt.Sprintf("error saving value in freecache: %v", err))
+		logger.Error("error saving value in freecache: %v", err)
 	}
 }
 

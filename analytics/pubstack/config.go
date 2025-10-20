@@ -21,7 +21,7 @@ func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error)
 		// read the entire response body to ensure full connection reuse if there's an
 		// error while decoding the json
 		if _, err := io.Copy(io.Discard, res.Body); err != nil {
-			logger.Error(fmt.Sprintf("[pubstack] Draining config response body failed: %v", err))
+			logger.Error("[pubstack] Draining config response body failed: %v", err)
 		}
 		res.Body.Close()
 	}()

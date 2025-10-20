@@ -63,7 +63,7 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 		// read the entire response body to ensure full connection reuse if there's an
 		// invalid status code
 		if _, err := io.Copy(io.Discard, response.Body); err != nil {
-			logger.Error(fmt.Sprintf("error draining conversion rates response body: %v", err))
+			logger.Error("error draining conversion rates response body: %v", err)
 		}
 		response.Body.Close()
 	}()
@@ -96,9 +96,9 @@ func (rc *RateConverter) update() error {
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
-			logger.Error(fmt.Sprintf("Error updating conversion rates, falling back to constant rates: %v", err))
+			logger.Error("Error updating conversion rates, falling back to constant rates: %v", err)
 		} else {
-			logger.Error(fmt.Sprintf("Error updating conversion rates: %v", err))
+			logger.Error("Error updating conversion rates: %v", err)
 		}
 	}
 

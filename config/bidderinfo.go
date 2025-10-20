@@ -234,8 +234,7 @@ const (
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
+		logger.Fatal(err.Error())
 	}
 
 	bidderInfos := make(map[string][]byte)

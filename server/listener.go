@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -32,7 +31,7 @@ func (l *monitorableConnection) Close() error {
 		// in the core Go libs: https://github.com/golang/go/issues/4373#issuecomment-347680321
 		errString := err.Error()
 		if !strings.Contains(errString, "use of closed network connection") {
-			logger.Error(fmt.Sprintf("Error closing connection: %s", errString))
+			logger.Error("Error closing connection: %s", errString)
 		}
 		l.metrics.RecordConnectionClose(false)
 	}
@@ -42,7 +41,7 @@ func (l *monitorableConnection) Close() error {
 func (ln *monitorableListener) Accept() (net.Conn, error) {
 	tc, err := ln.Listener.Accept()
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error accepting connection: %v", err))
+		logger.Error("Error accepting connection: %v", err)
 		ln.metrics.RecordConnectionAccept(false)
 		return tc, err
 	}

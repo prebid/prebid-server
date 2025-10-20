@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"context"
+	"flag"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,528 +9,295 @@ import (
 
 // mockLogger is a test implementation of the Logger interface
 type mockLogger struct {
-	debugCalls    []logCall
-	infoCalls     []logCall
-	warnCalls     []logCall
-	errorCalls    []logCall
-	debugCtxCalls []logCtxCall
-	infoCtxCalls  []logCtxCall
-	warnCtxCalls  []logCtxCall
-	errorCtxCalls []logCtxCall
+	debugCalls []logCall
+	infoCalls  []logCall
+	warnCalls  []logCall
+	errorCalls []logCall
+	fatalCalls []logCall
 }
 
 type logCall struct {
-	msg  any
+	msg  string
 	args []any
 }
 
-type logCtxCall struct {
-	ctx  context.Context
-	msg  any
-	args []any
+func (m *mockLogger) Debug(msg string, args ...any) {
+	m.debugCalls = append(m.debugCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) Debug(msg any, args ...any) {
-	m.debugCalls = append(m.debugCalls, logCall{msg: msg, args: args})
+func (m *mockLogger) Info(msg string, args ...any) {
+	m.infoCalls = append(m.infoCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) DebugContext(ctx context.Context, msg any, args ...any) {
-	m.debugCtxCalls = append(m.debugCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
+func (m *mockLogger) Warn(msg string, args ...any) {
+	m.warnCalls = append(m.warnCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) Info(msg any, args ...any) {
-	m.infoCalls = append(m.infoCalls, logCall{msg: msg, args: args})
+func (m *mockLogger) Error(msg string, args ...any) {
+	m.errorCalls = append(m.errorCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) InfoContext(ctx context.Context, msg any, args ...any) {
-	m.infoCtxCalls = append(m.infoCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
+func (m *mockLogger) Fatal(msg string, args ...any) {
+	m.fatalCalls = append(m.fatalCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) Warn(msg any, args ...any) {
-	m.warnCalls = append(m.warnCalls, logCall{msg: msg, args: args})
-}
-
-func (m *mockLogger) WarnContext(ctx context.Context, msg any, args ...any) {
-	m.warnCtxCalls = append(m.warnCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
-}
-
-func (m *mockLogger) Error(msg any, args ...any) {
-	m.errorCalls = append(m.errorCalls, logCall{msg: msg, args: args})
-}
-
-func (m *mockLogger) ErrorContext(ctx context.Context, msg any, args ...any) {
-	m.errorCtxCalls = append(m.errorCtxCalls, logCtxCall{ctx: ctx, msg: msg, args: args})
-}
-
-func setupTest() {
-	// Reset global logger to default before each test
-	logger = NewSlogLogger()
-}
-
-// TestNew tests the New function with various configurations
-func TestNew(t *testing.T) {
-	tests := []struct {
-		name        string
-		loggerType  string
-		depth       *int
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:        "slog logger",
-			loggerType:  "slog",
-			depth:       nil,
-			expectError: false,
-		},
-		{
-			name:        "slog logger with depth",
-			loggerType:  "slog",
-			depth:       intPtr(2),
-			expectError: false,
-		},
-		{
-			name:        "glog logger",
-			loggerType:  "glog",
-			depth:       nil,
-			expectError: false,
-		},
-		{
-			name:        "glog logger with depth",
-			loggerType:  "glog",
-			depth:       intPtr(5),
-			expectError: false,
-		},
-		{
-			name:        "custom logger without instance",
-			loggerType:  "custom",
-			depth:       nil,
-			expectError: true,
-			errorMsg:    "custom logger type requires CustomLogger instance",
-		},
-		{
-			name:        "unsupported logger type",
-			loggerType:  "invalid",
-			depth:       nil,
-			expectError: true,
-			errorMsg:    "unsupported logger type: invalid",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setupTest()
-
-			err := New(tt.loggerType, tt.depth)
-
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, GetCurrentLogger())
-			}
-		})
+func newMockLogger() *mockLogger {
+	return &mockLogger{
+		debugCalls: []logCall{},
+		infoCalls:  []logCall{},
+		warnCalls:  []logCall{},
+		errorCalls: []logCall{},
+		fatalCalls: []logCall{},
 	}
 }
 
-// TestNewWithConfig tests the NewWithConfig function
-func TestNewWithConfig(t *testing.T) {
-	tests := []struct {
-		name        string
-		config      *LoggerConfig
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:        "nil config",
-			config:      nil,
-			expectError: true,
-			errorMsg:    "logger config is nil",
-		},
-		{
-			name: "slog config",
-			config: &LoggerConfig{
-				Type: LoggerTypeSlog,
-			},
-			expectError: false,
-		},
-		{
-			name: "glog config",
-			config: &LoggerConfig{
-				Type: LoggerTypeGlog,
-			},
-			expectError: false,
-		},
-		{
-			name: "custom config with logger",
-			config: &LoggerConfig{
-				Type:         LoggerTypeCustom,
-				CustomLogger: &mockLogger{},
-			},
-			expectError: false,
-		},
-		{
-			name: "custom config without logger",
-			config: &LoggerConfig{
-				Type: LoggerTypeCustom,
-			},
-			expectError: true,
-			errorMsg:    "custom logger type requires CustomLogger instance",
-		},
-		{
-			name: "unsupported type",
-			config: &LoggerConfig{
-				Type: LoggerType("unknown"),
-			},
-			expectError: true,
-			errorMsg:    "unsupported logger type: unknown",
-		},
-	}
+func TestDefaultLogger(t *testing.T) {
+	// The default logger should be GlogLogger
+	defaultLogger := logger
+	assert.NotNil(t, defaultLogger, "Default logger should not be nil")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setupTest()
-
-			err := NewWithConfig(tt.config)
-
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, GetCurrentLogger())
-			}
-		})
-	}
+	_, ok := defaultLogger.(*GlogLogger)
+	assert.True(t, ok, "Default logger should be *GlogLogger")
 }
 
-// TestSetCustomLogger tests the SetCustomLogger function
-func TestSetCustomLogger(t *testing.T) {
-	setupTest()
+func TestDebug(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
 
-	customLogger := &mockLogger{}
-	SetCustomLogger(customLogger)
+	mock := newMockLogger()
+	logger = mock
 
-	currentLogger := GetCurrentLogger()
-	assert.Equal(t, customLogger, currentLogger)
+	Debug("debug message")
+	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
+	assert.Equal(t, "debug message", mock.debugCalls[0].msg)
+	assert.Empty(t, mock.debugCalls[0].args)
+
+	Debug("debug with args: %s, %d", "test", 123)
+	assert.Len(t, mock.debugCalls, 2, "Should have two debug calls")
+	assert.Equal(t, "debug with args: %s, %d", mock.debugCalls[1].msg)
+	assert.Equal(t, []any{"test", 123}, mock.debugCalls[1].args)
+
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestGetCurrentLogger tests the GetCurrentLogger function
-func TestGetCurrentLogger(t *testing.T) {
-	setupTest()
+func TestInfo(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
 
-	currentLogger := GetCurrentLogger()
-	assert.NotNil(t, currentLogger)
-	assert.Implements(t, (*Logger)(nil), currentLogger)
+	mock := newMockLogger()
+	logger = mock
+
+	Info("info message")
+	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
+	assert.Equal(t, "info message", mock.infoCalls[0].msg)
+	assert.Empty(t, mock.infoCalls[0].args)
+
+	Info("info with args: %s, %d", "test", 456)
+	assert.Len(t, mock.infoCalls, 2, "Should have two info calls")
+	assert.Equal(t, "info with args: %s, %d", mock.infoCalls[1].msg)
+	assert.Equal(t, []any{"test", 456}, mock.infoCalls[1].args)
+
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestGlobalDebugFunctions tests the global Debug functions
-func TestGlobalDebugFunctions(t *testing.T) {
-	mock := &mockLogger{}
-	SetCustomLogger(mock)
+func TestWarn(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
 
-	tests := []struct {
-		name string
-		fn   func()
-		ctx  context.Context
-	}{
-		{
-			name: "Debug",
-			fn: func() {
-				Debug("test debug", "key", "value")
-			},
-		},
-		{
-			name: "DebugContext",
-			fn: func() {
-				DebugContext(context.Background(), "test debug context", "key", "value")
-			},
-			ctx: context.Background(),
-		},
-	}
+	mock := newMockLogger()
+	logger = mock
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock.debugCalls = nil
-			mock.debugCtxCalls = nil
+	Warn("warning message")
+	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
+	assert.Equal(t, "warning message", mock.warnCalls[0].msg)
+	assert.Empty(t, mock.warnCalls[0].args)
 
-			tt.fn()
+	Warn("warning with args: %s, %d", "test", 789)
+	assert.Len(t, mock.warnCalls, 2, "Should have two warn calls")
+	assert.Equal(t, "warning with args: %s, %d", mock.warnCalls[1].msg)
+	assert.Equal(t, []any{"test", 789}, mock.warnCalls[1].args)
 
-			if tt.ctx != nil {
-				assert.Len(t, mock.debugCtxCalls, 1)
-				assert.Equal(t, "test debug context", mock.debugCtxCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.debugCtxCalls[0].args)
-			} else {
-				assert.Len(t, mock.debugCalls, 1)
-				assert.Equal(t, "test debug", mock.debugCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.debugCalls[0].args)
-			}
-		})
-	}
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestGlobalInfoFunctions tests the global Info functions
-func TestGlobalInfoFunctions(t *testing.T) {
-	mock := &mockLogger{}
-	SetCustomLogger(mock)
+func TestError(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
 
-	tests := []struct {
-		name string
-		fn   func()
-		ctx  context.Context
-	}{
-		{
-			name: "Info",
-			fn: func() {
-				Info("test info", "key", "value")
-			},
-		},
-		{
-			name: "InfoContext",
-			fn: func() {
-				InfoContext(context.Background(), "test info context", "key", "value")
-			},
-			ctx: context.Background(),
-		},
-	}
+	mock := newMockLogger()
+	logger = mock
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock.infoCalls = nil
-			mock.infoCtxCalls = nil
+	Error("error message")
+	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
+	assert.Equal(t, "error message", mock.errorCalls[0].msg)
+	assert.Empty(t, mock.errorCalls[0].args)
 
-			tt.fn()
+	Error("error with args: %s, %d", "test", 999)
+	assert.Len(t, mock.errorCalls, 2, "Should have two error calls")
+	assert.Equal(t, "error with args: %s, %d", mock.errorCalls[1].msg)
+	assert.Equal(t, []any{"test", 999}, mock.errorCalls[1].args)
 
-			if tt.ctx != nil {
-				assert.Len(t, mock.infoCtxCalls, 1)
-				assert.Equal(t, "test info context", mock.infoCtxCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.infoCtxCalls[0].args)
-			} else {
-				assert.Len(t, mock.infoCalls, 1)
-				assert.Equal(t, "test info", mock.infoCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.infoCalls[0].args)
-			}
-		})
-	}
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestGlobalWarnFunctions tests the global Warn functions
-func TestGlobalWarnFunctions(t *testing.T) {
-	mock := &mockLogger{}
-	SetCustomLogger(mock)
+func TestAllLogLevels(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
 
-	tests := []struct {
-		name string
-		fn   func()
-		ctx  context.Context
-	}{
-		{
-			name: "Warn",
-			fn: func() {
-				Warn("test warn", "key", "value")
-			},
-		},
-		{
-			name: "WarnContext",
-			fn: func() {
-				WarnContext(context.Background(), "test warn context", "key", "value")
-			},
-			ctx: context.Background(),
-		},
-	}
+	mock := newMockLogger()
+	logger = mock
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock.warnCalls = nil
-			mock.warnCtxCalls = nil
+	Debug("debug")
+	Info("info")
+	Warn("warn")
+	Error("error")
 
-			tt.fn()
+	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
+	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
+	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
+	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
 
-			if tt.ctx != nil {
-				assert.Len(t, mock.warnCtxCalls, 1)
-				assert.Equal(t, "test warn context", mock.warnCtxCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.warnCtxCalls[0].args)
-			} else {
-				assert.Len(t, mock.warnCalls, 1)
-				assert.Equal(t, "test warn", mock.warnCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.warnCalls[0].args)
-			}
-		})
-	}
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestGlobalErrorFunctions tests the global Error functions
-func TestGlobalErrorFunctions(t *testing.T) {
-	mock := &mockLogger{}
-	SetCustomLogger(mock)
+func TestEmptyMessages(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
 
-	tests := []struct {
-		name string
-		fn   func()
-		ctx  context.Context
-	}{
-		{
-			name: "Error",
-			fn: func() {
-				Error("test error", "key", "value")
-			},
-		},
-		{
-			name: "ErrorContext",
-			fn: func() {
-				ErrorContext(context.Background(), "test error context", "key", "value")
-			},
-			ctx: context.Background(),
-		},
-	}
+	mock := newMockLogger()
+	logger = mock
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock.errorCalls = nil
-			mock.errorCtxCalls = nil
+	Debug("")
+	Info("")
+	Warn("")
+	Error("")
 
-			tt.fn()
+	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
+	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
+	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
+	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
 
-			if tt.ctx != nil {
-				assert.Len(t, mock.errorCtxCalls, 1)
-				assert.Equal(t, "test error context", mock.errorCtxCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.errorCtxCalls[0].args)
-			} else {
-				assert.Len(t, mock.errorCalls, 1)
-				assert.Equal(t, "test error", mock.errorCalls[0].msg)
-				assert.Equal(t, []any{"key", "value"}, mock.errorCalls[0].args)
-			}
-		})
-	}
+	assert.Equal(t, "", mock.debugCalls[0].msg)
+	assert.Equal(t, "", mock.infoCalls[0].msg)
+	assert.Equal(t, "", mock.warnCalls[0].msg)
+	assert.Equal(t, "", mock.errorCalls[0].msg)
+
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestLoggerTypes tests the LoggerType constants
-func TestLoggerTypes(t *testing.T) {
-	assert.Equal(t, LoggerType("slog"), LoggerTypeSlog)
-	assert.Equal(t, LoggerType("glog"), LoggerTypeGlog)
-	assert.Equal(t, LoggerType("custom"), LoggerTypeCustom)
+func TestMultipleArguments(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	mock := newMockLogger()
+	logger = mock
+
+	Info("message: %s, number: %d, float: %f, bool: %v", "test", 42, 3.14, true)
+
+	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
+	assert.Equal(t, "message: %s, number: %d, float: %f, bool: %v", mock.infoCalls[0].msg)
+	assert.Equal(t, []any{"test", 42, 3.14, true}, mock.infoCalls[0].args)
+
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestConcurrentAccess tests concurrent access to global logger functions
-func TestConcurrentAccess(t *testing.T) {
-	setupTest()
+func TestNoArgs(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
 
-	const numGoroutines = 10
-	const messagesPerGoroutine = 5
+	mock := newMockLogger()
+	logger = mock
 
-	done := make(chan bool, numGoroutines)
-	ctx := context.Background()
+	Info("simple message")
+	Debug("simple debug")
+	Warn("simple warning")
+	Error("simple error")
 
-	for i := 0; i < numGoroutines; i++ {
-		go func(id int) {
-			defer func() { done <- true }()
+	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
+	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
+	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
+	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
 
-			for j := 0; j < messagesPerGoroutine; j++ {
-				Debug("concurrent debug", "goroutine", id, "message", j)
-				Info("concurrent info", "goroutine", id, "message", j)
-				Warn("concurrent warn", "goroutine", id, "message", j)
-				Error("concurrent error", "goroutine", id, "message", j)
+	assert.Empty(t, mock.infoCalls[0].args)
+	assert.Empty(t, mock.debugCalls[0].args)
+	assert.Empty(t, mock.warnCalls[0].args)
+	assert.Empty(t, mock.errorCalls[0].args)
 
-				DebugContext(ctx, "concurrent debug context", "goroutine", id, "message", j)
-				InfoContext(ctx, "concurrent info context", "goroutine", id, "message", j)
-				WarnContext(ctx, "concurrent warn context", "goroutine", id, "message", j)
-				ErrorContext(ctx, "concurrent error context", "goroutine", id, "message", j)
-			}
+	// Restore default logger
+	logger = NewGlogLogger()
+}
+
+func TestWithRealGlogLogger(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	// Use real GlogLogger
+	logger = NewGlogLogger()
+
+	// These should not panic
+	assert.NotPanics(t, func() {
+		Debug("debug message")
+		Info("info message")
+		Warn("warning message")
+		Error("error message")
+	}, "Real GlogLogger should not panic")
+}
+
+func TestSpecialCharacters(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	mock := newMockLogger()
+	logger = mock
+
+	Info("message with special chars: \n\t\"quotes\" and 'apostrophes'")
+
+	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
+	assert.Equal(t, "message with special chars: \n\t\"quotes\" and 'apostrophes'", mock.infoCalls[0].msg)
+
+	// Restore default logger
+	logger = NewGlogLogger()
+}
+
+func TestConcurrentLogging(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	mock := newMockLogger()
+	logger = mock
+
+	done := make(chan bool)
+
+	// Test concurrent logging
+	for i := 0; i < 10; i++ {
+		go func(n int) {
+			Info("concurrent message %d", n)
+			done <- true
 		}(i)
 	}
 
 	// Wait for all goroutines to complete
-	for i := 0; i < numGoroutines; i++ {
+	for i := 0; i < 10; i++ {
 		<-done
 	}
 
-	// If we get here without panic, concurrent access is working
-	assert.True(t, true)
+	assert.Equal(t, 10, len(mock.infoCalls), "Should have 10 info calls from concurrent execution")
+
+	// Restore default logger
+	logger = NewGlogLogger()
 }
 
-// TestGlobalFunctionsWithVariousArgs tests global functions with various argument types
-func TestGlobalFunctionsWithVariousArgs(t *testing.T) {
-	mock := &mockLogger{}
-	SetCustomLogger(mock)
-
-	// Test with no args
-	Info("no args message")
-	assert.Len(t, mock.infoCalls, 1)
-	assert.Equal(t, "no args message", mock.infoCalls[0].msg)
-	assert.Nil(t, mock.infoCalls[0].args)
-
-	// Reset and test with multiple args
-	mock.infoCalls = nil
-	Info("with args", "key1", "value1", "key2", 42, "key3", true)
-	assert.Len(t, mock.infoCalls, 1)
-	assert.Equal(t, "with args", mock.infoCalls[0].msg)
-	assert.Equal(t, []any{"key1", "value1", "key2", 42, "key3", true}, mock.infoCalls[0].args)
-}
-
-// TestContextPassing tests that context is properly passed to context methods
-func TestContextPassing(t *testing.T) {
-	mock := &mockLogger{}
-	SetCustomLogger(mock)
-
-	ctx := context.WithValue(context.Background(), "testKey", "testValue")
-
-	InfoContext(ctx, "test message", "arg", "value")
-
-	assert.Len(t, mock.infoCtxCalls, 1)
-	assert.Equal(t, ctx, mock.infoCtxCalls[0].ctx)
-	assert.Equal(t, "test message", mock.infoCtxCalls[0].msg)
-	assert.Equal(t, []any{"arg", "value"}, mock.infoCtxCalls[0].args)
-}
-
-// TestNilContextHandling tests behavior with nil context
-func TestNilContextHandling(t *testing.T) {
-	mock := &mockLogger{}
-	SetCustomLogger(mock)
-
-	InfoContext(nil, "test message with nil context")
-
-	assert.Len(t, mock.infoCtxCalls, 1)
-	assert.Nil(t, mock.infoCtxCalls[0].ctx)
-	assert.Equal(t, "test message with nil context", mock.infoCtxCalls[0].msg)
-}
-
-// BenchmarkGlobalInfo benchmarks the global Info function
-func BenchmarkGlobalInfo(b *testing.B) {
-	setupTest()
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Info("benchmark message", "iteration", i)
-	}
-}
-
-// BenchmarkGlobalInfoContext benchmarks the global InfoContext function
-func BenchmarkGlobalInfoContext(b *testing.B) {
-	setupTest()
-	ctx := context.Background()
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		InfoContext(ctx, "benchmark message", "iteration", i)
-	}
-}
-
-// BenchmarkLoggerSwitching benchmarks switching logger types
-func BenchmarkLoggerSwitching(b *testing.B) {
-	configs := []*LoggerConfig{
-		{Type: LoggerTypeSlog},
-		{Type: LoggerTypeGlog},
-		{Type: LoggerTypeCustom, CustomLogger: &mockLogger{}},
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		config := configs[i%len(configs)]
-		NewWithConfig(config)
-	}
-}
-
-// Helper function to create int pointer
-func intPtr(i int) *int {
-	return &i
+func TestLoggerInterfaceCompliance(t *testing.T) {
+	var _ Logger = (*mockLogger)(nil)
+	var _ Logger = (*GlogLogger)(nil)
 }

@@ -17,7 +17,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 	return func(payload []byte) error {
 		req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 			return err
 		}
 
@@ -30,13 +30,13 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 		}
 		defer func() {
 			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-				logger.Error(fmt.Sprintf("[pubstack] Draining sender response body failed: %v", err))
+				logger.Error("[pubstack] Draining sender response body failed: %v", err)
 			}
 			resp.Body.Close()
 		}()
 
 		if resp.StatusCode != http.StatusOK {
-			logger.Error(fmt.Sprintf("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK))
+			logger.Error("[pubstack] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 			return fmt.Errorf("wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		}
 		return nil
@@ -46,7 +46,7 @@ func NewHttpSender(client *http.Client, endpoint string) Sender {
 func BuildEndpointSender(client *http.Client, baseUrl string, module string) Sender {
 	endpoint, err := url.Parse(baseUrl)
 	if err != nil {
-		logger.Error(err)
+		logger.Error(err.Error())
 	}
 	endpoint.Path = path.Join(endpoint.Path, "intake", module)
 	return NewHttpSender(client, endpoint.String())

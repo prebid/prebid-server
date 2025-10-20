@@ -2,7 +2,6 @@ package adscert
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/prebid/prebid-server/v3/logger"
 )
@@ -32,8 +31,7 @@ func (sl *SignerLogger) Errorf(format string, args ...interface{}) {
 }
 
 func (sl *SignerLogger) Fatalf(format string, args ...interface{}) {
-	logger.Error(format, args...)
-	os.Exit(1)
+	logger.Fatal(format, args...)
 }
 
 func (sl *SignerLogger) Panicf(format string, args ...interface{}) {

@@ -1,361 +1,171 @@
 package logger
 
 import (
-	"context"
+	"flag"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGlogLogger_Debug tests the Debug method
+func TestNewGlogLogger(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("stderrthreshold", "INFO")
+
+	logger := NewGlogLogger()
+
+	assert.NotNil(t, logger, "NewGlogLogger should return a non-nil logger")
+
+	glogLogger, ok := logger.(*GlogLogger)
+	assert.True(t, ok, "Logger should be of type *GlogLogger")
+	assert.Equal(t, 1, glogLogger.depth, "Default depth should be 1")
+}
+
+func TestGlogLogger_ImplementsLoggerInterface(t *testing.T) {
+	var _ Logger = (*GlogLogger)(nil)
+}
+
 func TestGlogLogger_Debug(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
 	logger := NewGlogLogger()
 
-	tests := []struct {
-		name string
-		msg  string
-		args []interface{}
-	}{
-		{
-			name: "simple message",
-			msg:  "test debug message",
-			args: nil,
-		},
-		{
-			name: "message with format args",
-			msg:  "test debug message with %s and %d",
-			args: []interface{}{"string", 42},
-		},
-		{
-			name: "empty message",
-			msg:  "",
-			args: nil,
-		},
-		{
-			name: "message with no format but args provided",
-			msg:  "test message",
-			args: []interface{}{"extra", "args"},
-		},
-	}
+	// This test verifies the method can be called without panicking
+	// Actual log output verification would require capturing stderr
+	assert.NotPanics(t, func() {
+		logger.Debug("debug message")
+	}, "Debug should not panic")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// This test mainly ensures no panic occurs
-			// Since glog is a third-party library, we can't easily mock it
-			// but we can verify the method executes without error
-			assert.NotPanics(t, func() {
-				logger.Debug(tt.msg, tt.args...)
-			})
-		})
-	}
+	assert.NotPanics(t, func() {
+		logger.Debug("debug message with args: %s, %d", "test", 123)
+	}, "Debug with args should not panic")
 }
 
-// TestGlogLogger_DebugContext tests the DebugContext method
-func TestGlogLogger_DebugContext(t *testing.T) {
-	logger := NewGlogLogger()
-
-	tests := []struct {
-		name string
-		ctx  context.Context
-		msg  string
-		args []interface{}
-	}{
-		{
-			name: "with background context",
-			ctx:  context.Background(),
-			msg:  "test debug message with context",
-			args: nil,
-		},
-		{
-			name: "with nil context",
-			ctx:  nil,
-			msg:  "test debug message with nil context",
-			args: nil,
-		},
-		{
-			name: "with context and args",
-			ctx:  context.Background(),
-			msg:  "test debug message with %s and %d",
-			args: []interface{}{"context", 123},
-		},
-		{
-			name: "with context value",
-			ctx:  context.WithValue(context.Background(), "key", "value"),
-			msg:  "test debug message with context value",
-			args: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.NotPanics(t, func() {
-				logger.DebugContext(tt.ctx, tt.msg, tt.args...)
-			})
-		})
-	}
-}
-
-// TestGlogLogger_Info tests the Info method
 func TestGlogLogger_Info(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
 	logger := NewGlogLogger()
 
-	tests := []struct {
-		name string
-		msg  string
-		args []interface{}
-	}{
-		{
-			name: "simple info message",
-			msg:  "test info message",
-			args: nil,
-		},
-		{
-			name: "info message with format",
-			msg:  "info: %s happened at %v",
-			args: []interface{}{"event", "2023-01-01"},
-		},
-		{
-			name: "info with multiple args",
-			msg:  "processing %d items of type %s with priority %f",
-			args: []interface{}{10, "urgent", 9.5},
-		},
-	}
+	assert.NotPanics(t, func() {
+		logger.Info("info message")
+	}, "Info should not panic")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.NotPanics(t, func() {
-				logger.Info(tt.msg, tt.args...)
-			})
-		})
-	}
+	assert.NotPanics(t, func() {
+		logger.Info("info message with args: %s, %d", "test", 456)
+	}, "Info with args should not panic")
 }
 
-// TestGlogLogger_InfoContext tests the InfoContext method
-func TestGlogLogger_InfoContext(t *testing.T) {
-	logger := NewGlogLogger()
-
-	tests := []struct {
-		name string
-		ctx  context.Context
-		msg  string
-		args []interface{}
-	}{
-		{
-			name: "info with context",
-			ctx:  context.Background(),
-			msg:  "contextual info message",
-			args: nil,
-		},
-		{
-			name: "info with timeout context",
-			ctx:  func() context.Context { ctx, _ := context.WithCancel(context.Background()); return ctx }(),
-			msg:  "info with timeout context",
-			args: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.NotPanics(t, func() {
-				logger.InfoContext(tt.ctx, tt.msg, tt.args...)
-			})
-		})
-	}
-}
-
-// TestGlogLogger_Warn tests the Warn method
 func TestGlogLogger_Warn(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
 	logger := NewGlogLogger()
 
-	tests := []struct {
-		name string
-		msg  string
-		args []interface{}
-	}{
-		{
-			name: "simple warning",
-			msg:  "this is a warning",
-			args: nil,
-		},
-		{
-			name: "warning with details",
-			msg:  "warning: operation %s failed with code %d",
-			args: []interface{}{"save", 500},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.NotPanics(t, func() {
-				logger.Warn(tt.msg, tt.args...)
-			})
-		})
-	}
-}
-
-// TestGlogLogger_WarnContext tests the WarnContext method
-func TestGlogLogger_WarnContext(t *testing.T) {
-	logger := NewGlogLogger()
-	ctx := context.Background()
+	assert.NotPanics(t, func() {
+		logger.Warn("warning message")
+	}, "Warn should not panic")
 
 	assert.NotPanics(t, func() {
-		logger.WarnContext(ctx, "contextual warning with %s", "details")
-	})
-
-	assert.NotPanics(t, func() {
-		logger.WarnContext(nil, "warning with nil context")
-	})
+		logger.Warn("warning message with args: %s, %d", "test", 789)
+	}, "Warn with args should not panic")
 }
 
-// TestGlogLogger_Error tests the Error method
 func TestGlogLogger_Error(t *testing.T) {
-	logger := NewGlogLogger()
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
 
-	tests := []struct {
-		name string
-		msg  string
-		args []interface{}
-	}{
-		{
-			name: "simple error",
-			msg:  "an error occurred",
-			args: nil,
-		},
-		{
-			name: "error with details",
-			msg:  "error: failed to %s because %s",
-			args: []interface{}{"connect", "network unavailable"},
-		},
-		{
-			name: "error with numeric codes",
-			msg:  "error code %d: %s",
-			args: []interface{}{404, "not found"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.NotPanics(t, func() {
-				logger.Error(tt.msg, tt.args...)
-			})
-		})
-	}
-}
-
-// TestGlogLogger_ErrorContext tests the ErrorContext method
-func TestGlogLogger_ErrorContext(t *testing.T) {
-	logger := NewGlogLogger()
-	ctx := context.Background()
-
-	assert.NotPanics(t, func() {
-		logger.ErrorContext(ctx, "contextual error: %s", "database connection failed")
-	})
-
-	assert.NotPanics(t, func() {
-		logger.ErrorContext(nil, "error with nil context")
-	})
-}
-
-// TestGlogLogger_InterfaceCompliance tests that GlogLogger implements the Logger interface
-func TestGlogLogger_InterfaceCompliance(t *testing.T) {
-	var logger Logger = NewGlogLogger()
-	assert.NotNil(t, logger)
-
-	// Test that all interface methods are callable
-	ctx := context.Background()
-
-	assert.NotPanics(t, func() {
-		logger.Debug("debug", "test")
-		logger.DebugContext(ctx, "debug context", "test")
-		logger.Info("info", "test")
-		logger.InfoContext(ctx, "info context", "test")
-		logger.Warn("warn", "test")
-		logger.WarnContext(ctx, "warn context", "test")
-		logger.Error("error", "test")
-		logger.ErrorContext(ctx, "error context", "test")
-	})
-}
-
-// TestGlogLogger_ConcurrentUsage tests concurrent usage of the logger
-func TestGlogLogger_ConcurrentUsage(t *testing.T) {
-	logger := NewGlogLogger()
-	ctx := context.Background()
-
-	// Run multiple goroutines concurrently
-	const numGoroutines = 10
-	const messagesPerGoroutine = 5
-
-	done := make(chan bool, numGoroutines)
-
-	for i := 0; i < numGoroutines; i++ {
-		go func(id int) {
-			defer func() { done <- true }()
-
-			for j := 0; j < messagesPerGoroutine; j++ {
-				logger.Debug("goroutine %d message %d", id, j)
-				logger.Info("goroutine %d info %d", id, j)
-				logger.WarnContext(ctx, "goroutine %d warn %d", id, j)
-				logger.ErrorContext(ctx, "goroutine %d error %d", id, j)
-			}
-		}(i)
-	}
-
-	// Wait for all goroutines to complete
-	for i := 0; i < numGoroutines; i++ {
-		<-done
-	}
-}
-
-// TestGlogLogger_NilArgs tests behavior with nil arguments
-func TestGlogLogger_NilArgs(t *testing.T) {
 	logger := NewGlogLogger()
 
 	assert.NotPanics(t, func() {
-		logger.Debug("test with nil args", nil)
-		logger.Info("test with nil args", nil)
-		logger.Warn("test with nil args", nil)
-		logger.Error("test with nil args", nil)
-	})
-}
-
-// TestGlogLogger_EmptyArgs tests behavior with empty argument slice
-func TestGlogLogger_EmptyArgs(t *testing.T) {
-	logger := NewGlogLogger()
+		logger.Error("error message")
+	}, "Error should not panic")
 
 	assert.NotPanics(t, func() {
-		logger.Debug("test with empty args")
-		logger.Info("test with empty args")
-		logger.Warn("test with empty args")
-		logger.Error("test with empty args")
-	})
+		logger.Error("error message with args: %s, %d", "test", 999)
+	}, "Error with args should not panic")
 }
 
-// BenchmarkGlogLogger_Debug benchmarks the Debug method
-func BenchmarkGlogLogger_Debug(b *testing.B) {
+func TestGlogLogger_AllLevels(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
 	logger := NewGlogLogger()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		logger.Debug("benchmark debug message %d", i)
-	}
+	// Test that all logging levels work together
+	assert.NotPanics(t, func() {
+		logger.Debug("debug")
+		logger.Info("info")
+		logger.Warn("warn")
+		logger.Error("error")
+	}, "All logging levels should work without panic")
 }
 
-// BenchmarkGlogLogger_Info benchmarks the Info method
-func BenchmarkGlogLogger_Info(b *testing.B) {
-	logger := NewGlogLogger()
+func TestGlogLogger_Depth(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		logger.Info("benchmark info message %d", i)
-	}
+	glogLogger := &GlogLogger{depth: 2}
+
+	// Test with custom depth
+	assert.NotPanics(t, func() {
+		glogLogger.Info("info with custom depth")
+	}, "Logger with custom depth should not panic")
 }
 
-// BenchmarkGlogLogger_Error benchmarks the Error method
-func BenchmarkGlogLogger_Error(b *testing.B) {
+func TestGlogLogger_EmptyMessage(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
 	logger := NewGlogLogger()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		logger.Error("benchmark error message %d", i)
-	}
+	// Test with empty messages
+	assert.NotPanics(t, func() {
+		logger.Info("")
+		logger.Debug("")
+		logger.Warn("")
+		logger.Error("")
+	}, "Empty messages should not panic")
+}
+
+func TestGlogLogger_NoArgs(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	// Test logging without variadic args
+	assert.NotPanics(t, func() {
+		logger.Info("simple message")
+		logger.Debug("simple debug")
+		logger.Warn("simple warning")
+		logger.Error("simple error")
+	}, "Messages without args should not panic")
+}
+
+func TestGlogLogger_MultipleArgs(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	// Test with multiple arguments
+	assert.NotPanics(t, func() {
+		logger.Info("message: %s, number: %d, float: %f, bool: %v", "test", 42, 3.14, true)
+	}, "Messages with multiple args should not panic")
+}
+
+func TestGlogLogger_SpecialCharacters(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	// Test with special characters
+	assert.NotPanics(t, func() {
+		logger.Info("message with special chars: \n\t\"quotes\" and 'apostrophes'")
+	}, "Messages with special characters should not panic")
 }

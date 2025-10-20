@@ -2268,7 +2268,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	}
 
 	var loggerBuffer bytes.Buffer
-	logger := func(msg any, args ...any) {
+	logger := func(msg string, args ...any) {
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
 	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
@@ -3389,7 +3389,7 @@ func TestDoRequestImplWithTmax(t *testing.T) {
 		me:     &metricsConfig.NilMetricsEngine{},
 		Client: server.Client(),
 	}
-	logger := func(msg any, args ...any) {}
+	logger := func(msg string, args ...any) {}
 
 	tests := []struct {
 		ctxDeadline     time.Time
@@ -3464,7 +3464,7 @@ func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
 		me:     metricsMock,
 		Client: server.Client(),
 	}
-	logger := func(msg any, args ...any) {}
+	logger := func(msg string, args ...any) {}
 
 	tests := []struct {
 		ctxDeadline     time.Time

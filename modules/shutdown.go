@@ -1,8 +1,6 @@
 package modules
 
 import (
-	"fmt"
-
 	"github.com/prebid/prebid-server/v3/logger"
 )
 
@@ -35,7 +33,7 @@ func NewShutdownModules(modules map[string]interface{}) *ShutdownModules {
 func (s *ShutdownModules) Shutdown() {
 	for _, module := range s.modules {
 		if err := module.Shutdown(); err != nil {
-			logger.Error(fmt.Sprintf("Error shutting down module: %v", err))
+			logger.Error("Error shutting down module: %v", err)
 		}
 	}
 	return

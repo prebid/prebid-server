@@ -95,12 +95,10 @@ Prebid Server is not currently intended to be imported by other projects. Go Mod
 ## Swapping Global Dependencies
 
 Logger is a global side-effectful dependency that sometimes needs to be swapped to modify the behavior.  
-The `Logger` package contains an interface definition for defining a custom logger and provides multiple built-in implementations.
-The package includes a `Logger` interface definition with built-in `slog` and `glog` implementations.
-The `slog` implementation uses Go's standard `log/slog` package, while the `glog` implementation is based on `github.com/golang/glog` package.
-By default, the package uses the `slog` logger implementation.
-
-Notice: A custom logger can be defined based on the `logger.Logger` interface and configured using `LoggerConfig` or set directly via `SetCustomLogger()`.
+The `Logger` package contains an interface definition for unstructured logging with built-in `glog` implementation.
+The interface provides standard logging methods: `Debug`, `Info`, `Warn`, `Error`, and `Fatal`.
+The `glog` implementation is based on `github.com/golang/glog` package and serves as the concrete implementation for the logging interface.
+By default, the package uses the `glog` logger implementation.
 
 ## Contributing
 > [!IMPORTANT]

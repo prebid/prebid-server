@@ -1,8 +1,6 @@
 package logger
 
 import (
-	"context"
-
 	"github.com/golang/glog"
 )
 
@@ -12,43 +10,28 @@ type GlogLogger struct {
 }
 
 // Debug logs a debug-level message with the specified format and arguments.
-func (logger *GlogLogger) Debug(msg any, args ...any) {
-	glog.InfoDepthf(logger.depth, convertToString(msg, args...))
-}
-
-// DebugContext logs a debug-level message with context, using the specified format and arguments.
-func (logger *GlogLogger) DebugContext(ctx context.Context, msg any, args ...any) {
-	glog.InfoContextDepthf(ctx, logger.depth, convertToString(msg, args...))
+func (logger *GlogLogger) Debug(msg string, args ...any) {
+	glog.InfoDepthf(logger.depth, msg, args...)
 }
 
 // Info logs an informational-level message with the specified format and optional arguments.
-func (logger *GlogLogger) Info(msg any, args ...any) {
-	glog.InfoDepthf(logger.depth, convertToString(msg, args...))
-}
-
-// InfoContext logs an informational-level message with context, using the specified format and optional arguments.
-func (logger *GlogLogger) InfoContext(ctx context.Context, msg any, args ...any) {
-	glog.InfoContextDepthf(ctx, logger.depth, convertToString(msg, args...))
+func (logger *GlogLogger) Info(msg string, args ...any) {
+	glog.InfoDepthf(logger.depth, msg, args...)
 }
 
 // Warn logs a warning-level message with the specified format and arguments.
-func (logger *GlogLogger) Warn(msg any, args ...any) {
-	glog.WarningDepthf(logger.depth, convertToString(msg, args...))
-}
-
-// WarnContext logs a warning-level message with context, using the specified format and optional arguments.
-func (logger *GlogLogger) WarnContext(ctx context.Context, msg any, args ...any) {
-	glog.WarningContextDepthf(ctx, logger.depth, convertToString(msg, args...))
+func (logger *GlogLogger) Warn(msg string, args ...any) {
+	glog.WarningDepthf(logger.depth, msg, args...)
 }
 
 // Error logs an error-level message with the specified format and arguments.
-func (logger *GlogLogger) Error(msg any, args ...any) {
-	glog.ErrorDepthf(logger.depth, convertToString(msg, args...))
+func (logger *GlogLogger) Error(msg string, args ...any) {
+	glog.ErrorDepthf(logger.depth, msg, args...)
 }
 
-// ErrorContext logs an error-level message with context, using the specified format and optional arguments.
-func (logger *GlogLogger) ErrorContext(ctx context.Context, msg any, args ...any) {
-	glog.ErrorContextDepthf(ctx, logger.depth, convertToString(msg, args...))
+// Fatal logs a fatal-level message with the specified format and arguments, then exits the application.
+func (logger *GlogLogger) Fatal(msg string, args ...any) {
+	glog.FatalDepthf(logger.depth, msg, args...)
 }
 
 func NewGlogLogger() Logger {

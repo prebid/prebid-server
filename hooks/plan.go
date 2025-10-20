@@ -1,7 +1,6 @@
 package hooks
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/config"
@@ -211,7 +210,7 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
 			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
 		} else {
-			logger.Warn(fmt.Sprintf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode))
+			logger.Warn("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 

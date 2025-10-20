@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/prebid/prebid-server/v3/config"
@@ -16,8 +15,7 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 	proMetrics := metrics.PrometheusMetrics
 
 	if proMetrics == nil {
-		logger.Error(fmt.Sprintf("Prometheus metrics configured, but a Prometheus metrics engine was not found. Cannot set up a Prometheus listener."))
-		os.Exit(1)
+		logger.Fatal("Prometheus metrics configured, but a Prometheus metrics engine was not found. Cannot set up a Prometheus listener.")
 	}
 	return &http.Server{
 		Addr: cfg.Host + ":" + strconv.Itoa(cfg.Metrics.Prometheus.Port),
@@ -32,5 +30,5 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 type loggerForPrometheus struct{}
 
 func (loggerForPrometheus) Println(v ...interface{}) {
-	logger.Warn(v)
+	logger.Warn(fmt.Sprintln(v...))
 }

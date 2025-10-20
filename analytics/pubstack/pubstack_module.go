@@ -63,7 +63,7 @@ func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, 
 }
 
 func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEventCount int, maxByteSize, maxTime string, configTask ConfigUpdateTask, clock clock.Clock) (analytics.Module, error) {
-	logger.Info(fmt.Sprintf("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint))
+	logger.Info("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
 
 	// parse args
 	bufferCfg, err := newBufferConfig(maxEventCount, maxByteSize, maxTime)
@@ -215,7 +215,7 @@ func (p *PubstackModule) start(c <-chan *Configuration) {
 			return
 		case config := <-c:
 			p.updateConfig(config)
-			logger.Info(fmt.Sprintf("[pubstack] Updating config: %v", p.cfg))
+			logger.Info("[pubstack] Updating config: %v", p.cfg)
 		}
 	}
 }
