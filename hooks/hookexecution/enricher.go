@@ -78,7 +78,7 @@ func GetModulesJSON(
 		return nil, nil, nil
 	}
 
-	trace, isDebugEnabled, warnings := getDebugContext(bidRequest, account)
+	trace, isDebugEnabled, warnings := GetDebugContext(bidRequest, account)
 	modulesOutcome := getModulesOutcome(stageOutcomes, trace, isDebugEnabled)
 	if modulesOutcome == nil {
 		return nil, warnings, nil
@@ -89,7 +89,7 @@ func GetModulesJSON(
 	return data, warnings, err
 }
 
-func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (trace, bool, []error) {
+func GetDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (trace, bool, []error) {
 	var traceLevel string
 	var isDebugEnabled bool
 	var warnings []error

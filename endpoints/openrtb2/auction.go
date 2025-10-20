@@ -573,8 +573,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return nil, nil, nil, nil, nil, nil, errs
 	}
 
+	_, isDebugEnabled, _ := hookexecution.GetDebugContext(req.BidRequest, account)
+
 	hasStoredAuctionResponses := len(storedAuctionResponses) > 0
-	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredAuctionResponses, storedBidResponses, hasStoredBidRequest)
+	errL = deps.validateRequest(account, httpRequest, req, false, hasStoredAuctionResponses, storedBidResponses, hasStoredBidRequest, isDebugEnabled)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -768,7 +770,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
+func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http.Request, req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredAuctionResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest, isDebugEnabled bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -825,9 +827,11 @@ func (deps *endpointDeps) validateRequest(account *config.Account, httpReq *http
 			return []error{err}
 		}
 
-		if err := deps.validateEidPermissions(reqPrebid.Data, requestAliases); err != nil {
-			return []error{err}
+		errs := deps.validateEidPermissions(reqPrebid.Data, requestAliases, isDebugEnabled)
+		if errortypes.ContainsFatalError(errs) {
+			return errs
 		}
+		errL = append(errL, errs...)
 
 		if err := currency.ValidateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
@@ -998,32 +1002,44 @@ func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
 	return err
 }
 
-func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string) error {
+func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, requestAliases map[string]string, isDebugEnabled bool) []error {
+	var errs []error
+
 	if prebid == nil {
-		return nil
+		return errs
 	}
 
 	uniqueSources := make(map[string]struct{}, len(prebid.EidPermissions))
 	for i, eid := range prebid.EidPermissions {
 		if len(eid.Source) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i))
+			continue
 		}
 
 		if _, exists := uniqueSources[eid.Source]; exists {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i)
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i))
+			continue
 		}
 		uniqueSources[eid.Source] = struct{}{}
 
 		if len(eid.Bidders) == 0 {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i))
+			continue
 		}
 
 		if err := deps.validateBidders(eid.Bidders, deps.bidderMap, requestAliases); err != nil {
-			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+			errValidate := fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+
+			if isDebugEnabled {
+				errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("%v", errValidate)})
+				continue
+			}
+
+			errs = append(errs, fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err))
 		}
 	}
 
-	return nil
+	return errs
 }
 
 func (deps *endpointDeps) validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownRequestAliases map[string]string) error {
