@@ -110,7 +110,7 @@ func getPrebidChannel(request *openrtb2.BidRequest) (string, string) {
 
 func setPBSVersion(request *openrtb2.BidRequest, pbsVersion string) {
 	if pbsVersion == "" {
-		return
+		pbsVersion = version.VerUnknown
 	}
 	source := request.Source
 	if source == nil {
@@ -211,6 +211,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 func getBidType(markupType openrtb2.MarkupType) openrtb_ext.BidType {
+
 	switch markupType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner

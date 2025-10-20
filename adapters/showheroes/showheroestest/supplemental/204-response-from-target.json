@@ -82,7 +82,15 @@
                 }
               }
             }
-          ]
+          ],
+          "source": {
+            "ext": {
+              "pbs": {
+                "pbsp": "go",
+                "pbsv": "unknown"
+              }
+            }
+          }
         },
         "impIDs":["test-imp-id"]
       },

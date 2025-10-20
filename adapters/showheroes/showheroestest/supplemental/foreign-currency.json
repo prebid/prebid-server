@@ -65,6 +65,14 @@
                         }
                     }
                 }],
+                "source": {
+                    "ext": {
+                    "pbs": {
+                        "pbsp": "go",
+                        "pbsv": "unknown"
+                    }
+                    }
+                },
                 "ext": {
                     "prebid": {
                         "currency": {
