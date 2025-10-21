@@ -56,6 +56,7 @@ type requestSplitter struct {
 //  1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //  2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //  3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
+//  4. BidRequest.Ext.PageViewId will be set to that Bidder's ID.
 func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
@@ -92,6 +93,18 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	for bidder, uid := range explicitBuyerUIDs {
 		lowerKey := strings.ToLower(bidder)
 		lowerCaseExplicitBuyerUIDs[lowerKey] = uid
+	}
+
+	pageViewIds, err := extractAndCleanPageViewIds(req)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
+	lowerCasePageViewIds := make(map[string]string)
+	for bidder, pageViewId := range pageViewIds {
+		lowerKey := strings.ToLower(bidder)
+		lowerCasePageViewIds[lowerKey] = pageViewId
 	}
 
 	bidderParamsInReqExt, err := ExtractReqExtBidderParamsMap(req.BidRequest)
@@ -251,6 +264,8 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			bidderLabels.AdapterBids = metrics.AdapterBidPresent
 		}
 
+		pageViewId := pageViewIds[strings.ToLower(bidder)]
+
 		bidderRequest := BidderRequest{
 			BidderName:            openrtb_ext.BidderName(bidder),
 			BidderCoreName:        coreBidder,
@@ -259,6 +274,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 			BidderStoredResponses: bidderImpWithBidResp[openrtb_ext.BidderName(bidder)],
 			ImpReplaceImpId:       auctionReq.BidderImpReplaceImpID[bidder],
 			BidderLabels:          bidderLabels,
+			PageViewId:            pageViewId,
 		}
 		bidderRequests = append(bidderRequests, bidderRequest)
 	}
@@ -633,6 +649,31 @@ func extractAndCleanBuyerUIDs(req *openrtb_ext.RequestWrapper) (map[string]strin
 	// The API guarantees that user.ext.prebid.buyeruids exists and has at least one ID defined,
 	// as long as user.ext.prebid exists.
 	return buyerUIDs, nil
+}
+
+// extractAndCleanPageViewIds parses the values from ext.prebid.page_view_ids, and then deletes those values from the ext.
+// This prevents a Bidder from getting access to page view IDs of other Bidders.
+func extractAndCleanPageViewIds(req *openrtb_ext.RequestWrapper) (map[string]string, error) {
+	if req.Ext == nil {
+		return nil, nil
+	}
+
+	requestExt, err := req.GetRequestExt()
+	if err != nil {
+		return nil, err
+	}
+
+	prebid := requestExt.GetPrebid()
+	if prebid == nil {
+		return nil, nil
+	}
+
+	pageViewIds := prebid.PageViewIds
+
+	prebid.PageViewIds = nil
+	requestExt.SetPrebid(prebid)
+
+	return pageViewIds, nil
 }
 
 // splitImps takes a list of Imps and returns a map of imps which have been sanitized for each bidder.

@@ -3968,7 +3968,125 @@ func TestBuildExtData(t *testing.T) {
 	}
 }
 
-func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
+func TestCleanOpenRTBRequestsFilterBidderRequestExtForPageViewIds(t *testing.T) {
+	pageViewId1 := "a147eab5-9b1f-4fdc-b1f8-900a58c87a39"
+	pageViewId2 := "468dd24e-de62-4d2b-bdef-1daaea079e4c"
+	testCases := []struct {
+		desc            string
+		inExt           json.RawMessage
+		wantExt         []json.RawMessage
+		wantPageViewIds []string
+	}{
+		{
+			desc:            "Nil request ext, empty page view IDs",
+			inExt:           nil,
+			wantExt:         nil,
+			wantPageViewIds: []string{"", ""},
+		},
+		{
+			desc:            "Missing prebid in request ext, empty page view IDs",
+			inExt:           json.RawMessage(`{}`),
+			wantExt:         nil,
+			wantPageViewIds: []string{"", ""},
+		},
+		{
+			desc:            "Missing page_view_ids in prebid in request ext, empty page view IDs",
+			inExt:           json.RawMessage(`{"prebid": {}}`),
+			wantExt:         nil,
+			wantPageViewIds: []string{"", ""},
+		},
+		{
+			desc:  "Empty page_view_ids in prebid in request ext, empty page view IDs",
+			inExt: json.RawMessage(`{"prebid": {"page_view_ids":{}, "channel":{"name":"b","version":"c"}}}`),
+			wantExt: []json.RawMessage{
+				json.RawMessage(`{"prebid":{"channel":{"name":"b","version":"c"}}}`),
+				json.RawMessage(`{"prebid":{"channel":{"name":"b","version":"c"}}}`),
+			},
+			wantPageViewIds: []string{"", ""},
+		},
+		{
+			desc: "Non-matching page_view_ids in prebid in request ext, empty page view IDs",
+			inExt: json.RawMessage(`{"prebid":{"page_view_ids":{
+					"some-bidder":"page-view-id-for-some-bidder",
+					"second-bidder":"page-view-id-for-second-bidder"
+			}}}`),
+			wantExt:         nil,
+			wantPageViewIds: []string{"", ""},
+		},
+		{
+			desc: "Matching page_view_ids in prebid in request ext, non-empty page view IDs",
+			inExt: json.RawMessage(`{"prebid": { "channel": { "name":"b", "version":"c" }, "page_view_ids": {
+					"some-bidder":"page-view-id-for-some-bidder",
+					"appnexus": "a147eab5-9b1f-4fdc-b1f8-900a58c87a39",
+					"pubmatic": "468dd24e-de62-4d2b-bdef-1daaea079e4c"
+			}}}`),
+			wantExt: []json.RawMessage{
+				json.RawMessage(`{"prebid":{"channel":{"name":"b","version":"c"}}}`),
+				json.RawMessage(`{"prebid":{"channel":{"name":"b","version":"c"}}}`),
+			},
+			wantPageViewIds: []string{pageViewId1, pageViewId2},
+		},
+		{
+			desc: "One matching page_view_id in prebid in request ext, one non-empty page view ID",
+			inExt: json.RawMessage(`{ "prebid": { "channel": { "name":"b", "version":"c" }, "page_view_ids": {
+					"some-bidder":"page-view-id-for-some-bidder",
+					"appnexus": "a147eab5-9b1f-4fdc-b1f8-900a58c87a39"
+			}}}`),
+			wantExt: []json.RawMessage{
+				json.RawMessage(`{"prebid":{"channel":{"name":"b","version":"c"}}}`),
+				json.RawMessage(`{"prebid":{"channel":{"name":"b","version":"c"}}}`),
+			},
+			wantPageViewIds: []string{pageViewId1, ""},
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequestWithBidderParams()
+		req.Ext = nil
+		var extRequest *openrtb_ext.ExtRequest
+		if test.inExt != nil {
+			req.Ext = test.inExt
+			extRequest = &openrtb_ext.ExtRequest{}
+			err := jsonutil.UnmarshalValid(req.Ext, extRequest)
+			assert.NoErrorf(t, err, test.desc+":Error unmarshaling inExt")
+		}
+
+		auctionReq := AuctionRequest{
+			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:         &emptyUsersync{},
+			Account:           config.Account{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+
+		reqSplitter := &requestSplitter{
+			bidderToSyncerKey: map[string]string{},
+			me:                &metrics.MetricsEngineMock{},
+			privacyConfig:     config.Privacy{},
+			gdprPermsBuilder:  gdprPermissionsBuilder,
+			hostSChainNode:    nil,
+			bidderInfo:        config.BidderInfos{},
+		}
+
+		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, gdpr.SignalNo, false, map[string]float64{})
+		assert.Equal(t, 0, len(errs), test.desc)
+		sort.Slice(bidderRequests, func(i, j int) bool {
+			return bidderRequests[i].BidderCoreName < bidderRequests[j].BidderCoreName
+		})
+		for i, wantBidderRequest := range test.wantExt {
+			assert.Equal(t, wantBidderRequest, bidderRequests[i].BidRequest.Ext, test.desc+" : "+string(bidderRequests[i].BidderCoreName)+"\n\t\tGotRequestExt : "+string(bidderRequests[i].BidRequest.Ext))
+		}
+		for i, wantPageViewId := range test.wantPageViewIds {
+			assert.Equal(t, wantPageViewId, bidderRequests[i].PageViewId, test.desc+" : "+string(bidderRequests[i].BidderCoreName)+"\n\t\tGotPageViewId : "+bidderRequests[i].PageViewId)
+		}
+	}
+}
+
+func TestCleanOpenRTBRequestsFilterBidderRequestExtForAlternateBidderCodes(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		inExt     json.RawMessage
