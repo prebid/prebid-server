@@ -56,6 +56,13 @@ func TestBuilderWithWorkingDir(t *testing.T) {
 			expectedModuleOK: true,
 		},
 		{
+			name:             "invalid-config",
+			config:           json.RawMessage(`{"enabled": true, "refreshrateseconds": "invalid-format"}`),
+			deps:             moduledeps.ModuleDeps{},
+			expectError:      true,
+			expectedModuleOK: false,
+		},
+		{
 			name:   "with-geoscope-data",
 			config: json.RawMessage(``),
 			deps: moduledeps.ModuleDeps{

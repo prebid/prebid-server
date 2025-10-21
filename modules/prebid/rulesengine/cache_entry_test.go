@@ -14,39 +14,38 @@ import (
 
 func TestNewCacheEntry(t *testing.T) {
 	testCases := []struct {
-		name                    string
-		inCfg                   *config.PbRulesEngine
-		inCfgRaw                *json.RawMessage
-		expectEmptyRulesetArray bool
-		expectedRulesetCount    int
-		expectedErr             error
+		name                 string
+		inCfg                *config.PbRulesEngine
+		inCfgRaw             *json.RawMessage
+		expectedRulesetCount int
+		expectedErr          error
 	}{
 		{
-			name:                    "nil-ruleset-config",
-			expectEmptyRulesetArray: true,
-			expectedErr:             errors.New("no rules engine configuration provided"),
+			name:                 "nil-ruleset-config",
+			expectedRulesetCount: 0,
+			expectedErr:          errors.New("no rules engine configuration provided"),
 		},
 		{
-			name:                    "nil-cfgRaw",
-			inCfg:                   &config.PbRulesEngine{},
-			expectEmptyRulesetArray: true,
-			expectedErr:             errors.New("Can't create identifier hash from empty raw json configuration"),
+			name:                 "nil-cfgRaw",
+			inCfg:                &config.PbRulesEngine{},
+			expectedRulesetCount: 0,
+			expectedErr:          errors.New("Can't create identifier hash from empty raw json configuration"),
 		},
 		{
-			name:                    "nil-ruleset-array",
-			inCfg:                   &config.PbRulesEngine{},
-			inCfgRaw:                getValidJsonConfig(),
-			expectEmptyRulesetArray: true,
-			expectedErr:             nil,
+			name:                 "nil-ruleset-array",
+			inCfg:                &config.PbRulesEngine{},
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 0,
+			expectedErr:          nil,
 		},
 		{
 			name: "empty-ruleset-array",
 			inCfg: &config.PbRulesEngine{
 				RuleSets: []config.RuleSet{},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectEmptyRulesetArray: true,
-			expectedErr:             nil,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 0,
+			expectedErr:          nil,
 		},
 		{
 			name: "static-ruleset-with-wrong-stage",
@@ -55,8 +54,8 @@ func TestNewCacheEntry(t *testing.T) {
 					{Stage: "wrong-stage"},
 				},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectEmptyRulesetArray: true,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 0,
 		},
 		{
 			name: "createCacheRuleSet-throws-error",
@@ -76,8 +75,8 @@ func TestNewCacheEntry(t *testing.T) {
 					},
 				},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectEmptyRulesetArray: true,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 0,
 		},
 		{
 			name: "dynamic-ruleset",
@@ -85,9 +84,8 @@ func TestNewCacheEntry(t *testing.T) {
 				GenerateRulesFromBidderConfig: true,
 				RuleSets:                      []config.RuleSet{},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectedRulesetCount:    1,
-			expectEmptyRulesetArray: false,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 1,
 		},
 		{
 			name: "single-static-ruleset",
@@ -108,9 +106,8 @@ func TestNewCacheEntry(t *testing.T) {
 					},
 				},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectedRulesetCount:    1,
-			expectEmptyRulesetArray: false,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 1,
 		},
 		{
 			name: "single-static-ruleset-with-dynamic-ruleset",
@@ -132,9 +129,8 @@ func TestNewCacheEntry(t *testing.T) {
 					},
 				},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectedRulesetCount:    2,
-			expectEmptyRulesetArray: false,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 2,
 		},
 		{
 			name: "multiple-static-rulesets-some-with-the-wrong-stage",
@@ -156,9 +152,8 @@ func TestNewCacheEntry(t *testing.T) {
 					},
 				},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectedRulesetCount:    1,
-			expectEmptyRulesetArray: false,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 1,
 		},
 		{
 			name: "Multiple-entries-with-supported-rulesets",
@@ -192,9 +187,8 @@ func TestNewCacheEntry(t *testing.T) {
 					},
 				},
 			},
-			inCfgRaw:                getValidJsonConfig(),
-			expectedRulesetCount:    2,
-			expectEmptyRulesetArray: false,
+			inCfgRaw:             getValidJsonConfig(),
+			expectedRulesetCount: 2,
 		},
 	}
 
@@ -202,13 +196,7 @@ func TestNewCacheEntry(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cacheEntry, err := NewCacheEntry(tc.inCfg, tc.inCfgRaw, map[string][]string{})
 
-			if tc.expectEmptyRulesetArray {
-				assert.Empty(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage)
-			} else {
-				assert.NotEmpty(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage)
-				assert.Len(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage, tc.expectedRulesetCount)
-			}
-
+			assert.Len(t, cacheEntry.ruleSetsForProcessedAuctionRequestStage, tc.expectedRulesetCount)
 			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
@@ -422,6 +410,11 @@ func getValidJsonConfig() *json.RawMessage {
     "enabled": true,
     "generate_rules_from_bidderconfig": true,
     "timestamp": "20250131 00:00:00",
+    "set_definitions": {
+      "country_groups": {
+        "EEA": ["FRA", "DEU"]
+      }
+    },
     "rulesets": [
       {
         "stage": "processed_auction_request",
