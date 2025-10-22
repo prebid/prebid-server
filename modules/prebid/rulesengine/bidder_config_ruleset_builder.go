@@ -52,12 +52,10 @@ func mergeCountryGroups(defaults, setDefinitions CountryGroups) CountryGroups {
 		copy(copied, v)
 		countryGroups[strings.ToUpper(k)] = copied
 	}
-	if setDefinitions != nil {
-		for k, v := range setDefinitions {
-			copied := make([]string, len(v))
-			copy(copied, v)
-			countryGroups[strings.ToUpper(k)] = copied
-		}
+	for k, v := range setDefinitions {
+		copied := make([]string, len(v))
+		copy(copied, v)
+		countryGroups[strings.ToUpper(k)] = copied
 	}
 	return countryGroups
 }

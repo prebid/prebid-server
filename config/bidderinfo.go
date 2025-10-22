@@ -596,10 +596,6 @@ func validatePlatformInfo(info *PlatformInfo) error {
 }
 
 func validateGeoscope(geoscope []string, bidderName string) error {
-	if len(geoscope) == 0 {
-		return nil
-	}
-
 	// ISO 3166-1 alpha-3 country codes are uppercase 3-letter codes
 	for i, code := range geoscope {
 		code = strings.ToUpper(strings.TrimSpace(code))
