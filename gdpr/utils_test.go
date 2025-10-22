@@ -1,4 +1,4 @@
-package exchange
+package gdpr
 
 import (
 	"testing"
@@ -6,7 +6,6 @@ import (
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
@@ -16,53 +15,53 @@ func TestGetGDPR(t *testing.T) {
 	tests := []struct {
 		description string
 		giveRegs    *openrtb2.Regs
-		wantGDPR    gdpr.Signal
+		wantGDPR    Signal
 		wantError   bool
 	}{
 		{
 			description: "Regs Ext GDPR = 0",
 			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](0)},
-			wantGDPR:    gdpr.SignalNo,
+			wantGDPR:    SignalNo,
 		},
 		{
 			description: "Regs Ext GDPR = 1",
 			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](1)},
-			wantGDPR:    gdpr.SignalYes,
+			wantGDPR:    SignalYes,
 		},
 		{
 			description: "Regs Ext GDPR = null",
 			giveRegs:    &openrtb2.Regs{GDPR: nil},
-			wantGDPR:    gdpr.SignalAmbiguous,
+			wantGDPR:    SignalAmbiguous,
 		},
 		{
 			description: "Regs is nil",
 			giveRegs:    nil,
-			wantGDPR:    gdpr.SignalAmbiguous,
+			wantGDPR:    SignalAmbiguous,
 		},
 		{
 			description: "Regs Ext GDPR = null, GPPSID has tcf2",
 			giveRegs:    &openrtb2.Regs{GDPR: nil, GPPSID: []int8{2}},
-			wantGDPR:    gdpr.SignalYes,
+			wantGDPR:    SignalYes,
 		},
 		{
 			description: "Regs Ext GDPR = 1, GPPSID has uspv1",
 			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](1), GPPSID: []int8{6}},
-			wantGDPR:    gdpr.SignalNo,
+			wantGDPR:    SignalNo,
 		},
 		{
 			description: "Regs Ext GDPR = 0, GPPSID has tcf2",
 			giveRegs:    &openrtb2.Regs{GDPR: ptrutil.ToPtr[int8](0), GPPSID: []int8{2}},
-			wantGDPR:    gdpr.SignalYes,
+			wantGDPR:    SignalYes,
 		},
 		{
 			description: "Regs Ext is nil, GPPSID has tcf2",
 			giveRegs:    &openrtb2.Regs{GPPSID: []int8{2}},
-			wantGDPR:    gdpr.SignalYes,
+			wantGDPR:    SignalYes,
 		},
 		{
 			description: "Regs Ext is nil, GPPSID has uspv1",
 			giveRegs:    &openrtb2.Regs{GPPSID: []int8{6}},
-			wantGDPR:    gdpr.SignalNo,
+			wantGDPR:    SignalNo,
 		},
 	}
 
@@ -88,43 +87,43 @@ func TestGetGDPR(t *testing.T) {
 func TestEnforceGDPR(t *testing.T) {
 	tests := []struct {
 		name            string
-		giveSignal      gdpr.Signal
-		giveDefault     gdpr.Signal
+		giveSignal      Signal
+		giveDefault     Signal
 		giveChannelFlag bool
 		wantResult      bool
 	}{
 		{
 			name:            "gdpr-applies-with-yes-signal-and-channel-enabled",
-			giveSignal:      gdpr.SignalYes,
-			giveDefault:     gdpr.SignalYes,
+			giveSignal:      SignalYes,
+			giveDefault:     SignalYes,
 			giveChannelFlag: true,
 			wantResult:      true,
 		},
 		{
 			name:            "gdpr-does-not-apply-with-no-signal-and-channel-enabled",
-			giveSignal:      gdpr.SignalNo,
-			giveDefault:     gdpr.SignalYes,
+			giveSignal:      SignalNo,
+			giveDefault:     SignalYes,
 			giveChannelFlag: true,
 			wantResult:      false,
 		},
 		{
 			name:            "gdpr-applies-with-ambiguous-signal-and-default-yes-with-channel-enabled",
-			giveSignal:      gdpr.SignalAmbiguous,
-			giveDefault:     gdpr.SignalYes,
+			giveSignal:      SignalAmbiguous,
+			giveDefault:     SignalYes,
 			giveChannelFlag: true,
 			wantResult:      true,
 		},
 		{
 			name:            "gdpr-does-not-apply-with-ambiguous-signal-and-default-no-with-channel-enabled",
-			giveSignal:      gdpr.SignalAmbiguous,
-			giveDefault:     gdpr.SignalNo,
+			giveSignal:      SignalAmbiguous,
+			giveDefault:     SignalNo,
 			giveChannelFlag: true,
 			wantResult:      false,
 		},
 		{
 			name:            "gdpr-does-not-apply-with-yes-signal-and-channel-disabled",
-			giveSignal:      gdpr.SignalYes,
-			giveDefault:     gdpr.SignalYes,
+			giveSignal:      SignalYes,
+			giveDefault:     SignalYes,
 			giveChannelFlag: false,
 			wantResult:      false,
 		},
@@ -273,13 +272,68 @@ func TestSelectEEACountries(t *testing.T) {
 	}
 }
 
+func TestIsEEACountry(t *testing.T) {
+	eeaCountries := []string{"FRA", "DEU", "ITA", "ESP", "NLD"}
+
+	tests := []struct {
+		name     string
+		country  string
+		eeaList  []string
+		expected bool
+	}{
+		{
+			name:     "Country_in_EEA",
+			country:  "FRA",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_in_EEA_lowercase",
+			country:  "fra",
+			eeaList:  eeaCountries,
+			expected: true,
+		},
+		{
+			name:     "Country_not_in_EEA",
+			country:  "USA",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "Empty_country_string",
+			country:  "",
+			eeaList:  eeaCountries,
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_empty",
+			country:  "FRA",
+			eeaList:  []string{},
+			expected: false,
+		},
+		{
+			name:     "EEA_list_is_nil",
+			country:  "FRA",
+			eeaList:  nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isEEACountry(tt.country, tt.eeaList)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestParseGDPRDefaultValue(t *testing.T) {
 	tests := []struct {
 		name        string
 		giveRequest *openrtb_ext.RequestWrapper
 		giveDefault string
 		giveEEA     []string
-		wantResult  gdpr.Signal
+		wantResult  Signal
 	}{
 		{
 			name: "geo-nil-cfg-default-0",
@@ -292,7 +346,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			},
 			giveDefault: "0",
 			giveEEA:     []string{"DEU", "FRA"},
-			wantResult:  gdpr.SignalNo,
+			wantResult:  SignalNo,
 		},
 		{
 			name: "user-geo-present-eea-empty",
@@ -305,7 +359,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			},
 			giveDefault: "0",
 			giveEEA:     []string{},
-			wantResult:  gdpr.SignalNo,
+			wantResult:  SignalNo,
 		},
 		{
 			name: "user-geo-present-geo-country-in-eea",
@@ -318,7 +372,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			},
 			giveDefault: "0",
 			giveEEA:     []string{"DEU", "FRA"},
-			wantResult:  gdpr.SignalYes,
+			wantResult:  SignalYes,
 		},
 		{
 			name: "user-geo-present-geo-country-not-in-eea-but-properly-formatted",
@@ -331,7 +385,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			},
 			giveDefault: "1",
 			giveEEA:     []string{"DEU", "FRA"},
-			wantResult:  gdpr.SignalNo,
+			wantResult:  SignalNo,
 		},
 		{
 			name: "user-geo-present-geo-country-not-in-eea-but-improperly-formatted",
@@ -344,7 +398,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			},
 			giveDefault: "1",
 			giveEEA:     []string{"DEU", "FRA"},
-			wantResult:  gdpr.SignalYes,
+			wantResult:  SignalYes,
 		},
 		{
 			name: "device-geo-present-country-not-in-eea",
@@ -357,7 +411,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			},
 			giveDefault: "1",
 			giveEEA:     []string{"DEU", "FRA"},
-			wantResult:  gdpr.SignalNo,
+			wantResult:  SignalNo,
 		},
 		{
 			name: "user-and-device-geo-present-user-geo-country-selected",
@@ -373,7 +427,7 @@ func TestParseGDPRDefaultValue(t *testing.T) {
 			},
 			giveDefault: "0",
 			giveEEA:     []string{"DEU", "FRA"},
-			wantResult:  gdpr.SignalYes,
+			wantResult:  SignalYes,
 		},
 	}
 

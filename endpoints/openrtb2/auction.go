@@ -2087,18 +2087,18 @@ func (deps *endpointDeps) processGDPR(req *openrtb_ext.RequestWrapper, accountGD
 	}
 
 	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := exchange.SelectEEACountries(deps.cfg.GDPR.EEACountries, accountGDPR.EEACountries)
+	eeaCountries := gdpr.SelectEEACountries(deps.cfg.GDPR.EEACountries, accountGDPR.EEACountries)
 
 	// Make our best guess if GDPR applies
-	gdprDefaultValue := exchange.ParseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
-	gdprSignal, err := exchange.GetGDPR(req)
+	gdprDefaultValue := gdpr.ParseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := gdpr.GetGDPR(req)
 	if err != nil {
 		gdprErrs = append(gdprErrs, err)
 	}
-	consent := exchange.GetConsent(req, gpp)
+	consent := gdpr.GetConsent(req, gpp)
 
 	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[requestType])
-	gdprEnforced := exchange.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+	gdprEnforced := gdpr.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	if gdprEnforced {
 		analyticsPolicy = deps.gdprPrivacyPolicyBuilder(tcf2Config, gdprSignal, consent)
 	}
