@@ -81,7 +81,11 @@
           ],
           "site": {
             "publisher": {
-              "id": "first-publisher"
+              "ext": {
+                "prebid": {
+                  "publisherId": "first-publisher"
+                }
+              }
             }
           }
         },

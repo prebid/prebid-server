@@ -39,8 +39,13 @@
           "site": {
             "page": "https://example.com",
             "publisher": {
-              "id": "new-publisher-123",
-              "name": "Existing Publisher"
+              "id": "existing-publisher",
+              "name": "Existing Publisher",
+              "ext": {
+                "prebid": {
+                  "publisherId": "new-publisher-123"
+                }
+              }
             }
           },
           "imp": [

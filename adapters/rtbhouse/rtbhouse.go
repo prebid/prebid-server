@@ -21,6 +21,16 @@ const (
 	BidderCurrency string = "USD"
 )
 
+// publisherExtPrebid defines the structure for publisher.ext.prebid used by RTBHouse adapter
+type publisherExtPrebid struct {
+	PublisherId string `json:"publisherId,omitempty"`
+}
+
+// publisherExt defines the structure for publisher.ext used by RTBHouse adapter
+type publisherExt struct {
+	Prebid *publisherExtPrebid `json:"prebid,omitempty"`
+}
+
 // RTBHouseAdapter implements the Bidder interface.
 type RTBHouseAdapter struct {
 	endpoint string
@@ -107,7 +117,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		reqCopy.Imp = append(reqCopy.Imp, imp)
 	}
 
-	// Set publisher ID in site.publisher.id if we found one
+	// Set publisher ID in site.publisher.ext.prebid.publisherId if we found one
 	if publisherId != "" {
 		if reqCopy.Site == nil {
 			reqCopy.Site = &openrtb2.Site{}
@@ -123,7 +133,26 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			publisherCopy := *reqCopy.Site.Publisher
 			reqCopy.Site.Publisher = &publisherCopy
 		}
-		reqCopy.Site.Publisher.ID = publisherId
+
+		// Set publisherId in publisher.ext.prebid.publisherId using local struct
+		var pubExt publisherExt
+		if reqCopy.Site.Publisher.Ext != nil {
+			if err := jsonutil.Unmarshal(reqCopy.Site.Publisher.Ext, &pubExt); err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
+		}
+		if pubExt.Prebid == nil {
+			pubExt.Prebid = &publisherExtPrebid{}
+		}
+		pubExt.Prebid.PublisherId = publisherId
+
+		publisherExtJSON, err := jsonutil.Marshal(pubExt)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		reqCopy.Site.Publisher.Ext = publisherExtJSON
 	}
 
 	openRTBRequestJSON, err := json.Marshal(reqCopy)

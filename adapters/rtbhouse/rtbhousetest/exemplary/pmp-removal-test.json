@@ -58,7 +58,11 @@
           ],
           "site": {
             "publisher": {
-              "id": "12345"
+              "ext": {
+                "prebid": {
+                  "publisherId": "12345"
+                }
+              }
             }
           }
         },

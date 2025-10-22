@@ -57,7 +57,11 @@
           ],
           "site": {
             "publisher": {
-              "id": "app-publisher-123"
+              "ext": {
+                "prebid": {
+                  "publisherId": "app-publisher-123"
+                }
+              }
             }
           }
         },
