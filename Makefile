@@ -38,6 +38,6 @@ format:
 formatcheck:
 	./scripts/format.sh -f false
 
-# build-analytics generates analytics/builder.go file which provides a list of all available analytics modules
+# build-analytics generates analytics/build/build.go file which provides a list of all available analytics modules
 build-analytics:
-	go generate analytics/modules.go
+	go generate analytics/build/build.go

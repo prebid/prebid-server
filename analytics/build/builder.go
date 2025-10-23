@@ -7,7 +7,6 @@ import (
 )
 
 // builders returns mapping between analytics module name and its builder.
-// Since we no longer use vendor directories, we hardcode "modules" instead.
 func builders() AnalyticsModuleBuilders {
 	return AnalyticsModuleBuilders{
 		"agma":       modulesAgma.Builder,

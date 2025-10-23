@@ -3,21 +3,21 @@ package agma
 import (
 	"encoding/json"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type Config struct {
-	Enabled  bool                             `mapstructure:"enabled" json:"enabled"`
-	Endpoint config.AgmaAnalyticsHttpEndpoint `mapstructure:"endpoint" json:"endpoint"`
+	Enabled  bool                             `"enabled" json:"enabled"`
+	Endpoint config.AgmaAnalyticsHttpEndpoint `"endpoint" json:"endpoint"`
 	Buffers  struct {
-		EventCount int    `mapstructure:"eventCount" json:"eventCount"`
-		BufferSize string `mapstructure:"bufferSize" json:"bufferSize"`
-		Timeout    string `mapstructure:"timeout" json:"timeout"`
-	} `mapstructure:"buffers" json:"buffers"`
-	Accounts []config.AgmaAnalyticsAccount `mapstructure:"accounts" json:"accounts"`
+		EventCount int    `"eventCount" json:"eventCount"`
+		BufferSize string `"bufferSize" json:"bufferSize"`
+		Timeout    string `"timeout" json:"timeout"`
+	} `"buffers" json:"buffers"`
+	Accounts []config.AgmaAnalyticsAccount `"accounts" json:"accounts"`
 }
 
 // Builder builds the agma analytics module.
@@ -28,7 +28,7 @@ func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, er
 
 	var c Config
 	if cfg != nil {
-		if err := mapstructure.Decode(cfg, &c); err != nil {
+		if err := jsonutil.Unmarshal(cfg, &c); err != nil {
 			return nil, err
 		}
 	}

@@ -3,7 +3,7 @@ package filelogger
 import (
 	"encoding/json"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
@@ -12,15 +12,15 @@ import (
 // Config is the minimal configuration for the file logger analytics module.
 // Empty Filename means the module is disabled.
 type Config struct {
-	Enabled  bool   `mapstructure:"enabled" json:"enabled"`
-	Filename string `mapstructure:"filename" json:"filename"`
+	Enabled  bool   `"enabled" json:"enabled"`
+	Filename string `"filename" json:"filename"`
 }
 
 // Builder builds the filelogger analytics module.
 func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error) {
 	var c Config
 	if cfg != nil {
-		if err := mapstructure.Decode(cfg, &c); err != nil {
+		if err := jsonutil.Unmarshal(cfg, &c); err != nil {
 			return nil, err
 		}
 	}

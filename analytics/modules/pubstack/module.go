@@ -3,22 +3,22 @@ package pubstack
 import (
 	"encoding/json"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
 )
 
 type Config struct {
-	Enabled     bool   `mapstructure:"enabled" json:"enabled"`
-	ScopeId     string `mapstructure:"scopeId" json:"scopeId"`
-	IntakeUrl   string `mapstructure:"intakeUrl" json:"intakeUrl"`
-	ConfRefresh string `mapstructure:"confRefresh" json:"confRefresh"`
+	Enabled     bool   `"enabled" json:"enabled"`
+	ScopeId     string `"scopeId" json:"scopeId"`
+	IntakeUrl   string `"intakeUrl" json:"intakeUrl"`
+	ConfRefresh string `"confRefresh" json:"confRefresh"`
 	Buffers     struct {
-		EventCount int    `mapstructure:"eventCount" json:"eventCount"`
-		BufferSize string `mapstructure:"bufferSize" json:"bufferSize"`
-		Timeout    string `mapstructure:"timeout" json:"timeout"`
-	} `mapstructure:"buffers" json:"buffers"`
+		EventCount int    `"eventCount" json:"eventCount"`
+		BufferSize string `"bufferSize" json:"bufferSize"`
+		Timeout    string `"timeout" json:"timeout"`
+	} `"buffers" json:"buffers"`
 }
 
 func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error) {
@@ -28,7 +28,7 @@ func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, er
 
 	var c Config
 	if cfg != nil {
-		if err := mapstructure.Decode(cfg, &c); err != nil {
+		if err := jsonutil.Unmarshal(cfg, &c); err != nil {
 			return nil, err
 		}
 	}
