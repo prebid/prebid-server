@@ -3,8 +3,7 @@ endpoint: "https://srv.datacygnal.io/pbs/bidder?zid={{.ZoneID}}"
 maintainer:
   email: "contact@bcm.ltd"
 userSync:
-  # BCM Int. supports user syncing, but requires configuration by the host.Contact this
-  # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
-    - redirect
-    - iframe
+    redirect:
+      url: "https://track.datacygnal.io/sync/v2?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+      userMacro: "{uid}"

@@ -3,8 +3,7 @@ endpoint: "https://srv.bidgx.com/pbs/bidder?zid={{.ZoneID}}"
 maintainer:
   email: "aso@bidgency.com"
 userSync:
-  # Bidgency supports user syncing, but requires configuration by the host.Contact this
-  # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
-    - redirect
-    - iframe
+    redirect:
+      url: "https://track.bidgx.com/sync/v2?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+      userMacro: "{uid}"
