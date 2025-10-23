@@ -14,7 +14,6 @@ capabilities:
       - video
       - native
 userSync:
-  supports:
-    redirect:
-      url: "https://track.aso1.net/sync/v2?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
-      userMacro: "{uid}"
+  redirect:
+    url: "https://track.aso1.net/sync/v2?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "{uid}"
