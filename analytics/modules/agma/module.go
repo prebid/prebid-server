@@ -10,14 +10,14 @@ import (
 )
 
 type Config struct {
-	Enabled  bool                             `"enabled" json:"enabled"`
-	Endpoint config.AgmaAnalyticsHttpEndpoint `"endpoint" json:"endpoint"`
+	Enabled  bool                             `json:"enabled"`
+	Endpoint config.AgmaAnalyticsHttpEndpoint `json:"endpoint"`
 	Buffers  struct {
-		EventCount int    `"eventCount" json:"eventCount"`
-		BufferSize string `"bufferSize" json:"bufferSize"`
-		Timeout    string `"timeout" json:"timeout"`
-	} `"buffers" json:"buffers"`
-	Accounts []config.AgmaAnalyticsAccount `"accounts" json:"accounts"`
+		EventCount int    `json:"eventCount"`
+		BufferSize string `json:"bufferSize"`
+		Timeout    string `json:"timeout"`
+	} `json:"buffers"`
+	Accounts []config.AgmaAnalyticsAccount `json:"accounts"`
 }
 
 // Builder builds the agma analytics module.

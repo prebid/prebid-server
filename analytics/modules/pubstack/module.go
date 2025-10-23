@@ -10,15 +10,15 @@ import (
 )
 
 type Config struct {
-	Enabled     bool   `"enabled" json:"enabled"`
-	ScopeId     string `"scopeId" json:"scopeId"`
-	IntakeUrl   string `"intakeUrl" json:"intakeUrl"`
-	ConfRefresh string `"confRefresh" json:"confRefresh"`
+	Enabled     bool   `json:"enabled"`
+	ScopeId     string `json:"scopeId"`
+	IntakeUrl   string `json:"intakeUrl"`
+	ConfRefresh string `json:"confRefresh"`
 	Buffers     struct {
-		EventCount int    `"eventCount" json:"eventCount"`
-		BufferSize string `"bufferSize" json:"bufferSize"`
-		Timeout    string `"timeout" json:"timeout"`
-	} `"buffers" json:"buffers"`
+		EventCount int    `json:"eventCount"`
+		BufferSize string `json:"bufferSize"`
+		Timeout    string `json:"timeout"`
+	} `json:"buffers"`
 }
 
 func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error) {

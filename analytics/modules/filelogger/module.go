@@ -12,8 +12,8 @@ import (
 // Config is the minimal configuration for the file logger analytics module.
 // Empty Filename means the module is disabled.
 type Config struct {
-	Enabled  bool   `"enabled" json:"enabled"`
-	Filename string `"filename" json:"filename"`
+	Enabled  bool   `json:"enabled"`
+	Filename string `json:"filename"`
 }
 
 // Builder builds the filelogger analytics module.
