@@ -187,6 +187,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderNextMillennium,
 	BidderNexx360,
 	BidderNoBid,
+	BidderNuba,
 	BidderOgury,
 	BidderOms,
 	BidderOneTag,
@@ -558,6 +559,7 @@ const (
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNexx360           BidderName = "nexx360"
+	BidderNuba              BidderName = "nuba"
 	BidderNoBid             BidderName = "nobid"
 	BidderOgury             BidderName = "ogury"
 	BidderOms               BidderName = "oms"
