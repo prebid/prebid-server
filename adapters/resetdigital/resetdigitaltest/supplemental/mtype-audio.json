@@ -4,13 +4,9 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+        "audio": {
+          "mimes": ["audio/mp4"],
+          "protocols": [2, 3, 5, 6]
         },
         "ext": {
           "bidder": {
@@ -20,8 +16,7 @@
       }
     ],
     "site": {
-      "page": "https://example.com",
-      "domain": "example.com"
+      "page": "https://example.com"
     }
   },
   "httpCalls": [
@@ -33,13 +28,9 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
+              "audio": {
+                "mimes": ["audio/mp4"],
+                "protocols": [2, 3, 5, 6]
               },
               "tagid": "test-placement",
               "ext": {
@@ -50,22 +41,10 @@
             }
           ],
           "site": {
-            "page": "https://example.com",
-            "domain": "example.com"
+            "page": "https://example.com"
           },
           "cur": [
             "USD"
-          ]
-        },
-        "headers": {
-          "Content-Type": [
-            "application/json"
-          ],
-          "Accept": [
-            "application/json"
-          ],
-          "X-OpenRTB-Version": [
-            "2.6"
           ]
         },
         "impIDs": ["test-imp-id"]
@@ -80,12 +59,10 @@
                 {
                   "id": "test-bid-id",
                   "impid": "test-imp-id",
-                  "price": 3.14,
-                  "adm": "<div>test ad</div>",
+                  "price": 1.8,
+                  "adm": "<VAST></VAST>",
                   "crid": "test-creative-id",
-                  "w": 300,
-                  "h": 250,
-                  "adomain": ["example.com"]
+                  "mtype": 3
                 }
               ],
               "seat": "resetdigital"
@@ -104,14 +81,12 @@
           "bid": {
             "id": "test-bid-id",
             "impid": "test-imp-id",
-            "price": 3.14,
-            "adm": "<div>test ad</div>",
+            "price": 1.8,
+            "adm": "<VAST></VAST>",
             "crid": "test-creative-id",
-            "w": 300,
-            "h": 250,
-            "adomain": ["example.com"]
+            "mtype": 3
           },
-          "type": "banner",
+          "type": "audio",
           "seat": "resetdigital"
         }
       ]
