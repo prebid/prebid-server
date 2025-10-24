@@ -1,7 +1,6 @@
-package dxkulture
+package dxtech
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -24,7 +23,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the DXKulture adapter for the given bidder with the given config.
+// Builder builds a new instance of the DXTech adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -46,7 +45,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		request.Imp = []openrtb2.Imp{impression}
-		body, err := json.Marshal(request)
+		body, err := jsonutil.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -120,7 +119,7 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDXKulture, error) {
+func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDXTech, error) {
 	var bidderExt adapters.ExtImpBidder
 
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -129,7 +128,7 @@ func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDXKulture, error) {
 		}
 	}
 
-	impExt := openrtb_ext.ExtImpDXKulture{}
+	impExt := openrtb_ext.ExtImpDXTech{}
 	err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
 		return nil, &errortypes.BadInput{
@@ -142,30 +141,30 @@ func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpDXKulture, error) {
 
 func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("X-Openrtb-Version", "2.5")
+	headers.Set("Content-Type", "application/json;charset=utf-8")
+	headers.Set("Accept", "application/json")
+	headers.Set("X-Openrtb-Version", "2.6")
 
 	if request.Site != nil {
 		if request.Site.Ref != "" {
 			headers.Set("Referer", request.Site.Ref)
 		}
 		if request.Site.Domain != "" {
-			headers.Add("Origin", request.Site.Domain)
+			headers.Set("Origin", request.Site.Domain)
 		}
 	}
 
 	if request.Device != nil {
 		if len(request.Device.UA) > 0 {
-			headers.Add("User-Agent", request.Device.UA)
+			headers.Set("User-Agent", request.Device.UA)
 		}
 
 		if len(request.Device.IPv6) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
+			headers.Set("X-Forwarded-For", request.Device.IPv6)
 		}
 
 		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
+			headers.Set("X-Forwarded-For", request.Device.IP)
 		}
 	}
 	return headers
