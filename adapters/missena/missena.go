@@ -43,9 +43,10 @@ type BidServerResponse struct {
 }
 
 type UserParams struct {
+	APIKey    string         `json:"apiKey,omitempty"`
 	Formats   []string       `json:"formats,omitempty"`
 	Placement string         `json:"placement,omitempty" default:"sticky"`
-	TestMode  string         `json:"test,omitempty"`
+	Sample    string         `json:"sample,omitempty"`
 	Settings  map[string]any `json:"settings,omitempty"`
 }
 
@@ -65,6 +66,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		EndpointTemplate: endpoint,
 	}
 	return bidder, nil
+}
+
+func getVersionString() string {
+	if version.Ver == "" {
+		return version.VerUnknown
+	}
+	return version.Ver
 }
 
 func getCurrency(currencies []string) (string, error) {
@@ -124,12 +132,13 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		RequestID:      request.ID,
 		Timeout:        request.TMax,
 		UserParams: UserParams{
+			APIKey:    params.APIKey,
 			Formats:   params.Formats,
 			Placement: params.Placement,
-			TestMode:  params.TestMode,
+			Sample:    params.Sample,
 			Settings:  params.Settings,
 		},
-		Version: version.Ver,
+		Version: fmt.Sprintf("prebid-server@%s", getVersionString()),
 	}
 
 	body, err := jsonutil.Marshal(missenaRequest)
