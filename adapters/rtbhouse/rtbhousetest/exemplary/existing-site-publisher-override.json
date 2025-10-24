@@ -1,6 +1,13 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "existing-publisher",
+        "name": "Existing Publisher"
+      }
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -12,27 +19,13 @@
             }
           ]
         },
-        "bidfloor": 1.00,
-        "bidfloorcur": "EUR",
         "ext": {
           "bidder": {
-            "publisherId": "12345"
+            "publisherId": "new-publisher-123"
           }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "currency": {
-          "rates": {
-            "EUR": {
-              "USD": 0.05
-            }
-          },
-          "usepbsrates": false
-        }
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -43,6 +36,18 @@
           "cur": [
             "USD"
           ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "existing-publisher",
+              "name": "Existing Publisher",
+              "ext": {
+                "prebid": {
+                  "publisherId": "new-publisher-123"
+                }
+              }
+            }
+          },
           "imp": [
             {
               "banner": {
@@ -53,39 +58,16 @@
                   }
                 ]
               },
-              "bidfloor": 0.05,
-              "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
-                  "publisherId": "12345"
+                  "publisherId": "new-publisher-123"
                 }
               },
               "id": "test-imp-id"
             }
-          ],
-          "site": {
-            "publisher": {
-              "ext": {
-                "prebid": {
-                  "publisherId": "12345"
-                }
-              }
-            }
-          },
-          "ext": {
-            "prebid": {
-              "currency": {
-                "rates": {
-                  "EUR": {
-                    "USD": 0.05
-                  }
-                },
-                "usepbsrates": false
-              }
-            }
-          }
+          ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
