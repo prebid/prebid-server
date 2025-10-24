@@ -1,0 +1,15 @@
+{
+    "mockBidRequest": {
+      "id": "test-invalid-video-empty-mimes",
+      "imp": [
+        {
+          "id": "1",
+          "video": { "w": 640, "h": 480, "mimes": [] },
+          "ext": { "bidder": { "placementId": "abc" } }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      { "value": "missing or empty video.mimes", "comparison": "contains" }
+    ]
+  }
