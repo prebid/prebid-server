@@ -50,7 +50,7 @@ func TestBidderUniquenessGatekeeping(t *testing.T) {
 	// - Exclude duplicates of adapters for the same bidder, as it's unlikely a publisher will use both.
 	var bidders []string
 	for _, bidder := range CoreBidderNames() {
-		if bidder != BidderSilverPush && bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != "freewheel-ssp" && bidder != "yahooAdvertising" {
+		if bidder != BidderSilverPush && bidder != BidderTripleliftNative && bidder != BidderAdkernelAdn && bidder != "freewheel-ssp" && bidder != "yahooAdvertising" && bidder != "boldwin_rapid" {
 			bidders = append(bidders, string(bidder))
 		}
 	}
