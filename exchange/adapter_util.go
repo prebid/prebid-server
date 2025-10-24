@@ -126,6 +126,7 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,
 		"bizzclick":       `Bidder "bizzclick" is no longer available in Prebid Server. Please update your configuration. "bizzclick" has been renamed to "blasto".`,
 		"liftoff":         `Bidder "liftoff" is no longer available in Prebid Server. If you're looking to use the Vungle Exchange adapter, please rename it to "vungle" in your configuration.`,
+		"gothamads":       `Bidder "gothamads" is no longer available in Prebid Server. Please rename it to "intenze" in your configuration.`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
