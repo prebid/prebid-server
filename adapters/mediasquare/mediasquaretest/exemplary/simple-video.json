@@ -120,9 +120,11 @@
                 "id": "MEDIA_SQUARE"
               },
               "content": {}
-            }
+            },
+            "site": null
           },
-          "test": true
+          "test": true,
+          "user_uid": ""
         },
         "impIDs": ["2c35e25e-e7d3-41bf-b810-06a449f456b9"]
       },

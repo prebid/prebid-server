@@ -126,6 +126,10 @@
       "language": "fr",
       "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
     },
+    "site": {
+      "id": "test-site-id",
+      "page": "https://www.example.com/"
+    },
     "regs": {
       "gdpr": 1,
       "ext": {
@@ -133,7 +137,8 @@
       }
     },
     "user": {
-      "consent": "there-is-a-real-cs-in-it"
+      "consent": "there-is-a-real-cs-in-it",
+      "buyeruid": "42"
     },
     "test": 1
   },
@@ -257,10 +262,15 @@
                 "id": "MEDIA_SQUARE"
               },
               "content": {}
+            },
+            "site": {
+              "id": "test-site-id",
+              "page": "https://www.example.com/"
             }
           },
           "type": "pbs",
-          "test": true
+          "test": true,
+          "user_uid": "42"
         },
         "impIDs": [
           "2c35e25e-e7d3-41bf-b810-06a449f456b9",
