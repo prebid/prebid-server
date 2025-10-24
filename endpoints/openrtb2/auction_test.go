@@ -482,6 +482,7 @@ func TestExplicitUserId(t *testing.T) {
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -540,6 +541,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		disabledBidders,
 		aliasJSON,
 		bidderMap,
@@ -595,6 +597,7 @@ func TestNilExchange(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -621,6 +624,7 @@ func TestExchangeError(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -748,6 +752,7 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			cfg,
 			&metricsConfig.NilMetricsEngine{},
 			analyticsBuild.New(&config.Analytics{}),
+			fakeAnalyticsPolicy{allow: true}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -948,6 +953,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			&config.Configuration{MaxRequestSize: maxSize},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsBuild.New(&config.Analytics{}),
+			fakeAnalyticsPolicy{allow: true}.Builder,
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
@@ -1185,6 +1191,7 @@ func TestStoredRequests(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1635,6 +1642,7 @@ func TestValidateRequest(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2353,6 +2361,7 @@ func TestSetIntegrationType(t *testing.T) {
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2420,6 +2429,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2525,6 +2535,7 @@ func TestOversizedRequest(t *testing.T) {
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2565,6 +2576,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2603,6 +2615,7 @@ func TestNoEncoding(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2688,6 +2701,7 @@ func TestContentType(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -2726,6 +2740,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2775,6 +2790,7 @@ func TestCCPAInvalid(t *testing.T) {
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2828,6 +2844,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2884,6 +2901,7 @@ func TestValidateSourceTID(t *testing.T) {
 		cfg,
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -2930,6 +2948,7 @@ func TestSChainInvalid(t *testing.T) {
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3371,6 +3390,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3650,6 +3670,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -3713,6 +3734,7 @@ func TestAuctionWarnings(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3760,6 +3782,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3841,6 +3864,7 @@ func TestParseGzipedRequest(t *testing.T) {
 		&config.Configuration{MaxRequestSize: int64(50), Compression: config.Compression{Request: config.CompressionInfo{GZIP: false}}},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -3949,6 +3973,7 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
@@ -4024,6 +4049,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsBuild.New(&config.Analytics{}),
+				fakeAnalyticsPolicy{allow: true}.Builder,
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4130,6 +4156,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsBuild.New(&config.Analytics{}),
+				fakeAnalyticsPolicy{allow: true}.Builder,
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4243,6 +4270,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsBuild.New(&config.Analytics{}),
+				fakeAnalyticsPolicy{allow: true}.Builder,
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4281,6 +4309,7 @@ func TestValidateStoredResp(t *testing.T) {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -5104,6 +5133,7 @@ func TestParseRequestMultiBid(t *testing.T) {
 				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsBuild.New(&config.Analytics{}),
+				fakeAnalyticsPolicy{allow: true}.Builder,
 				map[string]string{},
 				false,
 				[]byte{},
@@ -5835,6 +5865,7 @@ func TestValidateRequestCookieDeprecation(t *testing.T) {
 		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -6022,6 +6053,7 @@ func sortUserData(user *openrtb2.User) {
 		}
 	}
 }
+
 func TestValidateEIDs(t *testing.T) {
 	testCases := []struct {
 		name                  string
@@ -6403,14 +6435,16 @@ func TestValidateUser(t *testing.T) {
 
 func TestProcessGDPR(t *testing.T) {
 	testCases := []struct {
-		name                 string
-		req                  *openrtb_ext.RequestWrapper
-		accountGDPR          config.AccountGDPR
-		requestType          metrics.RequestType
-		cfg                  *config.Configuration
-		expectedGDPREnforced bool
-		expectedGDPRSignal   gdpr.Signal
-		expectedErrorCount   int
+		name                        string
+		req                         *openrtb_ext.RequestWrapper
+		accountGDPR                 config.AccountGDPR
+		requestType                 metrics.RequestType
+		cfg                         *config.Configuration
+		expectedGDPREnforced        bool
+		expectedGDPRSignal          gdpr.Signal
+		expectedAnalyticsPolicyType string
+		expectedErrorCount          int
+		mockPolicyBuilder           func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy
 	}{
 		{
 			name: "gdpr-not-enforced-no-signal",
@@ -6429,9 +6463,13 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced: false,
-			expectedGDPRSignal:   gdpr.SignalAmbiguous,
-			expectedErrorCount:   0,
+			expectedGDPREnforced:        false,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "AllowAllAnalytics",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &gdpr.AllowAllAnalytics{}
+			},
 		},
 		{
 			name: "gdpr-enforced-with-signal-yes",
@@ -6457,9 +6495,13 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced: true,
-			expectedGDPRSignal:   gdpr.SignalYes,
-			expectedErrorCount:   0,
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
 		},
 		{
 			name: "gdpr-enforced-with-eea-country",
@@ -6484,9 +6526,13 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced: true,
-			expectedGDPRSignal:   gdpr.SignalAmbiguous,
-			expectedErrorCount:   0,
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
 		},
 		{
 			name: "gdpr-not-enforced-with-non-eea-country",
@@ -6511,9 +6557,13 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced: false,
-			expectedGDPRSignal:   gdpr.SignalAmbiguous,
-			expectedErrorCount:   0,
+			expectedGDPREnforced:        false,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "AllowAllAnalytics",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &gdpr.AllowAllAnalytics{}
+			},
 		},
 		{
 			name: "gdpr-with-gpp-string",
@@ -6537,9 +6587,43 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced: true,
-			expectedGDPRSignal:   gdpr.SignalYes,
-			expectedErrorCount:   0,
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
+		},
+		{
+			name: "gdpr-with-invalid-gpp-string",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+						GPP:  "invalid-gpp-string",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          1,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
 		},
 		{
 			name: "gdpr-with-account-eea-countries",
@@ -6566,9 +6650,13 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced: true,
-			expectedGDPRSignal:   gdpr.SignalAmbiguous,
-			expectedErrorCount:   0,
+			expectedGDPREnforced:        true,
+			expectedGDPRSignal:          gdpr.SignalAmbiguous,
+			expectedAnalyticsPolicyType: "mockPolicy",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &mockGDPRPolicy{policyType: "mockPolicy"}
+			},
 		},
 		{
 			name: "gdpr-disabled-tcf2",
@@ -6591,19 +6679,24 @@ func TestProcessGDPR(t *testing.T) {
 					},
 				},
 			},
-			expectedGDPREnforced: false,
-			expectedGDPRSignal:   gdpr.SignalYes,
-			expectedErrorCount:   0,
+			expectedGDPREnforced:        false,
+			expectedGDPRSignal:          gdpr.SignalYes,
+			expectedAnalyticsPolicyType: "AllowAllAnalytics",
+			expectedErrorCount:          0,
+			mockPolicyBuilder: func(gdpr.TCF2ConfigReader, gdpr.Signal, string) gdpr.PrivacyPolicy {
+				return &gdpr.AllowAllAnalytics{}
+			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			deps := &endpointDeps{
-				cfg: tc.cfg,
+				cfg:                      tc.cfg,
+				gdprPrivacyPolicyBuilder: tc.mockPolicyBuilder,
 			}
 
-			tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(
+			analyticsPolicy, tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(
 				tc.req,
 				tc.accountGDPR,
 				tc.requestType,
@@ -6612,7 +6705,29 @@ func TestProcessGDPR(t *testing.T) {
 			assert.Equal(t, tc.expectedGDPREnforced, gdprEnforced)
 			assert.Equal(t, tc.expectedGDPRSignal, gdprSignal)
 			assert.Len(t, gdprErrs, tc.expectedErrorCount)
+
+			if tc.expectedAnalyticsPolicyType == "AllowAllAnalytics" {
+				assert.IsType(t, &gdpr.AllowAllAnalytics{}, analyticsPolicy, "Analytics policy should be AllowAllAnalytics")
+			} else {
+				mockPolicy, ok := analyticsPolicy.(*mockGDPRPolicy)
+				assert.True(t, ok, "Analytics policy should be mockGDPRPolicy")
+				if ok {
+					assert.Equal(t, tc.expectedAnalyticsPolicyType, mockPolicy.policyType, "Policy type should match expected")
+				}
+			}
+
 			assert.NotNil(t, tcf2Config)
 		})
 	}
 }
+
+// mockGDPRPolicy is a test helper for mocking GDPR privacy policies
+type mockGDPRPolicy struct {
+	policyType string
+}
+
+func (m *mockGDPRPolicy) Allow(name string) bool {
+	return true
+}
+
+func (m *mockGDPRPolicy) SetContext(ctx context.Context) {}
