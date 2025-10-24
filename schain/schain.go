@@ -5,6 +5,7 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
+	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -15,8 +16,10 @@ func BidderToPrebidSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) (map[s
 	for _, schainWrapper := range sChains {
 		for _, bidder := range schainWrapper.Bidders {
 			if _, present := bidderToSChains[bidder]; present {
-				return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-					"it must contain no more than one per bidder.", bidder)
+				return nil, &errortypes.BadInput{
+					Message: fmt.Sprintf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+						"it must contain no more than one per bidder.", bidder),
+				}
 			} else {
 				bidderToSChains[bidder] = &schainWrapper.SChain
 			}
