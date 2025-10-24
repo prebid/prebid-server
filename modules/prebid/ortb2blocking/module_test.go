@@ -307,8 +307,9 @@ func TestHandleBidderRequestHook(t *testing.T) {
 						Video:  &openrtb2.Video{},
 					},
 					{
-						ID:    "ImpID2",
-						Audio: &openrtb2.Audio{},
+						ID:     "ImpID2",
+						Audio:  &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{},
 					},
 				},
 			},
@@ -391,7 +392,6 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				ModuleContext: map[string]interface{}{
 					bidder: blockingAttributes{
 						bAdv:  []string{bAdvA, bAdvB, bAdvC},
-						bType: map[string][]int{},
 						bAttr: map[string][]int{},
 					},
 				},
@@ -440,7 +440,6 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
 				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
-					bType: map[string][]int{},
 					bAttr: map[string][]int{},
 				}},
 			},
@@ -461,7 +460,6 @@ func TestHandleBidderRequestHook(t *testing.T) {
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
 				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
-					bType: map[string][]int{},
 					bAttr: map[string][]int{},
 				}},
 			},
