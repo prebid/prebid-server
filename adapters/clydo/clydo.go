@@ -244,7 +244,7 @@ func buildBidTypeMap(imps []openrtb2.Imp) (map[string]openrtb_ext.BidType, error
 				Message: "Duplicate impression ID found",
 			}
 		}
-		
+
 		switch {
 		case imp.Video != nil:
 			bidTypeMap[imp.ID] = openrtb_ext.BidTypeVideo
