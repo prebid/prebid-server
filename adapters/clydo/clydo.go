@@ -59,8 +59,12 @@ func (a *adapter) MakeBids(
 	requestData *adapters.RequestData,
 	responseData *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
-	if errResp := checkResponseStatus(responseData); errResp != nil {
-		return nil, errResp
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
+		return nil, []error{}
+	}
+
+	if errResp := adapters.CheckResponseStatusCodeForErrors(responseData); errResp != nil {
+		return nil, []error{errResp}
 	}
 	response, err := prepareBidResponse(responseData.Body)
 	if err != nil {
@@ -199,23 +203,6 @@ func prepareImpIds(request *openrtb2.BidRequest) ([]string, error) {
 	return impIds, nil
 }
 
-func checkResponseStatus(responseData *adapters.ResponseData) []error {
-	switch responseData.StatusCode {
-	case http.StatusNoContent:
-		return []error{}
-	case http.StatusBadRequest:
-		return []error{&errortypes.BadInput{
-			Message: "Bad request. Run with request.debug = 1 for more info.",
-		}}
-	case http.StatusOK:
-		return nil
-	default:
-		return []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}}
-	}
-}
-
 func prepareBidResponse(body []byte) (openrtb2.BidResponse, error) {
 	var response openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(body, &response); err != nil {
@@ -252,6 +239,12 @@ func prepareSeatBids(seatBids []openrtb2.SeatBid, bidTypeMap map[string]openrtb_
 func buildBidTypeMap(imps []openrtb2.Imp) (map[string]openrtb_ext.BidType, error) {
 	bidTypeMap := make(map[string]openrtb_ext.BidType, len(imps))
 	for _, imp := range imps {
+		if _, exists := bidTypeMap[imp.ID]; exists {
+			return nil, &errortypes.BadInput{
+				Message: "Duplicate impression ID found",
+			}
+		}
+		
 		switch {
 		case imp.Video != nil:
 			bidTypeMap[imp.ID] = openrtb_ext.BidTypeVideo
