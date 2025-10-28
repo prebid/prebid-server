@@ -60,7 +60,7 @@ func (a *adapter) MakeBids(
 	responseData *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
-		return nil, []error{}
+		return nil, nil
 	}
 
 	if errResp := adapters.CheckResponseStatusCodeForErrors(responseData); errResp != nil {
@@ -112,7 +112,17 @@ func (a *adapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp,
 func prepareExtParams(imp openrtb2.Imp) (*openrtb_ext.ImpExtClydo, error) {
 	var clydoImpExt openrtb_ext.ImpExtClydo
 	var bidderExt adapters.ExtImpBidder
+	if len(imp.Ext) == 0 {
+		return nil, &errortypes.BadInput{
+			Message: "missing ext",
+		}
+	}
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: "invalid ext",
+		}
+	}
+	if len(bidderExt.Bidder) == 0 {
 		return nil, &errortypes.BadInput{
 			Message: "missing ext.bidder",
 		}

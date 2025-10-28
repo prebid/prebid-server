@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "missing ext.bidder",
+      "value": "missing ext",
       "comparison": "literal"
     }
   ],
@@ -18,10 +18,7 @@
         "h": 50
       },
       "bidfloor": 0.111,
-      "bidfloorcur": "USD",
-      "ext": {
-        "prebid": {}
-      }
+      "bidfloorcur": "USD"
     }],
     "app": {
       "bundle": "com.bundle.app",
