@@ -17,13 +17,14 @@ type adapter struct {
 	endpoint string
 }
 
-func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	return &adapter{endpoint: cfg.Endpoint}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var validImps []openrtb2.Imp
+	validImps := make([]openrtb2.Imp, 0, len(request.Imp))
+	// Note: If ANY impression has testMode=1, the entire request is marked as test
 	var setTestMode bool
 
 	for imp := range iterutil.SlicePointerValues(request.Imp) {
@@ -33,7 +34,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		if impExt.BidFloor > 0 {
+		if imp.Banner == nil && imp.Video == nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("impID %s: no banner or video object specified", imp.ID),
+			})
+			continue
+		}
+
+		if imp.BidFloor == 0 && impExt.BidFloor > 0 {
 			imp.BidFloor = impExt.BidFloor
 		}
 

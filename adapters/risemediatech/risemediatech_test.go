@@ -94,6 +94,7 @@ func TestMakeRequestsErrors(t *testing.T) {
 	}{
 		{"Invalid ext", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`not-json`)}}, "impID 1:"},
 		{"No valid imps", []openrtb2.Imp{}, "no valid impressions"},
+		{"No banner or video", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"bidfloor": 0.5}}`)}}, "no banner or video object specified"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
