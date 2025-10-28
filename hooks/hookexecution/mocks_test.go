@@ -438,3 +438,36 @@ func (e mockUpdateResponseAgainHook) HandleExitpointHook(_ context.Context, _ ho
 
 	return hookstage.HookResult[hookstage.ExitpointPayload]{ChangeSet: c}, nil
 }
+
+// mockSequencedHook allows controlled execution order via channel synchronization
+type mockSequencedHook struct {
+	id        string
+	value     string
+	waitFor   chan struct{} // Block until this channel closes
+	completed chan struct{} // Signal when this hook completes
+}
+
+func (h mockSequencedHook) HandleProcessedAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, payload hookstage.ProcessedAuctionRequestPayload) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	// Wait for signal to proceed (allows controlling completion order)
+	if h.waitFor != nil {
+		<-h.waitFor
+	}
+
+	// Create mutation that builds on existing User.CustomData
+	c := hookstage.ChangeSet[hookstage.ProcessedAuctionRequestPayload]{}
+	c.AddMutation(func(p hookstage.ProcessedAuctionRequestPayload) (hookstage.ProcessedAuctionRequestPayload, error) {
+		if p.Request.User == nil {
+			p.Request.User = &openrtb2.User{}
+		}
+		// Append our value to existing CustomData
+		p.Request.User.CustomData = p.Request.User.CustomData + h.value
+		return p, nil
+	}, hookstage.MutationUpdate, "bidRequest", "user.customData")
+
+	// Signal that this hook has completed
+	if h.completed != nil {
+		close(h.completed)
+	}
+
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{ChangeSet: c}, nil
+}
