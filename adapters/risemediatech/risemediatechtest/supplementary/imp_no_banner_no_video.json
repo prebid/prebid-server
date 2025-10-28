@@ -9,6 +9,6 @@
       ]
     },
     "expectedMakeRequestsErrors": [
-      { "value": "no valid impressions", "comparison": "contains" }
+      { "value": "impID 1: no banner or video object specified", "comparison": "literal" }
     ]
   }
