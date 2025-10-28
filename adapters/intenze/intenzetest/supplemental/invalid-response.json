@@ -25,7 +25,7 @@
     },
     "imp": [
       {
-        "id": "1",
+        "id": "some-impression-id",
         "tagid": "ogTAGID",
         "banner": {
           "w": 320,
@@ -59,7 +59,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://us-e-node1.gothamads.com/?pass=accountId",
+        "uri": "http://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -70,7 +70,7 @@
           },
           "imp": [
             {
-              "id": "1",
+              "id": "some-impression-id",
               "banner": {
                 "w": 320,
                 "h": 50
@@ -95,58 +95,20 @@
           },
           "tmax": 1000
         },
-        "impIDs":["1"]
+        "impIDs": [
+          "some-impression-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
-        "body": {
-          "id": "awesome-resp-id",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "1",
-                  "price": 3.5,
-                  "adm": "awesome-markup",
-                  "adomain": [
-                    "awesome.com"
-                  ],
-                  "crid": "20",
-                  "w": 320,
-                  "h": 50,
-                  "mtype": 1
-                }
-              ],
-              "type": "banner",
-              "seat": "gothamAds"
-            }
-          ],
-          "cur": "USD"
-        }
+        "body": "invalid response"
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "1",
-            "price": 3.5,
-            "adm": "awesome-markup",
-            "adomain": [
-              "awesome.com"
-            ],
-            "crid": "20",
-            "w": 320,
-            "h": 50,
-            "mtype": 1
-          },
-          "type": "banner"
-        }
-      ]
+      "value": "Bad Server Response",
+      "comparison": "literal"
     }
   ]
 }

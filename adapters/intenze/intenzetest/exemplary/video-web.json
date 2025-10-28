@@ -11,17 +11,11 @@
     "user": {
       "buyeruid": "awesome-user"
     },
-    "app": {
+    "site": {
+      "page": "test.com",
       "publisher": {
         "id": "123456789"
-      },
-      "cat": [
-        "IAB22-1"
-      ],
-      "bundle": "com.app.awesome",
-      "name": "Awesome App",
-      "domain": "awesomeapp.com",
-      "id": "123456789"
+      }
     },
     "imp": [
       {
@@ -64,7 +58,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://us-e-node1.gothamads.com/?pass=accountId",
+        "uri": "http://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -76,6 +70,7 @@
           "imp": [
             {
               "id": "some-impression-id",
+              "tagid": "ogTAGID",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -84,18 +79,11 @@
                 "maxduration": 150,
                 "w": 640,
                 "h": 480
-              },
-              "tagid": "ogTAGID"
+              }
             }
           ],
-          "app": {
-            "id": "123456789",
-            "name": "Awesome App",
-            "bundle": "com.app.awesome",
-            "domain": "awesomeapp.com",
-            "cat": [
-              "IAB22-1"
-            ],
+          "site": {
+            "page": "test.com",
             "publisher": {
               "id": "123456789"
             }
@@ -105,7 +93,9 @@
           },
           "tmax": 1000
         },
-        "impIDs":["some-impression-id"]
+        "impIDs": [
+          "some-impression-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -125,10 +115,15 @@
                   "crid": "20",
                   "w": 1280,
                   "h": 720,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  },
                   "mtype": 2
                 }
               ],
-              "seat": "gothamads"
+              "seat": "intenze"
             }
           ],
           "cur": "USD"
@@ -145,12 +140,17 @@
             "impid": "some-impression-id",
             "price": 3.5,
             "adm": "awesome-markup",
-            "crid": "20",
             "adomain": [
               "awesome.com"
             ],
+            "crid": "20",
             "w": 1280,
             "h": 720,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            },
             "mtype": 2
           },
           "type": "video"
