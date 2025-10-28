@@ -99,6 +99,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderConnatix,
 	BidderConnectAd,
 	BidderConsumable,
+	BidderContxtful,
 	BidderConversant,
 	BidderCopper6ssp,
 	BidderCpmstar,
@@ -181,6 +182,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMobileFuse,
 	BidderMobkoi,
 	BidderMotorik,
+	BidderNativery,
 	BidderNativo,
 	BidderNextMillennium,
 	BidderNexx360,
@@ -470,6 +472,7 @@ const (
 	BidderConnatix          BidderName = "connatix"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
+	BidderContxtful         BidderName = "contxtful"
 	BidderConversant        BidderName = "conversant"
 	BidderCopper6ssp        BidderName = "copper6ssp"
 	BidderCpmstar           BidderName = "cpmstar"
@@ -552,6 +555,7 @@ const (
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMobkoi            BidderName = "mobkoi"
 	BidderMotorik           BidderName = "motorik"
+	BidderNativery          BidderName = "nativery"
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNexx360           BidderName = "nexx360"
