@@ -24,6 +24,7 @@ type MissenaAdRequest struct {
 	Adunit         string               `json:"adunit,omitempty"`
 	BuyerUID       string               `json:"buyeruid,omitempty"`
 	Currency       string               `json:"currency,omitempty"`
+	Debug          bool                 `json:"debug,omitempty"`
 	EIDs           []openrtb2.EID       `json:"userEids,omitempty"`
 	Floor          float64              `json:"floor,omitempty"`
 	FloorCurrency  string               `json:"floor_currency,omitempty"`
@@ -122,9 +123,18 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		}
 	}
 
+	var eids []openrtb2.EID
+	if request.User != nil && request.User.Ext != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err == nil {
+			eids = extUser.Eids
+		}
+	}
+
 	missenaRequest := MissenaAdRequest{
 		Adunit:         imp.ID,
 		Currency:       cur,
+		Debug:          request.Test == 1,
 		Floor:          floor,
 		FloorCurrency:  floorCur,
 		IdempotencyKey: request.ID,
@@ -138,6 +148,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 			Sample:    params.Sample,
 			Settings:  params.Settings,
 		},
+		EIDs:    eids,
 		Version: fmt.Sprintf("prebid-server@%s", getVersionString()),
 	}
 
