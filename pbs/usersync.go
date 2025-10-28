@@ -2,6 +2,7 @@ package pbs
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,7 +13,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/server/ssl"
 	"github.com/prebid/prebid-server/v3/usersync"
 )
 
@@ -24,6 +24,7 @@ type UserSyncDeps struct {
 	RecaptchaSecret  string
 	HostCookieConfig *config.HostCookie
 	PriorityGroups   [][]string
+	CertPool         *x509.CertPool
 }
 
 // Struct for parsing json in google's response
@@ -35,7 +36,7 @@ type googleResponse struct {
 func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 	ts := &http.Transport{
 		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: &tls.Config{RootCAs: ssl.GetRootCAPool()},
+		TLSClientConfig: &tls.Config{RootCAs: deps.CertPool},
 	}
 
 	client := &http.Client{

@@ -27,7 +27,6 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -125,8 +124,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Errors:    make([]error, 0),
 		StartTime: start,
 	}
-
-	// Set this as an AMP request in Metrics.
 
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
@@ -249,12 +246,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
 	hookExecutor.SetAccount(account)
+
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(reqWrapper, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -275,6 +273,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

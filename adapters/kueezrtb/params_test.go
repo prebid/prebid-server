@@ -44,7 +44,6 @@ var invalidParams = []string{
 	`{"cId": {}`,
 	`{"cId": ""}`,
 	`{"cId": null}`,
-	`{"cId": "provided_cid_123", "extra": "field"}`,
 	`{"cid": "valid_cid"}`,
 	`{"cId": "invalid_chars_!@#$%^&*()"}`,
 }

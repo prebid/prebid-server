@@ -586,15 +586,16 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	emptyActivityPoliciesRequest := privacy.NewRequestFromPolicies(privacy.Policies{})
 
 	testCases := []struct {
-		description          string
-		givenConfig          config.UserSync
-		givenBody            io.Reader
-		givenGDPRConfig      config.GDPR
-		givenCCPAEnabled     bool
-		givenAccountRequired bool
-		expectedError        string
-		expectedPrivacy      macros.UserSyncPrivacy
-		expectedRequest      usersync.Request
+		description              string
+		givenConfig              config.UserSync
+		givenBody                io.Reader
+		givenGDPRConfig          config.GDPR
+		givenCCPAEnabled         bool
+		givenAccountRequired     bool
+		givenAccountCoopDisabled bool
+		expectedError            string
+		expectedPrivacy          macros.UserSyncPrivacy
+		expectedRequest          usersync.Request
 	}{
 
 		{
@@ -1014,9 +1015,12 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenCCPAEnabled: true,
 			givenConfig: config.UserSync{
 				PriorityGroups: [][]string{{"a", "b", "c"}},
-				Cooperative:    config.UserSyncCooperative{},
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: true,
+				},
 			},
-			expectedPrivacy: macros.UserSyncPrivacy{},
+			givenAccountCoopDisabled: true,
+			expectedPrivacy:          macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
 				Cooperative: usersync.Cooperative{
@@ -1046,10 +1050,11 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenConfig: config.UserSync{
 				PriorityGroups: [][]string{{"a", "b", "c"}},
 				Cooperative: config.UserSyncCooperative{
-					EnabledByDefault: false,
+					EnabledByDefault: true,
 				},
 			},
-			expectedPrivacy: macros.UserSyncPrivacy{},
+			givenAccountCoopDisabled: true,
+			expectedPrivacy:          macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
 				Cooperative: usersync.Cooperative{
@@ -1115,6 +1120,11 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
+		testAccountData := json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`)
+		if test.givenAccountCoopDisabled {
+			testAccountData = json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30}}`)
+		}
+
 		endpoint := cookieSyncEndpoint{
 			config: &config.Configuration{
 				UserSync:        test.givenConfig,
@@ -1127,7 +1137,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				ccpaEnforce:            test.givenCCPAEnabled,
 			},
 			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
-				"TestAccount":                   json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
+				"TestAccount":                   testAccountData,
 				"DisabledAccount":               json.RawMessage(`{"disabled":true}`),
 				"ValidAccountInvalidActivities": json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 			}},
@@ -2498,6 +2508,453 @@ func TestSetCookieDeprecationHeader(t *testing.T) {
 				assert.Equal(t, wantCookie, gotCookie, ":set_cookie_deprecation_header")
 			} else {
 				assert.Empty(t, gotCookie, ":set_cookie_deprecation_header")
+			}
+		})
+	}
+}
+
+func TestCookieSyncFindPriorityGroups(t *testing.T) {
+	testCases := []struct {
+		description            string
+		givenGlobalConfig      config.UserSync
+		givenAccountCookieSync config.CookieSync
+		expectedPriorityGroups [][]string
+	}{
+		{
+			description: "Account-level config takes precedence when DefaultCoopSync is set",
+			givenGlobalConfig: config.UserSync{
+				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
+			},
+			givenAccountCookieSync: config.CookieSync{
+				DefaultCoopSync: ptrutil.ToPtr(true),
+				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
+			},
+			expectedPriorityGroups: [][]string{{"account1", "account2"}, {"account3"}},
+		},
+		{
+			description: "Account-level config with false DefaultCoopSync still uses account config",
+			givenGlobalConfig: config.UserSync{
+				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
+			},
+			givenAccountCookieSync: config.CookieSync{
+				DefaultCoopSync: ptrutil.ToPtr(false),
+				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
+			},
+			expectedPriorityGroups: [][]string{{"account1", "account2"}, {"account3"}},
+		},
+		{
+			description: "Falls back to global config when account DefaultCoopSync is nil",
+			givenGlobalConfig: config.UserSync{
+				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
+			},
+			givenAccountCookieSync: config.CookieSync{
+				DefaultCoopSync: nil,
+				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
+			},
+			expectedPriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
+		},
+		{
+			description: "Empty account priority groups with DefaultCoopSync set",
+			givenGlobalConfig: config.UserSync{
+				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
+			},
+			givenAccountCookieSync: config.CookieSync{
+				DefaultCoopSync: ptrutil.ToPtr(true),
+				PriorityGroups:  [][]string{},
+			},
+			expectedPriorityGroups: [][]string{},
+		},
+		{
+			description: "Nil account priority groups with DefaultCoopSync set",
+			givenGlobalConfig: config.UserSync{
+				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
+			},
+			givenAccountCookieSync: config.CookieSync{
+				DefaultCoopSync: ptrutil.ToPtr(true),
+				PriorityGroups:  nil,
+			},
+			expectedPriorityGroups: nil,
+		},
+		{
+			description: "Empty global config when no account config present",
+			givenGlobalConfig: config.UserSync{
+				PriorityGroups: nil,
+			},
+			givenAccountCookieSync: config.CookieSync{
+				DefaultCoopSync: nil,
+				PriorityGroups:  [][]string{{"account1", "account2"}},
+			},
+			expectedPriorityGroups: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			endpoint := &cookieSyncEndpoint{
+				config: &config.Configuration{
+					UserSync: tc.givenGlobalConfig,
+				},
+			}
+
+			result := endpoint.findPriorityGroups(tc.givenAccountCookieSync)
+			assert.Equal(t, tc.expectedPriorityGroups, result)
+		})
+	}
+}
+
+// createAccountJSON creates a JSON representation of account config for testing
+func createAccountJSON(priorityGroups [][]string, defaultCoopSync *bool) json.RawMessage {
+	account := map[string]interface{}{
+		"cookie_sync": map[string]interface{}{
+			"priority_groups": priorityGroups,
+		},
+	}
+
+	if defaultCoopSync != nil {
+		account["cookie_sync"].(map[string]interface{})["default_coop_sync"] = *defaultCoopSync
+	}
+
+	jsonData, _ := json.Marshal(account)
+	return json.RawMessage(jsonData)
+}
+
+func TestCookieSyncPriorityGroupsIntegration(t *testing.T) {
+	// Setup test syncers
+	syncerA := MockSyncer{}
+	syncerA.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderA.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerA.On("Key").Return("appnexus").Maybe()
+	syncerA.On("SupportsType", mock.Anything).Return(true).Maybe()
+	syncerB := MockSyncer{}
+	syncerB.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderB.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerB.On("Key").Return("rubicon").Maybe()
+	syncerB.On("SupportsType", mock.Anything).Return(true).Maybe()
+	syncerC := MockSyncer{}
+	syncerC.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderC.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerC.On("Key").Return("pubmatic").Maybe()
+	syncerC.On("SupportsType", mock.Anything).Return(true).Maybe()
+	// Need to choose real bidder names because the standard chooser is hardcoded to validate against them
+	syncersByBidder := map[string]usersync.Syncer{
+		"appnexus": &syncerA,
+		"rubicon":  &syncerB,
+		"pubmatic": &syncerC,
+	}
+
+	bidders := map[string]openrtb_ext.BidderName{
+		"appnexus": openrtb_ext.BidderName("appnexus"),
+		"rubicon":  openrtb_ext.BidderName("rubicon"),
+		"pubmatic": openrtb_ext.BidderName("pubmatic"),
+	}
+
+	bidderInfo := map[string]config.BidderInfo{
+		"appnexus": {},
+		"rubicon":  {},
+		"pubmatic": {},
+	}
+
+	testCases := []struct {
+		description                  string
+		givenRequestBody             string
+		givenAccountPriorityGroups   [][]string
+		givenAccountDefaultCoopSync  *bool
+		givenGlobalPriorityGroups    [][]string
+		givenCooperativeEnabledByDef bool
+		shouldContainBidders         []string
+	}{
+		{
+			description:      "Account-level priority groups used with cooperative sync enabled",
+			givenRequestBody: `{"bidders":["appnexus"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{"rubicon", "pubmatic"},
+			},
+			givenAccountDefaultCoopSync:  ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:    [][]string{{"ignored"}},
+			givenCooperativeEnabledByDef: false,
+			shouldContainBidders:         []string{"appnexus", "rubicon", "pubmatic"},
+		},
+		{
+			description:      "Global priority groups used when account DefaultCoopSync is nil",
+			givenRequestBody: `{"bidders":["appnexus"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{"sovrn"},
+			},
+			givenAccountDefaultCoopSync:  nil, // This should make it use global config
+			givenGlobalPriorityGroups:    [][]string{{"rubicon"}},
+			givenCooperativeEnabledByDef: false,
+			shouldContainBidders:         []string{"appnexus", "rubicon"},
+		},
+		{
+			description:                  "Empty account priority groups with cooperative enabled",
+			givenRequestBody:             `{"bidders":["appnexus"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups:   [][]string{},
+			givenAccountDefaultCoopSync:  ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:    [][]string{{"rubicon"}},
+			givenCooperativeEnabledByDef: false,
+			shouldContainBidders:         []string{"appnexus"},
+		},
+		{
+			description:      "Priority groups ignored when cooperative sync disabled",
+			givenRequestBody: `{"bidders":["appnexus"], "coopSync": false, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{"rubicon", "pubmatic"},
+			},
+			givenAccountDefaultCoopSync:  ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:    [][]string{{"rubicon"}},
+			givenCooperativeEnabledByDef: false,
+			shouldContainBidders:         []string{"appnexus"}, // Only requested bidders
+		},
+		{
+			description:      "Priority groups used when cooperative default from Account",
+			givenRequestBody: `{"bidders":["appnexus"], "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{"rubicon", "pubmatic"},
+			},
+			givenAccountDefaultCoopSync:  ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:    [][]string{{"rubicon"}},
+			givenCooperativeEnabledByDef: false,
+			shouldContainBidders:         []string{"appnexus", "rubicon", "pubmatic"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			// Setup mock analytics
+			mockAnalytics := MockAnalyticsRunner{}
+			mockAnalytics.On("LogCookieSyncObject", mock.AnythingOfType("*analytics.CookieSyncObject")).Return()
+
+			mockMetrics := metrics.MetricsEngineMock{}
+			mockMetrics.On("RecordCookieSync", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockMetrics.On("RecordSyncerRequest", mock.Anything, mock.Anything, mock.Anything).Return()
+
+			// Create endpoint with test configuration
+			endpoint := NewCookieSyncEndpoint(
+				syncersByBidder,
+				&config.Configuration{
+					UserSync: config.UserSync{
+						PriorityGroups: tc.givenGlobalPriorityGroups,
+						Cooperative: config.UserSyncCooperative{
+							EnabledByDefault: tc.givenCooperativeEnabledByDef,
+						},
+					},
+					HostCookie:  config.HostCookie{Family: "prebid"},
+					GDPR:        config.GDPR{Enabled: true, DefaultValue: "0"},
+					CCPA:        config.CCPA{Enforce: false},
+					BidderInfos: bidderInfo,
+				},
+				fakePermissionsBuilder{
+					permissions: &fakePermissions{},
+				}.Builder,
+				fakeTCF2ConfigBuilder{
+					cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+				}.Builder,
+				&mockMetrics,
+				&mockAnalytics,
+				&FakeAccountsFetcher{
+					AccountData: map[string]json.RawMessage{
+						"test_account": createAccountJSON(tc.givenAccountPriorityGroups, tc.givenAccountDefaultCoopSync),
+					},
+				},
+				bidders,
+			)
+			// Create test request
+			request := httptest.NewRequest("POST", "/cookie_sync", strings.NewReader(tc.givenRequestBody))
+			response := httptest.NewRecorder()
+
+			// Execute endpoint
+			endpoint.Handle(response, request, nil)
+
+			// Assert response status
+			assert.Equal(t, 200, response.Code)
+
+			// Parse response
+			var syncResponse cookieSyncResponse
+			err := json.Unmarshal(response.Body.Bytes(), &syncResponse)
+			assert.NoError(t, err)
+
+			// Verify bidder status contains expected bidders
+			actualBidders := make([]string, len(syncResponse.BidderStatus))
+			for i, bs := range syncResponse.BidderStatus {
+				actualBidders[i] = bs.BidderCode
+			}
+
+			// Check that expected bidders are present (order may vary due to shuffling)
+			for _, expected := range tc.shouldContainBidders {
+				assert.Contains(t, actualBidders, expected, "Expected bidder %s to be present in response", expected)
+			}
+		})
+	}
+}
+
+func TestCookieSyncPriorityGroupsEdgeCases(t *testing.T) {
+	// Setup basic syncers
+	syncerA := MockSyncer{}
+	syncerA.On("Key").Return("bidderA")
+	syncerA.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderA.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerA.On("SupportsType", mock.Anything).Return(true).Maybe()
+
+	syncersByBidder := map[string]usersync.Syncer{
+		"sovrn": &syncerA,
+	}
+
+	bidders := map[string]openrtb_ext.BidderName{
+		"sovrn": openrtb_ext.BidderName("sovrn"),
+	}
+
+	bidderInfo := map[string]config.BidderInfo{
+		"sovrn": {},
+	}
+
+	testCases := []struct {
+		description                 string
+		givenRequestBody            string
+		givenAccountPriorityGroups  [][]string
+		givenAccountDefaultCoopSync *bool
+		givenGlobalPriorityGroups   [][]string
+		expectedStatus              int
+		expectError                 bool
+	}{
+		{
+			description:                 "Nil priority groups in account config",
+			givenRequestBody:            `{"bidders":["sovrn"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups:  nil,
+			givenAccountDefaultCoopSync: ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:   [][]string{{"sovrn"}},
+			expectedStatus:              200,
+			expectError:                 false,
+		},
+		{
+			description:                 "Empty priority groups in account config",
+			givenRequestBody:            `{"bidders":["sovrn"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups:  [][]string{},
+			givenAccountDefaultCoopSync: ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:   [][]string{{"sovrn"}},
+			expectedStatus:              200,
+			expectError:                 false,
+		},
+		{
+			description:      "Priority groups with empty nested arrays",
+			givenRequestBody: `{"bidders":["sovrn"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{},          // empty group
+				{"bidderB"}, // valid group
+				{},          // another empty group
+			},
+			givenAccountDefaultCoopSync: ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:   [][]string{},
+			expectedStatus:              200,
+			expectError:                 false,
+		},
+		{
+			description:      "Priority groups with unknown bidders",
+			givenRequestBody: `{"bidders":["sovrn"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{"unknownBidder1", "unknownBidder2"},
+				{"anotherUnknownBidder"},
+			},
+			givenAccountDefaultCoopSync: ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:   [][]string{},
+			expectedStatus:              200,
+			expectError:                 false, // Should not error, just ignore unknown bidders
+		},
+		{
+			description:      "Priority groups with limit constraint",
+			givenRequestBody: `{"bidders":["sovrn"], "coopSync": true, "limit": 1, "account": "test_account"}`, // limit to 1
+			givenAccountPriorityGroups: [][]string{
+				{"appnexus", "rubicon", "pubmatic"}, // many bidders in priority
+			},
+			givenAccountDefaultCoopSync: ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:   [][]string{},
+			expectedStatus:              200,
+			expectError:                 false, // Should respect limit and not error
+		},
+		{
+			description:      "Very large priority groups",
+			givenRequestBody: `{"bidders":["sovrn"], "coopSync": true, "limit": 100, "account": "test_account"}`,
+			givenAccountPriorityGroups: func() [][]string {
+				// Create large priority groups
+				groups := make([][]string, 10)
+				for i := 0; i < 10; i++ {
+					group := make([]string, 50)
+					for j := 0; j < 50; j++ {
+						group[j] = fmt.Sprintf("bidder%d_%d", i, j)
+					}
+					groups[i] = group
+				}
+				return groups
+			}(),
+			givenAccountDefaultCoopSync: ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:   [][]string{},
+			expectedStatus:              200,
+			expectError:                 false, // Should handle large groups gracefully
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			// Setup mock analytics
+			mockAnalytics := MockAnalyticsRunner{}
+			mockAnalytics.On("LogCookieSyncObject", mock.AnythingOfType("*analytics.CookieSyncObject")).Return()
+
+			mockMetrics := metrics.MetricsEngineMock{}
+			mockMetrics.On("RecordCookieSync", mock.Anything, mock.Anything, mock.Anything).Return()
+			mockMetrics.On("RecordSyncerRequest", mock.Anything, mock.Anything, mock.Anything).Return()
+
+			// Create endpoint with test configuration
+			endpoint := NewCookieSyncEndpoint(
+				syncersByBidder,
+				&config.Configuration{
+					UserSync: config.UserSync{
+						PriorityGroups: tc.givenGlobalPriorityGroups,
+						Cooperative: config.UserSyncCooperative{
+							EnabledByDefault: false,
+						},
+					},
+					HostCookie:  config.HostCookie{Family: "prebid"},
+					GDPR:        config.GDPR{Enabled: true, DefaultValue: "0"},
+					CCPA:        config.CCPA{Enforce: false},
+					BidderInfos: bidderInfo,
+				},
+				fakePermissionsBuilder{
+					permissions: &fakePermissions{},
+				}.Builder,
+				fakeTCF2ConfigBuilder{
+					cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+				}.Builder,
+				&mockMetrics,
+				&mockAnalytics,
+				&FakeAccountsFetcher{
+					AccountData: map[string]json.RawMessage{
+						"test_account": createAccountJSON(tc.givenAccountPriorityGroups, tc.givenAccountDefaultCoopSync),
+					},
+				},
+				bidders,
+			)
+
+			// Create test request
+			request := httptest.NewRequest("POST", "/cookie_sync", strings.NewReader(tc.givenRequestBody))
+			response := httptest.NewRecorder()
+
+			// Execute endpoint
+			endpoint.Handle(response, request, nil)
+
+			// Assert response status
+			assert.Equal(t, tc.expectedStatus, response.Code)
+
+			if !tc.expectError && tc.expectedStatus == 200 {
+				// Parse response to ensure it's valid JSON and has expected structure
+				var syncResponse cookieSyncResponse
+				err := json.Unmarshal(response.Body.Bytes(), &syncResponse)
+				assert.NoError(t, err, "Response should be valid JSON")
+
+				// Should always contain the requested bidder at minimum
+				actualBidders := make([]string, len(syncResponse.BidderStatus))
+				for i, bs := range syncResponse.BidderStatus {
+					actualBidders[i] = bs.BidderCode
+				}
+
+				assert.Contains(t, actualBidders, "sovrn", "Response should always contain requested bidder")
+
+				// Verify response structure is valid
+				assert.NotEmpty(t, syncResponse.Status, "Response should have a status")
 			}
 		})
 	}

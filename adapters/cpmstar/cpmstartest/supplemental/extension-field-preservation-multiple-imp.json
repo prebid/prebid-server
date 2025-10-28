@@ -1,0 +1,72 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "w": 300,
+            "h": 250
+          },
+          "ext": {
+            "gpid": "/homepage/banner1",
+            "bidder": {
+              "placementId": 154
+            }
+          }
+        },
+        {
+            "id": "test-imp-id-2",
+            "banner": {
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "gpid": "/homepage/banner2",
+              "bidder": {
+                "placementId": 155
+              }
+            }
+          }
+      ]
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "//host",
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "banner": {
+                  "w": 300,
+                  "h": 250
+                },
+                "ext": {
+                  "gpid": "/homepage/banner1",
+                  "placementId": 154
+                }
+              },
+              {
+                "id": "test-imp-id-2",
+                "banner": {
+                  "w": 300,
+                  "h": 250
+                },
+                "ext": {
+                  "gpid": "/homepage/banner2",
+                  "placementId": 155
+                }
+              }
+            ]
+          },
+          "impIDs": ["test-imp-id", "test-imp-id-2"]
+        },
+        "mockResponse": {
+          "status": 204
+        }
+      }
+    ]
+  }
+  
