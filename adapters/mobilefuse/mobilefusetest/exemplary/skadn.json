@@ -25,9 +25,7 @@
                         ]
                     },
                     "bidder": {
-                        "placement_id": 999999,
-                        "pub_id": 1111,
-                        "tagid_src": "ext"
+                        "placement_id": 999999
                     }
                 }
             }
@@ -36,7 +34,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://mfx.mobilefuse.com/openrtb?pub_id=1111&tagid_src=ext",
+                "uri": "http://mfx.mobilefuse.com/openrtb",
                 "body": {
                     "id": "test-request-id",
                     "imp": [

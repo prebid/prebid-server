@@ -48,7 +48,7 @@ func (g *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 					siteCopy.Publisher = &openrtb2.Publisher{ID: strconv.FormatFloat(gumgumExt.PubID, 'f', -1, 64)}
 				}
 			}
-
+			//modified Imp along with tagID is added to the request
 			validImps = append(validImps, imp)
 		}
 	}
@@ -136,7 +136,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		}
 		return nil, err
 	}
-
 	var gumgumExt openrtb_ext.ExtImpGumGum
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &gumgumExt); err != nil {
 		err = &errortypes.BadInput{
@@ -145,12 +144,18 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		return nil, err
 	}
 
+	var ext openrtb_ext.ExtImpAdUnitCode
+	if err := json.Unmarshal(imp.Ext, &ext); err == nil {
+		if ext.Prebid.AdUnitCode != "" {
+			imp.TagID = ext.Prebid.AdUnitCode
+		}
+	}
+
 	if imp.Banner != nil && imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
 		bannerCopy := *imp.Banner
 		format := bannerCopy.Format[0]
 		bannerCopy.W = &(format.W)
 		bannerCopy.H = &(format.H)
-
 		if gumgumExt.Slot != 0 {
 			var err error
 			bannerExt := getBiggerFormat(bannerCopy.Format, gumgumExt.Slot)
@@ -159,10 +164,8 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 				return nil, err
 			}
 		}
-
 		imp.Banner = &bannerCopy
 	}
-
 	if imp.Video != nil {
 		if gumgumExt.IrisID != "" {
 			var err error
@@ -175,7 +178,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 			imp.Video = &videoCopy
 		}
 	}
-
 	if gumgumExt.Product != "" {
 		var err error
 		imp.Ext, err = json.Marshal(map[string]string{"product": gumgumExt.Product})
@@ -183,7 +185,6 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 			return nil, err
 		}
 	}
-
 	return &gumgumExt, nil
 }
 

@@ -44,13 +44,16 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bs-metadsp.yandex.ru/prebid/111?imp-id=1&ssp-cur=USD&ssp-id=10500&target-ref=www.example.com",
+        "uri": "https://bs-metadsp.yandex.ru/prebid/111?imp-id=1&ssp-cur=USD&ssp-id=10500&target-ref=http%3A%2F%2Fwww.example.com",
         "headers": {
           "User-Agent": [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
           ],
           "X-Forwarded-For": [
             "127.0.0.1"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
           ],
           "X-Real-Ip": [
             "127.0.0.1"
@@ -69,6 +72,8 @@
           "id": "request_id",
           "imp": [
             {
+              "displaymanager": "prebid.go",
+              "displaymanagerver": "1.1",
               "id": "imp_id1",
               "banner": {
                 "w": 300,
@@ -123,13 +128,16 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://bs-metadsp.yandex.ru/prebid/222?imp-id=2&ssp-cur=USD&ssp-id=10500&target-ref=www.example.com",
+        "uri": "https://bs-metadsp.yandex.ru/prebid/222?imp-id=2&ssp-cur=USD&ssp-id=10500&target-ref=http%3A%2F%2Fwww.example.com",
         "headers": {
           "User-Agent": [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
           ],
           "X-Forwarded-For": [
             "127.0.0.1"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
           ],
           "X-Real-Ip": [
             "127.0.0.1"
@@ -148,6 +156,8 @@
           "id": "request_id",
           "imp": [
             {
+              "displaymanager": "prebid.go",
+              "displaymanagerver": "1.1",
               "id": "imp_id2",
               "banner": {
                 "w": 400,

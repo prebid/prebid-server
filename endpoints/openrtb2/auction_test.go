@@ -21,12 +21,15 @@ import (
 	"github.com/buger/jsonparser"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/julienschmidt/httprouter"
+	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/analytics"
 	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -172,6 +175,7 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 		cfg.BlockedApps = test.Config.BlockedApps
 		cfg.BlockedAppsLookup = test.Config.getBlockedAppLookup()
 		cfg.AccountRequired = test.Config.AccountRequired
+		cfg.AccountDefaults.PreferredMediaType = test.Config.PreferredMediaType
 	}
 	cfg.MarshalAccountDefaults()
 	test.endpointType = OPENRTB_ENDPOINT
@@ -195,7 +199,7 @@ func runJsonBasedTest(t *testing.T, filename, desc string) {
 				t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
 			}
 			aa := a.(*exchange.BidderAdapter)
-			ma := aa.Bidder.(*mockAdapter)
+			ma := aa.Bidder.(*adapters.InfoAwareBidder).Bidder.(*mockAdapter)
 			assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
 		}
 	}
@@ -4912,6 +4916,11 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 			file:        "sample-requests/hooks/auction.json",
 			planBuilder: hooksPlanBuilder,
 		},
+		{
+			description: "Assert modified bidresponse after exitpoint hook implementation",
+			file:        "sample-requests/hooks/auction_exitpoint.json",
+			planBuilder: mockPlanBuilder{exitpointPlan: makePlan[hookstage.Exitpoint](mockUpdateResponseHook{})},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -5217,9 +5226,18 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 }
 
 func TestValidateAliases(t *testing.T) {
+	// This test runs against a real list of bidders, so we must use real bidder names for core bidders,
+	// but can use test values for the alias names.
 	deps := &endpointDeps{
-		disabledBidders: map[string]string{"rubicon": "rubicon"},
-		bidderMap:       map[string]openrtb_ext.BidderName{"appnexus": openrtb_ext.BidderName("appnexus")},
+		disabledBidders: map[string]string{
+			"rubicon":  "rubicon is disabled",
+			"appnexus": `Bidder "appnexus" can only be aliased and cannot be used directly.`, // exact wording needed to recognize white label only adapter error state
+		},
+		bidderMap: map[string]openrtb_ext.BidderName{
+			"appnexus": openrtb_ext.BidderName("appnexus"),
+			"rubicon":  openrtb_ext.BidderName("rubicon"),
+			"openx":    openrtb_ext.BidderName("openx"),
+		},
 	}
 
 	testCases := []struct {
@@ -5229,15 +5247,15 @@ func TestValidateAliases(t *testing.T) {
 		expectedError   error
 	}{
 		{
-			description:     "valid case",
-			aliases:         map[string]string{"test": "appnexus"},
-			expectedAliases: map[string]string{"test": "appnexus"},
+			description:     "valid",
+			aliases:         map[string]string{"test": "openx"},
+			expectedAliases: map[string]string{"test": "openx"},
 			expectedError:   nil,
 		},
 		{
-			description:     "valid case - case insensitive",
-			aliases:         map[string]string{"test": "Appnexus"},
-			expectedAliases: map[string]string{"test": "appnexus"},
+			description:     "valid - case insensitive",
+			aliases:         map[string]string{"test": "OpenX"},
+			expectedAliases: map[string]string{"test": "openx"},
 			expectedError:   nil,
 		},
 		{
@@ -5254,9 +5272,15 @@ func TestValidateAliases(t *testing.T) {
 		},
 		{
 			description:     "alias name is coreBidder name",
-			aliases:         map[string]string{"appnexus": "appnexus"},
+			aliases:         map[string]string{"openx": "openx"},
 			expectedAliases: nil,
-			expectedError:   errors.New("request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry."),
+			expectedError:   errors.New("request.ext.prebid.aliases.openx defines a no-op alias. Choose a different alias, or remove this entry."),
+		},
+		{
+			description:     "white label only bidder cannot be aliased",
+			aliases:         map[string]string{"test": "appnexus"},
+			expectedAliases: nil,
+			expectedError:   errors.New("request.ext.prebid.aliases.test refers to a bidder that cannot be aliased: appnexus"),
 		},
 	}
 
@@ -5266,7 +5290,7 @@ func TestValidateAliases(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, testCase.expectedError, err)
 			} else {
-				assert.ObjectsAreEqualValues(testCase.expectedAliases, map[string]string{"test": "appnexus"})
+				assert.Equal(t, testCase.expectedAliases, testCase.aliases)
 			}
 		})
 	}
@@ -5996,5 +6020,599 @@ func sortUserData(user *openrtb2.User) {
 				return user.Data[g].Segment[i].ID < user.Data[g].Segment[j].ID
 			})
 		}
+	}
+}
+func TestValidateEIDs(t *testing.T) {
+	testCases := []struct {
+		name                  string
+		input                 []openrtb2.EID
+		expected              []openrtb2.EID
+		numErrors             int
+		expectedErrorMessages []string
+	}{
+		{
+			name: "one-eid-one-uid-valid",
+			input: []openrtb2.EID{
+				{Source: "src1", UIDs: []openrtb2.UID{{ID: "id1"}}},
+			},
+			expected: []openrtb2.EID{
+				{Source: "src1", UIDs: []openrtb2.UID{{ID: "id1"}}},
+			},
+			numErrors:             0,
+			expectedErrorMessages: nil,
+		},
+		{
+			name: "one-eid-one-uid-empty",
+			input: []openrtb2.EID{
+				{Source: "src2", UIDs: []openrtb2.UID{{ID: ""}}},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 2,
+			expectedErrorMessages: []string{
+				"request.user.eids[0].uids[0] removed due to empty ids",
+				"request.user.eids[0] (source: src2) removed due to empty uids",
+			},
+		},
+		{
+			name: "many-mixed",
+			input: []openrtb2.EID{
+				{Source: "src3", UIDs: []openrtb2.UID{{ID: "ID1"}, {ID: "ID2"}}},
+				{Source: "src4", UIDs: []openrtb2.UID{{ID: ""}, {ID: "ID1"}}},
+				{Source: "src5", UIDs: []openrtb2.UID{{ID: ""}, {ID: ""}}},
+			},
+			expected: []openrtb2.EID{
+				{Source: "src3", UIDs: []openrtb2.UID{{ID: "ID1"}, {ID: "ID2"}}},
+				{Source: "src4", UIDs: []openrtb2.UID{{ID: "ID1"}}},
+			},
+			numErrors: 4,
+			expectedErrorMessages: []string{
+				"request.user.eids[1].uids[0] removed due to empty ids",
+				"request.user.eids[2].uids[0] removed due to empty ids",
+				"request.user.eids[2].uids[1] removed due to empty ids",
+				"request.user.eids[2] (source: src5) removed due to empty uids",
+			},
+		},
+		{
+			name: "one-eid-many-uid-empty",
+			input: []openrtb2.EID{
+				{Source: "src6", UIDs: []openrtb2.UID{{ID: ""}, {ID: ""}}},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 3,
+			expectedErrorMessages: []string{
+				"request.user.eids[0].uids[0] removed due to empty ids",
+				"request.user.eids[0].uids[1] removed due to empty ids",
+				"request.user.eids[0] (source: src6) removed due to empty uids",
+			},
+		},
+		{
+			name:                  "eid_nil",
+			input:                 nil,
+			expected:              nil,
+			numErrors:             0,
+			expectedErrorMessages: nil,
+		},
+		{
+			name: "eid_uid_nil",
+			input: []openrtb2.EID{
+				{Source: "src7", UIDs: nil},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 1,
+			expectedErrorMessages: []string{
+				"request.user.eids[0] (source: src7) removed due to empty uids",
+			},
+		},
+		{
+			name: "source_missing",
+			input: []openrtb2.EID{
+				{UIDs: []openrtb2.UID{{ID: "id1"}}},
+			},
+			expected:  []openrtb2.EID{},
+			numErrors: 1,
+			expectedErrorMessages: []string{
+				"request.user.eids[0] removed due to missing source",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			validEIDs, errorsList := validateEIDs(tc.input)
+
+			assert.ElementsMatch(t, tc.expected, validEIDs)
+			assert.Equal(t, tc.numErrors, len(errorsList))
+
+			// Assert error messages
+			assert.Equal(t, len(tc.expectedErrorMessages), len(errorsList))
+			for _, err := range errorsList {
+				assert.Contains(t, tc.expectedErrorMessages, err.Error())
+			}
+
+		})
+	}
+}
+
+func TestValidateUIDs(t *testing.T) {
+	testCases := []struct {
+		name              string
+		input             []openrtb2.UID
+		expectedValidUIDs []openrtb2.UID
+		expectedErrors    []error
+	}{
+		{
+			name: "many-uid-valid",
+			input: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: "id2"},
+			},
+			expectedValidUIDs: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: "id2"},
+			},
+			expectedErrors: nil,
+		},
+		{
+			name: "many-uid-empty",
+			input: []openrtb2.UID{
+				{ID: ""},
+				{ID: ""},
+			},
+			expectedValidUIDs: nil,
+			expectedErrors: []error{
+				&errortypes.Warning{
+					Message:     "request.user.eids[0].uids[0] removed due to empty ids",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+				&errortypes.Warning{
+					Message:     "request.user.eids[0].uids[1] removed due to empty ids",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+			},
+		},
+		{
+			name: "many-mixed",
+			input: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: ""},
+				{ID: "id2"},
+				{ID: ""},
+			},
+			expectedValidUIDs: []openrtb2.UID{
+				{ID: "id1"},
+				{ID: "id2"},
+			},
+			expectedErrors: []error{
+				&errortypes.Warning{
+					Message:     "request.user.eids[0].uids[1] removed due to empty ids",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+				&errortypes.Warning{
+					Message:     "request.user.eids[0].uids[3] removed due to empty ids",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+			},
+		},
+		{
+			name:              "empty-uid",
+			input:             []openrtb2.UID{},
+			expectedValidUIDs: nil,
+			expectedErrors:    nil,
+		},
+		{
+			name:              "nil-uid",
+			input:             nil,
+			expectedValidUIDs: nil,
+			expectedErrors:    nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			validUIDs, errorsList := validateUIDs(tc.input, 0)
+
+			assert.ElementsMatch(t, tc.expectedValidUIDs, validUIDs)
+			assert.ElementsMatch(t, tc.expectedErrors, errorsList)
+		})
+	}
+}
+func TestValidateUser(t *testing.T) {
+
+	testCases := []struct {
+		name         string
+		req          *openrtb_ext.RequestWrapper
+		expectedErr  []error
+		expectedEids []openrtb2.EID
+	}{
+		{
+			name: "Valid_user_with_Geo_accuracy",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: &openrtb2.Geo{
+							Accuracy: 10,
+						},
+					},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "Invalid_user_with_negative_Geo_accuracy",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Geo: &openrtb2.Geo{
+							Accuracy: -10,
+						},
+					},
+				},
+			},
+			expectedErr: []error{errors.New("request.user.geo.accuracy must be a positive number")},
+		},
+		{
+			name: "Invalid_user.ext.prebid_with_empty_buyeruids",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						Ext: json.RawMessage(`{"prebid": {"buyeruids": {}}}`),
+					},
+				},
+			},
+			expectedErr: []error{errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)},
+		},
+		{
+			name: "Invalid_user.eids_with_empty_id",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						EIDs: []openrtb2.EID{
+							{
+								Source: "source",
+								UIDs: []openrtb2.UID{
+									{ID: ""},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: []error{&errortypes.Warning{
+				Message:     "request.user.eids[0].uids[0] removed due to empty ids",
+				WarningCode: errortypes.InvalidUserUIDsWarningCode,
+			}, &errortypes.Warning{
+				Message:     "request.user.eids[0] (source: source) removed due to empty uids",
+				WarningCode: errortypes.InvalidUserEIDsWarningCode,
+			}},
+			expectedEids: nil,
+		},
+		{
+			name: "Valid_user.eids_with_UID1_id",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						EIDs: []openrtb2.EID{
+							{
+								Source: "source",
+								UIDs: []openrtb2.UID{
+									{ID: "UID1"},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: nil,
+			expectedEids: []openrtb2.EID{
+				{
+					Source: "source",
+					UIDs: []openrtb2.UID{
+						{ID: "UID1"},
+					},
+				},
+			},
+		},
+		{
+			name: "user.eids_with_empty_UIDs",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						EIDs: []openrtb2.EID{
+							{
+								Source: "source",
+								UIDs: []openrtb2.UID{
+									{},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: []error{
+				&errortypes.Warning{
+					Message:     "request.user.eids[0].uids[0] removed due to empty ids",
+					WarningCode: errortypes.InvalidUserUIDsWarningCode,
+				},
+				&errortypes.Warning{
+					Message:     "request.user.eids[0] (source: source) removed due to empty uids",
+					WarningCode: errortypes.InvalidUserEIDsWarningCode,
+				},
+			},
+			expectedEids: nil,
+		},
+		{
+			name: "user.eids_with_empty_UIDs",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						EIDs: []openrtb2.EID{
+							{
+								Source: "source",
+								UIDs:   []openrtb2.UID{},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: []error{
+				&errortypes.Warning{
+					Message:     "request.user.eids[0] (source: source) removed due to empty uids",
+					WarningCode: errortypes.InvalidUserEIDsWarningCode,
+				},
+			},
+			expectedEids: nil,
+		},
+		{
+			name: "user.eids_with_No_UIDs",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					User: &openrtb2.User{
+						EIDs: []openrtb2.EID{
+							{
+								Source: "source",
+							},
+						},
+					},
+				},
+			},
+			expectedErr: []error{
+				&errortypes.Warning{
+					Message:     "request.user.eids[0] (source: source) removed due to empty uids",
+					WarningCode: errortypes.InvalidUserEIDsWarningCode,
+				},
+			},
+			expectedEids: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			deps := &endpointDeps{
+				bidderMap: map[string]openrtb_ext.BidderName{
+					"appnexus": "appnexus",
+				},
+			}
+			errs := deps.validateUser(test.req, nil, gpplib.GppContainer{})
+			assert.Equal(t, test.expectedErr, errs)
+			if test.req.User != nil {
+				assert.ElementsMatch(t, test.expectedEids, test.req.User.EIDs)
+			}
+		})
+	}
+}
+
+func TestProcessGDPR(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		req                  *openrtb_ext.RequestWrapper
+		accountGDPR          config.AccountGDPR
+		requestType          metrics.RequestType
+		cfg                  *config.Configuration
+		expectedGDPREnforced bool
+		expectedGDPRSignal   gdpr.Signal
+		expectedErrorCount   int
+	}{
+		{
+			name: "gdpr-not-enforced-no-signal",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeAMP,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-enforced-with-signal-yes",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "consent-string",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-enforced-with-eea-country",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "FRA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-not-enforced-with-non-eea-country",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "USA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-with-gpp-string",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+						GPP:  "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-with-account-eea-countries",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "ITA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{
+				EEACountries: []string{"ITA", "ESP"},
+			},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "1",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-disabled-tcf2",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeAMP,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: false,
+					},
+				},
+			},
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			deps := &endpointDeps{
+				cfg: tc.cfg,
+			}
+
+			tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(
+				tc.req,
+				tc.accountGDPR,
+				tc.requestType,
+			)
+
+			assert.Equal(t, tc.expectedGDPREnforced, gdprEnforced)
+			assert.Equal(t, tc.expectedGDPRSignal, gdprSignal)
+			assert.Len(t, gdprErrs, tc.expectedErrorCount)
+			assert.NotNil(t, tcf2Config)
+		})
 	}
 }

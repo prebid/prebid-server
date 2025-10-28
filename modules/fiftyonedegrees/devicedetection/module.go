@@ -1,13 +1,15 @@
+//go:build cgo
+
 package devicedetection
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/51Degrees/device-detection-go/v4/onpremise"
-	"github.com/pkg/errors"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
@@ -35,12 +37,12 @@ func configHashFromConfig(cfg *config) *dd.ConfigHash {
 func Builder(rawConfig json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
 	cfg, err := parseConfig(rawConfig)
 	if err != nil {
-		return Module{}, errors.Wrap(err, "failed to parse config")
+		return Module{}, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	err = validateConfig(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid config")
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
 	configHash := configHashFromConfig(&cfg)
@@ -50,7 +52,7 @@ func Builder(rawConfig json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, e
 		&cfg,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create device detector")
+		return nil, fmt.Errorf("failed to create device detector: %w", err)
 	}
 
 	return Module{

@@ -1,3 +1,5 @@
+//go:build cgo
+
 package devicedetection
 
 import (
@@ -8,7 +10,6 @@ type deviceTypeMap = map[deviceType]adcom1.DeviceType
 
 var mobileOrTabletDeviceTypes = []deviceType{
 	deviceTypeMobile,
-	deviceTypeSmartPhone,
 }
 
 var personalComputerDeviceTypes = []deviceType{
@@ -23,6 +24,7 @@ var tvDeviceTypes = []deviceType{
 
 var phoneDeviceTypes = []deviceType{
 	deviceTypePhone,
+	deviceTypeSmartPhone,
 }
 
 var tabletDeviceTypes = []deviceType{

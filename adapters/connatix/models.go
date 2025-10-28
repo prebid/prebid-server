@@ -12,12 +12,9 @@ type impExtIncoming struct {
 	Bidder openrtb_ext.ExtImpConnatix `json:"bidder"`
 }
 
-type impExt struct {
-	Connatix impExtConnatix `json:"connatix"`
-}
-
 type impExtConnatix struct {
-	PlacementId string `json:"placementId,omitempty"`
+	PlacementId           string  `json:"placementId,omitempty"`
+	ViewabilityPercentage float64 `json:"viewabilityPercentage,omitempty"`
 }
 
 type bidExt struct {

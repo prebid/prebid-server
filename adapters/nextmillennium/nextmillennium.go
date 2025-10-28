@@ -11,7 +11,10 @@ import (
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/version"
 )
+
+const NM_ADAPTER_VERSION = "v1.0.1"
 
 type adapter struct {
 	endpoint string
@@ -33,7 +36,11 @@ type nmExtPrebid struct {
 	Server        *server                  `json:"server,omitempty"`
 }
 type nmExtNMM struct {
-	NmmFlags []string `json:"nmmFlags,omitempty"`
+	NmmFlags       []string `json:"nmmFlags,omitempty"`
+	AdSlots        []string `json:"adSlots,omitempty"`
+	AllowedAds     []string `json:"allowedAds,omitempty"`
+	ServerVersion  string   `json:"server_version,omitempty"`
+	AdapterVersion string   `json:"nm_version,omitempty"`
 }
 type nextMillJsonExt struct {
 	Prebid         nmExtPrebid `json:"prebid"`
@@ -149,6 +156,10 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 		DataCenter:  serverParams.DataCenter,
 		ExternalUrl: serverParams.ExternalUrl,
 	}
+	ext.NextMillennium.AdapterVersion = NM_ADAPTER_VERSION
+	ext.NextMillennium.ServerVersion = version.Ver
+	ext.NextMillennium.AllowedAds = params.AllowedAds
+	ext.NextMillennium.AdSlots = params.AdSlots
 	jsonExt, err := json.Marshal(ext)
 	if err != nil {
 		return &bidRequest

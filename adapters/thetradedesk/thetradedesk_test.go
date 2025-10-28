@@ -2,12 +2,14 @@ package thetradedesk
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"net/http"
 	"testing"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -116,15 +118,16 @@ func TestGetBidType(t *testing.T) {
 	}
 }
 
-func TestGetPublisherId(t *testing.T) {
+func TestGetExtensionInfo(t *testing.T) {
 	type args struct {
 		impressions []openrtb2.Imp
 	}
 	tests := []struct {
-		name                string
-		args                args
-		expectedPublisherId string
-		wantErr             bool
+		name                   string
+		args                   args
+		expectedPublisherId    string
+		expectedSupplySourceId string
+		wantErr                bool
 	}{
 		{
 			name: "valid_publisher_Id",
@@ -132,12 +135,13 @@ func TestGetPublisherId(t *testing.T) {
 				impressions: []openrtb2.Imp{
 					{
 						Video: &openrtb2.Video{},
-						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1"}}`),
+						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1", "supplySourceId": "abc"}}`),
 					},
 				},
 			},
-			expectedPublisherId: "1",
-			wantErr:             false,
+			expectedPublisherId:    "1",
+			expectedSupplySourceId: "abc",
+			wantErr:                false,
 		},
 		{
 			name: "multiple_valid_publisher_Id",
@@ -145,16 +149,17 @@ func TestGetPublisherId(t *testing.T) {
 				impressions: []openrtb2.Imp{
 					{
 						Video: &openrtb2.Video{},
-						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1"}}`),
+						Ext:   json.RawMessage(`{"bidder":{"publisherId":"1", "supplySourceId": "abc"}}`),
 					},
 					{
 						Video: &openrtb2.Video{},
-						Ext:   json.RawMessage(`{"bidder":{"publisherId":"2"}}`),
+						Ext:   json.RawMessage(`{"bidder":{"publisherId":"2",  "supplySourceId": "def"}}`),
 					},
 				},
 			},
-			expectedPublisherId: "1",
-			wantErr:             false,
+			expectedPublisherId:    "1",
+			expectedSupplySourceId: "abc",
+			wantErr:                false,
 		},
 		{
 			name: "not_publisherId_present",
@@ -166,8 +171,9 @@ func TestGetPublisherId(t *testing.T) {
 					},
 				},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 		{
 			name: "nil_publisherId_present",
@@ -179,16 +185,18 @@ func TestGetPublisherId(t *testing.T) {
 					},
 				},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 		{
 			name: "no_impressions",
 			args: args{
 				impressions: []openrtb2.Imp{},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 		{
 			name: "invalid_bidder_object",
@@ -200,15 +208,17 @@ func TestGetPublisherId(t *testing.T) {
 					},
 				},
 			},
-			expectedPublisherId: "",
-			wantErr:             false,
+			expectedPublisherId:    "",
+			expectedSupplySourceId: "",
+			wantErr:                false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			publisherId, err := getPublisherId(tt.args.impressions)
+			publisherId, supplySourceId, err := getExtensionInfo(tt.args.impressions)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.expectedPublisherId, publisherId)
+			assert.Equal(t, tt.expectedSupplySourceId, supplySourceId)
 		})
 	}
 }
@@ -268,9 +278,12 @@ func TestTheTradeDeskAdapter_MakeRequests(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &adapter{
-				bidderEndpoint: tt.fields.URI,
-			}
+			a, buildErr := Builder(openrtb_ext.BidderTheTradeDesk, config.Adapter{
+				Endpoint:         `https://adsrvr.org/bid/bidder/{{.SupplyId}}`,
+				ExtraAdapterInfo: "test",
+			}, config.Server{})
+			assert.Nil(t, buildErr)
+
 			gotReqData, gotErr := a.MakeRequests(tt.args.request, tt.args.reqInfo)
 			assert.Equal(t, tt.wantErr, len(gotErr) != 0)
 			if tt.wantErr == false {
@@ -374,12 +387,239 @@ func TestTheTradeDeskAdapter_MakeBids(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &adapter{
-				bidderEndpoint: tt.fields.URI,
-			}
+			a, buildErr := Builder(openrtb_ext.BidderTheTradeDesk, config.Adapter{
+				Endpoint:         `https://adsrvr.org/bid/bidder/{{.SupplyId}}`,
+				ExtraAdapterInfo: "test",
+			}, config.Server{})
+			assert.Nil(t, buildErr)
 			gotResp, gotErr := a.MakeBids(tt.args.internalRequest, tt.args.externalRequest, tt.args.response)
 			assert.Equal(t, tt.wantErr, gotErr, gotErr)
 			assert.Equal(t, tt.wantResp, gotResp)
+		})
+	}
+}
+
+func TestTheTradeDeskAdapter_BuildEndpoint(t *testing.T) {
+	tests := []struct {
+		name             string
+		supplySourceId   string
+		defaultEndpoint  string
+		expectedEndpoint string
+		wantErr          []error
+	}{
+		{
+			name:             "valid_supply_source_id",
+			supplySourceId:   "pub_abc",
+			defaultEndpoint:  "https://direct.adsrvr.org/bid/bidder/default_publisher",
+			expectedEndpoint: "https://direct.adsrvr.org/bid/bidder/pub_abc",
+			wantErr:          nil,
+		},
+		{
+			name:             "empty_supply_source_id",
+			supplySourceId:   "",
+			defaultEndpoint:  "https://direct.adsrvr.org/bid/bidder/default_publisher",
+			expectedEndpoint: "https://direct.adsrvr.org/bid/bidder/default_publisher",
+			wantErr:          nil,
+		},
+		{
+			name:             "empty_ssi_and_no_default_expect_err",
+			supplySourceId:   "",
+			defaultEndpoint:  "",
+			expectedEndpoint: "",
+			wantErr:          []error{errors.New("Either supplySourceId or a default endpoint must be provided")},
+		},
+	}
+
+	endpointTemplate, err := template.New("endpointTemplate").Parse("https://direct.adsrvr.org/bid/bidder/{{.SupplyId}}")
+	assert.Nil(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &adapter{
+				bidderEndpointTemplate: "https://direct.adsrvr.org/bid/bidder/{{.SupplyId}}",
+				defaultEndpoint:        tt.defaultEndpoint,
+				templateEndpoint:       endpointTemplate,
+			}
+			finalEndpoint, err := a.buildEndpointURL(tt.supplySourceId)
+			if tt.wantErr != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.wantErr[0].Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
+			assert.Equal(t, tt.expectedEndpoint, finalEndpoint)
+		})
+	}
+}
+
+func TestResolveAuctionPriceMacros(t *testing.T) {
+	tests := []struct {
+		name         string
+		bid          *openrtb2.Bid
+		expectedNURL string
+		expectedAdM  string
+		expectedBURL string
+	}{
+		{
+			name: "nil_bid",
+			bid:  nil,
+		},
+		{
+			name: "no_macros",
+			bid: &openrtb2.Bid{
+				Price: 1.23,
+				NURL:  "http://example.com/nurl",
+				AdM:   "<div>Ad content</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=1.23&param2=abc",
+			},
+			expectedNURL: "http://example.com/nurl",
+			expectedAdM:  "<div>Ad content</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=1.23&param2=abc",
+		},
+		{
+			name: "macros_in_both_nurl_and_adm",
+			bid: &openrtb2.Bid{
+				Price: 1.50,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Ad content with price ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
+			},
+			expectedNURL: "http://example.com/nurl?price=1.5",
+			expectedAdM:  "<div>Ad content with price 1.5</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=1.5&param2=abc",
+		},
+		{
+			name: "macro_only_in_nurl",
+			bid: &openrtb2.Bid{
+				Price: 2.75,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Ad content</div>",
+			},
+			expectedNURL: "http://example.com/nurl?price=2.75",
+			expectedAdM:  "<div>Ad content</div>",
+		},
+		{
+			name: "macro_only_in_adm",
+			bid: &openrtb2.Bid{
+				Price: 0.99,
+				NURL:  "http://example.com/nurl",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+			},
+			expectedNURL: "http://example.com/nurl",
+			expectedAdM:  "<div>Price: 0.99</div>",
+		},
+		{
+			name: "macro_only_in_burl",
+			bid: &openrtb2.Bid{
+				Price: 0.99,
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
+			},
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=0.99&param2=abc",
+		},
+		{
+			name: "multiple_macros_in_same_field",
+			bid: &openrtb2.Bid{
+				Price: 3.14,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}&backup_price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}, Backup: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=${AUCTION_PRICE}",
+			},
+			expectedNURL: "http://example.com/nurl?price=3.14&backup_price=3.14",
+			expectedAdM:  "<div>Price: 3.14, Backup: 3.14</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=3.14&param2=3.14",
+		},
+		{
+			name: "zero_price",
+			bid: &openrtb2.Bid{
+				Price: 0.0,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
+			},
+			expectedNURL: "http://example.com/nurl?price=0",
+			expectedAdM:  "<div>Price: 0</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=0&param2=abc",
+		},
+		{
+			name: "very_small_price",
+			bid: &openrtb2.Bid{
+				Price: 0.001,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
+			},
+			expectedNURL: "http://example.com/nurl?price=0.001",
+			expectedAdM:  "<div>Price: 0.001</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=0.001&param2=abc",
+		},
+		{
+			name: "large_price",
+			bid: &openrtb2.Bid{
+				Price: 999.999,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
+			},
+			expectedNURL: "http://example.com/nurl?price=999.999",
+			expectedAdM:  "<div>Price: 999.999</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=999.999&param2=abc",
+		},
+		{
+			name: "integer_price",
+			bid: &openrtb2.Bid{
+				Price: 5.0,
+				NURL:  "http://example.com/nurl?price=${AUCTION_PRICE}",
+				AdM:   "<div>Price: ${AUCTION_PRICE}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${AUCTION_PRICE}&param2=abc",
+			},
+			expectedNURL: "http://example.com/nurl?price=5",
+			expectedAdM:  "<div>Price: 5</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=5&param2=abc",
+		},
+		{
+			name: "empty_nurl_and_adm",
+			bid: &openrtb2.Bid{
+				Price: 1.23,
+				NURL:  "",
+				AdM:   "",
+				BURL:  "",
+			},
+			expectedNURL: "",
+			expectedAdM:  "",
+			expectedBURL: "",
+		},
+		{
+			name: "case_sensitive_macro_not_replaced",
+			bid: &openrtb2.Bid{
+				Price: 1.50,
+				NURL:  "http://example.com/nurl?price=${auction_price}",
+				AdM:   "<div>Price: ${Auction_Price}</div>",
+				BURL:  "http://adsrvr.org/feedback/xxxx?wp=${Auction_Price}&param2=abc",
+			},
+			expectedNURL: "http://example.com/nurl?price=${auction_price}",
+			expectedAdM:  "<div>Price: ${Auction_Price}</div>",
+			expectedBURL: "http://adsrvr.org/feedback/xxxx?wp=${Auction_Price}&param2=abc",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var testBid *openrtb2.Bid
+			if tt.bid != nil {
+				bidCopy := *tt.bid
+				testBid = &bidCopy
+			}
+
+			resolveAuctionPriceMacros(testBid)
+
+			if tt.bid == nil {
+				assert.Nil(t, testBid)
+				return
+			}
+
+			assert.Equal(t, tt.expectedNURL, testBid.NURL, "NURL should match expected value")
+			assert.Equal(t, tt.expectedAdM, testBid.AdM, "AdM should match expected value")
+			assert.Equal(t, tt.expectedBURL, testBid.BURL, "BRUL should match expected value")
 		})
 	}
 }

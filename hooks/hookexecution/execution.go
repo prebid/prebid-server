@@ -3,10 +3,12 @@ package hookexecution
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
@@ -67,10 +69,11 @@ func executeGroup[H any, P any](
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
-	resp := make(chan hookResponse[P])
+	resp := make(chan hookResponse[P], len(group.Hooks))
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
+		mCtx.HookImplCode = hook.Code
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
@@ -103,6 +106,13 @@ func executeHook[H any, P any](
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				glog.Errorf("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
+					hw.Module, hw.Code, r, string(debug.Stack()))
+			}
+		}()
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)

@@ -479,12 +479,10 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 					"inventory": {"key1" : "val1"},
 					"visitor": {"key2" : "val2"}
 				},
-				"context": {
-					"data": {
-                        "adserver": {
-                             "adslot": "/test-adslot",
-                             "name": "gam"
-                        }
+				"data": {
+					"adserver": {
+						 "adslot": "/test-adslot",
+						 "name": "gam"
 					}
 				}
 			}`),
@@ -993,6 +991,33 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 			assert.Equal(t, bidResponse.Bids[0].Bid.Ext, givenBidExt)
 		}
 	}
+}
+
+func TestUpdateBidExtWithMeta_OnlySeatSet(t *testing.T) {
+	bid := rubiconBid{
+		Bid: openrtb2.Bid{
+			Ext: nil,
+		},
+		AdmNative: nil,
+	}
+	seat := "test-seat"
+	buyer := 0
+
+	ext := updateBidExtWithMeta(bid, buyer, seat)
+	assert.NotNil(t, ext, "Expected non-nil ext when seat is set")
+
+	var extPrebidWrapper struct {
+		Prebid struct {
+			Meta struct {
+				Seat      string `json:"seat"`
+				NetworkID *int   `json:"networkId,omitempty"`
+			} `json:"meta"`
+		} `json:"prebid"`
+	}
+	err := json.Unmarshal(ext, &extPrebidWrapper)
+	assert.NoError(t, err, "Unmarshal should succeed")
+	assert.Equal(t, seat, extPrebidWrapper.Prebid.Meta.Seat, "Seat should be set")
+	assert.Zero(t, extPrebidWrapper.Prebid.Meta.NetworkID, "NetworkID should be omitted or zero")
 }
 
 func TestOpenRTBResponseBidExtPrebidMetaPassthrough(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
@@ -19,9 +20,25 @@ import (
 )
 
 const (
+	bidderVersion    = "1.1"
+	bidderName       = "prebid.go"
 	refererQueryKey  = "target-ref"
 	currencyQueryKey = "ssp-cur"
 	impIdQueryKey    = "imp-id"
+	videoMinDuration = 1
+	videoMaxDuration = 120
+)
+
+// HTTP header constants
+const (
+	headerReferer        = "Referer"
+	headerAcceptLanguage = "Accept-Language"
+	headerUserAgent      = "User-Agent"
+	headerXForwardedFor  = "X-Forwarded-For"
+	headerXRealIP        = "X-Real-Ip"
+	headerContentType    = "Content-Type"
+	headerAccept         = "Accept"
+	headerXOpenRTVersion = "X-OpenRTB-Version"
 )
 
 // Composite id of an ad placement
@@ -101,13 +118,14 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 
 	if request.Device != nil && request.Site != nil {
 		addNonEmptyHeaders(&headers, map[string]string{
-			"Referer":         request.Site.Page,
-			"Accept-Language": request.Device.Language,
-			"User-Agent":      request.Device.UA,
-			"X-Forwarded-For": request.Device.IP,
-			"X-Real-Ip":       request.Device.IP,
-			"Content-Type":    "application/json;charset=utf-8",
-			"Accept":          "application/json",
+			headerReferer:        request.Site.Page,
+			headerAcceptLanguage: request.Device.Language,
+			headerUserAgent:      request.Device.UA,
+			headerXForwardedFor:  request.Device.IP,
+			headerXRealIP:        request.Device.IP,
+			headerContentType:    "application/json;charset=utf-8",
+			headerAccept:         "application/json",
+			headerXOpenRTVersion: "2.5",
 		})
 	}
 
@@ -185,21 +203,40 @@ func mapExtToPlacementID(yandexExt openrtb_ext.ExtImpYandex) (*yandexPlacementID
 }
 
 func modifyImp(imp *openrtb2.Imp) error {
+	imp.DisplayManager = bidderName
+	imp.DisplayManagerVer = bidderVersion
+
+	var hasSupportedType bool
+
 	if imp.Banner != nil {
 		banner, err := modifyBanner(*imp.Banner)
-		if banner != nil {
-			imp.Banner = banner
+		if err != nil {
+			return err
 		}
-		return err
+		imp.Banner = banner
+		hasSupportedType = true
+	}
+
+	if imp.Video != nil {
+		video, err := modifyVideo(*imp.Video)
+		if err != nil {
+			return err
+		}
+		imp.Video = video
+		hasSupportedType = true
 	}
 
 	if imp.Native != nil {
-		return nil
+		hasSupportedType = true
 	}
 
-	return &errortypes.BadInput{
-		Message: fmt.Sprintf("Unsupported format. Yandex only supports banner and native types. Ignoring imp id #%s", imp.ID),
+	if !hasSupportedType {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Unsupported format. Yandex only supports banner, video, and native types. Ignoring imp id #%s", imp.ID),
+		}
 	}
+
+	return nil
 }
 
 func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
@@ -218,6 +255,26 @@ func modifyBanner(banner openrtb2.Banner) (*openrtb2.Banner, error) {
 	}
 
 	return &banner, nil
+}
+
+func modifyVideo(video openrtb2.Video) (*openrtb2.Video, error) {
+	if video.W == nil || video.H == nil || *video.W == 0 || *video.H == 0 {
+		return nil, &errortypes.BadInput{
+			Message: "Invalid size provided for Video",
+		}
+	}
+
+	if video.MinDuration == 0 {
+		video.MinDuration = videoMinDuration
+	}
+	if video.MaxDuration == 0 {
+		video.MaxDuration = videoMaxDuration
+	}
+	if len(video.Protocols) == 0 {
+		video.Protocols = []adcom1.MediaCreativeSubtype{3}
+	}
+
+	return &video, nil
 }
 
 // "Un-templates" the endpoint by replacing macroses and adding the required query parameters
@@ -257,6 +314,10 @@ func addNonEmptyQueryParams(url *url.URL, queryMap map[string]string) {
 func getReferer(request *openrtb2.BidRequest) string {
 	if request.Site == nil {
 		return ""
+	}
+
+	if request.Site.Page != "" {
+		return request.Site.Page
 	}
 
 	return request.Site.Domain
@@ -327,15 +388,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 }
 
 func getBidType(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
-	if imp.Native != nil {
+	switch {
+	case imp.Video != nil:
+		return openrtb_ext.BidTypeVideo, nil
+	case imp.Native != nil:
 		return openrtb_ext.BidTypeNative, nil
-	}
-
-	if imp.Banner != nil {
+	case imp.Banner != nil:
 		return openrtb_ext.BidTypeBanner, nil
-	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
+	default:
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("Processing an invalid impression; cannot resolve impression type for imp #%s", imp.ID),
+		}
 	}
 }

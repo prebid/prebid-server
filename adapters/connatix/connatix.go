@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/buger/jsonparser"
@@ -155,9 +156,33 @@ func splitRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 			return nil, errs
 		}
 
+		endpoint, err := url.Parse(uri)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		if request.User != nil {
+			userID := strings.TrimSpace(request.User.BuyerUID)
+
+			if len(userID) > 0 {
+				queryParams := url.Values{}
+
+				if strings.HasPrefix(userID, "1-") {
+					queryParams.Add("dc", "us-east-2")
+				} else if strings.HasPrefix(userID, "2-") {
+					queryParams.Add("dc", "us-west-2")
+				} else if strings.HasPrefix(userID, "3-") {
+					queryParams.Add("dc", "eu-west-1")
+				}
+
+				endpoint.RawQuery = queryParams.Encode()
+			}
+		}
+
 		resArr = append(resArr, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     uri,
+			Uri:     endpoint.String(),
 			Body:    reqJSON,
 			Headers: headers,
 			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -197,14 +222,20 @@ func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer st
 		imp.BidFloor = convertedValue
 	}
 
-	impExt := impExt{
-		Connatix: impExtConnatix{
-			PlacementId: ext.Bidder.PlacementId,
-		},
+	var incomingExt map[string]interface{}
+	if err := jsonutil.Unmarshal(imp.Ext, &incomingExt); err != nil {
+		incomingExt = make(map[string]interface{})
+	}
+
+	delete(incomingExt, "bidder")
+
+	incomingExt["connatix"] = impExtConnatix{
+		PlacementId:           ext.Bidder.PlacementId,
+		ViewabilityPercentage: ext.Bidder.ViewabilityPercentage,
 	}
 
 	var err error
-	imp.Ext, err = json.Marshal(impExt)
+	imp.Ext, err = json.Marshal(incomingExt)
 
 	return err
 }

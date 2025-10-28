@@ -91,6 +91,8 @@ type ExtRequestPrebid struct {
 	// - basic: excludes debugmessages and analytic_tags from output
 	// any other value or an empty string disables trace output at all.
 	Trace string `json:"trace,omitempty"`
+
+	BidderControls map[BidderName]BidderControl `json:"biddercontrols,omitempty"`
 }
 
 type AdServerTarget struct {
@@ -118,10 +120,11 @@ type Config struct {
 	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
 }
 
-type ORTB2 struct { //First party data
-	Site json.RawMessage `json:"site,omitempty"`
-	App  json.RawMessage `json:"app,omitempty"`
-	User json.RawMessage `json:"user,omitempty"`
+type ORTB2 struct { // First party data
+	Site   json.RawMessage `json:"site,omitempty"`
+	App    json.RawMessage `json:"app,omitempty"`
+	User   json.RawMessage `json:"user,omitempty"`
+	Device json.RawMessage `json:"device,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -201,6 +204,7 @@ type ExtRequestTargeting struct {
 	PreferDeals               bool                       `json:"preferdeals,omitempty"`
 	AppendBidderNames         bool                       `json:"appendbiddernames,omitempty"`
 	AlwaysIncludeDeals        bool                       `json:"alwaysincludedeals,omitempty"`
+	Prefix                    string                     `json:"prefix,omitempty"`
 }
 
 type ExtIncludeBrandCategory struct {
@@ -367,6 +371,10 @@ type ExtMultiBid struct {
 	TargetBidderCodePrefix string   `json:"targetbiddercodeprefix,omitempty"`
 }
 
+type BidderControl struct {
+	PreferredMediaType BidType `json:"prefmtype"`
+}
+
 func (m ExtMultiBid) String() string {
 	maxBid := "<nil>"
 	if m.MaxBids != nil {
@@ -486,6 +494,7 @@ func (erp *ExtRequestPrebid) Clone() *ExtRequestPrebid {
 			DurationRangeSec:  slices.Clone(erp.Targeting.DurationRangeSec),
 			PreferDeals:       erp.Targeting.PreferDeals,
 			AppendBidderNames: erp.Targeting.AppendBidderNames,
+			Prefix:            erp.Targeting.Prefix,
 		}
 		if erp.Targeting.PriceGranularity != nil {
 			newPriceGranularity := &PriceGranularity{

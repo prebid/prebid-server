@@ -76,7 +76,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	nilMetrics := &metricsConfig.NilMetricsEngine{}
 
-	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
+	adapters, singleFormatBidders, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
 	if adaptersErr != nil {
 		b.Fatal("unable to build adapters")
 	}
@@ -94,11 +94,12 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		nilMetrics,
 		infos,
 		gdprPermsBuilder,
-		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currency.NewRateConverter(&http.Client{}, 60*time.Second, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
 		&adscert.NilSigner{},
 		macros.NewStringIndexBasedReplacer(),
 		nil,
+		singleFormatBidders,
 	)
 
 	endpoint, _ := NewEndpoint(
