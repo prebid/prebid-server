@@ -208,7 +208,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		syncerKeys = append(syncerKeys, k)
 	}
 
-	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor}
+	normalizedGeoscopes := getNormalizedGeoscopes(cfg.BidderInfos)
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes}
 	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		logger.Fatal("Failed to init hook modules: %v", err)
@@ -407,4 +408,19 @@ func readDefaultRequestFromFile(defReqConfig config.DefReqConfig) []byte {
 	}
 
 	return defaultRequestJSON
+}
+
+func getNormalizedGeoscopes(bidderInfos config.BidderInfos) map[string][]string {
+	geoscopes := make(map[string][]string, len(bidderInfos))
+
+	for name, info := range bidderInfos {
+		if len(info.Geoscope) > 0 {
+			uppercasedGeoscopes := make([]string, len(info.Geoscope))
+			for i, scope := range info.Geoscope {
+				uppercasedGeoscopes[i] = strings.ToUpper(scope)
+			}
+			geoscopes[name] = uppercasedGeoscopes
+		}
+	}
+	return geoscopes
 }

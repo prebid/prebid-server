@@ -202,8 +202,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
@@ -217,6 +215,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
+
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(req, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
 
 	// Read Usersyncs/Cookie
 	decoder := usersync.Base64Decoder{}
@@ -260,6 +261,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	defer func() {
@@ -2058,4 +2061,29 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// processGDPR handles GDPR signal processing and policy building.
+// It returns the created privacy policy (if GDPR is enforced) and any errors encountered.
+func (deps *endpointDeps) processGDPR(req *openrtb_ext.RequestWrapper, accountGDPR config.AccountGDPR, requestType metrics.RequestType) (
+	gdpr.TCF2ConfigReader, gdpr.Signal, bool, []error) {
+
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, accountGDPR)
+
+	var gdprErrs []error
+
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := gdpr.SelectEEACountries(deps.cfg.GDPR.EEACountries, accountGDPR.EEACountries)
+
+	// Make our best guess if GDPR applies
+	gdprDefaultValue := gdpr.ParseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := gdpr.GetGDPR(req)
+	if err != nil {
+		gdprErrs = append(gdprErrs, err)
+	}
+
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[requestType])
+	gdprEnforced := gdpr.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+
+	return tcf2Config, gdprSignal, gdprEnforced, gdprErrs
 }
