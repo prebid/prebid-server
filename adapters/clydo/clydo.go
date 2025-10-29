@@ -80,10 +80,10 @@ func (a *adapter) MakeBids(
 	if err != nil {
 		return nil, []error{err}
 	}
-	bids, errors := prepareSeatBids(response.SeatBid, bidTypeMap)
+	bids := prepareSeatBids(response.SeatBid, bidTypeMap)
 	bidResponse.Bids = bids
 
-	return bidResponse, errors
+	return bidResponse, nil
 }
 
 func (a *adapter) prepareRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, impIds []string, headers http.Header) (*adapters.RequestData, error) {
@@ -221,18 +221,10 @@ func prepareBidResponse(body []byte) (openrtb2.BidResponse, error) {
 	return response, nil
 }
 
-func prepareSeatBids(seatBids []openrtb2.SeatBid, bidTypeMap map[string]openrtb_ext.BidType) ([]*adapters.TypedBid, []error) {
+func prepareSeatBids(seatBids []openrtb2.SeatBid, bidTypeMap map[string]openrtb_ext.BidType) []*adapters.TypedBid {
 	var typedBids []*adapters.TypedBid
-	var errors []error
-
-	if seatBids == nil {
-		return typedBids, nil
-	}
 
 	for _, seatBid := range seatBids {
-		if seatBid.Bid == nil {
-			continue
-		}
 		for i := range seatBid.Bid {
 			bid := &seatBid.Bid[i]
 			bidType := getMediaTypeForBid(bid, bidTypeMap)
@@ -243,7 +235,7 @@ func prepareSeatBids(seatBids []openrtb2.SeatBid, bidTypeMap map[string]openrtb_
 		}
 	}
 
-	return typedBids, errors
+	return typedBids
 }
 
 func buildBidTypeMap(imps []openrtb2.Imp) (map[string]openrtb_ext.BidType, error) {
@@ -256,6 +248,8 @@ func buildBidTypeMap(imps []openrtb2.Imp) (map[string]openrtb_ext.BidType, error
 		}
 
 		switch {
+		case imp.Audio != nil:
+			bidTypeMap[imp.ID] = openrtb_ext.BidTypeAudio
 		case imp.Video != nil:
 			bidTypeMap[imp.ID] = openrtb_ext.BidTypeVideo
 		case imp.Native != nil:
