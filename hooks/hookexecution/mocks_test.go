@@ -175,7 +175,7 @@ func (e mockTimeoutHook) HandleAllProcessedBidResponsesHook(_ context.Context, _
 }
 
 func (e mockTimeoutHook) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	c := hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
 	c.AddMutation(func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
 		payload.BidResponse.Ext = []byte("another-byte")
@@ -186,7 +186,7 @@ func (e mockTimeoutHook) HandleAuctionResponseHook(_ context.Context, _ hookstag
 }
 
 func (e mockTimeoutHook) HandleExitpointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	c := hookstage.ChangeSet[hookstage.ExitpointPayload]{}
 	c.AddMutation(func(payload hookstage.ExitpointPayload) (hookstage.ExitpointPayload, error) {
 		payload.Response = &openrtb2.BidResponse{ID: "another-id"}
