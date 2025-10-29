@@ -45,6 +45,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
+	headers := a.getHeaders(request)
 
 	for _, imp := range request.Imp {
 		// Create a new request with just this impression
@@ -67,7 +68,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			return nil, []error{err}
 		}
 
-		adapterReq, err := a.makeRequest(&reqCopy, endpoint)
+		adapterReq, err := a.makeRequest(&reqCopy, endpoint, headers)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -105,13 +106,11 @@ func (a *adapter) getHeaders(request *openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func (a *adapter) makeRequest(request *openrtb2.BidRequest, endpoint string) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, endpoint string, headers http.Header) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
-
-	headers := a.getHeaders(request)
 
 	return &adapters.RequestData{
 		Method:  "POST",
