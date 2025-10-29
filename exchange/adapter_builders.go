@@ -205,6 +205,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/seedingAlliance"
 	"github.com/prebid/prebid-server/v3/adapters/seedtag"
 	"github.com/prebid/prebid-server/v3/adapters/sharethrough"
+	"github.com/prebid/prebid-server/v3/adapters/showheroes"
 	"github.com/prebid/prebid-server/v3/adapters/silvermob"
 	"github.com/prebid/prebid-server/v3/adapters/silverpush"
 	"github.com/prebid/prebid-server/v3/adapters/smaato"
@@ -474,6 +475,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
 		openrtb_ext.BidderScreencore:        screencore.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
+		openrtb_ext.BidderShowheroes:        showheroes.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
 		openrtb_ext.BidderSilverPush:        silverpush.Builder,
 		openrtb_ext.BidderSmaato:            smaato.Builder,
