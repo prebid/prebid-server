@@ -511,6 +511,15 @@ func buildRequestExtForBidder(bidder string, req *openrtb_ext.RequestWrapper, re
 		AlternateBidderCodes: alternateBidderCodes,
 	}
 
+	if prebid := reqExt.GetPrebid(); prebid != nil && prebid.Aliases != nil {
+		if aliasValue, ok := prebid.Aliases[bidder]; ok {
+			if prebidNew.Aliases == nil {
+				prebidNew.Aliases = make(map[string]string)
+			}
+			prebidNew.Aliases[bidder] = aliasValue
+		}
+	}
+
 	// Copy Allowed Fields
 	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
 	if prebid != nil {
