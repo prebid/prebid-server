@@ -14,6 +14,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"golang.org/x/sync/singleflight"
 )
 
 // cachedConfig holds a config with expiry time
@@ -31,6 +32,7 @@ type ConfigClient struct {
 	done  chan struct{}
 	// Dynamic mode: multiple configs keyed by URL
 	dynamicCache sync.Map // map[string]*cachedConfig
+	fetchGroup   singleflight.Group
 }
 
 // NewConfigClient creates a new config client and starts the background refresh
@@ -75,21 +77,27 @@ func (c *ConfigClient) GetConfigForURL(url string) *ShapingConfig {
 		c.dynamicCache.Delete(url)
 	}
 
-	// Fetch new config
-	config, err := c.fetchForURL(url)
+	// Fetch new config (coalesced per URL)
+	value, err, _ := c.fetchGroup.Do(url, func() (interface{}, error) {
+		config, fetchErr := c.fetchForURL(url)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+
+		expiresAt := time.Now().Add(c.config.GetRefreshInterval())
+		c.dynamicCache.Store(url, &cachedConfig{
+			config:    config,
+			expiresAt: expiresAt,
+		})
+
+		return config, nil
+	})
 	if err != nil {
 		glog.Warningf("trafficshaping: fetch failed for %s: %v", url, err)
 		return nil
 	}
 
-	// Cache with TTL
-	expiresAt := time.Now().Add(c.config.GetRefreshInterval())
-	c.dynamicCache.Store(url, &cachedConfig{
-		config:    config,
-		expiresAt: expiresAt,
-	})
-
-	return config
+	return value.(*ShapingConfig)
 }
 
 // Stop stops the background refresh goroutine

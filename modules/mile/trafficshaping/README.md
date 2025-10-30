@@ -200,7 +200,7 @@ If no GPID is found, the impression is not shaped.
 ### Skip Rate
 
 The module uses deterministic sampling based on the request ID:
-- `sample = fnv1a32(hex(salt + request.id)) % 100`
+- `sample = fnv1a32(salt + request.id) % 100`
 - If `sample < skipRate`, shaping is skipped for the entire auction
 
 This ensures consistent behavior across multiple pods/instances.

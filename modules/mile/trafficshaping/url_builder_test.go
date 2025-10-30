@@ -393,8 +393,8 @@ func TestBuildConfigURLWithFallback_DeviceFallback(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			geoResolver := &mockGeoResolver{country: "US"}
-			url, activities, err := buildConfigURLWithFallback(context.Background(), "http://localhost:8080/ts-server/", tt.wrapper, geoResolver)
+		geoResolver := &mockGeoResolver{country: "US"}
+		url, activities, err := buildConfigURLWithFallback(context.Background(), "http://localhost:8080/", tt.wrapper, geoResolver)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -433,6 +433,7 @@ func (m *mockGeoResolver) Resolve(ctx context.Context, ip string) (string, error
 func createWrapper(country string, deviceType int64, ua string) *openrtb_ext.RequestWrapper {
 	return &openrtb_ext.RequestWrapper{
 		BidRequest: &openrtb2.BidRequest{
+			Site: &openrtb2.Site{ID: "ts-server"},
 			Device: &openrtb2.Device{
 				DeviceType: adcom1.DeviceType(deviceType),
 				UA:         ua,
@@ -447,6 +448,7 @@ func createWrapper(country string, deviceType int64, ua string) *openrtb_ext.Req
 func createWrapperNoGeo(deviceType int64, ua string) *openrtb_ext.RequestWrapper {
 	return &openrtb_ext.RequestWrapper{
 		BidRequest: &openrtb2.BidRequest{
+			Site: &openrtb2.Site{ID: "ts-server"},
 			Device: &openrtb2.Device{
 				DeviceType: adcom1.DeviceType(deviceType),
 				UA:         ua,

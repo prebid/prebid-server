@@ -1,7 +1,6 @@
 package trafficshaping
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"hash/fnv"
 	"strings"
@@ -20,9 +19,10 @@ func shouldSkipByRate(requestID string, skipRate int, salt string) bool {
 		return true
 	}
 
-	// Compute deterministic sample: fnv1a32(hex(salt + requestID)) % 100
+	// Compute deterministic sample: fnv1a32(salt + requestID) % 100
 	h := fnv.New32a()
-	h.Write([]byte(hex.EncodeToString([]byte(salt + requestID))))
+	h.Write([]byte(salt))
+	h.Write([]byte(requestID))
 	sample := int(h.Sum32() % 100)
 
 	return sample < skipRate
@@ -175,6 +175,23 @@ func pruneEIDs(wrapper *openrtb_ext.RequestWrapper, allowedVendors map[string]st
 	return nil
 }
 
+// vendorPatternMappings maps shorthand vendor identifiers to substrings expected in EID sources.
+var vendorPatternMappings = map[string][]string{
+	"33acrossId": {"33across.com"},
+	"criteoId":   {"criteo.com"},
+	"hadronId":   {"audigent.com", "hadron"},
+	"idl_env":    {"liveramp.com", "identitylink"},
+	"index":      {"casalemedia.com"},
+	"magnite":    {"rubiconproject.com"},
+	"medianet":   {"media.net"},
+	"openx":      {"openx.net"},
+	"pubcid":     {"pubcid.org"},
+	"pubmatic":   {"pubmatic.com"},
+	"sovrn":      {"liveintent.com", "sovrn"},
+	"tdid":       {"adserver.org"},
+	"uid2":       {"uidapi.com"},
+}
+
 // shouldKeepEID determines if an EID should be kept based on allowed vendors
 func shouldKeepEID(eid openrtb2.EID, allowedVendors map[string]struct{}) bool {
 	source := strings.ToLower(eid.Source)
@@ -185,24 +202,8 @@ func shouldKeepEID(eid openrtb2.EID, allowedVendors map[string]struct{}) bool {
 	}
 
 	// Vendor-specific mappings (conservative, substring match)
-	vendorMappings := map[string][]string{
-		"33acrossId": {"33across.com"},
-		"criteoId":   {"criteo.com"},
-		"hadronId":   {"audigent.com", "hadron"},
-		"idl_env":    {"liveramp.com", "identitylink"},
-		"index":      {"casalemedia.com"},
-		"magnite":    {"rubiconproject.com"},
-		"medianet":   {"media.net"},
-		"openx":      {"openx.net"},
-		"pubcid":     {"pubcid.org"},
-		"pubmatic":   {"pubmatic.com"},
-		"sovrn":      {"liveintent.com", "sovrn"},
-		"tdid":       {"adserver.org"},
-		"uid2":       {"uidapi.com"},
-	}
-
 	for vendor := range allowedVendors {
-		if patterns, ok := vendorMappings[vendor]; ok {
+		if patterns, ok := vendorPatternMappings[vendor]; ok {
 			for _, pattern := range patterns {
 				if strings.Contains(source, pattern) {
 					// Special case for TDID: check rtiPartner

@@ -138,12 +138,25 @@ func extractBrowser(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	return "chrome", nil
 }
 
+// extractSiteID extracts the site ID from the bid request
+func extractSiteID(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+	if wrapper.BidRequest == nil || wrapper.BidRequest.Site == nil || wrapper.BidRequest.Site.ID == "" {
+		return "", errors.New("missing site.id")
+	}
+	return wrapper.BidRequest.Site.ID, nil
+}
+
 // buildConfigURLWithFallback resolves missing country/device using fallbacks.
 func buildConfigURLWithFallback(ctx context.Context, baseEndpoint string, wrapper *openrtb_ext.RequestWrapper, geoResolver GeoResolver) (string, []hookanalytics.Activity, error) {
-	activities := make([]hookanalytics.Activity, 0, 2)
+	activities := make([]hookanalytics.Activity, 0, 3)
 
 	if wrapper == nil || wrapper.BidRequest == nil {
 		return "", activities, errors.New("invalid request wrapper")
+	}
+
+	siteID, err := extractSiteID(wrapper)
+	if err != nil {
+		return "", activities, errors.New("site.id unavailable")
 	}
 
 	country, err := extractCountry(wrapper)
@@ -172,7 +185,7 @@ func buildConfigURLWithFallback(ctx context.Context, baseEndpoint string, wrappe
 		return "", activities, err
 	}
 
-	url := fmt.Sprintf("%s%s/%s/%s/ts.json", baseEndpoint, country, deviceCategory, browser)
+	url := fmt.Sprintf("%s%s/%s/%s/%s/ts.json", baseEndpoint, siteID, country, deviceCategory, browser)
 	return url, activities, nil
 }
 
