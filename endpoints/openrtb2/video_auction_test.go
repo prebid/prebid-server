@@ -1261,7 +1261,7 @@ func TestVideoAuctionResponseHeaders(t *testing.T) {
 	}
 }
 
-func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *metrics.Metrics, *mockAnalyticsModule) {
+func mockDepsWithMetrics(_ *testing.T, ex *mockExchangeVideo) (*endpointDeps, *metrics.Metrics, *mockAnalyticsModule) {
 	mockModule := &mockAnalyticsModule{}
 
 	metrics := metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{}, nil, nil)

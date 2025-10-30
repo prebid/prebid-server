@@ -36,7 +36,6 @@
       "id":"some-request-id",
       "bidid":"test bid id",
       "cur": "MXN",
-      "nbr":0,
       "seatbid": [
         {
           "bid": [
