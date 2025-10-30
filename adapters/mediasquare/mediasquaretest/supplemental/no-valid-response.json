@@ -26,6 +26,7 @@
     ],
     "app": null,
     "device": null,
+    "site": null,
     "regs": {
       "gdpr": null,
       "ext": {
@@ -57,11 +58,9 @@
           },
           "type": "pbs",
           "dsa": "",
-          "tech": {
-            "device": null,
-            "app": null
-          },
-          "test": true
+          "tech": { "device": null, "app": null, "site": null },
+          "test": true,
+          "user_uid": ""
         },
         "impIDs": ["2c35e25e-e7d3-41bf-b810-06a449f456b9"]
       },

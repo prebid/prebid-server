@@ -52,8 +52,9 @@
           "gdpr": { "consent_required": false, "consent_string": "" },
           "type": "pbs",
           "dsa": "",
-          "tech": { "device": null, "app": null },
-          "test": true
+          "tech": { "device": null, "app": null, "site": null },
+          "test": true,
+          "user_uid": ""
         },
         "impIDs": ["0", "1", "-42", "-1", "-0", "42"]
       },
