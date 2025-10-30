@@ -1,4 +1,4 @@
-package dxkulture
+package dxtech
 
 import (
 	"encoding/json"
@@ -7,11 +7,11 @@ import (
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
-// This file actually intends to test static/bidder-params/dxkulture.json
+// This file actually intends to test static/bidder-params/dxtech.json
 //
-// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.dxkulture
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.dxtech
 
-// TestValidParams makes sure that the dxkulture schema accepts all imp.ext fields which we intend to support.
+// TestValidParams makes sure that the dxtech schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -19,13 +19,13 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderDXKulture, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected dxkulture params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderDXTech, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected dxtech params: %s", validParam)
 		}
 	}
 }
 
-// TestInvalidParams makes sure that the dxkulture schema rejects all the imp.ext fields we don't support.
+// TestInvalidParams makes sure that the dxtech schema rejects all the imp.ext fields we don't support.
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -33,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderDXKulture, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderDXTech, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
