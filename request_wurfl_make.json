@@ -1,0 +1,253 @@
+{
+  "imp": [
+    {
+      "ext": {
+        "prebid": {
+          "bidder": {
+            "pubmatic": {
+              "publisherId": "156276",
+              "adSlot": "pubmatic_test"
+            },
+            "appnexus": {
+              "placement_id": 13144370
+            },
+            "eplanning": {
+              "ci": "18f66",
+              "t": 1
+            }
+          },
+          "adunitcode": "test-div-1"
+        }
+      },
+      "id": "test-div-1",
+      "banner": {
+        "topframe": 1,
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 300,
+            "h": 600
+          }
+        ]
+      },
+      "secure": 1
+    }
+  ],
+  "site": {
+    "domain": "staging-prebid-js-poc.scientiamobile.com",
+    "publisher": {
+      "domain": "scientiamobile.com",
+      "id": "1"
+    },
+    "page": "https://staging-prebid-js-poc.scientiamobile.com/static/html/pbs_wurfl.html",
+    "ref": "https://staging-prebid-js-poc.scientiamobile.com/static/html/menu.html"
+  },
+  "device": {
+    "w": 563,
+    "h": 922,
+    "dnt": 0,
+    "ua": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36",
+    "language": "en",
+    "ext": {
+      "vpw": 980,
+      "vph": 1605,
+      "wurfl": {
+        "wurfl_id": "lg_nexus5_ver1_suban60"
+      }
+    },
+    "sua": {
+      "source": 2,
+      "platform": {
+        "brand": "Android",
+        "version": [
+          "6",
+          "0"
+        ]
+      },
+      "browsers": [
+        {
+          "brand": "Not(A:Brand",
+          "version": [
+            "99",
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "brand": "Google Chrome",
+          "version": [
+            "133",
+            "0",
+            "6943",
+            "126"
+          ]
+        },
+        {
+          "brand": "Chromium",
+          "version": [
+            "133",
+            "0",
+            "6943",
+            "126"
+          ]
+        }
+      ],
+      "mobile": 1,
+      "model": "Nexus 5",
+      "architecture": ""
+    },
+    "make": "Google",
+    "model": "Nexus 5"
+  },
+  "ext": {
+    "prebid": {
+      "auctiontimestamp": 1740049205801,
+      "targeting": {
+        "includewinners": true,
+        "includebidderkeys": false
+      },
+      "bidderconfig": [
+        {
+          "bidders": [
+            "pubmatic"
+          ],
+          "config": {
+            "ortb2": {
+              "device": {
+                "ext": {
+                  "wurfl": {
+                    "is_mobile": true,
+                    "complete_device_name": "Google Nexus 5",
+                    "form_factor": "Feature Phone",
+                    "model_name": "Nexus 5",
+                    "brand_name": "Google",
+                    "wurfl_id": "lg_nexus5_ver1_suban60"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "bidders": [
+            "appnexus"
+          ],
+          "config": {
+            "ortb2": {
+              "device": {
+                "ext": {
+                  "wurfl": {
+                    "wurfl_id": "lg_nexus5_ver1_suban60",
+                    "advertised_browser": "Chrome Mobile",
+                    "advertised_browser_version": "133.0.0.0",
+                    "advertised_device_os": "Android",
+                    "advertised_device_os_version": "6.0",
+                    "ajax_support_javascript": true,
+                    "brand_name": "Google",
+                    "complete_device_name": "Google Nexus 5",
+                    "density_class": "3.0",
+                    "form_factor": "Feature Phone",
+                    "is_app_webview": false,
+                    "is_connected_tv": false,
+                    "is_full_desktop": false,
+                    "is_mobile": true,
+                    "is_ott": false,
+                    "is_phone": true,
+                    "is_robot": false,
+                    "is_smartphone": false,
+                    "is_smarttv": false,
+                    "is_tablet": false,
+                    "manufacturer_name": "LG",
+                    "marketing_name": "",
+                    "max_image_height": 640,
+                    "max_image_width": 360,
+                    "model_name": "Nexus 5",
+                    "physical_screen_height": 110,
+                    "physical_screen_width": 62,
+                    "pixel_density": 443,
+                    "pointing_method": "touchscreen",
+                    "resolution_height": 1920,
+                    "resolution_width": 1080
+                  }
+                },
+                "devicetype": 1,
+                "os": "Android",
+                "osv": "6.0",
+                "hwv": "Nexus 5",
+                "ppi": 443,
+                "pxratio": "3.0",
+                "js": true
+              }
+            }
+          }
+        },
+        {
+          "bidders": [
+            "eplanning"
+          ],
+          "config": {
+            "ortb2": {
+              "device": {
+                "ext": {
+                  "wurfl": {
+                    "wurfl_id": "lg_nexus5_ver1_suban60",
+                    "advertised_browser": "Chrome Mobile",
+                    "advertised_browser_version": "133.0.0.0",
+                    "advertised_device_os": "Android",
+                    "advertised_device_os_version": "6.0",
+                    "ajax_support_javascript": true,
+                    "brand_name": "Google",
+                    "complete_device_name": "Google Nexus 5",
+                    "density_class": "3.0",
+                    "form_factor": "Feature Phone",
+                    "is_app_webview": false,
+                    "is_connected_tv": false,
+                    "is_full_desktop": false,
+                    "is_mobile": true,
+                    "is_ott": false,
+                    "is_phone": true,
+                    "is_robot": false,
+                    "is_smartphone": false,
+                    "is_smarttv": false,
+                    "is_tablet": false,
+                    "manufacturer_name": "LG",
+                    "marketing_name": "",
+                    "max_image_height": 640,
+                    "max_image_width": 360,
+                    "model_name": "Nexus 5",
+                    "physical_screen_height": 110,
+                    "physical_screen_width": 62,
+                    "pixel_density": 443,
+                    "pointing_method": "touchscreen",
+                    "resolution_height": 1920,
+                    "resolution_width": 1080
+                  }
+                },
+                "devicetype": 1,
+                "os": "Android",
+                "osv": "6.0",
+                "hwv": "Nexus 5",
+                "ppi": 443,
+                "pxratio": "3.0",
+                "js": true
+              }
+            }
+          }
+        }
+      ],
+      "channel": {
+        "name": "pbjs",
+        "version": "v9.29.0-pre"
+      },
+      "createtids": false
+    },
+    "tmaxmax": 3000
+  },
+  "id": "0576bcd2-dcf7-4624-b7fb-2752d1ecf596",
+  "test": 0,
+  "tmax": 1000
+}
