@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 type DbProvider interface {
@@ -31,15 +31,15 @@ func NewDbProvider(dataType config.DataType, cfg config.DatabaseConnection) DbPr
 			cfg: cfg,
 		}
 	default:
-		glog.Fatalf("Unsupported database driver %s", cfg.Driver)
+		logger.Fatalf("Unsupported database driver %s", cfg.Driver)
 		return nil
 	}
 
 	if err := provider.Open(); err != nil {
-		glog.Fatalf("Failed to open %s database connection: %v", dataType, err)
+		logger.Fatalf("Failed to open %s database connection: %v", dataType, err)
 	}
 	if err := provider.Ping(); err != nil {
-		glog.Fatalf("Failed to ping %s database: %v", dataType, err)
+		logger.Fatalf("Failed to ping %s database: %v", dataType, err)
 	}
 
 	return provider

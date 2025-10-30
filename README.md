@@ -92,6 +92,14 @@ An option for developing Prebid Server in a reproducible environment isolated fr
 
 Prebid Server is not currently intended to be imported by other projects. Go Modules is used to manage dependencies, which also makes it possible to import Prebid Server packages. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
 
+## Swapping Global Dependencies
+
+Logger is a global side-effectful dependency that sometimes needs to be swapped to modify the behavior.  
+The `Logger` package contains an interface definition for unstructured logging with built-in `glog` implementation.
+The interface provides standard logging methods: `Debug`, `Info`, `Warn`, `Error`, and `Fatal`.
+The `glog` implementation is based on `github.com/golang/glog` package and serves as the concrete implementation for the logging interface.
+By default, the package uses the `glog` logger implementation.
+
 ## Contributing
 > [!IMPORTANT]
 > All contributions must follow the [Prebid Code of Conduct](https://prebid.org/code-of-conduct/) and the [Prebid Module Rules](https://docs.prebid.org/dev-docs/module-rules.html).

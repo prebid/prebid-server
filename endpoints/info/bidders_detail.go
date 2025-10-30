@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
@@ -22,7 +22,7 @@ const (
 func NewBiddersDetailEndpoint(bidders config.BidderInfos) httprouter.Handle {
 	responses, err := prepareBiddersDetailResponse(bidders)
 	if err != nil {
-		glog.Fatalf("error creating /info/bidders/<bidder> endpoint response: %v", err)
+		logger.Fatalf("error creating /info/bidders/<bidder> endpoint response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
@@ -36,7 +36,7 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos) httprouter.Handle {
 		if response, ok := responses[bidderName]; ok {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write(response); err != nil {
-				glog.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
+				logger.Errorf("error writing response to /info/bidders/%s: %v", bidder, err)
 			}
 		} else {
 			w.WriteHeader(http.StatusNotFound)
