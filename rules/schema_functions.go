@@ -7,6 +7,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
@@ -37,7 +38,7 @@ type SchemaFunction[T any] interface {
 
 // NewRequestSchemaFunction returns the specified schema function that operates on a request payload along with
 // any schema function args validation errors that occurred during instantiation
-func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewRequestSchemaFunction(name string, params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	switch name {
 	case DeviceCountry:
 		return NewDeviceCountry(params)
@@ -76,7 +77,7 @@ type deviceCountryIn struct {
 	CountryDirectory map[string]struct{}
 }
 
-func NewDeviceCountryIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewDeviceCountryIn(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	schemaFunc := &deviceCountryIn{}
 	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
 		return nil, err
@@ -94,8 +95,8 @@ func NewDeviceCountryIn(params json.RawMessage) (SchemaFunction[openrtb_ext.Requ
 	return schemaFunc, nil
 }
 
-func (dci *deviceCountryIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	deviceGeo := getDeviceGeo(wrapper)
+func (dci *deviceCountryIn) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	deviceGeo := getDeviceGeo(payload.GetBidderRequestPayload())
 	if deviceGeo == nil || len(deviceGeo.Country) == 0 {
 		return "false", nil
 	}
@@ -111,15 +112,15 @@ func (dci *deviceCountryIn) Name() string {
 // ------------deviceCountry----------------
 type deviceCountry struct{}
 
-func NewDeviceCountry(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewDeviceCountry(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, DeviceCountry); err != nil {
 		return nil, err
 	}
 	return &deviceCountry{}, nil
 }
 
-func (dc *deviceCountry) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if deviceGeo := getDeviceGeo(wrapper); deviceGeo != nil && len(deviceGeo.Country) > 0 {
+func (dc *deviceCountry) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	if deviceGeo := getDeviceGeo(payload.GetBidderRequestPayload()); deviceGeo != nil && len(deviceGeo.Country) > 0 {
 		return deviceGeo.Country, nil
 	}
 	return "", nil
@@ -134,15 +135,15 @@ func (dci *deviceCountry) Name() string {
 
 type dataCenter struct{}
 
-func NewDataCenter(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewDataCenter(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, DataCenter); err != nil {
 		return nil, err
 	}
 	return &dataCenter{}, nil
 }
 
-func (dc *dataCenter) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if deviceGeo := getDeviceGeo(wrapper); deviceGeo != nil {
+func (dc *dataCenter) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	if deviceGeo := getDeviceGeo(payload.GetBidderRequestPayload()); deviceGeo != nil {
 		return deviceGeo.Region, nil
 	}
 	return "", nil
@@ -159,7 +160,7 @@ type dataCenterIn struct {
 	DataCenterDir map[string]struct{}
 }
 
-func NewDataCenterIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewDataCenterIn(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	schemaFunc := &dataCenterIn{}
 	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
 		return nil, err
@@ -177,8 +178,8 @@ func NewDataCenterIn(params json.RawMessage) (SchemaFunction[openrtb_ext.Request
 	return schemaFunc, nil
 }
 
-func (dc *dataCenterIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	deviceGeo := getDeviceGeo(wrapper)
+func (dc *dataCenterIn) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	deviceGeo := getDeviceGeo(payload.GetBidderRequestPayload())
 	if deviceGeo == nil || len(deviceGeo.Region) == 0 {
 		return "false", nil
 	}
@@ -194,15 +195,15 @@ func (dci *dataCenterIn) Name() string {
 // ------------channel------------------
 type channel struct{}
 
-func NewChannel(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewChannel(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, Channel); err != nil {
 		return nil, err
 	}
 	return &channel{}, nil
 }
 
-func (c *channel) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	prebid, err := getExtRequestPrebid(wrapper)
+func (c *channel) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	prebid, err := getExtRequestPrebid(payload.GetBidderRequestPayload())
 	if err != nil {
 		return "", err
 	}
@@ -224,15 +225,15 @@ func (c *channel) Name() string {
 // ------------eidAvailable------------------
 type eidAvailable struct{}
 
-func NewEidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewEidAvailable(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, EidAvailable); err != nil {
 		return nil, err
 	}
 	return &eidAvailable{}, nil
 }
 
-func (ea *eidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if len(getUserEIDS(wrapper)) > 0 {
+func (ea *eidAvailable) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	if len(getUserEIDS(payload.GetBidderRequestPayload())) > 0 {
 		return "true", nil
 	}
 	return "false", nil
@@ -247,7 +248,7 @@ type eidIn struct {
 	Eids       map[string]struct{}
 }
 
-func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewEidIn(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	schemaFunc := &eidIn{}
 	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
 		return nil, err
@@ -265,12 +266,12 @@ func NewEidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper
 	return schemaFunc, nil
 }
 
-func (ei *eidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+func (ei *eidIn) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
 	if len(ei.Eids) == 0 {
 		return "false", nil
 	}
 
-	eids := getUserEIDS(wrapper)
+	eids := getUserEIDS(payload.GetBidderRequestPayload())
 
 	for i := range eids {
 		if _, found := ei.Eids[eids[i].Source]; found {
@@ -287,15 +288,15 @@ func (ei *eidIn) Name() string {
 // ------------userFpdAvailable------------------
 type userFpdAvailable struct{}
 
-func NewUserFpdAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewUserFpdAvailable(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, UserFpdAvailable); err != nil {
 		return nil, err
 	}
 	return &userFpdAvailable{}, nil
 }
 
-func (ufpd *userFpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	return checkUserDataAndUserExtData(wrapper)
+func (ufpd *userFpdAvailable) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	return checkUserDataAndUserExtData(payload.GetBidderRequestPayload())
 }
 
 func (ufpd *userFpdAvailable) Name() string {
@@ -305,14 +306,18 @@ func (ufpd *userFpdAvailable) Name() string {
 // ------------fpdAvail------------------
 type fpdAvailable struct{}
 
-func NewFpdAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewFpdAvailable(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, FpdAvailable); err != nil {
 		return nil, err
 	}
 	return &fpdAvailable{}, nil
 }
 
-func (fpd *fpdAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+func (fpd *fpdAvailable) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	if payload == nil {
+		return "false", nil
+	}
+	wrapper := payload.GetBidderRequestPayload()
 	if wrapper == nil || wrapper.BidRequest == nil {
 		return "false", nil
 	}
@@ -338,7 +343,7 @@ type gppSidIn struct {
 	GppSids map[int8]struct{}
 }
 
-func NewGppSidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewGppSidIn(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	schemaFunc := &gppSidIn{}
 	if err := jsonutil.Unmarshal(params, schemaFunc); err != nil {
 		return nil, err
@@ -356,11 +361,11 @@ func NewGppSidIn(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrap
 	return schemaFunc, nil
 }
 
-func (sid *gppSidIn) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+func (sid *gppSidIn) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
 	if len(sid.GppSids) == 0 {
 		return "false", nil
 	}
-
+	wrapper := payload.GetBidderRequestPayload()
 	if !hasGPPSIDs(wrapper) {
 		return "false", nil
 	}
@@ -381,15 +386,15 @@ func (sid *gppSidIn) Name() string {
 // ------------gppSidAvailable-------------
 type gppSidAvailable struct{}
 
-func NewGppSidAvailable(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewGppSidAvailable(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, GppSidAvailable); err != nil {
 		return nil, err
 	}
 	return &gppSidAvailable{}, nil
 }
 
-func (sid *gppSidAvailable) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	return fmt.Sprintf("%t", hasGPPSIDs(wrapper)), nil
+func (sid *gppSidAvailable) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	return fmt.Sprintf("%t", hasGPPSIDs(payload.GetBidderRequestPayload())), nil
 }
 
 func (sid *gppSidAvailable) Name() string {
@@ -399,15 +404,15 @@ func (sid *gppSidAvailable) Name() string {
 // ------------tcfInScope------------------
 type tcfInScope struct{}
 
-func NewTcfInScope(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewTcfInScope(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	if err := checkNilArgs(params, TcfInScope); err != nil {
 		return nil, err
 	}
 	return &tcfInScope{}, nil
 }
 
-func (tcf *tcfInScope) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
-	if regs := getRequestRegs(wrapper); regs != nil && regs.GDPR != nil && *regs.GDPR == int8(1) {
+func (tcf *tcfInScope) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
+	if regs := getRequestRegs(payload.GetBidderRequestPayload()); regs != nil && regs.GDPR != nil && *regs.GDPR == int8(1) {
 		return "true", nil
 	}
 	return "false", nil
@@ -423,7 +428,7 @@ type percent struct {
 	rand    randomutil.RandomGenerator
 }
 
-func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapper], error) {
+func NewPercent(params json.RawMessage) (SchemaFunction[hookstage.ProcessedAuctionRequestPayload], error) {
 	schemaFunc := &percent{
 		rand: randomutil.RandomNumberGenerator{},
 	}
@@ -442,7 +447,7 @@ func NewPercent(params json.RawMessage) (SchemaFunction[openrtb_ext.RequestWrapp
 	return schemaFunc, nil
 }
 
-func (p *percent) Call(wrapper *openrtb_ext.RequestWrapper) (string, error) {
+func (p *percent) Call(payload *hookstage.ProcessedAuctionRequestPayload) (string, error) {
 	pValue := *p.Percent
 	if pValue <= 0 {
 		return "false", nil
