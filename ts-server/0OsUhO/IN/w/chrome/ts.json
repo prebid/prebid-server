@@ -6,7 +6,7 @@
     "schema": {
       "fields": ["gpID"]
     },
-    "skipRate": 100,
+    "skipRate": 75,
     "userIdVendors": [
       "pubcid",
       "tdid",

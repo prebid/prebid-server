@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -67,6 +69,63 @@ func TestBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetConfigForURLCoalescesFetches(t *testing.T) {
+	var requestCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		time.Sleep(20 * time.Millisecond)
+
+		response := TrafficShapingData{
+			Response: Response{
+				SkipRate:      0,
+				UserIdVendors: []string{},
+				Values:        map[string]map[string]map[string]int{},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	config := &Config{
+		Enabled:          true,
+		BaseEndpoint:     server.URL + "/",
+		RefreshMs:        30000,
+		RequestTimeoutMs: 1000,
+		SampleSalt:       "pbs",
+	}
+
+	client := NewConfigClient(server.Client(), config)
+	defer client.Stop()
+
+	url := server.URL + "/ts.json"
+
+	const concurrency = 5
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	results := make([]*ShapingConfig, concurrency)
+
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			<-start
+			results[idx] = client.GetConfigForURL(url)
+		}(i)
+	}
+
+	close(start)
+	wg.Wait()
+
+	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount))
+	for _, cfg := range results {
+		require.NotNil(t, cfg)
+	}
+
+	cached := client.GetConfigForURL(url)
+	require.NotNil(t, cached)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount))
 }
 
 func TestHandleProcessedAuctionHook_NoConfig(t *testing.T) {
@@ -138,6 +197,12 @@ func TestHandleProcessedAuctionHook_SkipRate(t *testing.T) {
 			skipRate:   50,
 			requestID:  "test-request-3",
 			shouldSkip: shouldSkipByRate("test-request-3", 50, "pbs"),
+		},
+		{
+			name:       "skipRate_75_deterministic",
+			skipRate:   75,
+			requestID:  "test-request-4",
+			shouldSkip: shouldSkipByRate("test-request-4", 75, "pbs"),
 		},
 	}
 
@@ -590,9 +655,10 @@ func TestFilterBannerSizes(t *testing.T) {
 			originalLen := len(imp.Banner.Format)
 			filterBannerSizes(imp, allowedSizes)
 
-			if tt.name == "filter_formats" {
+			switch tt.name {
+			case "filter_formats":
 				assert.Equal(t, tt.expectedFormat, len(imp.Banner.Format))
-			} else if tt.name == "all_filtered_out" {
+			case "all_filtered_out":
 				// Should keep original when all would be filtered
 				assert.Equal(t, originalLen, len(imp.Banner.Format))
 			}
@@ -636,6 +702,16 @@ func TestPruneEIDs(t *testing.T) {
 		// Should keep uid2 and pubcid (conservative matching keeps ambiguous ones too)
 		assert.GreaterOrEqual(t, len(*filteredEIDs), 2)
 	}
+}
+
+func TestShouldKeepEIDMatchesVendorPatterns(t *testing.T) {
+	allowedVendors := map[string]struct{}{
+		"criteoId": {},
+	}
+
+	eid := openrtb2.EID{Source: "https://ad.criteo.com"}
+
+	assert.True(t, shouldKeepEID(eid, allowedVendors))
 }
 
 func TestAccountConfigOverrides(t *testing.T) {
@@ -809,6 +885,7 @@ func TestHandleProcessedAuctionHook_Fallbacks(t *testing.T) {
 				Ext: impExt,
 			},
 		},
+		Site: &openrtb2.Site{ID: "ts-server"},
 		Device: &openrtb2.Device{
 			UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
 			IP: "1.1.1.1",
@@ -835,13 +912,4 @@ func TestHandleProcessedAuctionHook_Fallbacks(t *testing.T) {
 	}
 	assert.True(t, hasCountryDerived)
 	assert.True(t, hasDeviceDerived)
-}
-
-func hasActivity(activities []hookanalytics.Activity, name string) bool {
-	for _, activity := range activities {
-		if activity.Name == name {
-			return true
-		}
-	}
-	return false
 }
