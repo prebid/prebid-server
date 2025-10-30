@@ -150,7 +150,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 
 func logError(errs *[]error, format string, a ...interface{}) {
 	msg := fmt.Sprintf(format, a...)
-	logger.Error(msg)
+	logger.Errorf(msg)
 	*errs = append(*errs, errors.New(msg))
 }
 

@@ -570,7 +570,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // Bidder interface.
 func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	if bidder.shouldRequest() {
-		return bidder.doRequestImpl(ctx, req, loggerI.Warn, bidderRequestStartTime, tmaxAdjustments)
+		return bidder.doRequestImpl(ctx, req, loggerI.Warnf, bidderRequestStartTime, tmaxAdjustments)
 	}
 	return &httpCallInfo{
 		request: req,
@@ -683,7 +683,7 @@ func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			if err == nil {
 				defer func() {
 					if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
-						loggerI.Error("TimeoutNotification: Draining response body failed %v", err)
+						loggerI.Errorf("TimeoutNotification: Draining response body failed %v", err)
 					}
 					httpResp.Body.Close()
 				}()

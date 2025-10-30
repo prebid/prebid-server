@@ -71,7 +71,7 @@ func (m *builder) Build(
 			}
 
 			if !isEnabled {
-				logger.Info("Skip %s module, disabled.", id)
+				logger.Infof("Skip %s module, disabled.", id)
 				continue
 			}
 

@@ -37,7 +37,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		)
 		go shutdownAfterSignals(mainServer, stopMain, done)
 		if socketListener, err = newUnixListener(mainServer.Addr, metrics); err != nil {
-			logger.Error("Error listening for Unix-Socket connections on path %s: %v for socket server", mainServer.Addr, err)
+			logger.Errorf("Error listening for Unix-Socket connections on path %s: %v for socket server", mainServer.Addr, err)
 			return
 		}
 		go runServer(mainServer, "UnixSocket", socketListener)
@@ -48,7 +48,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		)
 		go shutdownAfterSignals(mainServer, stopMain, done)
 		if mainListener, err = newTCPListener(mainServer.Addr, metrics); err != nil {
-			logger.Error("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
+			logger.Errorf("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
 			return
 		}
 		go runServer(mainServer, "Main", mainListener)
@@ -61,7 +61,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 
 		var adminListener net.Listener
 		if adminListener, err = newTCPListener(adminServer.Addr, nil); err != nil {
-			logger.Error("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
+			logger.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
 			return
 		}
 		go runServer(adminServer, "Admin", adminListener)
@@ -75,7 +75,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		stopChannels = append(stopChannels, stopPrometheus)
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
 		if prometheusListener, err = newTCPListener(prometheusServer.Addr, nil); err != nil {
-			logger.Error("Error listening for TCP connections on %s: %v for prometheus server", prometheusServer.Addr, err)
+			logger.Errorf("Error listening for TCP connections on %s: %v for prometheus server", prometheusServer.Addr, err)
 			return
 		}
 
@@ -127,17 +127,17 @@ func getCompressionEnabledHandler(h http.Handler, compressionInfo config.Compres
 func runServer(server *http.Server, name string, listener net.Listener) (err error) {
 	if server == nil {
 		err = fmt.Errorf(">> Server is a nil_ptr.")
-		logger.Error("%s server quit with error: %v", name, err)
+		logger.Errorf("%s server quit with error: %v", name, err)
 		return
 	} else if listener == nil {
 		err = fmt.Errorf(">> Listener is a nil.")
-		logger.Error("%s server quit with error: %v", name, err)
+		logger.Errorf("%s server quit with error: %v", name, err)
 		return
 	}
 
-	logger.Info("%s server starting on: %s", name, server.Addr)
+	logger.Infof("%s server starting on: %s", name, server.Addr)
 	if err = server.Serve(listener); err != nil {
-		logger.Error("%s server quit with error: %v", name, err)
+		logger.Errorf("%s server quit with error: %v", name, err)
 	}
 	return
 }
@@ -152,7 +152,7 @@ func newTCPListener(address string, metrics metrics.MetricsEngine) (net.Listener
 	if casted, ok := ln.(*net.TCPListener); ok {
 		ln = &tcpKeepAliveListener{casted}
 	} else {
-		logger.Warn("net.Listen(\"tcp\", \"addr\") didn't return a TCPListener as it did in Go 1.9. Things will probably work fine... but this should be investigated.")
+		logger.Warnf("net.Listen(\"tcp\", \"addr\") didn't return a TCPListener as it did in Go 1.9. Things will probably work fine... but this should be investigated.")
 	}
 
 	if metrics != nil {
@@ -171,7 +171,7 @@ func newUnixListener(address string, metrics metrics.MetricsEngine) (net.Listene
 	if casted, ok := ln.(*net.UnixListener); ok {
 		ln = &unixListener{casted}
 	} else {
-		logger.Warn("net.Listen(\"unix\", \"addr\") didn't return an UnixListener.")
+		logger.Warnf("net.Listen(\"unix\", \"addr\") didn't return an UnixListener.")
 	}
 
 	if metrics != nil {
@@ -200,9 +200,9 @@ func shutdownAfterSignals(server *http.Server, stopper <-chan os.Signal, done ch
 	defer cancel()
 
 	var s struct{}
-	logger.Info("Stopping %s because of signal: %s", server.Addr, sig.String())
+	logger.Infof("Stopping %s because of signal: %s", server.Addr, sig.String())
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Error("Failed to shutdown %s: %v", server.Addr, err)
+		logger.Errorf("Failed to shutdown %s: %v", server.Addr, err)
 	}
 	done <- s
 }

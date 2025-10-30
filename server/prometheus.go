@@ -15,7 +15,7 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 	proMetrics := metrics.PrometheusMetrics
 
 	if proMetrics == nil {
-		logger.Fatal("Prometheus metrics configured, but a Prometheus metrics engine was not found. Cannot set up a Prometheus listener.")
+		logger.Fatalf("Prometheus metrics configured, but a Prometheus metrics engine was not found. Cannot set up a Prometheus listener.")
 	}
 	return &http.Server{
 		Addr: cfg.Host + ":" + strconv.Itoa(cfg.Metrics.Prometheus.Port),
@@ -30,5 +30,5 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 type loggerForPrometheus struct{}
 
 func (loggerForPrometheus) Println(v ...interface{}) {
-	logger.Warn(fmt.Sprintln(v...))
+	logger.Warnf(fmt.Sprintln(v...))
 }

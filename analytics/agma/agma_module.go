@@ -93,7 +93,7 @@ func (l *AgmaLogger) start() {
 	for {
 		select {
 		case <-l.sigTermCh:
-			logger.Info("[AgmaAnalytics] Received Close, trying to flush buffer")
+			logger.Infof("[AgmaAnalytics] Received Close, trying to flush buffer")
 			l.flush()
 			return
 		case event := <-l.bufferCh:
@@ -139,7 +139,7 @@ func (l *AgmaLogger) flush() {
 	if err != nil {
 		l.reset()
 		l.mux.Unlock()
-		logger.Warn("[AgmaAnalytics] fail to copy the buffer")
+		logger.Warnf("[AgmaAnalytics] fail to copy the buffer")
 		return
 	}
 
@@ -223,7 +223,7 @@ func (l *AgmaLogger) LogAuctionObject(event *analytics.AuctionObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeAuction, code, event.StartTime)
 	if err != nil {
-		logger.Error("[AgmaAnalytics] Error serializing auction object: %v", err)
+		logger.Errorf("[AgmaAnalytics] Error serializing auction object: %v", err)
 		return
 	}
 	l.bufferCh <- data
@@ -239,7 +239,7 @@ func (l *AgmaLogger) LogAmpObject(event *analytics.AmpObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeAmp, code, event.StartTime)
 	if err != nil {
-		logger.Error("[AgmaAnalytics] Error serializing amp object: %v", err)
+		logger.Errorf("[AgmaAnalytics] Error serializing amp object: %v", err)
 		return
 	}
 	l.bufferCh <- data
@@ -255,14 +255,14 @@ func (l *AgmaLogger) LogVideoObject(event *analytics.VideoObject) {
 	}
 	data, err := serializeAnayltics(event.RequestWrapper, EventTypeVideo, code, event.StartTime)
 	if err != nil {
-		logger.Error("[AgmaAnalytics] Error serializing video object: %v", err)
+		logger.Errorf("[AgmaAnalytics] Error serializing video object: %v", err)
 		return
 	}
 	l.bufferCh <- data
 }
 
 func (l *AgmaLogger) Shutdown() {
-	logger.Info("[AgmaAnalytics] Shutdown, trying to flush buffer")
+	logger.Infof("[AgmaAnalytics] Shutdown, trying to flush buffer")
 	l.flush() // mutex safe
 }
 

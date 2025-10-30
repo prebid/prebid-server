@@ -176,11 +176,11 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.ExtCacheURL.validate(errs)
 	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
-		logger.Warn(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
+		logger.Warnf(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
 
 	if cfg.AccountDefaults.Events.Enabled {
-		logger.Warn(`account_defaults.events has no effect as the feature is under development.`)
+		logger.Warnf(`account_defaults.events has no effect as the feature is under development.`)
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -292,7 +292,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
 	if cfg.HostVendorID == 0 {
-		logger.Warn("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
+		logger.Warnf("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
 	}
 	if cfg.AMPException {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
@@ -757,7 +757,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		logger.Fatal("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES)
+		logger.Fatalf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES)
 
 		return nil, err
 	}
@@ -848,7 +848,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 	c.BidderInfos = mergedBidderInfos
 
-	logger.Info("Logging the resolved configuration:")
+	logger.Infof("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(v); len(errs) > 0 {
 		return &c, errortypes.NewAggregateError("validation errors", errs)
@@ -891,7 +891,7 @@ func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) 
 func (cfg *Configuration) MarshalAccountDefaults() error {
 	var err error
 	if cfg.accountDefaultsJSON, err = jsonutil.Marshal(cfg.AccountDefaults); err != nil {
-		logger.Warn("converting %+v to json: %v", cfg.AccountDefaults, err)
+		logger.Warnf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
 }

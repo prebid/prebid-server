@@ -14,7 +14,7 @@ const versionEndpointValueNotSet = "not-set"
 func NewVersionEndpoint(version, revision string) http.HandlerFunc {
 	response, err := prepareVersionEndpointResponse(version, revision)
 	if err != nil {
-		logger.Fatal("error creating /version endpoint response: %v", err)
+		logger.Fatalf("error creating /version endpoint response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request) {

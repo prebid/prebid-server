@@ -35,11 +35,11 @@ func TestGlogLogger_Debug(t *testing.T) {
 	// This test verifies the method can be called without panicking
 	// Actual log output verification would require capturing stderr
 	assert.NotPanics(t, func() {
-		logger.Debug("debug message")
+		logger.Debugf("debug message")
 	}, "Debug should not panic")
 
 	assert.NotPanics(t, func() {
-		logger.Debug("debug message with args: %s, %d", "test", 123)
+		logger.Debugf("debug message with args: %s, %d", "test", 123)
 	}, "Debug with args should not panic")
 }
 
@@ -50,11 +50,11 @@ func TestGlogLogger_Info(t *testing.T) {
 	logger := NewGlogLogger()
 
 	assert.NotPanics(t, func() {
-		logger.Info("info message")
+		logger.Infof("info message")
 	}, "Info should not panic")
 
 	assert.NotPanics(t, func() {
-		logger.Info("info message with args: %s, %d", "test", 456)
+		logger.Infof("info message with args: %s, %d", "test", 456)
 	}, "Info with args should not panic")
 }
 
@@ -65,11 +65,11 @@ func TestGlogLogger_Warn(t *testing.T) {
 	logger := NewGlogLogger()
 
 	assert.NotPanics(t, func() {
-		logger.Warn("warning message")
+		logger.Warnf("warning message")
 	}, "Warn should not panic")
 
 	assert.NotPanics(t, func() {
-		logger.Warn("warning message with args: %s, %d", "test", 789)
+		logger.Warnf("warning message with args: %s, %d", "test", 789)
 	}, "Warn with args should not panic")
 }
 
@@ -80,11 +80,11 @@ func TestGlogLogger_Error(t *testing.T) {
 	logger := NewGlogLogger()
 
 	assert.NotPanics(t, func() {
-		logger.Error("error message")
+		logger.Errorf("error message")
 	}, "Error should not panic")
 
 	assert.NotPanics(t, func() {
-		logger.Error("error message with args: %s, %d", "test", 999)
+		logger.Errorf("error message with args: %s, %d", "test", 999)
 	}, "Error with args should not panic")
 }
 
@@ -97,10 +97,10 @@ func TestGlogLogger_AllLevels(t *testing.T) {
 
 	// Test that all logging levels work together
 	assert.NotPanics(t, func() {
-		logger.Debug("debug")
-		logger.Info("info")
-		logger.Warn("warn")
-		logger.Error("error")
+		logger.Debugf("debug")
+		logger.Infof("info")
+		logger.Warnf("warn")
+		logger.Errorf("error")
 	}, "All logging levels should work without panic")
 }
 
@@ -112,7 +112,7 @@ func TestGlogLogger_Depth(t *testing.T) {
 
 	// Test with custom depth
 	assert.NotPanics(t, func() {
-		glogLogger.Info("info with custom depth")
+		glogLogger.Infof("info with custom depth")
 	}, "Logger with custom depth should not panic")
 }
 
@@ -124,10 +124,10 @@ func TestGlogLogger_EmptyMessage(t *testing.T) {
 
 	// Test with empty messages
 	assert.NotPanics(t, func() {
-		logger.Info("")
-		logger.Debug("")
-		logger.Warn("")
-		logger.Error("")
+		logger.Infof("")
+		logger.Debugf("")
+		logger.Warnf("")
+		logger.Errorf("")
 	}, "Empty messages should not panic")
 }
 
@@ -139,10 +139,10 @@ func TestGlogLogger_NoArgs(t *testing.T) {
 
 	// Test logging without variadic args
 	assert.NotPanics(t, func() {
-		logger.Info("simple message")
-		logger.Debug("simple debug")
-		logger.Warn("simple warning")
-		logger.Error("simple error")
+		logger.Infof("simple message")
+		logger.Debugf("simple debug")
+		logger.Warnf("simple warning")
+		logger.Errorf("simple error")
 	}, "Messages without args should not panic")
 }
 
@@ -154,7 +154,7 @@ func TestGlogLogger_MultipleArgs(t *testing.T) {
 
 	// Test with multiple arguments
 	assert.NotPanics(t, func() {
-		logger.Info("message: %s, number: %d, float: %f, bool: %v", "test", 42, 3.14, true)
+		logger.Infof("message: %s, number: %d, float: %f, bool: %v", "test", 42, 3.14, true)
 	}, "Messages with multiple args should not panic")
 }
 
@@ -166,6 +166,6 @@ func TestGlogLogger_SpecialCharacters(t *testing.T) {
 
 	// Test with special characters
 	assert.NotPanics(t, func() {
-		logger.Info("message with special chars: \n\t\"quotes\" and 'apostrophes'")
+		logger.Infof("message with special chars: \n\t\"quotes\" and 'apostrophes'")
 	}, "Messages with special characters should not panic")
 }

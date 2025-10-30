@@ -38,7 +38,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 	// Create database connection if given options for one
 	if cfg.Database.ConnectionInfo.Database != "" {
 		if provider == nil {
-			logger.Info("Connecting to Database for Stored %s. Driver=%s, DB=%s, host=%s, port=%d, user=%s",
+			logger.Infof("Connecting to Database for Stored %s. Driver=%s, DB=%s, host=%s, port=%d, user=%s",
 				cfg.DataType(),
 				cfg.Database.ConnectionInfo.Driver,
 				cfg.Database.ConnectionInfo.Database,
@@ -50,7 +50,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 
 		// Error out if config is trying to use multiple database connections for different stored requests (not supported yet)
 		if provider.Config() != cfg.Database.ConnectionInfo {
-			logger.Fatal("Multiple database connection settings found in config, only a single database connection is currently supported.")
+			logger.Fatalf("Multiple database connection settings found in config, only a single database connection is currently supported.")
 		}
 	}
 
@@ -75,7 +75,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 		}
 
 		if err := provider.Close(); err != nil {
-			logger.Error("Error closing DB connection: %v", err)
+			logger.Errorf("Error closing DB connection: %v", err)
 		}
 	}
 
@@ -156,7 +156,7 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 		idList = append(idList, fFetcher)
 	}
 	if cfg.Database.FetcherQueries.QueryTemplate != "" {
-		logger.Info("Loading Stored %s data via Database.\nQuery: %s", cfg.DataType(), cfg.Database.FetcherQueries.QueryTemplate)
+		logger.Infof("Loading Stored %s data via Database.\nQuery: %s", cfg.DataType(), cfg.Database.FetcherQueries.QueryTemplate)
 		idList = append(idList, db_fetcher.NewFetcher(provider,
 			cfg.Database.FetcherQueries.QueryTemplate, cfg.Database.FetcherQueries.QueryTemplate))
 	} else if cfg.Database.CacheInitialization.Query != "" && cfg.Database.PollUpdates.Query != "" {
@@ -164,7 +164,7 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 		idList = append(idList, empty_fetcher.EmptyFetcher{})
 	}
 	if cfg.HTTP.Endpoint != "" {
-		logger.Info("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType(), cfg.HTTP.Endpoint)
+		logger.Infof("Loading Stored %s data via HTTP. endpoint=%s", cfg.DataType(), cfg.HTTP.Endpoint)
 		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint, cfg.HTTP.UseRfcCompliantBuilder))
 	}
 
@@ -181,7 +181,7 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	}
 	switch {
 	case cfg.InMemoryCache.Type == "none":
-		logger.Warn("No %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType(), cfg.DataType())
+		logger.Warnf("No %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType(), cfg.DataType())
 	case cfg.DataType() == config.AccountDataType:
 		cache.Accounts = memory.NewCache(cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL, "Accounts")
 	default:
@@ -233,10 +233,10 @@ func newHttpEvents(client *http.Client, timeout time.Duration, refreshRate time.
 }
 
 func newFilesystem(dataType config.DataType, configPath string) stored_requests.AllFetcher {
-	logger.Info("Loading Stored %s data from filesystem at path %s", dataType, configPath)
+	logger.Infof("Loading Stored %s data from filesystem at path %s", dataType, configPath)
 	fetcher, err := file_fetcher.NewFileFetcher(configPath)
 	if err != nil {
-		logger.Fatal("Failed to create a %s FileFetcher: %v", dataType, err)
+		logger.Fatalf("Failed to create a %s FileFetcher: %v", dataType, err)
 	}
 	return fetcher
 }
@@ -246,9 +246,9 @@ func consolidate(dataType config.DataType, fetchers []stored_requests.AllFetcher
 	if len(fetchers) == 0 {
 		switch dataType {
 		case config.RequestDataType:
-			logger.Warn("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
+			logger.Warnf("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		default:
-			logger.Warn("No Stored %s support configured. If you need this, check your app config", dataType)
+			logger.Warnf("No Stored %s support configured. If you need this, check your app config", dataType)
 		}
 		return empty_fetcher.EmptyFetcher{}
 	} else if len(fetchers) == 1 {

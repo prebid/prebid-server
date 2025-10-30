@@ -58,9 +58,9 @@ func NewFetcher(client *http.Client, endpoint string, useRfcCompliantBuilder boo
 	endpointURL, err := url.Parse(endpoint)
 
 	if err != nil {
-		logger.Fatal(`Invalid endpoint "%s": %v`, endpoint, err)
+		logger.Fatalf(`Invalid endpoint "%s": %v`, endpoint, err)
 	}
-	logger.Info("Making http_fetcher for endpoint %v", endpoint)
+	logger.Infof("Making http_fetcher for endpoint %v", endpoint)
 
 	return &HttpFetcher{
 		client:                 client,

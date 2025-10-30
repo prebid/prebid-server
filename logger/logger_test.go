@@ -21,23 +21,23 @@ type logCall struct {
 	args []any
 }
 
-func (m *mockLogger) Debug(msg string, args ...any) {
+func (m *mockLogger) Debugf(msg string, args ...any) {
 	m.debugCalls = append(m.debugCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) Info(msg string, args ...any) {
+func (m *mockLogger) Infof(msg string, args ...any) {
 	m.infoCalls = append(m.infoCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) Warn(msg string, args ...any) {
+func (m *mockLogger) Warnf(msg string, args ...any) {
 	m.warnCalls = append(m.warnCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) Error(msg string, args ...any) {
+func (m *mockLogger) Errorf(msg string, args ...any) {
 	m.errorCalls = append(m.errorCalls, logCall{msg, args})
 }
 
-func (m *mockLogger) Fatal(msg string, args ...any) {
+func (m *mockLogger) Fatalf(msg string, args ...any) {
 	m.fatalCalls = append(m.fatalCalls, logCall{msg, args})
 }
 
@@ -68,12 +68,12 @@ func TestDebug(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Debug("debug message")
+	Debugf("debug message")
 	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
 	assert.Equal(t, "debug message", mock.debugCalls[0].msg)
 	assert.Empty(t, mock.debugCalls[0].args)
 
-	Debug("debug with args: %s, %d", "test", 123)
+	Debugf("debug with args: %s, %d", "test", 123)
 	assert.Len(t, mock.debugCalls, 2, "Should have two debug calls")
 	assert.Equal(t, "debug with args: %s, %d", mock.debugCalls[1].msg)
 	assert.Equal(t, []any{"test", 123}, mock.debugCalls[1].args)
@@ -89,12 +89,12 @@ func TestInfo(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Info("info message")
+	Infof("info message")
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
 	assert.Equal(t, "info message", mock.infoCalls[0].msg)
 	assert.Empty(t, mock.infoCalls[0].args)
 
-	Info("info with args: %s, %d", "test", 456)
+	Infof("info with args: %s, %d", "test", 456)
 	assert.Len(t, mock.infoCalls, 2, "Should have two info calls")
 	assert.Equal(t, "info with args: %s, %d", mock.infoCalls[1].msg)
 	assert.Equal(t, []any{"test", 456}, mock.infoCalls[1].args)
@@ -110,12 +110,12 @@ func TestWarn(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Warn("warning message")
+	Warnf("warning message")
 	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
 	assert.Equal(t, "warning message", mock.warnCalls[0].msg)
 	assert.Empty(t, mock.warnCalls[0].args)
 
-	Warn("warning with args: %s, %d", "test", 789)
+	Warnf("warning with args: %s, %d", "test", 789)
 	assert.Len(t, mock.warnCalls, 2, "Should have two warn calls")
 	assert.Equal(t, "warning with args: %s, %d", mock.warnCalls[1].msg)
 	assert.Equal(t, []any{"test", 789}, mock.warnCalls[1].args)
@@ -131,12 +131,12 @@ func TestError(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Error("error message")
+	Errorf("error message")
 	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
 	assert.Equal(t, "error message", mock.errorCalls[0].msg)
 	assert.Empty(t, mock.errorCalls[0].args)
 
-	Error("error with args: %s, %d", "test", 999)
+	Errorf("error with args: %s, %d", "test", 999)
 	assert.Len(t, mock.errorCalls, 2, "Should have two error calls")
 	assert.Equal(t, "error with args: %s, %d", mock.errorCalls[1].msg)
 	assert.Equal(t, []any{"test", 999}, mock.errorCalls[1].args)
@@ -153,10 +153,10 @@ func TestAllLogLevels(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Debug("debug")
-	Info("info")
-	Warn("warn")
-	Error("error")
+	Debugf("debug")
+	Infof("info")
+	Warnf("warn")
+	Errorf("error")
 
 	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
@@ -174,10 +174,10 @@ func TestEmptyMessages(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Debug("")
-	Info("")
-	Warn("")
-	Error("")
+	Debugf("")
+	Infof("")
+	Warnf("")
+	Errorf("")
 
 	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
@@ -200,7 +200,7 @@ func TestMultipleArguments(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Info("message: %s, number: %d, float: %f, bool: %v", "test", 42, 3.14, true)
+	Infof("message: %s, number: %d, float: %f, bool: %v", "test", 42, 3.14, true)
 
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
 	assert.Equal(t, "message: %s, number: %d, float: %f, bool: %v", mock.infoCalls[0].msg)
@@ -217,10 +217,10 @@ func TestNoArgs(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Info("simple message")
-	Debug("simple debug")
-	Warn("simple warning")
-	Error("simple error")
+	Infof("simple message")
+	Debugf("simple debug")
+	Warnf("simple warning")
+	Errorf("simple error")
 
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
 	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
@@ -246,10 +246,10 @@ func TestWithRealGlogLogger(t *testing.T) {
 
 	// These should not panic
 	assert.NotPanics(t, func() {
-		Debug("debug message")
-		Info("info message")
-		Warn("warning message")
-		Error("error message")
+		Debugf("debug message")
+		Infof("info message")
+		Warnf("warning message")
+		Errorf("error message")
 	}, "Real GlogLogger should not panic")
 }
 
@@ -260,7 +260,7 @@ func TestSpecialCharacters(t *testing.T) {
 	mock := newMockLogger()
 	logger = mock
 
-	Info("message with special chars: \n\t\"quotes\" and 'apostrophes'")
+	Infof("message with special chars: \n\t\"quotes\" and 'apostrophes'")
 
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
 	assert.Equal(t, "message with special chars: \n\t\"quotes\" and 'apostrophes'", mock.infoCalls[0].msg)
@@ -281,7 +281,7 @@ func TestConcurrentLogging(t *testing.T) {
 	// Test concurrent logging
 	for i := 0; i < 10; i++ {
 		go func(n int) {
-			Info("concurrent message %d", n)
+			Infof("concurrent message %d", n)
 			done <- true
 		}(i)
 	}
