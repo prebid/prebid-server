@@ -35,7 +35,14 @@
           ],
           "app": {
             "bundle": "com.example.app",
-            "name": "Test App"
+            "name": "Test App",
+            "publisher": {
+              "ext": {
+                "prebid": {
+                  "publisherId": "app-publisher-123"
+                }
+              }
+            }
           },
           "imp": [
             {
@@ -54,16 +61,7 @@
               },
               "id": "test-imp-id"
             }
-          ],
-          "site": {
-            "publisher": {
-              "ext": {
-                "prebid": {
-                  "publisherId": "app-publisher-123"
-                }
-              }
-            }
-          }
+          ]
         },
         "impIDs": ["test-imp-id"]
       },

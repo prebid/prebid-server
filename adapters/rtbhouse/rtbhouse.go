@@ -117,42 +117,12 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		reqCopy.Imp = append(reqCopy.Imp, imp)
 	}
 
-	// Set publisher ID in site.publisher.ext.prebid.publisherId if we found one
+	// Set publisher ID in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId if we found one
 	if publisherId != "" {
-		if reqCopy.Site == nil {
-			reqCopy.Site = &openrtb2.Site{}
-		} else {
-			// Create a copy of the site to avoid modifying the original request
-			siteCopy := *reqCopy.Site
-			reqCopy.Site = &siteCopy
-		}
-		if reqCopy.Site.Publisher == nil {
-			reqCopy.Site.Publisher = &openrtb2.Publisher{}
-		} else {
-			// Create a copy of the publisher to avoid modifying the original request
-			publisherCopy := *reqCopy.Site.Publisher
-			reqCopy.Site.Publisher = &publisherCopy
-		}
-
-		// Set publisherId in publisher.ext.prebid.publisherId using local struct
-		var pubExt publisherExt
-		if reqCopy.Site.Publisher.Ext != nil {
-			if err := jsonutil.Unmarshal(reqCopy.Site.Publisher.Ext, &pubExt); err != nil {
-				errs = append(errs, err)
-				return nil, errs
-			}
-		}
-		if pubExt.Prebid == nil {
-			pubExt.Prebid = &publisherExtPrebid{}
-		}
-		pubExt.Prebid.PublisherId = publisherId
-
-		publisherExtJSON, err := jsonutil.Marshal(pubExt)
-		if err != nil {
+		if err := setPublisherID(&reqCopy, publisherId); err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
-		reqCopy.Site.Publisher.Ext = publisherExtJSON
 	}
 
 	openRTBRequestJSON, err := json.Marshal(reqCopy)
@@ -173,6 +143,60 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	requestsToBidder = append(requestsToBidder, requestToBidder)
 
 	return requestsToBidder, errs
+}
+
+// setPublisherID sets the publisherId in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId
+func setPublisherID(request *openrtb2.BidRequest, publisherId string) error {
+	var publisher *openrtb2.Publisher
+	if request.Site != nil {
+		// Create a copy of the site to avoid modifying the original request
+		siteCopy := *request.Site
+		request.Site = &siteCopy
+		publisher = request.Site.Publisher
+	} else if request.App != nil {
+		// Create a copy of the app to avoid modifying the original request
+		appCopy := *request.App
+		request.App = &appCopy
+		publisher = request.App.Publisher
+	} else {
+		// If neither site nor app exists, create a site object
+		request.Site = &openrtb2.Site{}
+	}
+
+	if publisher != nil {
+		// Create a copy of the publisher to avoid modifying the original request
+		publisherCopy := *publisher
+		publisher = &publisherCopy
+	} else {
+		publisher = &openrtb2.Publisher{}
+	}
+
+	// Set publisherId in publisher.ext.prebid.publisherId using local struct
+	var pubExt publisherExt
+	if publisher.Ext != nil {
+		if err := jsonutil.Unmarshal(publisher.Ext, &pubExt); err != nil {
+			return err
+		}
+	}
+	if pubExt.Prebid == nil {
+		pubExt.Prebid = &publisherExtPrebid{}
+	}
+	pubExt.Prebid.PublisherId = publisherId
+
+	publisherExtJSON, err := jsonutil.Marshal(pubExt)
+	if err != nil {
+		return err
+	}
+	publisher.Ext = publisherExtJSON
+
+	// Assign the updated publisher back to the appropriate object
+	if request.Site != nil {
+		request.Site.Publisher = publisher
+	} else if request.App != nil {
+		request.App.Publisher = publisher
+	}
+
+	return nil
 }
 
 func clearAuctionEnvironment(imp *openrtb2.Imp) (json.RawMessage, error) {
