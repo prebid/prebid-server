@@ -125,10 +125,7 @@ func (c *ConfigClient) refreshLoop() {
 				if backoff == 0 {
 					backoff = 10 * time.Second
 				} else {
-					backoff = backoff * 2
-					if backoff > maxBackoff {
-						backoff = maxBackoff
-					}
+					backoff = min(backoff*2, maxBackoff)
 				}
 
 				// Add jitter
