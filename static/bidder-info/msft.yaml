@@ -3,6 +3,8 @@ platform_id: "5"
 maintainer:
   email: "prebid@microsoft.com"
 gvlVendorID: 32
+openrtb:
+  version: 2.6
 capabilities:
   app:
     mediaTypes:
