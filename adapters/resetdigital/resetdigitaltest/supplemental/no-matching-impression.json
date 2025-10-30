@@ -20,8 +20,7 @@
       }
     ],
     "site": {
-      "page": "https://example.com",
-      "domain": "example.com"
+      "page": "https://example.com"
     }
   },
   "httpCalls": [
@@ -50,22 +49,10 @@
             }
           ],
           "site": {
-            "page": "https://example.com",
-            "domain": "example.com"
+            "page": "https://example.com"
           },
           "cur": [
             "USD"
-          ]
-        },
-        "headers": {
-          "Content-Type": [
-            "application/json"
-          ],
-          "Accept": [
-            "application/json"
-          ],
-          "X-OpenRTB-Version": [
-            "2.6"
           ]
         },
         "impIDs": ["test-imp-id"]
@@ -79,13 +66,12 @@
               "bid": [
                 {
                   "id": "test-bid-id",
-                  "impid": "test-imp-id",
-                  "price": 3.14,
+                  "impid": "wrong-imp-id",
+                  "price": 1.5,
                   "adm": "<div>test ad</div>",
                   "crid": "test-creative-id",
                   "w": 300,
-                  "h": 250,
-                  "adomain": ["example.com"]
+                  "h": 250
                 }
               ],
               "seat": "resetdigital"
@@ -99,22 +85,13 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "test-bid-id",
-            "impid": "test-imp-id",
-            "price": 3.14,
-            "adm": "<div>test ad</div>",
-            "crid": "test-creative-id",
-            "w": 300,
-            "h": 250,
-            "adomain": ["example.com"]
-          },
-          "type": "banner",
-          "seat": "resetdigital"
-        }
-      ]
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "no matching impression found for ImpID: wrong-imp-id",
+      "comparison": "literal"
     }
   ]
 }

@@ -4,13 +4,8 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}"
         },
         "ext": {
           "bidder": {
@@ -20,8 +15,7 @@
       }
     ],
     "site": {
-      "page": "https://example.com",
-      "domain": "example.com"
+      "page": "https://example.com"
     }
   },
   "httpCalls": [
@@ -33,13 +27,8 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}"
               },
               "tagid": "test-placement",
               "ext": {
@@ -50,22 +39,10 @@
             }
           ],
           "site": {
-            "page": "https://example.com",
-            "domain": "example.com"
+            "page": "https://example.com"
           },
           "cur": [
             "USD"
-          ]
-        },
-        "headers": {
-          "Content-Type": [
-            "application/json"
-          ],
-          "Accept": [
-            "application/json"
-          ],
-          "X-OpenRTB-Version": [
-            "2.6"
           ]
         },
         "impIDs": ["test-imp-id"]
@@ -80,12 +57,9 @@
                 {
                   "id": "test-bid-id",
                   "impid": "test-imp-id",
-                  "price": 3.14,
-                  "adm": "<div>test ad</div>",
-                  "crid": "test-creative-id",
-                  "w": 300,
-                  "h": 250,
-                  "adomain": ["example.com"]
+                  "price": 2.0,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Title\"}}]}}",
+                  "crid": "test-creative-id"
                 }
               ],
               "seat": "resetdigital"
@@ -104,14 +78,11 @@
           "bid": {
             "id": "test-bid-id",
             "impid": "test-imp-id",
-            "price": 3.14,
-            "adm": "<div>test ad</div>",
-            "crid": "test-creative-id",
-            "w": 300,
-            "h": 250,
-            "adomain": ["example.com"]
+            "price": 2.0,
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Title\"}}]}}",
+            "crid": "test-creative-id"
           },
-          "type": "banner",
+          "type": "native",
           "seat": "resetdigital"
         }
       ]
