@@ -73,14 +73,15 @@
               ],
               "seat": "TEST_SEAT_ID"
             }
-          ]
+          ],
+          "cur": "EUR"
         }
       }
     }
   ],
   "expectedBidResponses": [
     {
-      "currency": "EUR",
+      "currency": "USD",
       "bids": [
         {
           "bid": {

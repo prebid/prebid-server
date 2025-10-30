@@ -1,0 +1,21 @@
+endpoint: "http://ib.adnxs.com/openrtb2"
+platform_id: "5"
+maintainer:
+  email: "prebid@microsoft.com"
+gvlVendorID: 32
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  key: "adnxs"
+  redirect:
+    url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
+    userMacro: "$UID"
