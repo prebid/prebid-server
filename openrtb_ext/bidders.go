@@ -131,6 +131,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGamma,
 	BidderGamoshi,
 	BidderGlobalsun,
+	BidderGoldbach,
 	BidderGothamads,
 	BidderGrid,
 	BidderGumGum,
@@ -222,6 +223,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSaLunaMedia,
 	BidderScreencore,
 	BidderSharethrough,
+	BidderShowheroes,
 	BidderSilverMob,
 	BidderSilverPush,
 	BidderSmaato,
@@ -503,6 +505,7 @@ const (
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
+	BidderGoldbach          BidderName = "goldbach"
 	BidderGothamads         BidderName = "gothamads"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
@@ -594,6 +597,7 @@ const (
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderScreencore        BidderName = "screencore"
 	BidderSharethrough      BidderName = "sharethrough"
+	BidderShowheroes        BidderName = "showheroes"
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSilverPush        BidderName = "silverpush"
 	BidderSmaato            BidderName = "smaato"
