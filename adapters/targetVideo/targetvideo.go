@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type TargetVideoAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -21,7 +21,7 @@ type impExt struct {
 	TargetVideo openrtb_ext.ExtImpTargetVideo `json:"targetVideo"`
 }
 
-func (a *TargetVideoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	totalImps := len(request.Imp)
 	errors := make([]error, 0)
 	adapterRequests := make([]*adapters.RequestData, 0, totalImps)
@@ -38,7 +38,7 @@ func (a *TargetVideoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 	return adapterRequests, errors
 }
 
-func (a *TargetVideoAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
 
 	// For now, this adapter sends one imp per request, but we still
 	// iterate over all imps in the request to perform the required
@@ -124,7 +124,7 @@ func (a *TargetVideoAdapter) makeRequest(request openrtb2.BidRequest, imp openrt
 	}, nil
 }
 
-func (a *TargetVideoAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -187,7 +187,7 @@ func validateImpAndSetExt(imp *openrtb2.Imp) (int, error) {
 
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
 
-	bidder := &TargetVideoAdapter{
+	bidder := &adapter{
 		endpoint: cfg.Endpoint,
 	}
 	return bidder, nil
