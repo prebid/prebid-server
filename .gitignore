@@ -54,3 +54,7 @@ prebid-server.iml
 *~
 *.swp
 *.swo
+
+# local test server directory
+ts-server/
+pbs_output.log
