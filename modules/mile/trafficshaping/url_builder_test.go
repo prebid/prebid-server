@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -454,5 +455,431 @@ func createWrapperNoGeo(deviceType int64, ua string) *openrtb_ext.RequestWrapper
 				UA:         ua,
 			},
 		},
+	}
+}
+
+func TestDeriveDeviceCategory(t *testing.T) {
+	tests := []struct {
+		name     string
+		wrapper  *openrtb_ext.RequestWrapper
+		expected string
+	}{
+		{
+			name: "sua_mobile_1",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0",
+						SUA: &openrtb2.UserAgent{
+							Mobile: ptrutil.ToPtr[int8](1),
+						},
+					},
+				},
+			},
+			expected: "m",
+		},
+		{
+			name: "sua_mobile_0",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0",
+						SUA: &openrtb2.UserAgent{
+							Mobile: ptrutil.ToPtr[int8](0),
+						},
+					},
+				},
+			},
+			expected: "w",
+		},
+		{
+			name: "sua_browsers_tablet",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0",
+						SUA: &openrtb2.UserAgent{
+							Browsers: []openrtb2.BrandVersion{
+								{Brand: "iPad"},
+							},
+						},
+					},
+				},
+			},
+			expected: "t",
+		},
+		{
+			name: "sua_browsers_surface",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0",
+						SUA: &openrtb2.UserAgent{
+							Browsers: []openrtb2.BrandVersion{
+								{Brand: "Surface"},
+							},
+						},
+					},
+				},
+			},
+			expected: "t",
+		},
+		{
+			name: "ua_fallback_ipad",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0 (iPad; CPU OS 14_0)",
+					},
+				},
+			},
+			expected: "t",
+		},
+		{
+			name: "ua_fallback_tablet",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0 (Linux; Android 11) Tablet",
+					},
+				},
+			},
+			expected: "t",
+		},
+		{
+			name: "ua_fallback_kindle",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0 (Linux; Android) Kindle",
+					},
+				},
+			},
+			expected: "t",
+		},
+		{
+			name: "ua_fallback_mobile",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0)",
+					},
+				},
+			},
+			expected: "m",
+		},
+		{
+			name: "ua_fallback_android",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0 (Linux; Android 10) Mobile",
+					},
+				},
+			},
+			expected: "m",
+		},
+		{
+			name: "ua_fallback_smart_tv",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0 Smart-TV",
+					},
+				},
+			},
+			expected: "t",
+		},
+		{
+			name: "ua_fallback_appletv",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "AppleTV",
+					},
+				},
+			},
+			expected: "t",
+		},
+		{
+			name: "ua_fallback_default_desktop",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "Mozilla/5.0 (Windows NT 10.0)",
+					},
+				},
+			},
+			expected: "w",
+		},
+		{
+			name: "empty_ua",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						UA: "",
+					},
+				},
+			},
+			expected: "",
+		},
+		{
+			name: "nil_device",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: nil,
+				},
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := deriveDeviceCategory(tt.wrapper)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestDeriveCountry(t *testing.T) {
+	tests := []struct {
+		name        string
+		wrapper     *openrtb_ext.RequestWrapper
+		geoResolver GeoResolver
+		expectError bool
+	}{
+		{
+			name: "nil_geo_resolver",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						IP: "1.1.1.1",
+					},
+				},
+			},
+			geoResolver: nil,
+			expectError: true,
+		},
+		{
+			name: "missing_device",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: nil,
+				},
+			},
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: true,
+		},
+		{
+			name: "ipv6_fallback",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						IP:   "",
+						IPv6: "2001:db8::1",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{country: "CA"},
+			expectError: false,
+		},
+		{
+			name: "resolver_error",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						IP: "1.1.1.1",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{err: assert.AnError},
+			expectError: true,
+		},
+		{
+			name: "empty_country",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						IP: "1.1.1.1",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{country: ""},
+			expectError: true,
+		},
+		{
+			name: "success",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						IP: "1.1.1.1",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			country, err := deriveCountry(context.Background(), tt.wrapper, tt.geoResolver)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Empty(t, country)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, country)
+			}
+		})
+	}
+}
+
+func TestExtractSiteID(t *testing.T) {
+	tests := []struct {
+		name        string
+		wrapper     *openrtb_ext.RequestWrapper
+		expected    string
+		expectError bool
+	}{
+		{
+			name: "valid_site_id",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{ID: "ts-server"},
+				},
+			},
+			expected:    "ts-server",
+			expectError: false,
+		},
+		{
+			name: "missing_site",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: nil,
+				},
+			},
+			expected:    "",
+			expectError: true,
+		},
+		{
+			name: "empty_site_id",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{ID: ""},
+				},
+			},
+			expected:    "",
+			expectError: true,
+		},
+		{
+			name: "nil_bid_request",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: nil,
+			},
+			expected:    "",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			siteID, err := extractSiteID(tt.wrapper)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Empty(t, siteID)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, siteID)
+			}
+		})
+	}
+}
+
+func TestBuildConfigURLWithFallback_ErrorCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		wrapper     *openrtb_ext.RequestWrapper
+		geoResolver GeoResolver
+		expectError bool
+	}{
+		{
+			name: "nil_wrapper",
+			wrapper: nil,
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: true,
+		},
+		{
+			name: "nil_bid_request",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: nil,
+			},
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: true,
+		},
+		{
+			name: "missing_site_id",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: nil,
+				},
+			},
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: true,
+		},
+		{
+			name: "missing_country_and_geo_resolver_error",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{ID: "ts-server"},
+					Device: &openrtb2.Device{
+						IP: "1.1.1.1",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{err: assert.AnError},
+			expectError: true,
+		},
+		{
+			name: "missing_device_category_and_ua",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{ID: "ts-server"},
+					Device: &openrtb2.Device{
+						UA: "",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: true,
+		},
+		{
+			name: "missing_browser",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Site: &openrtb2.Site{ID: "ts-server"},
+					Device: &openrtb2.Device{
+						UA: "",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url, activities, err := buildConfigURLWithFallback(context.Background(), "http://localhost:8080/", tt.wrapper, tt.geoResolver)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Empty(t, url)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, url)
+				_ = activities // Activities may or may not be populated
+			}
+		})
 	}
 }

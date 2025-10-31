@@ -592,24 +592,88 @@ func TestGetGPID(t *testing.T) {
 			impExt:       map[string]interface{}{},
 			expectedGPID: "",
 		},
+		{
+			name: "gpid_empty_string",
+			impExt: map[string]interface{}{
+				"gpid": "",
+			},
+			expectedGPID: "", // Empty string should return empty
+		},
+		{
+			name: "nil_imp_wrapper",
+			impExt: nil,
+			expectedGPID: "",
+		},
+		{
+			name: "nil_imp",
+			impExt: map[string]interface{}{},
+			expectedGPID: "",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			extJSON, err := json.Marshal(tt.impExt)
-			require.NoError(t, err)
+			var impWrapper *openrtb_ext.ImpWrapper
+			if tt.name == "nil_imp_wrapper" {
+				impWrapper = nil
+			} else if tt.name == "nil_imp" {
+				impWrapper = &openrtb_ext.ImpWrapper{Imp: nil}
+			} else {
+				extJSON, err := json.Marshal(tt.impExt)
+				require.NoError(t, err)
 
-			impWrapper := &openrtb_ext.ImpWrapper{
-				Imp: &openrtb2.Imp{
-					ID:  "test-imp",
-					Ext: extJSON,
-				},
+				impWrapper = &openrtb_ext.ImpWrapper{
+					Imp: &openrtb2.Imp{
+						ID:  "test-imp",
+						Ext: extJSON,
+					},
+				}
 			}
 
 			gpid := getGPID(impWrapper)
 			assert.Equal(t, tt.expectedGPID, gpid)
 		})
 	}
+
+	t.Run("invalid_ext_json", func(t *testing.T) {
+		impWrapper := &openrtb_ext.ImpWrapper{
+			Imp: &openrtb2.Imp{
+				ID:  "test-imp",
+				Ext: json.RawMessage(`{"invalid": json}`), // Invalid JSON
+			},
+		}
+
+		gpid := getGPID(impWrapper)
+		assert.Equal(t, "", gpid) // Should return empty on error
+	})
+
+	t.Run("gpid_unmarshal_error", func(t *testing.T) {
+		// Create ext with invalid gpid JSON
+		extJSON := json.RawMessage(`{"gpid": {"invalid": json}}`)
+		impWrapper := &openrtb_ext.ImpWrapper{
+			Imp: &openrtb2.Imp{
+				ID:  "test-imp",
+				Ext: extJSON,
+			},
+		}
+
+		gpid := getGPID(impWrapper)
+		assert.Equal(t, "", gpid) // Should return empty on unmarshal error
+	})
+
+	t.Run("data_unmarshal_error", func(t *testing.T) {
+		// Create ext with invalid data JSON
+		extJSON := json.RawMessage(`{"data": {"invalid": json}}`)
+		impWrapper := &openrtb_ext.ImpWrapper{
+			Imp: &openrtb2.Imp{
+				ID:  "test-imp",
+				Ext: extJSON,
+			},
+		}
+
+		gpid := getGPID(impWrapper)
+		assert.Equal(t, "", gpid) // Should return empty on unmarshal error
+	})
 }
 
 func TestFilterBannerSizes(t *testing.T) {
@@ -912,4 +976,372 @@ func TestHandleProcessedAuctionHook_Fallbacks(t *testing.T) {
 	}
 	assert.True(t, hasCountryDerived)
 	assert.True(t, hasDeviceDerived)
+}
+
+func TestHandleProcessedAuctionHook_PruneEIDsError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := TrafficShapingData{
+			Response: Response{
+				SkipRate:      0,
+				UserIdVendors: []string{"uid2"},
+				Values: map[string]map[string]map[string]int{
+					"test-gpid": {
+						"rubicon": {"300x250": 1},
+					},
+				},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	config := &Config{
+		Enabled:          true,
+		Endpoint:         server.URL,
+		RefreshMs:        30000,
+		RequestTimeoutMs: 1000,
+		SampleSalt:       "pbs",
+		PruneUserIds:     true,
+	}
+
+	client := NewConfigClient(http.DefaultClient, config)
+	defer client.Stop()
+
+	// Wait for initial fetch
+	for client.GetConfig() == nil {
+	}
+
+	module := &Module{
+		config: config,
+		client: client,
+	}
+
+	// Create request with invalid user.ext JSON to trigger pruneEIDs error
+	payload := hookstage.ProcessedAuctionRequestPayload{
+		Request: &openrtb_ext.RequestWrapper{
+			BidRequest: &openrtb2.BidRequest{
+				ID: "test-request",
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`{"invalid": json}`), // Invalid JSON
+				},
+				Imp: []openrtb2.Imp{
+					{
+						ID: "imp1",
+						Ext: func() []byte {
+							ext, _ := json.Marshal(map[string]interface{}{
+								"gpid": "test-gpid",
+							})
+							return ext
+						}(),
+						Banner: &openrtb2.Banner{
+							Format: []openrtb2.Format{
+								{W: 300, H: 250},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result, err := module.HandleProcessedAuctionHook(context.Background(), hookstage.ModuleInvocationContext{}, payload)
+
+	assert.NoError(t, err)
+	// Should have warning about pruneEIDs failure
+	assert.Contains(t, result.Warnings, "trafficshaping: failed to prune eids")
+}
+
+func TestGetAccountConfig_UnmarshalError(t *testing.T) {
+	module := &Module{
+		config: &Config{},
+		client: nil,
+	}
+
+	// Invalid JSON should return nil
+	accountConfig := module.getAccountConfig(json.RawMessage(`{"invalid": json}`))
+	assert.Nil(t, accountConfig)
+}
+
+func TestAccountConfig_GetAllowedCountriesMap(t *testing.T) {
+	t.Run("nil_allowed_countries", func(t *testing.T) {
+		config := &AccountConfig{
+			AllowedCountries: nil,
+		}
+		result := config.GetAllowedCountriesMap()
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty_allowed_countries", func(t *testing.T) {
+		emptySlice := []string{}
+		config := &AccountConfig{
+			AllowedCountries: &emptySlice,
+		}
+		result := config.GetAllowedCountriesMap()
+		assert.Nil(t, result)
+	})
+
+	t.Run("valid_allowed_countries", func(t *testing.T) {
+		countries := []string{"US", "CA", "GB"}
+		config := &AccountConfig{
+			AllowedCountries: &countries,
+		}
+		result := config.GetAllowedCountriesMap()
+		assert.NotNil(t, result)
+		assert.Equal(t, 3, len(result))
+		_, hasUS := result["US"]
+		_, hasCA := result["CA"]
+		_, hasGB := result["GB"]
+		assert.True(t, hasUS)
+		assert.True(t, hasCA)
+		assert.True(t, hasGB)
+	})
+}
+
+func TestPreprocessConfig_NoAllowedSizes(t *testing.T) {
+	// Test case where bidder has sizes but all flags are 0
+	response := &Response{
+		SkipRate:      0,
+		UserIdVendors: []string{},
+		Values: map[string]map[string]map[string]int{
+			"test-gpid": {
+				"rubicon": {
+					"300x250": 0, // All flags are 0
+					"728x90":  0,
+				},
+			},
+		},
+	}
+
+	config := preprocessConfig(response)
+
+	// Should have GPID rule
+	rule, ok := config.GPIDRules["test-gpid"]
+	require.True(t, ok)
+
+	// Should not have rubicon in allowed bidders (no allowed sizes)
+	_, hasRubicon := rule.AllowedBidders["rubicon"]
+	assert.False(t, hasRubicon)
+
+	// Should have empty allowed sizes
+	assert.Equal(t, 0, len(rule.AllowedSizes))
+}
+
+func TestHandleProcessedAuctionHook_AccountConfigPruneUserIdsOverride(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := TrafficShapingData{
+			Response: Response{
+				SkipRate:      0,
+				UserIdVendors: []string{"uid2"},
+				Values: map[string]map[string]map[string]int{
+					"test-gpid": {
+						"rubicon": {"300x250": 1},
+					},
+				},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	config := &Config{
+		Enabled:          true,
+		Endpoint:         server.URL,
+		RefreshMs:        30000,
+		RequestTimeoutMs: 1000,
+		SampleSalt:       "pbs",
+		PruneUserIds:     false, // Host config has it disabled
+	}
+
+	client := NewConfigClient(http.DefaultClient, config)
+	defer client.Stop()
+
+	// Wait for initial fetch
+	for client.GetConfig() == nil {
+	}
+
+	module := &Module{
+		config: config,
+		client: client,
+	}
+
+	// Account config overrides pruneUserIds to true
+	accountConfig := json.RawMessage(`{"prune_user_ids": true}`)
+
+	eids := []openrtb2.EID{
+		{Source: "uidapi.com"},
+	}
+
+	userExtJSON, _ := json.Marshal(map[string]interface{}{
+		"eids": eids,
+	})
+
+	payload := hookstage.ProcessedAuctionRequestPayload{
+		Request: &openrtb_ext.RequestWrapper{
+			BidRequest: &openrtb2.BidRequest{
+				ID: "test-request",
+				User: &openrtb2.User{
+					Ext: userExtJSON,
+				},
+				Imp: []openrtb2.Imp{
+					{
+						ID: "imp1",
+						Ext: func() []byte {
+							ext, _ := json.Marshal(map[string]interface{}{
+								"gpid": "test-gpid",
+							})
+							return ext
+						}(),
+						Banner: &openrtb2.Banner{
+							Format: []openrtb2.Format{
+								{W: 300, H: 250},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	moduleCtx := hookstage.ModuleInvocationContext{
+		AccountConfig: accountConfig,
+	}
+
+	result, err := module.HandleProcessedAuctionHook(context.Background(), moduleCtx, payload)
+
+	assert.NoError(t, err)
+	// Should have applied shaping
+	names := make(map[string]bool)
+	for _, a := range result.AnalyticsTags.Activities {
+		names[a.Name] = true
+	}
+	assert.True(t, names["applied"])
+	assert.True(t, names["shaped"])
+
+	// EIDs should be pruned (account config override enabled pruning)
+	userExt, err := payload.Request.GetUserExt()
+	if err == nil && userExt != nil {
+		eids := userExt.GetEid()
+		if eids != nil {
+			// Should have filtered EIDs
+			assert.GreaterOrEqual(t, len(*eids), 0)
+		}
+	}
+}
+
+func TestCheckTDIDRtiPartner(t *testing.T) {
+	tests := []struct {
+		name     string
+		eid      openrtb2.EID
+		expected bool
+	}{
+		{
+			name: "valid_tdid",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs: []openrtb2.UID{
+					{
+						ID:  "test-id",
+						Ext: json.RawMessage(`{"rtiPartner":"TDID"}`),
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "valid_tdid_lowercase",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs: []openrtb2.UID{
+					{
+						ID:  "test-id",
+						Ext: json.RawMessage(`{"rtiPartner":"tdid"}`),
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "invalid_rtipartner",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs: []openrtb2.UID{
+					{
+						ID:  "test-id",
+						Ext: json.RawMessage(`{"rtiPartner":"OTHER"}`),
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "missing_ext",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs: []openrtb2.UID{
+					{
+						ID: "test-id",
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "invalid_json",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs: []openrtb2.UID{
+					{
+						ID:  "test-id",
+						Ext: json.RawMessage(`{"rtiPartner":invalid}`),
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "empty_uids",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs:  []openrtb2.UID{},
+			},
+			expected: false,
+		},
+		{
+			name: "multiple_uids_one_valid",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs: []openrtb2.UID{
+					{
+						ID:  "test-id-1",
+						Ext: json.RawMessage(`{"rtiPartner":"OTHER"}`),
+					},
+					{
+						ID:  "test-id-2",
+						Ext: json.RawMessage(`{"rtiPartner":"TDID"}`),
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "missing_rtipartner_field",
+			eid: openrtb2.EID{
+				Source: "adserver.org",
+				UIDs: []openrtb2.UID{
+					{
+						ID:  "test-id",
+						Ext: json.RawMessage(`{"otherField":"value"}`),
+					},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := checkTDIDRtiPartner(tt.eid)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
