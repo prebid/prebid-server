@@ -1,5 +1,4 @@
-#endpoint: "https://pbs.prebrid.tv/openrtb2/auction"
-endpoint: "http://localhost:8000/openrtb2/auction"
+endpoint: "https://pbs.prebrid.tv/openrtb2/auction"
 geoscope:
   - global
 maintainer:
