@@ -18,6 +18,11 @@ gvlVendorID: 617
 openrtb:
   version: 2.6
 capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
   app:
     mediaTypes:
       - banner
