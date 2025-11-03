@@ -513,10 +513,9 @@ func buildRequestExtForBidder(bidder string, req *openrtb_ext.RequestWrapper, re
 
 	if prebid := reqExt.GetPrebid(); prebid != nil && prebid.Aliases != nil {
 		if aliasValue, ok := prebid.Aliases[bidder]; ok {
-			if prebidNew.Aliases == nil {
-				prebidNew.Aliases = make(map[string]string)
+			prebidNew.Aliases = map[string]string{
+				bidder: aliasValue,
 			}
-			prebidNew.Aliases[bidder] = aliasValue
 		}
 	}
 

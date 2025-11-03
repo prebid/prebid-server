@@ -2749,6 +2749,11 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			requestExt:   json.RawMessage(`{"prebid":{"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"publisher":"anyPublisher","withcategory":true}}}}`),
 			expectedJson: json.RawMessage(`{"prebid":{"targeting":{"includebrandcategory":{"primaryadserver":1,"publisher":"anyPublisher","withcategory":true}}}}`),
 		},
+		{
+			name:         "request_ext_with_aliase",
+			requestExt:   json.RawMessage(`{"prebid":{"aliases":{"foo":"pubmatic", "bar":"pubmatic"}}}`),
+			expectedJson: json.RawMessage(`{"prebid":{"aliases":{"foo":"pubmatic"}}}`),
+		},
 	}
 
 	for _, test := range testCases {
