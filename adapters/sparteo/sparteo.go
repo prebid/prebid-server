@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 type adapter struct {
@@ -151,14 +152,17 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 	var pubExt string
 
 	if request.Site != nil {
-		pub = ensurePublisher(&request.Site.Publisher)
+		pub = ensurePublisher(request.Site.Publisher)
+		request.Site.Publisher = pub
 		pubExt = "site.publisher.ext"
 	} else if request.App != nil {
-		pub = ensurePublisher(&request.App.Publisher)
+		pub = ensurePublisher(request.App.Publisher)
+		request.App.Publisher = pub
 		pubExt = "app.publisher.ext"
 	} else {
 		request.Site = &openrtb2.Site{}
-		pub = ensurePublisher(&request.Site.Publisher)
+		pub = ensurePublisher(request.Site.Publisher)
+		request.Site.Publisher = pub
 		pubExt = "site.publisher.ext"
 	}
 
@@ -220,17 +224,15 @@ func normalizeHostname(host string) string {
 	return host
 }
 
-func strPtr(s string) *string { return &s }
-
 func resolveSiteDomain(site *openrtb2.Site) *string {
 	if site != nil {
 		if d := normalizeHostname(site.Domain); d != "" {
-			return strPtr(d)
+			return ptrutil.ToPtr(d)
 		}
 		if fromPage := normalizeHostname(site.Page); fromPage != "" {
-			return strPtr(fromPage)
+			return ptrutil.ToPtr(fromPage)
 		}
-		return strPtr(unknownValue)
+		return ptrutil.ToPtr(unknownValue)
 	}
 	return nil
 }
@@ -238,9 +240,9 @@ func resolveSiteDomain(site *openrtb2.Site) *string {
 func resolveAppDomain(app *openrtb2.App) *string {
 	if app != nil {
 		if d := normalizeHostname(app.Domain); d != "" {
-			return strPtr(d)
+			return ptrutil.ToPtr(d)
 		}
-		return strPtr(unknownValue)
+		return ptrutil.ToPtr(unknownValue)
 	}
 	return nil
 }
@@ -252,32 +254,31 @@ func resolveBundle(app *openrtb2.App) *string {
 
 	raw := app.Bundle
 	if strings.TrimSpace(raw) == "" {
-		return strPtr(unknownValue)
+		return ptrutil.ToPtr(unknownValue)
 	}
 
 	b := strings.TrimSpace(raw)
 	if strings.EqualFold(b, "null") {
-		return strPtr(unknownValue)
+		return ptrutil.ToPtr(unknownValue)
 	}
 
-	return strPtr(b)
+	return ptrutil.ToPtr(b)
 }
 
-func ensurePublisher(p **openrtb2.Publisher) *openrtb2.Publisher {
-	if *p == nil {
-		*p = &openrtb2.Publisher{}
+func ensurePublisher(p *openrtb2.Publisher) *openrtb2.Publisher {
+	if p == nil {
+		p = &openrtb2.Publisher{}
+	}
+	if p.Ext == nil {
+		p.Ext = jsonutil.RawMessage("{}")
 	}
 
-	return *p
+	return p
 }
 
 func updatePublisherExtension(targetExt *jsonutil.RawMessage, networkID, fieldPath string) ([]byte, error) {
 	var pubExt map[string]interface{}
-	if *targetExt != nil {
-		if err := jsonutil.Unmarshal(*targetExt, &pubExt); err != nil {
-			pubExt = make(map[string]interface{})
-		}
-	} else {
+	if err := jsonutil.Unmarshal(*targetExt, &pubExt); err != nil {
 		pubExt = make(map[string]interface{})
 	}
 
