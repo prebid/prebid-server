@@ -58,6 +58,7 @@
           },
           "type": "pbs",
           "dsa": "",
+          "pbjs": "prebid-test-version",
           "tech": { "device": null, "app": null, "site": null },
           "test": true,
           "user_uid": ""

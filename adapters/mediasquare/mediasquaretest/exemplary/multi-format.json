@@ -243,6 +243,7 @@
             "consent_string": "there-is-a-real-cs-in-it"
           },
           "dsa": "mediasquare-test",
+          "pbjs": "prebid-test-version",
           "tech": {
             "device": {
               "geo": {

@@ -103,6 +103,7 @@
           },
           "type": "pbs",
           "dsa": "",
+          "pbjs": "prebid-test-version",
           "tech": {
             "device": {
               "geo": {

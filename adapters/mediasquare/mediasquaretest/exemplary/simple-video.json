@@ -101,6 +101,7 @@
           },
           "type": "pbs",
           "dsa": "mediasquare-test",
+          "pbjs": "prebid-test-version",
           "tech": {
             "device": {
               "geo": {
