@@ -17,7 +17,7 @@ hooks:
       rtd:
         enabled: true
         auth_key: ${SCOPE3_API_KEY}  # Set SCOPE3_API_KEY environment variable
-        endpoint: https://rtdp.scope3.com/amazonaps/rtii
+        endpoint: https://rtdp.scope3.com/prebid/prebid
         timeout_ms: 1000
         cache_ttl_seconds: 60   # Cache segments for 60 seconds (default)
         add_to_targeting: false # Set to true to add segments as individual targeting keys for GAM
@@ -68,7 +68,7 @@ hooks:
       "scope3": {
         "rtd": {
           "enabled": true,
-          "endpoint": "https://rtdp.scope3.com/amazonaps/rtii",
+          "endpoint": "https://rtdp.scope3.com/prebid/prebid",
           "auth_key": "your-scope3-auth-key",
           "timeout_ms": 1000,
           "cache_ttl_seconds": 60,

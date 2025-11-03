@@ -40,7 +40,7 @@ func getTestEntrypointPayload(t *testing.T) hookstage.EntrypointPayload {
 func TestBuilder(t *testing.T) {
 	config := json.RawMessage(`{
 		"enabled": true,
-		"endpoint": "https://rtdp.scope3.com/amazonaps/rtii",
+		"endpoint": "https://rtdp.scope3.com/prebid/prebid",
 		"auth_key": "test-key",
 		"timeout_ms": 1000,
 		"cache_ttl_seconds": 60,
@@ -55,7 +55,7 @@ func TestBuilder(t *testing.T) {
 	assert.IsType(t, &Module{}, module)
 
 	m := module.(*Module)
-	assert.Equal(t, "https://rtdp.scope3.com/amazonaps/rtii", m.cfg.Endpoint)
+	assert.Equal(t, "https://rtdp.scope3.com/prebid/prebid", m.cfg.Endpoint)
 	assert.Equal(t, "test-key", m.cfg.AuthKey)
 	assert.Equal(t, 1000, m.cfg.Timeout)
 	assert.Equal(t, 60, m.cfg.CacheTTL)
@@ -123,7 +123,7 @@ func TestBuilderDefaults(t *testing.T) {
 
 	assert.NoError(t, err)
 	m := module.(*Module)
-	assert.Equal(t, "https://rtdp.scope3.com/prebid/rtii", m.cfg.Endpoint)
+	assert.Equal(t, "https://rtdp.scope3.com/prebid/prebid", m.cfg.Endpoint)
 	assert.Equal(t, 1000, m.cfg.Timeout)
 	assert.Equal(t, 60, m.cfg.CacheTTL)
 	assert.Equal(t, false, m.cfg.AddToTargeting)
@@ -147,6 +147,7 @@ func TestScope3APIIntegration(t *testing.T) {
 							"id": "test-imp-1",
 							"ext": {
 								"scope3": {
+									"macro": "test-macro",
 									"segments": [
 										{"id": "gmp_eligible"},
 										{"id": "gmp_plus_eligible"}
@@ -207,9 +208,10 @@ func TestScope3APIIntegration(t *testing.T) {
 	ctx := context.Background()
 	segments, err := module.fetchScope3Segments(ctx, bidRequest)
 	require.NoError(t, err)
-	assert.Len(t, segments, 2)
+	assert.Len(t, segments, 3)
 	assert.Contains(t, segments, "gmp_eligible")
 	assert.Contains(t, segments, "gmp_plus_eligible")
+	assert.Contains(t, segments, "scope3_macro;test-macro")
 	assert.NotContains(t, segments, "triplelift.com") // Should not include destination
 }
 
@@ -225,6 +227,7 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 							"id": "test-imp-1",
 							"ext": {
 								"scope3": {
+									"macro": "test-macro",
 									"segments": [
 										{"id": "test_segment_1"},
 										{"id": "test_segment_2"}
@@ -317,7 +320,7 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 	require.True(t, exists)
 	segments, exists := scope3Data["segments"].([]interface{})
 	require.True(t, exists)
-	assert.Len(t, segments, 2)
+	assert.Len(t, segments, 3)
 
 	// Verify targeting section exists (add_to_targeting: true)
 	prebidData, exists := extMap["prebid"].(map[string]interface{})
@@ -328,6 +331,7 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 	// Check individual targeting keys
 	assert.Equal(t, "true", targetingData["test_segment_1"])
 	assert.Equal(t, "true", targetingData["test_segment_2"])
+	assert.Equal(t, "test-macro", targetingData["scope3_macro"])
 }
 
 func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
@@ -602,7 +606,7 @@ func TestScope3APIError(t *testing.T) {
 func TestBuilderWithMasking(t *testing.T) {
 	config := json.RawMessage(`{
 		"enabled": true,
-		"endpoint": "https://rtdp.scope3.com/amazonaps/rtii",
+		"endpoint": "https://rtdp.scope3.com/prebid/prebid",
 		"auth_key": "test-key",
 		"timeout_ms": 1000,
 		"cache_ttl_seconds": 60,

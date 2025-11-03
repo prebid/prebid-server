@@ -37,7 +37,7 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 	}
 
 	if cfg.Endpoint == "" {
-		cfg.Endpoint = "https://rtdp.scope3.com/prebid/rtii"
+		cfg.Endpoint = "https://rtdp.scope3.com/prebid/prebid"
 	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 1000 // 1000ms default
@@ -96,6 +96,7 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 const (
 	// keys for miCtx
 	asyncRequestKey = "scope3.AsyncRequest"
+	scope3MacroKey  = "scope3_macro"
 )
 
 var (
@@ -171,6 +172,7 @@ type Scope3Ext struct {
 
 type Scope3ExtData struct {
 	Segments []Scope3Segment `json:"segments"`
+	Macro    string          `json:"macro"`
 }
 
 type Scope3Segment struct {
@@ -340,7 +342,12 @@ func (m *Module) HandleAuctionResponseHook(
 				}
 				// Add each segment as individual targeting key
 				for _, segment := range segments {
-					targetingMap[segment] = "true"
+					if strings.HasPrefix(segment, scope3MacroKey) {
+						macroKeyVal := strings.Split(segment, ";")
+						targetingMap[macroKeyVal[0]] = macroKeyVal[1]
+					} else {
+						targetingMap[segment] = "true"
+					}
 				}
 			}
 
@@ -418,10 +425,14 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 
 	// Extract unique segments (exclude destination)
 	segmentMap := make(map[string]bool)
+	var macro string
 	for data := range iterutil.SlicePointerValues(scope3Resp.Data) {
 		// Extract actual segments from impression-level data
 		for imp := range iterutil.SlicePointerValues(data.Imp) {
 			if imp.Ext != nil && imp.Ext.Scope3 != nil {
+				if imp.Ext.Scope3.Macro != "" {
+					macro = imp.Ext.Scope3.Macro
+				}
 				for segment := range iterutil.SlicePointerValues(imp.Ext.Scope3.Segments) {
 					segmentMap[segment.ID] = true
 				}
@@ -431,6 +442,9 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 
 	// Convert to slice
 	segments := slices.AppendSeq(make([]string, 0, len(segmentMap)), maps.Keys(segmentMap))
+	if macro != "" {
+		segments = append(segments, fmt.Sprintf("%s;%s", scope3MacroKey, macro))
+	}
 
 	// Cache the result
 	err = m.cache.Set(cacheKey, []byte(strings.Join(segments, ",")), m.cfg.CacheTTL)
