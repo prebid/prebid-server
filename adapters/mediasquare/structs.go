@@ -86,9 +86,10 @@ type msqResponseBids struct {
 }
 
 type msqSupport struct {
-	Device interface{} `json:"device"`
-	App    interface{} `json:"app"`
-	Site   interface{} `json:"site"`
+	Device *openrtb2.Device `json:"device,omitempty"`
+	App    *openrtb2.App    `json:"app,omitempty"`
+	Site   *openrtb2.Site   `json:"site,omitempty"`
+	User   *openrtb2.User   `json:"user,omitempty"`
 }
 
 type msqParametersCodes struct {
@@ -127,6 +128,7 @@ func initMsqParams(request *openrtb2.BidRequest) (msqParams msqParameters) {
 		Device: request.Device,
 		App:    request.App,
 		Site:   request.Site,
+		User:   request.User,
 	}
 	msqParams.Gdpr = msqParametersGdpr{
 		ConsentRequired: (parserGDPR{}).getValue("consent_requirement", request) == "true",

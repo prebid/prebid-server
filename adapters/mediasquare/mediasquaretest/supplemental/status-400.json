@@ -123,7 +123,11 @@
               },
               "content": {}
             },
-            "site": null
+            "user": {
+              "ext": {
+                "consent": "consent-covering"
+              }
+            }
           },
           "test": true,
           "user_uid": ""

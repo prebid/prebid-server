@@ -52,7 +52,7 @@
           "gdpr": { "consent_required": false, "consent_string": "" },
           "type": "pbs",
           "pbjs": "prebid-test-version",
-          "tech": { "device": null, "app": null, "site": null },
+          "tech": {},
           "test": true,
           "user_uid": ""
         },

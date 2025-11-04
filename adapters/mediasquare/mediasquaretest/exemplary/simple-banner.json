@@ -152,7 +152,9 @@
               },
               "content": {}
             },
-            "site": null
+            "user": {
+              "consent": "there-is-a-real-cs-in-it"
+            }
           },
           "type": "pbs",
           "test": true,
