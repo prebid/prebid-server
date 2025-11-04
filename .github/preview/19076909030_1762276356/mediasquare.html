@@ -1,0 +1,662 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>mediasquare: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/mediasquare/mediasquare.go (91.8%)</option>
+				
+				<option value="file1">github.com/prebid/prebid-server/v3/adapters/mediasquare/parsers.go (82.8%)</option>
+				
+				<option value="file2">github.com/prebid/prebid-server/v3/adapters/mediasquare/structs.go (95.8%)</option>
+				
+				<option value="file3">github.com/prebid/prebid-server/v3/adapters/mediasquare/utils.go (97.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package mediasquare
+
+import (
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{
+                endpoint: config.Endpoint,
+        }, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var (
+                requestData []*adapters.RequestData
+                errs        []error
+        )
+        if request == nil || request.Imp == nil </span><span class="cov8" title="1">{
+                errs = append(errs, errorWriter("&lt;MakeRequests&gt; request", nil, true))
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">msqParams := initMsqParams(request)
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                var (
+                        bidderExt   adapters.ExtImpBidder
+                        msqExt      openrtb_ext.ImpExtMediasquare
+                        currentCode = msqParametersCodes{
+                                AdUnit:    imp.TagID,
+                                AuctionId: request.ID,
+                                BidId:     imp.ID,
+                        }
+                )
+
+                if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, errorWriter("&lt;MakeRequests&gt; imp[ext]", err, len(imp.Ext) == 0))
+                        continue</span>
+                }
+                <span class="cov8" title="1">if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;msqExt); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, errorWriter("&lt;MakeRequests&gt; imp-bidder[ext]", err, len(bidderExt.Bidder) == 0))
+                        continue</span>
+                }
+                <span class="cov8" title="1">currentCode.Owner = msqExt.Owner
+                currentCode.Code = msqExt.Code
+
+                if currentCode.setContent(imp) </span><span class="cov8" title="1">{
+                        msqParams.Codes = append(msqParams.Codes, currentCode)
+                }</span>
+        }
+
+        <span class="cov8" title="1">req, err := a.makeRequest(request, &amp;msqParams)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+        }</span> else<span class="cov8" title="1"> if req != nil </span><span class="cov8" title="1">{
+                requestData = append(requestData, req)
+        }</span>
+        <span class="cov8" title="1">return requestData, errs</span>
+}
+
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *msqParameters) (requestData *adapters.RequestData, err error) <span class="cov8" title="1">{
+        var requestJsonBytes []byte
+        if msqParams == nil </span><span class="cov0" title="0">{
+                err = errorWriter("&lt;makeRequest&gt; msqParams", nil, true)
+                return
+        }</span>
+        <span class="cov8" title="1">if requestJsonBytes, err = jsonutil.Marshal(msqParams); err == nil </span><span class="cov8" title="1">{
+                var headers http.Header = headerList
+                requestData = &amp;adapters.RequestData{
+                        Method:  "POST",
+                        Uri:     a.endpoint,
+                        Body:    requestJsonBytes,
+                        Headers: headers,
+                        ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+                }
+        }</span> else<span class="cov0" title="0"> {
+                err = errorWriter("&lt;makeRequest&gt; jsonutil.Marshal", err, false)
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        var (
+                bidderResponse *adapters.BidderResponse
+                errs           []error
+        )
+        if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                switch response.StatusCode </span>{
+                case http.StatusBadRequest:<span class="cov8" title="1">
+                        errs = []error{&amp;errortypes.BadInput{Message: fmt.Sprintf("&lt;MakeBids&gt; Unexpected status code: %d.", response.StatusCode)}}</span>
+                default:<span class="cov8" title="1">
+                        errs = []error{&amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("&lt;MakeBids&gt; Unexpected status code: %d. Run with request.debug = 1 for more info.", response.StatusCode),
+                        }}</span>
+                }
+                <span class="cov8" title="1">return bidderResponse, errs</span>
+        }
+
+        <span class="cov8" title="1">var msqResp msqResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;msqResp); err != nil </span><span class="cov8" title="1">{
+                errs = []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("&lt;MakeBids&gt; Unexpected status code: %d. Bad server response: %s.",
+                                http.StatusNotAcceptable, err.Error())},
+                }
+                return bidderResponse, errs
+        }</span>
+        <span class="cov8" title="1">if len(msqResp.Responses) == 0 </span><span class="cov8" title="1">{
+                errs = []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("&lt;MakeBids&gt; Unexpected status code: %d. No responses found into body content.",
+                                http.StatusNoContent)},
+                }
+                return bidderResponse, errs
+        }</span>
+        <span class="cov8" title="1">bidderResponse = adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+        msqResp.getContent(bidderResponse)
+
+        return bidderResponse, errs</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package mediasquare
+
+import (
+        "fmt"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+// parserDSA: Struct used to extracts dsa content of a jsonutil.
+type parserDSA struct {
+        DSA interface{} `json:"dsa,omitempty"`
+}
+
+// setContent: Unmarshal a []byte into the parserDSA struct.
+func (parser *parserDSA) setContent(extJsonBytes []byte) error <span class="cov8" title="1">{
+        if len(extJsonBytes) &gt; 0 </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(extJsonBytes, parser); err != nil </span><span class="cov0" title="0">{
+                        return errorWriter("&lt;setContent(*parserDSA)&gt; extJsonBytes", err, false)
+                }</span>
+                <span class="cov8" title="1">return nil</span>
+        }
+        <span class="cov0" title="0">return errorWriter("&lt;setContent(*parserDSA)&gt; extJsonBytes", nil, true)</span>
+}
+
+// getValue: Returns the DSA value as a string, defaultly returns empty-string.
+func (parser parserDSA) getValue(request *openrtb2.BidRequest) interface{} <span class="cov8" title="1">{
+        if request == nil || request.Regs == nil </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if parser.setContent(request.Regs.Ext) != nil </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return parser.DSA</span>
+}
+
+// parserGDPR: Struct used to extract pair of GDPR/Consent of a jsonutil.
+type parserGDPR struct {
+        GDPR    interface{} `json:"gdpr,omitempty"`
+        Consent interface{} `json:"consent,omitempty"`
+}
+
+// setContent: Unmarshal a []byte into the parserGDPR struct.
+func (parser *parserGDPR) setContent(extJsonBytes []byte) error <span class="cov8" title="1">{
+        if len(extJsonBytes) &gt; 0 </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(extJsonBytes, parser); err != nil </span><span class="cov0" title="0">{
+                        return errorWriter("&lt;setContent(*parserGDPR)&gt; extJsonBytes", err, false)
+                }</span>
+                <span class="cov8" title="1">return nil</span>
+        }
+        <span class="cov0" title="0">return errorWriter("&lt;setContent(*parserGDPR)&gt; extJsonBytes", nil, true)</span>
+}
+
+// value: Returns the consent or GDPR-string depending of the parserGDPR content, defaulty return empty-string.
+func (parser *parserGDPR) value() (gdpr string) <span class="cov8" title="1">{
+        switch </span>{
+        case parser.Consent != nil:<span class="cov8" title="1">
+                gdpr = fmt.Sprint(parser.Consent)</span>
+        case parser.GDPR != nil:<span class="cov8" title="1">
+                gdpr = fmt.Sprint(parser.GDPR)</span>
+        }
+        <span class="cov8" title="1">return</span>
+}
+
+// getValue: Returns the consent or GDPR-string depending on the openrtb2.User content, defaultly returns empty-string.
+func (parser parserGDPR) getValue(field string, request *openrtb2.BidRequest) (gdpr string) <span class="cov8" title="1">{
+        if request != nil </span><span class="cov8" title="1">{
+                switch </span>{
+                case field == "consent_requirement" &amp;&amp; request.Regs != nil:<span class="cov8" title="1">
+                        gdpr = "true"
+                        if !ptrInt8ToBool(request.Regs.GDPR) </span><span class="cov8" title="1">{
+                                gdpr = "false"
+                        }</span>
+                case field == "consent_string" &amp;&amp; request.User != nil:<span class="cov8" title="1">
+                        gdpr = request.User.Consent
+                        if len(gdpr) &lt;= 0 </span><span class="cov8" title="1">{
+                                parser.setContent(request.User.Ext)
+                                gdpr = parser.value()
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package mediasquare
+
+import (
+        "fmt"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/util/ptrutil"
+        "github.com/prebid/prebid-server/v3/version"
+)
+
+// msqResponse: Bid-Response sent by mediasquare.
+type msqResponse struct {
+        Infos struct {
+                Version     string `json:"version"`
+                Description string `json:"description"`
+                Hostname    string `json:"hostname,omitempty"`
+        } `json:"infos"`
+        Responses []msqResponseBids `json:"responses"`
+}
+
+// msqParameters: Bid-Request sent to mediasquare.
+type msqParameters struct {
+        Codes     []msqParametersCodes `json:"codes"`
+        Gdpr      msqParametersGdpr    `json:"gdpr"`
+        Type      string               `json:"type"`
+        PrebidVer string               `json:"pbjs,omitempty"`
+        DSA       interface{}          `json:"dsa,omitempty"`
+        Support   msqSupport           `json:"tech"`
+        Test      bool                 `json:"test"`
+        UserUID   string               `json:"user_uid"`
+}
+
+type msqResponseBidsVideo struct {
+        Xml string `json:"xml"`
+        Url string `json:"url"`
+}
+
+type nativeResponseImg struct {
+        Url    string `json:"url"`
+        Width  *int   `json:"width,omitempty"`
+        Height *int   `json:"height,omitempty"`
+}
+
+type msqResponseBidsNative struct {
+        ClickUrl           string             `json:"clickUrl,omitempty"`
+        ClickTrackers      []string           `json:"clickTrackers,omitempty"`
+        ImpressionTrackers []string           `json:"impressionTrackers,omitempty"`
+        JavascriptTrackers []string           `json:"javascriptTrackers,omitempty"`
+        Privacy            *string            `json:"privacy,omitempty"`
+        Title              *string            `json:"title,omitempty"`
+        Icon               *nativeResponseImg `json:"icon,omitempty"`
+        Image              *nativeResponseImg `json:"image,omitempty"`
+        Cta                *string            `json:"cta,omitempty"`
+        Rating             *string            `json:"rating,omitempty"`
+        Downloads          *string            `json:"downloads,omitempty"`
+        Likes              *string            `json:"likes,omitempty"`
+        Price              *string            `json:"price,omitempty"`
+        SalePrice          *string            `json:"saleprice,omitempty"`
+        Address            *string            `json:"address,omitempty"`
+        Phone              *string            `json:"phone,omitempty"`
+        Body               *string            `json:"body,omitempty"`
+        Body2              *string            `json:"body2,omitempty"`
+        SponsoredBy        *string            `json:"sponsoredBy,omitempty"`
+        DisplayUrl         *string            `json:"displayUrl,omitempty"`
+}
+
+type msqResponseBids struct {
+        ID            string                 `json:"id"`
+        Ad            string                 `json:"ad,omitempty"`
+        BidId         string                 `json:"bid_id,omitempty"`
+        Bidder        string                 `json:"bidder,omitempty"`
+        Cpm           float64                `json:"cpm,omitempty"`
+        Currency      string                 `json:"currency,omitempty"`
+        CreativeId    string                 `json:"creative_id,omitempty"`
+        Height        int64                  `json:"height,omitempty"`
+        Width         int64                  `json:"width,omitempty"`
+        NetRevenue    bool                   `json:"net_revenue,omitempty"`
+        TransactionId string                 `json:"transaction_id,omitempty"`
+        Ttl           int                    `json:"ttl,omitempty"`
+        Video         *msqResponseBidsVideo  `json:"video,omitempty"`
+        Native        *msqResponseBidsNative `json:"native,omitempty"`
+        ADomain       []string               `json:"adomain,omitempty"`
+        Dsa           interface{}            `json:"dsa,omitempty"`
+        BURL          string                 `json:"burl,omitempty"`
+}
+
+type msqSupport struct {
+        Device *openrtb2.Device `json:"device,omitempty"`
+        App    *openrtb2.App    `json:"app,omitempty"`
+        Site   *openrtb2.Site   `json:"site,omitempty"`
+        User   *openrtb2.User   `json:"user,omitempty"`
+}
+
+type msqParametersCodes struct {
+        AdUnit     string              `json:"adunit"`
+        AuctionId  string              `json:"auctionid"`
+        BidId      string              `json:"bidid"`
+        Code       string              `json:"code"`
+        Owner      string              `json:"owner"`
+        Mediatypes mediaTypes          `json:"mediatypes,omitempty"`
+        Floor      map[string]msqFloor `json:"floor,omitempty"`
+}
+
+type msqParametersGdpr struct {
+        ConsentRequired bool   `json:"consent_required"`
+        ConsentString   string `json:"consent_string"`
+}
+
+type msqFloor struct {
+        Price    float64 `json:"floor,omitempty"`
+        Currency string  `json:"currency,omitempty"`
+}
+
+type mediaTypes struct {
+        Banner        *mediaTypeBanner `json:"banner,omitempty"`
+        Video         *openrtb2.Video  `json:"video,omitempty"`
+        NativeRequest *string          `json:"native_request,omitempty"`
+}
+
+type mediaTypeBanner struct {
+        Sizes [][]*int `json:"sizes"`
+}
+
+func initMsqParams(request *openrtb2.BidRequest) (msqParams msqParameters) <span class="cov8" title="1">{
+        msqParams.Type = "pbs"
+        msqParams.Support = msqSupport{
+                Device: request.Device,
+                App:    request.App,
+                Site:   request.Site,
+                User:   request.User,
+        }
+        msqParams.Gdpr = msqParametersGdpr{
+                ConsentRequired: (parserGDPR{}).getValue("consent_requirement", request) == "true",
+                ConsentString:   (parserGDPR{}).getValue("consent_string", request),
+        }
+        msqParams.DSA = (parserDSA{}).getValue(request)
+        if request.User != nil &amp;&amp; len(request.User.BuyerUID) &gt; 0 </span><span class="cov8" title="1">{
+                msqParams.UserUID = request.User.BuyerUID
+        }</span>
+        <span class="cov8" title="1">msqParams.Test = (request.Test == int8(1))
+        switch </span>{
+        case msqParams.Test:<span class="cov8" title="1">
+                msqParams.PrebidVer = "prebid-test-version"</span>
+        case len(version.Ver) &gt; 0:<span class="cov0" title="0">
+                msqParams.PrebidVer = version.Ver</span>
+        default:<span class="cov0" title="0">
+                msqParams.PrebidVer = "n/a"</span>
+        }
+        <span class="cov8" title="1">return</span>
+}
+
+// setContent: Loads currentImp into msqParams (*msqParametersCodes),
+// returns (ok bool) where `ok` express if mandatory content had been loaded.
+func (msqParams *msqParametersCodes) setContent(currentImp openrtb2.Imp) (ok bool) <span class="cov8" title="1">{
+        var (
+                currentMapFloors = make(map[string]msqFloor, 0)
+                currentFloor     = msqFloor{
+                        Price:    currentImp.BidFloor,
+                        Currency: currentImp.BidFloorCur,
+                }
+        )
+
+        if currentImp.Video != nil </span><span class="cov8" title="1">{
+                ok = true
+                msqParams.Mediatypes.Video = currentImp.Video
+                if currentImp.Video.W != nil &amp;&amp; currentImp.Video.H != nil </span><span class="cov8" title="1">{
+                        currentMapFloors[fmt.Sprintf("%dx%d", *(currentImp.Video.W), *(currentImp.Video.H))] = currentFloor
+                }</span>
+                <span class="cov8" title="1">currentMapFloors["*"] = currentFloor</span>
+        }
+
+        <span class="cov8" title="1">if currentImp.Banner != nil </span><span class="cov8" title="1">{
+                switch </span>{
+                case len(currentImp.Banner.Format) &gt; 0:<span class="cov8" title="1">
+                        ok = true
+                        msqParams.Mediatypes.Banner = new(mediaTypeBanner)
+                        for _, bannerFormat := range currentImp.Banner.Format </span><span class="cov8" title="1">{
+                                currentMapFloors[fmt.Sprintf("%dx%d", bannerFormat.W, bannerFormat.H)] = currentFloor
+                                msqParams.Mediatypes.Banner.Sizes = append(msqParams.Mediatypes.Banner.Sizes,
+                                        []*int{ptrutil.ToPtr(int(bannerFormat.W)), ptrutil.ToPtr(int(bannerFormat.H))})
+                        }</span>
+                case currentImp.Banner.W != nil &amp;&amp; currentImp.Banner.H != nil:<span class="cov8" title="1">
+                        ok = true
+                        msqParams.Mediatypes.Banner = new(mediaTypeBanner)
+                        currentMapFloors[fmt.Sprintf("%dx%d", *(currentImp.Banner.W), *(currentImp.Banner.H))] = currentFloor
+                        msqParams.Mediatypes.Banner.Sizes = append(msqParams.Mediatypes.Banner.Sizes,
+                                []*int{ptrutil.ToPtr(int(*currentImp.Banner.W)), ptrutil.ToPtr(int(*currentImp.Banner.H))})</span>
+                }
+
+                <span class="cov8" title="1">if msqParams.Mediatypes.Banner != nil </span><span class="cov8" title="1">{
+                        for _, bannerSizes := range msqParams.Mediatypes.Banner.Sizes </span><span class="cov8" title="1">{
+                                if len(bannerSizes) == 2 &amp;&amp; bannerSizes[0] != nil &amp;&amp; bannerSizes[1] != nil </span><span class="cov8" title="1">{
+                                        currentMapFloors[fmt.Sprintf("%dx%d", *(bannerSizes[0]), *(bannerSizes[1]))] = currentFloor
+                                }</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">if currentImp.Native != nil &amp;&amp; len(currentImp.Native.Request) &gt; 0 </span><span class="cov8" title="1">{
+                ok = true
+                msqParams.Mediatypes.NativeRequest = ptrutil.ToPtr(currentImp.Native.Request)
+                currentMapFloors["*"] = currentFloor
+        }</span>
+
+        <span class="cov8" title="1">if len(currentMapFloors) &gt; 0 </span><span class="cov8" title="1">{
+                msqParams.Floor = currentMapFloors
+        }</span>
+        <span class="cov8" title="1">return</span>
+}
+
+// getContent: Loads msqResp content into the bidderResponse (*adapters.BidderResponse).
+func (msqResp *msqResponse) getContent(bidderResponse *adapters.BidderResponse) <span class="cov8" title="1">{
+        var tmpBids []*adapters.TypedBid
+        for _, resp := range msqResp.Responses </span><span class="cov8" title="1">{
+                tmpTBid := adapters.TypedBid{
+                        BidType: resp.bidType(),
+                        Bid: &amp;openrtb2.Bid{
+                                ID:      resp.ID,
+                                ImpID:   resp.BidId,
+                                Price:   resp.Cpm,
+                                AdM:     resp.Ad,
+                                ADomain: resp.ADomain,
+                                W:       resp.Width,
+                                H:       resp.Height,
+                                CrID:    resp.CreativeId,
+                                MType:   resp.mType(),
+                                BURL:    resp.BURL,
+                                Ext:     resp.extBid(),
+                        },
+                        BidMeta: resp.extBidPrebidMeta(),
+                }
+                tmpBids = append(tmpBids, &amp;tmpTBid)
+                bidderResponse.Currency = resp.Currency
+        }</span>
+
+        <span class="cov8" title="1">if len(tmpBids) &gt; 0 </span><span class="cov8" title="1">{
+                bidderResponse.Bids = tmpBids
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package mediasquare
+
+import (
+        "encoding/json"
+        "fmt"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+var headerList = map[string][]string{
+        "Content-Type": {"application/json;charset=utf-8"},
+        "Accept":       {"application/json"},
+}
+
+// mType: Returns the openrtb2.MarkupType from an msqResponseBids.
+func (msqBids *msqResponseBids) mType() openrtb2.MarkupType <span class="cov8" title="1">{
+        switch </span>{
+        case msqBids.Video != nil:<span class="cov8" title="1">
+                return openrtb2.MarkupVideo</span>
+        case msqBids.Native != nil:<span class="cov8" title="1">
+                return openrtb2.MarkupNative</span>
+        default:<span class="cov8" title="1">
+                return openrtb2.MarkupBanner</span>
+        }
+}
+
+// bidType: Returns the openrtb_ext.BidType from an msqResponseBids.
+func (msqBids *msqResponseBids) bidType() openrtb_ext.BidType <span class="cov8" title="1">{
+        switch </span>{
+        case msqBids.Video != nil:<span class="cov8" title="1">
+                return "video"</span>
+        case msqBids.Native != nil:<span class="cov8" title="1">
+                return "native"</span>
+        default:<span class="cov8" title="1">
+                return "banner"</span>
+        }
+}
+
+// extBid: Extracts the ExtBid from msqBids formated as (json.RawMessage).
+func (msqBids *msqResponseBids) extBid() (raw json.RawMessage) <span class="cov8" title="1">{
+        extBid, _ := msqBids.loadExtBid()
+        if extBid.DSA != nil || extBid.Prebid != nil </span><span class="cov8" title="1">{
+                if bb, _ := jsonutil.Marshal(extBid); len(bb) &gt; 0 </span><span class="cov8" title="1">{
+                        raw = json.RawMessage(bb)
+                }</span>
+        }
+        <span class="cov8" title="1">return</span>
+}
+
+// loadExtBid: Extracts the ExtBid from msqBids as (openrtb_ext.ExtBid, []error).
+func (msqBids *msqResponseBids) loadExtBid() (extBid openrtb_ext.ExtBid, errs []error) <span class="cov8" title="1">{
+        if msqBids.Dsa != nil </span><span class="cov8" title="1">{
+                bb, err := jsonutil.Marshal(msqBids.Dsa)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span>
+                <span class="cov8" title="1">if len(bb) &gt; 0 </span><span class="cov8" title="1">{
+                        var dsa openrtb_ext.ExtBidDSA
+                        if err = jsonutil.Unmarshal(bb, &amp;dsa); err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                        }</span> else<span class="cov8" title="1"> {
+                                extBid.DSA = &amp;dsa
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return</span>
+}
+
+// extBidPrebidMeta: Extracts the ExtBidPrebidMeta from msqBids as (*openrtb_ext.ExtBidPrebidMeta).
+func (msqBids *msqResponseBids) extBidPrebidMeta() *openrtb_ext.ExtBidPrebidMeta <span class="cov8" title="1">{
+        var extBidMeta openrtb_ext.ExtBidPrebidMeta
+        if msqBids.ADomain != nil </span><span class="cov8" title="1">{
+                extBidMeta.AdvertiserDomains = msqBids.ADomain
+        }</span>
+        <span class="cov8" title="1">extBidMeta.MediaType = string(msqBids.bidType())
+        return &amp;extBidMeta</span>
+}
+
+// ptrInt8ToBool: Returns (TRUE) when i equals 1.
+func ptrInt8ToBool(i *int8) bool <span class="cov8" title="1">{
+        if i != nil </span><span class="cov8" title="1">{
+                return (*i == int8(1))
+        }</span>
+        <span class="cov8" title="1">return false</span>
+}
+
+// errorWriter: Returns a Custom error message.
+func errorWriter(header string, err error, isEmpty bool) error <span class="cov8" title="1">{
+        if isEmpty </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: is empty.", header)
+        }</span>
+        <span class="cov8" title="1">return fmt.Errorf("%s: %s", header, err.Error())</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
