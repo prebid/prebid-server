@@ -68,8 +68,8 @@ func (parser parserGDPR) getValue(field string, request *openrtb2.BidRequest) (g
 		switch {
 		case field == "consent_requirement" && request.Regs != nil:
 			gdpr = "true"
-			if ptrInt8ToBool(request.Regs.GDPR) {
-				gdpr = "true"
+			if !ptrInt8ToBool(request.Regs.GDPR) {
+				gdpr = "false"
 			}
 		case field == "consent_string" && request.User != nil:
 			gdpr = request.User.Consent
