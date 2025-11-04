@@ -145,7 +145,6 @@ func initMsqParams(request *openrtb2.BidRequest) (msqParams msqParameters) {
 	default:
 		msqParams.PrebidVer = "n/a"
 	}
-
 	return
 }
 

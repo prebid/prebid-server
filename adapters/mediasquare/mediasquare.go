@@ -87,7 +87,6 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *msqParame
 	} else {
 		err = errorWriter("<makeRequest> jsonutil.Marshal", err, false)
 	}
-
 	return
 }
 

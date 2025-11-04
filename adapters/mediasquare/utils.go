@@ -87,9 +87,9 @@ func ptrInt8ToBool(i *int8) bool {
 }
 
 // errorWriter: Returns a Custom error message.
-func errorWriter(referer string, err error, isEmpty bool) error {
+func errorWriter(header string, err error, isEmpty bool) error {
 	if isEmpty {
-		return fmt.Errorf("%s: is empty.", referer)
+		return fmt.Errorf("%s: is empty.", header)
 	}
-	return fmt.Errorf("%s: %s", referer, err.Error())
+	return fmt.Errorf("%s: %s", header, err.Error())
 }

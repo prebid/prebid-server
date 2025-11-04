@@ -133,7 +133,9 @@
     "regs": {
       "gdpr": 1,
       "ext": {
-        "dsa": "mediasquare-test"
+        "dsa": {
+          "msq_test": 42
+        }
       }
     },
     "user": {
@@ -242,7 +244,9 @@
             "consent_required": true,
             "consent_string": "there-is-a-real-cs-in-it"
           },
-          "dsa": "mediasquare-test",
+          "dsa": {
+            "msq_test": 42
+          },
           "pbjs": "prebid-test-version",
           "tech": {
             "device": {

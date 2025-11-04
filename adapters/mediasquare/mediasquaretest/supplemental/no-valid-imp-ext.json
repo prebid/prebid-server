@@ -51,7 +51,6 @@
           "codes": null,
           "gdpr": { "consent_required": false, "consent_string": "" },
           "type": "pbs",
-          "dsa": "",
           "pbjs": "prebid-test-version",
           "tech": { "device": null, "app": null, "site": null },
           "test": true,

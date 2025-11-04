@@ -102,7 +102,6 @@
             "consent_required": true
           },
           "type": "pbs",
-          "dsa": "",
           "pbjs": "prebid-test-version",
           "tech": {
             "device": {
