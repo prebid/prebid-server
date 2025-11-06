@@ -4,12 +4,14 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"go/format"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"text/template"
@@ -21,12 +23,16 @@ var (
 	outName  = "builder.go"
 )
 
+//go:embed builder.tmpl
+var builderTmpl string
+
 type Import struct {
 	Module string
 }
 
 type Data struct {
 	Modules []string
+	Imports []string
 }
 
 func TitleASCII(s string) string {
@@ -40,26 +46,34 @@ func TitleASCII(s string) string {
 	return string(rs)
 }
 
+func analyticsRoot() string {
+	_, thisFile, _, _ := runtime.Caller(0)
+	return filepath.Dir(filepath.Dir(thisFile))
+}
+
 func main() {
+	root := analyticsRoot()
 	modSet := make(map[string]struct{})
 
-	err := filepath.WalkDir("./", func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() && (path == "./generator" || path == "generator") {
-			return fs.SkipDir
+		rel := strings.TrimPrefix(filepath.ToSlash(path), filepath.ToSlash(root)+"/")
+		if rel == "generator" || strings.HasPrefix(rel, "generator/") {
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
 		}
 		if d.IsDir() {
 			return nil
 		}
 
-		slashPath := filepath.ToSlash(strings.TrimPrefix(path, "./"))
-		if !r.MatchString(slashPath) {
+		if !r.MatchString(rel) {
 			return nil
 		}
-
-		match := r.FindStringSubmatch(slashPath)
+		match := r.FindStringSubmatch(rel)
 		mod := match[2]
 		modSet[mod] = struct{}{}
 		return nil
@@ -74,11 +88,14 @@ func main() {
 	}
 	sort.Strings(modules)
 
-	data := Data{Modules: modules}
+	data := Data{
+		Modules: modules,
+		Imports: modules,
+	}
 
 	t, err := template.New(tmplName).
 		Funcs(template.FuncMap{"Title": TitleASCII}).
-		ParseFiles(filepath.Join("generator", tmplName))
+		Parse(builderTmpl)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse builder template: %s", err))
 	}
@@ -93,9 +110,10 @@ func main() {
 		panic(fmt.Errorf("failed to format generated code: %w\n---\n%s", err, buf.String()))
 	}
 
-	if err := os.WriteFile(outName, formatted, 0o644); err != nil {
-		panic(fmt.Sprintf("failed to write %s: %s", outName, err))
+	outPath := filepath.Join(root, "build", outName)
+	if err := os.WriteFile(outPath, formatted, 0o644); err != nil {
+		panic(fmt.Sprintf("failed to write %s: %s", outPath, err))
 	}
 
-	fmt.Printf("%s file successfully generated\n", outName)
+	fmt.Printf("%s file successfully generated at %s\n", outName, outPath)
 }

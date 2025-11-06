@@ -15,7 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics/clients"
 )
 
-//go:generate go run ./generator/buildergen.go
+//go:generate go run ../generator/buildergen.go
 
 // NewBuilder returns a new analytics module builder.
 func NewBuilder() AnalyticsModuleBuilders {
