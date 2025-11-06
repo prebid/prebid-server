@@ -1,4 +1,4 @@
-package filelogger
+package file
 
 import (
 	"bytes"

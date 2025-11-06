@@ -1,4 +1,4 @@
-package filelogger
+package file
 
 import (
 	"encoding/json"
@@ -12,7 +12,6 @@ import (
 // Config is the minimal configuration for the file logger analytics module.
 // Empty Filename means the module is disabled.
 type Config struct {
-	Enabled  bool   `json:"enabled"`
 	Filename string `json:"filename"`
 }
 
@@ -30,8 +29,5 @@ func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, er
 		return nil, nil
 	}
 
-	if !c.Enabled {
-		return nil, nil
-	}
 	return NewFileLogger(c.Filename)
 }
