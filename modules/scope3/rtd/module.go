@@ -85,11 +85,6 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 				return sha256.New()
 			},
 		},
-		asyncRequestPool: &sync.Pool{
-			New: func() any {
-				return &AsyncRequest{}
-			},
-		},
 	}, nil
 }
 
@@ -186,8 +181,6 @@ type Module struct {
 	cache      *freecache.Cache
 	// sha256Pool provides a pool of reusable SHA-256 hash instances for performance
 	sha256Pool *sync.Pool
-	// asyncRequestPool provides a pool of reusable AsyncRequest objects for performance
-	asyncRequestPool *sync.Pool
 }
 
 // HandleEntrypointHook initializes the module context with a sync.Map for storing segments
@@ -199,7 +192,7 @@ func (m *Module) HandleEntrypointHook(
 	// Initialize module context with sync.Map for thread-safe segment storage
 	return hookstage.HookResult[hookstage.EntrypointPayload]{
 		ModuleContext: hookstage.ModuleContext{
-			asyncRequestKey: m.getAsyncRequest(payload.Request),
+			asyncRequestKey: m.NewAsyncRequest(payload.Request),
 		},
 	}, nil
 }
@@ -278,7 +271,6 @@ func (m *Module) HandleAuctionResponseHook(
 	// Ensure we cancel the request context always to free resources
 	defer func() {
 		asyncRequest.Cancel()
-		m.putAsyncRequest(asyncRequest)
 	}()
 
 	// Check if a request was made

@@ -74,12 +74,7 @@ func TestBuilderInvalidConfig(t *testing.T) {
 }
 
 func TestHandleEntrypointHook(t *testing.T) {
-	module := &Module{
-		asyncRequestPool: &sync.Pool{
-			New: func() any {
-				return &AsyncRequest{}
-			},
-		}}
+	module := &Module{}
 	ctx := context.Background()
 	miCtx := hookstage.ModuleInvocationContext{}
 	payload := getTestEntrypointPayload(t)
@@ -91,13 +86,7 @@ func TestHandleEntrypointHook(t *testing.T) {
 }
 
 func TestHandleAuctionResponseHook_NoSegments(t *testing.T) {
-	module := &Module{
-		asyncRequestPool: &sync.Pool{
-			New: func() any {
-				return &AsyncRequest{}
-			},
-		},
-	}
+	module := &Module{}
 	ctx := context.Background()
 	miCtx := hookstage.ModuleInvocationContext{
 		ModuleContext: hookstage.ModuleContext{
