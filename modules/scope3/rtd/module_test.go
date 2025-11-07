@@ -40,7 +40,7 @@ func getTestEntrypointPayload(t *testing.T) hookstage.EntrypointPayload {
 func TestBuilder(t *testing.T) {
 	config := json.RawMessage(`{
 		"enabled": true,
-		"endpoint": "https://rtdp.scope3.com/prebid/prebid",
+		"endpoint": "` + DefaultScope3RTDURL + `",
 		"auth_key": "test-key",
 		"timeout_ms": 1000,
 		"cache_ttl_seconds": 60,
@@ -55,7 +55,7 @@ func TestBuilder(t *testing.T) {
 	assert.IsType(t, &Module{}, module)
 
 	m := module.(*Module)
-	assert.Equal(t, "https://rtdp.scope3.com/prebid/prebid", m.cfg.Endpoint)
+	assert.Equal(t, DefaultScope3RTDURL, m.cfg.Endpoint)
 	assert.Equal(t, "test-key", m.cfg.AuthKey)
 	assert.Equal(t, 1000, m.cfg.Timeout)
 	assert.Equal(t, 60, m.cfg.CacheTTL)
@@ -112,7 +112,7 @@ func TestBuilderDefaults(t *testing.T) {
 
 	assert.NoError(t, err)
 	m := module.(*Module)
-	assert.Equal(t, "https://rtdp.scope3.com/prebid/prebid", m.cfg.Endpoint)
+	assert.Equal(t, DefaultScope3RTDURL, m.cfg.Endpoint)
 	assert.Equal(t, 1000, m.cfg.Timeout)
 	assert.Equal(t, 60, m.cfg.CacheTTL)
 	assert.Equal(t, false, m.cfg.AddToTargeting)

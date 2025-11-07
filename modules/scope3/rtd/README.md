@@ -98,7 +98,7 @@ hooks:
 ## Environment Variables
 - `SCOPE3_API_KEY`: Your Scope3 API key for authentication
 
-## Privacy Protection {#privacy-protection}
+## Privacy Protection
 
 This module includes comprehensive privacy masking to protect user data while preserving targeting capabilities. When masking is enabled, sensitive user information is removed or anonymized before being sent to the Scope3 API.
 

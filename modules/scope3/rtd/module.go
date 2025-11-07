@@ -37,7 +37,7 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 	}
 
 	if cfg.Endpoint == "" {
-		cfg.Endpoint = "https://rtdp.scope3.com/prebid/prebid"
+		cfg.Endpoint = DefaultScope3RTDURL
 	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 1000 // 1000ms default
@@ -93,6 +93,8 @@ const (
 	asyncRequestKey = "scope3.AsyncRequest"
 	scope3MacroKey  = "scope3_macro"
 )
+
+const DefaultScope3RTDURL = "https://rtdp.scope3.com/prebid/prebid"
 
 var (
 	// Declare hooks
@@ -269,9 +271,7 @@ func (m *Module) HandleAuctionResponseHook(
 		return ret, nil
 	}
 	// Ensure we cancel the request context always to free resources
-	defer func() {
-		asyncRequest.Cancel()
-	}()
+	defer asyncRequest.Cancel()
 
 	// Check if a request was made
 	if asyncRequest.Done == nil {
@@ -336,6 +336,9 @@ func (m *Module) HandleAuctionResponseHook(
 				for _, segment := range segments {
 					if strings.HasPrefix(segment, scope3MacroKey) {
 						macroKeyVal := strings.Split(segment, ";")
+						if len(macroKeyVal) != 2 {
+							continue
+						}
 						targetingMap[macroKeyVal[0]] = macroKeyVal[1]
 					} else {
 						targetingMap[segment] = "true"
