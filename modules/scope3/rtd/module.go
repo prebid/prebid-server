@@ -90,8 +90,9 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 
 const (
 	// keys for miCtx
-	asyncRequestKey = "scope3.AsyncRequest"
-	scope3MacroKey  = "scope3_macro"
+	asyncRequestKey      = "scope3.AsyncRequest"
+	scope3MacroKey       = "scope3_macro"
+	scope3MacroSeparator = ";"
 )
 
 const DefaultScope3RTDURL = "https://rtdp.scope3.com/prebid/prebid"
@@ -334,8 +335,8 @@ func (m *Module) HandleAuctionResponseHook(
 				}
 				// Add each segment as individual targeting key
 				for _, segment := range segments {
-					if strings.HasPrefix(segment, scope3MacroKey) {
-						macroKeyVal := strings.Split(segment, ";")
+					if strings.HasPrefix(segment, fmt.Sprintf("%s%s", scope3MacroKey, scope3MacroSeparator)) {
+						macroKeyVal := strings.Split(segment, scope3MacroSeparator)
 						if len(macroKeyVal) != 2 {
 							continue
 						}
