@@ -58,6 +58,11 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 				"url": "http://localhost:8000/api/domains/floors_test/",
 			}
 			floors["enabled"] = true
+			floors["enforcement"] = map[string]interface{}{
+				"enforcerate": 100,  // 0-100, where 100 = always enforce
+				"enforcepbs":  true, // enforce in PBS
+				"floordeals":  true, // enforce for deals too
+			}
 
 			fmt.Println(floors)
 
