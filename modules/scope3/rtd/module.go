@@ -335,7 +335,7 @@ func (m *Module) HandleAuctionResponseHook(
 				}
 				// Add each segment as individual targeting key
 				for _, segment := range segments {
-					if strings.HasPrefix(segment, fmt.Sprintf("%s%s", scope3MacroKey, scope3MacroSeparator)) {
+					if strings.HasPrefix(segment, scope3MacroKey+scope3MacroSeparator) {
 						macroKeyVal := strings.Split(segment, scope3MacroSeparator)
 						if len(macroKeyVal) != 2 {
 							continue
