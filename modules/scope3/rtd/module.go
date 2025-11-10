@@ -95,6 +95,8 @@ const (
 	scope3MacroSeparator = ";"
 )
 
+var scope3MacroKeyPlusSeparator = scope3MacroKey + scope3MacroSeparator
+
 const DefaultScope3RTDURL = "https://rtdp.scope3.com/prebid/prebid"
 
 var (
@@ -335,7 +337,7 @@ func (m *Module) HandleAuctionResponseHook(
 				}
 				// Add each segment as individual targeting key
 				for _, segment := range segments {
-					if strings.HasPrefix(segment, scope3MacroKey+scope3MacroSeparator) {
+					if strings.HasPrefix(segment, scope3MacroKeyPlusSeparator) {
 						macroKeyVal := strings.Split(segment, scope3MacroSeparator)
 						if len(macroKeyVal) != 2 {
 							continue
@@ -439,7 +441,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	// Convert to slice
 	segments := slices.AppendSeq(make([]string, 0, len(segmentMap)), maps.Keys(segmentMap))
 	if macro != "" {
-		segments = append(segments, fmt.Sprintf("%s;%s", scope3MacroKey, macro))
+		segments = append(segments, scope3MacroKeyPlusSeparator+macro)
 	}
 
 	// Cache the result

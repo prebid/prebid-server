@@ -198,9 +198,7 @@ func TestScope3APIIntegration(t *testing.T) {
 	segments, err := module.fetchScope3Segments(ctx, bidRequest)
 	require.NoError(t, err)
 	assert.Len(t, segments, 3)
-	assert.Contains(t, segments, "gmp_eligible")
-	assert.Contains(t, segments, "gmp_plus_eligible")
-	assert.Contains(t, segments, "scope3_macro;test-macro")
+	assert.ElementsMatch(t, segments, []string{"gmp_eligible", "gmp_plus_eligible", "scope3_macro;test-macro"})
 	assert.NotContains(t, segments, "triplelift.com") // Should not include destination
 }
 
