@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "BeOp Adapter Params",
+  "description": "A schema which validates params accepted by the BeOp adapter",
+  "type": "object",
+  "properties": {
+    "pid": {
+      "type": "string",
+      "description": "Beop publisher ID"
+    },
+    "nid": {
+      "type": "string",
+      "description": "Beop Network ID"
+    }
+  },
+  "oneOf": [
+    {"required": ["pid"]},
+    {"required": ["nid"]}
+  ]
+}
