@@ -1,0 +1,21 @@
+#endpoint: "https://prebid-server.agrvt.com"
+endpoint: "https://durbuy.ngrok.io/openrtb2/auction"
+maintainer:
+  email: produit@alliancegravity.com
+gvlVendorID: 501
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
