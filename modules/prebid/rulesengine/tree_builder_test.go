@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/stretchr/testify/assert"
@@ -84,13 +84,13 @@ func TestBuildTree(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			builder := &treeBuilder[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+			builder := &treeBuilder[hookstage.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{
 				Config:            tt.modelGroup,
 				SchemaFuncFactory: rules.NewRequestSchemaFunction,
 				ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
 			}
-			tree := rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
-				Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{},
+			tree := rules.Tree[hookstage.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{
+				Root: &rules.Node[hookstage.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{},
 			}
 			err := builder.Build(&tree)
 			if tt.expectErr {
@@ -108,13 +108,13 @@ func TestBuildTreeFullConfigNoErrors(t *testing.T) {
 	err := jsonutil.Unmarshal(GetFullConf(), &modelGroup)
 	assert.NoError(t, err)
 
-	builder := &treeBuilder[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+	builder := &treeBuilder[hookstage.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{
 		Config:            modelGroup,
 		SchemaFuncFactory: rules.NewRequestSchemaFunction,
 		ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
 	}
-	tree := rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
-		Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{},
+	tree := rules.Tree[hookstage.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{
+		Root: &rules.Node[hookstage.ProcessedAuctionRequestPayload, ProcessedAuctionHookResult]{},
 	}
 
 	err = builder.Build(&tree)
