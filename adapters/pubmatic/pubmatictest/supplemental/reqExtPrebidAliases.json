@@ -45,6 +45,9 @@
     },
     "ext": {
       "prebid": {
+        "aliases": {
+          "pubmatic-alias": "pubmatic"
+        },
         "bidderparams": {
           "wrapper": {
             "profile": 1234,
@@ -99,11 +102,11 @@
             "wrapper": {
               "profile": 1234,
               "version": 2,
-              "biddercode":"pubmatic"
+              "biddercode": "pubmatic-alias"
             }
           }
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -165,7 +168,7 @@
               "deal_channel": 1
             }
           },
-           "type": "banner"
+          "type": "banner"
         }
       ]
     }
