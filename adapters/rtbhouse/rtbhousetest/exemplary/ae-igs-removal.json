@@ -12,27 +12,18 @@
             }
           ]
         },
-        "bidfloor": 1.00,
-        "bidfloorcur": "EUR",
         "ext": {
+          "ae": 1,
+          "igs": {
+            "biddable": 1
+          },
           "bidder": {
             "publisherId": "12345"
-          }
-        }
-      }
-    ],
-    "ext": {
-      "prebid": {
-        "currency": {
-          "rates": {
-            "EUR": {
-              "USD": 0.05
-            }
           },
-          "usepbsrates": false
+          "someOtherField": "should-remain"
         }
       }
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -53,12 +44,11 @@
                   }
                 ]
               },
-              "bidfloor": 0.05,
-              "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
                   "publisherId": "12345"
-                }
+                },
+                "someOtherField": "should-remain"
               },
               "id": "test-imp-id"
             }
@@ -71,21 +61,9 @@
                 }
               }
             }
-          },
-          "ext": {
-            "prebid": {
-              "currency": {
-                "rates": {
-                  "EUR": {
-                    "USD": 0.05
-                  }
-                },
-                "usepbsrates": false
-              }
-            }
           }
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

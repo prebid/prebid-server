@@ -1,6 +1,10 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "app": {
+      "bundle": "com.example.app",
+      "name": "Test App"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -12,27 +16,13 @@
             }
           ]
         },
-        "bidfloor": 1.00,
-        "bidfloorcur": "EUR",
         "ext": {
           "bidder": {
-            "publisherId": "12345"
+            "publisherId": "app-publisher-123"
           }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "currency": {
-          "rates": {
-            "EUR": {
-              "USD": 0.05
-            }
-          },
-          "usepbsrates": false
-        }
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -43,6 +33,17 @@
           "cur": [
             "USD"
           ],
+          "app": {
+            "bundle": "com.example.app",
+            "name": "Test App",
+            "publisher": {
+              "ext": {
+                "prebid": {
+                  "publisherId": "app-publisher-123"
+                }
+              }
+            }
+          },
           "imp": [
             {
               "banner": {
@@ -53,39 +54,16 @@
                   }
                 ]
               },
-              "bidfloor": 0.05,
-              "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
-                  "publisherId": "12345"
+                  "publisherId": "app-publisher-123"
                 }
               },
               "id": "test-imp-id"
             }
-          ],
-          "site": {
-            "publisher": {
-              "ext": {
-                "prebid": {
-                  "publisherId": "12345"
-                }
-              }
-            }
-          },
-          "ext": {
-            "prebid": {
-              "currency": {
-                "rates": {
-                  "EUR": {
-                    "USD": 0.05
-                  }
-                },
-                "usepbsrates": false
-              }
-            }
-          }
+          ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
