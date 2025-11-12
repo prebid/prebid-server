@@ -32,6 +32,7 @@ type BidderInfo struct {
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" mapstructure:"capabilities"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug" mapstructure:"debug"`
+	Geoscope                []string          `yaml:"geoscope" mapstructure:"geoscope"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
 
 	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
@@ -477,6 +478,9 @@ func validateInfo(bidder BidderInfo, infos BidderInfos, bidderName string) error
 	if err := validateMaintainer(bidder.Maintainer, bidderName); err != nil {
 		return err
 	}
+	if err := validateGeoscope(bidder.Geoscope, bidderName); err != nil {
+		return err
+	}
 	if err := validateCapabilities(bidder.Capabilities, bidderName); err != nil {
 		return err
 	}
@@ -587,6 +591,38 @@ func validatePlatformInfo(info *PlatformInfo) error {
 	for index, mediaType := range info.MediaTypes {
 		if mediaType != "banner" && mediaType != "video" && mediaType != "native" && mediaType != "audio" {
 			return fmt.Errorf("unrecognized media type at index %d: %s", index, mediaType)
+		}
+	}
+
+	return nil
+}
+
+func validateGeoscope(geoscope []string, bidderName string) error {
+	// ISO 3166-1 alpha-3 country codes are uppercase 3-letter codes
+	for i, code := range geoscope {
+		code = strings.ToUpper(strings.TrimSpace(code))
+
+		if code == "GLOBAL" || code == "EEA" {
+			continue
+		}
+
+		// Handle exclusion pattern with "!" prefix
+		exclusion := ""
+		if strings.HasPrefix(code, "!") {
+			exclusion = "!"
+			code = code[1:]
+		}
+
+		if len(code) != 3 {
+			return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must be a 3-letter ISO 3166-1 alpha-3 country code",
+				i, code, exclusion, bidderName)
+		}
+
+		for _, char := range code {
+			if char < 'A' || char > 'Z' {
+				return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must contain only uppercase letters A-Z",
+					i, code, exclusion, bidderName)
+			}
 		}
 	}
 

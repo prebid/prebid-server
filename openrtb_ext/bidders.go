@@ -87,6 +87,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBluesea,
 	BidderBmtm,
 	BidderBoldwin,
+	BidderBoldwinRapid,
 	BidderBrave,
 	BidderBWX,
 	BidderCadentApertureMX,
@@ -100,6 +101,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderConnatix,
 	BidderConnectAd,
 	BidderConsumable,
+	BidderContxtful,
 	BidderConversant,
 	BidderCopper6ssp,
 	BidderCpmstar,
@@ -131,6 +133,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGamma,
 	BidderGamoshi,
 	BidderGlobalsun,
+	BidderGoldbach,
 	BidderGothamads,
 	BidderGrid,
 	BidderGumGum,
@@ -182,6 +185,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMobileFuse,
 	BidderMobkoi,
 	BidderMotorik,
+	BidderNativery,
 	BidderNativo,
 	BidderNextMillennium,
 	BidderNexx360,
@@ -221,6 +225,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSaLunaMedia,
 	BidderScreencore,
 	BidderSharethrough,
+	BidderShowheroes,
 	BidderSilverMob,
 	BidderSilverPush,
 	BidderSmaato,
@@ -458,6 +463,7 @@ const (
 	BidderBluesea           BidderName = "bluesea"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
+	BidderBoldwinRapid      BidderName = "boldwin_rapid"
 	BidderBrave             BidderName = "brave"
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
@@ -471,6 +477,7 @@ const (
 	BidderConnatix          BidderName = "connatix"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
+	BidderContxtful         BidderName = "contxtful"
 	BidderConversant        BidderName = "conversant"
 	BidderCopper6ssp        BidderName = "copper6ssp"
 	BidderCpmstar           BidderName = "cpmstar"
@@ -502,6 +509,7 @@ const (
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
+	BidderGoldbach          BidderName = "goldbach"
 	BidderGothamads         BidderName = "gothamads"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
@@ -553,6 +561,7 @@ const (
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMobkoi            BidderName = "mobkoi"
 	BidderMotorik           BidderName = "motorik"
+	BidderNativery          BidderName = "nativery"
 	BidderNativo            BidderName = "nativo"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNexx360           BidderName = "nexx360"
@@ -592,6 +601,7 @@ const (
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderScreencore        BidderName = "screencore"
 	BidderSharethrough      BidderName = "sharethrough"
+	BidderShowheroes        BidderName = "showheroes"
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSilverPush        BidderName = "silverpush"
 	BidderSmaato            BidderName = "smaato"
