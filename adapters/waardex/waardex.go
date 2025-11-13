@@ -180,17 +180,17 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp
     bidRequest.Imp = imps
     if bidRequest.Site != nil {
         // Need to copy Site as Request is a shallow copy
-        siteCopy := *bidRequest.Site
-		bidRequest.Site = &siteCopy
-		bidRequest.Site.Publisher = nil
-	}
-	if bidRequest.App != nil {
-		// Need to copy App as Request is a shallow copy
-		appCopy := *bidRequest.App
-		bidRequest.App = &appCopy
-		bidRequest.App.Publisher = nil
-	}
-	return &bidRequest
+        site := *bidRequest.Site
+        site.Publisher = nil
+        bidRequest.Site = &site
+    }
+    if bidRequest.App != nil {
+        // Need to copy App as Request is a shallow copy
+        app := *bidRequest.App
+        app.Publisher = nil
+        bidRequest.App = &app
+    }
+    return &bidRequest
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
