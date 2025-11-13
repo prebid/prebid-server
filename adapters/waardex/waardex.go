@@ -26,11 +26,11 @@ func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *ada
     if len(request.Imp) == 0 {
         return nil, []error{newBadInputError("No impression in the bid request")}
     }
-	imps, impExts, err := getImpressionsInfo(request.Imp)
-	if len(imps) == 0 {
-		return nil, err
-	}
-	errs = append(errs, err...)
+    imps, impExts, impErrs := getImpressionsInfo(request.Imp)
+    errs = append(errs, impErrs...)
+    if len(imps) == 0 {
+        return nil, errs
+    }
 
 	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
 	if len(dispErrors) > 0 {
