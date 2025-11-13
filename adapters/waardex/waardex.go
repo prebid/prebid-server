@@ -22,11 +22,10 @@ type waardexAdapter struct {
 
 // MakeRequests prepares request information for prebid-server core
 func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
-	if len(request.Imp) == 0 {
-		errs = append(errs, newBadInputError("No impression in the bid request"))
-		return nil, errs
-	}
+    var errs []error
+    if len(request.Imp) == 0 {
+        return nil, []error{newBadInputError("No impression in the bid request")}
+    }
 	imps, impExts, err := getImpressionsInfo(request.Imp)
 	if len(imps) == 0 {
 		return nil, err
