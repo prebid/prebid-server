@@ -316,6 +316,10 @@ func getReferer(request *openrtb2.BidRequest) string {
 		return ""
 	}
 
+	if request.Site.Page != "" {
+		return request.Site.Page
+	}
+
 	return request.Site.Domain
 }
 

@@ -22,6 +22,7 @@ type EndpointTemplateParams struct {
 	SspID       string
 	SeatID      string
 	TokenID     string
+	PlacementID string
 	NetworkId   string
 	SiteDomain  string
 	AppDomain   string

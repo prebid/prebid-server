@@ -285,7 +285,7 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{}}}`),
 				},
 			},
-			expectedReqExt: extRequestAdServer{},
+			expectedReqExt: extRequestAdServer{Wrapper: &pubmaticWrapperExt{ProfileID: 0, VersionID: 0, BidderCode: "pubmatic"}},
 			wantErr:        false,
 		},
 		{
@@ -296,7 +296,7 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 				},
 			},
 			expectedReqExt: extRequestAdServer{
-				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456, BidderCode: "pubmatic"},
 			},
 			wantErr: false,
 		},
@@ -317,7 +317,7 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 				},
 			},
 			expectedReqExt: extRequestAdServer{
-				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456, BidderCode: "pubmatic"},
 				Acat:    []string{"drg", "dlu", "ssr"},
 			},
 			wantErr: false,
@@ -330,7 +330,7 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 				},
 			},
 			expectedReqExt: extRequestAdServer{
-				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456, BidderCode: "pubmatic"},
 			},
 			wantErr: true,
 		},
@@ -343,7 +343,31 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			},
 			expectedReqExt: extRequestAdServer{
 				Marketplace: &marketplaceReqExt{AllowedBidders: []string{"pubmatic", "groupm"}},
-				Wrapper:     &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				Wrapper:     &pubmaticWrapperExt{ProfileID: 123, VersionID: 456, BidderCode: "pubmatic"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid_request_ext_with_alias",
+			args: args{
+				request: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"pubmatic-1":"pubmatic"},"bidderparams":{"wrapper":{"profile":123,"version":456}}}}`),
+				},
+			},
+			expectedReqExt: extRequestAdServer{
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456, BidderCode: "pubmatic-1"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Valid_request_ext_with_empty_alias",
+			args: args{
+				request: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{},"bidderparams":{"wrapper":{"profile":123,"version":456}}}}`),
+				},
+			},
+			expectedReqExt: extRequestAdServer{
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456, BidderCode: "pubmatic"},
 			},
 			wantErr: false,
 		},

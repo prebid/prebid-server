@@ -2124,10 +2124,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	var gdprDefaultValue string
+	var gdprSignal gdpr.Signal
 	if spec.AssumeGDPRApplies {
 		gdprDefaultValue = "1"
+		gdprSignal = gdpr.SignalYes
 	} else {
 		gdprDefaultValue = "0"
+		gdprSignal = gdpr.SignalNo
 	}
 
 	privacyConfig := config.Privacy{
@@ -2138,13 +2141,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enforce: spec.EnforceLMT,
 		},
 		GDPR: config.GDPR{
-			Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
 			EEACountries:    eeac,
 			EEACountriesMap: eeacMap,
-			TCF2: config.TCF2{
-				Enabled: spec.GDPREnabled,
-			},
 		},
 	}
 	bidIdGenerator := &fakeBidIDGenerator{}
@@ -2204,6 +2203,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		HookExecutor:  &hookexecution.EmptyHookExecutor{},
 		TCF2Config:    gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, config.AccountGDPR{}),
 		Activities:    activityControl,
+		GDPRSignal:    gdprSignal,
+		GDPREnforced:  spec.GDPREnforced,
 	}
 
 	if spec.MultiBid != nil {
@@ -2435,11 +2436,6 @@ func newExchangeForTests(t *testing.T, filename string, aliases map[string]strin
 		bidderToSyncerKey[string(bidderName)] = string(bidderName)
 	}
 
-	gdprDefaultValue := gdpr.SignalYes
-	if privacyConfig.GDPR.DefaultValue == "0" {
-		gdprDefaultValue = gdpr.SignalNo
-	}
-
 	var hostSChainNode *openrtb2.SupplyChainNode
 	if exSpec.HostSChainFlag {
 		hostSChainNode = &openrtb2.SupplyChainNode{
@@ -2470,7 +2466,6 @@ func newExchangeForTests(t *testing.T, filename string, aliases map[string]strin
 		cache:                    &wellBehavedCache{},
 		cacheTime:                0,
 		currencyConverter:        currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0)),
-		gdprDefaultValue:         gdprDefaultValue,
 		gdprPermsBuilder:         gdprPermsBuilder,
 		privacyConfig:            privacyConfig,
 		categoriesFetcher:        categoriesFetcher,
@@ -5501,7 +5496,7 @@ func (ms *MockSigner) Sign(destinationURL string, body []byte) (string, error) {
 }
 
 type exchangeSpec struct {
-	GDPREnabled                bool                   `json:"gdpr_enabled"`
+	GDPREnforced               bool                   `json:"gdpr_enforced"`
 	FloorsEnabled              bool                   `json:"floors_enabled"`
 	IncomingRequest            exchangeRequest        `json:"incomingRequest"`
 	OutgoingRequests           map[string]*bidderSpec `json:"outgoingRequests"`
@@ -6526,61 +6521,6 @@ func TestGetBidderPreferredMediaType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := getBidderPreferredMediaTypeMap(tt.prebid, tt.account, tt.liveAdapters, tt.singleFormatBidders)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestIsEEACountry(t *testing.T) {
-	eeaCountries := []string{"FRA", "DEU", "ITA", "ESP", "NLD"}
-
-	tests := []struct {
-		name     string
-		country  string
-		eeaList  []string
-		expected bool
-	}{
-		{
-			name:     "Country_in_EEA",
-			country:  "FRA",
-			eeaList:  eeaCountries,
-			expected: true,
-		},
-		{
-			name:     "Country_in_EEA_lowercase",
-			country:  "fra",
-			eeaList:  eeaCountries,
-			expected: true,
-		},
-		{
-			name:     "Country_not_in_EEA",
-			country:  "USA",
-			eeaList:  eeaCountries,
-			expected: false,
-		},
-		{
-			name:     "Empty_country_string",
-			country:  "",
-			eeaList:  eeaCountries,
-			expected: false,
-		},
-		{
-			name:     "EEA_list_is_empty",
-			country:  "FRA",
-			eeaList:  []string{},
-			expected: false,
-		},
-		{
-			name:     "EEA_list_is_nil",
-			country:  "FRA",
-			eeaList:  nil,
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isEEACountry(tt.country, tt.eeaList)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

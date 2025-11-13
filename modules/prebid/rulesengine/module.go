@@ -16,7 +16,7 @@ import (
 // Builder configures the rules engine module initiating an in-memory cache and kicking
 // off a go routine that builds tree structures that represent rule sets optimized for finding
 // a rule to applies for a given request.
-func Builder(cfg json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
+func Builder(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error) {
 	schemaValidator, err := config.CreateSchemaValidator(config.RulesEngineSchemaFilePath)
 	if err != nil {
 		return nil, err
@@ -25,6 +25,7 @@ func Builder(cfg json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) 
 	tm := treeManager{
 		done:            make(chan struct{}),
 		requests:        make(chan buildInstruction),
+		geoscopes:       deps.Geoscope,
 		schemaValidator: schemaValidator,
 		monitor:         &treeManagerLogger{},
 	}
@@ -95,9 +96,7 @@ func (m Module) HandleProcessedAuctionHook(
 		}, nil
 	}
 
-	ruleSets := co.ruleSetsForProcessedAuctionRequestStage
-
-	return handleProcessedAuctionHook(ruleSets, payload)
+	return handleProcessedAuctionHook(co.ruleSetsForProcessedAuctionRequestStage, payload)
 }
 
 // Shutdown signals the module to stop processing and waits for the tree manager to finish

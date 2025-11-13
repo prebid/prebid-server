@@ -93,275 +93,330 @@ func TestValidateConfig(t *testing.T) {
 	validator, err := CreateSchemaValidator(RulesEngineSchemaFile)
 	assert.NoError(t, err, fmt.Sprintf("could not create schema validator using file %s", RulesEngineSchemaFile))
 
-	type testInput struct {
-		inConfig  json.RawMessage
-		outErrMsg string
-	}
-
-	testGroups := []struct {
-		desc  string
-		tests []testInput
+	tests := []struct {
+		name          string
+		config        json.RawMessage
+		expectedError string
 	}{
 		{
-			"nil rules engine config",
-			[]testInput{{nil, "EOF"}},
+			name:          "nil-config",
+			config:        nil,
+			expectedError: "EOF",
 		},
 		{
-			"malformed rules engine config",
-			[]testInput{{json.RawMessage(`malformed`), "invalid character 'm' looking for beginning of value"}},
+			name:          "invalid-malformed-config",
+			config:        json.RawMessage(`malformed`),
+			expectedError: "invalid character 'm' looking for beginning of value",
 		},
 		{
-			"Well formed config fails schema validation",
-			[]testInput{
-				{ //0
-					json.RawMessage(`{}`),
-					"[(root): enabled is required] [(root): rulesets is required] ",
-				},
-				{ //1
-					json.RawMessage(`{"enabled": true}`),
-					"[(root): rulesets is required] ",
-				},
-				{ //2
-					json.RawMessage(`{"enabled": true, "rulesets": []}`),
-					"[rulesets: Array must have at least 1 items] ",
-				},
-				{ //3
-					json.RawMessage(`{"enabled": true, "rulesets": [{}]}`),
-					"[rulesets.0: stage is required] [rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
-				},
-				{ //4
-					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"a"}]}`),
-					"[rulesets.0: name is required] [rulesets.0: modelgroups is required] [rulesets.0.stage: rulesets.0.stage must be one of the following: \"entrypoint\", \"raw_auction_request\", \"processed_auction_request\", \"bidder_request\", \"raw_bidder_response\", \"all_processed_bid_responses\", \"auction_response\"] ",
-				},
-				{ //5
-					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint"}]}`),
-					"[rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
-				},
-				{ //6
-					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n"}]}`),
-					"[rulesets.0: modelgroups is required] ",
-				},
-				{ //7
-					json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n","modelgroups":[]}]}`),
-					"[rulesets.0.modelgroups: Array must have at least 1 items] ",
-				},
-				{ //8
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "n",
-                          "modelgroups": [
-                            {
-                              "weight": 101,
-							  "schema": [{"function":"channel"}],
-                              "rules": [
-							    {
-								  "conditions": ["cond"],
-								  "results": [{"function": "excludeBidders"}]
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"[rulesets.0.modelgroups.0.weight: Must be less than or equal to 100] ",
-				},
-				{ //9
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "n",
-                          "modelgroups": [
-                            {
-                              "weight": -1,
-							  "schema": [{"function":"channel"}],
-                              "rules": [
-							    {
-								  "conditions": ["cond"],
-								  "results": [{"function": "excludeBidders"}]
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"[rulesets.0.modelgroups.0.weight: Must be greater than or equal to 1] ",
-				},
-				{ //10
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "n",
-                          "modelgroups": [
-                            {
-                              "schema": [],
-                              "rules": [
-							    {
-								  "conditions": ["cond"],
-								  "results": [{"function": "excludeBidders"}]
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"",
-				},
-				{ //11
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "n",
-                          "modelgroups": [
-                            {
-							  "schema": [{"function":"channel"}],
-                              "rules": []
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"",
-				},
-				{ //12
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "someName",
-                          "modelgroups": [
-                            {
-							  "schema": [{"function":"foo"}],
-                              "rules": [
-							    {
-								  "conditions": ["cond"],
-								  "results": [{"function": "excludeBidders"}]
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"[rulesets.0.modelgroups.0.schema.0.function: rulesets.0.modelgroups.0.schema.0.function must be one of the following: \"channel\", \"dataCenter\", \"dataCenterIn\", \"deviceCountry\", \"deviceCountryIn\", \"eidAvailable\", \"eidIn\", \"fpdAvailable\", \"gppSidAvailable\", \"gppSidIn\", \"percent\", \"tcfInScope\", \"userFpdAvailable\"] ",
-				},
-				{ //13
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "someName",
-                          "modelgroups": [
-                            {
-							  "schema": [{"function":"channel"}],
-                              "rules": [
-							    {
-								  "conditions": [],
-								  "results": [{"function": "excludeBidders"}]
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"[rulesets.0.modelgroups.0.rules.0.conditions: Array must have at least 1 items] ",
-				},
-				{ //14
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "someName",
-                          "modelgroups": [
-                            {
-							  "schema": [{"function":"channel"}],
-                              "rules": [
-							    {
-								  "conditions": ["cond"],
-								  "results": []
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"",
-				},
-				{ //15
-					json.RawMessage(`
-                    {
-                      "enabled": true,
-                      "rulesets": [
-                        {
-                          "stage": "entrypoint",
-                          "name": "someName",
-                          "modelgroups": [
-                            {
-							  "schema": [{"function":"channel"}],
-                              "rules": [
-							    {
-								  "conditions": ["cond"],
-								  "results": [{"function": "foobar"}]
-								}
-							  ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-					`),
-					"[rulesets.0.modelgroups.0.rules.0.results.0.function: rulesets.0.modelgroups.0.rules.0.results.0.function must be one of the following: \"excludeBidders\", \"includeBidders\", \"logATag\"] ",
-				},
-			},
+			name:          "invalid-missing-enabled-and-rulesets",
+			config:        json.RawMessage(`{}`),
+			expectedError: "[(root): enabled is required] [(root): rulesets is required] ",
 		},
 		{
-			"successful rules engine schema validation",
-			[]testInput{{getValidJsonConfig(), ""}},
+			name:          "invalid-missing-rulesets",
+			config:        json.RawMessage(`{"enabled": true}`),
+			expectedError: "[(root): rulesets is required] ",
+		},
+		{
+			name:          "invalid-missing-ruleset-name-and-modelgroups",
+			config:        json.RawMessage(`{"enabled": true, "rulesets": [{}]}`),
+			expectedError: "[rulesets.0: stage is required] [rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
+		},
+		{
+			name:          "invalid-missing-ruleset-modelgroups-and-valid-stage-name",
+			config:        json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"a"}]}`),
+			expectedError: "[rulesets.0: name is required] [rulesets.0: modelgroups is required] [rulesets.0.stage: rulesets.0.stage must be one of the following: \"entrypoint\", \"raw_auction_request\", \"processed_auction_request\", \"bidder_request\", \"raw_bidder_response\", \"all_processed_bid_responses\", \"auction_response\"] ",
+		},
+		{
+			name:          "invalid-missing-ruleset-name-and-modelgroups",
+			config:        json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint"}]}`),
+			expectedError: "[rulesets.0: name is required] [rulesets.0: modelgroups is required] ",
+		},
+		{
+			name:          "invalid-missing-modelgroups",
+			config:        json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n"}]}`),
+			expectedError: "[rulesets.0: modelgroups is required] ",
+		},
+		{
+			name:          "invalid-empty-modelgroups",
+			config:        json.RawMessage(`{"enabled": true, "rulesets": [{"stage":"entrypoint","name":"n","modelgroups":[]}]}`),
+			expectedError: "[rulesets.0.modelgroups: Array must have at least 1 items] ",
+		},
+		{
+			name: "invalid-weight-high",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "n",
+					"modelgroups": [
+					{
+						"weight": 101,
+						"schema": [{"function":"channel"}],
+						"rules": [
+						{
+							"conditions": ["cond"],
+							"results": [{"function": "excludeBidders"}]
+						}
+						]
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "[rulesets.0.modelgroups.0.weight: Must be less than or equal to 100] ",
+		},
+		{
+			name: "invalid-weight-low",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "n",
+					"modelgroups": [
+					{
+						"weight": -1,
+						"schema": [{"function":"channel"}],
+						"rules": [
+						{
+							"conditions": ["cond"],
+							"results": [{"function": "excludeBidders"}]
+						}
+						]
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "[rulesets.0.modelgroups.0.weight: Must be greater than or equal to 1] ",
+		},
+		{
+			name: "invalid-missing-schema-function",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "n",
+					"modelgroups": [
+					{
+						"schema": [],
+						"rules": [
+						{
+							"conditions": ["cond"],
+							"results": [{"function": "excludeBidders"}]
+						}
+						]
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "",
+		},
+		{
+			name: "valid-empty-rules",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "n",
+					"modelgroups": [
+					{
+						"schema": [{"function":"channel"}],
+						"rules": []
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "",
+		},
+		{
+			name: "invalid-schema-function",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "someName",
+					"modelgroups": [
+					{
+						"schema": [{"function":"foo"}],
+						"rules": [
+						{
+							"conditions": ["cond"],
+							"results": [{"function": "excludeBidders"}]
+						}
+						]
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "[rulesets.0.modelgroups.0.schema.0.function: rulesets.0.modelgroups.0.schema.0.function must be one of the following: \"channel\", \"dataCenter\", \"dataCenterIn\", \"deviceCountry\", \"deviceCountryIn\", \"eidAvailable\", \"eidIn\", \"fpdAvailable\", \"gppSidAvailable\", \"gppSidIn\", \"percent\", \"tcfInScope\", \"userFpdAvailable\"] ",
+		},
+		{
+			name: "invalid-empty-conditions",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "someName",
+					"modelgroups": [
+					{
+						"schema": [{"function":"channel"}],
+						"rules": [
+						{
+							"conditions": [],
+							"results": [{"function": "excludeBidders"}]
+						}
+						]
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "[rulesets.0.modelgroups.0.rules.0.conditions: Array must have at least 1 items] ",
+		},
+		{
+			name: "valid-empty-results",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "someName",
+					"modelgroups": [
+					{
+						"schema": [{"function":"channel"}],
+						"rules": [
+						{
+							"conditions": ["cond"],
+							"results": []
+						}
+						]
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "",
+		},
+		{
+			name: "invalid-result-function",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "someName",
+					"modelgroups": [
+					{
+						"schema": [{"function":"channel"}],
+						"rules": [
+						{
+							"conditions": ["cond"],
+							"results": [{"function": "foobar"}]
+						}
+						]
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "[rulesets.0.modelgroups.0.rules.0.results.0.function: rulesets.0.modelgroups.0.rules.0.results.0.function must be one of the following: \"excludeBidders\", \"includeBidders\", \"logATag\"] ",
+		},
+		{
+			name: "invalid-set-definitions-invalid-property",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"set_definitions": {
+					"invalid": {
+						"EEA": ["FRA"]
+					}
+				},
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "n",
+					"modelgroups": [
+					{
+						"schema": [{"function":"channel"}],
+						"rules": []
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "[set_definitions: Additional property invalid is not allowed] ",
+		},
+		{
+			name: "invalid-set-definitions-valid-property-invalid-value",
+			config: json.RawMessage(`
+			{
+				"enabled": true,
+				"set_definitions": {
+					"country_groups": {
+						"EEA": [123]
+					}
+				},
+				"rulesets": [
+				{
+					"stage": "entrypoint",
+					"name": "n",
+					"modelgroups": [
+					{
+						"schema": [{"function":"channel"}],
+						"rules": []
+					}
+					]
+				}
+				]
+			}
+			`),
+			expectedError: "[set_definitions.country_groups.EEA.0: Invalid type. Expected: string, given: integer] ",
+		},
+		{
+			name:          "valid-config",
+			config:        getValidJsonConfig(),
+			expectedError: "",
 		},
 	}
 
-	for _, tg := range testGroups {
-		for i, tc := range tg.tests {
-			t.Run(fmt.Sprintf("%s test %d", tg.desc, i), func(t *testing.T) {
-				actualError := validateConfig(tc.inConfig, validator)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actualError := validateConfig(test.config, validator)
 
-				if len(tc.outErrMsg) > 0 {
-					assert.EqualError(t, actualError, tc.outErrMsg)
-				} else {
-					assert.NoError(t, actualError)
-				}
-			})
-		}
+			if len(test.expectedError) > 0 {
+				assert.EqualError(t, actualError, test.expectedError)
+			} else {
+				assert.NoError(t, actualError)
+			}
+		})
 	}
 }
 
@@ -475,7 +530,12 @@ func getValidJsonConfig() json.RawMessage {
 	return json.RawMessage(`
   {
     "enabled": true,
-    "generateRulesFromBidderConfig": true,
+    "generate_rules_from_bidderconfig": true,
+	"set_definitions": {
+		"country_groups": {
+			"CUSTOM_GROUP": ["USA", "CAN"]
+		}
+	},
     "timestamp": "20250131 00:00:00",
     "rulesets": [
       {
@@ -616,7 +676,13 @@ func getInvalidRuleSetConfig() json.RawMessage {
 
 func getValidConfig() *PbRulesEngine {
 	return &PbRulesEngine{
-		Enabled:   true,
+		Enabled:                       true,
+		GenerateRulesFromBidderConfig: true,
+		SetDefinitions: SetDefinitions{
+			CountryGroups: map[string][]string{
+				"CUSTOM_GROUP": {"USA", "CAN"},
+			},
+		},
 		Timestamp: "20250131 00:00:00",
 		RuleSets: []RuleSet{
 			{
