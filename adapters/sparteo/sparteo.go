@@ -5,20 +5,18 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 type adapter struct {
-	endpoint *template.Template
+	endpoint string
 }
 
 type extBidWrapper struct {
@@ -28,13 +26,8 @@ type extBidWrapper struct {
 const unknownValue = "unknown"
 
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(cfg.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
 	bidder := &adapter{
-		endpoint: template,
+		endpoint: cfg.Endpoint,
 	}
 	return bidder, nil
 }
@@ -299,8 +292,44 @@ func updatePublisherExtension(targetExt *jsonutil.RawMessage, networkID, fieldPa
 }
 
 func (a *adapter) buildEndpointURL(networkId string, siteDomain string, appDomain string, bundle string) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{NetworkId: networkId, SiteDomain: siteDomain, AppDomain: appDomain, Bundle: bundle}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
+	parsed, err := url.Parse(a.endpoint)
+	if err != nil {
+		return "", fmt.Errorf("invalid endpoint URL %q: %w", a.endpoint, err)
+	}
+
+	hasSite := siteDomain != ""
+	hasAppOrBundle := appDomain != "" || bundle != ""
+
+	var b strings.Builder
+
+	b.WriteString("network_id=")
+	b.WriteString(url.QueryEscape(networkId))
+
+	if hasSite {
+		v := siteDomain
+		if v == "" {
+			v = unknownValue
+		}
+		b.WriteString("&site_domain=")
+		b.WriteString(url.QueryEscape(v))
+	} else if hasAppOrBundle {
+		ad := appDomain
+		if ad == "" {
+			ad = unknownValue
+		}
+		bd := bundle
+		if bd == "" {
+			bd = unknownValue
+		}
+
+		b.WriteString("&app_domain=")
+		b.WriteString(url.QueryEscape(ad))
+		b.WriteString("&bundle=")
+		b.WriteString(url.QueryEscape(bd))
+	}
+
+	parsed.RawQuery = b.String()
+	return parsed.String(), nil
 }
 
 func (a *adapter) MakeBids(req *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {

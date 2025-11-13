@@ -1,7 +1,6 @@
 package sparteo
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -20,44 +19,18 @@ import (
 // and that the endpoint template renders fields using the new macros.
 func TestBuilder(t *testing.T) {
 	cfg := config.Adapter{
-		Endpoint: "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}",
+		Endpoint: "https://bid-test.sparteo.com/s2s-auction",
 	}
-	bidder, err := Builder(openrtb_ext.BidderSparteo, cfg, config.Server{GvlID: 1028})
-	require.NoError(t, err, "Builder returned an error")
-	assert.NotNil(t, bidder, "Bidder is nil")
-
-	sparteoAdapter, ok := bidder.(*adapter)
-	require.True(t, ok, "Expected *adapter, got %T", bidder)
-
-	var endpointBuffer bytes.Buffer
-	templateData := struct {
-		NetworkId  string
-		SiteDomain string
-		AppDomain  string
-		Bundle     string
-	}{
-		NetworkId:  "networkID",
-		SiteDomain: "dev.sparteo.com",
-		AppDomain:  "",
-		Bundle:     "com.sparteo.app",
+	bidder, err := Builder(openrtb_ext.BidderSparteo, cfg, config.Server{})
+	if assert.NoError(t, err) {
+		assert.NotNil(t, bidder)
 	}
-	err = sparteoAdapter.endpoint.Execute(&endpointBuffer, templateData)
-	require.NoError(t, err)
-	expectedEndpoint := "https://bid-test.sparteo.com/s2s-auction?network_id=networkID&site_domain=dev.sparteo.com&bundle=com.sparteo.app"
-	assert.Equal(t, expectedEndpoint, endpointBuffer.String(), "Endpoint is not correctly set")
-}
-
-// TestEndpointTemplateMalformed verifies that the Builder returns an error when the endpoint template is malformed.
-func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderSmrtconnect, config.Adapter{
-		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://bid-test.sparteo.com.com", GvlID: 196})
-	assert.Error(t, buildErr)
 }
 
 // TestJsonSamples runs JSON sample tests using the shared adapterstest framework.
 func TestJsonSamples(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{
-		Endpoint: "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}",
+		Endpoint: "https://bid-test.sparteo.com/s2s-auction",
 	}, config.Server{GvlID: 1028})
 	require.NoError(t, err, "Builder returned an error")
 
@@ -100,9 +73,9 @@ func TestGetMediaType_NilExt(t *testing.T) {
 	assert.Equal(t, openrtb_ext.BidType(""), result, "Expected empty result for nil extension")
 }
 
-// TestMakeRequests_ResolvesMacros verifies that the adapter correctly resolves macros in the endpoint URL for Site traffic.
-func TestMakeRequests_ResolvesMacros(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+// TestMakeRequests_ResolvesQueryParams verifies that the adapter correctly resolves macros in the endpoint URL for Site traffic.
+func TestMakeRequests_ResolvesQueryParams(t *testing.T) {
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{
 		Endpoint: endpoint,
@@ -132,7 +105,7 @@ func TestMakeRequests_ResolvesMacros(t *testing.T) {
 
 // TestMakeRequests_AppBundleMacro verifies that the adapter correctly resolves app_domain and bundle for App traffic.
 func TestMakeRequests_AppBundleMacro(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -162,7 +135,7 @@ func TestMakeRequests_AppBundleMacro(t *testing.T) {
 
 // TestMakeRequests_AppBundleMissing_AppendsUnknown verifies that when app.bundle is empty or missing we send bundle=unknown (and warn).
 func TestMakeRequests_AppBundleMissing_AppendsUnknown(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -189,7 +162,7 @@ func TestMakeRequests_AppBundleMissing_AppendsUnknown(t *testing.T) {
 
 // TestMakeRequests_SiteDomain verifies that the adapter uses site.Domain and does not include app fields for Site traffic.
 func TestMakeRequests_SiteDomain(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{
 		Endpoint: endpoint,
@@ -219,7 +192,7 @@ func TestMakeRequests_SiteDomain(t *testing.T) {
 
 // TestMakeRequests_DomainPrecedence_SiteDomainWins verifies that Site wins over App when both exist.
 func TestMakeRequests_DomainPrecedence_SiteDomainWins(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -255,7 +228,7 @@ func TestMakeRequests_DomainPrecedence_SiteDomainWins(t *testing.T) {
 
 // TestMakeRequests_SitePresentWithEmptyDomain_UsesUnknownNotApp verifies that when Site exists but has no domain/page, we send site_domain=unknown and do NOT use App.
 func TestMakeRequests_SitePresentWithEmptyDomain_UsesUnknownNotApp(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -288,7 +261,7 @@ func TestMakeRequests_SitePresentWithEmptyDomain_UsesUnknownNotApp(t *testing.T)
 
 // TestMakeRequests_DomainPrecedence_AppDomainWhenNoSite verifies that if there is no Site, we use app.domain (and include bundle if present).
 func TestMakeRequests_DomainPrecedence_AppDomainWhenNoSite(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -320,7 +293,7 @@ func TestMakeRequests_DomainPrecedence_AppDomainWhenNoSite(t *testing.T) {
 
 // TestMakeRequests_SitePageWhenNoSiteDomainNoApp verifies that if there is Site without domain but page is present, we use site.page.
 func TestMakeRequests_SitePageWhenNoSiteDomainNoApp(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -408,7 +381,7 @@ func readNetworkIDFromPublisherExt(t *testing.T, ext json.RawMessage) (string, b
 
 // When site exists but site.publisher is nil, the adapter must create publisher and upsert networkId into site.publisher.ext
 func TestMakeRequests_UpdatePublisherExtension_CreatesSitePublisherIfMissing(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -440,7 +413,7 @@ func TestMakeRequests_UpdatePublisherExtension_CreatesSitePublisherIfMissing(t *
 
 // When no site is present, create app.publisher if missing and upsert networkId into app.publisher.ext
 func TestMakeRequests_UpdatePublisherExtension_CreatesAppPublisherIfMissingWhenNoSite(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -475,7 +448,7 @@ func TestMakeRequests_UpdatePublisherExtension_CreatesAppPublisherIfMissingWhenN
 
 // TestMakeRequests_UpdatePublisherExtension_PrefersSiteOverApp verifies that we prefer Site when both Site and App exist; only Site should receive the networkId
 func TestMakeRequests_UpdatePublisherExtension_PrefersSiteOverApp(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -516,7 +489,7 @@ func TestMakeRequests_UpdatePublisherExtension_PrefersSiteOverApp(t *testing.T) 
 
 // TestMakeRequests_NoSiteNoApp_NoDomainParam_NoWarning verifies that with neither Site nor App we don't send domain params and produce no warnings.
 func TestMakeRequests_NoSiteNoApp_NoDomainParam_NoWarning(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -541,7 +514,7 @@ func TestMakeRequests_NoSiteNoApp_NoDomainParam_NoWarning(t *testing.T) {
 
 // TestMakeRequests_SitePageLiteralNull_TreatedAsMissingDomain verifies that a literal "null" in site.page is treated as an unknown site domain.
 func TestMakeRequests_SitePageLiteralNull_TreatedAsMissingDomain(t *testing.T) {
-	endpoint := "https://bid-test.sparteo.com/s2s-auction?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s-auction"
 
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
@@ -573,7 +546,7 @@ func TestMakeRequests_SitePageLiteralNull_TreatedAsMissingDomain(t *testing.T) {
 
 // TestMakeRequests_AppBundle_NormalizationVariants ensures blank/whitespace/"null" bundles normalize to "unknown" with a single warning.
 func TestMakeRequests_AppBundle_NormalizationVariants(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
@@ -606,7 +579,7 @@ func TestMakeRequests_AppBundle_NormalizationVariants(t *testing.T) {
 
 // TestMakeRequests_SitePresent_IgnoresAppFields ensures when Site is present, only site_domain is sent and app fields are ignored.
 func TestMakeRequests_SitePresent_IgnoresAppFields(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
@@ -618,40 +591,40 @@ func TestMakeRequests_SitePresent_IgnoresAppFields(t *testing.T) {
 	reqs, errs := bidder.MakeRequests(in, &adapters.ExtraRequestInfo{})
 	require.Len(t, reqs, 1)
 	require.Empty(t, errs)
-	assert.Equal(t, "https://host/s2s?network_id=N&site_domain=site.sparteo.com", reqs[0].Uri)
+	assert.Equal(t, "https://bid-test.sparteo.com/s2s?network_id=N&site_domain=site.sparteo.com", reqs[0].Uri)
 }
 
 // TestMakeRequests_SiteWithPageFallback_IgnoresApp ensures Site.Page is used when Site.Domain is empty and App is ignored when Site exists.
 func TestMakeRequests_SiteWithPageFallback_IgnoresApp(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
 	in := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{Domain: "", Page: "https://www.example.com:8080/p"},
 		App:  &openrtb2.App{Domain: "app.sparteo.com", Bundle: "com.app"},
-		Imp:  []openrtb2.Imp{{ID: "i1", Ext: json.RawMessage(`{"bidder":{"networkId":"N"}}`)}},
+		Imp:  []openrtb2.Imp{{ID: "i1", Ext: json.RawMessage(`{"bidder":{"networkId":"networkID"}}`)}},
 	}
 	reqs, errs := bidder.MakeRequests(in, &adapters.ExtraRequestInfo{})
 	require.Len(t, reqs, 1)
 	require.Empty(t, errs)
-	assert.Equal(t, "https://host/s2s?network_id=N&site_domain=example.com", reqs[0].Uri)
+	assert.Equal(t, "https://bid-test.sparteo.com/s2s?network_id=networkID&site_domain=example.com", reqs[0].Uri)
 }
 
 // TestMakeRequests_AppMissingBundle_WarnsAndUnknown ensures App with missing bundle yields bundle=unknown and one bundle warning.
 func TestMakeRequests_AppMissingBundle_WarnsAndUnknown(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
 	in := &openrtb2.BidRequest{
 		App: &openrtb2.App{Domain: "dev.sparteo.com", Bundle: "", Publisher: &openrtb2.Publisher{}},
-		Imp: []openrtb2.Imp{{ID: "i1", Ext: json.RawMessage(`{"bidder":{"networkId":"N"}}`)}},
+		Imp: []openrtb2.Imp{{ID: "i1", Ext: json.RawMessage(`{"bidder":{"networkId":"networkID"}}`)}},
 	}
 	reqs, errs := bidder.MakeRequests(in, &adapters.ExtraRequestInfo{})
 	require.Len(t, reqs, 1)
 	require.Len(t, errs, 1)
-	assert.Equal(t, "https://host/s2s?network_id=N&app_domain=dev.sparteo.com&bundle=unknown", reqs[0].Uri)
+	assert.Equal(t, "https://bid-test.sparteo.com/s2s?network_id=networkID&app_domain=dev.sparteo.com&bundle=unknown", reqs[0].Uri)
 	var badInput *errortypes.BadInput
 	require.True(t, errors.As(errs[0], &badInput))
 	assert.Contains(t, badInput.Error(), "Bundle not found")
@@ -659,7 +632,7 @@ func TestMakeRequests_AppMissingBundle_WarnsAndUnknown(t *testing.T) {
 
 // TestMakeRequests_ExtRewrite_MovesBidderIntoSparteoParams verifies bidder object is moved under sparteo.params and bidder is removed.
 func TestMakeRequests_ExtRewrite_MovesBidderIntoSparteoParams(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
@@ -686,7 +659,7 @@ func TestMakeRequests_ExtRewrite_MovesBidderIntoSparteoParams(t *testing.T) {
 
 // TestMakeRequests_ExtRewrite_PreservesExistingSparteoParams verifies existing sparteo.params keys are preserved when merging bidder fields.
 func TestMakeRequests_ExtRewrite_PreservesExistingSparteoParams(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
@@ -715,7 +688,7 @@ func TestMakeRequests_ExtRewrite_PreservesExistingSparteoParams(t *testing.T) {
 
 // TestMakeRequests_NetworkId_FirstNonEmptyWins verifies the first non-empty networkId across imps is used.
 func TestMakeRequests_NetworkId_FirstNonEmptyWins(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
@@ -730,12 +703,12 @@ func TestMakeRequests_NetworkId_FirstNonEmptyWins(t *testing.T) {
 	reqs, errs := bidder.MakeRequests(in, &adapters.ExtraRequestInfo{})
 	require.Len(t, reqs, 1)
 	require.Empty(t, errs)
-	assert.Equal(t, "https://host/s2s?network_id=N2&site_domain=dev.sparteo.com", reqs[0].Uri)
+	assert.Equal(t, "https://bid-test.sparteo.com/s2s?network_id=N2&site_domain=dev.sparteo.com", reqs[0].Uri)
 }
 
 // TestMakeRequests_AllImpsBadExt_AggregatesErrors verifies a request is still built when all imps have bad ext and errors are aggregated.
 func TestMakeRequests_AllImpsBadExt_AggregatesErrors(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
@@ -749,12 +722,12 @@ func TestMakeRequests_AllImpsBadExt_AggregatesErrors(t *testing.T) {
 	reqs, errs := bidder.MakeRequests(in, &adapters.ExtraRequestInfo{})
 	require.Len(t, reqs, 1)
 	require.Len(t, errs, 2)
-	assert.Equal(t, "https://host/s2s?network_id=&site_domain=dev.sparteo.com", reqs[0].Uri)
+	assert.Equal(t, "https://bid-test.sparteo.com/s2s?network_id=&site_domain=dev.sparteo.com", reqs[0].Uri)
 }
 
 // TestMakeRequests_UpdatePublisherExtension_PreservesOtherKeys verifies publisher.ext keeps existing keys while adding params.networkId.
 func TestMakeRequests_UpdatePublisherExtension_PreservesOtherKeys(t *testing.T) {
-	endpoint := "https://host/s2s?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}"
+	endpoint := "https://bid-test.sparteo.com/s2s"
 	bidder, err := Builder(openrtb_ext.BidderSparteo, config.Adapter{Endpoint: endpoint}, config.Server{GvlID: 1028})
 	require.NoError(t, err)
 
