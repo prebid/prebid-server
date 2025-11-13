@@ -55,27 +55,17 @@ func getImpressionsInfo(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext.ExtI
 	resImps := make([]openrtb2.Imp, 0, impsCount)
 	resImpExts := make([]openrtb_ext.ExtImpWaardex, 0, impsCount)
 
-	for _, imp := range imps {
-		impExt, err := getImpressionExt(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		if err := validateImpression(&imp, impExt); err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		resImps = append(resImps, imp)
-		resImpExts = append(resImpExts, *impExt)
-	}
-	return resImps, resImpExts, errors
-}
-
-func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpWaardex) error {
-	if impExt.ZoneId < 1 {
-		return newBadInputError(fmt.Sprintf("Invalid zoneId value: %d. Ignoring imp id=%s", impExt.ZoneId, imp.ID))
-	}
-	return nil
+    for _, imp := range imps {
+        impExt, err := getImpressionExt(&imp)
+        if err != nil {
+            errors = append(errors, err)
+            continue
+        }
+        // Additional validation is handled by the core JSON schema (static/bidder-params/waardex.json).
+        resImps = append(resImps, imp)
+        resImpExts = append(resImpExts, *impExt)
+    }
+    return resImps, resImpExts, errors
 }
 
 // Group impressions by Waardex-specific parameter `zoneId`
