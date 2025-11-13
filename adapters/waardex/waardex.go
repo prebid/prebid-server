@@ -70,19 +70,19 @@ func getImpressionsInfo(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext.ExtI
 
 // Group impressions by Waardex-specific parameter `zoneId`
 func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaardex) map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp {
-	res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
-	for idx := range imps {
-		imp := imps[idx]
-		imp.Ext = nil
-		impExt := impsExt[idx]
-		if res[impExt] == nil {
-			res[impExt] = make([]openrtb2.Imp, 0)
-		}
-		if isMultiFormatImp(&imp) {
-			splImps := splitMultiFormatImp(&imp)
-			res[impExt] = append(res[impExt], splImps...)
-		} else {
-			res[impExt] = append(res[impExt], imp)
+    res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
+    for idx := range imps {
+        imp := imps[idx]
+        imp.Ext = nil
+        impExt := impsExt[idx]
+        if _, exists := res[impExt]; !exists {
+            res[impExt] = make([]openrtb2.Imp, 0, 4)
+        }
+        if isMultiFormatImp(&imp) {
+            splImps := splitMultiFormatImp(&imp)
+            res[impExt] = append(res[impExt], splImps...)
+        } else {
+            res[impExt] = append(res[impExt], imp)
 		}
 	}
 	return res
