@@ -212,7 +212,7 @@ func (adapter *waardexAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 	var bidResp openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{
-			newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
+			newBadServerResponseError(fmt.Sprintf("Bad server response: %v", err)),
 		}
 	}
 
