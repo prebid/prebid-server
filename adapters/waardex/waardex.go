@@ -32,10 +32,7 @@ func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *ada
         return nil, errs
     }
 
-	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
-	if len(dispErrors) > 0 {
-		errs = append(errs, dispErrors...)
-	}
+	pub2impressions := dispatchImpressions(imps, impExts)
 	if len(pub2impressions) == 0 {
 		return nil, errs
 	}
@@ -82,9 +79,8 @@ func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpWaardex) er
 }
 
 // Group impressions by Waardex-specific parameter `zoneId`
-func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaardex) (map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp, []error) {
+func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaardex) map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp {
 	res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
-	errors := make([]error, 0)
 	for idx := range imps {
 		imp := imps[idx]
 		imp.Ext = nil
@@ -99,7 +95,7 @@ func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaarde
 			res[impExt] = append(res[impExt], imp)
 		}
 	}
-	return res, errors
+	return res
 }
 
 func isMultiFormatImp(imp *openrtb2.Imp) bool {
