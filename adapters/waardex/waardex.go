@@ -32,12 +32,12 @@ func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *ada
         return nil, errs
     }
 
-	pub2impressions := dispatchImpressions(imps, impExts)
-	if len(pub2impressions) == 0 {
+	impressionsByZone := dispatchImpressions(imps, impExts)
+	if len(impressionsByZone) == 0 {
 		return nil, errs
 	}
-	result := make([]*adapters.RequestData, 0, len(pub2impressions))
-	for k, imps := range pub2impressions {
+	result := make([]*adapters.RequestData, 0, len(impressionsByZone))
+	for k, imps := range impressionsByZone {
 		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
