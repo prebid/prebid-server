@@ -151,7 +151,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpWaardex, error) {
 }
 
 func (adapter *waardexAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpWaardex, imps []openrtb2.Imp) (*adapters.RequestData, error) {
-	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
+    newBidRequest := createBidRequest(prebidBidRequest, imps)
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
 		return nil, err
@@ -175,12 +175,12 @@ func (adapter *waardexAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.Bi
 		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpWaardex, imps []openrtb2.Imp) *openrtb2.BidRequest {
-	bidRequest := *prebidBidRequest
-	bidRequest.Imp = imps
-	if bidRequest.Site != nil {
-		// Need to copy Site as Request is a shallow copy
-		siteCopy := *bidRequest.Site
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *openrtb2.BidRequest {
+    bidRequest := *prebidBidRequest
+    bidRequest.Imp = imps
+    if bidRequest.Site != nil {
+        // Need to copy Site as Request is a shallow copy
+        siteCopy := *bidRequest.Site
 		bidRequest.Site = &siteCopy
 		bidRequest.Site.Publisher = nil
 	}
