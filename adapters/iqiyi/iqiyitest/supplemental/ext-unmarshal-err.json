@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "accountid": 100000099
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "bad Iqiyi bidder ext",
+      "comparison": "literal"
+    }
+  ]
+}
