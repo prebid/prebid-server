@@ -99,20 +99,20 @@ func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaarde
 }
 
 func isMultiFormatImp(imp *openrtb2.Imp) bool {
-	count := 0
+	formatCount := 0
 	if imp.Video != nil {
-		count++
+		formatCount++
 	}
 	if imp.Audio != nil {
-		count++
+		formatCount++
 	}
 	if imp.Banner != nil {
-		count++
+		formatCount++
 	}
 	if imp.Native != nil {
-		count++
+		formatCount++
 	}
-	return count > 1
+	return formatCount > 1
 }
 
 func splitMultiFormatImp(imp *openrtb2.Imp) []openrtb2.Imp {
