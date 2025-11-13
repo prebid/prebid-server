@@ -127,6 +127,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/interactiveoffers"
 	"github.com/prebid/prebid-server/v3/adapters/intertech"
 	"github.com/prebid/prebid-server/v3/adapters/invibes"
+	"github.com/prebid/prebid-server/v3/adapters/iqiyi"
 	"github.com/prebid/prebid-server/v3/adapters/iqx"
 	"github.com/prebid/prebid-server/v3/adapters/iqzone"
 	"github.com/prebid/prebid-server/v3/adapters/ix"
@@ -393,6 +394,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
 		openrtb_ext.BidderIntertech:         intertech.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
+		openrtb_ext.BidderIqiyi:             iqiyi.Builder,
 		openrtb_ext.BidderIQX:               iqx.Builder,
 		openrtb_ext.BidderIQZone:            iqzone.Builder,
 		openrtb_ext.BidderIx:                ix.Builder,
