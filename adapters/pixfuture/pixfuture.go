@@ -1,8 +1,10 @@
+// Package pixfuture implements the Pixfuture adapter for Prebid Server.
+// It provides functionality to handle bid requests and responses according to Pixfuture's specifications
 package pixfuture
 
 import (
+	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -24,27 +26,38 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	var errs []error
 	var adapterRequests []*adapters.RequestData
+
 	headers := http.Header{}
 	headers.Set("Content-Type", "application/json")
-	headers.Set("Accept", "application/json")
+	// Removed Accept header as recommended
 
 	for imp := range iterutil.SlicePointerValues(request.Imp) {
-		var bidderExt struct {
-			Bidder struct {
-				PixID string `json:"pix_id"`
-			} `json:"bidder"`
-		}
+		var bidderExt adapters.ExtImpBidder
+		var pixfutureExt openrtb_ext.ImpExtPixfuture
 
+		// First unmarshal bidder extension
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{Message: "Invalid pix_id in impression ext: " + err.Error()})
+			errs = append(errs, err)
 			continue
 		}
 
+		// Then unmarshal Pixfuture-specific extension
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &pixfutureExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		// Validate pix_id
+		if pixfutureExt.PixID == "" {
+			errs = append(errs, &errortypes.BadInput{Message: "Missing required parameter pix_id"})
+			continue
+		}
+
+		// Prepare request copy with single impression
 		requestCopy := *request
-		requestCopy.Imp = []openrtb2.Imp{*imp} // slice notation with dereferencing
+		requestCopy.Imp = []openrtb2.Imp{*imp}
 
 		reqJSON, err := jsonutil.Marshal(requestCopy)
 		if err != nil {
@@ -68,12 +81,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{Message: "Unexpected status code: " + strconv.Itoa(response.StatusCode)}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -81,7 +94,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{&errortypes.BadServerResponse{Message: "Invalid response format: " + err.Error()}}
 	}
 
-	bidResponse := adapters.NewBidderResponse()
+	// Calculate expected number of bids to pre-allocate slice capacity
+	expectedBids := 0
+	for i := range bidResp.SeatBid {
+		expectedBids += len(bidResp.SeatBid[i].Bid)
+	}
+
+	// Use constructor that accepts capacity
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(expectedBids)
 	bidResponse.Currency = bidResp.Cur
 
 	var errs []error
@@ -89,11 +109,15 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		seatBid := &bidResp.SeatBid[i]
 		for j := range seatBid.Bid {
 			bid := &seatBid.Bid[j]
+
 			bidType, err := getMediaTypeForBid(*bid)
 			if err != nil {
-				errs = append(errs, &errortypes.BadServerResponse{Message: "Failed to parse impression \"" + bid.ImpID + "\" mediatype"})
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: "Failed to parse impression \"" + bid.ImpID + "\" mediatype",
+				})
 				continue
 			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     bid,
 				BidType: bidType,
@@ -111,13 +135,26 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	// First try standard MType field (OpenRTB 2.6)
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
+	// Fallback to custom extension
 	var ext struct {
 		Prebid struct {
 			Type string `json:"type"`
 		} `json:"prebid"`
 	}
 	if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
-		return "", err
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Failed to parse bid ext for impression %s: %v", bid.ImpID, err),
+		}
 	}
 
 	switch ext.Prebid.Type {
@@ -128,6 +165,8 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case "native":
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", &errortypes.BadServerResponse{Message: "Unknown bid type: " + ext.Prebid.Type}
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unknown bid type for impression %s", bid.ImpID),
+		}
 	}
 }
