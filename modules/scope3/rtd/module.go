@@ -359,6 +359,56 @@ func (m *Module) HandleAuctionResponseHook(
 				payload.BidResponse.Ext = extResp
 			}
 
+			// also add to seatbid[].bid[]
+			for idx, seatBid := range payload.BidResponse.SeatBid {
+				for idy, bid := range seatBid.Bid {
+					if bid.Ext == nil {
+						bid.Ext = json.RawMessage("{}")
+					}
+
+					var bidExtMap map[string]interface{}
+					if err = jsonutil.Unmarshal(bid.Ext, &bidExtMap); err != nil {
+						bidExtMap = make(map[string]interface{})
+					}
+
+					// Add segments as individual targeting keys for GAM integration
+					if m.cfg.AddToTargeting {
+						prebidMap, ok := bidExtMap["prebid"].(map[string]interface{})
+						if !ok {
+							prebidMap = make(map[string]interface{})
+							bidExtMap["prebid"] = prebidMap
+						}
+						targetingMap, ok := prebidMap["targeting"].(map[string]interface{})
+						if !ok {
+							targetingMap = make(map[string]interface{})
+							prebidMap["targeting"] = targetingMap
+						}
+						// Add each segment as individual targeting key
+						for _, segment := range segments {
+							if strings.HasPrefix(segment, scope3MacroKeyPlusSeparator) {
+								macroKeyVal := strings.Split(segment, scope3MacroSeparator)
+								if len(macroKeyVal) != 2 {
+									continue
+								}
+								targetingMap[macroKeyVal[0]] = macroKeyVal[1]
+							} else {
+								targetingMap[segment] = "true"
+							}
+						}
+					}
+
+					// Always add to a dedicated scope3 section for publisher flexibility
+					bidExtMap["scope3"] = map[string]interface{}{
+						"segments": segments,
+					}
+
+					bidExtResp, err := jsonutil.Marshal(bidExtMap)
+					if err == nil {
+						payload.BidResponse.SeatBid[idx].Bid[idy].Ext = bidExtResp
+					}
+				}
+			}
+
 			return payload, nil
 		},
 		hookstage.MutationUpdate,
