@@ -280,6 +280,19 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 		BidResponse: &openrtb2.BidResponse{
 			ID:  "test-response",
 			Ext: json.RawMessage(`{}`),
+			SeatBid: []openrtb2.SeatBid{
+				{
+					Seat: "test-seat",
+					Bid: []openrtb2.Bid{
+						{
+							ID:    "test-bid-1",
+							ImpID: "test-imp-1",
+							Price: 1.0,
+							Ext:   json.RawMessage(`{}`),
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -319,6 +332,33 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 	assert.Equal(t, "true", targetingData["test_segment_1"])
 	assert.Equal(t, "true", targetingData["test_segment_2"])
 	assert.Equal(t, "test-macro", targetingData["scope3_macro"])
+
+	// check seatbid
+	assert.Len(t, modifiedPayload.BidResponse.SeatBid, 1)
+	assert.Len(t, modifiedPayload.BidResponse.SeatBid[0].Bid, 1)
+
+	// Parse the modified response
+	var extBidMap map[string]interface{}
+	err = json.Unmarshal(modifiedPayload.BidResponse.SeatBid[0].Bid[0].Ext, &extBidMap)
+	require.NoError(t, err)
+
+	// Verify scope3 section exists
+	scope3DataSeatBid, exists := extBidMap["scope3"].(map[string]interface{})
+	require.True(t, exists)
+	segmentsSeatBid, exists := scope3DataSeatBid["segments"].([]interface{})
+	require.True(t, exists)
+	assert.Len(t, segmentsSeatBid, 3)
+
+	// Verify targeting section exists (add_to_targeting: true)
+	prebidDataSeatBid, exists := extBidMap["prebid"].(map[string]interface{})
+	require.True(t, exists)
+	targetingDataSeatBid, exists := prebidDataSeatBid["targeting"].(map[string]interface{})
+	require.True(t, exists)
+
+	// Check individual targeting keys
+	assert.Equal(t, "true", targetingDataSeatBid["test_segment_1"])
+	assert.Equal(t, "true", targetingDataSeatBid["test_segment_2"])
+	assert.Equal(t, "test-macro", targetingDataSeatBid["scope3_macro"])
 }
 
 func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
