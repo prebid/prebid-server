@@ -360,8 +360,8 @@ func (m *Module) HandleAuctionResponseHook(
 			}
 
 			// also add to seatbid[].bid[]
-			for idx, seatBid := range payload.BidResponse.SeatBid {
-				for idy, bid := range seatBid.Bid {
+			for seatBid := range iterutil.SlicePointerValues(payload.BidResponse.SeatBid) {
+				for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
 					if bid.Ext == nil {
 						bid.Ext = json.RawMessage("{}")
 					}
@@ -404,7 +404,7 @@ func (m *Module) HandleAuctionResponseHook(
 
 					bidExtResp, err := jsonutil.Marshal(bidExtMap)
 					if err == nil {
-						payload.BidResponse.SeatBid[idx].Bid[idy].Ext = bidExtResp
+						bid.Ext = bidExtResp
 					}
 				}
 			}
