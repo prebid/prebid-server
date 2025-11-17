@@ -26,38 +26,33 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+
 	var errs []error
 	var adapterRequests []*adapters.RequestData
-
 	headers := http.Header{}
 	headers.Set("Content-Type", "application/json")
-	// Removed Accept header as recommended
+	headers.Set("Accept", "application/json")
 
 	for imp := range iterutil.SlicePointerValues(request.Imp) {
+
 		var bidderExt adapters.ExtImpBidder
 		var pixfutureExt openrtb_ext.ImpExtPixfuture
 
-		// First unmarshal bidder extension
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		// Then unmarshal Pixfuture-specific extension
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &pixfutureExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		// Validate pix_id
 		if pixfutureExt.PixID == "" {
 			errs = append(errs, &errortypes.BadInput{Message: "Missing required parameter pix_id"})
 			continue
 		}
 
-		// Prepare request copy with single impression
 		requestCopy := *request
-		requestCopy.Imp = []openrtb2.Imp{*imp}
+		requestCopy.Imp = []openrtb2.Imp{*imp} // slice notation with dereferencing
 
 		reqJSON, err := jsonutil.Marshal(requestCopy)
 		if err != nil {
@@ -91,26 +86,24 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	var bidResp openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{Message: "Invalid response format: " + err.Error()}}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: "Invalid response format: " + err.Error(),
+		}}
 	}
 
-	// Calculate expected number of bids to pre-allocate slice capacity
+	// Pre-calculate total number of bids to avoid slice reallocations
 	expectedBids := 0
 	for i := range bidResp.SeatBid {
 		expectedBids += len(bidResp.SeatBid[i].Bid)
 	}
 
-	// Use constructor that accepts capacity
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(expectedBids)
 	bidResponse.Currency = bidResp.Cur
 
 	var errs []error
 	for i := range bidResp.SeatBid {
-		seatBid := &bidResp.SeatBid[i]
-		for j := range seatBid.Bid {
-			bid := &seatBid.Bid[j]
-
-			bidType, err := getMediaTypeForBid(*bid)
+		for _, bid := range bidResp.SeatBid[i].Bid {
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
 					Message: "Failed to parse impression \"" + bid.ImpID + "\" mediatype",
@@ -119,7 +112,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     bid,
+				Bid:     &bid,
 				BidType: bidType,
 			})
 		}
@@ -131,6 +124,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}
 		return nil, nil
 	}
+
 	return bidResponse, errs
 }
 

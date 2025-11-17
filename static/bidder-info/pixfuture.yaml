@@ -1,4 +1,4 @@
-endpoint: "https://srv-adapter.pixfuture.com/pixservices"
+endpoint: "https://pbs-pix.pixfuture.com/pixservices"
 maintainer:
   email: "client-support@pixfuture.com"
 gvlVendorID: 839
