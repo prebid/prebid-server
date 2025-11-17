@@ -1,8 +1,10 @@
-#endpoint: "https://prebid-server.agrvt.com"
-endpoint: "https://durbuy.ngrok.io/openrtb2/auction"
+endpoint: "https://pbs.production.agrvt.com/openrtb2/auction"
 maintainer:
   email: produit@alliancegravity.com
 gvlVendorID: 501
+gdpr:
+  enabled: true
+  default_value: "1"
 modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
@@ -19,3 +21,7 @@ capabilities:
       - video
       - audio
       - native
+userSync:
+  iframe:
+    url: "https://pbs.production.agrvt.com/static/cookie_sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
