@@ -1,6 +1,6 @@
-endpoint: "https://prebid.attekmi.com/pbserver?partnerName={{.Host}}&seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "https://prebid.attekmi.co/pbserver?partnerName={{.Host}}&seat={{.AccountID}}&token={{.SourceId}}"
 maintainer:
-  email: "prebid@attekmi.com"
+  email: "prebid@attekmi.co"
 capabilities:
   app:
     mediaTypes:
