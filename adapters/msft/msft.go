@@ -305,7 +305,7 @@ func buildRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 		}
 
 		requests = append(requests, &adapters.RequestData{
-			Method:  "POST",
+			Method:  http.MethodPost,
 			Uri:     uri,
 			Body:    requestJSON,
 			Headers: buildHeaders(),
