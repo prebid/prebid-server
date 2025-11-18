@@ -31,7 +31,7 @@ import (
 
 var errInvalidRequestExt = errors.New("request.ext is invalid")
 
-var channelTypeMap = map[metrics.RequestType]config.ChannelType{
+var ChannelTypeMap = map[metrics.RequestType]config.ChannelType{
 	metrics.ReqTypeAMP:       config.ChannelAMP,
 	metrics.ReqTypeORTB2App:  config.ChannelApp,
 	metrics.ReqTypeVideo:     config.ChannelVideo,
@@ -60,8 +60,6 @@ type requestSplitter struct {
 func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
-	gdprSignal gdpr.Signal,
-	gdprEnforced bool,
 	bidAdjustmentFactors map[string]float64,
 ) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 	req := auctionReq.BidRequestWrapper
@@ -128,12 +126,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	consent, err := getConsent(req, gpp)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	consent := gdpr.GetConsent(req, gpp)
 
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, requestAliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, requestAliases, ChannelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -151,7 +146,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
 
-	if gdprEnforced {
+	if auctionReq.GDPREnforced {
 		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
@@ -162,7 +157,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		gdprRequestInfo := gdpr.RequestInfo{
 			AliasGVLIDs: requestAliasesGVLIDs,
 			Consent:     consent,
-			GDPRSignal:  gdprSignal,
+			GDPRSignal:  auctionReq.GDPRSignal,
 			PublisherID: auctionReq.LegacyLabels.PubID,
 		}
 		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
@@ -525,6 +520,14 @@ func buildRequestExtForBidder(bidder string, req *openrtb_ext.RequestWrapper, re
 	prebidNew := openrtb_ext.ExtRequestPrebid{
 		BidderParams:         reqExtBidderParams[bidder],
 		AlternateBidderCodes: alternateBidderCodes,
+	}
+
+	if prebid != nil && prebid.Aliases != nil {
+		if aliasValue, ok := prebid.Aliases[bidder]; ok {
+			prebidNew.Aliases = map[string]string{
+				bidder: aliasValue,
+			}
+		}
 	}
 
 	// Copy Allowed Fields

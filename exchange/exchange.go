@@ -72,7 +72,6 @@ type exchange struct {
 	gdprPermsBuilder         gdpr.PermissionsBuilder
 	currencyConverter        *currency.RateConverter
 	externalURL              string
-	gdprDefaultValue         gdpr.Signal
 	privacyConfig            config.Privacy
 	categoriesFetcher        stored_requests.CategoryFetcher
 	bidIDGenerator           BidIDGenerator
@@ -142,11 +141,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidderToSyncerKey[bidder] = syncer.Key()
 	}
 
-	gdprDefaultValue := gdpr.SignalYes
-	if cfg.GDPR.DefaultValue == "0" {
-		gdprDefaultValue = gdpr.SignalNo
-	}
-
 	privacyConfig := config.Privacy{
 		CCPA: cfg.CCPA,
 		GDPR: cfg.GDPR,
@@ -173,7 +167,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		externalURL:              cfg.ExternalURL,
 		gdprPermsBuilder:         gdprPermsBuilder,
 		me:                       metricsEngine,
-		gdprDefaultValue:         gdprDefaultValue,
 		privacyConfig:            privacyConfig,
 		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode:           cfg.HostSChainNode,
@@ -223,6 +216,8 @@ type AuctionRequest struct {
 	QueryParams             url.Values
 	BidderResponseStartTime time.Time
 	TmaxAdjustments         *TmaxAdjustmentsPreprocessed
+	GDPRSignal              gdpr.Signal
+	GDPREnforced            bool
 }
 
 // BidderRequest holds the bidder-specific request and all other
@@ -322,20 +317,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
-	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := selectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
-
-	// Make our best guess if GDPR applies
-	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
-	gdprSignal, err := getGDPR(r.BidRequestWrapper)
-	if err != nil {
-		return nil, err
-	}
-	channelEnabled := r.TCF2Config.ChannelEnabled(channelTypeMap[r.LegacyLabels.RType])
-	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	dsaWriter := dsa.Writer{
 		Config:      r.Account.Privacy.DSA,
-		GDPRInScope: gdprEnforced,
+		GDPRInScope: r.GDPREnforced,
 	}
 	if err := dsaWriter.Write(r.BidRequestWrapper); err != nil {
 		return nil, err
@@ -351,7 +335,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		Prebid: *requestExtPrebid,
 		SChain: requestExt.GetSChain(),
 	}
-	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprSignal, gdprEnforced, bidAdjustmentFactors)
+	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, bidAdjustmentFactors)
 	for _, err := range errs {
 		if errortypes.ReadCode(err) == errortypes.InvalidImpFirstPartyDataErrorCode {
 			return nil, err
@@ -624,29 +608,6 @@ func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_e
 	}
 
 	return multiBidMap
-}
-
-func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCountries []string) gdpr.Signal {
-	gdprDefaultValue := e.gdprDefaultValue
-
-	var geo *openrtb2.Geo
-	if r.User != nil && r.User.Geo != nil {
-		geo = r.User.Geo
-	} else if r.Device != nil && r.Device.Geo != nil {
-		geo = r.Device.Geo
-	}
-
-	if geo != nil {
-		// If the country is in the EEA list, GDPR applies.
-		// Otherwise, if the country code is properly formatted (3 characters), GDPR does not apply.
-		if isEEACountry(geo.Country, eeaCountries) {
-			gdprDefaultValue = gdpr.SignalYes
-		} else if len(geo.Country) == 3 {
-			gdprDefaultValue = gdpr.SignalNo
-		}
-	}
-
-	return gdprDefaultValue
 }
 
 func recordImpMetrics(r *openrtb_ext.RequestWrapper, metricsEngine metrics.MetricsEngine) {
@@ -1683,18 +1644,4 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBidBuilder
 
 	bidResponseExt.Prebid.SeatNonBid = seatNonBidBuilder.Slice()
 	return bidResponseExt
-}
-
-func isEEACountry(country string, eeaCountries []string) bool {
-	if len(eeaCountries) == 0 {
-		return false
-	}
-
-	country = strings.ToUpper(country)
-	for _, c := range eeaCountries {
-		if strings.ToUpper(c) == country {
-			return true
-		}
-	}
-	return false
 }
