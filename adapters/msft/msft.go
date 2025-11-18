@@ -296,9 +296,9 @@ func buildRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 	)
 
 	for i := range requestsCount {
-		imps := imps[i*maxImpsPerReq : min((i+1)*maxImpsPerReq, len(imps))]
+		impsForRequest := imps[i*maxImpsPerReq : min((i+1)*maxImpsPerReq, len(imps))]
 
-		request.Imp = imps
+		request.Imp = impsForRequest
 		requestJSON, err := jsonutil.Marshal(request)
 		if err != nil {
 			return nil, []error{err}
