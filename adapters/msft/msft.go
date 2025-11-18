@@ -295,7 +295,7 @@ func buildRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 		requests      = make([]*adapters.RequestData, 0, requestsCount)
 	)
 
-	for i := 0; i < requestsCount; i++ {
+	for i := range requestsCount {
 		imps := imps[i*maxImpsPerReq : min((i+1)*maxImpsPerReq, len(imps))]
 
 		request.Imp = imps
