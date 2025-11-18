@@ -4080,7 +4080,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExtForPageViewIds(t *testing.T) 
 			bidderInfo:        config.BidderInfos{},
 		}
 
-		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, gdpr.SignalNo, false, map[string]float64{})
+		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, map[string]float64{})
 		assert.Equal(t, 0, len(errs), test.desc)
 		sort.Slice(bidderRequests, func(i, j int) bool {
 			return bidderRequests[i].BidderCoreName < bidderRequests[j].BidderCoreName
