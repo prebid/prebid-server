@@ -26,9 +26,7 @@ const (
 
 var (
 	errMalformedExtraInfo  = errors.New("malformed extra adapter info")
-	errMalformedImpExt     = errors.New("malformed impression ext")
 	errMalformedRequestExt = errors.New("malformed request ext.appnexus")
-	errMarshalImpExt       = errors.New("error building impression ext")
 	errMemberIDMismatch    = errors.New("member id mismatch: all impressions must use the same member id")
 )
 
@@ -98,12 +96,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for i := 0; i < len(request.Imp); i++ {
 		var impExt impExtIncoming
 		if err := jsonutil.Unmarshal(request.Imp[i].Ext, &impExt); err != nil {
-			errs = append(errs, errMalformedImpExt)
+			errs = append(errs, fmt.Errorf("malformed impression ext for id '%s'", request.Imp[i].ID))
 			continue
 		}
 
 		if err := modifyImp(&request.Imp[i], impExt, displayManagerVerBuilder); err != nil {
-			errs = append(errs, errMarshalImpExt)
+			errs = append(errs, fmt.Errorf("error building impression ext for id '%s'", request.Imp[i].ID))
 			continue
 		}
 
