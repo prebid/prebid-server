@@ -106,11 +106,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		// ensure all impressions with member ids use the same member id
-		memberId := impExt.Bidder.Member
-		if memberId != 0 {
+		memberID := impExt.Bidder.Member
+		if memberID != 0 {
 			if uniqueMemberID == 0 {
-				uniqueMemberID = memberId
-			} else if uniqueMemberID != memberId {
+				uniqueMemberID = memberID
+			} else if uniqueMemberID != memberID {
 				errs = append(errs, errMemberIDMismatch)
 				return nil, errs
 			}
@@ -127,7 +127,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestURI := a.uri
 	if uniqueMemberID != 0 {
-		requestURI = appendMemberId(requestURI, uniqueMemberID)
+		requestURI = appendMemberID(requestURI, uniqueMemberID)
 	}
 
 	if err := a.modifyRequestExt(request, requestInfo); err != nil {
@@ -196,14 +196,14 @@ func modifyImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVerBuilder f
 
 	impExt := impExtOutgoing{
 		Appnexus: impExtOutgoingAppnexus{
-			PlacementID:       ext.Bidder.PlacementId,
+			PlacementID:       ext.Bidder.PlacementID,
 			AllowSmallerSizes: ext.Bidder.AllowSmallerSizes,
 			UsePmtRule:        ext.Bidder.UsePaymentRule,
 			Keywords:          ext.Bidder.Keywords,
 			TrafficSourceCode: ext.Bidder.TrafficSourceCode,
 			PubClick:          ext.Bidder.PubClick,
 			ExtInvCode:        ext.Bidder.ExtInvCode,
-			ExtImpID:          ext.Bidder.ExtImpId,
+			ExtImpID:          ext.Bidder.ExtImpID,
 		},
 		GPID: ext.GPID,
 	}
@@ -214,9 +214,9 @@ func modifyImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVerBuilder f
 	return err
 }
 
-func appendMemberId(uri url.URL, memberId int) url.URL {
+func appendMemberID(uri url.URL, memberID int) url.URL {
 	q := uri.Query()
-	q.Set("member_id", fmt.Sprint(memberId))
+	q.Set("member_id", fmt.Sprint(memberID))
 	uri.RawQuery = q.Encode()
 	return uri
 }
@@ -295,6 +295,8 @@ func buildRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 		requests      = make([]*adapters.RequestData, 0, requestsCount)
 	)
 
+	headers := buildHeaders()
+
 	for i := range requestsCount {
 		impsForRequest := imps[i*maxImpsPerReq : min((i+1)*maxImpsPerReq, len(imps))]
 
@@ -308,7 +310,7 @@ func buildRequests(imps []openrtb2.Imp, request *openrtb2.BidRequest, uri string
 			Method:  http.MethodPost,
 			Uri:     uri,
 			Body:    requestJSON,
-			Headers: buildHeaders(),
+			Headers: headers,
 			ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 		})
 	}
@@ -356,8 +358,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				continue
 			}
 
-			iabCategory, found := findIABCategoryForBid(&bidExt)
-			if found {
+			if iabCategory, found := findIABCategoryForBid(&bidExt); found {
 				bid.Cat = []string{iabCategory}
 			} else if len(bid.Cat) > 1 {
 				//create empty categories array to force bid to be rejected
