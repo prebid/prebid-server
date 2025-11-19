@@ -464,25 +464,6 @@ func (cfg *CurrencyConverter) validate(errs []error) []error {
 	return errs
 }
 
-// FileLogs Corresponding config for FileLogger as a PBS Analytics Module
-type FileLogs struct {
-	Filename string `mapstructure:"filename"`
-}
-
-type Pubstack struct {
-	Enabled     bool           `mapstructure:"enabled"`
-	ScopeId     string         `mapstructure:"scopeid"`
-	IntakeUrl   string         `mapstructure:"endpoint"`
-	Buffers     PubstackBuffer `mapstructure:"buffers"`
-	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
-}
-
-type PubstackBuffer struct {
-	BufferSize string `mapstructure:"size"`
-	EventCount int    `mapstructure:"count"`
-	Timeout    string `mapstructure:"timeout"`
-}
-
 type VTrack struct {
 	TimeoutMS          int64 `mapstructure:"timeout_ms"`
 	AllowUnknownBidder bool  `mapstructure:"allow_unknown_bidder"`

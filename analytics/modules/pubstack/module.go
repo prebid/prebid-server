@@ -9,18 +9,6 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
 )
 
-type Config struct {
-	Enabled     bool   `json:"enabled"`
-	ScopeId     string `json:"scopeId"`
-	IntakeUrl   string `json:"intakeUrl"`
-	ConfRefresh string `json:"confRefresh"`
-	Buffers     struct {
-		EventCount int    `json:"eventCount"`
-		BufferSize string `json:"bufferSize"`
-		Timeout    string `json:"timeout"`
-	} `json:"buffers"`
-}
-
 func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
 		return nil, nil
