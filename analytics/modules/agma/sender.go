@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/version"
 )
 
@@ -29,9 +28,8 @@ func compressToGZIP(requestBody []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttpEndpoint) (httpSender, error) {
-	_, err := url.Parse(endpoint.Url)
-	if err != nil {
+func createHttpSender(httpClient *http.Client, endpoint EndpointConfig) (httpSender, error) {
+	if _, err := url.ParseRequestURI(endpoint.Url); err != nil {
 		return nil, err
 	}
 
@@ -44,17 +42,12 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 		ctx, cancel := context.WithTimeout(context.Background(), httpTimeout)
 		defer cancel()
 
-		var requestBody []byte
-		var err error
-
+		requestBody := payload
 		if endpoint.Gzip {
-			requestBody, err = compressToGZIP(payload)
-			if err != nil {
+			if requestBody, err = compressToGZIP(payload); err != nil {
 				glog.Errorf("[agmaAnalytics] Compressing request failed %v", err)
 				return err
 			}
-		} else {
-			requestBody = payload
 		}
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.Url, bytes.NewBuffer(requestBody))
@@ -74,6 +67,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 			glog.Errorf("[agmaAnalytics] Sending request failed %v", err)
 			return err
 		}
+		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			glog.Errorf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)

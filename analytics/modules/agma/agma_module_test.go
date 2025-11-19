@@ -12,7 +12,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -86,7 +85,7 @@ var mockValidAmpObject = analytics.AmpObject{
 	},
 }
 
-var mockValidAccounts = []config.AgmaAnalyticsAccount{
+var mockValidAccounts = []AccountConfig{
 	{
 		PublisherId: "track-me",
 		Code:        "abc",
@@ -111,14 +110,14 @@ func (m *MockedSender) Send(payload []byte) error {
 func TestConfigParsingError(t *testing.T) {
 	testCases := []struct {
 		name       string
-		config     config.AgmaAnalytics
+		config     Config
 		shouldFail bool
 	}{
 		{
-			name: "Test with invalid/empty URL",
-			config: config.AgmaAnalytics{
+			name: "Test with invalid/empty Url",
+			config: Config{
 				Enabled: true,
-				Endpoint: config.AgmaAnalyticsHttpEndpoint{
+				Endpoint: EndpointConfig{
 					Url:     "%%2815197306101420000%29",
 					Timeout: "1s",
 					Gzip:    false,
@@ -128,9 +127,9 @@ func TestConfigParsingError(t *testing.T) {
 		},
 		{
 			name: "Test with invalid timout",
-			config: config.AgmaAnalytics{
+			config: Config{
 				Enabled: true,
-				Endpoint: config.AgmaAnalyticsHttpEndpoint{
+				Endpoint: EndpointConfig{
 					Url:     "http://localhost:8000/event",
 					Timeout: "1x",
 					Gzip:    false,
@@ -140,19 +139,19 @@ func TestConfigParsingError(t *testing.T) {
 		},
 		{
 			name: "Test with no accounts",
-			config: config.AgmaAnalytics{
+			config: Config{
 				Enabled: true,
-				Endpoint: config.AgmaAnalyticsHttpEndpoint{
+				Endpoint: EndpointConfig{
 					Url:     "http://localhost:8000/event",
 					Timeout: "1s",
 					Gzip:    false,
 				},
-				Buffers: config.AgmaAnalyticsBuffer{
+				Buffers: BufferConfig{
 					EventCount: 1,
 					BufferSize: "1Kb",
 					Timeout:    "1s",
 				},
-				Accounts: []config.AgmaAnalyticsAccount{},
+				Accounts: []AccountConfig{},
 			},
 			shouldFail: true,
 		},
@@ -171,18 +170,18 @@ func TestConfigParsingError(t *testing.T) {
 }
 
 func TestShouldTrackEvent(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 1,
 			BufferSize: "1Kb",
 			Timeout:    "1s",
 		},
-		Accounts: []config.AgmaAnalyticsAccount{
+		Accounts: []AccountConfig{
 			{
 				PublisherId: "track-me",
 				Code:        "abc",
@@ -320,18 +319,18 @@ func TestShouldTrackEvent(t *testing.T) {
 }
 
 func TestShouldTrackMultipleAccounts(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 1,
 			BufferSize: "1Kb",
 			Timeout:    "1s",
 		},
-		Accounts: []config.AgmaAnalyticsAccount{
+		Accounts: []AccountConfig{
 			{
 				PublisherId: "track-me-a",
 				Code:        "abc",
@@ -388,22 +387,22 @@ func TestShouldTrackMultipleAccounts(t *testing.T) {
 func TestShouldNotTrackLog(t *testing.T) {
 	testCases := []struct {
 		name   string
-		config config.AgmaAnalytics
+		config Config
 	}{
 		{
 			name: "Test with do-not-track PublisherId",
-			config: config.AgmaAnalytics{
+			config: Config{
 				Enabled: true,
-				Endpoint: config.AgmaAnalyticsHttpEndpoint{
+				Endpoint: EndpointConfig{
 					Url:     "http://localhost:8000/event",
 					Timeout: "5s",
 				},
-				Buffers: config.AgmaAnalyticsBuffer{
+				Buffers: BufferConfig{
 					EventCount: 1,
 					BufferSize: "1Kb",
 					Timeout:    "1s",
 				},
-				Accounts: []config.AgmaAnalyticsAccount{
+				Accounts: []AccountConfig{
 					{
 						PublisherId: "do-not-track",
 						Code:        "abc",
@@ -413,18 +412,18 @@ func TestShouldNotTrackLog(t *testing.T) {
 		},
 		{
 			name: "Test with do-not-track PublisherId",
-			config: config.AgmaAnalytics{
+			config: Config{
 				Enabled: true,
-				Endpoint: config.AgmaAnalyticsHttpEndpoint{
+				Endpoint: EndpointConfig{
 					Url:     "http://localhost:8000/event",
 					Timeout: "5s",
 				},
-				Buffers: config.AgmaAnalyticsBuffer{
+				Buffers: BufferConfig{
 					EventCount: 1,
 					BufferSize: "1Kb",
 					Timeout:    "1s",
 				},
-				Accounts: []config.AgmaAnalyticsAccount{
+				Accounts: []AccountConfig{
 					{
 						PublisherId: "track-me",
 						Code:        "abc",
@@ -457,13 +456,13 @@ func TestShouldNotTrackLog(t *testing.T) {
 }
 
 func TestRaceAllEvents(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 10000,
 			BufferSize: "100Mb",
 			Timeout:    "5m",
@@ -489,13 +488,13 @@ func TestRaceAllEvents(t *testing.T) {
 }
 
 func TestFlushOnSigterm(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 10000,
 			BufferSize: "100Mb",
 			Timeout:    "5m",
@@ -527,18 +526,18 @@ func TestFlushOnSigterm(t *testing.T) {
 }
 
 func TestRaceBufferCount(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 2,
 			BufferSize: "100Mb",
 			Timeout:    "5m",
 		},
-		Accounts: []config.AgmaAnalyticsAccount{
+		Accounts: []AccountConfig{
 			{
 				PublisherId: "track-me",
 				Code:        "abc",
@@ -578,18 +577,18 @@ func TestRaceBufferCount(t *testing.T) {
 }
 
 func TestBufferSize(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 1000,
 			BufferSize: "20Kb",
 			Timeout:    "5m",
 		},
-		Accounts: []config.AgmaAnalyticsAccount{
+		Accounts: []AccountConfig{
 			{
 				PublisherId: "track-me",
 				Code:        "abc",
@@ -613,18 +612,18 @@ func TestBufferSize(t *testing.T) {
 }
 
 func TestBufferTime(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 1000,
 			BufferSize: "100mb",
 			Timeout:    "5m",
 		},
-		Accounts: []config.AgmaAnalyticsAccount{
+		Accounts: []AccountConfig{
 			{
 				PublisherId: "track-me",
 				Code:        "abc",
@@ -665,13 +664,13 @@ func TestRaceEnd2End(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 	}))
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     server.URL,
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 2,
 			BufferSize: "100mb",
 			Timeout:    "5m",
@@ -700,18 +699,18 @@ func TestRaceEnd2End(t *testing.T) {
 }
 
 func TestShutdownFlush(t *testing.T) {
-	cfg := config.AgmaAnalytics{
+	cfg := Config{
 		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
+		Endpoint: EndpointConfig{
 			Url:     "http://localhost:8000/event",
 			Timeout: "5s",
 		},
-		Buffers: config.AgmaAnalyticsBuffer{
+		Buffers: BufferConfig{
 			EventCount: 1000,
 			BufferSize: "100mb",
 			Timeout:    "5m",
 		},
-		Accounts: []config.AgmaAnalyticsAccount{
+		Accounts: []AccountConfig{
 			{
 				PublisherId: "track-me",
 				Code:        "abc",

@@ -464,31 +464,6 @@ func (cfg *CurrencyConverter) validate(errs []error) []error {
 	return errs
 }
 
-type AgmaAnalytics struct {
-	Enabled  bool                      `mapstructure:"enabled"`
-	Endpoint AgmaAnalyticsHttpEndpoint `mapstructure:"endpoint"`
-	Buffers  AgmaAnalyticsBuffer       `mapstructure:"buffers"`
-	Accounts []AgmaAnalyticsAccount    `mapstructure:"accounts"`
-}
-
-type AgmaAnalyticsHttpEndpoint struct {
-	Url     string `mapstructure:"url"`
-	Timeout string `mapstructure:"timeout"`
-	Gzip    bool   `mapstructure:"gzip"`
-}
-
-type AgmaAnalyticsBuffer struct {
-	BufferSize string `mapstructure:"size"`
-	EventCount int    `mapstructure:"count"`
-	Timeout    string `mapstructure:"timeout"`
-}
-
-type AgmaAnalyticsAccount struct {
-	Code        string `mapstructure:"code"`
-	PublisherId string `mapstructure:"publisher_id"`
-	SiteAppId   string `mapstructure:"site_app_id"`
-}
-
 // FileLogs Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Filename string `mapstructure:"filename"`
@@ -1102,7 +1077,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("analytics.agma.buffers.size", "2MB")
 	v.SetDefault("analytics.agma.buffers.count", 100)
 	v.SetDefault("analytics.agma.buffers.timeout", "15m")
-	v.SetDefault("analytics.agma.accounts", []AgmaAnalyticsAccount{})
+	v.SetDefault("analytics.agma.accounts", []map[string]interface{}{})
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.BindEnv("gdpr.default_value")
 	v.SetDefault("gdpr.enabled", true)

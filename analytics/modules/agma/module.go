@@ -5,50 +5,24 @@ import (
 
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
-	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type Config struct {
-	Enabled  bool                             `json:"enabled"`
-	Endpoint config.AgmaAnalyticsHttpEndpoint `json:"endpoint"`
-	Buffers  struct {
-		EventCount int    `json:"eventCount"`
-		BufferSize string `json:"bufferSize"`
-		Timeout    string `json:"timeout"`
-	} `json:"buffers"`
-	Accounts []config.AgmaAnalyticsAccount `json:"accounts"`
-}
-
-// Builder builds the agma analytics module.
 func Builder(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error) {
 	if deps.HTTPClient == nil || deps.Clock == nil {
 		return nil, nil
 	}
 
 	var c Config
-	if cfg != nil {
+	if len(cfg) > 0 {
 		if err := jsonutil.Unmarshal(cfg, &c); err != nil {
 			return nil, err
 		}
 	}
 
-	if !c.Enabled {
-		return nil, nil
-	}
-	if c.Endpoint.Url == "" {
+	if !c.Enabled || c.Endpoint.Url == "" {
 		return nil, nil
 	}
 
-	full := config.AgmaAnalytics{
-		Enabled:  true,
-		Endpoint: c.Endpoint,
-		Buffers: config.AgmaAnalyticsBuffer{
-			EventCount: c.Buffers.EventCount,
-			BufferSize: c.Buffers.BufferSize,
-			Timeout:    c.Buffers.Timeout,
-		},
-		Accounts: c.Accounts,
-	}
-	return NewModule(deps.HTTPClient, full, deps.Clock)
+	return NewModule(deps.HTTPClient, c, deps.Clock)
 }
