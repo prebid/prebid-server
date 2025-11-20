@@ -96,12 +96,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for i := 0; i < len(request.Imp); i++ {
 		var impExt impExtIncoming
 		if err := jsonutil.Unmarshal(request.Imp[i].Ext, &impExt); err != nil {
-			errs = append(errs, fmt.Errorf("malformed impression ext for id '%s'", request.Imp[i].ID))
+			errs = append(errs, fmt.Errorf("failed to parse ext for impression id '%s'", request.Imp[i].ID))
 			continue
 		}
 
 		if err := modifyImp(&request.Imp[i], impExt, displayManagerVerBuilder); err != nil {
-			errs = append(errs, fmt.Errorf("error building impression ext for id '%s'", request.Imp[i].ID))
+			errs = append(errs, fmt.Errorf("failed to build ext for impression id '%s'", request.Imp[i].ID))
 			continue
 		}
 

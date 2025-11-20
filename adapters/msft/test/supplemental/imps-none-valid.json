@@ -44,11 +44,11 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "malformed impression ext for id 'test-imp-id-1'",
+      "value": "failed to parse ext for impression id 'test-imp-id-1'",
       "comparison": "literal"
     },
     {
-      "value": "malformed impression ext for id 'test-imp-id-2'",
+      "value": "failed to parse ext for impression id 'test-imp-id-2'",
       "comparison": "literal"
     }
   ]
