@@ -87,10 +87,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBluesea,
 	BidderBmtm,
 	BidderBoldwin,
+	BidderBoldwinRapid,
 	BidderBrave,
 	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
+	BidderClydo,
 	BidderCointraffic,
 	BidderCoinzilla,
 	BidderColossus,
@@ -462,10 +464,12 @@ const (
 	BidderBluesea           BidderName = "bluesea"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
+	BidderBoldwinRapid      BidderName = "boldwin_rapid"
 	BidderBrave             BidderName = "brave"
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
+	BidderClydo             BidderName = "clydo"
 	BidderCointraffic       BidderName = "cointraffic"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
