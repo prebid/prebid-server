@@ -165,7 +165,7 @@
       "body": {
         "id": "de825c88-282e-439a-bcf1-3108344f260c",
         "imp": [{
-          "id": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+          "id": "1753f913-d9ac-4d2b-93d2-475ff35c6ada",
           "native": {
             "request": "{\"ver\":\"1.1\",\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"data\":{\"type\":12}},{\"id\":2,\"required\":1,\"title\":{\"len\":100}},{\"id\":3,\"required\":1,\"img\":{\"type\":1,\"w\":80,\"h\":80}},{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}},{\"id\":5,\"data\":{\"type\":3}},{\"id\":6,\"required\":1,\"data\":{\"type\":2,\"len\":150}}]}",
             "ver": "1.2",
