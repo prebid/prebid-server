@@ -10,7 +10,7 @@
     },
     "placement": {
       "type": "string",
-      "description": "Refers to the placement of an adunit in a page. Must not contain any information about the type of device."
+      "description": "Refers to the placement of an adunit in a page. See Adagio recommended values: https://prebid.org/dev-docs/bidders/adagio.html#recommended-placement-param-values."
     },
     "site": {
       "type": "string",
