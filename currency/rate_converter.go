@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/timeutil"
 )
@@ -63,7 +63,7 @@ func (rc *RateConverter) fetch() (*Rates, error) {
 		// read the entire response body to ensure full connection reuse if there's an
 		// invalid status code
 		if _, err := io.Copy(io.Discard, response.Body); err != nil {
-			glog.Errorf("error draining conversion rates response body: %v", err)
+			logger.Errorf("error draining conversion rates response body: %v", err)
 		}
 		response.Body.Close()
 	}()
@@ -96,9 +96,9 @@ func (rc *RateConverter) update() error {
 	} else {
 		if rc.checkStaleRates() {
 			rc.clearRates()
-			glog.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
+			logger.Errorf("Error updating conversion rates, falling back to constant rates: %v", err)
 		} else {
-			glog.Errorf("Error updating conversion rates: %v", err)
+			logger.Errorf("Error updating conversion rates: %v", err)
 		}
 	}
 
