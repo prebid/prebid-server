@@ -169,7 +169,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/nextmillennium"
 	"github.com/prebid/prebid-server/v3/adapters/nexx360"
 	"github.com/prebid/prebid-server/v3/adapters/nobid"
-	"github.com/prebid/prebid-server/v3/adapters/nuba"
 	"github.com/prebid/prebid-server/v3/adapters/ogury"
 	"github.com/prebid/prebid-server/v3/adapters/oms"
 	"github.com/prebid/prebid-server/v3/adapters/onetag"
@@ -438,7 +437,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
 		openrtb_ext.BidderNexx360:           nexx360.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
-		openrtb_ext.BidderNuba:              nuba.Builder,
 		openrtb_ext.BidderOgury:             ogury.Builder,
 		openrtb_ext.BidderOms:               oms.Builder,
 		openrtb_ext.BidderOneTag:            onetag.Builder,

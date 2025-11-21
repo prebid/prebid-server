@@ -1,16 +1,12 @@
+aliasOf: "teqblaze"
 endpoint: "http://sa-lb.deliverimp.com/pserver"
 maintainer:
   email: "ssp@nuba.io"
-gvlVendorID: null
-capabilities:
-  site:
-    mediaTypes:
-      - banner
-      - video
-      - native
-
-  app:
-    mediaTypes:
-      - banner
-      - video
-      - native
+gvlVendorID: 1473
+userSync:
+  redirect:
+    url: "https://cs.screencore.io/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&coppa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://cs.screencore.io/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"  
