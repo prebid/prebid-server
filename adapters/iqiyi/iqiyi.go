@@ -57,19 +57,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		errs = append(errs, &errortypes.BadInput{Message: "No impression in the request"})
 		return nil, errs
 	}
-	
+
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		errs = append(errs, &errortypes.BadInput{Message: "bad Iqiyi bidder ext"})
 		return nil, errs
 	}
-	
+
 	var iqiyiExt openrtb_ext.ExtImpIqiyi
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &iqiyiExt); err != nil {
 		errs = append(errs, &errortypes.BadInput{Message: "bad Iqiyi bidder ext"})
 		return nil, errs
 	}
-	
+
 	for i := range request.Imp {
 		imp := &request.Imp[i]
 		if imp.Banner != nil {
@@ -85,23 +85,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			imp.BidFloorCur = "USD"
 		}
 	}
-	
+
 	url, err := a.buildEndpointURL(&iqiyiExt)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
-	
+
 	reqJson, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
-	
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     url,

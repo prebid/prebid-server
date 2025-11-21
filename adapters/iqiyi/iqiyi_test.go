@@ -98,8 +98,8 @@ func TestMakeRequests(t *testing.T) {
 		request := &openrtb2.BidRequest{
 			ID: "test-request-id",
 			Imp: []openrtb2.Imp{{
-				ID:   "test-imp-id",
-				Ext:  json.RawMessage(`invalid json`),
+				ID:  "test-imp-id",
+				Ext: json.RawMessage(`invalid json`),
 			}},
 		}
 		reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -126,8 +126,8 @@ func TestMakeRequests(t *testing.T) {
 		request := &openrtb2.BidRequest{
 			ID: "test-request-id",
 			Imp: []openrtb2.Imp{{
-				ID:  "test-imp-id",
-				Ext: json.RawMessage(`{"bidder":{"accountid":"test-account"}}`),
+				ID:       "test-imp-id",
+				Ext:      json.RawMessage(`{"bidder":{"accountid":"test-account"}}`),
 				BidFloor: math.Inf(1), // Cannot be marshalled
 			}},
 		}
@@ -143,7 +143,7 @@ func TestMakeRequests(t *testing.T) {
 		request := &openrtb2.BidRequest{
 			ID: "test-request-id",
 			Imp: []openrtb2.Imp{{
-				ID: "test-imp-id",
+				ID:  "test-imp-id",
 				Ext: json.RawMessage(`{"bidder":{"accountid":"test-account"}}`),
 				Banner: &openrtb2.Banner{
 					W: &w,
@@ -170,9 +170,9 @@ func TestMakeRequests(t *testing.T) {
 		request := &openrtb2.BidRequest{
 			ID: "test-request-id",
 			Imp: []openrtb2.Imp{{
-				ID:  "test-imp-id",
-				Ext: json.RawMessage(`{"bidder":{"accountid":"test-account"}}`),
-				BidFloor: 1.5,
+				ID:          "test-imp-id",
+				Ext:         json.RawMessage(`{"bidder":{"accountid":"test-account"}}`),
+				BidFloor:    1.5,
 				BidFloorCur: "",
 			}},
 		}
@@ -203,7 +203,7 @@ func TestMakeRequests(t *testing.T) {
 				t.Fatalf("Failed to create template: %v", err)
 			}
 		}
-		
+
 		badBidder := &adapter{
 			endpoint: invalidTemplate,
 		}
@@ -325,7 +325,7 @@ func TestMakeBids(t *testing.T) {
 			}`),
 		}
 		internalRequestWithCur := &openrtb2.BidRequest{
-			ID: "test-request-id",
+			ID:  "test-request-id",
 			Cur: []string{"EUR"},
 			Imp: []openrtb2.Imp{{
 				ID: "test-imp-id",
