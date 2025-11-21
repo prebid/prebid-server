@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Waardex Adapter Params",
+  "description": "A schema which validates params accepted by the Waardex adapter",
+
+  "type": "object",
+  "properties": {
+    "zoneId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Publisher Id to use."
+    }
+  },
+  "required": ["zoneId"]
+}
