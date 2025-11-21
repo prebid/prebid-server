@@ -1,0 +1,145 @@
+{
+  "mockBidRequest": {
+    "id": "test-multiple-seatbids-bids",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "abc"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "video": {
+          "w": 640,
+          "h": 480,
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "def"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dev-ads.risemediatech.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "test-multiple-seatbids-bids",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "abc"
+                }
+              }
+            },
+            {
+              "id": "imp-2",
+              "video": {
+                "w": 640,
+                "h": 480,
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "def"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1",
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-multiple-seatbids-bids",
+          "seatbid": [
+            {
+              "seat": "seat-1",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.0,
+                  "adm": "<div>Banner</div>",
+                  "mtype": 1,
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            },
+            {
+              "seat": "seat-2",
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 2.0,
+                  "adm": "<VAST/>",
+                  "mtype": 2,
+                  "w": 640,
+                  "h": 480
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.0,
+            "adm": "<div>Banner</div>",
+            "mtype": 1,
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-2",
+            "price": 2.0,
+            "adm": "<VAST/>",
+            "mtype": 2,
+            "w": 640,
+            "h": 480
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
