@@ -1,4 +1,4 @@
 aliasOf: "teqblaze"
-endpoint: "http://sa-lb.deliverimp.com/pserver"
+endpoint: "https://ads.nuba.io/openrtb2/auction"
 maintainer:
   email: "ssp@nuba.io"
