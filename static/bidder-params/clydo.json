@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Clydo Adapter Params",
+  "description": "A schema which validates params accepted by the Clydo adapter",
+  "type": "object",
+
+  "properties": {
+    "partnerId": {
+      "type": "string",
+      "description": "Partner ID",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "description": "Regional endpoint identifier (us, usw, eu, apac)",
+      "enum": ["us", "usw", "eu", "apac"]
+    }
+  },
+
+  "required": ["partnerId"]
+}

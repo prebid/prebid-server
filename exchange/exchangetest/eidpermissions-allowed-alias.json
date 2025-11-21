@@ -93,7 +93,14 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "prebid": {
+                            "aliases": {
+                                "foo": "appnexus"
+                            }
+                        }
+                    }
                 }
             },
             "mockResponse": {
