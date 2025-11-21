@@ -38,7 +38,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 		result = append(result, bidRequest)
 	}
@@ -57,8 +57,8 @@ func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][
 			errors = append(errors, err)
 			continue
 		}
-		//dispatchImpressions
-		//Group impressions by Matterfull-specific parameters `pid
+		// Dispatch impressions.
+		// Group impressions by the Matterfull-specific parameter `pid`.
 		if err := compatImpression(imp); err != nil {
 			errors = append(errors, err)
 			continue
@@ -80,17 +80,30 @@ func compatImpression(imp *openrtb2.Imp) error {
 }
 
 func compatBannerImpression(imp *openrtb2.Imp) error {
-	//As banner.w/h are required fields for Matterfull platform - take the first format entry
 	if imp.Banner.W == nil || imp.Banner.H == nil {
 		bannerCopy := *imp.Banner
 		banner := &bannerCopy
+
 		if len(banner.Format) == 0 {
-			return &errortypes.BadInput{Message: "Expected at least one banner.format entry or explicit w/h"}
+			return &errortypes.BadInput{
+				Message: "Expected at least one banner.format entry or explicit w/h",
+			}
 		}
+
 		format := banner.Format[0]
-		banner.Format = banner.Format[1:]
+
+		// Deep copy the remaining formats
+		if len(banner.Format) > 1 {
+			newFormats := make([]openrtb2.Format, len(banner.Format)-1)
+			copy(newFormats, banner.Format[1:])
+			banner.Format = newFormats
+		} else {
+			banner.Format = nil
+		}
+
 		banner.W = &format.W
 		banner.H = &format.H
+
 		imp.Banner = banner
 	}
 	return nil
@@ -109,11 +122,19 @@ func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfull, error) {
 			Message: err.Error(),
 		}
 	}
+
+	// Runtime validation: pid (PublisherID) must not be empty
+	if matterfullExt.PublisherID == "" {
+		return openrtb_ext.ExtImpMatterfull{}, &errortypes.BadInput{
+			Message: "matterfull bidder requires non-empty publisher_id",
+		}
+	}
+
 	return matterfullExt, nil
 }
 
 func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) (*adapters.RequestData, error) {
-	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
+	newBidRequest := createBidRequest(prebidBidRequest, imps)
 	reqJSON, err := jsonutil.Marshal(newBidRequest)
 	if err != nil {
 		return nil, err
@@ -137,7 +158,7 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		ImpIDs:  openrtb_ext.GetImpIDs(imps)}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) *openrtb2.BidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *openrtb2.BidRequest {
 
 	reqCopy := *prebidBidRequest
 	newBidRequest := &reqCopy

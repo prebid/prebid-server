@@ -63,7 +63,7 @@
           }
         ]
       },
-      "url": "http://us.matterfull.co/?uqhash=pub-abc"
+      "url": "https://prebid.matterfull.co/?uqhash=pub-abc"
     },
     {
       "request": {
@@ -78,7 +78,7 @@
           }
         ]
       },
-      "url": "http://us.matterfull.co/?uqhash=pub-def"
+      "url": "https://prebid.matterfull.co/?uqhash=pub-def"
     }
   ],
   "mockResponse": {

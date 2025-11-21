@@ -22,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://us.matterfull.co/?uqhash=LUN2gcJFHRwysZVTm8p3",
+        "uri": "https://prebid.matterfull.co/?uqhash=LUN2gcJFHRwysZVTm8p3",
         "body":{
           "id": "testid",
           "imp": [{

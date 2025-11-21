@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Metterfull Adapter Params",
+  "title": "Matterfull Adapter Params",
   "description": "A schema which validates params accepted by the Matterfull adapter",
   "type": "object",
   "properties": {
