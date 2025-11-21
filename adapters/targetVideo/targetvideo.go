@@ -21,6 +21,13 @@ type impExt struct {
 	TargetVideo openrtb_ext.ExtImpTargetVideo `json:"targetVideo"`
 }
 
+type impExtBidder struct {
+	TargetVideo openrtb_ext.ExtImpTargetVideo `json:"targetVideo"`
+}
+type impExtPrebid struct {
+	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	totalImps := len(request.Imp)
 	errors := make([]error, 0)
@@ -45,63 +52,36 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	// imp.ext transformation.
 	request.Imp = []openrtb2.Imp{imp}
 
-	_, errImp := validateImpAndSetExt(&imp)
-	if errImp != nil {
-		return nil, errImp
-	}
-
 	for i := range request.Imp {
-		if len(request.Imp[i].Ext) == 0 {
-			continue
+
+		var extBidder adapters.ExtImpBidder
+		if err := jsonutil.Unmarshal(imp.Ext, &extBidder); err != nil {
+			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error parsing imp.ext, err: %s", err)}
 		}
-		var root map[string]json.RawMessage
-		if err := json.Unmarshal(request.Imp[i].Ext, &root); err != nil {
-			// If ext cannot be parsed, skip transformation for this imp
-			continue
+		var extImpTargetVideo openrtb_ext.ExtImpTargetVideo
+		if err := jsonutil.Unmarshal(extBidder.Bidder, &extImpTargetVideo); err != nil {
+			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error parsing imp.ext.bidder, err: %s", err)}
 		}
+		var prebid *openrtb_ext.ExtImpPrebid
+		if extBidder.Prebid == nil {
+			prebid = &openrtb_ext.ExtImpPrebid{}
+		}
+		if prebid.StoredRequest == nil {
+			prebid.StoredRequest = &openrtb_ext.ExtStoredRequest{}
+		}
+		prebid.StoredRequest.ID = fmt.Sprintf("%d", extImpTargetVideo.PlacementId)
 
-		// Try to extract placementId from ext.bidder.targetVideo (or targetvideo)
-		placementId := ""
-		if bRaw, ok := root["bidder"]; ok && len(bRaw) > 0 {
-			var bidder map[string]json.RawMessage
-			if err := json.Unmarshal(bRaw, &bidder); err == nil {
-				if placementIdRaw, ok := bidder["placementId"]; ok && len(placementIdRaw) > 0 {
-
-					var asStr string
-					var asInt int64
-					if err := json.Unmarshal(placementIdRaw, &asStr); err == nil && asStr != "" {
-						placementId = asStr
-					} else if err := json.Unmarshal(placementIdRaw, &asInt); err == nil {
-						placementId = fmt.Sprintf("%d", asInt)
-					}
-
-				}
-			}
-			// Remove bidder node as required
-			delete(root, "bidder")
+		ext := impExtPrebid{
+			Prebid: prebid,
 		}
 
-		// If we obtained a placementId, set ext.prebid.storedrequest.id = placementId
-		if placementId != "" {
-			// Build prebid.storedrequest structure, preserving existing prebid if any
-			var prebid map[string]json.RawMessage
-			if pr, ok := root["prebid"]; ok && len(pr) > 0 {
-				_ = json.Unmarshal(pr, &prebid)
-			}
-			if prebid == nil {
-				prebid = make(map[string]json.RawMessage)
-			}
-			stored := map[string]string{"id": placementId}
-			storedRaw, _ := json.Marshal(stored)
-			prebid["storedrequest"] = storedRaw
-			prebidRaw, _ := json.Marshal(prebid)
-			root["prebid"] = prebidRaw
+		extRaw, err := jsonutil.Marshal(ext)
+		if err != nil {
+			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error building imp.ext, err: %s", err)}
 		}
 
-		// Marshal back the transformed ext
-		if newExt, err := json.Marshal(root); err == nil {
-			request.Imp[i].Ext = newExt
-		}
+		request.Imp[i].Ext = extRaw
+
 	}
 
 	reqJSON, err := json.Marshal(request)
@@ -125,24 +105,16 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 }
 
 func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if httpRes.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(httpRes) {
 		return nil, nil
 	}
-	if httpRes.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode)}}
+	if statusError := adapters.CheckResponseStatusCodeForErrors(httpRes); statusError != nil {
+		return nil, []error{statusError}
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := jsonutil.Unmarshal(httpRes.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("error while decoding response, err: %s", err)}}
-	}
-
-	if len(bidResp.SeatBid) == 0 {
-		return nil, nil
-	}
-
-	if len(bidResp.SeatBid[0].Bid) == 0 {
-		return nil, nil
+	bidResp, errResp := prepareBidResponse(httpRes.Body)
+	if errResp != nil {
+		return nil, []error{errResp}
 	}
 
 	br := adapters.NewBidderResponse()
@@ -151,18 +123,8 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bid := sb.Bid[i]
-			// Ensure imp exists and is video
+
 			mediaType := openrtb_ext.BidTypeVideo
-			for _, imp := range bidReq.Imp {
-				if imp.ID == bid.ImpID {
-					if imp.Video == nil {
-						// Not a video impression; skip
-						errs = append(errs, &errortypes.BadServerResponse{Message: fmt.Sprintf("ignoring bid id=%s for non-video imp id=%s", bid.ID, bid.ImpID)})
-						mediaType = ""
-					}
-					break
-				}
-			}
 
 			br.Bids = append(br.Bids, &adapters.TypedBid{Bid: &bid, BidType: mediaType})
 		}
@@ -170,19 +132,12 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	return br, errs
 }
 
-func validateImpAndSetExt(imp *openrtb2.Imp) (int, error) {
-	if imp.Video == nil {
-		return 0, &errortypes.BadInput{Message: fmt.Sprintf("Only video impressions are supported by targetvideo. ImpID=%s", imp.ID)}
+func prepareBidResponse(body []byte) (openrtb2.BidResponse, error) {
+	var response openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(body, &response); err != nil {
+		return response, err
 	}
-	if len(imp.Ext) == 0 {
-		return 0, &errortypes.BadInput{Message: fmt.Sprintf("imp.ext is required and must contain bidder params for targetvideo. ImpID=%s", imp.ID)}
-	}
-	var ext impExt
-	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
-		return 0, &errortypes.BadInput{Message: fmt.Sprintf("error parsing imp.ext for targetvideo, err: %s", err)}
-	}
-
-	return 0, nil
+	return response, nil
 }
 
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {

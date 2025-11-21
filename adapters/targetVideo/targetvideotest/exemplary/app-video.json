@@ -25,13 +25,6 @@
     ],
     "device": {
       "ua": "test-user-agent"
-    },
-    "site": {
-      "domain": "www.publisher.com",
-      "page": "http://www.publisher.com/some/path",
-      "ext": {
-        "amp": 0
-      }
     }
   },
   "httpCalls": [
@@ -69,13 +62,6 @@
           ],
           "device": {
             "ua": "test-user-agent"
-          },
-          "site": {
-            "domain": "www.publisher.com",
-            "page": "http://www.publisher.com/some/path",
-            "ext": {
-              "amp": 0
-            }
           },
           "cur": ["EUR"]
         },

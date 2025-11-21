@@ -45,4 +45,5 @@ var invalidParams = []string{
 	`{"placementId": "%9"}`,
 	`{"publisherId": "as9""}`,
 	`{"placementId": true}`,
+	`{"placementId": ""}`,
 }
