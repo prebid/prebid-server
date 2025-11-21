@@ -76,6 +76,9 @@ type ExtRequestPrebid struct {
 	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
 	Macros map[string]string `json:"macros,omitempty"`
 
+	// ORTBErrors enables OpenRTB-compliant error responses if set to true
+	ORTBErrors *bool `json:"ortberrors,omitempty"`
+
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.

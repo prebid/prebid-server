@@ -1,0 +1,23 @@
+{
+  "description": "Bid request is is missing imp array and ortb_error_response is configured in request",
+  "mockBidRequest": {
+    "id": "req-id",
+    "ext": {
+      "prebid": {
+        "ortberrors": true
+      }
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedBidResponse": {
+    "id": "req-id",
+    "nbr": 2,
+    "ext": {
+      "prebid": {
+        "errors": [
+          "request.imp must contain at least one element."
+        ]
+      }
+    }
+  }
+}
