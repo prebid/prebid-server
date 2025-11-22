@@ -1,0 +1,136 @@
+package pubstack
+
+import (
+	"encoding/json"
+	"net/http"
+	"testing"
+
+	bjclock "github.com/benbjohnson/clock"
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
+	"github.com/stretchr/testify/assert"
+)
+
+func newDepsWith(client *http.Client, c bjclock.Clock) analyticsdeps.Deps {
+	return analyticsdeps.Deps{
+		HTTPClient: client,
+		Clock:      c,
+	}
+}
+
+func TestBuilderNilDeps(t *testing.T) {
+	mod, err := Builder(nil, analyticsdeps.Deps{})
+	assert.NoError(t, err)
+	assert.Nil(t, mod)
+
+	client := &http.Client{}
+	mod, err = Builder(nil, analyticsdeps.Deps{HTTPClient: client})
+	assert.NoError(t, err)
+	assert.Nil(t, mod)
+
+	clk := bjclock.NewMock()
+	mod, err = Builder(nil, analyticsdeps.Deps{Clock: clk})
+	assert.NoError(t, err)
+	assert.Nil(t, mod)
+}
+
+func TestBuilderEmptyConfig(t *testing.T) {
+	client := &http.Client{}
+	clk := bjclock.NewMock()
+	deps := newDepsWith(client, clk)
+
+	mod, err := Builder([]byte(`{}`), deps)
+	assert.NoError(t, err)
+	assert.Nil(t, mod)
+}
+
+func TestBuilderDisabled(t *testing.T) {
+	client := &http.Client{}
+	clk := bjclock.NewMock()
+	deps := newDepsWith(client, clk)
+
+	cfg := Config{
+		Enabled:   false,
+		IntakeUrl: "https://pubstack.example.com/intake",
+		ScopeId:   "scope-1",
+	}
+	raw, err := json.Marshal(cfg)
+	assert.NoError(t, err)
+
+	mod, err := Builder(raw, deps)
+	assert.NoError(t, err)
+	assert.Nil(t, mod)
+}
+
+func TestBuilderNoIntakeUrl(t *testing.T) {
+	client := &http.Client{}
+	clk := bjclock.NewMock()
+	deps := newDepsWith(client, clk)
+
+	cfg := Config{
+		Enabled:   true,
+		IntakeUrl: "",
+		ScopeId:   "scope-1",
+	}
+	raw, err := json.Marshal(cfg)
+	assert.NoError(t, err)
+
+	mod, err := Builder(raw, deps)
+	assert.NoError(t, err)
+	assert.Nil(t, mod)
+}
+
+func TestBuilderNoScopeId(t *testing.T) {
+	client := &http.Client{}
+	clk := bjclock.NewMock()
+	deps := newDepsWith(client, clk)
+
+	cfg := Config{
+		Enabled:   true,
+		IntakeUrl: "https://pubstack.example.com/intake",
+		ScopeId:   "",
+	}
+	raw, err := json.Marshal(cfg)
+	assert.NoError(t, err)
+
+	mod, err := Builder(raw, deps)
+	assert.NoError(t, err)
+	assert.Nil(t, mod)
+}
+
+func TestBuilderInvalidConfig(t *testing.T) {
+	client := &http.Client{}
+	clk := bjclock.NewMock()
+	deps := newDepsWith(client, clk)
+
+	mod, err := Builder([]byte(`{`), deps)
+	assert.Error(t, err)
+	assert.Nil(t, mod)
+}
+
+func TestBuilderValidConfig(t *testing.T) {
+	client := &http.Client{}
+	clk := bjclock.NewMock()
+	deps := newDepsWith(client, clk)
+
+	cfg := Config{
+		Enabled:     true,
+		ScopeId:     "scope-1",
+		IntakeUrl:   "https://pubstack.example.com/intake",
+		ConfRefresh: "1m",
+		Buffers: BufferConfig{
+			BufferSize: "1MB",
+			EventCount: 100,
+			Timeout:    "1s",
+		},
+	}
+	raw, err := json.Marshal(cfg)
+	assert.NoError(t, err)
+
+	mod, err := Builder(raw, deps)
+	assert.NoError(t, err)
+	assert.NotNil(t, mod)
+
+	_, ok := mod.(analytics.Module)
+	assert.True(t, ok)
+}
