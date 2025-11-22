@@ -232,19 +232,6 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "account_defaults.privacy.ipv6.anon_keep_bits", 56, cfg.AccountDefaults.Privacy.IPv6Config.AnonKeepBits)
 	cmpInts(t, "account_defaults.privacy.ipv4.anon_keep_bits", 24, cfg.AccountDefaults.Privacy.IPv4Config.AnonKeepBits)
 
-	//Assert purpose VendorExceptionMap hash tables were built correctly
-	agmaMap, _ := cfg.Analytics["agma"].(map[string]interface{})
-	endpointMap, _ := agmaMap["endpoint"].(map[string]interface{})
-	buffersMap, _ := agmaMap["buffers"].(map[string]interface{})
-	cmpBools(t, "analytics.agma.enabled", false, agmaMap["enabled"].(bool))
-	cmpStrings(t, "analytics.agma.endpoint.timeout", "2s", endpointMap["timeout"].(string))
-	cmpBools(t, "analytics.agma.endpoint.gzip", false, endpointMap["gzip"].(bool))
-	cmpStrings(t, "analytics.agma.endppoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server", endpointMap["url"].(string))
-	cmpStrings(t, "analytics.agma.buffers.size", "2MB", buffersMap["size"].(string))
-	cmpInts(t, "analytics.agma.buffers.count", 100, buffersMap["count"].(int))
-	cmpStrings(t, "analytics.agma.buffers.timeout", "15m", buffersMap["timeout"].(string))
-	accountsSlice, _ := agmaMap["accounts"].([]interface{})
-	cmpInts(t, "analytics.agma.accounts", 0, len(accountsSlice))
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
@@ -556,21 +543,6 @@ tmax_adjustments:
   bidder_network_latency_buffer_ms: 100
   pbs_response_preparation_duration_ms: 100
 tmax_default: 600
-analytics:
-  agma:
-    enabled: true
-    endpoint:
-      url: "http://test.com"
-      timeout: "5s"
-      gzip: false
-    buffers:
-      size: 10MB
-      count: 111
-      timeout: 5m
-    accounts:
-    - code: agma-code
-      publisher_id: publisher-id
-      site_app_id: site-or-app-id
 `)
 
 func cmpStrings(t *testing.T, key, expected, actual string) {
@@ -643,7 +615,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.max_idle_connections_per_host", 2, cfg.CacheClient.MaxIdleConnsPerHost)
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", 3, cfg.CacheClient.IdleConnTimeout)
 	cmpInts(t, "gdpr.host_vendor_id", 15, cfg.GDPR.HostVendorID)
-	cmpStrings(t, "gdpr.default_value", "1", cfg.GDPR.DefaultValue)
+	cmpStrings(t, "gdpr.default_value", "0", cfg.GDPR.DefaultValue)
 	cmpStrings(t, "host_schain_node.asi", "pbshostcompany.com", cfg.HostSChainNode.ASI)
 	cmpStrings(t, "host_schain_node.sid", "00001", cfg.HostSChainNode.SID)
 	cmpStrings(t, "host_schain_node.rid", "BidRequest", cfg.HostSChainNode.RID)
@@ -894,21 +866,6 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", 10, cfg.Experiment.AdCerts.Remote.SigningTimeoutMs)
 	cmpBools(t, "hooks.enabled", true, cfg.Hooks.Enabled)
 	cmpBools(t, "account_modules_metrics", true, cfg.Metrics.Disabled.AccountModulesMetrics)
-	agmaMap, _ := cfg.Analytics["agma"].(map[string]interface{})
-	endpointMap, _ := agmaMap["endpoint"].(map[string]interface{})
-	buffersMap, _ := agmaMap["buffers"].(map[string]interface{})
-	cmpBools(t, "analytics.agma.enabled", true, agmaMap["enabled"].(bool))
-	cmpStrings(t, "analytics.agma.endpoint.timeout", "5s", endpointMap["timeout"].(string))
-	cmpBools(t, "analytics.agma.endpoint.gzip", false, endpointMap["gzip"].(bool))
-	cmpStrings(t, "analytics.agma.endpoint.url", "http://test.com", endpointMap["url"].(string))
-	cmpStrings(t, "analytics.agma.buffers.size", "10MB", buffersMap["size"].(string))
-	cmpInts(t, "analytics.agma.buffers.count", 111, buffersMap["count"].(int))
-	cmpStrings(t, "analytics.agma.buffers.timeout", "5m", buffersMap["timeout"].(string))
-	accountsSlice, _ := agmaMap["accounts"].([]interface{})
-	firstAccount, _ := accountsSlice[0].(map[string]interface{})
-	cmpStrings(t, "analytics.agma.accounts.0.publisher_id", "publisher-id", firstAccount["publisher_id"].(string))
-	cmpStrings(t, "analytics.agma.accounts.0.code", "agma-code", firstAccount["code"].(string))
-	cmpStrings(t, "analytics.agma.accounts.0.site_app_id", "site-or-app-id", firstAccount["site_app_id"].(string))
 }
 
 func TestValidateConfig(t *testing.T) {

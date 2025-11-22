@@ -72,17 +72,17 @@ func (a *Configuration) disableAllFeatures() *Configuration {
 }
 
 type Pubstack struct {
-	Enabled     bool           `json:"enabled" mapstructure:"enabled"`
-	ScopeId     string         `json:"scopeId" mapstructure:"scopeid"`
-	IntakeUrl   string         `json:"intakeUrl" mapstructure:"endpoint"`
-	Buffers     PubstackBuffer `json:"buffers" mapstructure:"buffers"`
-	ConfRefresh string         `json:"confRefresh" mapstructure:"configuration_refresh_delay"`
+	Enabled     bool           `json:"enabled"`
+	ScopeId     string         `json:"scopeId"`
+	IntakeUrl   string         `json:"intakeUrl"`
+	Buffers     PubstackBuffer `json:"buffers"`
+	ConfRefresh string         `json:"confRefresh"`
 }
 
 type PubstackBuffer struct {
-	BufferSize string `json:"bufferSize" mapstructure:"size"`
-	EventCount int    `json:"eventCount" mapstructure:"count"`
-	Timeout    string `json:"timeout" mapstructure:"timeout"`
+	BufferSize string `json:"bufferSize"`
+	EventCount int    `json:"eventCount"`
+	Timeout    string `json:"timeout"`
 }
 
 type Config = Pubstack
