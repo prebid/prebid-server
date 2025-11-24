@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid ext.bidder",
+      "value": "Placement ID missing",
       "comparison": "literal"
     }
   ],
@@ -16,8 +16,10 @@
           "w": 640,
           "h": 360
         },
-        "prebid": {
-          "placementId": "test"
+        "ext": {
+          "bidder": {
+            "placementId": "test"
+          }
         }
       }
     ],

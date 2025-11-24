@@ -17,13 +17,6 @@ type adapter struct {
 	endpoint string
 }
 
-type impExt struct {
-	TargetVideo openrtb_ext.ExtImpTargetVideo `json:"targetVideo"`
-}
-
-type impExtBidder struct {
-	TargetVideo openrtb_ext.ExtImpTargetVideo `json:"targetVideo"`
-}
 type impExtPrebid struct {
 	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
 }
@@ -56,11 +49,11 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 
 		var extBidder adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &extBidder); err != nil {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error parsing imp.ext, err: %s", err)}
+			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Invalid ext.bidder")}
 		}
 		var extImpTargetVideo openrtb_ext.ExtImpTargetVideo
 		if err := jsonutil.Unmarshal(extBidder.Bidder, &extImpTargetVideo); err != nil {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error parsing imp.ext.bidder, err: %s", err)}
+			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Placement ID missing")}
 		}
 		var prebid *openrtb_ext.ExtImpPrebid
 		if extBidder.Prebid == nil {
