@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -25,8 +24,6 @@ func init() {
 }
 
 func main() {
-	flag.Parse() // required for di.Log flags and testing package flags
-
 	bidderInfoPath, err := filepath.Abs(infoDirectory)
 	if err != nil {
 		logger.Fatalf("Unable to build configuration directory path: %v", err)

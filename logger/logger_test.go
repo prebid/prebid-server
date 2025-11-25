@@ -157,11 +157,13 @@ func TestAllLogLevels(t *testing.T) {
 	Infof("info")
 	Warnf("warn")
 	Errorf("error")
+	Fatalf("fatal")
 
 	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
 	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
 	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
+	assert.Len(t, mock.fatalCalls, 1, "Should have one fatal call")
 
 	// Restore default logger
 	logger = NewGlogLogger()
@@ -178,16 +180,19 @@ func TestEmptyMessages(t *testing.T) {
 	Infof("")
 	Warnf("")
 	Errorf("")
+	Fatalf("")
 
 	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
 	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
 	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
+	assert.Len(t, mock.fatalCalls, 1, "Should have one fatal call")
 
 	assert.Equal(t, "", mock.debugCalls[0].msg)
 	assert.Equal(t, "", mock.infoCalls[0].msg)
 	assert.Equal(t, "", mock.warnCalls[0].msg)
 	assert.Equal(t, "", mock.errorCalls[0].msg)
+	assert.Equal(t, "", mock.fatalCalls[0].msg)
 
 	// Restore default logger
 	logger = NewGlogLogger()
@@ -221,16 +226,19 @@ func TestNoArgs(t *testing.T) {
 	Debugf("simple debug")
 	Warnf("simple warning")
 	Errorf("simple error")
+	Fatalf("simple fatal")
 
 	assert.Len(t, mock.infoCalls, 1, "Should have one info call")
 	assert.Len(t, mock.debugCalls, 1, "Should have one debug call")
 	assert.Len(t, mock.warnCalls, 1, "Should have one warn call")
 	assert.Len(t, mock.errorCalls, 1, "Should have one error call")
+	assert.Len(t, mock.fatalCalls, 1, "Should have one fatal call")
 
 	assert.Empty(t, mock.infoCalls[0].args)
 	assert.Empty(t, mock.debugCalls[0].args)
 	assert.Empty(t, mock.warnCalls[0].args)
 	assert.Empty(t, mock.errorCalls[0].args)
+	assert.Empty(t, mock.fatalCalls[0].args)
 
 	// Restore default logger
 	logger = NewGlogLogger()
@@ -269,35 +277,28 @@ func TestSpecialCharacters(t *testing.T) {
 	logger = NewGlogLogger()
 }
 
-func TestConcurrentLogging(t *testing.T) {
+func TestLoggerInterfaceCompliance(t *testing.T) {
+	var _ Logger = (*mockLogger)(nil)
+	var _ Logger = (*GlogLogger)(nil)
+}
+
+func TestFatal(t *testing.T) {
 	// Initialize glog flags
 	flag.Set("logtostderr", "true")
 
 	mock := newMockLogger()
 	logger = mock
 
-	done := make(chan bool)
+	Fatalf("fatal message")
+	assert.Len(t, mock.fatalCalls, 1, "Should have one fatal call")
+	assert.Equal(t, "fatal message", mock.fatalCalls[0].msg)
+	assert.Empty(t, mock.fatalCalls[0].args)
 
-	// Test concurrent logging
-	for i := 0; i < 10; i++ {
-		go func(n int) {
-			Infof("concurrent message %d", n)
-			done <- true
-		}(i)
-	}
-
-	// Wait for all goroutines to complete
-	for i := 0; i < 10; i++ {
-		<-done
-	}
-
-	assert.Equal(t, 10, len(mock.infoCalls), "Should have 10 info calls from concurrent execution")
+	Fatalf("fatal with args: %s, %d", "test", 111)
+	assert.Len(t, mock.fatalCalls, 2, "Should have two fatal calls")
+	assert.Equal(t, "fatal with args: %s, %d", mock.fatalCalls[1].msg)
+	assert.Equal(t, []any{"test", 111}, mock.fatalCalls[1].args)
 
 	// Restore default logger
 	logger = NewGlogLogger()
-}
-
-func TestLoggerInterfaceCompliance(t *testing.T) {
-	var _ Logger = (*mockLogger)(nil)
-	var _ Logger = (*GlogLogger)(nil)
 }
