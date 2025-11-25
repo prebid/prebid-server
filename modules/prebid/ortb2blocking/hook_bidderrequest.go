@@ -506,25 +506,19 @@ func createBAttrMutation(bAttrByImp map[string][]int, mediaType string) hookstag
 			if values, ok := bAttrByImp[imp.ID]; ok && len(values) > 0 {
 				switch mediaType {
 				case "banner":
-					if imp.Banner != nil {
-						imp.Banner.BAttr = make([]adcom1.CreativeAttribute, len(values))
-						for j, attr := range values {
-							imp.Banner.BAttr[j] = adcom1.CreativeAttribute(attr)
-						}
+					imp.Banner.BAttr = make([]adcom1.CreativeAttribute, len(values))
+					for j, attr := range values {
+						imp.Banner.BAttr[j] = adcom1.CreativeAttribute(attr)
 					}
 				case "video":
-					if imp.Video != nil {
-						imp.Video.BAttr = make([]adcom1.CreativeAttribute, len(values))
-						for j, attr := range values {
-							imp.Video.BAttr[j] = adcom1.CreativeAttribute(attr)
-						}
+					imp.Video.BAttr = make([]adcom1.CreativeAttribute, len(values))
+					for j, attr := range values {
+						imp.Video.BAttr[j] = adcom1.CreativeAttribute(attr)
 					}
 				case "audio":
-					if imp.Audio != nil {
-						imp.Audio.BAttr = make([]adcom1.CreativeAttribute, len(values))
-						for j, attr := range values {
-							imp.Audio.BAttr[j] = adcom1.CreativeAttribute(attr)
-						}
+					imp.Audio.BAttr = make([]adcom1.CreativeAttribute, len(values))
+					for j, attr := range values {
+						imp.Audio.BAttr[j] = adcom1.CreativeAttribute(attr)
 					}
 				}
 				payload.Request.Imp[i] = imp
@@ -538,14 +532,11 @@ func createBTypeMutation(bTypeByImp map[string][]int) hookstage.MutationFunc[hoo
 	return func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 		for i, imp := range payload.Request.Imp {
 			if values, ok := bTypeByImp[imp.ID]; ok && len(values) > 0 {
-				// Only apply if Banner exists
-				if imp.Banner != nil {
-					imp.Banner.BType = make([]openrtb2.BannerAdType, len(values))
-					for j, btype := range values {
-						imp.Banner.BType[j] = openrtb2.BannerAdType(btype)
-					}
-					payload.Request.Imp[i] = imp
+				imp.Banner.BType = make([]openrtb2.BannerAdType, len(values))
+				for j, btype := range values {
+					imp.Banner.BType[j] = openrtb2.BannerAdType(btype)
 				}
+				payload.Request.Imp[i] = imp
 			}
 		}
 		return payload, nil
