@@ -28,11 +28,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// Split multi-imp request into multiple ad server requests. SRA is currently not recommended.
 	for i := 0; i < totalImps; i++ {
-		if adapterReq, err := a.makeRequest(*request, request.Imp[i]); err == nil {
-			adapterRequests = append(adapterRequests, adapterReq)
-		} else {
+		adapterReq, err := a.makeRequest(*request, request.Imp[i])
+		if err != nil {
 			errors = append(errors, err)
+			continue
 		}
+		adapterRequests = append(adapterRequests, adapterReq)
 	}
 
 	return adapterRequests, errors
@@ -116,10 +117,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bid := sb.Bid[i]
-
-			mediaType := openrtb_ext.BidTypeVideo
-
-			br.Bids = append(br.Bids, &adapters.TypedBid{Bid: &bid, BidType: mediaType})
+			br.Bids = append(br.Bids, &adapters.TypedBid{Bid: &bid, BidType: openrtb_ext.BidTypeVideo})
 		}
 	}
 	return br, errs
@@ -134,7 +132,6 @@ func prepareBidResponse(body []byte) (openrtb2.BidResponse, error) {
 }
 
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
-
 	bidder := &adapter{
 		endpoint: cfg.Endpoint,
 	}
