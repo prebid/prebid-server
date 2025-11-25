@@ -176,6 +176,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, []error{err}, &vo, &debugLog)
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	resolvedRequest := requestJson
 	if debugLog.DebugEnabledOrOverridden {
@@ -303,6 +304,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(bidReqWrapper, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
+
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	if errs := deps.setFieldsImplicitly(r, bidReqWrapper, account); len(errs) > 0 {
 		errL = append(errL, errs...)
@@ -331,8 +335,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TCF2Config:                 tcf2Config,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 		Activities:                 activityControl,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

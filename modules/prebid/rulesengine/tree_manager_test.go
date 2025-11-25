@@ -19,7 +19,7 @@ func TestTreeManagerShutdown(t *testing.T) {
 		requests: make(chan buildInstruction, 10),
 		monitor:  &treeManagerLogger{},
 	}
-	cache := NewCache()
+	cache := NewCache(0)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -192,7 +192,7 @@ func TestTreeManagerRun(t *testing.T) {
 				monitor:         logger,
 			}
 
-			cache := NewCache()
+			cache := NewCache(0)
 			cache.m.Store(tc.inStoredDataInCache)
 
 			// run
@@ -248,7 +248,7 @@ func getDisabledJsonConfig() *json.RawMessage {
 	rv := json.RawMessage(`
   {
     "enabled": false,
-    "generateRulesFromBidderConfig": true,
+    "generate_rules_from_bidderconfig": true,
     "timestamp": "20250131 00:00:00",
     "rulesets": [
       {
@@ -340,7 +340,7 @@ func getJsonConfigUnknownFunction() *json.RawMessage {
 	rv := json.RawMessage(`
   {
     "enabled": true,
-    "generateRulesFromBidderConfig": true,
+    "generate_rules_from_bidderconfig": true,
     "timestamp": "20250131 00:00:00",
     "rulesets": [
       {

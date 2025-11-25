@@ -679,54 +679,53 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 }
 
 func TestValidateAliases(t *testing.T) {
-	testCase := struct {
-		description  string
-		bidderInfos  BidderInfos
-		expectErrors []error
+	testCases := []struct {
+		name        string
+		bidderName  string
+		bidderInfo  BidderInfo
+		bidderInfos BidderInfos
+		expectedErr error
 	}{
-		description: "invalid aliases",
-		bidderInfos: BidderInfos{
-			"bidderA": BidderInfo{
-				Endpoint: "http://bidderA.com/openrtb2",
-				Maintainer: &MaintainerInfo{
-					Email: "maintainer@bidderA.com",
-				},
-				Capabilities: &CapabilitiesInfo{
-					Site: &PlatformInfo{
-						MediaTypes: []openrtb_ext.BidType{
-							openrtb_ext.BidTypeVideo,
-						},
-					},
-				},
-				AliasOf: "bidderB",
-			},
-			"bidderB": BidderInfo{
-				Endpoint: "http://bidderA.com/openrtb2",
-				Maintainer: &MaintainerInfo{
-					Email: "maintainer@bidderA.com",
-				},
-				Capabilities: &CapabilitiesInfo{
-					Site: &PlatformInfo{
-						MediaTypes: []openrtb_ext.BidType{
-							openrtb_ext.BidTypeVideo,
-						},
-					},
-				},
-				AliasOf: "bidderC",
-			},
+		{
+			name:        "not-alias",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{},
+			bidderInfos: BidderInfos{},
+			expectedErr: nil,
 		},
-		expectErrors: []error{
-			errors.New("bidder: bidderB cannot be an alias of an alias: bidderA"),
-			errors.New("bidder: bidderC not found for an alias: bidderB"),
+		{
+			name:        "alias-not-found",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "nonexistent"},
+			bidderInfos: BidderInfos{},
+			expectedErr: errors.New("bidder: nonexistent not found for an alias: b"), // does this make sense? should it be reversed?
+		},
+		{
+			name:        "alias-of-alias",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "a"},
+			bidderInfos: BidderInfos{"a": BidderInfo{AliasOf: "foo"}},
+			expectedErr: errors.New("bidder: a cannot be an alias of an alias: b"), // does this make sense? should it be reversed?
+		},
+		{
+			name:        "whitelabelonly",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "a", WhiteLabelOnly: true},
+			bidderInfos: BidderInfos{"a": BidderInfo{}},
+			expectedErr: errors.New("bidder: b is an alias and cannot be set as white label only"),
 		},
 	}
 
-	var errs []error
-	for bidderName, bidderInfo := range testCase.bidderInfos {
-		errs = append(errs, validateAliases(bidderInfo, testCase.bidderInfos, bidderName))
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := validateAliases(test.bidderInfo, test.bidderInfos, test.bidderName)
+			if test.expectedErr == nil {
+				assert.NoError(t, result)
+			} else {
+				assert.EqualError(t, result, test.expectedErr.Error())
+			}
+		})
 	}
-
-	assert.ElementsMatch(t, errs, testCase.expectErrors)
 }
 
 func TestBidderInfoValidationNegative(t *testing.T) {
@@ -1563,6 +1562,42 @@ func TestSyncerEndpointOverride(t *testing.T) {
 	}
 }
 
+func TestBidderInfoIsEnabled(t *testing.T) {
+	testCases := []struct {
+		name     string
+		bidder   BidderInfo
+		expected bool
+	}{
+		{
+			name:     "enabled",
+			bidder:   BidderInfo{Disabled: false},
+			expected: true,
+		},
+		{
+			name:     "enabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: false, WhiteLabelOnly: true},
+			expected: false,
+		},
+		{
+			name:     "disabled",
+			bidder:   BidderInfo{Disabled: true},
+			expected: false,
+		},
+		{
+			name:     "disabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: true, WhiteLabelOnly: true},
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.bidder.IsEnabled()
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
 func TestSyncerDefined(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -1972,4 +2007,98 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 		},
 	}
 	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")
+}
+
+func TestValidateGeoscope(t *testing.T) {
+	testCases := []struct {
+		name       string
+		geoscope   []string
+		bidderName string
+		expectErr  bool
+		errMsg     string
+	}{
+		{
+			name:       "nil",
+			geoscope:   nil,
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "empty",
+			geoscope:   []string{},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-iso-code",
+			geoscope:   []string{"USA"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-with-global-and-eea",
+			geoscope:   []string{"USA", "GLOBAL", "EEA"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-with-exclusion",
+			geoscope:   []string{"!USA"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "mixed-case-valid",
+			geoscope:   []string{"UsA", "can", "GbR"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "invalid-length",
+			geoscope:   []string{"USAA"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: USAA for adapter: testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "invalid-exclusion-length",
+			geoscope:   []string{"!USAA"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: USAA for adapter: !testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "non-letter-characters",
+			geoscope:   []string{"US1"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: US1 for adapter: testBidder - must contain only uppercase letters A-Z",
+		},
+		{
+			name:       "too-short-code",
+			geoscope:   []string{"US"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: US for adapter: testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "whitespace-and-trimming",
+			geoscope:   []string{" USA "},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateGeoscope(tc.geoscope, tc.bidderName)
+
+			if tc.expectErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -67,7 +68,12 @@ func createHttpSender(httpClient *http.Client, endpoint EndpointConfig) (httpSen
 			glog.Errorf("[agmaAnalytics] Sending request failed %v", err)
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+				glog.Errorf("[agmaAnalytics] Draining response body failed: %v", err)
+			}
+			resp.Body.Close()
+		}()
 
 		if resp.StatusCode != http.StatusOK {
 			glog.Errorf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)

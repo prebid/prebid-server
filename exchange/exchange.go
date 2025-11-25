@@ -72,7 +72,6 @@ type exchange struct {
 	gdprPermsBuilder         gdpr.PermissionsBuilder
 	currencyConverter        *currency.RateConverter
 	externalURL              string
-	gdprDefaultValue         gdpr.Signal
 	privacyConfig            config.Privacy
 	categoriesFetcher        stored_requests.CategoryFetcher
 	bidIDGenerator           BidIDGenerator
@@ -142,11 +141,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidderToSyncerKey[bidder] = syncer.Key()
 	}
 
-	gdprDefaultValue := gdpr.SignalYes
-	if cfg.GDPR.DefaultValue == "0" {
-		gdprDefaultValue = gdpr.SignalNo
-	}
-
 	privacyConfig := config.Privacy{
 		CCPA: cfg.CCPA,
 		GDPR: cfg.GDPR,
@@ -173,7 +167,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		externalURL:              cfg.ExternalURL,
 		gdprPermsBuilder:         gdprPermsBuilder,
 		me:                       metricsEngine,
-		gdprDefaultValue:         gdprDefaultValue,
 		privacyConfig:            privacyConfig,
 		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode:           cfg.HostSChainNode,
@@ -223,6 +216,8 @@ type AuctionRequest struct {
 	QueryParams             url.Values
 	BidderResponseStartTime time.Time
 	TmaxAdjustments         *TmaxAdjustmentsPreprocessed
+	GDPRSignal              gdpr.Signal
+	GDPREnforced            bool
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -321,20 +316,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 
 	recordImpMetrics(r.BidRequestWrapper, e.me)
 
-	// Retrieve EEA countries configuration from either host or account settings
-	eeaCountries := selectEEACountries(e.privacyConfig.GDPR.EEACountries, r.Account.GDPR.EEACountries)
-
-	// Make our best guess if GDPR applies
-	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper, eeaCountries)
-	gdprSignal, err := getGDPR(r.BidRequestWrapper)
-	if err != nil {
-		return nil, err
-	}
-	channelEnabled := r.TCF2Config.ChannelEnabled(channelTypeMap[r.LegacyLabels.RType])
-	gdprEnforced := enforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
 	dsaWriter := dsa.Writer{
 		Config:      r.Account.Privacy.DSA,
-		GDPRInScope: gdprEnforced,
+		GDPRInScope: r.GDPREnforced,
 	}
 	if err := dsaWriter.Write(r.BidRequestWrapper); err != nil {
 		return nil, err
@@ -350,7 +334,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		Prebid: *requestExtPrebid,
 		SChain: requestExt.GetSChain(),
 	}
-	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, gdprSignal, gdprEnforced, bidAdjustmentFactors)
+	bidderRequests, privacyLabels, errs := e.requestSplitter.cleanOpenRTBRequests(ctx, *r, requestExtLegacy, bidAdjustmentFactors)
 	for _, err := range errs {
 		if errortypes.ReadCode(err) == errortypes.InvalidImpFirstPartyDataErrorCode {
 			return nil, err
@@ -448,7 +432,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExtPrebid.Targeting != nil && requestExtPrebid.Targeting.IncludeBrandCategory != nil {
 			var rejections []string
-			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, *requestExtPrebid.Targeting, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &seatNonBidBuilder)
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, *requestExtPrebid.Targeting, adapterBids, e.categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &seatNonBidBuilder, r.Account)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
@@ -480,7 +464,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.Imp), targData.preferDeals)
 			auc.validateAndUpdateMultiBid(adapterBids, targData.preferDeals, r.Account.DefaultBidLimit)
-			auc.setRoundedPrices(*targData)
+			auc.setRoundedPrices(*targData, r.Account)
 
 			if requestExtPrebid.SupportDeals {
 				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, multiBidMap)
@@ -502,8 +486,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 				errs = append(errs, cacheErrs...)
 			}
 
+			env := ""
+			if r.BidRequestWrapper.BidRequest.App != nil {
+				env = openrtb_ext.EnvAppValue
+			}
+			if r.RequestType == "amp" {
+				env = openrtb_ext.EnvAmpValue
+			}
+
 			if targData.includeWinners || targData.includeBidderKeys || targData.includeFormat {
-				targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
+				targData.setTargeting(auc, env, bidCategory, r.Account.TruncateTargetAttribute, multiBidMap)
 			}
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, *r, responseDebugAllow, requestExtPrebid.Passthrough, fledge, errs)
@@ -615,29 +607,6 @@ func buildMultiBidMap(prebid *openrtb_ext.ExtRequestPrebid) map[string]openrtb_e
 	}
 
 	return multiBidMap
-}
-
-func (e *exchange) parseGDPRDefaultValue(r *openrtb_ext.RequestWrapper, eeaCountries []string) gdpr.Signal {
-	gdprDefaultValue := e.gdprDefaultValue
-
-	var geo *openrtb2.Geo
-	if r.User != nil && r.User.Geo != nil {
-		geo = r.User.Geo
-	} else if r.Device != nil && r.Device.Geo != nil {
-		geo = r.Device.Geo
-	}
-
-	if geo != nil {
-		// If the country is in the EEA list, GDPR applies.
-		// Otherwise, if the country code is properly formatted (3 characters), GDPR does not apply.
-		if isEEACountry(geo.Country, eeaCountries) {
-			gdprDefaultValue = gdpr.SignalYes
-		} else if len(geo.Country) == 3 {
-			gdprDefaultValue = gdpr.SignalNo
-		}
-	}
-
-	return gdprDefaultValue
 }
 
 func recordImpMetrics(r *openrtb_ext.RequestWrapper, metricsEngine metrics.MetricsEngine) {
@@ -1020,7 +989,7 @@ func encodeBidResponseExt(bidResponseExt *openrtb_ext.ExtBidResponse) ([]byte, e
 	return buffer.Bytes(), err
 }
 
-func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBidBuilder *SeatNonBidBuilder) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
+func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestTargeting, seatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData, booleanGenerator deduplicateChanceGenerator, seatNonBidBuilder *SeatNonBidBuilder, account config.Account) (map[string]string, map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -1104,7 +1073,7 @@ func applyCategoryMapping(ctx context.Context, targeting openrtb_ext.ExtRequestT
 
 			// TODO: consider should we remove bids with zero duration here?
 
-			priceBucket = GetPriceBucket(*bid.Bid, *targData)
+			priceBucket = GetPriceBucket(*bid.Bid, *targData, account)
 
 			newDur, err := findDurationRange(duration, targeting.DurationRangeSec)
 			if err != nil {
@@ -1673,18 +1642,4 @@ func setSeatNonBid(bidResponseExt *openrtb_ext.ExtBidResponse, seatNonBidBuilder
 
 	bidResponseExt.Prebid.SeatNonBid = seatNonBidBuilder.Slice()
 	return bidResponseExt
-}
-
-func isEEACountry(country string, eeaCountries []string) bool {
-	if len(eeaCountries) == 0 {
-		return false
-	}
-
-	country = strings.ToUpper(country)
-	for _, c := range eeaCountries {
-		if strings.ToUpper(c) == country {
-			return true
-		}
-	}
-	return false
 }

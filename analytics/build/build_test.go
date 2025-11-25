@@ -115,7 +115,7 @@ func TestNewPBSAnalytics_FileLogger(t *testing.T) {
 	}
 	defer os.RemoveAll(TEST_DIR)
 	mod := New(map[string]interface{}{
-		"filelogger": map[string]interface{}{
+		"file": map[string]interface{}{
 			"enabled":  true,
 			"filename": TEST_DIR + "/test",
 		},
@@ -159,9 +159,9 @@ func TestNewModuleHttp(t *testing.T) {
 				"timeout": "1s",
 			},
 			"buffers": map[string]interface{}{
-				"bufferSize": "100KB",
-				"eventCount": 50,
-				"timeout":    "30s",
+				"size":    "100kB",
+				"count":   50,
+				"timeout": "30s",
 			},
 			"accounts": []map[string]interface{}{
 				{"publisher_id": "123", "code": "abc"},

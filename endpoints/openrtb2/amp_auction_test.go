@@ -2199,6 +2199,11 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "assert response returned by exitpoint stage",
+			file:        "sample-requests/hooks/amp_exitpoint.json",
+			planBuilder: mockPlanBuilder{exitpointPlan: makePlan[hookstage.Exitpoint](mockUpdateResponseHook{})},
+		},
 	}
 
 	for _, tc := range testCases {

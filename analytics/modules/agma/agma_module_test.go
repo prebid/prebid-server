@@ -697,38 +697,3 @@ func TestRaceEnd2End(t *testing.T) {
 
 	assert.Equal(t, expected, actual)
 }
-
-func TestShutdownFlush(t *testing.T) {
-	cfg := Config{
-		Enabled: true,
-		Endpoint: EndpointConfig{
-			Url:     "http://localhost:8000/event",
-			Timeout: "5s",
-		},
-		Buffers: BufferConfig{
-			EventCount: 1000,
-			BufferSize: "100mb",
-			Timeout:    "5m",
-		},
-		Accounts: []AccountConfig{
-			{
-				PublisherId: "track-me",
-				Code:        "abc",
-			},
-		},
-	}
-	mockedSender := new(MockedSender)
-	mockedSender.On("Send", mock.Anything).Return(nil)
-	clockMock := clock.NewMock()
-	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
-	assert.NoError(t, err)
-
-	go logger.start()
-	logger.LogAuctionObject(&mockValidAuctionObject)
-	logger.Shutdown()
-
-	time.Sleep(10 * time.Millisecond)
-
-	mockedSender.AssertCalled(t, "Send", mock.Anything)
-	mockedSender.AssertNumberOfCalls(t, "Send", 1)
-}

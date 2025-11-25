@@ -74,7 +74,12 @@
                  "w": 300,
                  "pos": 1
                },
-               "bidfloor": 0.05
+               "bidfloor": 0.05,
+               "ext": {
+                 "bidder": {
+                   "pubId": "386276e072"
+                 }
+               }
              },
              {
                "id": "121-dt2",
@@ -85,8 +90,13 @@
                },
                "bidfloor": 0.12,
                "ext": {
-                  "key1": "value1",
-                  "key2": "value2"
+                 "bidder": {
+                   "pubId": "386276e072",
+                   "ext": {
+                     "key1": "value1",
+                     "key2": "value2"
+                   }
+                 }
                }
              }
            ],
@@ -157,9 +167,9 @@
                ],
                "seat": "772"
              }
-           ]
-         },
-         "cur": "USD"
+           ],
+           "cur": "USD"
+         }
        }
      }
    ],

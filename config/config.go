@@ -79,6 +79,8 @@ type Configuration struct {
 	AccountDefaults Account `mapstructure:"account_defaults"`
 	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
 	accountDefaultsJSON json.RawMessage
+	// CertsUseSystem will use the host OS certificates instead of embedded certs.
+	CertsUseSystem bool `mapstructure:"certificates_use_system"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
@@ -125,10 +127,32 @@ type PriceFloorFetcher struct {
 const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
-	MaxConnsPerHost     int `mapstructure:"max_connections_per_host"`
-	MaxIdleConns        int `mapstructure:"max_idle_connections"`
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
-	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
+	MaxConnsPerHost       int          `mapstructure:"max_connections_per_host"`
+	MaxIdleConns          int          `mapstructure:"max_idle_connections"`
+	MaxIdleConnsPerHost   int          `mapstructure:"max_idle_connections_per_host"`
+	IdleConnTimeout       int          `mapstructure:"idle_connection_timeout_seconds"`
+	TLSHandshakeTimeout   int          `mapstructure:"tls_handshake_timeout_seconds"`
+	ExpectContinueTimeout int          `mapstructure:"expect_continue_timeout_seconds"`
+	Dialer                Dialer       `mapstructure:"dialer"`
+	Throttle              HTTPThrottle `mapstructure:"throttle"`
+}
+
+type HTTPThrottle struct {
+	// Enables bidder throttling
+	EnableThrottling bool `mapstructure:"enable_throttling"`
+	// If enabled, we will only log that the bidder was to be throttled, but not actually throttle it.
+	SimulateThrottlingOnly bool `mapstructure:"simulate_throttling_only"`
+	// Queue wait time that is considered unhealthy
+	LongQueueWaitThresholdMS int `mapstructure:"long_queue_wait_threshold_ms"`
+	// Queue wait time that is short enough to be considered a healthy signal
+	ShortQueueWaitThresholdMS int `mapstructure:"short_queue_wait_threshold_ms"`
+	// ThrottleWindow controls the speed that the throttling logic will react to changes in the health of the bidder.
+	ThrottleWindow int `mapstructure:"throttle_window"`
+}
+
+type Dialer struct {
+	TimeoutSeconds   int `mapstructure:"timeout_seconds"`
+	KeepAliveSeconds int `mapstructure:"keep_alive_seconds"`
 }
 
 func (cfg *Configuration) validate(v *viper.Viper) []error {
@@ -452,14 +476,18 @@ type LMT struct {
 }
 
 type CurrencyConverter struct {
-	FetchURL             string `mapstructure:"fetch_url"`
-	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`
-	StaleRatesSeconds    int    `mapstructure:"stale_rates_seconds"`
+	FetchURL                 string `mapstructure:"fetch_url"`
+	FetchTimeoutMilliseconds int    `mapstructure:"fetch_timeout_ms"`
+	FetchIntervalSeconds     int    `mapstructure:"fetch_interval_seconds"`
+	StaleRatesSeconds        int    `mapstructure:"stale_rates_seconds"`
 }
 
 func (cfg *CurrencyConverter) validate(errs []error) []error {
 	if cfg.FetchIntervalSeconds < 0 {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
+	}
+	if cfg.FetchTimeoutMilliseconds < 0 {
+		errs = append(errs, fmt.Errorf("currency_converter.fetch_timeout_ms must be 0 or greater. Got %d", cfg.FetchTimeoutMilliseconds))
 	}
 	return errs
 }
@@ -515,6 +543,9 @@ type DisabledMetrics struct {
 	// server establishes with bidder servers such as the number of connections
 	// that were created or reused.
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
+
+	// True if we don't want to collect metrics on dial time and dial errors
+	AdapterConnectionDialMetrics bool `mapstructure:"adapter_connection_dial_metrics"`
 
 	// True if we don't want to collect the per adapter buyer UID scrubbed metric
 	AdapterBuyerUIDScrubbed bool `mapstructure:"adapter_buyeruid_scrubbed"`
@@ -895,15 +926,29 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client.tls_handshake_timeout_seconds", 10)
+	v.SetDefault("http_client.expect_continue_timeout_seconds", 1)
+	v.SetDefault("http_client.dialer.timeout_seconds", 30)
+	v.SetDefault("http_client.dialer.keep_alive_seconds", 15)
+	v.SetDefault("http_client.throttle.enable_throttling", false)
+	v.SetDefault("http_client.throttle.simulate_throttling_only", false)
+	v.SetDefault("http_client.throttle.long_queue_wait_threshold_ms", 50)
+	v.SetDefault("http_client.throttle.short_queue_wait_threshold_ms", 10)
+	v.SetDefault("http_client.throttle.throttle_window", 1000)
 	v.SetDefault("http_client_cache.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client_cache.max_idle_connections", 10)
 	v.SetDefault("http_client_cache.max_idle_connections_per_host", 2)
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client_cache.tls_handshake_timeout_seconds", 10)
+	v.SetDefault("http_client_cache.expect_continue_timeout_seconds", 1)
+	v.SetDefault("http_client_cache.dialer.timeout_seconds", 30)
+	v.SetDefault("http_client_cache.dialer.keep_alive_seconds", 15)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.account_stored_responses", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
+	v.SetDefault("metrics.disabled_metrics.adapter_connection_dial_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_buyeruid_scrubbed", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
@@ -1033,7 +1078,16 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
+	v.SetDefault("accounts.http.endpoint", "")
+	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", false)
 	v.SetDefault("accounts.in_memory_cache.type", "none")
+	v.SetDefault("accounts.in_memory_cache.ttl_seconds", 0)
+	v.SetDefault("accounts.in_memory_cache.size_bytes", 0)
+	v.SetDefault("accounts.cache_events.enabled", false)
+	v.SetDefault("accounts.cache_events.endpoint", "")
+	v.SetDefault("accounts.http_events.endpoint", "")
+	v.SetDefault("accounts.http_events.refresh_rate_seconds", 0)
+	v.SetDefault("accounts.http_events.timeout_ms", 0)
 
 	v.BindEnv("user_sync.external_url")
 	v.BindEnv("user_sync.coop_sync.default")
@@ -1079,6 +1133,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
+	v.SetDefault("currency_converter.fetch_timeout_ms", 60000)      // 60 seconds
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("currency_converter.stale_rates_seconds", 0)
 	v.SetDefault("default_request.type", "")
@@ -1121,13 +1176,19 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections", 40)
 	v.SetDefault("price_floors.fetcher.http_client.max_idle_connections_per_host", 2)
 	v.SetDefault("price_floors.fetcher.http_client.idle_connection_timeout_seconds", 60)
+	v.SetDefault("price_floors.fetcher.http_client.tls_handshake_timeout_seconds", 10)
+	v.SetDefault("price_floors.fetcher.http_client.expect_continue_timeout_seconds", 1)
+	v.SetDefault("price_floors.fetcher.http_client.dialer.timeout_seconds", 30)
+	v.SetDefault("price_floors.fetcher.http_client.dialer.keep_alive_seconds", 15)
 	v.SetDefault("price_floors.fetcher.max_retries", 10)
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)
 
+	v.SetDefault("certificates_use_system", false)
 	v.SetDefault("certificates_file", "")
+
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
 	v.SetDefault("generate_request_id", false)

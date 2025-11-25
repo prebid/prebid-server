@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/v3/hooks"
-	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
@@ -20,7 +19,7 @@ type cacheEntry struct {
 	enabled                                 bool
 	timestamp                               time.Time
 	hashedConfig                            hash
-	ruleSetsForProcessedAuctionRequestStage []cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]
+	ruleSetsForProcessedAuctionRequestStage []cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]
 }
 type cacheRuleSet[T1 any, T2 any] struct {
 	name        string
@@ -36,7 +35,7 @@ type cacheModelGroup[T1 any, T2 any] struct {
 // NewCacheEntry creates a new cache object for the given configuration
 // It builds the tree structures for the rule sets for the processed auction request stage
 // and stores them in the cache object
-func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEntry, error) {
+func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage, geoscopes map[string][]string) (cacheEntry, error) {
 	if cfg == nil {
 		return cacheEntry{}, errors.New("no rules engine configuration provided")
 	}
@@ -50,6 +49,14 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 		enabled:      cfg.Enabled,
 		timestamp:    time.Now(),
 		hashedConfig: idHash,
+	}
+
+	if cfg.GenerateRulesFromBidderConfig {
+		bidderConfigRuleSet, err := buildBidderConfigRuleSet(geoscopes, cfg.SetDefinitions.CountryGroups)
+		if err != nil {
+			return cacheEntry{}, err
+		}
+		newCacheObj.ruleSetsForProcessedAuctionRequestStage = bidderConfigRuleSet
 	}
 
 	for _, ruleSet := range cfg.RuleSets {
@@ -71,19 +78,19 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 
 // createCacheRuleSet creates a new cache rule set for the given configuration
 // It builds the tree structures for the model groups and stores them in the cache rule set
-func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]], error) {
+func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult], error) {
 	if cfg == nil {
-		return cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{}, errors.New("no rules engine configuration provided")
+		return cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{}, errors.New("no rules engine configuration provided")
 	}
 
-	crs := cacheRuleSet[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+	crs := cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 		name:        cfg.Name,
-		modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{},
+		modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{},
 	}
 
 	for _, modelGroup := range cfg.ModelGroups {
-		tree, err := rules.NewTree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]](
-			&treeBuilder[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+		tree, err := rules.NewTree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult](
+			&treeBuilder[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 				Config:            modelGroup,
 				SchemaFuncFactory: rules.NewRequestSchemaFunction,
 				ResultFuncFactory: NewProcessedAuctionRequestResultFunction,
@@ -93,7 +100,7 @@ func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWr
 			return crs, err
 		}
 
-		cmg := cacheModelGroup[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+		cmg := cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 			weight:       modelGroup.Weight,
 			version:      modelGroup.Version,
 			analyticsKey: modelGroup.AnalyticsKey,
