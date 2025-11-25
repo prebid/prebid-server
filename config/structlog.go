@@ -45,7 +45,6 @@ func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
 
 func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Struct {
-		logger("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
 		logInternal.Fatalf("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
 	}
 	t := v.Type()
@@ -61,7 +60,6 @@ func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 
 func logMapWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Map {
-		logger("LogMap called on type %s, whuch is not a map!", v.Type().String())
 		logInternal.Fatalf("LogMap called on type %s, whuch is not a map!", v.Type().String())
 	}
 	for _, k := range v.MapKeys() {
