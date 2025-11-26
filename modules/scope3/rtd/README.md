@@ -22,6 +22,7 @@ hooks:
         cache_ttl_seconds: 60               # Cache segments for 60 seconds (default)
         add_to_targeting: false             # Set to true to add segments as individual targeting keys for GAM
         add_scope3_targeting_section: false # Also set targeting in dedicated scope3 section
+        single_segment_key: ""              # When set, adds all segments as a comma separated value under a single targeting key
         masking:                            # Optional privacy masking configuration
           enabled: true                     # Enable field masking before sending to Scope3
           geo:

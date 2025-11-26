@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
@@ -116,6 +117,7 @@ type Config struct {
 	CacheSize                 int           `json:"cache_size"`                   // Maximum size of segment cache in bytes
 	AddToTargeting            bool          `json:"add_to_targeting"`             // Add segments as individual targeting keys
 	AddScope3TargetingSection bool          `json:"add_scope3_targeting_section"` // Add segments as individual targeting keys in Scope3 targeting section
+	SingleSegmentKey          string        `json:"single_segment_key"`           // When set, adds all segments as a comma separated value under a single targeting key
 	Masking                   MaskingConfig `json:"masking"`                      // Privacy masking configuration
 }
 
@@ -313,11 +315,28 @@ func (m *Module) HandleAuctionResponseHook(
 						}
 						payload.BidResponse.Ext = newPayload
 					} else {
-						newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "prebid.targeting."+segment, "true")
-						if err != nil {
-							return payload, err
+						if m.cfg.SingleSegmentKey != "" {
+							currentVal := gjson.GetBytes(payload.BidResponse.Ext, "prebid.targeting."+m.cfg.SingleSegmentKey)
+							if currentVal.Exists() {
+								newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "prebid.targeting."+m.cfg.SingleSegmentKey, currentVal.String()+","+segment)
+								if err != nil {
+									return payload, err
+								}
+								payload.BidResponse.Ext = newPayload
+							} else {
+								newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "prebid.targeting."+m.cfg.SingleSegmentKey, segment)
+								if err != nil {
+									return payload, err
+								}
+								payload.BidResponse.Ext = newPayload
+							}
+						} else {
+							newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "prebid.targeting."+segment, "true")
+							if err != nil {
+								return payload, err
+							}
+							payload.BidResponse.Ext = newPayload
 						}
-						payload.BidResponse.Ext = newPayload
 					}
 				}
 			}
@@ -348,11 +367,28 @@ func (m *Module) HandleAuctionResponseHook(
 								}
 								bid.Ext = newPayload
 							} else {
-								newPayload, err := sjson.SetBytes(bid.Ext, "prebid.targeting."+segment, "true")
-								if err != nil {
-									return payload, err
+								if m.cfg.SingleSegmentKey != "" {
+									currentVal := gjson.GetBytes(bid.Ext, "prebid.targeting."+m.cfg.SingleSegmentKey)
+									if currentVal.Exists() {
+										newPayload, err := sjson.SetBytes(bid.Ext, "prebid.targeting."+m.cfg.SingleSegmentKey, currentVal.String()+","+segment)
+										if err != nil {
+											return payload, err
+										}
+										bid.Ext = newPayload
+									} else {
+										newPayload, err := sjson.SetBytes(bid.Ext, "prebid.targeting."+m.cfg.SingleSegmentKey, segment)
+										if err != nil {
+											return payload, err
+										}
+										bid.Ext = newPayload
+									}
+								} else {
+									newPayload, err := sjson.SetBytes(bid.Ext, "prebid.targeting."+segment, "true")
+									if err != nil {
+										return payload, err
+									}
+									bid.Ext = newPayload
 								}
-								bid.Ext = newPayload
 							}
 						}
 					}
