@@ -14,8 +14,10 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/firstpartydata"
+	"github.com/prebid/prebid-server/v3/floors"
 	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -60,6 +62,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidAdjustmentFactors map[string]float64,
+	conversions currency.Conversions,
 ) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 	req := auctionReq.BidRequestWrapper
 	if err := PreloadExts(req); err != nil {
@@ -180,6 +183,28 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		// apply bid adjustments
 		if auctionReq.Account.PriceFloors.IsAdjustForBidAdjustmentEnabled() {
 			applyBidAdjustmentToFloor(reqWrapperCopy, bidder, bidAdjustmentFactors)
+		}
+
+		// apply SSP-specific floors if "ssp" field is in schema
+		if auctionReq.Account.PriceFloors.Enabled {
+			// Get original floors from the main request
+			requestExt, err := auctionReq.BidRequestWrapper.GetRequestExt()
+			if err == nil && requestExt != nil {
+				prebidExt := requestExt.GetPrebid()
+				if prebidExt != nil && prebidExt.Floors != nil {
+					// Recalculate floors for this specific SSP/bidder
+					floorErrs := floors.UpdateFloorsForSSP(
+						reqWrapperCopy,
+						string(bidder),
+						prebidExt.Floors,
+						conversions,
+					)
+					// Log errors but don't fail the request
+					for _, floorErr := range floorErrs {
+						errs = append(errs, fmt.Errorf("SSP %s floor calculation error: %v", bidder, floorErr))
+					}
+				}
+			}
 		}
 
 		// prepare user
