@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -34,6 +35,9 @@ const (
 	VideoOutstreamMedia string = "video-outstream"
 	AudioMedia          string = "audio"
 	NativeMedia         string = "native"
+	MQ                  string = "mq"
+	SSP                 string = "ssp"
+	GPID                string = "gpid"
 )
 
 // getFloorCurrency returns floors currency provided in floors JSON,
@@ -220,10 +224,105 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb_ex
 			value = getGptSlot(imp)
 		case AdUnitCode:
 			value = getAdUnitCode(imp)
+		case GPID:
+			value = getGPID(imp)
+		case MQ:
+			value = getMQ(imp)
+		case SSP:
+			value = getSSP(imp)
 		}
 		ruleKeys = append(ruleKeys, value)
 	}
 	return ruleKeys
+}
+
+// CreateRuleKeyWithSSP prepares rule keys with a specific SSP/bidder name
+// Used for per-bidder floor calculation after request split
+func CreateRuleKeyWithSSP(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb_ext.RequestWrapper, imp *openrtb_ext.ImpWrapper, sspName string) []string {
+	var ruleKeys []string
+
+	for _, field := range floorSchema.Fields {
+		value := catchAll
+		switch field {
+		case MediaType:
+			value = getMediaType(imp.Imp)
+		case Size:
+			value = getSizeValue(imp.Imp)
+			fmt.Println("value", value)
+		case Domain:
+			value = getDomain(request)
+		case SiteDomain:
+			value = getSiteDomain(request)
+		case Bundle:
+			value = getBundle(request)
+		case PubDomain:
+			value = getPublisherDomain(request)
+		case Country:
+			value = getDeviceCountry(request)
+		case DeviceType:
+			value = getDeviceType(request)
+		case Channel:
+			value = getChannelName(request)
+		case GptSlot:
+			value = getGptSlot(imp)
+		case AdUnitCode:
+			value = getAdUnitCode(imp)
+		case GPID:
+			value = getGPID(imp)
+		case MQ:
+			value = getMQ(imp)
+		case SSP:
+			// Use the provided SSP name instead of extracting from imp
+			value = strings.ToLower(sspName)
+		}
+		ruleKeys = append(ruleKeys, value)
+	}
+	return ruleKeys
+}
+
+func getGPID(imp *openrtb_ext.ImpWrapper) string {
+
+	impExt, err := imp.GetImpExt()
+	if err == nil && impExt != nil {
+		prebidExt := impExt.GetPrebid()
+		if prebidExt != nil && prebidExt.AdUnitCode != "" {
+			return prebidExt.AdUnitCode
+		}
+		return imp.ID
+	}
+	return ""
+}
+
+func getMQ(imp *openrtb_ext.ImpWrapper) string {
+	minute := 0
+	if imp != nil && imp.Imp != nil && imp.Imp.Ext != nil {
+		// No specific minute in imp.Ext for now, fallback to current time
+	}
+	// Use current system time
+	now := time.Now().UTC()
+	minute = now.Minute()
+	q := ((minute) / 15) + 1
+	return fmt.Sprintf("mq-%d", q)
+}
+
+func getSSP(imp *openrtb_ext.ImpWrapper) string {
+	return getBidder(imp)
+}
+
+func getBidder(imp *openrtb_ext.ImpWrapper) string {
+	// At initial stage (before request split), multiple bidders exist in imp.ext.prebid.bidder
+	// Return catchAll - actual SSP will be determined after request is split per bidder
+	impExt, err := imp.GetImpExt()
+	if err == nil && impExt != nil {
+		prebidExt := impExt.GetPrebid()
+		if prebidExt != nil && prebidExt.Bidder != nil {
+			fmt.Println("prebidExt.Bidder", prebidExt.Bidder)
+			// Multiple bidders present - can't choose one
+			// Return wildcard, will be recalculated per-SSP later
+			return catchAll
+		}
+	}
+	return catchAll
 }
 
 // getDeviceType returns device type provided into request
