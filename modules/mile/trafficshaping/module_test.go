@@ -600,13 +600,13 @@ func TestGetGPID(t *testing.T) {
 			expectedGPID: "", // Empty string should return empty
 		},
 		{
-			name: "nil_imp_wrapper",
-			impExt: nil,
+			name:         "nil_imp_wrapper",
+			impExt:       nil,
 			expectedGPID: "",
 		},
 		{
-			name: "nil_imp",
-			impExt: map[string]interface{}{},
+			name:         "nil_imp",
+			impExt:       map[string]interface{}{},
 			expectedGPID: "",
 		},
 	}
@@ -614,11 +614,12 @@ func TestGetGPID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var impWrapper *openrtb_ext.ImpWrapper
-			if tt.name == "nil_imp_wrapper" {
+			switch tt.name {
+			case "nil_imp_wrapper":
 				impWrapper = nil
-			} else if tt.name == "nil_imp" {
+			case "nil_imp":
 				impWrapper = &openrtb_ext.ImpWrapper{Imp: nil}
-			} else {
+			default:
 				extJSON, err := json.Marshal(tt.impExt)
 				require.NoError(t, err)
 
@@ -1302,7 +1303,7 @@ func TestCheckTDIDRtiPartner(t *testing.T) {
 			name: "empty_uids",
 			eid: openrtb2.EID{
 				Source: "adserver.org",
-				UIDs:  []openrtb2.UID{},
+				UIDs:   []openrtb2.UID{},
 			},
 			expected: false,
 		},
