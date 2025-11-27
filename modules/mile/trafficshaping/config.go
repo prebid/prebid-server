@@ -22,6 +22,9 @@ type Config struct {
 	AllowedCountries  []string `json:"allowed_countries"`
 	GeoLookupEndpoint string   `json:"geo_lookup_endpoint"`
 	GeoCacheTTLMS     int      `json:"geo_cache_ttl_ms"`
+
+	// Cached map for fast lookup (built once at parse time)
+	allowedCountriesMap map[string]struct{}
 }
 
 // parseConfig parses and validates the module configuration
@@ -45,6 +48,9 @@ func parseConfig(rawConfig json.RawMessage) (*Config, error) {
 	if err := validateConfig(cfg); err != nil {
 		return nil, err
 	}
+
+	// Build cached map for fast lookup
+	cfg.buildAllowedCountriesMap()
 
 	return cfg, nil
 }
@@ -98,17 +104,26 @@ func (c *Config) GetRequestTimeout() time.Duration {
 	return time.Duration(c.RequestTimeoutMs) * time.Millisecond
 }
 
-// GetAllowedCountriesMap returns a map of allowed countries for fast lookup
-func (c *Config) GetAllowedCountriesMap() map[string]struct{} {
+// buildAllowedCountriesMap builds the cached map from the slice
+func (c *Config) buildAllowedCountriesMap() {
 	if len(c.AllowedCountries) == 0 {
-		return nil
+		c.allowedCountriesMap = nil
+		return
 	}
 
-	countries := make(map[string]struct{}, len(c.AllowedCountries))
+	c.allowedCountriesMap = make(map[string]struct{}, len(c.AllowedCountries))
 	for _, country := range c.AllowedCountries {
-		countries[country] = struct{}{}
+		c.allowedCountriesMap[country] = struct{}{}
 	}
-	return countries
+}
+
+// GetAllowedCountriesMap returns a map of allowed countries for fast lookup
+func (c *Config) GetAllowedCountriesMap() map[string]struct{} {
+	// Lazy initialization for configs created without parseConfig
+	if c.allowedCountriesMap == nil && len(c.AllowedCountries) > 0 {
+		c.buildAllowedCountriesMap()
+	}
+	return c.allowedCountriesMap
 }
 
 // GeoEnabled returns true if geo lookup fallback is configured

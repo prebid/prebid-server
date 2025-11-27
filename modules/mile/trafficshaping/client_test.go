@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -12,6 +13,50 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type manualTimer struct {
+	ch        chan time.Time
+	mu        sync.Mutex
+	lastReset time.Duration
+}
+
+func newManualTimer() *manualTimer {
+	return &manualTimer{ch: make(chan time.Time, 1)}
+}
+
+func (mt *manualTimer) C() <-chan time.Time {
+	return mt.ch
+}
+
+func (mt *manualTimer) Reset(d time.Duration) bool {
+	mt.mu.Lock()
+	mt.lastReset = d
+	mt.mu.Unlock()
+	return true
+}
+
+func (mt *manualTimer) Stop() bool {
+	return true
+}
+
+func (mt *manualTimer) Trigger() {
+	select {
+	case mt.ch <- time.Now():
+	default:
+	}
+}
+
+func (mt *manualTimer) LastReset() time.Duration {
+	mt.mu.Lock()
+	defer mt.mu.Unlock()
+	return mt.lastReset
+}
+
+func (mt *manualTimer) SetLastReset(d time.Duration) {
+	mt.mu.Lock()
+	mt.lastReset = d
+	mt.mu.Unlock()
+}
 
 func TestRefreshLoop(t *testing.T) {
 	// Test backoff on errors
@@ -103,7 +148,7 @@ func TestGetConfigForURLCacheExpiration(t *testing.T) {
 
 	config := &Config{
 		Enabled:          true,
-		BaseEndpoint:      server.URL + "/",
+		BaseEndpoint:     server.URL + "/",
 		RefreshMs:        50, // Very short TTL for testing
 		RequestTimeoutMs: 1000,
 		SampleSalt:       "pbs",
@@ -141,7 +186,7 @@ func TestGetConfigForURLFetchError(t *testing.T) {
 
 	config := &Config{
 		Enabled:          true,
-		BaseEndpoint:      server.URL + "/",
+		BaseEndpoint:     server.URL + "/",
 		RefreshMs:        30000,
 		RequestTimeoutMs: 1000,
 		SampleSalt:       "pbs",
@@ -513,3 +558,122 @@ func TestPreprocessConfig_FlagZero(t *testing.T) {
 	assert.True(t, hasRubicon)
 }
 
+func TestConfigClientStopTwice(t *testing.T) {
+	config := &Config{
+		Enabled:          true,
+		BaseEndpoint:     "http://example.com/",
+		RefreshMs:        30000,
+		RequestTimeoutMs: 1000,
+		SampleSalt:       "pbs",
+	}
+
+	client := NewConfigClient(http.DefaultClient, config)
+	assert.NotNil(t, client)
+
+	assert.NotPanics(t, func() {
+		client.Stop()
+		client.Stop()
+	})
+}
+
+func TestRefreshLoopRecoversAndResetsInterval(t *testing.T) {
+	var requestCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count := atomic.AddInt32(&requestCount, 1)
+		if count == 2 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		response := TrafficShapingData{Response: Response{Values: map[string]map[string]map[string]int{}}}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	config := &Config{
+		Enabled:          true,
+		Endpoint:         server.URL,
+		RefreshMs:        1000,
+		RequestTimeoutMs: 1000,
+		SampleSalt:       "pbs",
+	}
+
+	timer := newManualTimer()
+	client := &ConfigClient{
+		httpClient: server.Client(),
+		config:     config,
+		done:       make(chan struct{}),
+		newTimer: func(d time.Duration) schedulerTimer {
+			timer.SetLastReset(d)
+			return timer
+		},
+		jitterFn: func(int64) int64 { return 0 },
+	}
+
+	require.NoError(t, client.fetch())
+	go client.refreshLoop()
+	defer client.Stop()
+
+	timer.Trigger()
+	require.Eventually(t, func() bool { return atomic.LoadInt32(&requestCount) >= 2 }, time.Second, 10*time.Millisecond)
+	assert.Equal(t, 10*time.Second, timer.LastReset())
+
+	timer.Trigger()
+	require.Eventually(t, func() bool { return atomic.LoadInt32(&requestCount) >= 3 }, time.Second, 10*time.Millisecond)
+	assert.Equal(t, config.GetRefreshInterval(), timer.LastReset())
+}
+
+func TestGetConfigForURLRemovesExpiredEntry(t *testing.T) {
+	var requestCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		response := TrafficShapingData{Response: Response{Values: map[string]map[string]map[string]int{}}}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	config := &Config{
+		Enabled:          true,
+		BaseEndpoint:     server.URL + "/",
+		RefreshMs:        50,
+		RequestTimeoutMs: 1000,
+		SampleSalt:       "pbs",
+	}
+
+	client := NewConfigClient(server.Client(), config)
+	defer client.Stop()
+
+	url := server.URL + "/config.json"
+	require.NotNil(t, client.GetConfigForURL(url))
+
+	raw, ok := client.dynamicCache.Load(url)
+	require.True(t, ok)
+	cached := raw.(*cachedConfig)
+	cached.expiresAt = time.Now().Add(-time.Second)
+	atomic.StoreInt64(&client.lastDynamicCleanup, 0)
+
+	require.NotNil(t, client.GetConfigForURL(url))
+	assert.GreaterOrEqual(t, atomic.LoadInt32(&requestCount), int32(2))
+}
+
+func TestGetConfigForURLDoesNotCacheOnError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	config := &Config{
+		Enabled:          true,
+		BaseEndpoint:     server.URL + "/",
+		RefreshMs:        50,
+		RequestTimeoutMs: 1000,
+		SampleSalt:       "pbs",
+	}
+
+	client := NewConfigClient(server.Client(), config)
+	defer client.Stop()
+
+	url := server.URL + "/config.json"
+	assert.Nil(t, client.GetConfigForURL(url))
+	_, ok := client.dynamicCache.Load(url)
+	assert.False(t, ok)
+}

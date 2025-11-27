@@ -59,11 +59,18 @@ start_pbs() {
         export PBS_GDPR_DEFAULT_VALUE="0"
     fi
 
+    # Build first for faster startup detection
+    print_info "Building Prebid Server..."
+    if ! go build -o prebid-server . 2>&1; then
+        print_error "Build failed"
+        exit 1
+    fi
+    
     # Start in background
-    PBS_GDPR_DEFAULT_VALUE="$PBS_GDPR_DEFAULT_VALUE" go run . > "$LOG_FILE" 2>&1 &
+    PBS_GDPR_DEFAULT_VALUE="$PBS_GDPR_DEFAULT_VALUE" ./prebid-server > "$LOG_FILE" 2>&1 &
     
     # Wait a bit for startup
-    sleep 3
+    sleep 5
     
     # Check if it started successfully
     if is_running; then
