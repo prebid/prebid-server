@@ -44,7 +44,7 @@ func generateImps(imps []openrtb2.Imp) ([]openrtb2.Imp, error) {
 		bidderExt.Bidder = json.RawMessage(`{}`)
 		bidderExt.Prebid = &openrtb_ext.ExtImpPrebid{
 			StoredRequest: &openrtb_ext.ExtStoredRequest{
-				ID: allianceGravityExt.SrID,
+				ID: allianceGravityExt.SrId,
 			},
 		}
 

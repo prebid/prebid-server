@@ -6,7 +6,8 @@
   "properties": {
     "srid": {
       "type": "string",
-      "description": "Stored request ID"
+      "description": "Stored request ID",
+      "minLength": 1
     }
   },
 
