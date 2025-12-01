@@ -4,6 +4,7 @@
     "imp": [
       {
         "id": "test-imp-id",
+        "tagid": "",
         "banner": {
           "format": [
             {
@@ -12,26 +13,17 @@
             }
           ]
         },
-        "bidfloor": 1.00,
         "ext": {
+          "gpid": "gpid_value",
+          "data": {
+            "pbAdSlot": "pbslot_value"
+          },
           "bidder": {
             "publisherId": "12345"
           }
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "currency": {
-          "rates": {
-            "EUR": {
-              "USD": 0.05
-            }
-          },
-          "usepbsrates": false
-        }
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -52,14 +44,17 @@
                   }
                 ]
               },
-              "bidfloor": 1,
               "ext": {
                 "bidder": {
                   "publisherId": "12345"
+                },
+                "gpid": "gpid_value",
+                "data": {
+                  "pbAdSlot": "pbslot_value"
                 }
               },
               "id": "test-imp-id",
-              "tagid": "test-imp-id"
+              "tagid": "gpid_value"
             }
           ],
           "site": {
@@ -70,21 +65,9 @@
                 }
               }
             }
-          },
-          "ext": {
-            "prebid": {
-              "currency": {
-                "rates": {
-                  "EUR": {
-                    "USD": 0.05
-                  }
-                },
-                "usepbsrates": false
-              }
-            }
           }
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": ["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
