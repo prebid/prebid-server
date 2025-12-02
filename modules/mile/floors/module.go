@@ -151,7 +151,6 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 				return orig, nil
 			}
 
-			fmt.Println(string(mutated))
 			return hookstage.RawAuctionRequestPayload(mutated), nil
 		}, hookstage.MutationUpdate, "ext", "prebid", "floors",
 	)
