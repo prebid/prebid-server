@@ -6,15 +6,30 @@ import (
 	"fmt"
 
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/modules/mile/common"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
 
 // Builder creates a new floors injector module instance
-func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {
-	return &FloorsInjector{}, nil
+func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error) {
+
+	config, err := parseConfig(rawConfig)
+	if err != nil {
+		return nil, err
+	}
+	var geoResolver common.GeoResolver
+	if config.GeoEnabled() {
+		geoResolver, err = common.NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &FloorsInjector{geoResolver: geoResolver}, nil
 }
 
-type FloorsInjector struct{}
+type FloorsInjector struct {
+	geoResolver common.GeoResolver
+}
 
 func (f *FloorsInjector) HandleRawAuctionHook(
 	ctx context.Context,
@@ -28,7 +43,72 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			// Parse the incoming OpenRTB request
 			var req map[string]interface{}
 			if err := json.Unmarshal(orig, &req); err != nil {
+				fmt.Println("Unmarshal failed:", err)
 				// If unmarshal fails, return original payload (fail open)
+				return orig, err
+			}
+
+			// get IP and ua from raw ortb request
+			ip := ""
+			ua := ""
+			country := ""
+			if device, ok := req["device"].(map[string]interface{}); ok {
+				ua = device["ua"].(string)
+				switch ipv := device["ip"].(type) {
+				case string:
+					ip = ipv
+				}
+				// fallback to ipv6 if no ipv4
+				if ip == "" {
+					if ipv6, ok := device["ipv6"].(string); ok {
+						ip = ipv6
+					}
+				}
+
+				// Check if country is already present in device.geo.country
+				if geo, ok := device["geo"].(map[string]interface{}); ok {
+					fmt.Println("geo is", geo)
+					if countryCode, ok := geo["country"].(string); ok && countryCode != "" {
+						country = countryCode
+						fmt.Println("Country found in request:", country)
+					}
+				}
+			}
+
+			// Only resolve country from IP if not already present in request
+			if country == "" && f.geoResolver != nil {
+				resolvedCountry, err := f.geoResolver.Resolve(ctx, ip)
+				if err != nil {
+					return orig, nil
+				}
+				country = resolvedCountry
+				fmt.Println("Country resolved from IP:", country)
+			}
+
+			if country == "" {
+				fmt.Println("country is empty for ip", ip, ", skipping floors injection")
+				return orig, nil
+			}
+
+			platform := common.ClassifyDevicePlatform(ua)
+			fmt.Println("platform is", platform)
+			if platform == "" {
+				fmt.Println("platform is empty for ua", ua, ", skipping floors injection")
+				return orig, nil
+			}
+
+			siteID := ""
+			if site, ok := req["site"].(map[string]interface{}); ok {
+				siteID, ok = site["id"].(string)
+				if !ok {
+					fmt.Println("site id is not a string", site["id"], ", skipping floors injection")
+					return orig, nil
+				}
+			}
+			fmt.Println("siteID is", siteID)
+			siteConfig, ok := floorsConfig[siteID]
+			if !ok {
+				fmt.Println("site config not found for site id", siteID, ", skipping floors injection")
 				return orig, nil
 			}
 
@@ -55,16 +135,15 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			// Don't set 'location' or 'fetchstatus' - Prebid Server sets these after fetch
 			floors["floorendpoint"] = map[string]interface{}{
 				// "url": "https://floors.atmtd.com/floors.json?siteID=g35tzr",
-				"url": "http://localhost:8000/api/domains/floors_test/",
+				"url": "https://t-f.mile.so/floor-server/" + siteConfig.siteUID + "/" + country + "/" + platform + "/floor.json",
 			}
+
 			floors["enabled"] = true
 			floors["enforcement"] = map[string]interface{}{
 				"enforcerate": 100,  // 0-100, where 100 = always enforce
 				"enforcepbs":  true, // enforce in PBS
 				"floordeals":  true, // enforce for deals too
 			}
-
-			fmt.Println(floors)
 
 			// Marshal back to JSON
 			mutated, err := json.Marshal(req)
