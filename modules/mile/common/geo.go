@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/oschwald/geoip2-golang"
 )
 
 // GeoResolver resolves country codes from IP addresses.
@@ -136,3 +138,49 @@ func extractCountryFromPayload(payload map[string]any) (string, bool) {
 	return "", false
 }
 
+// MaxMindGeoResolver resolves geolocation using MaxMind GeoIP2 database
+type MaxMindGeoResolver struct {
+	db *geoip2.Reader
+}
+
+// NewMaxMindGeoResolver creates a new MaxMind-based GeoResolver
+func NewMaxMindGeoResolver(dbPath string) (*MaxMindGeoResolver, error) {
+	db, err := geoip2.Open(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open MaxMind database: %w", err)
+	}
+	return &MaxMindGeoResolver{db: db}, nil
+}
+
+// Resolve returns ISO alpha-2 country code for the given IP
+func (r *MaxMindGeoResolver) Resolve(_ context.Context, ip string) (string, error) {
+	if ip == "" {
+		return "", errors.New("ip required")
+	}
+	if r.db == nil {
+		return "", errors.New("maxmind database not initialized")
+	}
+	parsedIP := net.ParseIP(strings.TrimSpace(ip))
+	if parsedIP == nil {
+		return "", fmt.Errorf("invalid ip: %s", ip)
+	}
+
+	record, err := r.db.Country(parsedIP)
+	if err != nil {
+		return "", fmt.Errorf("maxmind lookup failed: %w", err)
+	}
+
+	if record.Country.IsoCode == "" {
+		return "", errors.New("country code not found")
+	}
+
+	return strings.ToUpper(record.Country.IsoCode), nil
+}
+
+// Close closes the MaxMind database
+func (r *MaxMindGeoResolver) Close() error {
+	if r.db != nil {
+		return r.db.Close()
+	}
+	return nil
+}
