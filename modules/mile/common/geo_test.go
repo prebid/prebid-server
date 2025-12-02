@@ -1,4 +1,4 @@
-package trafficshaping
+package common
 
 import (
 	"context"
