@@ -1660,7 +1660,7 @@ func TestSyncerEqual(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "different-supports-orderd",
+			name: "different-supports-ordered",
 			syncer1: &Syncer{
 				Key:      "key",
 				Supports: []string{"iframe"},
