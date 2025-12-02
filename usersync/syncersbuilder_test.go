@@ -294,10 +294,11 @@ func TestShouldCreateSyncer(t *testing.T) {
 
 func TestChooseSyncerConfig(t *testing.T) {
 	var (
-		bidderAPopulated = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
-		bidderAEmpty     = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{}}
-		bidderBPopulated = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
-		bidderBEmpty     = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{}}
+		bidderAPopulated    = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
+		bidderAEmpty        = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{}}
+		bidderBPopulated    = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
+		bidderBPopulatedAlt = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "differentURL"}}}
+		bidderBEmpty        = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{}}
 	)
 
 	testCases := []struct {
@@ -317,9 +318,14 @@ func TestChooseSyncerConfig(t *testing.T) {
 			expectedConfig: bidderBPopulated,
 		},
 		{
-			description:   "Many - Same Key - Multiple Configs",
-			given:         []namedSyncerConfig{bidderAPopulated, bidderBPopulated},
-			expectedError: "bidders bidderA, bidderB define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
+			description:    "Many - Same Key - Multiple - Same Configs",
+			given:          []namedSyncerConfig{bidderAPopulated, bidderBPopulated},
+			expectedConfig: bidderBPopulated,
+		},
+		{
+			description:   "Many - Same Key - Multiple - Different Configs",
+			given:         []namedSyncerConfig{bidderAPopulated, bidderBPopulatedAlt},
+			expectedError: "bidders bidderA, bidderB define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints unless the configs are identical",
 		},
 		{
 			description:   "Many - Same Key - No Configs",
