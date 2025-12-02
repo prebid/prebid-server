@@ -1815,10 +1815,10 @@ func TestSyncerEqual(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := tc.syncer1.Equal(tc.syncer2)
-			assert.Equal(t, tc.expected, result)
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.syncer1.Equal(test.syncer2)
+			assert.Equal(t, test.expected, result)
 		})
 	}
 }
@@ -2029,10 +2029,10 @@ func TestSyncerEndpointEqual(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := tc.endpoint1.Equal(tc.endpoint2)
-			assert.Equal(t, tc.expected, result)
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.endpoint1.Equal(test.endpoint2)
+			assert.Equal(t, test.expected, result)
 		})
 	}
 }
