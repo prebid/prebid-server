@@ -112,6 +112,85 @@ func updateBidRequestWithFloors(extFloorRules *openrtb_ext.PriceFloorRules, requ
 	return floorErrList
 }
 
+// hasSspInSchema checks if the schema includes "ssp" field
+func hasSspInSchema(schema openrtb_ext.PriceFloorSchema) bool {
+	for _, field := range schema.Fields {
+		if field == SSP {
+			return true
+		}
+	}
+	return false
+}
+
+// UpdateFloorsForSSP recalculates floors for a specific SSP/bidder after request split
+// This function should be called after the request has been split per bidder
+func UpdateFloorsForSSP(
+	bidRequestWrapper *openrtb_ext.RequestWrapper,
+	sspName string,
+	extFloorRules *openrtb_ext.PriceFloorRules,
+	conversions currency.Conversions,
+) []error {
+	var (
+		floorErrList []error
+		floorVal     float64
+	)
+
+	if extFloorRules == nil || extFloorRules.Data == nil || len(extFloorRules.Data.ModelGroups) == 0 {
+		return []error{}
+	}
+
+	modelGroup := extFloorRules.Data.ModelGroups[0]
+	if modelGroup.Schema.Delimiter == "" {
+		modelGroup.Schema.Delimiter = defaultDelimiter
+	}
+
+	// Only recalculate if schema includes "ssp" field
+	if !hasSspInSchema(modelGroup.Schema) {
+		return []error{} // Skip - use floors from initial calculation
+	}
+
+	floorErrList = validateFloorRulesAndLowerValidRuleKey(modelGroup.Schema, modelGroup.Schema.Delimiter, modelGroup.Values)
+	if len(modelGroup.Values) > 0 {
+		for _, imp := range bidRequestWrapper.GetImp() {
+			// Create rule key with actual SSP name
+			desiredRuleKey := CreateRuleKeyWithSSP(modelGroup.Schema, bidRequestWrapper, imp, sspName)
+			matchedRule, isRuleMatched := findRule(modelGroup.Values, modelGroup.Schema.Delimiter, desiredRuleKey)
+			floorVal = modelGroup.Default
+			if isRuleMatched {
+				floorVal = modelGroup.Values[matchedRule]
+			}
+
+			// No rule is matched or no default value provided or non-zero bidfloor not provided
+			if floorVal == 0.0 {
+				continue
+			}
+
+			floorMinVal, floorCur, err := getMinFloorValue(extFloorRules, imp, conversions)
+			if err == nil {
+				floorVal = roundToFourDecimals(floorVal)
+				bidFloor := floorVal
+				if floorMinVal > 0.0 && floorVal < floorMinVal {
+					bidFloor = floorMinVal
+				}
+
+				// Update floor for this SSP-specific request
+				imp.BidFloor = bidFloor
+				imp.BidFloorCur = floorCur
+
+				if isRuleMatched {
+					err = updateImpExtWithFloorDetails(imp, matchedRule, floorVal, imp.BidFloor)
+					if err != nil {
+						floorErrList = append(floorErrList, err)
+					}
+				}
+			} else {
+				floorErrList = append(floorErrList, err)
+			}
+		}
+	}
+	return floorErrList
+}
+
 // roundToFourDecimals retuns given value to 4 decimal points
 func roundToFourDecimals(in float64) float64 {
 	return math.Round(in*10000) / 10000

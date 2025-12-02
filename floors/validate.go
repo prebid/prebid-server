@@ -20,6 +20,9 @@ var validSchemaDimensions = map[string]struct{}{
 	AdUnitCode: {},
 	Country:    {},
 	DeviceType: {},
+	SSP:        {},
+	MQ:         {},
+	GPID:       {},
 }
 
 // validateSchemaDimensions validates schema dimesions given in floors JSON
