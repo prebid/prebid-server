@@ -112,7 +112,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			imp.TagID = getTagIDFromImpExt(impExtMap, imp.ID)
 		}
 
-		// Process imp.Ext: remove PAAPI signals and assign TagID
+		// remove PAAPI signals
 		err = clearAuctionEnvironment(impExtMap)
 		if err != nil {
 			errs = append(errs, err)
@@ -224,19 +224,27 @@ func clearAuctionEnvironment(impExtMap map[string]interface{}) error {
 }
 
 func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
-	// Try to get TagID from imp.ext.gpid
+	// imp.ext.gpid
 	if gpid, ok := impExtMap["gpid"].(string); ok && gpid != "" {
 		return gpid
 	}
 
-	// Try to get TagID from imp.ext.data.pbAdSlot
-	if data, ok := impExtMap["data"].(map[string]interface{}); ok {
-		if pbAdSlot, ok := data["pbadslot"].(string); ok && pbAdSlot != "" {
+	dataMap, hasData := impExtMap["data"].(map[string]interface{})
+	if hasData {
+		// imp.ext.data.adserver.adslot
+		if adserver, ok := dataMap["adserver"].(map[string]interface{}); ok {
+			if adslot, ok := adserver["adslot"].(string); ok && adslot != "" {
+				return adslot
+			}
+		}
+
+		// imp.ext.data.pbAdSlot
+		if pbAdSlot, ok := dataMap["pbadslot"].(string); ok && pbAdSlot != "" {
 			return pbAdSlot
 		}
 	}
 
-	// If not found, use imp.ID as fallback
+	// imp.ID as fallback
 	if impID != "" {
 		return impID
 	}
