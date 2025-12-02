@@ -7,6 +7,7 @@ import (
 
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/modules/mile/common"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
 
@@ -19,9 +20,9 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 
 	client := NewConfigClient(deps.HTTPClient, config)
 
-	var geoResolver GeoResolver
+	var geoResolver common.GeoResolver
 	if config.GeoEnabled() {
-		geoResolver, err = NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
+		geoResolver, err = common.NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +40,7 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 type Module struct {
 	config      *Config
 	client      *ConfigClient
-	geoResolver GeoResolver
+	geoResolver common.GeoResolver
 	httpClient  *http.Client
 }
 

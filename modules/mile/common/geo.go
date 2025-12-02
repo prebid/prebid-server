@@ -1,4 +1,4 @@
-package trafficshaping
+package common
 
 import (
 	"context"
@@ -135,3 +135,4 @@ func extractCountryFromPayload(payload map[string]any) (string, bool) {
 	}
 	return "", false
 }
+
