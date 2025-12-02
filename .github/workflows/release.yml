@@ -127,7 +127,10 @@ jobs:
           fetch-depth: 0
       - name: Build image
         run: |
-          docker build -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
+          docker build \
+            --build-arg MAXMIND_ACCOUNT_ID="${{ secrets.MAXMIND_ACCOUNT_ID }}" \
+            --build-arg MAXMIND_LICENSE_KEY="${{ secrets.MAXMIND_LICENSE_KEY }}" \
+            -t docker.io/prebid/prebid-server:${{ needs.publish-tag.outputs.releaseTag }} .
       - name: Login to docker Hub
         if: contains(inputs.debug, 'false')
         uses: docker/login-action@v2.1.0
