@@ -2,10 +2,12 @@
 
 The Traffic Shaping module allows publishers to dynamically control which bidders and ad sizes are allowed for specific placements based on a remote configuration. This enables fine-grained traffic management and optimization.
 
+**Note**: This module uses the [`mile/common`](../common/README.md) package for device, geo, and browser resolution.
+
 ## Features
 
 - **GPID-based Shaping**: Filter bidders and banner sizes per Global Placement ID (GPID)
-- **Dynamic URL Construction**: Automatically construct config URLs based on device geo, type, and browser
+- **Dynamic URL Construction**: Automatically construct config URLs based on device geo, type, and browser (uses [`mile/common`](../common/README.md))
 - **Skip Rate Gating**: Deterministically skip shaping for a percentage of auctions
 - **Country Gating**: Apply shaping only for specific countries
 - **User ID Vendor Filtering**: Optionally prune user.ext.eids to allowed vendors
@@ -19,7 +21,7 @@ The module supports two configuration modes:
 
 ### 1. Dynamic Mode (Recommended)
 
-Constructs the config URL dynamically per request based on device characteristics:
+Constructs the config URL dynamically per request based on device characteristics using the [`mile/common`](../common/README.md) module:
 
 ```yaml
 hooks:
@@ -33,6 +35,8 @@ hooks:
         request_timeout_ms: 1000
         prune_user_ids: false
         sample_salt: "pbs"
+        geo_lookup_endpoint: "http://geo-service.com/{ip}"  # optional, for IP fallback
+        geo_cache_ttl_ms: 300000  # optional, default: 300000ms
   default_account_execution_plan:
     endpoints:
       /openrtb2/auction:
@@ -45,16 +49,19 @@ hooks:
                     hook_impl_code: default
 ```
 
-**URL Construction**: `{base_endpoint}{country}/{device}/{browser}/ts.json`
+**URL Construction**: `{base_endpoint}{siteID}/{country}/{device}/{browser}/ts.json`
 
-**Example**: `https://example.com/ts-server/US/w/chrome/ts.json`
+**Example**: `https://example.com/ts-server/test-site/US/w/chrome/ts.json`
 
-**Path Components**:
+**Path Components** (resolved using [`mile/common`](../common/README.md)):
+- `siteID`: From `site.id` (required)
 - `country`: ISO 3166-1 alpha-2 code from `device.geo.country` (e.g., "US", "IN", "GB")
+  - Fallback: IP-based geo lookup if `geo_lookup_endpoint` is configured
 - `device`: Device category from `device.devicetype`:
   - `w` = Desktop/PC (devicetype=2)
   - `m` = Mobile/Phone (devicetype=1,4,6)
   - `t` = Tablet/TV (devicetype=3,5,7, or devicetype=1 with iPad/Tablet UA)
+  - Fallback: Derived from SUA or UA string if devicetype is missing
 - `browser`: Browser detected from `device.ua`:
   - `chrome` = Chrome (includes CriOS for iOS)
   - `safari` = Safari
@@ -104,6 +111,8 @@ hooks:
 - `prune_user_ids` (optional, default: false): Enable user ID vendor filtering
 - `sample_salt` (optional, default: "pbs"): Salt for deterministic sampling
 - `allowed_countries` (optional, static mode only): List of allowed countries for shaping (ISO 3166-1 alpha-2 codes)
+- `geo_lookup_endpoint` (optional, dynamic mode): HTTP endpoint for IP-based geo lookup fallback (supports `{ip}` placeholder)
+- `geo_cache_ttl_ms` (optional, default: 300000): TTL for geo lookup cache in milliseconds (minimum: 1000)
 
 ### Account-level Configuration
 
@@ -173,17 +182,25 @@ The module fetches a JSON configuration from the specified endpoint:
 
 ### Dynamic Mode URL Construction (Fail-Open)
 
-In dynamic mode, the module constructs the config URL from request data. If any required field is missing, shaping is skipped entirely (fail-open behavior):
+In dynamic mode, the module constructs the config URL from request data using the [`mile/common`](../common/README.md) resolver. If any required field is missing, shaping is skipped entirely (fail-open behavior):
 
 **Required fields**:
-- `device.geo.country` (2-letter ISO code)
-- `device.devicetype` (non-zero value)
+- `site.id` (required for URL construction)
+- `device.geo.country` (2-letter ISO code) OR IP address (if `geo_lookup_endpoint` configured)
+- `device.devicetype` (non-zero value) OR derivable from SUA/UA
 - `device.ua` (user agent string)
 
+**Fallback behavior** (via [`mile/common`](../common/README.md)):
+- Country: If `device.geo.country` is missing, attempts IP-based lookup if `geo_lookup_endpoint` is configured
+- Device: If `device.devicetype` is 0 or missing, derives from SUA or UA string
+- Browser: No fallback (must be present in UA)
+
 **Fail-open scenarios**:
-- Missing or empty `device.geo.country`
+- Missing or empty `site.id`
+- Missing or empty `device.geo.country` AND no `geo_lookup_endpoint` configured
+- Missing or empty `device.geo.country` AND IP-based lookup fails
 - Invalid country code (not 2 letters)
-- Missing or zero `device.devicetype`
+- Missing or zero `device.devicetype` AND cannot derive from SUA/UA
 - Missing or empty `device.ua`
 - Config fetch fails for the constructed URL
 
@@ -250,6 +267,8 @@ The module emits the following analytics activities:
 - `skipped_country`: Skipped due to country gating
 - `missing_gpid`: One or more impressions had no GPID
 - `skipped`: General skip marker added alongside specific skip reason
+- `country_derived`: Country was resolved via IP fallback (from [`mile/common`](../common/README.md))
+- `devicetype_derived`: Device category was derived from SUA/UA (from [`mile/common`](../common/README.md))
 
 ## Error Handling
 
@@ -257,12 +276,14 @@ The module emits the following analytics activities:
 - **Invalid GPID**: Impression is not shaped
 - **All Bidders Filtered**: Impression is left unchanged (fail-open)
 - **All Sizes Filtered**: Original sizes are preserved (fail-open)
+- **Geo Resolution Failure**: Falls back to fail-open if IP-based lookup fails
 
 ## Performance
 
 - Configuration is cached in memory and refreshed in the background
 - No network calls in the hot path (auction processing)
 - Lock-free reads using atomic pointers
+- Geo lookups are cached with configurable TTL
 - Typical overhead: < 50µs per impression
 
 ## Testing
@@ -293,6 +314,20 @@ hooks:
         endpoint: "https://cdn.example.com/shaping.json"
 ```
 
+### Dynamic Mode with Geo Fallback
+
+```yaml
+hooks:
+  enabled: true
+  modules:
+    mile:
+      trafficshaping:
+        enabled: true
+        base_endpoint: "https://cdn.example.com/ts-server/"
+        geo_lookup_endpoint: "http://geo-service.com/{ip}"
+        geo_cache_ttl_ms: 300000
+```
+
 ### With Country Gating
 
 ```yaml
@@ -319,13 +354,42 @@ hooks:
         prune_user_ids: true
 ```
 
+## Architecture
+
+The Traffic Shaping module leverages the [`mile/common`](../common/README.md) package for device, geo, and browser resolution:
+
+```
+┌─────────────────────────────────────┐
+│   Traffic Shaping Module            │
+│   (trafficshaping/)                 │
+│                                     │
+│   ┌─────────────────────────────┐   │
+│   │  URL Builder               │   │
+│   │  - Uses common.DefaultResolver│ │
+│   │  - Constructs config URL    │   │
+│   └─────────────────────────────┘   │
+│            │                         │
+│            ▼                         │
+│   ┌─────────────────────────────┐   │
+│   │  Config Client              │   │
+│   │  - Fetches & caches configs │   │
+│   └─────────────────────────────┘   │
+└────────────┬────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────┐
+│   Common Module (mile/common)       │
+│   See: ../common/README.md          │
+└─────────────────────────────────────┘
+```
+
 ## Limitations
 
 - Only banner size filtering is supported (video and native are not filtered)
 - Bidder aliases must use the same keys as in `imp.ext.prebid.bidder`
 - EID pruning is best-effort and conservative
+- Geo fallback requires `geo_lookup_endpoint` to be configured
 
 ## Support
 
 For issues or questions, please refer to the Prebid Server documentation or open an issue on GitHub.
-
