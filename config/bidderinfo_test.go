@@ -1648,7 +1648,7 @@ func TestSyncerEqual(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "same-supports-nill-vs-empty",
+			name: "same-supports-nil-vs-empty",
 			syncer1: &Syncer{
 				Key:      "key",
 				Supports: nil,
