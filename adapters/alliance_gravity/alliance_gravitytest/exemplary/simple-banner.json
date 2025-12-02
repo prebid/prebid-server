@@ -56,7 +56,7 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
-          "currency": "EUR",
+          "cur": "EUR",
           "seatbid": [
             {
               "seat": "testalias",
