@@ -3,6 +3,7 @@ package trafficshaping
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
@@ -22,9 +23,17 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 
 	var geoResolver common.GeoResolver
 	if config.GeoEnabled() {
-		geoResolver, err = common.NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
-		if err != nil {
-			return nil, err
+		// Prefer MaxMind if both are configured
+		if config.GeoDBPath != "" {
+			geoResolver, err = common.NewMaxMindGeoResolver(config.GeoDBPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize MaxMind resolver: %w", err)
+			}
+		} else if config.GeoLookupEndpoint != "" {
+			geoResolver, err = common.NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize HTTP geo resolver: %w", err)
+			}
 		}
 	}
 
@@ -36,12 +45,28 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 	}, nil
 }
 
+// Closeable represents a resource that can be closed
+type Closeable interface {
+	Close() error
+}
+
 // Module implements the traffic shaping hook
 type Module struct {
 	config      *Config
 	client      *ConfigClient
 	geoResolver common.GeoResolver
 	httpClient  *http.Client
+}
+
+// Close releases resources held by the Module
+func (m *Module) Close() error {
+	if m.geoResolver == nil {
+		return nil
+	}
+	if closer, ok := m.geoResolver.(Closeable); ok {
+		return closer.Close()
+	}
+	return nil
 }
 
 // HandleProcessedAuctionHook implements the ProcessedAuctionRequest hook

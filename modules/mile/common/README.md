@@ -14,15 +14,19 @@ The `common` module provides reusable functionality for resolving device, geo, a
 ```go
 import "github.com/prebid/prebid-server/v3/modules/mile/common"
 
-// Create a geo resolver (optional, for IP-based country fallback)
+// Option 1: Create HTTP-based geo resolver (for IP-based country fallback)
 geoResolver, _ := common.NewHTTPGeoResolver(
     "http://geo-service.com/{ip}",
     time.Minute * 5,
     httpClient,
 )
 
+// Option 2: Create MaxMind-based geo resolver (for IP-based country fallback)
+maxMindResolver, _ := common.NewMaxMindGeoResolver("/path/to/GeoLite2-Country.mmdb")
+defer maxMindResolver.Close() // Don't forget to close when done
+
 // Create a unified resolver
-resolver := common.NewDefaultResolver(geoResolver)
+resolver := common.NewDefaultResolver(geoResolver) // or maxMindResolver
 
 // Resolve all information at once
 info, activities, err := resolver.Resolve(ctx, wrapper)
@@ -66,6 +70,34 @@ func NewHTTPGeoResolver(endpoint string, ttl time.Duration, client *http.Client)
 - In-memory caching with TTL-based expiry
 - Supports multiple field names in response: `country`, `countryCode`, `country_code`, `iso_code`, `isoCode`
 - Supports nested structures: `{location: {country: "US"}}`
+
+#### `MaxMindGeoResolver`
+
+MaxMind GeoIP2 database-based implementation:
+
+```go
+func NewMaxMindGeoResolver(dbPath string) (*MaxMindGeoResolver, error)
+```
+
+- `dbPath`: Path to MaxMind GeoIP2 database file (e.g., `"/path/to/GeoLite2-Country.mmdb"`)
+
+**Features**:
+- Local database lookup (no network latency)
+- No caching needed (database is fast)
+- Requires MaxMind GeoIP2 database file (e.g., GeoLite2-Country.mmdb)
+- Must call `Close()` to release database handle when done
+
+**Example**:
+```go
+resolver, err := common.NewMaxMindGeoResolver("/path/to/GeoLite2-Country.mmdb")
+if err != nil {
+    // Handle error
+}
+defer resolver.Close()
+
+country, err := resolver.Resolve(ctx, "8.8.8.8")
+// Returns: "US", nil
+```
 
 #### `ExtractCountry(wrapper)`
 
@@ -223,10 +255,10 @@ device, _ := common.ExtractDeviceCategory(wrapper)
 browser, _ := common.ExtractBrowser(wrapper)
 ```
 
-### With Geo Fallback
+### With Geo Fallback (HTTP Resolver)
 
 ```go
-// Create geo resolver
+// Create HTTP geo resolver
 geoResolver, _ := common.NewHTTPGeoResolver(
     "http://geo-service.com/{ip}",
     time.Minute * 5,
@@ -249,6 +281,34 @@ for _, activity := range activities {
     }
     if activity.Name == "devicetype_derived" {
         // Device was derived from SUA/UA
+    }
+}
+```
+
+### With Geo Fallback (MaxMind Resolver)
+
+```go
+// Create MaxMind geo resolver
+maxMindResolver, err := common.NewMaxMindGeoResolver("/path/to/GeoLite2-Country.mmdb")
+if err != nil {
+    // Handle error (e.g., database file not found)
+    return
+}
+defer maxMindResolver.Close() // Important: close when done
+
+// Use unified resolver
+resolver := common.NewDefaultResolver(maxMindResolver)
+info, activities, err := resolver.Resolve(ctx, wrapper)
+
+if err != nil {
+    // Handle error
+    return
+}
+
+// Check if fallbacks were used
+for _, activity := range activities {
+    if activity.Name == "country_derived" {
+        // Country was resolved via IP using MaxMind database
     }
 }
 ```
@@ -313,10 +373,13 @@ func (m *Module) ProcessRequest(ctx context.Context, wrapper *openrtb_ext.Reques
 
 ## Performance
 
-- Geo lookups are cached with configurable TTL
+- **HTTP Geo Resolver**: Geo lookups are cached with configurable TTL, adds network latency (cached)
+- **MaxMind Geo Resolver**: Local database lookup, no network latency, typically < 1ms per lookup
 - Device and browser detection are pure functions (no I/O)
 - Typical overhead: < 10µs per request (without geo fallback)
-- Geo fallback adds network latency (cached)
+- Geo fallback overhead:
+  - HTTP resolver: Network latency + cache lookup (~10-100ms first time, < 1ms cached)
+  - MaxMind resolver: Database lookup (~0.1-1ms)
 
 ## Error Handling
 

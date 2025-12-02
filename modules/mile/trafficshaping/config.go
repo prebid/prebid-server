@@ -20,8 +20,9 @@ type Config struct {
 	PruneUserIds      bool     `json:"prune_user_ids"`
 	SampleSalt        string   `json:"sample_salt"`
 	AllowedCountries  []string `json:"allowed_countries"`
-	GeoLookupEndpoint string   `json:"geo_lookup_endpoint"`
-	GeoCacheTTLMS     int      `json:"geo_cache_ttl_ms"`
+	GeoLookupEndpoint string   `json:"geo_lookup_endpoint"` // HTTP endpoint option
+	GeoDBPath         string   `json:"geo_db_path"`         // MaxMind database path option
+	GeoCacheTTLMS     int      `json:"geo_cache_ttl_ms"`    // Only used for HTTP resolver
 
 	// Cached map for fast lookup (built once at parse time)
 	allowedCountriesMap map[string]struct{}
@@ -128,7 +129,7 @@ func (c *Config) GetAllowedCountriesMap() map[string]struct{} {
 
 // GeoEnabled returns true if geo lookup fallback is configured
 func (c *Config) GeoEnabled() bool {
-	return c.GeoLookupEndpoint != ""
+	return c.GeoLookupEndpoint != "" || c.GeoDBPath != ""
 }
 
 // GetGeoCacheTTL returns the geo cache TTL as duration
