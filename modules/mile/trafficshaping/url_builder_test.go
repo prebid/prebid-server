@@ -115,6 +115,7 @@ func TestBuildConfigURLWithFallback_DeviceFallback(t *testing.T) {
 				w := createWrapper("US", 0, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36")
 				w.Device.DeviceType = 0
 				w.Device.Geo = nil
+				w.Device.IP = "1.1.1.1" // IP required for geo fallback
 				return w
 			}(),
 			expectedURL: "http://localhost:8080/ts-server/ts-server/US/w/chrome/ts.json",
@@ -125,6 +126,7 @@ func TestBuildConfigURLWithFallback_DeviceFallback(t *testing.T) {
 				w := createWrapper("US", 0, "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1")
 				w.Device.DeviceType = 0
 				w.Device.Geo = nil
+				w.Device.IP = "1.1.1.1" // IP required for geo fallback
 				return w
 			}(),
 			expectedURL: "http://localhost:8080/ts-server/ts-server/US/m/safari/ts.json",
@@ -135,6 +137,7 @@ func TestBuildConfigURLWithFallback_DeviceFallback(t *testing.T) {
 				w := createWrapper("US", 0, "Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1")
 				w.Device.DeviceType = 0
 				w.Device.Geo = nil
+				w.Device.IP = "1.1.1.1" // IP required for geo fallback
 				return w
 			}(),
 			expectedURL: "http://localhost:8080/ts-server/ts-server/US/t/safari/ts.json",

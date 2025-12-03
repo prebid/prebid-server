@@ -131,6 +131,19 @@ func TestDeriveCountry(t *testing.T) {
 			expectError: true,
 		},
 		{
+			name: "empty_ip",
+			wrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						IP:   "",
+						IPv6: "",
+					},
+				},
+			},
+			geoResolver: &mockGeoResolver{country: "US"},
+			expectError: true, // Should error before calling resolver
+		},
+		{
 			name: "success",
 			wrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
@@ -146,10 +159,19 @@ func TestDeriveCountry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockResolver, ok := tt.geoResolver.(*mockGeoResolver)
+			if ok {
+				mockResolver.callCount = 0 // Reset call count
+			}
+			
 			country, err := DeriveCountry(context.Background(), tt.wrapper, tt.geoResolver)
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Empty(t, country)
+				// For empty_ip case, resolver should not be called
+				if tt.name == "empty_ip" && ok {
+					assert.Equal(t, 0, mockResolver.callCount, "Resolver should not be called with empty IP")
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.NotEmpty(t, country)
@@ -235,9 +257,11 @@ func TestDefaultResolver_Resolve(t *testing.T) {
 type mockGeoResolver struct {
 	country string
 	err     error
+	callCount int // Track if Resolve was called
 }
 
 func (m *mockGeoResolver) Resolve(ctx context.Context, ip string) (string, error) {
+	m.callCount++
 	if m.err != nil {
 		return "", m.err
 	}

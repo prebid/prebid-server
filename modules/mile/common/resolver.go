@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
@@ -103,10 +104,15 @@ func DeriveCountry(ctx context.Context, wrapper *openrtb_ext.RequestWrapper, geo
 	if ip == "" {
 		ip = strings.TrimSpace(wrapper.Device.IPv6)
 	}
-	// Attempt resolution even if IP is empty; concrete resolvers may still error.
+	
+	// Don't attempt resolution if IP is empty
+	if ip == "" {
+		return "", errors.New("ip address required for geo resolution")
+	}
+	
 	country, err := geoResolver.Resolve(ctx, ip)
 	if err != nil || country == "" {
-		return "", errors.New("country resolve failed")
+		return "", fmt.Errorf("country resolve failed: %w", err)
 	}
 	return country, nil
 }
