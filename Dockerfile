@@ -26,12 +26,15 @@ ARG MAXMIND_LICENSE_KEY
 COPY ./ ./
 
 # Download MaxMind database if license key provided and file doesn't exist
-# Create placeholder file to ensure COPY doesn't fail in release stage
-RUN touch /app/prebid-server/GeoLite2-Country.mmdb.placeholder && \
-    if [ -n "$MAXMIND_LICENSE_KEY" ] && [ ! -f /app/prebid-server/GeoLite2-Country.mmdb ]; then \
+RUN if [ -n "$MAXMIND_LICENSE_KEY" ] && [ ! -f /app/prebid-server/GeoLite2-Country.mmdb ]; then \
         echo "Downloading MaxMind GeoLite2-Country database..."; \
         chmod +x scripts/download-maxmind.sh; \
-        MAXMIND_ACCOUNT_ID="$MAXMIND_ACCOUNT_ID" MAXMIND_LICENSE_KEY="$MAXMIND_LICENSE_KEY" ./scripts/download-maxmind.sh /app/prebid-server/GeoLite2-Country.mmdb || echo "Warning: Failed to download MaxMind database"; \
+        MAXMIND_ACCOUNT_ID="$MAXMIND_ACCOUNT_ID" MAXMIND_LICENSE_KEY="$MAXMIND_LICENSE_KEY" ./scripts/download-maxmind.sh /app/prebid-server/GeoLite2-Country.mmdb; \
+        if [ ! -f /app/prebid-server/GeoLite2-Country.mmdb ]; then \
+            echo "ERROR: MaxMind database download failed or file not created"; \
+            exit 1; \
+        fi; \
+        echo "MaxMind database downloaded successfully"; \
     elif [ -z "$MAXMIND_LICENSE_KEY" ]; then \
         echo "MAXMIND_LICENSE_KEY not provided, skipping database download"; \
     else \
@@ -58,15 +61,14 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy MaxMind database from build stage if it exists
-# Note: We create a placeholder in build stage to ensure COPY doesn't fail
-COPY --from=build /app/prebid-server/GeoLite2-Country.mmdb* /tmp/
 RUN mkdir -p /opt/maxmind && \
-    if [ -f /tmp/GeoLite2-Country.mmdb ]; then \
-        mv /tmp/GeoLite2-Country.mmdb /opt/maxmind/GeoLite2-Country.mmdb && \
+    if [ -f /usr/local/bin/GeoLite2-Country.mmdb ]; then \
+        cp /usr/local/bin/GeoLite2-Country.mmdb /opt/maxmind/GeoLite2-Country.mmdb && \
         chmod 644 /opt/maxmind/GeoLite2-Country.mmdb && \
         echo "MaxMind database available at /opt/maxmind/GeoLite2-Country.mmdb"; \
     else \
-        echo "MaxMind database not found, skipping copy"; \
+        echo "WARNING: MaxMind database not found"; \
+        echo "The application may fail if MaxMind database is required by configuration"; \
     fi
 
 RUN addgroup --system --gid 2001 prebidgroup && adduser --system --uid 1001 --ingroup prebidgroup prebid
