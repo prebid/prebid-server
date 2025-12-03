@@ -70,6 +70,14 @@ start_pbs() {
             source .env 2>/dev/null
             set -e  # Re-enable exit on error
             
+            # Export variables so they're available to subprocesses
+            if [ -n "$MAXMIND_LICENSE_KEY" ]; then
+                export MAXMIND_LICENSE_KEY
+            fi
+            if [ -n "$MAXMIND_ACCOUNT_ID" ]; then
+                export MAXMIND_ACCOUNT_ID
+            fi
+            
             if [ -n "$MAXMIND_LICENSE_KEY" ]; then
                 print_info "Downloading MaxMind database..."
                 if ./scripts/download-maxmind.sh "$MAXMIND_DB"; then
