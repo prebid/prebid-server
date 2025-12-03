@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/mile/common"
@@ -17,9 +18,9 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 	if err != nil {
 		return nil, err
 	}
-	var geoResolver common.GeoResolver
+	var geoResolver *common.MaxMindGeoResolver
 	if config.GeoEnabled() {
-		geoResolver, err = common.NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
+		geoResolver, err = common.NewMaxMindGeoResolver(config.GeoDBPath)
 		if err != nil {
 			return nil, err
 		}
@@ -28,7 +29,7 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 }
 
 type FloorsInjector struct {
-	geoResolver common.GeoResolver
+	geoResolver *common.MaxMindGeoResolver
 }
 
 func (f *FloorsInjector) HandleRawAuctionHook(
@@ -79,15 +80,16 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			if country == "" && f.geoResolver != nil {
 				resolvedCountry, err := f.geoResolver.Resolve(ctx, ip)
 				if err != nil {
-					return orig, nil
+					fmt.Println("Error resolving country from IP:", err)
+					return orig, err
 				}
 				country = resolvedCountry
 				fmt.Println("Country resolved from IP:", country)
 			}
 
 			if country == "" {
-				fmt.Println("country is empty for ip", ip, ", skipping floors injection")
-				return orig, nil
+				fmt.Println("country is empty for ip", ip, ", using OC instead")
+				country = "OC"
 			}
 
 			platform := common.ClassifyDevicePlatform(ua)
@@ -110,6 +112,11 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			if !ok {
 				fmt.Println("site config not found for site id", siteID, ", skipping floors injection")
 				return orig, nil
+			}
+
+			if !slices.Contains(siteConfig.countries, country) {
+				fmt.Println("country is not in site config countries", siteConfig.countries, ", using OC instead")
+				country = "OC"
 			}
 
 			// Ensure ext and ext.prebid exist

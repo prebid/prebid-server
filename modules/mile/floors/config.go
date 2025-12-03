@@ -9,12 +9,12 @@ import (
 )
 
 type Config struct {
-	GeoLookupEndpoint string `json:"geo_lookup_endpoint"`
-	GeoCacheTTLMS     int    `json:"geo_cache_ttl_ms"`
+	GeoDBPath     string `json:"geo_db_path"`
+	GeoCacheTTLMS int    `json:"geo_cache_ttl_ms"`
 }
 
 func (c *Config) GeoEnabled() bool {
-	return c.GeoLookupEndpoint != ""
+	return c.GeoDBPath != ""
 }
 
 func (c *Config) GetGeoCacheTTL() time.Duration {
