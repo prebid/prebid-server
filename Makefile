@@ -37,3 +37,15 @@ format:
 # formatcheck runs format for diagnostics, without modifying the code
 formatcheck:
 	./scripts/format.sh -f false
+
+
+VERSION:=$(shell date +%Y%m%d%H%M%S)
+
+# Use the GIT_TAG passed from the GitHub Actions workflow
+PREBID_TAG=registry.digitalocean.com/automatad/amp/prebid-server:$(VERSION)
+
+# .PHONY: build
+
+buildmile:
+	docker build -t $(PREBID_TAG) .
+	docker push $(PREBID_TAG)

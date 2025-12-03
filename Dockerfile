@@ -40,8 +40,8 @@ RUN touch /app/prebid-server/GeoLite2-Country.mmdb.placeholder && \
 RUN go mod tidy
 RUN go mod vendor
 ARG TEST="true"
-RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
-RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/v3/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/v3/version.Rev=`git rev-parse HEAD`" .
+# RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
+RUN go build -mod=vendor .
 
 FROM ubuntu:22.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 

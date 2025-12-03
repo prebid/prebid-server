@@ -16,6 +16,7 @@ require (
 	github.com/chasex/glog v0.0.0-20160217080310-c62392af379c
 	github.com/coocood/freecache v1.2.1
 	github.com/docker/go-units v0.4.0
+	github.com/getsentry/sentry-go v0.31.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/glog v1.2.4
@@ -30,6 +31,7 @@ require (
 	github.com/prebid/go-gdpr v1.12.0
 	github.com/prebid/go-gpp v0.2.0
 	github.com/prebid/openrtb/v20 v20.3.0
+	github.com/prebid/prebid-server/v2 v2.32.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
