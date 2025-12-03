@@ -24,6 +24,11 @@ type Config struct {
 	GeoDBPath         string   `json:"geo_db_path"`         // MaxMind database path option
 	GeoCacheTTLMS     int      `json:"geo_cache_ttl_ms"`    // Only used for HTTP resolver
 
+	// Whitelist endpoints for pre-filtering
+	GeoWhitelistEndpoint      string `json:"geo_whitelist_endpoint"`      // URL to fetch geo whitelist
+	PlatformWhitelistEndpoint string `json:"platform_whitelist_endpoint"` // URL to fetch platform whitelist
+	WhitelistRefreshMs        int    `json:"whitelist_refresh_ms"`        // Whitelist refresh interval (default: 300000ms = 5 min)
+
 	// Cached map for fast lookup (built once at parse time)
 	allowedCountriesMap map[string]struct{}
 }
@@ -31,11 +36,12 @@ type Config struct {
 // parseConfig parses and validates the module configuration
 func parseConfig(rawConfig json.RawMessage) (*Config, error) {
 	cfg := &Config{
-		RefreshMs:        30000,
-		RequestTimeoutMs: 1000,
-		SampleSalt:       "pbs",
-		PruneUserIds:     false,
-		GeoCacheTTLMS:    300000,
+		RefreshMs:          30000,
+		RequestTimeoutMs:   1000,
+		SampleSalt:         "pbs",
+		PruneUserIds:       false,
+		GeoCacheTTLMS:      300000,
+		WhitelistRefreshMs: 300000, // 5 minutes default
 	}
 
 	if len(rawConfig) == 0 {
@@ -87,6 +93,16 @@ func validateConfig(cfg *Config) error {
 		return errors.New("geo_cache_ttl_ms must be at least 1000ms")
 	}
 
+	// Validate whitelist config if enabled
+	if cfg.GeoWhitelistEndpoint != "" || cfg.PlatformWhitelistEndpoint != "" {
+		if cfg.GeoWhitelistEndpoint == "" || cfg.PlatformWhitelistEndpoint == "" {
+			return errors.New("both geo_whitelist_endpoint and platform_whitelist_endpoint must be configured together")
+		}
+		if cfg.WhitelistRefreshMs < 1000 {
+			return errors.New("whitelist_refresh_ms must be at least 1000ms")
+		}
+	}
+
 	return nil
 }
 
@@ -135,4 +151,14 @@ func (c *Config) GeoEnabled() bool {
 // GetGeoCacheTTL returns the geo cache TTL as duration
 func (c *Config) GetGeoCacheTTL() time.Duration {
 	return time.Duration(c.GeoCacheTTLMS) * time.Millisecond
+}
+
+// WhitelistEnabled returns true if whitelist pre-filtering is configured
+func (c *Config) WhitelistEnabled() bool {
+	return c.GeoWhitelistEndpoint != "" && c.PlatformWhitelistEndpoint != ""
+}
+
+// GetWhitelistRefreshInterval returns the whitelist refresh interval as duration
+func (c *Config) GetWhitelistRefreshInterval() time.Duration {
+	return time.Duration(c.WhitelistRefreshMs) * time.Millisecond
 }

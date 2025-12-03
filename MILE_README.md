@@ -33,6 +33,7 @@ Allows publishers to dynamically control which bidders and ad sizes are allowed 
 **Key Features**:
 - **GPID-based Shaping**: Filter bidders and sizes per Global Placement ID.
 - **Dynamic URL Construction**: Config URLs built using `siteID`, `country`, `device`, `browser`.
+- **Whitelist Pre-filtering**: Skip shaping for site/geo/platform combinations not in whitelist.
 - **Skip Rate Gating**: Deterministic sampling to skip shaping.
 - **Fail-open Behavior**: Auctions proceed normally if config fetch fails.
 - **User ID Filtering**: Prune `user.ext.eids` to allowed vendors.
@@ -47,6 +48,10 @@ hooks:
         enabled: true
         base_endpoint: "https://example.com/ts-server/"
         geo_db_path: "tmp/GeoLite2-Country.mmdb" # For IP fallback
+        # Optional: Whitelist pre-filtering
+        geo_whitelist_endpoint: "https://rtd.mile.so/whitelist/pbs/ts-geos.json"
+        platform_whitelist_endpoint: "https://rtd.mile.so/whitelist/pbs/ts-platforms.json"
+        whitelist_refresh_ms: 300000  # 5 minutes (default)
 ```
 
 ### 2. Common Module
@@ -293,6 +298,11 @@ hooks:
         request_timeout_ms: 2000     # HTTP request timeout (ms)
         prune_user_ids: false       # Enable user ID vendor filtering
         sample_salt: "pbs"          # Salt for deterministic sampling
+        
+        # Optional: Whitelist pre-filtering (both endpoints required together)
+        geo_whitelist_endpoint: "https://rtd.mile.so/whitelist/pbs/ts-geos.json"
+        platform_whitelist_endpoint: "https://rtd.mile.so/whitelist/pbs/ts-platforms.json"
+        whitelist_refresh_ms: 300000  # Whitelist refresh interval (ms, default: 300000)
   
   default_account_execution_plan:
     endpoints:
@@ -335,9 +345,13 @@ account_defaults:
 | `prune_user_ids` | boolean | No | false | Enable user ID vendor filtering |
 | `sample_salt` | string | No | "pbs" | Salt for deterministic sampling |
 | `allowed_countries` | array | No | [] | List of allowed countries (ISO 3166-1 alpha-2) |
+| `geo_whitelist_endpoint` | string | No*** | - | URL to fetch geo whitelist JSON |
+| `platform_whitelist_endpoint` | string | No*** | - | URL to fetch platform whitelist JSON |
+| `whitelist_refresh_ms` | integer | No | 300000 | Whitelist refresh interval in ms (min: 1000) |
 
 > **\*** At least one of `base_endpoint` (dynamic mode) or `endpoint` (static mode) is required.  
-> **\*\*** At least one of `geo_db_path` or `geo_lookup_endpoint` is required for IP-based geo resolution.
+> **\*\*** At least one of `geo_db_path` or `geo_lookup_endpoint` is required for IP-based geo resolution.  
+> **\*\*\*** Both `geo_whitelist_endpoint` and `platform_whitelist_endpoint` must be configured together if whitelist filtering is desired.
 
 #### Geo Resolution Options
 
@@ -355,6 +369,48 @@ geo_cache_ttl_ms: 300000  # 5 minutes cache
 ```
 
 **Note**: If both are configured, MaxMind (`geo_db_path`) takes priority.
+
+#### Whitelist Pre-filtering
+
+The whitelist feature allows you to pre-filter requests before traffic shaping is applied. Only requests matching both the geo and platform whitelists will proceed to traffic shaping.
+
+**Configuration**:
+```yaml
+geo_whitelist_endpoint: "https://rtd.mile.so/whitelist/pbs/ts-geos.json"
+platform_whitelist_endpoint: "https://rtd.mile.so/whitelist/pbs/ts-platforms.json"
+whitelist_refresh_ms: 300000  # Refresh every 5 minutes (default)
+```
+
+**Geo Whitelist Format** (`ts-geos.json`):
+```json
+{
+  "siteID1": ["US", "CA"],
+  "siteID2": ["GB", "DE", "FR"]
+}
+```
+
+**Platform Whitelist Format** (`ts-platforms.json`):
+```json
+{
+  "siteID1": ["m-android|chrome", "m-ios|safari", "w|chrome"],
+  "siteID2": ["w|safari", "w|edge", "w|ff"]
+}
+```
+
+**Platform Key Format**: `{device-os}|{browser}`
+- Device types: `m-android`, `m-ios`, `t-android`, `t-ios`, `w`
+- Browsers: `chrome`, `safari`, `ff`, `edge`, `opera`, `google search`, `samsung internet for android`, `amazon silk`
+
+**Filtering Logic**:
+1. Whitelists are fetched on module startup and refreshed every 5 minutes (configurable)
+2. If whitelists are not loaded (fetch failed), all requests are allowed (fail-open)
+3. If site is not in either whitelist, traffic shaping proceeds (fail-open for unknown sites)
+4. If site is in both whitelists, **both** geo AND platform must match for shaping to proceed
+5. If either geo or platform doesn't match, shaping is skipped
+
+**Example**: A request with `site.id="site1"`, `device.geo.country="US"`, and platform `"m-android|chrome"` will proceed to traffic shaping only if:
+- `site1` exists in geo whitelist AND `"US"` is in its allowed geos
+- `site1` exists in platform whitelist AND `"m-android|chrome"` is in its allowed platforms
 
 ### Environment-Specific Paths
 
@@ -395,6 +451,8 @@ Prebid Server validates the configuration on startup. Common errors:
 | Invalid `geo_db_path` | File doesn't exist | Check path, run `./run.sh start` to download |
 | Invalid `refresh_ms` | Value < 1000 | Set to >= 1000 |
 | Invalid `request_timeout_ms` | Value < 100 | Set to >= 100 |
+| Invalid `whitelist_refresh_ms` | Value < 1000 | Set to >= 1000 |
+| Whitelist endpoints mismatch | Only one endpoint configured | Configure both `geo_whitelist_endpoint` and `platform_whitelist_endpoint` together |
 | Module not executing | Missing hook plan | Add `default_account_execution_plan` |
 
 ### Verifying Configuration
@@ -450,6 +508,8 @@ curl -s -X POST http://localhost:8000/openrtb2/auction \
 | **Docker Build Fails** | MaxMind download error | Verify build args passed correctly; check license key validity |
 | **Module Not Running** | No shaping applied | Check `hooks.enabled: true` and `default_account_execution_plan` |
 | **Config Fetch Fails** | "fetch_failed" in analytics | Verify `base_endpoint` URL is accessible |
+| **Whitelist Not Working** | All requests skipped | Check whitelist endpoints are accessible; verify site IDs match; check logs for fetch errors |
+| **Whitelist Too Restrictive** | All requests blocked | Verify site IDs, geos, and platforms in whitelist JSON match request data |
 
 ### Debugging Commands
 

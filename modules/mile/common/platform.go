@@ -20,7 +20,7 @@ func ClassifyDevicePlatform(ua string) string {
 		return ""
 	}
 
-	return deviceType + "/" + browser
+	return deviceType + "|" + browser
 }
 
 // detectDeviceType detects the device type and OS from user agent
@@ -61,11 +61,21 @@ func detectDeviceType(ua string) string {
 }
 
 // detectBrowser detects the browser from user agent
-// Returns: "chrome", "safari", "edge", "google search", "ff" (firefox), "opera"
+// Returns: "chrome", "safari", "edge", "google search", "ff" (firefox), "opera", "samsung internet for android", "amazon silk"
 func detectBrowser(ua string) string {
 	// Check for Google Search App (GSA)
 	if strings.Contains(ua, "GSA/") {
 		return "google search"
+	}
+
+	// Check for Samsung Internet (must be before Chrome since it contains "Chrome")
+	if strings.Contains(ua, "SamsungBrowser/") {
+		return "samsung internet for android"
+	}
+
+	// Check for Amazon Silk (must be before Chrome since it may contain "Chrome")
+	if strings.Contains(ua, "Silk/") {
+		return "amazon silk"
 	}
 
 	// Check for Edge (must be before Chrome since Edge also contains "Chrome")

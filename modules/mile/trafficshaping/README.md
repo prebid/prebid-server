@@ -8,6 +8,7 @@ The Traffic Shaping module allows publishers to dynamically control which bidder
 
 - **GPID-based Shaping**: Filter bidders and banner sizes per Global Placement ID (GPID)
 - **Dynamic URL Construction**: Automatically construct config URLs based on device geo, type, and browser (uses [`mile/common`](../common/README.md))
+- **Whitelist Pre-filtering**: Skip shaping for site/geo/platform combinations not in the whitelist
 - **Skip Rate Gating**: Deterministically skip shaping for a percentage of auctions
 - **Country Gating**: Apply shaping only for specific countries
 - **User ID Vendor Filtering**: Optionally prune user.ext.eids to allowed vendors
@@ -113,6 +114,9 @@ hooks:
 - `allowed_countries` (optional, static mode only): List of allowed countries for shaping (ISO 3166-1 alpha-2 codes)
 - `geo_lookup_endpoint` (optional, dynamic mode): HTTP endpoint for IP-based geo lookup fallback (supports `{ip}` placeholder)
 - `geo_cache_ttl_ms` (optional, default: 300000): TTL for geo lookup cache in milliseconds (minimum: 1000)
+- `geo_whitelist_endpoint` (optional): URL to fetch geo whitelist JSON (must be configured with `platform_whitelist_endpoint`)
+- `platform_whitelist_endpoint` (optional): URL to fetch platform whitelist JSON (must be configured with `geo_whitelist_endpoint`)
+- `whitelist_refresh_ms` (optional, default: 300000): Whitelist refresh interval in milliseconds (minimum: 1000)
 
 ### Account-level Configuration
 
@@ -221,6 +225,41 @@ The module uses deterministic sampling based on the request ID:
 - If `sample < skipRate`, shaping is skipped for the entire auction
 
 This ensures consistent behavior across multiple pods/instances.
+
+### Whitelist Pre-filtering
+
+When both `geo_whitelist_endpoint` and `platform_whitelist_endpoint` are configured, the module performs early filtering:
+
+**Geo Whitelist Format** (`ts-geos.json`):
+```json
+{
+  "siteID1": ["US", "CA"],
+  "siteID2": ["GB", "DE"]
+}
+```
+
+**Platform Whitelist Format** (`ts-platforms.json`):
+```json
+{
+  "siteID1": ["m-android|chrome", "m-ios|safari", "w|chrome"],
+  "siteID2": ["w|safari", "w|edge"]
+}
+```
+
+**Platform Key Format**: `{device-os}|{browser}`
+- Device types: `m-android`, `m-ios`, `t-android`, `t-ios`, `w`
+- Browsers: `chrome`, `safari`, `ff`, `edge`, `opera`, `google search`, `samsung internet for android`, `amazon silk`
+
+**Filtering Logic**:
+1. If whitelists are not loaded (fetch failed), allow all requests (fail-open)
+2. If site is not in either whitelist, allow traffic shaping (fail-open for unknown sites)
+3. If site is in both whitelists, both geo AND platform must match for shaping to proceed
+4. If either geo or platform doesn't match, shaping is skipped
+
+**Refresh Behavior**:
+- Whitelists are fetched on module startup
+- Background refresh every 5 minutes (configurable via `whitelist_refresh_ms`)
+- Exponential backoff on fetch failures
 
 ### Country Gating (Static Mode Only)
 
