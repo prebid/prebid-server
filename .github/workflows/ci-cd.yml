@@ -38,7 +38,12 @@ jobs:
       #     ref: ${{ github.event.inputs.branch || github.ref }}
 
       - name: Build the Docker image
-        run: docker build . --tag ${{ env.IMAGE_NAME }}:${{ github.sha }} --build-arg TEST=false
+        run: |
+          docker build . \
+            --tag ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --build-arg TEST=false \
+            --build-arg MAXMIND_ACCOUNT_ID=${{ secrets.MAXMIND_ACCOUNT_ID }} \
+            --build-arg MAXMIND_LICENSE_KEY=${{ secrets.MAXMIND_LICENSE_KEY }}
 
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
