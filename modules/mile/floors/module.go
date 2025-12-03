@@ -78,13 +78,15 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 
 			// Only resolve country from IP if not already present in request
 			if country == "" && f.geoResolver != nil {
-				resolvedCountry, err := f.geoResolver.Resolve(ctx, ip)
-				if err != nil {
-					fmt.Println("Error resolving country from IP:", err)
-					return orig, err
+				if ip != "" {
+					resolvedCountry, err := f.geoResolver.Resolve(ctx, ip)
+					if err != nil {
+						fmt.Println("Error resolving country from IP:", err)
+						return orig, err
+					}
+					country = resolvedCountry
+					fmt.Println("Country resolved from IP:", country)
 				}
-				country = resolvedCountry
-				fmt.Println("Country resolved from IP:", country)
 			}
 
 			if country == "" {
