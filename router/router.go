@@ -130,7 +130,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
 	// local file system
-	certPool, certPoolCreateErr := ssl.CreateCertPool(cfg.CertsUseSystem)
+	certPool, certPoolCreateErr := ssl.CreateCertPool()
 	if certPoolCreateErr != nil {
 		glog.Infof("Could not load root certificates: %s \n", certPoolCreateErr.Error())
 	}
