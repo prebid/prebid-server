@@ -26,23 +26,20 @@ ARG MAXMIND_LICENSE_KEY
 COPY ./ ./
 
 # Download MaxMind database (required for mile.floors module)
-RUN if [ -z "$MAXMIND_LICENSE_KEY" ]; then \
+RUN set -e && \
+    echo "=== MaxMind Download Step ===" && \
+    echo "MAXMIND_LICENSE_KEY length: ${#MAXMIND_LICENSE_KEY}" && \
+    echo "MAXMIND_ACCOUNT_ID length: ${#MAXMIND_ACCOUNT_ID}" && \
+    if [ -z "$MAXMIND_LICENSE_KEY" ]; then \
         echo "ERROR: MAXMIND_LICENSE_KEY is required but not provided"; \
-        echo "The mile.floors module requires MaxMind database. Please provide MAXMIND_LICENSE_KEY build arg."; \
         exit 1; \
     fi && \
-    if [ ! -f /app/prebid-server/GeoLite2-Country.mmdb ]; then \
-        echo "Downloading MaxMind GeoLite2-Country database..."; \
-        chmod +x scripts/download-maxmind.sh; \
-        MAXMIND_ACCOUNT_ID="$MAXMIND_ACCOUNT_ID" MAXMIND_LICENSE_KEY="$MAXMIND_LICENSE_KEY" ./scripts/download-maxmind.sh /app/prebid-server/GeoLite2-Country.mmdb; \
-        if [ ! -f /app/prebid-server/GeoLite2-Country.mmdb ]; then \
-            echo "ERROR: MaxMind database download failed or file not created"; \
-            exit 1; \
-        fi; \
-        echo "MaxMind database downloaded successfully: $(ls -lh /app/prebid-server/GeoLite2-Country.mmdb)"; \
-    else \
-        echo "MaxMind database already exists, skipping download"; \
-    fi
+    echo "Downloading MaxMind GeoLite2-Country database..." && \
+    chmod +x scripts/download-maxmind.sh && \
+    MAXMIND_ACCOUNT_ID="$MAXMIND_ACCOUNT_ID" MAXMIND_LICENSE_KEY="$MAXMIND_LICENSE_KEY" ./scripts/download-maxmind.sh /app/prebid-server/GeoLite2-Country.mmdb && \
+    echo "=== Verifying download ===" && \
+    ls -la /app/prebid-server/GeoLite2-Country.mmdb && \
+    echo "MaxMind database downloaded successfully"
 RUN go mod tidy
 RUN go mod vendor
 ARG TEST="true"

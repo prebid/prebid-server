@@ -40,8 +40,8 @@ fi
 
 # Check for license key (required)
 if [ -z "$MAXMIND_LICENSE_KEY" ]; then
-    print_warning "MAXMIND_LICENSE_KEY not set, skipping download"
-    exit 0
+    print_error "MAXMIND_LICENSE_KEY not set - cannot download database"
+    exit 1
 fi
 
 # Account ID is optional for direct download API, but recommended
@@ -70,11 +70,15 @@ TAR_FILE="${TMP_DIR}/GeoLite2-Country.tar.gz"
 
 # Download the database
 print_info "Fetching from MaxMind..."
-if ! curl -s -f -L -o "$TAR_FILE" "$DOWNLOAD_URL"; then
-    print_error "Failed to download MaxMind database"
-    print_info "Please verify your MAXMIND_LICENSE_KEY is correct"
+print_info "URL: https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&..."
+HTTP_CODE=$(curl -s -w "%{http_code}" -f -L -o "$TAR_FILE" "$DOWNLOAD_URL" 2>&1) || true
+if [ ! -f "$TAR_FILE" ] || [ ! -s "$TAR_FILE" ]; then
+    print_error "Failed to download MaxMind database (HTTP: $HTTP_CODE)"
+    print_error "Please verify your MAXMIND_ACCOUNT_ID and MAXMIND_LICENSE_KEY are correct"
+    print_info "Get credentials at: https://www.maxmind.com/en/account"
     exit 1
 fi
+print_info "Download complete (HTTP: $HTTP_CODE), file size: $(du -h "$TAR_FILE" | cut -f1)"
 
 # Extract the archive
 print_info "Extracting database..."
