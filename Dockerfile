@@ -20,13 +20,18 @@ RUN apt-get update && \
 # CGO must be enabled because some modules depend on native C code
 ENV CGO_ENABLED 1
 
-# MaxMind database download (optional)
+# MaxMind database download (required for mile.floors module)
 ARG MAXMIND_ACCOUNT_ID
 ARG MAXMIND_LICENSE_KEY
 COPY ./ ./
 
-# Download MaxMind database if license key provided and file doesn't exist
-RUN if [ -n "$MAXMIND_LICENSE_KEY" ] && [ ! -f /app/prebid-server/GeoLite2-Country.mmdb ]; then \
+# Download MaxMind database (required for mile.floors module)
+RUN if [ -z "$MAXMIND_LICENSE_KEY" ]; then \
+        echo "ERROR: MAXMIND_LICENSE_KEY is required but not provided"; \
+        echo "The mile.floors module requires MaxMind database. Please provide MAXMIND_LICENSE_KEY build arg."; \
+        exit 1; \
+    fi && \
+    if [ ! -f /app/prebid-server/GeoLite2-Country.mmdb ]; then \
         echo "Downloading MaxMind GeoLite2-Country database..."; \
         chmod +x scripts/download-maxmind.sh; \
         MAXMIND_ACCOUNT_ID="$MAXMIND_ACCOUNT_ID" MAXMIND_LICENSE_KEY="$MAXMIND_LICENSE_KEY" ./scripts/download-maxmind.sh /app/prebid-server/GeoLite2-Country.mmdb; \
@@ -34,9 +39,7 @@ RUN if [ -n "$MAXMIND_LICENSE_KEY" ] && [ ! -f /app/prebid-server/GeoLite2-Count
             echo "ERROR: MaxMind database download failed or file not created"; \
             exit 1; \
         fi; \
-        echo "MaxMind database downloaded successfully"; \
-    elif [ -z "$MAXMIND_LICENSE_KEY" ]; then \
-        echo "MAXMIND_LICENSE_KEY not provided, skipping database download"; \
+        echo "MaxMind database downloaded successfully: $(ls -lh /app/prebid-server/GeoLite2-Country.mmdb)"; \
     else \
         echo "MaxMind database already exists, skipping download"; \
     fi
@@ -60,15 +63,18 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates mtr libatomic1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy MaxMind database from build stage if it exists
+# Copy MaxMind database from build stage
+# The database is required for mile.floors module, so fail if it's missing
 RUN mkdir -p /opt/maxmind && \
     if [ -f /usr/local/bin/GeoLite2-Country.mmdb ]; then \
         cp /usr/local/bin/GeoLite2-Country.mmdb /opt/maxmind/GeoLite2-Country.mmdb && \
         chmod 644 /opt/maxmind/GeoLite2-Country.mmdb && \
-        echo "MaxMind database available at /opt/maxmind/GeoLite2-Country.mmdb"; \
+        echo "MaxMind database copied to /opt/maxmind/GeoLite2-Country.mmdb" && \
+        ls -lh /opt/maxmind/GeoLite2-Country.mmdb; \
     else \
-        echo "WARNING: MaxMind database not found"; \
-        echo "The application may fail if MaxMind database is required by configuration"; \
+        echo "ERROR: MaxMind database not found at /usr/local/bin/GeoLite2-Country.mmdb" && \
+        echo "The mile.floors module requires this database. Build will fail." && \
+        exit 1; \
     fi
 
 RUN addgroup --system --gid 2001 prebidgroup && adduser --system --uid 1001 --ingroup prebidgroup prebid
