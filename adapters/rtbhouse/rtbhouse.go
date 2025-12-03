@@ -113,11 +113,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		}
 
 		// remove PAAPI signals
-		err = clearAuctionEnvironment(impExtMap)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
+		clearAuctionEnvironment(impExtMap)
 		newImpExt, err := json.Marshal(impExtMap)
 		if err != nil {
 			errs = append(errs, err)
@@ -215,12 +211,11 @@ func setPublisherID(request *openrtb2.BidRequest, publisherId string) error {
 	return nil
 }
 
-func clearAuctionEnvironment(impExtMap map[string]interface{}) error {
+func clearAuctionEnvironment(impExtMap map[string]interface{}) {
 	keysToDelete := []string{"ae", "igs", "paapi"}
 	for _, key := range keysToDelete {
 		delete(impExtMap, key)
 	}
-	return nil
 }
 
 func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
