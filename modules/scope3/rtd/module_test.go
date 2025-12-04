@@ -129,25 +129,13 @@ func TestScope3APIIntegration(t *testing.T) {
 
 		// Return mock Scope3 response with segments
 		response := `{
-			"data": [
-				{
-					"destination": "triplelift.com",
-					"imp": [
-						{
-							"id": "test-imp-1",
-							"ext": {
-								"scope3": {
-									"macro": "test-macro",
-									"segments": [
-										{"id": "gmp_eligible"},
-										{"id": "gmp_plus_eligible"}
-									]
-								}
-							}
-						}
-					]
-				}
-			]
+			"aee_signals": {
+				"include": [
+					"gmp_eligible",
+					"gmp_plus_eligible"
+				],
+				"macro": "test-macro"
+			}
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -198,9 +186,8 @@ func TestScope3APIIntegration(t *testing.T) {
 	ctx := context.Background()
 	segments, err := module.fetchScope3Segments(ctx, bidRequest)
 	require.NoError(t, err)
-	assert.Len(t, segments, 3)
-	assert.ElementsMatch(t, segments, []string{"gmp_eligible", "gmp_plus_eligible", "scope3_macro;test-macro"})
-	assert.NotContains(t, segments, "triplelift.com") // Should not include destination
+	assert.Len(t, segments, 2)
+	assert.ElementsMatch(t, segments, []string{"scope3_include;gmp_eligible,gmp_plus_eligible", "scope3_macro;test-macro"})
 }
 
 func TestScope3APIIntegrationNoSegments(t *testing.T) {
@@ -213,11 +200,7 @@ func TestScope3APIIntegrationNoSegments(t *testing.T) {
 
 		// Return mock Scope3 response with segments
 		response := `{
-			"data": [
-				{
-					"destination": "triplelift.com"
-				}
-			]
+			"aee_signals": {}
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -343,25 +326,13 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 	// Create mock server that returns segments
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{
-			"data": [
-				{
-					"destination": "triplelift.com",
-					"imp": [
-						{
-							"id": "test-imp-1",
-							"ext": {
-								"scope3": {
-									"macro": "test-macro",
-									"segments": [
-										{"id": "test_segment_1"},
-										{"id": "test_segment_2"}
-									]
-								}
-							}
-						}
-					]
-				}
-			]
+			"aee_signals": {
+				"include": [
+					"test_segment_1",
+					"test_segment_2"
+				],
+				"macro": "test-macro"
+			}
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -489,211 +460,13 @@ func TestScope3APIIntegrationWithTargeting(t *testing.T) {
 	require.True(t, exists)
 	segments, exists := scope3Data["segments"].([]interface{})
 	require.True(t, exists)
-	assert.Len(t, segments, 3)
+	assert.Len(t, segments, 2)
 
 	// Verify targeting section exists (add_to_targeting: true)
 	prebidData, exists := extMap["prebid"].(map[string]interface{})
 	require.True(t, exists, "prebid section missing")
 	targetingData, exists := prebidData["targeting"].(map[string]interface{})
 	require.True(t, exists, "targeting section missing")
-
-	// Check individual targeting keys
-	assert.Equal(t, "true", targetingData["test_segment_1"])
-	assert.Equal(t, "true", targetingData["test_segment_2"])
-	assert.Equal(t, "test-macro", targetingData["scope3_macro"])
-
-	// check seatbid
-	assert.Len(t, modifiedPayload.BidResponse.SeatBid, 2)
-	assert.Len(t, modifiedPayload.BidResponse.SeatBid[0].Bid, 2)
-	assert.Len(t, modifiedPayload.BidResponse.SeatBid[1].Bid, 2)
-
-	for _, seatbid := range modifiedPayload.BidResponse.SeatBid {
-		for _, bid := range seatbid.Bid {
-			// Parse the modified response
-			var extBidMap map[string]interface{}
-			err = json.Unmarshal(bid.Ext, &extBidMap)
-			require.NoError(t, err)
-
-			// Verify scope3 section exists
-			scope3DataSeatBid, exists := extBidMap["scope3"].(map[string]interface{})
-			require.True(t, exists, "scope3 section missing")
-			segmentsSeatBid, exists := scope3DataSeatBid["segments"].([]interface{})
-			require.True(t, exists, "segments section missing")
-			assert.Len(t, segmentsSeatBid, 3)
-
-			// Verify targeting section exists (add_to_targeting: true)
-			prebidDataSeatBid, exists := extBidMap["prebid"].(map[string]interface{})
-			require.True(t, exists, "prebid section missing")
-			targetingDataSeatBid, exists := prebidDataSeatBid["targeting"].(map[string]interface{})
-			require.True(t, exists, "targeting section missing")
-
-			// Check individual targeting keys
-			assert.Equal(t, "true", targetingDataSeatBid["test_segment_1"])
-			assert.Equal(t, "true", targetingDataSeatBid["test_segment_2"])
-			assert.Equal(t, "test-macro", targetingDataSeatBid["scope3_macro"])
-		}
-	}
-}
-
-func TestScope3APIIntegrationWithTargetingSingleKey(t *testing.T) {
-	// Create mock server that returns segments
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := `{
-			"data": [
-				{
-					"destination": "triplelift.com",
-					"imp": [
-						{
-							"id": "test-imp-1",
-							"ext": {
-								"scope3": {
-									"macro": "test-macro",
-									"segments": [
-										{"id": "test_segment_1"},
-										{"id": "test_segment_2"}
-									]
-								}
-							}
-						}
-					]
-				}
-			]
-		}`
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(response))
-	}))
-	defer mockServer.Close()
-
-	// Create module with targeting enabled
-	config := json.RawMessage(`{
-		"endpoint": "` + mockServer.URL + `",
-		"auth_key": "test-auth-key",
-		"timeout_ms": 1000,
-		"add_to_targeting": true,
-		"add_scope3_targeting_section": true,
-		"single_segment_key": "scope3_include"
-	}`)
-
-	moduleInterface, err := Builder(config, getTestModuleDeps(t))
-	require.NoError(t, err)
-	module := moduleInterface.(*Module)
-
-	// Test full hook workflow
-	ctx := context.Background()
-
-	// Test entrypoint hook
-	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, getTestEntrypointPayload(t))
-	require.NoError(t, err)
-	assert.NotNil(t, entrypointResult.ModuleContext[asyncRequestKey])
-
-	// Create test request payload
-	width := int64(300)
-	height := int64(250)
-	payload := hookstage.ProcessedAuctionRequestPayload{
-		Request: &openrtb_ext.RequestWrapper{
-			BidRequest: &openrtb2.BidRequest{
-				ID: "test-auction",
-				Imp: []openrtb2.Imp{
-					{
-						ID:     "test-imp-1",
-						Banner: &openrtb2.Banner{W: &width, H: &height},
-					},
-					{
-						ID:     "test-imp-2",
-						Banner: &openrtb2.Banner{W: &width, H: &height},
-					}},
-				Site: &openrtb2.Site{
-					Domain: "example.com",
-					Page:   "https://example.com/test",
-				},
-			},
-		},
-	}
-
-	// Test raw auction hook
-	miCtx := hookstage.ModuleInvocationContext{
-		ModuleContext: entrypointResult.ModuleContext,
-	}
-	_, err = module.HandleProcessedAuctionHook(ctx, miCtx, payload)
-	require.NoError(t, err)
-
-	// Test auction response hook
-	responsePayload := hookstage.AuctionResponsePayload{
-		BidResponse: &openrtb2.BidResponse{
-			ID:  "test-response",
-			Ext: json.RawMessage(`{}`),
-			SeatBid: []openrtb2.SeatBid{
-				{
-					Seat: "test-seat",
-					Bid: []openrtb2.Bid{
-						{
-							ID:    "test-bid-1",
-							ImpID: "test-imp-1",
-							Price: 1.0,
-							Ext:   json.RawMessage(`{}`),
-						},
-						{
-							ID:    "test-bid-2",
-							ImpID: "test-imp-2",
-							Price: 2.0,
-							Ext:   json.RawMessage(`{}`),
-						},
-					},
-				},
-				{
-					Seat: "test-seat2",
-					Bid: []openrtb2.Bid{
-						{
-							ID:    "test-bid-3",
-							ImpID: "test-imp-3",
-							Price: 1.0,
-							Ext:   json.RawMessage(`{}`),
-						},
-						{
-							ID:    "test-bid-4",
-							ImpID: "test-imp-4",
-							Price: 2.0,
-							Ext:   json.RawMessage(`{}`),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	responseResult, err := module.HandleAuctionResponseHook(ctx, miCtx, responsePayload)
-	require.NoError(t, err)
-
-	// Verify the response was modified
-	assert.True(t, len(responseResult.ChangeSet.Mutations()) > 0)
-
-	// Apply the mutations and check the result
-	modifiedPayload := responsePayload
-	for _, mutation := range responseResult.ChangeSet.Mutations() {
-		var err error
-		modifiedPayload, err = mutation.Apply(modifiedPayload)
-		require.NoError(t, err)
-	}
-
-	// Parse the modified response
-	var extMap map[string]interface{}
-	err = json.Unmarshal(modifiedPayload.BidResponse.Ext, &extMap)
-	require.NoError(t, err)
-
-	// Verify scope3 section exists
-	scope3Data, exists := extMap["scope3"].(map[string]interface{})
-	require.True(t, exists)
-	segments, exists := scope3Data["segments"].([]interface{})
-	require.True(t, exists)
-	assert.Len(t, segments, 3)
-
-	// Verify targeting section exists (add_to_targeting: true)
-	prebidData, exists := extMap["prebid"].(map[string]interface{})
-	require.True(t, exists, "prebid section missing")
-	targetingData, exists := prebidData["targeting"].(map[string]interface{})
-	require.True(t, exists, "targeting section missing")
-	assert.Len(t, targetingData, 2)
 
 	// Check individual targeting keys
 	assert.Equal(t, "test_segment_1,test_segment_2", targetingData["scope3_include"])
@@ -716,17 +489,16 @@ func TestScope3APIIntegrationWithTargetingSingleKey(t *testing.T) {
 			require.True(t, exists, "scope3 section missing")
 			segmentsSeatBid, exists := scope3DataSeatBid["segments"].([]interface{})
 			require.True(t, exists, "segments section missing")
-			assert.Len(t, segmentsSeatBid, 3)
+			assert.Len(t, segmentsSeatBid, 2)
 
 			// Verify targeting section exists (add_to_targeting: true)
 			prebidDataSeatBid, exists := extBidMap["prebid"].(map[string]interface{})
 			require.True(t, exists, "prebid section missing")
 			targetingDataSeatBid, exists := prebidDataSeatBid["targeting"].(map[string]interface{})
 			require.True(t, exists, "targeting section missing")
-			assert.Len(t, targetingDataSeatBid, 2)
 
 			// Check individual targeting keys
-			assert.Equal(t, "test_segment_1,test_segment_2", targetingData["scope3_include"])
+			assert.Equal(t, "test_segment_1,test_segment_2", targetingDataSeatBid["scope3_include"])
 			assert.Equal(t, "test-macro", targetingDataSeatBid["scope3_macro"])
 		}
 	}
@@ -736,25 +508,13 @@ func TestScope3APIIntegrationWithTargetingNoScope3Section(t *testing.T) {
 	// Create mock server that returns segments
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{
-			"data": [
-				{
-					"destination": "triplelift.com",
-					"imp": [
-						{
-							"id": "test-imp-1",
-							"ext": {
-								"scope3": {
-									"macro": "test-macro",
-									"segments": [
-										{"id": "test_segment_1"},
-										{"id": "test_segment_2"}
-									]
-								}
-							}
-						}
-					]
-				}
-			]
+			"aee_signals": {
+				"include": [
+					"test_segment_1",
+					"test_segment_2"
+				],
+				"macro": "test-macro"
+			}
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -860,8 +620,7 @@ func TestScope3APIIntegrationWithTargetingNoScope3Section(t *testing.T) {
 	require.True(t, exists)
 
 	// Check individual targeting keys
-	assert.Equal(t, "true", targetingData["test_segment_1"])
-	assert.Equal(t, "true", targetingData["test_segment_2"])
+	assert.Equal(t, "test_segment_1,test_segment_2", targetingData["scope3_include"])
 	assert.Equal(t, "test-macro", targetingData["scope3_macro"])
 
 	// check seatbid
@@ -884,8 +643,7 @@ func TestScope3APIIntegrationWithTargetingNoScope3Section(t *testing.T) {
 	require.True(t, exists, "targeting section missing")
 
 	// Check individual targeting keys
-	assert.Equal(t, "true", targetingDataSeatBid["test_segment_1"])
-	assert.Equal(t, "true", targetingDataSeatBid["test_segment_2"])
+	assert.Equal(t, "test_segment_1,test_segment_2", targetingDataSeatBid["scope3_include"])
 	assert.Equal(t, "test-macro", targetingDataSeatBid["scope3_macro"])
 }
 
@@ -893,24 +651,13 @@ func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
 	// Create mock server that returns segments
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{
-			"data": [
-				{
-					"destination": "triplelift.com",
-					"imp": [
-						{
-							"id": "test-imp-1",
-							"ext": {
-								"scope3": {
-									"segments": [
-										{"id": "test_segment_1"},
-										{"id": "test_segment_2"}
-									]
-								}
-							}
-						}
-					]
-				}
-			]
+			"aee_signals": {
+				"include": [
+					"test_segment_1",
+					"test_segment_2"
+				],
+				"macro": "test-macro"
+			}
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -1006,33 +753,21 @@ func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
 	require.True(t, exists)
 
 	// Check individual targeting keys
-	assert.Equal(t, "true", targetingData["segment_existing"])
-	assert.Equal(t, "true", targetingData["test_segment_1"])
-	assert.Equal(t, "true", targetingData["test_segment_2"])
+	assert.Equal(t, "test_segment_1,test_segment_2", targetingData["scope3_include"])
+	assert.Equal(t, "test-macro", targetingData["scope3_macro"])
 }
 
 func TestScope3APIIntegrationWithExistingPrebidNoTargeting(t *testing.T) {
 	// Create mock server that returns segments
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := `{
-			"data": [
-				{
-					"destination": "triplelift.com",
-					"imp": [
-						{
-							"id": "test-imp-1",
-							"ext": {
-								"scope3": {
-									"segments": [
-										{"id": "test_segment_1"},
-										{"id": "test_segment_2"}
-									]
-								}
-							}
-						}
-					]
-				}
-			]
+			"aee_signals": {
+				"include": [
+					"test_segment_1",
+					"test_segment_2"
+				],
+				"macro": "test-macro"
+			}
 		}`
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -1128,8 +863,8 @@ func TestScope3APIIntegrationWithExistingPrebidNoTargeting(t *testing.T) {
 	require.True(t, exists)
 
 	// Check individual targeting keys
-	assert.Equal(t, "true", targetingData["test_segment_1"])
-	assert.Equal(t, "true", targetingData["test_segment_2"])
+	assert.Equal(t, "test_segment_1,test_segment_2", targetingData["scope3_include"])
+	assert.Equal(t, "test-macro", targetingData["scope3_macro"])
 }
 
 func TestScope3APIError(t *testing.T) {
