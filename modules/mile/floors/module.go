@@ -101,18 +101,22 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 				return orig, nil
 			}
 
-			siteID := ""
+			siteUID := ""
 			if site, ok := req["site"].(map[string]interface{}); ok {
-				siteID, ok = site["id"].(string)
-				if !ok {
-					fmt.Println("site id is not a string", site["id"], ", skipping floors injection")
-					return orig, nil
+				if ext, ok := site["ext"].(map[string]interface{}); ok {
+					if data, ok := ext["data"].(map[string]interface{}); ok {
+						siteUID, ok = data["site_uid"].(string)
+						if !ok {
+							fmt.Println("site_uid is not a string", data["site_uid"], ", skipping floors injection")
+							return orig, nil
+						}
+					}
 				}
 			}
-			fmt.Println("siteID is", siteID)
-			siteConfig, ok := floorsConfig[siteID]
+			fmt.Println("siteID is", siteUID)
+			siteConfig, ok := floorsConfig[siteUID]
 			if !ok {
-				fmt.Println("site config not found for site id", siteID, ", skipping floors injection")
+				fmt.Println("site config not found for site id", siteUID, ", skipping floors injection")
 				return orig, nil
 			}
 

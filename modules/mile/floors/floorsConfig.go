@@ -3,13 +3,15 @@ package floors
 type FloorsConfig map[string]SiteConfig
 
 type SiteConfig struct {
+	siteID    string
 	siteUID   string
 	platforms []string
 	countries []string
 }
 
 var floorsConfig = FloorsConfig{
-	"1992": SiteConfig{
+	"ViXOj3": SiteConfig{
+		siteID:  "1992",
 		siteUID: "ViXOj3",
 		platforms: []string{"m-android|chrome",
 			"m-ios|chrome",
