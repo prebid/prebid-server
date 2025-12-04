@@ -115,7 +115,7 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s share the same syncer key, but none define endpoints (iframe and/or redirect)", bidders)
 	}
 
-	if len(bidderNamesWithEndpoints) > 1 {
+	if len(syncerConfigWithEndpoints) > 1 {
 		// allowed if all configs are identical
 		firstConfig := syncerConfigWithEndpoints[0].cfg
 		for _, config := range syncerConfigWithEndpoints[1:] {
