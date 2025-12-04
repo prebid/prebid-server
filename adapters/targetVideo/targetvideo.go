@@ -118,6 +118,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 		for i := range sb.Bid {
 			bid := sb.Bid[i]
 			br.Bids = append(br.Bids, &adapters.TypedBid{Bid: &bid, BidType: openrtb_ext.BidTypeVideo})
+			br.Currency = bidResp.Cur
 		}
 	}
 	return br, errs
