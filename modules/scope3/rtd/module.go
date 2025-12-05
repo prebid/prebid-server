@@ -89,10 +89,11 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 
 const (
 	// keys for miCtx
-	asyncRequestKey  = "scope3.AsyncRequest"
-	scope3MacroKey   = "scope3_macro"
-	scope3IncludeKey = "scope3_include"
-	scope3Separator  = ";"
+	asyncRequestKey         = "scope3.AsyncRequest"
+	scope3MacroKey          = "scope3_macro"
+	scope3IncludeKey        = "scope3_include"
+	scope3Separator         = ";"
+	scope3CacheKeySeparator = "|"
 )
 
 var scope3MacroKeyPlusSeparator = scope3MacroKey + scope3Separator
@@ -357,7 +358,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 
 	// Check cache first
 	if segments, err := m.cache.Get(cacheKey); err == nil {
-		return strings.Split(string(segments), "|"), nil
+		return strings.Split(string(segments), scope3CacheKeySeparator), nil
 	}
 
 	// Apply privacy masking before sending to Scope3
@@ -413,7 +414,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	}
 
 	// Cache the result
-	err = m.cache.Set(cacheKey, []byte(strings.Join(segments, "|")), m.cfg.CacheTTL)
+	err = m.cache.Set(cacheKey, []byte(strings.Join(segments, scope3CacheKeySeparator)), m.cfg.CacheTTL)
 	if err != nil {
 		glog.Infof("could not set segments in cache: %v", err)
 	}
