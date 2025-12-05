@@ -20,7 +20,7 @@ func ClassifyDevicePlatform(ua string) string {
 		return ""
 	}
 
-	return deviceType + "|" + browser
+	return deviceType + "/" + browser
 }
 
 // detectDeviceType detects the device type and OS from user agent
@@ -68,25 +68,25 @@ func detectBrowser(ua string) string {
 		return "google search"
 	}
 
-	// Check for Samsung Internet (must be before Chrome since it contains "Chrome")
-	if strings.Contains(ua, "SamsungBrowser/") {
-		return "samsung internet for android"
-	}
+	// // Check for Samsung Internet (must be before Chrome since it contains "Chrome")
+	// if strings.Contains(ua, "SamsungBrowser/") {
+	// 	return "samsung internet for android"
+	// }
 
-	// Check for Amazon Silk (must be before Chrome since it may contain "Chrome")
-	if strings.Contains(ua, "Silk/") {
-		return "amazon silk"
-	}
+	// // Check for Amazon Silk (must be before Chrome since it may contain "Chrome")
+	// if strings.Contains(ua, "Silk/") {
+	// 	return "amazon silk"
+	// }
 
 	// Check for Edge (must be before Chrome since Edge also contains "Chrome")
 	if strings.Contains(ua, "Edg/") || strings.Contains(ua, "Edge/") || strings.Contains(ua, "EdgiOS/") {
 		return "edge"
 	}
 
-	// Check for Opera (must be before Chrome since Opera also contains "Chrome")
-	if strings.Contains(ua, "OPR/") || strings.Contains(ua, "Opera/") {
-		return "opera"
-	}
+	// // Check for Opera (must be before Chrome since Opera also contains "Chrome")
+	// if strings.Contains(ua, "OPR/") || strings.Contains(ua, "Opera/") {
+	// 	return "opera"
+	// }
 
 	// Check for Firefox
 	if strings.Contains(ua, "Firefox/") || strings.Contains(ua, "FxiOS/") {
