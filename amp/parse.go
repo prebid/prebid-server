@@ -14,6 +14,8 @@ import (
 	"github.com/prebid/prebid-server/v3/privacy"
 	"github.com/prebid/prebid-server/v3/privacy/ccpa"
 	"github.com/prebid/prebid-server/v3/privacy/gdpr"
+	"github.com/prebid/prebid-server/v3/privacy/gpp"
+	"github.com/prebid/prebid-server/v3/util/stringutil"
 )
 
 // Params defines the parameters of an AMP request.
@@ -25,6 +27,7 @@ type Params struct {
 	ConsentType       int64
 	Debug             bool
 	GdprApplies       *bool
+	GppSid            string
 	Origin            string
 	Size              Size
 	Slot              string
@@ -49,6 +52,7 @@ const (
 	ConsentTCF1      = 1
 	ConsentTCF2      = 2
 	ConsentUSPrivacy = 3
+	ConsentGPP       = 4
 )
 
 // ReadPolicy returns a privacy writer in accordance to the query values consent, consent_type and gdpr_applies.
@@ -83,6 +87,11 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 			// Log warning if CCPA string is invalid
 			warningMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
 		}
+	case ConsentGPP:
+		if gppSidErr := validateGppSid(ampParams.GppSid); len(gppSidErr) > 0 {
+			warningMsg = gppSidErr
+		}
+		rv = gpp.ConsentWriter{Consent: ampParams.Consent, GppSid: ampParams.GppSid}
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
@@ -146,6 +155,20 @@ func validateTCf2ConsentString(consent string) string {
 	return ""
 }
 
+// validateGppSid validates that gpp_sid is a comma-separated list of integers
+func validateGppSid(gppSid string) string {
+	if len(gppSid) == 0 {
+		return ""
+	}
+
+	_, err := stringutil.StrToInt8Slice(gppSid)
+	if err != nil {
+		return fmt.Sprintf("GPP SID '%s' is not a valid comma-separated list of integers.", gppSid)
+	}
+
+	return ""
+}
+
 // ParseParams parses the AMP parameters from a HTTP request.
 func ParseParams(httpRequest *http.Request) (Params, error) {
 	query := httpRequest.URL.Query()
@@ -162,6 +185,7 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Consent:           chooseConsent(query.Get("consent_string"), query.Get("gdpr_consent")),
 		ConsentType:       parseInt(query.Get("consent_type")),
 		Debug:             query.Get("debug") == "1",
+		GppSid:            query.Get("gpp_sid"),
 		Origin:            query.Get("__amp_source_origin"),
 		Size: Size{
 			Height:         parseInt(query.Get("h")),
