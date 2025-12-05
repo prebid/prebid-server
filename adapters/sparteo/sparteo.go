@@ -5,20 +5,17 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 type adapter struct {
-	endpoint *template.Template
+	endpoint string
 }
 
 type extBidWrapper struct {
@@ -28,14 +25,8 @@ type extBidWrapper struct {
 const unknownValue = "unknown"
 
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
-	templateString := cfg.Endpoint + "?network_id={{.NetworkId}}{{if .SiteDomain}}&site_domain={{.SiteDomain}}{{end}}{{if .AppDomain}}&app_domain={{.AppDomain}}{{end}}{{if .Bundle}}&bundle={{.Bundle}}{{end}}"
-	template, err := template.New("endpointTemplate").Parse(templateString)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
 	bidder := &adapter{
-		endpoint: template,
+		endpoint: cfg.Endpoint,
 	}
 	return bidder, nil
 }
@@ -64,47 +55,6 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 	request.Imp = make([]openrtb2.Imp, len(req.Imp))
 	copy(request.Imp, req.Imp)
 
-	if req.Site != nil {
-		siteCopy := *req.Site
-		request.Site = &siteCopy
-		if req.Site.Publisher != nil {
-			pubCopy := *req.Site.Publisher
-			request.Site.Publisher = &pubCopy
-		}
-	}
-	if req.App != nil {
-		appCopy := *req.App
-		request.App = &appCopy
-		if req.App.Publisher != nil {
-			pubCopy := *req.App.Publisher
-			request.App.Publisher = &pubCopy
-		}
-	}
-
-	var siteDomain, appDomain, bundle string
-	if request.Site != nil {
-		if sd := resolveSiteDomain(request.Site); sd != nil {
-			siteDomain = *sd
-			if siteDomain == unknownValue {
-				errs = append(errs, &errortypes.BadInput{
-					Message: "Domain not found. Missing the site.domain or the site.page field",
-				})
-			}
-		}
-	} else if request.App != nil {
-		if ad := resolveAppDomain(request.App); ad != nil {
-			appDomain = *ad
-		}
-		if b := resolveBundle(request.App); b != nil {
-			bundle = *b
-			if bundle == unknownValue {
-				errs = append(errs, &errortypes.BadInput{
-					Message: "Bundle not found. Missing the app.bundle field.",
-				})
-			}
-		}
-	}
-
 	var networkID string
 	for i, imp := range request.Imp {
 		extImpSparteo, err := parseExt(&imp)
@@ -112,7 +62,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 			errs = append(errs, err)
 			continue
 		}
-		if networkID == "" {
+		if networkID == "" && extImpSparteo.NetworkId != "" {
 			networkID = extImpSparteo.NetworkId
 		}
 
@@ -127,20 +77,17 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 			sparteoMap = make(map[string]interface{})
 			extMap["sparteo"] = sparteoMap
 		}
-
 		paramsMap, ok := sparteoMap["params"].(map[string]interface{})
 		if !ok {
 			paramsMap = make(map[string]interface{})
 			sparteoMap["params"] = paramsMap
 		}
-
 		if bidderObj, ok := extMap["bidder"].(map[string]interface{}); ok {
 			delete(extMap, "bidder")
 			for k, v := range bidderObj {
 				paramsMap[k] = v
 			}
 		}
-
 		updatedExt, err := jsonutil.Marshal(extMap)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while marshaling updated ext, err: %s", imp.ID, err))
@@ -149,30 +96,82 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 		request.Imp[i].Ext = updatedExt
 	}
 
-	var pub *openrtb2.Publisher
-	var pubExt string
+	var sb strings.Builder
+	sb.WriteString("network_id=")
+	sb.WriteString(url.QueryEscape(networkID))
 
-	if request.Site != nil {
-		pub = ensurePublisher(request.Site.Publisher)
-		request.Site.Publisher = pub
-		pubExt = "site.publisher.ext"
-	} else if request.App != nil {
-		pub = ensurePublisher(request.App.Publisher)
-		request.App.Publisher = pub
-		pubExt = "app.publisher.ext"
+	var pubToUpdate *openrtb2.Publisher
+	var pubExtPath string
+
+	if req.Site != nil {
+		siteCopy := *req.Site
+		request.Site = &siteCopy
+		if req.Site.Publisher != nil {
+			pubCopy := *req.Site.Publisher
+			request.Site.Publisher = &pubCopy
+		}
+
+		pubToUpdate = ensurePublisher(request.Site.Publisher)
+		request.Site.Publisher = pubToUpdate
+		pubExtPath = "site.publisher.ext"
+
+		domain := resolveSiteDomain(request.Site)
+		if domain == "" {
+			domain = unknownValue
+			errs = append(errs, &errortypes.BadInput{
+				Message: "Domain not found. Missing the site.domain or the site.page field",
+			})
+		}
+		sb.WriteString("&site_domain=")
+		sb.WriteString(url.QueryEscape(domain))
+	} else if req.App != nil {
+		appCopy := *req.App
+		request.App = &appCopy
+		if req.App.Publisher != nil {
+			pubCopy := *req.App.Publisher
+			request.App.Publisher = &pubCopy
+		}
+
+		pubToUpdate = ensurePublisher(request.App.Publisher)
+		request.App.Publisher = pubToUpdate
+		pubExtPath = "app.publisher.ext"
+
+		appDomain := resolveAppDomain(request.App)
+		if appDomain == "" {
+			appDomain = unknownValue
+		}
+		sb.WriteString("&app_domain=")
+		sb.WriteString(url.QueryEscape(appDomain))
+
+		bundle := resolveBundle(request.App)
+		if bundle == "" {
+			bundle = unknownValue
+			errs = append(errs, &errortypes.BadInput{
+				Message: "Bundle not found. Missing the app.bundle field.",
+			})
+		}
+		sb.WriteString("&bundle=")
+		sb.WriteString(url.QueryEscape(bundle))
 	} else {
+		// NO CONTEXT (Fallback)
 		request.Site = &openrtb2.Site{}
-		pub = ensurePublisher(request.Site.Publisher)
-		request.Site.Publisher = pub
-		pubExt = "site.publisher.ext"
+		pubToUpdate = ensurePublisher(request.Site.Publisher)
+		request.Site.Publisher = pubToUpdate
+		pubExtPath = "site.publisher.ext"
 	}
 
-	ext, err := updatePublisherExtension(&pub.Ext, networkID, pubExt)
+	ext, err := updatePublisherExtension(&pubToUpdate.Ext, networkID, pubExtPath)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
-		pub.Ext = ext
+		pubToUpdate.Ext = ext
 	}
+
+	uri, err := url.Parse(a.endpoint)
+	if err != nil {
+		return nil, []error{fmt.Errorf("invalid endpoint URL %q: %w", a.endpoint, err)}
+	}
+	uri.RawQuery = sb.String()
 
 	body, err := jsonutil.Marshal(request)
 	if err != nil {
@@ -180,14 +179,9 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 		return nil, errs
 	}
 
-	uri, err := a.buildEndpointURL(networkID, siteDomain, appDomain, bundle)
-	if err != nil {
-		return nil, []error{err}
-	}
-
 	requestData := &adapters.RequestData{
 		Method: http.MethodPost,
-		Uri:    uri,
+		Uri:    uri.String(),
 		Body:   body,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 		Headers: http.Header{
@@ -225,45 +219,36 @@ func normalizeHostname(host string) string {
 	return host
 }
 
-func resolveSiteDomain(site *openrtb2.Site) *string {
+func resolveSiteDomain(site *openrtb2.Site) string {
 	if site != nil {
 		if d := normalizeHostname(site.Domain); d != "" {
-			return ptrutil.ToPtr(d)
+			return d
 		}
 		if fromPage := normalizeHostname(site.Page); fromPage != "" {
-			return ptrutil.ToPtr(fromPage)
+			return fromPage
 		}
-		return ptrutil.ToPtr(unknownValue)
 	}
-	return nil
+	return ""
 }
 
-func resolveAppDomain(app *openrtb2.App) *string {
+func resolveAppDomain(app *openrtb2.App) string {
 	if app != nil {
 		if d := normalizeHostname(app.Domain); d != "" {
-			return ptrutil.ToPtr(d)
+			return d
 		}
-		return ptrutil.ToPtr(unknownValue)
 	}
-	return nil
+	return ""
 }
 
-func resolveBundle(app *openrtb2.App) *string {
+func resolveBundle(app *openrtb2.App) string {
 	if app == nil {
-		return nil
+		return ""
 	}
-
-	raw := app.Bundle
-	if strings.TrimSpace(raw) == "" {
-		return ptrutil.ToPtr(unknownValue)
+	raw := strings.TrimSpace(app.Bundle)
+	if raw == "" || strings.EqualFold(raw, "null") {
+		return ""
 	}
-
-	b := strings.TrimSpace(raw)
-	if strings.EqualFold(b, "null") {
-		return ptrutil.ToPtr(unknownValue)
-	}
-
-	return ptrutil.ToPtr(b)
+	return raw
 }
 
 func ensurePublisher(p *openrtb2.Publisher) *openrtb2.Publisher {
@@ -273,7 +258,6 @@ func ensurePublisher(p *openrtb2.Publisher) *openrtb2.Publisher {
 	if p.Ext == nil {
 		p.Ext = jsonutil.RawMessage("{}")
 	}
-
 	return p
 }
 
@@ -297,11 +281,6 @@ func updatePublisherExtension(targetExt *jsonutil.RawMessage, networkID, fieldPa
 		}
 	}
 	return updated, nil
-}
-
-func (a *adapter) buildEndpointURL(networkId string, siteDomain string, appDomain string, bundle string) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{NetworkId: networkId, SiteDomain: siteDomain, AppDomain: appDomain, Bundle: bundle}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
 func (a *adapter) MakeBids(req *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
