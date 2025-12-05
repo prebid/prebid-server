@@ -404,12 +404,12 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	}
 
 	segments := []string{}
-	if scope3Resp.AEESignals.Include != nil && len(scope3Resp.AEESignals.Include) > 0 {
-		segmentsStr := scope3IncludeKeyPlusSeparator + strings.Join(scope3Resp.AEESignals.Include, ",")
+	if len(scope3Resp.Include) > 0 {
+		segmentsStr := scope3IncludeKeyPlusSeparator + strings.Join(scope3Resp.Include, ",")
 		segments = append(segments, segmentsStr)
 	}
-	if scope3Resp.AEESignals.Macro != "" {
-		segments = append(segments, scope3MacroKeyPlusSeparator+scope3Resp.AEESignals.Macro)
+	if scope3Resp.Macro != "" {
+		segments = append(segments, scope3MacroKeyPlusSeparator+scope3Resp.Macro)
 	}
 
 	// Cache the result
