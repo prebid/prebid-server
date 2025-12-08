@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v3/endpoints"
 	"github.com/prebid/prebid-server/v3/endpoints/events"
 	infoEndpoints "github.com/prebid/prebid-server/v3/endpoints/info"
+	mileEndpoint "github.com/prebid/prebid-server/v3/endpoints/mile"
 	"github.com/prebid/prebid-server/v3/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
@@ -262,6 +263,23 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
+	}
+
+	if cfg.Mile.Enabled {
+		mileStore, err := mileEndpoint.NewRedisSiteStore(cfg.Mile)
+		if err != nil {
+			return nil, err
+		}
+		mileHandler, shutdownMile, err := mileEndpoint.NewHandler(cfg, mileStore, openrtbEndpoint, r.MetricsEngine, mileEndpoint.Hooks{})
+		if err != nil {
+			return nil, err
+		}
+		path := cfg.Mile.Endpoint
+		if path == "" {
+			path = "/mile/v1/request"
+		}
+		r.POST(path, mileHandler)
+		r.shutdowns = append(r.shutdowns, shutdownMile)
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
