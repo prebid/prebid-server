@@ -125,6 +125,11 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 				country = "OC"
 			}
 
+			if !slices.Contains(siteConfig.platforms, platform) {
+				fmt.Println("platform is not in site config platforms", siteConfig.platforms, ", skipping floors injection")
+				return orig, nil
+			}
+
 			// Ensure ext and ext.prebid exist
 			ext, ok := req["ext"].(map[string]interface{})
 			if !ok {
