@@ -92,10 +92,9 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 
 			if device, ok := req["device"].(map[string]interface{}); ok {
 				ua = device["ua"].(string)
-				fmt.Println(device)
 
 				if ip == "" {
-					fmt.Println("ip is empty ")
+					fmt.Println("ip is empty")
 				}
 
 				// Check if country is already present in device.geo.country
