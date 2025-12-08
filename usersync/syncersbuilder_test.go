@@ -22,8 +22,10 @@ func TestBuildSyncers(t *testing.T) {
 	var (
 		hostConfig              = config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}}
 		iframeConfig            = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
+		iframeConfigAlt         = &config.SyncerEndpoint{URL: "https://bidder.com/iframe-alt?redirect={{.RedirectURL}}"}
 		iframeConfigError       = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{xRedirectURL}}"} // Error caused by invalid macro
 		infoKeyAPopulated       = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
+		infoKeyAPopulatedAlt    = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfigAlt}}
 		infoKeyADisabled        = config.BidderInfo{Disabled: true, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
 		infoKeyAEmpty           = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a"}}
 		infoKeyAError           = config.BidderInfo{Disabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfigError}}
@@ -86,11 +88,20 @@ func TestBuildSyncers(t *testing.T) {
 			},
 		},
 		{
-			description:      "Many - Same Syncers - Many Primaries",
+			description:      "Many - Same Syncers - Many Primaries - Identical",
 			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAPopulated},
+			expectedIFramesURLs: map[string]string{
+				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder1%2Fhost",
+				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder2%2Fhost",
+			},
+		},
+		{
+			description:      "Many - Same Syncers - Many Primaries - Different",
+			givenConfig:      hostConfig,
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAPopulatedAlt},
 			expectedErrors: []string{
-				"bidders bidder1, bidder2 define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
+				"bidders bidder1, bidder2 define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints unless the configs are identical",
 			},
 		},
 		{
@@ -294,10 +305,11 @@ func TestShouldCreateSyncer(t *testing.T) {
 
 func TestChooseSyncerConfig(t *testing.T) {
 	var (
-		bidderAPopulated = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
-		bidderAEmpty     = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{}}
-		bidderBPopulated = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
-		bidderBEmpty     = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{}}
+		bidderAPopulated    = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
+		bidderAEmpty        = namedSyncerConfig{name: "bidderA", cfg: config.Syncer{}}
+		bidderBPopulated    = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "anyURL"}}}
+		bidderBPopulatedAlt = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{Key: "a", IFrame: &config.SyncerEndpoint{URL: "differentURL"}}}
+		bidderBEmpty        = namedSyncerConfig{name: "bidderB", cfg: config.Syncer{}}
 	)
 
 	testCases := []struct {
@@ -317,9 +329,14 @@ func TestChooseSyncerConfig(t *testing.T) {
 			expectedConfig: bidderBPopulated,
 		},
 		{
-			description:   "Many - Same Key - Multiple Configs",
-			given:         []namedSyncerConfig{bidderAPopulated, bidderBPopulated},
-			expectedError: "bidders bidderA, bidderB define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
+			description:    "Many - Same Key - Multiple - Same Configs",
+			given:          []namedSyncerConfig{bidderAPopulated, bidderBPopulated},
+			expectedConfig: bidderBPopulated,
+		},
+		{
+			description:   "Many - Same Key - Multiple - Different Configs",
+			given:         []namedSyncerConfig{bidderAPopulated, bidderBPopulatedAlt},
+			expectedError: "bidders bidderA, bidderB define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints unless the configs are identical",
 		},
 		{
 			description:   "Many - Same Key - No Configs",
