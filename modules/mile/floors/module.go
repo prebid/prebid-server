@@ -9,6 +9,8 @@ import (
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/mile/common"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v3/util/httputil"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 )
 
 // Builder creates a new floors injector module instance
@@ -32,6 +34,32 @@ type FloorsInjector struct {
 	geoResolver *common.MaxMindGeoResolver
 }
 
+const (
+	deviceIPCtxKey = "device_ip"
+)
+
+// HandleEntrypointHook extracts the device IP from HTTP headers and stores it in ModuleContext
+func (f *FloorsInjector) HandleEntrypointHook(
+	ctx context.Context,
+	moduleCtx hookstage.ModuleInvocationContext,
+	payload hookstage.EntrypointPayload,
+) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+
+	// Extract IP from headers using httputil which checks X-Forwarded-For, X-Real-IP, etc.
+	ip, _ := httputil.FindIP(payload.Request, iputil.PublicNetworkIPValidator{})
+
+	// Create module context to pass IP to later stages
+	modCtx := make(hookstage.ModuleContext)
+	if ip != nil {
+		modCtx[deviceIPCtxKey] = ip.String()
+		fmt.Println("Extracted IP from headers:", ip.String())
+	}
+
+	return hookstage.HookResult[hookstage.EntrypointPayload]{
+		ModuleContext: modCtx,
+	}, nil
+}
+
 func (f *FloorsInjector) HandleRawAuctionHook(
 	ctx context.Context,
 	moduleCtx hookstage.ModuleInvocationContext,
@@ -53,22 +81,26 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			ip := ""
 			ua := ""
 			country := ""
+
+			// First try to get IP from ModuleContext (passed from Entrypoint hook)
+			if moduleCtx.ModuleContext != nil {
+				if ipFromHeader, ok := moduleCtx.ModuleContext[deviceIPCtxKey].(string); ok && ipFromHeader != "" {
+					ip = ipFromHeader
+					fmt.Println("Using IP from headers (via ModuleContext):", ip)
+				}
+			}
+
 			if device, ok := req["device"].(map[string]interface{}); ok {
 				ua = device["ua"].(string)
-				switch ipv := device["ip"].(type) {
-				case string:
-					ip = ipv
-				}
-				// fallback to ipv6 if no ipv4
+				fmt.Println(device)
+
 				if ip == "" {
-					if ipv6, ok := device["ipv6"].(string); ok {
-						ip = ipv6
-					}
+					fmt.Println("ip is empty ")
 				}
 
 				// Check if country is already present in device.geo.country
 				if geo, ok := device["geo"].(map[string]interface{}); ok {
-					fmt.Println("geo is", geo)
+					fmt.Println("geo is", geo, "from request")
 					if countryCode, ok := geo["country"].(string); ok && countryCode != "" {
 						country = countryCode
 						fmt.Println("Country found in request:", country)
@@ -121,12 +153,12 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			}
 
 			if !slices.Contains(siteConfig.countries, country) {
-				fmt.Println("country is not in site config countries", siteConfig.countries, ", using OC instead")
+				fmt.Println("country is not in site config countries", country, ", using OC instead")
 				country = "OC"
 			}
 
 			if !slices.Contains(siteConfig.platforms, platform) {
-				fmt.Println("platform is not in site config platforms", siteConfig.platforms, ", skipping floors injection")
+				fmt.Println("platform is not in site config platforms", platform, "skipping floors injection")
 				return orig, nil
 			}
 
