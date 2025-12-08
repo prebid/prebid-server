@@ -90,6 +90,25 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 				}
 			}
 
+			siteUID := ""
+			if site, ok := req["site"].(map[string]interface{}); ok {
+				if ext, ok := site["ext"].(map[string]interface{}); ok {
+					if data, ok := ext["data"].(map[string]interface{}); ok {
+						siteUID, ok = data["site_uid"].(string)
+						if !ok {
+							fmt.Println("site_uid is not a string", data["site_uid"], ", skipping floors injection")
+							return orig, nil
+						}
+					}
+				}
+			}
+			fmt.Println("siteID is", siteUID)
+			siteConfig, ok := floorsConfig[siteUID]
+			if !ok {
+				fmt.Println("site config not found for site id", siteUID, ", skipping floors injection")
+				return orig, nil
+			}
+
 			if device, ok := req["device"].(map[string]interface{}); ok {
 				ua = device["ua"].(string)
 
@@ -129,25 +148,6 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			fmt.Println("platform is", platform)
 			if platform == "" {
 				fmt.Println("platform is empty for ua", ua, ", skipping floors injection")
-				return orig, nil
-			}
-
-			siteUID := ""
-			if site, ok := req["site"].(map[string]interface{}); ok {
-				if ext, ok := site["ext"].(map[string]interface{}); ok {
-					if data, ok := ext["data"].(map[string]interface{}); ok {
-						siteUID, ok = data["site_uid"].(string)
-						if !ok {
-							fmt.Println("site_uid is not a string", data["site_uid"], ", skipping floors injection")
-							return orig, nil
-						}
-					}
-				}
-			}
-			fmt.Println("siteID is", siteUID)
-			siteConfig, ok := floorsConfig[siteUID]
-			if !ok {
-				fmt.Println("site config not found for site id", siteUID, ", skipping floors injection")
 				return orig, nil
 			}
 
