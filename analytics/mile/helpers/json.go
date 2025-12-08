@@ -3,9 +3,11 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/getsentry/sentry-go"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"time"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnalyticsEvent, error) {
@@ -20,6 +22,8 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 				var bidBiders []string
 				var winningBidder, winningSize string
 				var winningPrice float64 = 0
+				biddersFloorMap := make(map[string]string)
+
 				if ao.Response != nil {
 					if ao.Response.SeatBid != nil {
 
@@ -32,6 +36,16 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 										winningPrice = bid.Price
 										winningBidder = seatBid.Seat
 										//winningSize = bid.Ext.
+									}
+
+									// Extract floor value from bid response
+									if bid.Ext != nil {
+										var extBid openrtb_ext.ExtBid
+										if err := json.Unmarshal(bid.Ext, &extBid); err == nil {
+											if extBid.Prebid != nil && extBid.Prebid.Floors != nil {
+												biddersFloorMap[seatBid.Seat] = fmt.Sprintf("%f", extBid.Prebid.Floors.FloorValue)
+											}
+										}
 									}
 								}
 							}
@@ -91,6 +105,9 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 							"prebid_server": []string{"1"},
 							"amp":           []string{"1"},
 						},
+						BiddersFloorMeta: map[string]map[string]string{
+							"prebid_server": biddersFloorMap,
+						},
 						//Viewability: ao.RequestWrapper.
 						//WinningSize: ao.Response.SeatBi
 						IsPBS: true,
@@ -147,6 +164,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 				bidbiddersMap := make(map[string]struct{})
 				var winningBidder, winningSize string
 				var winningPrice float64 = 0.0
+				biddersFloorMap := make(map[string]string)
 
 				// Evaluate bids
 				if ao.AuctionResponse != nil {
@@ -166,6 +184,16 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 										winningPrice = bid.Price
 										winningBidder = seatBid.Seat
 										//winningSize = bid.Ext.
+									}
+
+									// Extract floor value from bid response
+									if bid.Ext != nil {
+										var extBid openrtb_ext.ExtBid
+										if err := json.Unmarshal(bid.Ext, &extBid); err == nil {
+											if extBid.Prebid != nil && extBid.Prebid.Floors != nil {
+												biddersFloorMap[seatBid.Seat] = fmt.Sprintf("%f", extBid.Prebid.Floors.FloorValue)
+											}
+										}
 									}
 								}
 							}
@@ -194,6 +222,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 					}
 
 				}
+
 				var respExt RespExt
 				err = json.Unmarshal(ao.AuctionResponse.Ext, &respExt)
 				if err != nil {
@@ -244,6 +273,9 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						MetaData: map[string][]string{
 							"prebid_server": []string{"1"},
 							"amp":           []string{"1"},
+						},
+						BiddersFloorMeta: map[string]map[string]string{
+							"prebid_server": biddersFloorMap,
 						},
 						//Viewability: ao.RequestWrapper.
 						//WinningSize: ao.Response.SeatBi
