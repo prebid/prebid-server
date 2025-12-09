@@ -71,8 +71,25 @@ func executeGroup[H any, P any](
 	rejected := make(chan struct{})
 	resp := make(chan hookResponse[P], len(group.Hooks))
 
+	// For concurrent stages (bidder request/response), hold read lock
+	// for the entire duration that goroutines are executing to prevent
+	// concurrent writes to moduleContexts map
+	if executionCtx.holdReadLock && executionCtx.moduleContexts != nil {
+		executionCtx.moduleContexts.RLock()
+		defer executionCtx.moduleContexts.RUnlock()
+	}
+
 	for _, hook := range group.Hooks {
-		mCtx := executionCtx.getModuleContext(hook.Module)
+		var mCtx hookstage.ModuleInvocationContext
+
+		if executionCtx.holdReadLock {
+			// Lock already held, use lockless accessor
+			mCtx = executionCtx.getModuleContextLocked(hook.Module)
+		} else {
+			// Normal case: acquire and release lock per hook
+			mCtx = executionCtx.getModuleContext(hook.Module)
+		}
+
 		mCtx.HookImplCode = hook.Code
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)

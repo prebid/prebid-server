@@ -203,6 +203,7 @@ func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb_ext.RequestWrapper
 
 	stageName := hooks.StageBidderRequest.String()
 	executionCtx := e.newContext(stageName)
+	executionCtx.holdReadLock = true // Enable lock holding for concurrent bidder stage
 	payload := hookstage.BidderRequestPayload{Request: req, Bidder: bidder}
 	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entity(bidder)
@@ -231,6 +232,7 @@ func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderRe
 
 	stageName := hooks.StageRawBidderResponse.String()
 	executionCtx := e.newContext(stageName)
+	executionCtx.holdReadLock = true // Enable lock holding for concurrent bidder stage
 	payload := hookstage.RawBidderResponsePayload{BidderResponse: response, Bidder: bidder}
 
 	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)

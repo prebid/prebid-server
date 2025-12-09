@@ -17,12 +17,41 @@ type executionContext struct {
 	account         *config.Account
 	moduleContexts  *moduleContexts
 	activityControl privacy.ActivityControl
+	// holdReadLock indicates whether to hold moduleContexts read lock
+	// for the duration of hook group execution. This is needed for stages
+	// that run concurrently (bidder stages) to prevent concurrent map access.
+	holdReadLock    bool
 }
 
 func (ctx executionContext) getModuleContext(moduleName string) hookstage.ModuleInvocationContext {
 	moduleInvocationCtx := hookstage.ModuleInvocationContext{Endpoint: ctx.endpoint}
 	if ctx.moduleContexts != nil {
 		if mc, ok := ctx.moduleContexts.get(moduleName); ok {
+			moduleInvocationCtx.ModuleContext = mc
+		}
+	}
+
+	if ctx.account != nil {
+		cfg, err := ctx.account.Hooks.Modules.ModuleConfig(moduleName)
+		if err != nil {
+			logger.Warnf("Failed to get account config for %s module: %s", moduleName, err)
+		}
+
+		moduleInvocationCtx.AccountID = ctx.accountID
+		moduleInvocationCtx.AccountConfig = cfg
+	}
+
+	return moduleInvocationCtx
+}
+
+// getModuleContextLocked reads from moduleContexts without locking.
+// IMPORTANT: Caller must hold moduleContexts.RLock.
+func (ctx executionContext) getModuleContextLocked(moduleName string) hookstage.ModuleInvocationContext {
+	moduleInvocationCtx := hookstage.ModuleInvocationContext{Endpoint: ctx.endpoint}
+
+	// Direct map access - caller holds lock
+	if ctx.moduleContexts != nil && ctx.moduleContexts.ctxs != nil {
+		if mc, ok := ctx.moduleContexts.ctxs[moduleName]; ok {
 			moduleInvocationCtx.ModuleContext = mc
 		}
 	}
