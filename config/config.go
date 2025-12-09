@@ -58,14 +58,14 @@ type Configuration struct {
 	// StoredRequestsTimeout defines the number of milliseconds before a timeout occurs with stored requests fetch
 	StoredRequestsTimeout int `mapstructure:"stored_requests_timeout_ms"`
 
-	MaxRequestSize       int64             `mapstructure:"max_request_size"`
-	Analytics            Analytics         `mapstructure:"analytics"`
-	AMPTimeoutAdjustment int64             `mapstructure:"amp_timeout_adjustment_ms"`
-	GDPR                 GDPR              `mapstructure:"gdpr"`
-	CCPA                 CCPA              `mapstructure:"ccpa"`
-	LMT                  LMT               `mapstructure:"lmt"`
-	CurrencyConverter    CurrencyConverter `mapstructure:"currency_converter"`
-	DefReqConfig         DefReqConfig      `mapstructure:"default_request"`
+	MaxRequestSize       int64                  `mapstructure:"max_request_size"`
+	Analytics            map[string]interface{} `mapstructure:"analytics"`
+	AMPTimeoutAdjustment int64                  `mapstructure:"amp_timeout_adjustment_ms"`
+	GDPR                 GDPR                   `mapstructure:"gdpr"`
+	CCPA                 CCPA                   `mapstructure:"ccpa"`
+	LMT                  LMT                    `mapstructure:"lmt"`
+	CurrencyConverter    CurrencyConverter      `mapstructure:"currency_converter"`
+	DefReqConfig         DefReqConfig           `mapstructure:"default_request"`
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
@@ -475,12 +475,6 @@ type LMT struct {
 	Enforce bool `mapstructure:"enforce"`
 }
 
-type Analytics struct {
-	File     FileLogs      `mapstructure:"file"`
-	Agma     AgmaAnalytics `mapstructure:"agma"`
-	Pubstack Pubstack      `mapstructure:"pubstack"`
-}
-
 type CurrencyConverter struct {
 	FetchURL                 string `mapstructure:"fetch_url"`
 	FetchTimeoutMilliseconds int    `mapstructure:"fetch_timeout_ms"`
@@ -496,50 +490,6 @@ func (cfg *CurrencyConverter) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf("currency_converter.fetch_timeout_ms must be 0 or greater. Got %d", cfg.FetchTimeoutMilliseconds))
 	}
 	return errs
-}
-
-type AgmaAnalytics struct {
-	Enabled  bool                      `mapstructure:"enabled"`
-	Endpoint AgmaAnalyticsHttpEndpoint `mapstructure:"endpoint"`
-	Buffers  AgmaAnalyticsBuffer       `mapstructure:"buffers"`
-	Accounts []AgmaAnalyticsAccount    `mapstructure:"accounts"`
-}
-
-type AgmaAnalyticsHttpEndpoint struct {
-	Url     string `mapstructure:"url"`
-	Timeout string `mapstructure:"timeout"`
-	Gzip    bool   `mapstructure:"gzip"`
-}
-
-type AgmaAnalyticsBuffer struct {
-	BufferSize string `mapstructure:"size"`
-	EventCount int    `mapstructure:"count"`
-	Timeout    string `mapstructure:"timeout"`
-}
-
-type AgmaAnalyticsAccount struct {
-	Code        string `mapstructure:"code"`
-	PublisherId string `mapstructure:"publisher_id"`
-	SiteAppId   string `mapstructure:"site_app_id"`
-}
-
-// FileLogs Corresponding config for FileLogger as a PBS Analytics Module
-type FileLogs struct {
-	Filename string `mapstructure:"filename"`
-}
-
-type Pubstack struct {
-	Enabled     bool           `mapstructure:"enabled"`
-	ScopeId     string         `mapstructure:"scopeid"`
-	IntakeUrl   string         `mapstructure:"endpoint"`
-	Buffers     PubstackBuffer `mapstructure:"buffers"`
-	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
-}
-
-type PubstackBuffer struct {
-	BufferSize string `mapstructure:"size"`
-	EventCount int    `mapstructure:"count"`
-	Timeout    string `mapstructure:"timeout"`
 }
 
 type VTrack struct {
@@ -1147,22 +1097,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}")
 
 	v.SetDefault("max_request_size", 1024*256)
-	v.SetDefault("analytics.file.filename", "")
-	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
-	v.SetDefault("analytics.pubstack.scopeid", "change-me")
-	v.SetDefault("analytics.pubstack.enabled", false)
-	v.SetDefault("analytics.pubstack.configuration_refresh_delay", "2h")
-	v.SetDefault("analytics.pubstack.buffers.size", "2MB")
-	v.SetDefault("analytics.pubstack.buffers.count", 100)
-	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
-	v.SetDefault("analytics.agma.enabled", false)
-	v.SetDefault("analytics.agma.endpoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server")
-	v.SetDefault("analytics.agma.endpoint.timeout", "2s")
-	v.SetDefault("analytics.agma.endpoint.gzip", false)
-	v.SetDefault("analytics.agma.buffers.size", "2MB")
-	v.SetDefault("analytics.agma.buffers.count", 100)
-	v.SetDefault("analytics.agma.buffers.timeout", "15m")
-	v.SetDefault("analytics.agma.accounts", []AgmaAnalyticsAccount{})
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.BindEnv("gdpr.default_value")
 	v.SetDefault("gdpr.enabled", true)

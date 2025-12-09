@@ -7,20 +7,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateHttpSender(t *testing.T) {
 	testCases := []struct {
 		name        string
-		endpoint    config.AgmaAnalyticsHttpEndpoint
+		endpoint    EndpointConfig
 		wantHeaders http.Header
 		wantErr     bool
 	}{
 		{
 			name: "Test with invalid/empty URL",
-			endpoint: config.AgmaAnalyticsHttpEndpoint{
+			endpoint: EndpointConfig{
 				Url:     "%%2815197306101420000%29",
 				Timeout: "1s",
 				Gzip:    false,
@@ -29,7 +28,7 @@ func TestCreateHttpSender(t *testing.T) {
 		},
 		{
 			name: "Test with timeout",
-			endpoint: config.AgmaAnalyticsHttpEndpoint{
+			endpoint: EndpointConfig{
 				Url:     "http://localhost:8080",
 				Timeout: "2x", // Very short timeout
 				Gzip:    false,
@@ -38,7 +37,7 @@ func TestCreateHttpSender(t *testing.T) {
 		},
 		{
 			name: "Test with Gzip true",
-			endpoint: config.AgmaAnalyticsHttpEndpoint{
+			endpoint: EndpointConfig{
 				Url:     "http://localhost:8080",
 				Timeout: "1s",
 				Gzip:    true,
@@ -51,7 +50,7 @@ func TestCreateHttpSender(t *testing.T) {
 		},
 		{
 			name: "Test with Gzip false",
-			endpoint: config.AgmaAnalyticsHttpEndpoint{
+			endpoint: EndpointConfig{
 				Url:     "http://localhost:8080",
 				Timeout: "1s",
 				Gzip:    false,
@@ -115,19 +114,21 @@ func TestCreateHttpSender(t *testing.T) {
 	}
 }
 
-func TestSenderErrorReponse(t *testing.T) {
+func TestSenderErrorResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer ts.Close()
 
 	client := &http.Client{}
-	sender, err := createHttpSender(client, config.AgmaAnalyticsHttpEndpoint{
+	sender, err := createHttpSender(client, EndpointConfig{
 		Url:     ts.URL,
 		Timeout: "1s",
 		Gzip:    false,
 	})
+	assert.NoError(t, err)
+
 	testBody := []byte("[{ \"type\": \"test\" }]")
-	err = sender([]byte(testBody))
+	err = sender(testBody)
 	assert.Error(t, err)
 }

@@ -1,0 +1,18 @@
+package build
+
+import (
+{{- if .Imports }}
+{{- range .Imports }}
+    modules{{ . | Title }} "github.com/prebid/prebid-server/v3/analytics/modules/{{ . }}"
+{{- end }}
+{{- end }}
+)
+
+// builders returns mapping between analytics module name and its builder.
+func builders() AnalyticsModuleBuilders {
+    return AnalyticsModuleBuilders{
+        {{- range .Modules }}
+        "{{ . }}": modules{{ . | Title }}.Builder,
+        {{- end }}
+    }
+}

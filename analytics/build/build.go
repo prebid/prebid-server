@@ -5,64 +5,58 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/agma"
-	"github.com/prebid/prebid-server/v3/analytics/clients"
-	"github.com/prebid/prebid-server/v3/analytics/filesystem"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack"
-	"github.com/prebid/prebid-server/v3/config"
+
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
+
+	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/analytics/analyticsdeps"
+	"github.com/prebid/prebid-server/v3/analytics/clients"
 )
 
-// Modules that need to be logged to need to be initialized here
-func New(analytics *config.Analytics) analytics.Runner {
-	modules := make(enabledAnalytics, 0)
-	if len(analytics.File.Filename) > 0 {
-		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
-			modules["filelogger"] = mod
-		} else {
-			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
-		}
+//go:generate go run ../generator/buildergen.go
+
+// NewBuilder returns a new analytics module builder.
+func NewBuilder() AnalyticsModuleBuilders {
+	return builders()
+}
+
+type AnalyticsModuleBuilders map[string]AnalyticsModuleBuilderFn
+
+type AnalyticsModuleBuilderFn func(cfg json.RawMessage, deps analyticsdeps.Deps) (analytics.Module, error)
+
+func New(cfg map[string]interface{}) analytics.Runner {
+	modules := make(EnabledAnalytics)
+
+	deps := analyticsdeps.Deps{
+		HTTPClient: clients.GetDefaultHttpInstance(),
+		Clock:      clock.New(),
 	}
 
-	if analytics.Pubstack.Enabled {
-		pubstackModule, err := pubstack.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Pubstack.ScopeId,
-			analytics.Pubstack.IntakeUrl,
-			analytics.Pubstack.ConfRefresh,
-			analytics.Pubstack.Buffers.EventCount,
-			analytics.Pubstack.Buffers.BufferSize,
-			analytics.Pubstack.Buffers.Timeout,
-			clock.New())
-		if err == nil {
-			modules["pubstack"] = pubstackModule
-		} else {
-			glog.Errorf("Could not initialize PubstackModule: %v", err)
+	for moduleName, buildFn := range NewBuilder() {
+		moduleCfg := cfg[moduleName]
+		jsonCfg, err := json.Marshal(moduleCfg)
+		if err != nil {
+			glog.Errorf("Could not parse analytics module %s config: %v", moduleName, err)
+			continue
+		}
+		m, err := buildFn(jsonCfg, deps)
+		if err != nil {
+			glog.Errorf("Could not initialize analytics module %s: %v", moduleName, err)
+			continue
+		}
+		if m != nil {
+			modules[moduleName] = m
 		}
 	}
-
-	if analytics.Agma.Enabled {
-		agmaModule, err := agma.NewModule(
-			clients.GetDefaultHttpInstance(),
-			analytics.Agma,
-			clock.New())
-		if err == nil {
-			modules["agma"] = agmaModule
-		} else {
-			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
-		}
-	}
-
 	return modules
 }
 
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
-type enabledAnalytics map[string]analytics.Module
+type EnabledAnalytics map[string]analytics.Module
 
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -77,7 +71,7 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -93,19 +87,19 @@ func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.
 	}
 }
 
-func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
+func (ea EnabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	for _, module := range ea {
 		module.LogCookieSyncObject(cso)
 	}
 }
 
-func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
+func (ea EnabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 	for _, module := range ea {
 		module.LogSetUIDObject(so)
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
 			if cloneBidderReq != nil {
@@ -120,7 +114,7 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.Acti
 	}
 }
 
-func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent, ac privacy.ActivityControl) {
+func (ea EnabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent, ac privacy.ActivityControl) {
 	for name, module := range ea {
 		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
 		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
@@ -130,7 +124,7 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 }
 
 // Shutdown - correctly shutdown all analytics modules and wait for them to finish
-func (ea enabledAnalytics) Shutdown() {
+func (ea EnabledAnalytics) Shutdown() {
 	for _, module := range ea {
 		module.Shutdown()
 	}

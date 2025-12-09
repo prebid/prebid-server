@@ -1409,7 +1409,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		accountFetcher,
 		cfg,
 		met,
-		analyticsBuild.New(&config.Analytics{}),
+		analyticsBuild.New(map[string]interface{}{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,

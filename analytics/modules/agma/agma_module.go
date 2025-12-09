@@ -15,7 +15,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -29,7 +28,7 @@ const (
 type AgmaLogger struct {
 	sender            httpSender
 	clock             clock.Clock
-	accounts          []config.AgmaAnalyticsAccount
+	accounts          []AccountConfig
 	eventCount        int64
 	maxEventCount     int64
 	maxBufferByteSize int64
@@ -40,7 +39,7 @@ type AgmaLogger struct {
 	bufferCh          chan []byte
 }
 
-func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Clock) (*AgmaLogger, error) {
+func newAgmaLogger(cfg Config, sender httpSender, clock clock.Clock) (*AgmaLogger, error) {
 	pSize, err := units.FromHumanSize(cfg.Buffers.BufferSize)
 	if err != nil {
 		return nil, err
@@ -70,7 +69,7 @@ func newAgmaLogger(cfg config.AgmaAnalytics, sender httpSender, clock clock.Cloc
 	}, nil
 }
 
-func NewModule(httpClient *http.Client, cfg config.AgmaAnalytics, clock clock.Clock) (analytics.Module, error) {
+func NewModule(httpClient *http.Client, cfg Config, clock clock.Clock) (analytics.Module, error) {
 	sender, err := createHttpSender(httpClient, cfg.Endpoint)
 	if err != nil {
 		return nil, err
