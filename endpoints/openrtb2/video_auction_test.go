@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
@@ -1276,6 +1277,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		&config.Configuration{MaxRequestSize: maxSize},
 		metrics,
 		mockModule,
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1296,19 +1298,21 @@ type mockAnalyticsModule struct {
 	videoObjects   []*analytics.VideoObject
 }
 
-func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl) {
+func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	m.auctionObjects = append(m.auctionObjects, ao)
 }
 
-func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl) {
+func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 	m.videoObjects = append(m.videoObjects, vo)
 }
 
-func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {}
+func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
+}
 
-func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) {}
+func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
+}
 
-func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl) {
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.ActivityControl, _ gdpr.PrivacyPolicy) {
 }
 
 func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
@@ -1327,6 +1331,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1352,6 +1357,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},
@@ -1379,6 +1385,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
+		fakeAnalyticsPolicy{allow: true}.Builder,
 		map[string]string{},
 		false,
 		[]byte{},

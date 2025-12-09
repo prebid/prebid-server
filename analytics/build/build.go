@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/analytics/filesystem"
 	"github.com/prebid/prebid-server/v3/analytics/pubstack"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/gdpr"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
@@ -62,60 +63,97 @@ func New(analytics *config.Analytics) analytics.Runner {
 // Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics map[string]analytics.Module
 
-func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				ao.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogAuctionObject(ao)
-			if cloneReq != nil {
-				ao.RequestWrapper = cloneReq
-			}
+		var isAllowed bool
+		var cloneBidderReq *openrtb_ext.RequestWrapper
+
+		if isAllowed, cloneBidderReq = evaluateActivities(ao.RequestWrapper, ac, name); !isAllowed {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
+		if cloneBidderReq != nil {
+			ao.RequestWrapper = cloneBidderReq
+		}
+		cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
+		module.LogAuctionObject(ao)
+		if cloneReq != nil {
+			ao.RequestWrapper = cloneReq
 		}
 	}
 }
 
-func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				vo.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogVideoObject(vo)
-			if cloneReq != nil {
-				vo.RequestWrapper = cloneReq
-			}
-		}
+		var isAllowed bool
+		var cloneBidderReq *openrtb_ext.RequestWrapper
 
+		if isAllowed, cloneBidderReq = evaluateActivities(vo.RequestWrapper, ac, name); !isAllowed {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
+		if cloneBidderReq != nil {
+			vo.RequestWrapper = cloneBidderReq
+		}
+		cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
+		module.LogVideoObject(vo)
+		if cloneReq != nil {
+			vo.RequestWrapper = cloneReq
+		}
 	}
 }
 
-func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
-	for _, module := range ea {
+// func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject, p userSyncPrivacy) {
+func (ea enabledAnalytics) LogCookieSyncObject(cso *analytics.CookieSyncObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	for name, module := range ea {
+		// check if the report analytics activity is allowed for this module
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		if !ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
 		module.LogCookieSyncObject(cso)
 	}
 }
 
-func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
-	for _, module := range ea {
+func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
+	for name, module := range ea {
+		// check if the report analytics activity is allowed for this module
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		if !ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
 		module.LogSetUIDObject(so)
 	}
 }
 
-func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
+func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl, pp gdpr.PrivacyPolicy) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				ao.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogAmpObject(ao)
-			if cloneReq != nil {
-				ao.RequestWrapper = cloneReq
-			}
+		var isAllowed bool
+		var cloneBidderReq *openrtb_ext.RequestWrapper
+
+		if isAllowed, cloneBidderReq = evaluateActivities(ao.RequestWrapper, ac, name); !isAllowed {
+			continue
+		}
+		if !pp.Allow(name) {
+			continue
+		}
+		if cloneBidderReq != nil {
+			ao.RequestWrapper = cloneBidderReq
+		}
+		cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
+		module.LogAmpObject(ao)
+		if cloneReq != nil {
+			ao.RequestWrapper = cloneReq
 		}
 	}
 }

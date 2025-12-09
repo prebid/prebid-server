@@ -237,6 +237,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, r.MetricsEngine, gdpr.VendorListURLMaker)
 	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher, r.MetricsEngine)
+	gdprAnalyticsPolicyBuilder := gdpr.NewAnalyticsPolicyBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher, r.MetricsEngine)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
@@ -259,17 +260,17 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	macroReplacer := macros.NewStringIndexBasedReplacer()
 	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, requestValidator, syncersByBidder, r.MetricsEngine, cfg.BidderInfos, gdprPermsBuilder, rateConvertor, categoriesFetcher, adsCertSigner, macroReplacer, priceFloorFetcher, singleFormatAdapters)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
-	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, gdprAnalyticsPolicyBuilder, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, gdprAnalyticsPolicyBuilder, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, cacheClient, tmaxAdjustments)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, gdprAnalyticsPolicyBuilder, disabledBidders, defReqJSON, activeBidders, cacheClient, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
@@ -285,7 +286,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(cfg.BidderInfos))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(cfg.BidderInfos))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, analyticsRunner, accounts, activeBidders).Handle)
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, analyticsRunner, gdprAnalyticsPolicyBuilder, accounts, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.Handler("GET", "/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
@@ -309,7 +310,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		CertPool:         certPool,
 	}
 
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, analyticsRunner, accounts, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, analyticsRunner, gdprAnalyticsPolicyBuilder, accounts, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)

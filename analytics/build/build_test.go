@@ -1,9 +1,7 @@
 package build
 
 import (
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/iputil"
-
+	"context"
 	"net/http"
 	"os"
 	"testing"
@@ -11,7 +9,10 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +27,7 @@ func TestSampleModule(t *testing.T) {
 		RequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()},
 		Errors:         nil,
 		Response:       &openrtb2.BidResponse{},
-	}, privacy.ActivityControl{})
+	}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
 	}
@@ -37,22 +38,22 @@ func TestSampleModule(t *testing.T) {
 		UID:     "uid",
 		Errors:  nil,
 		Success: true,
-	})
+	}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObject")
 	}
 
-	am.LogCookieSyncObject(&analytics.CookieSyncObject{})
+	am.LogCookieSyncObject(&analytics.CookieSyncObject{}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 3 {
 		t.Errorf("PBSAnalyticsModule failed at LogCookieSyncObject")
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{})
+	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{})
+	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, privacy.ActivityControl{}, &gdpr.AllowAllAnalytics{})
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
@@ -191,105 +192,397 @@ func TestNewModuleHttp(t *testing.T) {
 	assert.Equal(t, len(instanceWithError), 0)
 }
 
-func TestSampleModuleActivitiesAllowed(t *testing.T) {
-	var count int
-	am := initAnalytics(&count)
-
-	acAllowed := privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true))
-
-	ao := &analytics.AuctionObject{
-		Status:         http.StatusOK,
-		RequestWrapper: &openrtb_ext.RequestWrapper{},
-		Errors:         nil,
-		Response:       &openrtb2.BidResponse{},
+func TestLogAuctionObject(t *testing.T) {
+	tests := []struct {
+		name              string
+		activityControl   privacy.ActivityControl
+		gdprPrivacyPolicy gdpr.PrivacyPolicy
+		reqExt            []byte
+		expectLogged      bool
+		expectCloned      bool
+	}{
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+		},
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed-with-request-analytics-config",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			reqExt:            []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`),
+			expectLogged:      true,
+			expectCloned:      true, // cloned because req.ext.prebid.analytics was stripped
+		},
+		{
+			name:              "no-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      false,
+		},
+		{
+			name:              "some-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+			expectCloned:      true, // cloned because user fpd was stripped
+		},
+		{
+			name:              "all-activities-allowed-no-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &DenyAllAnalytics{},
+			expectLogged:      false,
+		},
 	}
 
-	am.LogAuctionObject(ao, acAllowed)
-	if count != 1 {
-		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var count int
+			am := initAnalytics(&count)
 
-	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed)
-	if count != 2 {
-		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
-	}
+			rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
+			rw.Ext = tt.reqExt
 
-	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: &openrtb_ext.RequestWrapper{}}, acAllowed)
-	if count != 3 {
-		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
-	}
+			ao := &analytics.AuctionObject{
+				Status:         http.StatusOK,
+				RequestWrapper: rw,
+				Errors:         nil,
+				Response:       &openrtb2.BidResponse{},
+			}
 
-	am.LogNotificationEventObject(&analytics.NotificationEvent{}, acAllowed)
-	if count != 4 {
-		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+			am.LogAuctionObject(ao, tt.activityControl, tt.gdprPrivacyPolicy)
+
+			if tt.expectLogged {
+				assert.Equal(t, 1, count, "LogAuctionObject should have been called exactly once")
+			} else {
+				assert.Equal(t, 0, count, "LogAuctionObject should not have been called")
+			}
+			if tt.expectCloned {
+				assert.NotSame(t, rw, ao.RequestWrapper, "LogAuctionObject should have cloned the RequestWrapper")
+			} else {
+				assert.Same(t, rw, ao.RequestWrapper, "LogAuctionObject should not have cloned the RequestWrapper")
+			}
+		})
 	}
 }
 
-func TestSampleModuleActivitiesAllowedAndDenied(t *testing.T) {
-	var count int
-	am := initAnalytics(&count)
-
-	acAllowed := privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, true))
-
-	rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
-	ao := &analytics.AuctionObject{
-		RequestWrapper: rw,
-		Status:         http.StatusOK,
-		Errors:         nil,
-		Response:       &openrtb2.BidResponse{},
+func TestLogVideoObject(t *testing.T) {
+	tests := []struct {
+		name              string
+		activityControl   privacy.ActivityControl
+		gdprPrivacyPolicy gdpr.PrivacyPolicy
+		reqExt            []byte
+		expectLogged      bool
+		expectCloned      bool
+	}{
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+		},
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed-with-request-analytics-config",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			reqExt:            []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`),
+			expectLogged:      true,
+			expectCloned:      true, // cloned because req.ext.prebid.analytics was stripped
+		},
+		{
+			name:              "no-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      false,
+		},
+		{
+			name:              "some-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+			expectCloned:      true, // cloned because user fpd was stripped
+		},
+		{
+			name:              "all-activities-allowed-no-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &DenyAllAnalytics{},
+			expectLogged:      false,
+		},
 	}
 
-	am.LogAuctionObject(ao, acAllowed)
-	if count != 1 {
-		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var count int
+			am := initAnalytics(&count)
 
-	am.LogAmpObject(&analytics.AmpObject{RequestWrapper: rw}, acAllowed)
-	if count != 2 {
-		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
-	}
+			rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
+			rw.Ext = tt.reqExt
 
-	am.LogVideoObject(&analytics.VideoObject{RequestWrapper: rw}, acAllowed)
-	if count != 3 {
-		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
-	}
+			vo := &analytics.VideoObject{
+				Status:         http.StatusOK,
+				RequestWrapper: rw,
+				Errors:         nil,
+				Response:       &openrtb2.BidResponse{},
+			}
 
-	am.LogNotificationEventObject(&analytics.NotificationEvent{}, acAllowed)
-	if count != 4 {
-		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+			am.LogVideoObject(vo, tt.activityControl, tt.gdprPrivacyPolicy)
+
+			if tt.expectLogged {
+				assert.Equal(t, 1, count, "LogVideoObject should have been called exactly once")
+			} else {
+				assert.Equal(t, 0, count, "LogVideoObject should not have been called")
+			}
+			if tt.expectCloned {
+				assert.NotSame(t, rw, vo.RequestWrapper, "LogVideoObject should have cloned the RequestWrapper")
+			} else {
+				assert.Same(t, rw, vo.RequestWrapper, "LogVideoObject should not have cloned the RequestWrapper")
+			}
+		})
 	}
 }
 
-func TestSampleModuleActivitiesDenied(t *testing.T) {
-	var count int
-	am := initAnalytics(&count)
-
-	acDenied := privacy.NewActivityControl(getActivityConfig("sampleModule", false, true, true))
-
-	ao := &analytics.AuctionObject{
-		Status:   http.StatusOK,
-		Errors:   nil,
-		Response: &openrtb2.BidResponse{},
+func TestLogCookieSyncObject(t *testing.T) {
+	tests := []struct {
+		name              string
+		activityControl   privacy.ActivityControl
+		gdprPrivacyPolicy gdpr.PrivacyPolicy
+		expectLogged      bool
+	}{
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+		},
+		{
+			name:              "no-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      false,
+		},
+		{
+			name:              "report-analytics-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, false)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+		},
+		{
+			name:              "all-activities-allowed-no-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &DenyAllAnalytics{},
+			expectLogged:      false,
+		},
 	}
 
-	am.LogAuctionObject(ao, acDenied)
-	if count != 0 {
-		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var count int
+			am := initAnalytics(&count)
+
+			cso := &analytics.CookieSyncObject{
+				Status: http.StatusOK,
+				Errors: nil,
+				BidderStatus: []*analytics.CookieSyncBidder{
+					{
+						BidderCode: "test-bidder",
+						NoCookie:   true,
+					},
+				},
+			}
+
+			am.LogCookieSyncObject(cso, tt.activityControl, tt.gdprPrivacyPolicy)
+
+			if tt.expectLogged {
+				assert.Equal(t, 1, count, "LogCookieSyncObject should have been called exactly once")
+			} else {
+				assert.Equal(t, 0, count, "LogCookieSyncObject should not have been called")
+			}
+		})
+	}
+}
+
+func TestLogSetUIDObject(t *testing.T) {
+	tests := []struct {
+		name              string
+		activityControl   privacy.ActivityControl
+		gdprPrivacyPolicy gdpr.PrivacyPolicy
+		expectLogged      bool
+	}{
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+		},
+		{
+			name:              "no-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      false,
+		},
+		{
+			name:              "report-analytics-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, false)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+		},
+		{
+			name:              "all-activities-allowed-no-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &DenyAllAnalytics{},
+			expectLogged:      false,
+		},
 	}
 
-	am.LogAmpObject(&analytics.AmpObject{}, acDenied)
-	if count != 0 {
-		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var count int
+			am := initAnalytics(&count)
+
+			so := &analytics.SetUIDObject{
+				Status:  http.StatusOK,
+				Bidder:  "test-bidder",
+				UID:     "test-uid",
+				Errors:  nil,
+				Success: true,
+			}
+
+			am.LogSetUIDObject(so, tt.activityControl, tt.gdprPrivacyPolicy)
+
+			if tt.expectLogged {
+				assert.Equal(t, 1, count, "LogSetUIDObject should have been called exactly once")
+			} else {
+				assert.Equal(t, 0, count, "LogSetUIDObject should not have been called")
+			}
+		})
+	}
+}
+
+func TestLogAmpObject(t *testing.T) {
+	tests := []struct {
+		name              string
+		activityControl   privacy.ActivityControl
+		gdprPrivacyPolicy gdpr.PrivacyPolicy
+		reqExt            []byte
+		expectLogged      bool
+		expectCloned      bool
+	}{
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+		},
+		{
+			name:              "all-activities-allowed-all-gdpr-analytics-allowed-with-request-analytics-config",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			reqExt:            []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`),
+			expectLogged:      true,
+			expectCloned:      true, // cloned because req.ext.prebid.analytics was stripped
+		},
+		{
+			name:              "no-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      false,
+		},
+		{
+			name:              "some-activities-allowed-all-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, true)),
+			gdprPrivacyPolicy: &gdpr.AllowAllAnalytics{},
+			expectLogged:      true,
+			expectCloned:      true, // cloned because user fpd was stripped
+		},
+		{
+			name:              "all-activities-allowed-no-gdpr-analytics-allowed",
+			activityControl:   privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			gdprPrivacyPolicy: &DenyAllAnalytics{},
+			expectLogged:      false,
+		},
 	}
 
-	am.LogVideoObject(&analytics.VideoObject{}, acDenied)
-	if count != 0 {
-		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var count int
+			am := initAnalytics(&count)
+
+			rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
+			rw.Ext = tt.reqExt
+
+			ao := &analytics.AmpObject{
+				Status:          http.StatusOK,
+				RequestWrapper:  rw,
+				Errors:          nil,
+				AuctionResponse: &openrtb2.BidResponse{},
+			}
+
+			am.LogAmpObject(ao, tt.activityControl, tt.gdprPrivacyPolicy)
+
+			if tt.expectLogged {
+				assert.Equal(t, 1, count, "LogAmpObject should have been called exactly once")
+			} else {
+				assert.Equal(t, 0, count, "LogAmpObject should not have been called")
+			}
+			if tt.expectCloned {
+				assert.NotSame(t, rw, ao.RequestWrapper, "LogAmpObject should have cloned the RequestWrapper")
+			} else {
+				assert.Same(t, rw, ao.RequestWrapper, "LogAmpObject should not have cloned the RequestWrapper")
+			}
+		})
+	}
+}
+
+func TestLogNotificationEventObject(t *testing.T) {
+	tests := []struct {
+		name            string
+		activityControl privacy.ActivityControl
+		expectLogged    bool
+	}{
+		{
+			name:            "all-activities-allowed",
+			activityControl: privacy.NewActivityControl(getActivityConfig("sampleModule", true, true, true)),
+			expectLogged:    true,
+		},
+		{
+			name:            "no-activities-allowed",
+			activityControl: privacy.NewActivityControl(getActivityConfig("sampleModule", false, false, false)),
+			expectLogged:    false,
+		},
+		{
+			name:            "report-analytics-allowed-only",
+			activityControl: privacy.NewActivityControl(getActivityConfig("sampleModule", true, false, false)),
+			expectLogged:    true,
+		},
 	}
 
-	am.LogNotificationEventObject(&analytics.NotificationEvent{}, acDenied)
-	if count != 0 {
-		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var count int
+			am := initAnalytics(&count)
+
+			ne := &analytics.NotificationEvent{
+				Request: &analytics.EventRequest{
+					Type:        "event-type",
+					BidID:       "test-bid-id",
+					Timestamp:   123456789,
+					AccountID:   "test-account-id",
+					Integration: "test-integration",
+				},
+				Account: &config.Account{
+					ID: "test-account-id",
+				},
+			}
+
+			am.LogNotificationEventObject(ne, tt.activityControl)
+
+			if tt.expectLogged {
+				assert.Equal(t, 1, count, "LogNotificationEventObject should have been called exactly once")
+			} else {
+				assert.Equal(t, 0, count, "LogNotificationEventObject should not have been called")
+			}
+		})
 	}
 }
 
@@ -532,19 +825,19 @@ func TestLogObject(t *testing.T) {
 			var loggedBidReq1, loggedBidReq2 *openrtb2.BidRequest
 			switch {
 			case test.givenAuctionObject != nil:
-				test.givenEnabledAnalytics.LogAuctionObject(test.givenAuctionObject, ac)
+				test.givenEnabledAnalytics.LogAuctionObject(test.givenAuctionObject, ac, &gdpr.AllowAllAnalytics{})
 				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAuctionBidRequest
 				if len(test.givenEnabledAnalytics) == 2 {
 					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*mockAnalytics).lastLoggedAuctionBidRequest
 				}
 			case test.givenAmpObject != nil:
-				test.givenEnabledAnalytics.LogAmpObject(test.givenAmpObject, ac)
+				test.givenEnabledAnalytics.LogAmpObject(test.givenAmpObject, ac, &gdpr.AllowAllAnalytics{})
 				loggedBidReq1 = test.givenEnabledAnalytics["adapter1"].(*mockAnalytics).lastLoggedAmpBidRequest
 				if len(test.givenEnabledAnalytics) == 2 {
 					loggedBidReq2 = test.givenEnabledAnalytics["adapter2"].(*mockAnalytics).lastLoggedAmpBidRequest
 				}
 			case test.givenVideoObject != nil:
-				test.givenEnabledAnalytics.LogVideoObject(test.givenVideoObject, ac)
+				test.givenEnabledAnalytics.LogVideoObject(test.givenVideoObject, ac, &gdpr.AllowAllAnalytics{})
 				loggedBidReq1 = test.givenEnabledAnalytics["unknownAdapter"].(*mockAnalytics).lastLoggedVideoBidRequest
 			}
 
@@ -627,4 +920,17 @@ func TestUpdateReqWrapperForAnalytics(t *testing.T) {
 			assert.Equal(t, test.expectedCloneRequest, cloneReq)
 		})
 	}
+}
+
+// DenyAllAnalytics implements the PrivacyPolicy interface representing a policy that always
+// denies sending data to analytics adapters
+type DenyAllAnalytics struct{}
+
+func (daa *DenyAllAnalytics) SetContext(ctx context.Context) {
+	return
+}
+
+// Allow satisfies the PrivacyPolicy interface always returning true
+func (daa *DenyAllAnalytics) Allow(name string) bool {
+	return false
 }

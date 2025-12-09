@@ -1392,7 +1392,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		planBuilder = hooks.EmptyPlanBuilder{}
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, ortb.RequestValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, ortb.RequestValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.Runner, gdpr.PrivacyPolicyBuilder, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder, *exchange.TmaxAdjustmentsPreprocessed) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1400,6 +1400,8 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	default: //case OPENRTB_ENDPOINT:
 		endpointBuilder = NewEndpoint
 	}
+
+	analyticsPolicyBuilder := fakeAnalyticsPolicy{allow: true}.Builder
 
 	endpoint, err := endpointBuilder(
 		fakeUUIDGenerator{},
@@ -1410,6 +1412,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		cfg,
 		met,
 		analyticsBuild.New(&config.Analytics{}),
+		analyticsPolicyBuilder,
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
@@ -1519,6 +1522,20 @@ func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
 	}
+}
+
+type fakeAnalyticsPolicy struct {
+	allow bool
+	cfg   gdpr.TCF2ConfigReader
+}
+
+func (ap fakeAnalyticsPolicy) Allow(name string) bool {
+	return ap.allow
+}
+func (ap fakeAnalyticsPolicy) SetContext(ctx context.Context) {}
+
+func (ap fakeAnalyticsPolicy) Builder(_ gdpr.TCF2ConfigReader, _ gdpr.Signal, _ string) gdpr.PrivacyPolicy {
+	return ap
 }
 
 type mockPlanBuilder struct {
