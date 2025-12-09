@@ -20,9 +20,9 @@
       }
     ],
     "site": {
-      "page": "https://example.com",
-      "domain": "example.com"
-    }
+      "page": "https://example.com"
+    },
+    "cur": ["EUR"]
   },
   "httpCalls": [
     {
@@ -50,22 +50,10 @@
             }
           ],
           "site": {
-            "page": "https://example.com",
-            "domain": "example.com"
+            "page": "https://example.com"
           },
           "cur": [
-            "USD"
-          ]
-        },
-        "headers": {
-          "Content-Type": [
-            "application/json"
-          ],
-          "Accept": [
-            "application/json"
-          ],
-          "X-OpenRTB-Version": [
-            "2.6"
+            "EUR"
           ]
         },
         "impIDs": ["test-imp-id"]
@@ -80,36 +68,33 @@
                 {
                   "id": "test-bid-id",
                   "impid": "test-imp-id",
-                  "price": 3.14,
+                  "price": 1.5,
                   "adm": "<div>test ad</div>",
                   "crid": "test-creative-id",
                   "w": 300,
-                  "h": 250,
-                  "adomain": ["example.com"]
+                  "h": 250
                 }
               ],
               "seat": "resetdigital"
             }
-          ],
-          "cur": "USD"
+          ]
         }
       }
     }
   ],
   "expectedBidResponses": [
     {
-      "currency": "USD",
+      "currency": "EUR",
       "bids": [
         {
           "bid": {
             "id": "test-bid-id",
             "impid": "test-imp-id",
-            "price": 3.14,
+            "price": 1.5,
             "adm": "<div>test ad</div>",
             "crid": "test-creative-id",
             "w": 300,
-            "h": 250,
-            "adomain": ["example.com"]
+            "h": 250
           },
           "type": "banner",
           "seat": "resetdigital"
