@@ -101,7 +101,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				Bid:      &bid,
 				BidMeta:  meta,
 				BidVideo: video,
-				Seat:     openrtb_ext.BidderName(seatBid.Seat),
 				BidType:  bidType,
 			}
 			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
