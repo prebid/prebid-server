@@ -323,4 +323,3 @@ func createTestWrapper(country string, deviceType int64, ua string) *openrtb_ext
 		},
 	}
 }
-

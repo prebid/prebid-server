@@ -71,4 +71,3 @@ func TestParseConfig(t *testing.T) {
 		assert.Equal(t, 30000, cfg.RefreshMs)
 	})
 }
-

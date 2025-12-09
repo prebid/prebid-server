@@ -100,4 +100,3 @@ func isTablet(ua string) bool {
 		strings.Contains(uaLower, "tablet") ||
 		strings.Contains(uaLower, "kindle")
 }
-

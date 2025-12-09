@@ -163,7 +163,7 @@ func TestDeriveCountry(t *testing.T) {
 			if ok {
 				mockResolver.callCount = 0 // Reset call count
 			}
-			
+
 			country, err := DeriveCountry(context.Background(), tt.wrapper, tt.geoResolver)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -255,8 +255,8 @@ func TestDefaultResolver_Resolve(t *testing.T) {
 }
 
 type mockGeoResolver struct {
-	country string
-	err     error
+	country   string
+	err       error
 	callCount int // Track if Resolve was called
 }
 
@@ -279,4 +279,3 @@ func createTestWrapperNoGeo(deviceType int64, ua string) *openrtb_ext.RequestWra
 		},
 	}
 }
-

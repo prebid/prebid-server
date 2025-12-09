@@ -220,10 +220,10 @@ func TestNormalizeIP(t *testing.T) {
 
 func TestExtractCountryFromPayload(t *testing.T) {
 	tests := []struct {
-		name      string
-		payload   map[string]any
-		expected  string
-		shouldOk  bool
+		name     string
+		payload  map[string]any
+		expected string
+		shouldOk bool
 	}{
 		{
 			name:     "country_field",
@@ -309,4 +309,3 @@ func TestExtractCountryFromPayload(t *testing.T) {
 		})
 	}
 }
-

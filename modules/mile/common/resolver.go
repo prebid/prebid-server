@@ -104,16 +104,15 @@ func DeriveCountry(ctx context.Context, wrapper *openrtb_ext.RequestWrapper, geo
 	if ip == "" {
 		ip = strings.TrimSpace(wrapper.Device.IPv6)
 	}
-	
+
 	// Don't attempt resolution if IP is empty
 	if ip == "" {
 		return "", errors.New("ip address required for geo resolution")
 	}
-	
+
 	country, err := geoResolver.Resolve(ctx, ip)
 	if err != nil || country == "" {
 		return "", fmt.Errorf("country resolve failed: %w", err)
 	}
 	return country, nil
 }
-

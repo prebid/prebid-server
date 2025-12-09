@@ -99,4 +99,3 @@ func TestExtractBrowser(t *testing.T) {
 		})
 	}
 }
-

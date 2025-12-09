@@ -44,4 +44,3 @@ func ExtractBrowser(wrapper *openrtb_ext.RequestWrapper) (string, error) {
 	// Default to chrome for unknown browsers
 	return "chrome", nil
 }
-

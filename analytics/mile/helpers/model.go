@@ -214,7 +214,7 @@ type ErrStruct struct {
 func (r *RespExt) getTimeoutBidders(timeout int64) []string {
 	timeouts := []string{}
 	if r.Errors != nil {
-		for bidder, _ := range r.Errors {
+		for bidder := range r.Errors {
 			timeouts = append(timeouts, bidder)
 		}
 

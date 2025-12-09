@@ -313,4 +313,3 @@ func TestShouldKeepEID_MoreVendorPatterns(t *testing.T) {
 		})
 	}
 }
-

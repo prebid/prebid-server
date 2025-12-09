@@ -508,4 +508,3 @@ func TestNewWhitelistClient(t *testing.T) {
 		assert.True(t, client.IsAllowed("site1", "US", "w|chrome"))
 	})
 }
-

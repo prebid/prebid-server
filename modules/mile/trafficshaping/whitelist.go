@@ -280,4 +280,3 @@ func (c *WhitelistClient) fetchPlatformWhitelist() error {
 
 	return nil
 }
-

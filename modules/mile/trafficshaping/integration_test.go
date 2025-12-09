@@ -46,12 +46,12 @@ func TestIntegration_RealEndpoint(t *testing.T) {
 		"gpid": "21804848220,22690441817/ATD_RecipeReader/ATD_728x90_Footer#fi-ash-1709555708-6581",
 		"prebid": map[string]interface{}{
 			"bidder": map[string]interface{}{
-				"criteo":  json.RawMessage(`{}`),
-				"gumgum":  json.RawMessage(`{}`),
+				"criteo":   json.RawMessage(`{}`),
+				"gumgum":   json.RawMessage(`{}`),
 				"kueezrtb": json.RawMessage(`{}`),
 				"medianet": json.RawMessage(`{}`),
-				"rubicon": json.RawMessage(`{}`),
-				"vidazoo": json.RawMessage(`{}`),
+				"rubicon":  json.RawMessage(`{}`),
+				"vidazoo":  json.RawMessage(`{}`),
 				"appnexus": json.RawMessage(`{}`), // Should be filtered out (not in config)
 			},
 		},
@@ -334,9 +334,9 @@ func TestIntegration_CompleteFlow(t *testing.T) {
 		"gpid": "21804848220,22690441817/ATD_RecipeReader/ATD_728x90_Footer#fi-ash-1709555708-6581",
 		"prebid": map[string]interface{}{
 			"bidder": map[string]interface{}{
-				"criteo":  json.RawMessage(`{}`),
-				"gumgum":  json.RawMessage(`{}`),
-				"rubicon": json.RawMessage(`{}`),
+				"criteo":   json.RawMessage(`{}`),
+				"gumgum":   json.RawMessage(`{}`),
+				"rubicon":  json.RawMessage(`{}`),
 				"appnexus": json.RawMessage(`{}`), // Should be filtered out
 			},
 		},
@@ -481,8 +481,8 @@ func TestIntegration_SiteNotInWhitelist(t *testing.T) {
 		},
 		{
 			name:           "enabled_site_with_matching_geo_platform",
-			siteID:         "enabled-site", // In whitelist
-			country:        "US",          // Matches whitelist
+			siteID:         "enabled-site",                                                 // In whitelist
+			country:        "US",                                                           // Matches whitelist
 			ua:             "Mozilla/5.0 (Windows NT 10.0) Chrome/120.0.0.0 Safari/537.36", // w|chrome matches
 			expectAllowed:  true,
 			expectActivity: "applied",
@@ -499,10 +499,10 @@ func TestIntegration_SiteNotInWhitelist(t *testing.T) {
 		},
 		{
 			name:           "enabled_site_with_non_matching_platform",
-			siteID:         "enabled-site", // In whitelist
-			country:        "US",          // Matches
+			siteID:         "enabled-site",                                // In whitelist
+			country:        "US",                                          // Matches
 			ua:             "Mozilla/5.0 (Windows NT 10.0) Firefox/120.0", // ff not in whitelist (only chrome)
-			expectAllowed:  false, // Should be blocked
+			expectAllowed:  false,                                         // Should be blocked
 			expectActivity: "skipped_whitelist",
 			description:    "Enabled site with non-matching platform should be blocked",
 		},
@@ -511,7 +511,7 @@ func TestIntegration_SiteNotInWhitelist(t *testing.T) {
 			siteID:         "", // Empty site ID
 			country:        "US",
 			ua:             "Mozilla/5.0 (Windows NT 10.0) Chrome/120.0.0.0 Safari/537.36",
-			expectAllowed:  true, // Whitelist passes (fail-open for empty), but URL construction will fail
+			expectAllowed:  true,                              // Whitelist passes (fail-open for empty), but URL construction will fail
 			expectActivity: "skipped_url_construction_failed", // URL construction fails without siteID
 			description:    "Empty site ID passes whitelist but fails URL construction",
 		},
@@ -557,17 +557,17 @@ func TestIntegration_SiteNotInWhitelist(t *testing.T) {
 
 			if tt.expectAllowed {
 				// Should proceed (may be skipped by skipRate or URL construction though)
-				assert.False(t, activityNames["skipped_whitelist"], 
+				assert.False(t, activityNames["skipped_whitelist"],
 					"%s: Should not be skipped by whitelist", tt.description)
 				// May proceed to shaping OR fail at URL construction (for empty siteID)
-				assert.True(t, activityNames["applied"] || activityNames["skipped_by_skiprate"] || 
+				assert.True(t, activityNames["applied"] || activityNames["skipped_by_skiprate"] ||
 					activityNames["skipped_no_config"] || activityNames["skipped_url_construction_failed"],
 					"%s: Should proceed past whitelist (may fail later)", tt.description)
 			} else {
 				// Should be blocked by whitelist
-				assert.True(t, activityNames["skipped_whitelist"], 
+				assert.True(t, activityNames["skipped_whitelist"],
 					"%s: Should be skipped by whitelist", tt.description)
-				assert.True(t, activityNames["skipped"], 
+				assert.True(t, activityNames["skipped"],
 					"%s: Should have skipped tag", tt.description)
 			}
 
@@ -575,4 +575,3 @@ func TestIntegration_SiteNotInWhitelist(t *testing.T) {
 		})
 	}
 }
-

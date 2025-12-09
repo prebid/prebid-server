@@ -102,8 +102,8 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
 						FloorPrice:        imp.BidFloor,
 						MetaData: map[string][]string{
-							"prebid_server": []string{"1"},
-							"amp":           []string{"1"},
+							"prebid_server": {"1"},
+							"amp":           {"1"},
 						},
 						BiddersFloorMeta: map[string]map[string]string{
 							"prebid_server": biddersFloorMap,
@@ -216,7 +216,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 				}
 
 				var noBidBidders []string
-				for bidder, _ := range impExt.Prebid.Bidder {
+				for bidder := range impExt.Prebid.Bidder {
 					if _, found := bidbiddersMap[bidder]; !found {
 						noBidBidders = append(noBidBidders, bidder)
 					}
@@ -271,8 +271,8 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						ResponseTimes:     respExt.ResponseTimeMillis,
 						FloorPrice:        imp.BidFloor,
 						MetaData: map[string][]string{
-							"prebid_server": []string{"1"},
-							"amp":           []string{"1"},
+							"prebid_server": {"1"},
+							"amp":           {"1"},
 						},
 						BiddersFloorMeta: map[string]map[string]string{
 							"prebid_server": biddersFloorMap,

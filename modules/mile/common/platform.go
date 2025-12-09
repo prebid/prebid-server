@@ -20,7 +20,7 @@ func ClassifyDevicePlatform(ua string) string {
 		return ""
 	}
 
-	return deviceType + "/" + browser
+	return deviceType + "|" + browser
 }
 
 // detectDeviceType detects the device type and OS from user agent
@@ -63,43 +63,45 @@ func detectDeviceType(ua string) string {
 // detectBrowser detects the browser from user agent
 // Returns: "chrome", "safari", "edge", "google search", "ff" (firefox), "opera", "samsung internet for android", "amazon silk"
 func detectBrowser(ua string) string {
+	uaLower := strings.ToLower(ua)
+
 	// Check for Google Search App (GSA)
-	if strings.Contains(ua, "GSA/") {
+	if strings.Contains(uaLower, "gsa/") {
 		return "google search"
 	}
 
-	// // Check for Samsung Internet (must be before Chrome since it contains "Chrome")
-	// if strings.Contains(ua, "SamsungBrowser/") {
-	// 	return "samsung internet for android"
-	// }
+	// Check for Samsung Internet (must be before Chrome since it contains "Chrome")
+	if strings.Contains(uaLower, "samsungbrowser/") {
+		return "samsung internet for android"
+	}
 
-	// // Check for Amazon Silk (must be before Chrome since it may contain "Chrome")
-	// if strings.Contains(ua, "Silk/") {
-	// 	return "amazon silk"
-	// }
+	// Check for Amazon Silk (must be before Chrome since it may contain "Chrome")
+	if strings.Contains(uaLower, "silk/") {
+		return "amazon silk"
+	}
 
 	// Check for Edge (must be before Chrome since Edge also contains "Chrome")
-	if strings.Contains(ua, "Edg/") || strings.Contains(ua, "Edge/") || strings.Contains(ua, "EdgiOS/") {
+	if strings.Contains(uaLower, "edg/") || strings.Contains(uaLower, "edge/") || strings.Contains(uaLower, "edgios/") {
 		return "edge"
 	}
 
-	// // Check for Opera (must be before Chrome since Opera also contains "Chrome")
-	// if strings.Contains(ua, "OPR/") || strings.Contains(ua, "Opera/") {
-	// 	return "opera"
-	// }
+	// Check for Opera (must be before Chrome since Opera also contains "Chrome")
+	if strings.Contains(uaLower, "opr/") || strings.Contains(uaLower, "opera/") {
+		return "opera"
+	}
 
 	// Check for Firefox
-	if strings.Contains(ua, "Firefox/") || strings.Contains(ua, "FxiOS/") {
+	if strings.Contains(uaLower, "firefox/") || strings.Contains(uaLower, "fxios/") {
 		return "ff"
 	}
 
 	// Check for Chrome (CriOS for iOS)
-	if strings.Contains(ua, "Chrome/") || strings.Contains(ua, "CriOS/") {
+	if strings.Contains(uaLower, "chrome/") || strings.Contains(uaLower, "crios/") {
 		return "chrome"
 	}
 
 	// Check for Safari (must be after Chrome since Chrome also contains "Safari")
-	if strings.Contains(ua, "Safari/") {
+	if strings.Contains(uaLower, "safari/") {
 		return "safari"
 	}
 

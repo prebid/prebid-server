@@ -342,4 +342,3 @@ func TestBrowserDetectionOrder(t *testing.T) {
 		})
 	}
 }
-
