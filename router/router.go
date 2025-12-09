@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/v3/metrics"
 	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
 	"github.com/prebid/prebid-server/v3/modules"
+	mileModule "github.com/prebid/prebid-server/v3/modules/mile/endpoint"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
@@ -210,7 +211,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	normalizedGeoscopes := getNormalizedGeoscopes(cfg.BidderInfos)
 	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes}
-	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
+	repo, moduleStageNames, shutdownModules, builtModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
@@ -262,6 +263,29 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
+	}
+
+	// Register Mile endpoint if the module is enabled
+	if mileModuleInstance, ok := builtModules["mile.endpoint"]; ok {
+		if mileEp, ok := mileModuleInstance.(*mileModule.Module); ok {
+			// Inject the auction handler into the module
+			mileEp.SetAuctionHandler(openrtbEndpoint)
+
+			// Register endpoints provided by the module
+			for _, ep := range mileEp.GetEndpoints() {
+				if ep.Method == "POST" {
+					r.POST(ep.Path, ep.Handler)
+					glog.Infof("Registered Mile endpoint: POST %s", ep.Path)
+				}
+			}
+
+			// Register module shutdown (wrap to match func() signature)
+			r.shutdowns = append(r.shutdowns, func() {
+				if err := mileEp.Shutdown(); err != nil {
+					glog.Warningf("Mile module shutdown error: %v", err)
+				}
+			})
+		}
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
