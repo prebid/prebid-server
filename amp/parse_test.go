@@ -2,6 +2,7 @@ package amp
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -9,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/privacy"
 	"github.com/prebid/prebid-server/v3/privacy/ccpa"
 	"github.com/prebid/prebid-server/v3/privacy/gdpr"
+	"github.com/prebid/prebid-server/v3/privacy/gpp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -694,5 +696,233 @@ func TestParseGdprApplies(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		assert.Equal(t, tc.expectRegsExtGdpr, parseGdprApplies(tc.inGdprApplies), tc.desc)
+	}
+}
+
+func TestParseParamsGppSid(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		expectedSid string
+	}{
+		{
+			name:        "gpp_sid present with single value",
+			url:         "/openrtb2/amp?tag_id=1&gpp_sid=2",
+			expectedSid: "2",
+		},
+		{
+			name:        "gpp_sid present with multiple values",
+			url:         "/openrtb2/amp?tag_id=1&gpp_sid=2,4,6",
+			expectedSid: "2,4,6",
+		},
+		{
+			name:        "gpp_sid absent",
+			url:         "/openrtb2/amp?tag_id=1",
+			expectedSid: "",
+		},
+		{
+			name:        "gpp_sid empty string",
+			url:         "/openrtb2/amp?tag_id=1&gpp_sid=",
+			expectedSid: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest("GET", test.url, nil)
+			params, err := ParseParams(request)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedSid, params.GppSid)
+		})
+	}
+}
+
+func TestValidateGppSid(t *testing.T) {
+	tests := []struct {
+		name        string
+		gppSid      string
+		expectedErr string
+	}{
+		{
+			name:        "valid single value",
+			gppSid:      "2",
+			expectedErr: "",
+		},
+		{
+			name:        "valid multiple values",
+			gppSid:      "2,4,6",
+			expectedErr: "",
+		},
+		{
+			name:        "empty string is valid",
+			gppSid:      "",
+			expectedErr: "",
+		},
+		{
+			name:        "invalid - contains letters",
+			gppSid:      "2,abc,6",
+			expectedErr: "GPP SID '2,abc,6' is not a valid comma-separated list of integers.",
+		},
+		{
+			name:        "invalid - malformed",
+			gppSid:      "malformed",
+			expectedErr: "GPP SID 'malformed' is not a valid comma-separated list of integers.",
+		},
+		{
+			name:        "invalid - special characters",
+			gppSid:      "2;4;6",
+			expectedErr: "GPP SID '2;4;6' is not a valid comma-separated list of integers.",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateGppSid(test.gppSid)
+			assert.Equal(t, test.expectedErr, err)
+		})
+	}
+}
+
+func TestReadPolicyGPP(t *testing.T) {
+	tests := []struct {
+		name            string
+		params          Params
+		gdprEnabled     bool
+		expectNilPolicy bool
+		expectWarning   bool
+		warningContains string
+	}{
+		{
+			name: "GPP with valid gpp_sid",
+			params: Params{
+				Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				ConsentType: ConsentGPP,
+				GppSid:      "2,4,6",
+			},
+			gdprEnabled:     true,
+			expectNilPolicy: false,
+			expectWarning:   false,
+		},
+		{
+			name: "GPP with invalid gpp_sid",
+			params: Params{
+				Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				ConsentType: ConsentGPP,
+				GppSid:      "malformed",
+			},
+			gdprEnabled:     true,
+			expectNilPolicy: false,
+			expectWarning:   true,
+			warningContains: "not a valid comma-separated list of integers",
+		},
+		{
+			name: "GPP without gpp_sid",
+			params: Params{
+				Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				ConsentType: ConsentGPP,
+				GppSid:      "",
+			},
+			gdprEnabled:     true,
+			expectNilPolicy: false,
+			expectWarning:   false,
+		},
+		{
+			name: "GPP without consent string",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentGPP,
+				GppSid:      "2,4",
+			},
+			gdprEnabled:     true,
+			expectNilPolicy: true,
+			expectWarning:   false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			writer, warning := ReadPolicy(test.params, test.gdprEnabled)
+
+			if test.expectNilPolicy {
+				assert.IsType(t, privacy.NilPolicyWriter{}, writer)
+			} else {
+				assert.IsType(t, gpp.ConsentWriter{}, writer)
+			}
+
+			if test.expectWarning {
+				assert.Error(t, warning)
+				assert.Contains(t, warning.Error(), test.warningContains)
+			} else {
+				assert.NoError(t, warning)
+			}
+		})
+	}
+}
+
+func TestGppConsentWriterWrite(t *testing.T) {
+	tests := []struct {
+		name              string
+		writer            gpp.ConsentWriter
+		expectedGpp       string
+		expectedGppSid    []int8
+		expectedGppSidNil bool
+	}{
+		{
+			name: "write both gpp and gpp_sid",
+			writer: gpp.ConsentWriter{
+				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				GppSid:  "2,4,6",
+			},
+			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			expectedGppSid:    []int8{2, 4, 6},
+			expectedGppSidNil: false,
+		},
+		{
+			name: "write only gpp string",
+			writer: gpp.ConsentWriter{
+				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				GppSid:  "",
+			},
+			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			expectedGppSid:    nil,
+			expectedGppSidNil: true,
+		},
+		{
+			name: "invalid gpp_sid should result in nil GPPSID",
+			writer: gpp.ConsentWriter{
+				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				GppSid:  "malformed",
+			},
+			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			expectedGppSid:    nil,
+			expectedGppSidNil: true,
+		},
+		{
+			name: "empty gpp string and empty gpp_sid",
+			writer: gpp.ConsentWriter{
+				Consent: "",
+				GppSid:  "",
+			},
+			expectedGpp:       "",
+			expectedGppSid:    nil,
+			expectedGppSidNil: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := &openrtb2.BidRequest{}
+			err := test.writer.Write(req)
+
+			assert.NoError(t, err)
+			assert.NotNil(t, req.Regs)
+			assert.Equal(t, test.expectedGpp, req.Regs.GPP)
+
+			if test.expectedGppSidNil {
+				assert.Nil(t, req.Regs.GPPSID)
+			} else {
+				assert.Equal(t, test.expectedGppSid, req.Regs.GPPSID)
+			}
+		})
 	}
 }
