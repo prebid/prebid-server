@@ -20,18 +20,28 @@ type Config struct {
 	PruneUserIds      bool     `json:"prune_user_ids"`
 	SampleSalt        string   `json:"sample_salt"`
 	AllowedCountries  []string `json:"allowed_countries"`
-	GeoLookupEndpoint string   `json:"geo_lookup_endpoint"`
-	GeoCacheTTLMS     int      `json:"geo_cache_ttl_ms"`
+	GeoLookupEndpoint string   `json:"geo_lookup_endpoint"` // HTTP endpoint option
+	GeoDBPath         string   `json:"geo_db_path"`         // MaxMind database path option
+	GeoCacheTTLMS     int      `json:"geo_cache_ttl_ms"`    // Only used for HTTP resolver
+
+	// Whitelist endpoints for pre-filtering
+	GeoWhitelistEndpoint      string `json:"geo_whitelist_endpoint"`      // URL to fetch geo whitelist
+	PlatformWhitelistEndpoint string `json:"platform_whitelist_endpoint"` // URL to fetch platform whitelist
+	WhitelistRefreshMs        int    `json:"whitelist_refresh_ms"`        // Whitelist refresh interval (default: 300000ms = 5 min)
+
+	// Cached map for fast lookup (built once at parse time)
+	allowedCountriesMap map[string]struct{}
 }
 
 // parseConfig parses and validates the module configuration
 func parseConfig(rawConfig json.RawMessage) (*Config, error) {
 	cfg := &Config{
-		RefreshMs:        30000,
-		RequestTimeoutMs: 1000,
-		SampleSalt:       "pbs",
-		PruneUserIds:     false,
-		GeoCacheTTLMS:    300000,
+		RefreshMs:          30000,
+		RequestTimeoutMs:   1000,
+		SampleSalt:         "pbs",
+		PruneUserIds:       false,
+		GeoCacheTTLMS:      300000,
+		WhitelistRefreshMs: 300000, // 5 minutes default
 	}
 
 	if len(rawConfig) == 0 {
@@ -45,6 +55,9 @@ func parseConfig(rawConfig json.RawMessage) (*Config, error) {
 	if err := validateConfig(cfg); err != nil {
 		return nil, err
 	}
+
+	// Build cached map for fast lookup
+	cfg.buildAllowedCountriesMap()
 
 	return cfg, nil
 }
@@ -80,6 +93,16 @@ func validateConfig(cfg *Config) error {
 		return errors.New("geo_cache_ttl_ms must be at least 1000ms")
 	}
 
+	// Validate whitelist config if enabled
+	if cfg.GeoWhitelistEndpoint != "" || cfg.PlatformWhitelistEndpoint != "" {
+		if cfg.GeoWhitelistEndpoint == "" || cfg.PlatformWhitelistEndpoint == "" {
+			return errors.New("both geo_whitelist_endpoint and platform_whitelist_endpoint must be configured together")
+		}
+		if cfg.WhitelistRefreshMs < 1000 {
+			return errors.New("whitelist_refresh_ms must be at least 1000ms")
+		}
+	}
+
 	return nil
 }
 
@@ -98,25 +121,44 @@ func (c *Config) GetRequestTimeout() time.Duration {
 	return time.Duration(c.RequestTimeoutMs) * time.Millisecond
 }
 
-// GetAllowedCountriesMap returns a map of allowed countries for fast lookup
-func (c *Config) GetAllowedCountriesMap() map[string]struct{} {
+// buildAllowedCountriesMap builds the cached map from the slice
+func (c *Config) buildAllowedCountriesMap() {
 	if len(c.AllowedCountries) == 0 {
-		return nil
+		c.allowedCountriesMap = nil
+		return
 	}
 
-	countries := make(map[string]struct{}, len(c.AllowedCountries))
+	c.allowedCountriesMap = make(map[string]struct{}, len(c.AllowedCountries))
 	for _, country := range c.AllowedCountries {
-		countries[country] = struct{}{}
+		c.allowedCountriesMap[country] = struct{}{}
 	}
-	return countries
+}
+
+// GetAllowedCountriesMap returns a map of allowed countries for fast lookup
+func (c *Config) GetAllowedCountriesMap() map[string]struct{} {
+	// Lazy initialization for configs created without parseConfig
+	if c.allowedCountriesMap == nil && len(c.AllowedCountries) > 0 {
+		c.buildAllowedCountriesMap()
+	}
+	return c.allowedCountriesMap
 }
 
 // GeoEnabled returns true if geo lookup fallback is configured
 func (c *Config) GeoEnabled() bool {
-	return c.GeoLookupEndpoint != ""
+	return c.GeoLookupEndpoint != "" || c.GeoDBPath != ""
 }
 
 // GetGeoCacheTTL returns the geo cache TTL as duration
 func (c *Config) GetGeoCacheTTL() time.Duration {
 	return time.Duration(c.GeoCacheTTLMS) * time.Millisecond
+}
+
+// WhitelistEnabled returns true if whitelist pre-filtering is configured
+func (c *Config) WhitelistEnabled() bool {
+	return c.GeoWhitelistEndpoint != "" && c.PlatformWhitelistEndpoint != ""
+}
+
+// GetWhitelistRefreshInterval returns the whitelist refresh interval as duration
+func (c *Config) GetWhitelistRefreshInterval() time.Duration {
+	return time.Duration(c.WhitelistRefreshMs) * time.Millisecond
 }

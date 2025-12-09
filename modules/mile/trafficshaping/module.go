@@ -3,10 +3,12 @@ package trafficshaping
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/modules/mile/common"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 )
 
@@ -19,28 +21,65 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 
 	client := NewConfigClient(deps.HTTPClient, config)
 
-	var geoResolver GeoResolver
+	// Initialize whitelist client if configured
+	var whitelistClient *WhitelistClient
+	if config.WhitelistEnabled() {
+		whitelistClient = NewWhitelistClient(deps.HTTPClient, config)
+	}
+
+	var geoResolver common.GeoResolver
 	if config.GeoEnabled() {
-		geoResolver, err = NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
-		if err != nil {
-			return nil, err
+		// Prefer MaxMind if both are configured
+		if config.GeoDBPath != "" {
+			geoResolver, err = common.NewMaxMindGeoResolver(config.GeoDBPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize MaxMind resolver: %w", err)
+			}
+		} else if config.GeoLookupEndpoint != "" {
+			geoResolver, err = common.NewHTTPGeoResolver(config.GeoLookupEndpoint, config.GetGeoCacheTTL(), deps.HTTPClient)
+			if err != nil {
+				return nil, fmt.Errorf("failed to initialize HTTP geo resolver: %w", err)
+			}
 		}
 	}
 
 	return &Module{
-		config:      config,
-		client:      client,
-		geoResolver: geoResolver,
-		httpClient:  deps.HTTPClient,
+		config:          config,
+		client:          client,
+		whitelistClient: whitelistClient,
+		geoResolver:     geoResolver,
+		httpClient:      deps.HTTPClient,
 	}, nil
+}
+
+// Closeable represents a resource that can be closed
+type Closeable interface {
+	Close() error
 }
 
 // Module implements the traffic shaping hook
 type Module struct {
-	config      *Config
-	client      *ConfigClient
-	geoResolver GeoResolver
-	httpClient  *http.Client
+	config          *Config
+	client          *ConfigClient
+	whitelistClient *WhitelistClient
+	geoResolver     common.GeoResolver
+	httpClient      *http.Client
+}
+
+// Close releases resources held by the Module
+func (m *Module) Close() error {
+	// Stop whitelist client refresh loop
+	if m.whitelistClient != nil {
+		m.whitelistClient.Stop()
+	}
+
+	// Close geo resolver if it implements Closeable
+	if m.geoResolver != nil {
+		if closer, ok := m.geoResolver.(Closeable); ok {
+			return closer.Close()
+		}
+	}
+	return nil
 }
 
 // HandleProcessedAuctionHook implements the ProcessedAuctionRequest hook
@@ -58,21 +97,63 @@ func (m *Module) HandleProcessedAuctionHook(
 		return result, nil
 	}
 
+	// Extract siteID early (needed for both whitelist and URL construction)
+	siteID := ""
+	if wrapper.BidRequest.Site != nil {
+		siteID = wrapper.BidRequest.Site.ID
+	}
+
+	// Resolve geo/device/browser once (with IP fallback) for both whitelist and URL construction
+	var resolvedInfo *common.RequestInfo
+	var resolutionActivities []hookanalytics.Activity
+
+	if m.config.IsDynamicMode() || m.whitelistClient != nil {
+		resolver := common.NewDefaultResolver(m.geoResolver)
+		info, activities, err := resolver.Resolve(ctx, wrapper)
+		if err != nil {
+			// Fail-open: skip shaping if resolution fails
+			result.AnalyticsTags.Activities = append(result.AnalyticsTags.Activities,
+				hookanalytics.Activity{Name: "skipped_resolution_failed", Status: hookanalytics.ActivityStatusSuccess},
+				hookanalytics.Activity{Name: "skipped", Status: hookanalytics.ActivityStatusSuccess})
+			return result, nil
+		}
+		resolvedInfo = &info
+		resolutionActivities = activities
+	}
+
+	// Check whitelist pre-filter using resolved values (if configured)
+	if m.whitelistClient != nil && resolvedInfo != nil {
+		// Build platform string from resolved device and browser
+		platform := ""
+		if wrapper.Device != nil && wrapper.Device.UA != "" {
+			platform = common.ClassifyDevicePlatform(wrapper.Device.UA)
+		}
+
+		if !m.whitelistClient.IsAllowed(siteID, resolvedInfo.Country, platform) {
+			result.AnalyticsTags.Activities = append(result.AnalyticsTags.Activities,
+				hookanalytics.Activity{Name: "skipped_whitelist", Status: hookanalytics.ActivityStatusSuccess},
+				hookanalytics.Activity{Name: "skipped", Status: hookanalytics.ActivityStatusSuccess})
+			return result, nil
+		}
+	}
+
 	// Get the shaping config (dynamic or static mode)
 	var shapingConfig *ShapingConfig
 
 	if m.config.IsDynamicMode() {
-		// Dynamic mode: construct URL from request data
-		configURL, tags, err := buildConfigURLWithFallback(ctx, m.config.BaseEndpoint, wrapper, m.geoResolver)
-		if err != nil {
-			// Fail-open: skip shaping if URL cannot be built
+		// Add resolution activities to result
+		result.AnalyticsTags.Activities = append(result.AnalyticsTags.Activities, resolutionActivities...)
+
+		// Build URL from already-resolved values (no duplicate resolution)
+		if siteID == "" {
 			result.AnalyticsTags.Activities = append(result.AnalyticsTags.Activities,
 				hookanalytics.Activity{Name: "skipped_url_construction_failed", Status: hookanalytics.ActivityStatusSuccess},
 				hookanalytics.Activity{Name: "skipped", Status: hookanalytics.ActivityStatusSuccess})
 			return result, nil
 		}
 
-		result.AnalyticsTags.Activities = append(result.AnalyticsTags.Activities, tags...)
+		configURL := fmt.Sprintf("%s%s/%s/%s/%s/ts.json",
+			m.config.BaseEndpoint, siteID, resolvedInfo.Country, resolvedInfo.Device, resolvedInfo.Browser)
 
 		shapingConfig = m.client.GetConfigForURL(configURL)
 		if shapingConfig == nil {

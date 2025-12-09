@@ -59,11 +59,56 @@ start_pbs() {
         export PBS_GDPR_DEFAULT_VALUE="0"
     fi
 
+    # Check for MaxMind database and download if missing
+    MAXMIND_DB="tmp/GeoLite2-Country.mmdb"
+    mkdir -p tmp  # Ensure tmp directory exists
+    if [ ! -f "$MAXMIND_DB" ]; then
+        if [ -f ".env" ]; then
+            print_info "MaxMind database not found, checking for credentials..."
+            # Source .env to get MAXMIND_LICENSE_KEY
+            set +e  # Temporarily disable exit on error for sourcing
+            source .env 2>/dev/null
+            set -e  # Re-enable exit on error
+            
+            # Export variables so they're available to subprocesses
+            if [ -n "$MAXMIND_LICENSE_KEY" ]; then
+                export MAXMIND_LICENSE_KEY
+            fi
+            if [ -n "$MAXMIND_ACCOUNT_ID" ]; then
+                export MAXMIND_ACCOUNT_ID
+            fi
+            
+            if [ -n "$MAXMIND_LICENSE_KEY" ]; then
+                print_info "Downloading MaxMind database..."
+                if ./scripts/download-maxmind.sh "$MAXMIND_DB"; then
+                    print_success "MaxMind database downloaded successfully"
+                else
+                    print_warning "Failed to download MaxMind database, continuing without IP resolver"
+                fi
+            else
+                print_warning "MAXMIND_LICENSE_KEY not found in .env, skipping database download"
+                print_info "IP-based geo resolution will not be available"
+            fi
+        else
+            print_warning ".env file not found, skipping MaxMind database download"
+            print_info "IP-based geo resolution will not be available"
+        fi
+    else
+        print_info "MaxMind database found at $MAXMIND_DB"
+    fi
+
+    # Build first for faster startup detection
+    print_info "Building Prebid Server..."
+    if ! go build -o prebid-server . 2>&1; then
+        print_error "Build failed"
+        exit 1
+    fi
+    
     # Start in background
-    PBS_GDPR_DEFAULT_VALUE="$PBS_GDPR_DEFAULT_VALUE" go run . > "$LOG_FILE" 2>&1 &
+    PBS_GDPR_DEFAULT_VALUE="$PBS_GDPR_DEFAULT_VALUE" ./prebid-server > "$LOG_FILE" 2>&1 &
     
     # Wait a bit for startup
-    sleep 3
+    sleep 5
     
     # Check if it started successfully
     if is_running; then

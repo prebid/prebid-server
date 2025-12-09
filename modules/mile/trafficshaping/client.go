@@ -28,11 +28,15 @@ type ConfigClient struct {
 	httpClient *http.Client
 	config     *Config
 	// Static mode (legacy): single config with background refresh
-	cache atomic.Pointer[ShapingConfig]
-	done  chan struct{}
+	cache    atomic.Pointer[ShapingConfig]
+	done     chan struct{}
+	stopOnce sync.Once
 	// Dynamic mode: multiple configs keyed by URL
-	dynamicCache sync.Map // map[string]*cachedConfig
-	fetchGroup   singleflight.Group
+	dynamicCache       sync.Map // map[string]*cachedConfig
+	lastDynamicCleanup int64
+	fetchGroup         singleflight.Group
+	newTimer           func(time.Duration) schedulerTimer
+	jitterFn           func(int64) int64
 }
 
 // NewConfigClient creates a new config client and starts the background refresh
@@ -41,6 +45,15 @@ func NewConfigClient(httpClient *http.Client, config *Config) *ConfigClient {
 		httpClient: httpClient,
 		config:     config,
 		done:       make(chan struct{}),
+		newTimer: func(d time.Duration) schedulerTimer {
+			return &realTimer{time.NewTimer(d)}
+		},
+		jitterFn: func(n int64) int64 {
+			if n <= 0 {
+				return 0
+			}
+			return rand.Int63n(n)
+		},
 	}
 
 	// Only use background refresh for static mode (legacy endpoint config)
@@ -66,11 +79,14 @@ func (c *ConfigClient) GetConfig() *ShapingConfig {
 // GetConfigForURL returns the config for a specific URL (dynamic mode)
 // Fetches and caches on-demand with TTL-based expiry
 func (c *ConfigClient) GetConfigForURL(url string) *ShapingConfig {
+	now := time.Now()
+	c.maybeCleanupDynamicCache(now)
+
 	// Check cache first
 	if cached, ok := c.dynamicCache.Load(url); ok {
 		cachedCfg := cached.(*cachedConfig)
 		// Return if not expired
-		if time.Now().Before(cachedCfg.expiresAt) {
+		if now.Before(cachedCfg.expiresAt) {
 			return cachedCfg.config
 		}
 		// Expired, remove from cache
@@ -102,13 +118,16 @@ func (c *ConfigClient) GetConfigForURL(url string) *ShapingConfig {
 
 // Stop stops the background refresh goroutine
 func (c *ConfigClient) Stop() {
-	close(c.done)
+	c.stopOnce.Do(func() {
+		close(c.done)
+	})
 }
 
 // refreshLoop periodically fetches the configuration
 func (c *ConfigClient) refreshLoop() {
-	ticker := time.NewTicker(c.config.GetRefreshInterval())
-	defer ticker.Stop()
+	interval := c.config.GetRefreshInterval()
+	timer := c.newTimer(interval)
+	defer timer.Stop()
 
 	backoff := time.Duration(0)
 	maxBackoff := 5 * time.Minute
@@ -116,8 +135,14 @@ func (c *ConfigClient) refreshLoop() {
 	for {
 		select {
 		case <-c.done:
+			if !timer.Stop() {
+				select {
+				case <-timer.C():
+				default:
+				}
+			}
 			return
-		case <-ticker.C:
+		case <-timer.C():
 			if err := c.fetch(); err != nil {
 				glog.Warningf("trafficshaping: fetch failed: %v", err)
 
@@ -129,15 +154,58 @@ func (c *ConfigClient) refreshLoop() {
 				}
 
 				// Add jitter
-				jitter := time.Duration(rand.Int63n(int64(backoff / 10)))
-				ticker.Reset(backoff + jitter)
+				jitter := time.Duration(c.jitterFn(int64(backoff / 10)))
+				timer.Reset(backoff + jitter)
 			} else {
 				// Reset backoff on success
 				backoff = 0
-				ticker.Reset(c.config.GetRefreshInterval())
+				timer.Reset(interval)
 			}
 		}
 	}
+}
+
+func (c *ConfigClient) maybeCleanupDynamicCache(now time.Time) {
+	interval := c.config.GetRefreshInterval()
+	if interval <= 0 {
+		interval = time.Minute
+	}
+	last := atomic.LoadInt64(&c.lastDynamicCleanup)
+	if now.UnixNano()-last < interval.Nanoseconds() {
+		return
+	}
+	if !atomic.CompareAndSwapInt64(&c.lastDynamicCleanup, last, now.UnixNano()) {
+		return
+	}
+	c.dynamicCache.Range(func(key, value any) bool {
+		cached, ok := value.(*cachedConfig)
+		if ok && now.After(cached.expiresAt) {
+			c.dynamicCache.Delete(key)
+		}
+		return true
+	})
+}
+
+type schedulerTimer interface {
+	C() <-chan time.Time
+	Reset(time.Duration) bool
+	Stop() bool
+}
+
+type realTimer struct {
+	t *time.Timer
+}
+
+func (rt *realTimer) C() <-chan time.Time {
+	return rt.t.C
+}
+
+func (rt *realTimer) Reset(d time.Duration) bool {
+	return rt.t.Reset(d)
+}
+
+func (rt *realTimer) Stop() bool {
+	return rt.t.Stop()
 }
 
 // fetch retrieves and parses the configuration from the remote endpoint (static mode)

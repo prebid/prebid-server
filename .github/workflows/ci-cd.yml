@@ -1,0 +1,77 @@
+name: Docker Image CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  # inputs:
+  #   branch:
+  #     description: 'Branch to build from'
+  #     required: true
+  #     default: 'main'
+  #     type: choice
+  #     options:
+  #       - main
+  #       - develop
+  #       - ft/atd-log-adapter
+  # gitTag:
+  #   description: 'Git tag for the build'
+  #   required: false
+  #   type: string
+
+env:
+  REGISTRY: registry.digitalocean.com
+  IMAGE_NAME: automatad/milebuild
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      #   with:
+      #     ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Verify secrets are set
+        run: |
+          if [ -z "${{ secrets.MAXMIND_LICENSE_KEY }}" ]; then
+            echo "ERROR: MAXMIND_LICENSE_KEY secret is not set in GitHub repository"
+            echo "Please add it at: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          if [ -z "${{ secrets.MAXMIND_ACCOUNT_ID }}" ]; then
+            echo "WARNING: MAXMIND_ACCOUNT_ID secret is not set (may be required)"
+          fi
+          echo "Secrets are configured"
+
+      - name: Build the Docker image
+        run: |
+          docker build . \
+            --tag ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --build-arg TEST=false \
+            --build-arg MAXMIND_ACCOUNT_ID=${{ secrets.MAXMIND_ACCOUNT_ID }} \
+            --build-arg MAXMIND_LICENSE_KEY=${{ secrets.MAXMIND_LICENSE_KEY }} \
+            --progress=plain \
+            --no-cache
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Tag Docker image
+        run: |
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      - name: Push Docker image to DigitalOcean Container Registry
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

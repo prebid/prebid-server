@@ -1,0 +1,52 @@
+name: Docker Image CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_call:
+    inputs:
+      gitTag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      gitTag:
+        required: false
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag milebuild:${{ github.sha }}
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Log in to DO Container Registry
+      run: doctl registry login --expiry-seconds 1200
+
+    - name: Tag Docker image
+      run: |
+        docker tag milebuild:${{ github.sha }} registry.digitalocean.com/automatad/milebuild:${{ github.sha }}
+        docker tag milebuild:${{ github.sha }} registry.digitalocean.com/automatad/milebuild:latest
+
+    - name: Push Docker image to DigitalOcean Container Registry
+      run: |
+        docker push registry.digitalocean.com/automatad/milebuild:${{ github.sha }}
+        docker push registry.digitalocean.com/automatad/milebuild:latest
+
+    - name: Build with Make (if needed)
+      run: make milebuild GIT_TAG=${{ inputs.gitTag || github.event.inputs.gitTag || github.sha }}

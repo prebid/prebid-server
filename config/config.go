@@ -479,6 +479,7 @@ type Analytics struct {
 	File     FileLogs      `mapstructure:"file"`
 	Agma     AgmaAnalytics `mapstructure:"agma"`
 	Pubstack Pubstack      `mapstructure:"pubstack"`
+	Mile     Mile          `mapstructure:"mile"`
 }
 
 type CurrencyConverter struct {
@@ -534,6 +535,15 @@ type Pubstack struct {
 	IntakeUrl   string         `mapstructure:"endpoint"`
 	Buffers     PubstackBuffer `mapstructure:"buffers"`
 	ConfRefresh string         `mapstructure:"configuration_refresh_delay"`
+}
+
+type Mile struct {
+	Enabled       bool   `mapstructure:"enabled"`
+	Scope         string `mapstructure:"scopeid"`
+	Endpoint      string `mapstructure:"endpoint"`
+	MaxByteSize   string `mapstructure:"maxbytesize"`
+	MaxEventCount int    `mapstructure:"maxeventcount"`
+	MaxTime       string `mapstructure:"maxtime"`
 }
 
 type PubstackBuffer struct {
@@ -1162,6 +1172,12 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("analytics.agma.buffers.size", "2MB")
 	v.SetDefault("analytics.agma.buffers.count", 100)
 	v.SetDefault("analytics.agma.buffers.timeout", "15m")
+	v.SetDefault("analytics.mile.enabled", false)
+	v.SetDefault("analytics.mile.endpoint", "https://e01.dev.mile.so")
+	v.SetDefault("analytics.mile.scopeid", "test")
+	v.SetDefault("analytics.mile.maxtime", "30s")
+	v.SetDefault("analytics.mile.maxeventcount", "20")
+	v.SetDefault("analytics.mile.maxbytesize", "5KB")
 	v.SetDefault("analytics.agma.accounts", []AgmaAnalyticsAccount{})
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.BindEnv("gdpr.default_value")
