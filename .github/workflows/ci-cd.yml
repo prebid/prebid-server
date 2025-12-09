@@ -8,6 +8,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      tag_type:
+        description: 'Secondary tag to apply (latest or datetime)'
+        required: false
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - datetime
   # inputs:
   #   branch:
   #     description: 'Branch to build from'
@@ -67,11 +76,22 @@ jobs:
       - name: Log in to DO Container Registry
         run: doctl registry login --expiry-seconds 1200
 
+      - name: Choose secondary tag
+        id: secondary_tag
+        run: |
+          TAG_TYPE="${{ github.event.inputs.tag_type || 'latest' }}"
+          if [ "$TAG_TYPE" = "datetime" ]; then
+            TAG_VALUE=$(date -u +"%Y%m%d%H%M%SZ")
+          else
+            TAG_VALUE=latest
+          fi
+          echo "secondary_tag=$TAG_VALUE" >> "$GITHUB_OUTPUT"
+
       - name: Tag Docker image
         run: |
           docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.secondary_tag.outputs.secondary_tag }}
       - name: Push Docker image to DigitalOcean Container Registry
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.secondary_tag.outputs.secondary_tag }}
