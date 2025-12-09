@@ -1,4 +1,4 @@
-package mile
+package endpoint
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/prebid/prebid-server/v3/config"
 
 	redis "github.com/redis/go-redis/v9"
 )
@@ -20,25 +18,35 @@ type RedisSiteStore struct {
 }
 
 // NewRedisSiteStore builds a Redis-backed SiteStore.
-func NewRedisSiteStore(cfg config.Mile) (*RedisSiteStore, error) {
+func NewRedisSiteStore(cfg *Config) (*RedisSiteStore, error) {
 	if cfg.Redis.Addr == "" {
-		return nil, fmt.Errorf("mile.redis.addr is required when mile is enabled")
+		return nil, fmt.Errorf("mile.redis.addr is required when mile endpoint is enabled")
 	}
 
 	opts := &redis.Options{
-		Addr:     cfg.Redis.Addr,
-		DB:       cfg.Redis.DB,
-		Username: cfg.Redis.Username,
-		Password: cfg.Redis.Password,
+		Addr:         cfg.Redis.Addr,
+		DB:           cfg.Redis.DB,
+		Username:     cfg.Redis.Username,
+		Password:     cfg.Redis.Password,
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
+		PoolSize:     10,
+		MinIdleConns: 2,
 	}
 
 	if cfg.Redis.TLS {
 		opts.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 
+	timeout := time.Duration(cfg.RedisTimeoutMs) * time.Millisecond
+	if timeout == 0 {
+		timeout = 200 * time.Millisecond // default
+	}
+
 	return &RedisSiteStore{
 		client:      redis.NewClient(opts),
-		timeout:     time.Duration(cfg.RedisTimeoutMs) * time.Millisecond,
+		timeout:     timeout,
 		keyTemplate: "mile:site:%s",
 	}, nil
 }
@@ -49,11 +57,7 @@ func (s *RedisSiteStore) Get(ctx context.Context, siteID string) (*SiteConfig, e
 		return nil, fmt.Errorf("site id is required")
 	}
 
-	readCtx := ctx
-	cancel := func() {}
-	if s.timeout > 0 {
-		readCtx, cancel = context.WithTimeout(ctx, s.timeout)
-	}
+	readCtx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
 	key := fmt.Sprintf(s.keyTemplate, siteID)
@@ -62,12 +66,12 @@ func (s *RedisSiteStore) Get(ctx context.Context, siteID string) (*SiteConfig, e
 		if err == redis.Nil {
 			return nil, ErrSiteNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("redis get failed: %w", err)
 	}
 
 	var site SiteConfig
 	if err := json.Unmarshal([]byte(val), &site); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal site config: %w", err)
 	}
 	return &site, nil
 }
@@ -75,4 +79,11 @@ func (s *RedisSiteStore) Get(ctx context.Context, siteID string) (*SiteConfig, e
 // Close releases Redis resources.
 func (s *RedisSiteStore) Close() error {
 	return s.client.Close()
+}
+
+// Ping checks if Redis is reachable.
+func (s *RedisSiteStore) Ping(ctx context.Context) error {
+	pingCtx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	return s.client.Ping(pingCtx).Err()
 }

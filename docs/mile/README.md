@@ -2,7 +2,33 @@
 
 Thin adapter-facing endpoint that validates Mile requests, enriches from Redis, and forwards in-process to `/openrtb2/auction`.
 
-## Configuration
+> **Note:** The Mile endpoint is now implemented as a PBS module. See [modules/mile/endpoint/README.md](/modules/mile/endpoint/README.md) for detailed documentation.
+
+## Configuration (Module-based - Recommended)
+
+Configure in your PBS config file under `hooks.modules`:
+
+```yaml
+hooks:
+  modules:
+    mile:
+      endpoint:
+        enabled: true
+        endpoint: /mile/v1/request
+        auth_token: "<optional-shared-token>"
+        request_timeout_ms: 500
+        redis_timeout_ms: 200
+        max_request_size: 524288
+        redis:
+          addr: localhost:6379
+          db: 0
+          tls: false
+```
+
+## Legacy Configuration (Deprecated)
+
+The old top-level configuration is still supported but deprecated:
+
 ```yaml
 mile:
   enabled: true

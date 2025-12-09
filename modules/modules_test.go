@@ -109,7 +109,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 				},
 			}
 
-			repo, modulesStages, shutdownModules, err := builder.Build(test.givenConfig, moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
+			repo, modulesStages, shutdownModules, _, err := builder.Build(test.givenConfig, moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
 			assert.Equal(t, test.expectedErr, err)
 			assert.Equal(t, test.expectedModulesStages, modulesStages)
 			assert.Equal(t, test.expectedShutdownModules, shutdownModules)

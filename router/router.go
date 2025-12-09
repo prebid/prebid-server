@@ -18,7 +18,6 @@ import (
 	"github.com/prebid/prebid-server/v3/endpoints"
 	"github.com/prebid/prebid-server/v3/endpoints/events"
 	infoEndpoints "github.com/prebid/prebid-server/v3/endpoints/info"
-	mileEndpoint "github.com/prebid/prebid-server/v3/endpoints/mile"
 	"github.com/prebid/prebid-server/v3/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/exchange"
@@ -30,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/v3/metrics"
 	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
 	"github.com/prebid/prebid-server/v3/modules"
+	mileModule "github.com/prebid/prebid-server/v3/modules/mile/endpoint"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
@@ -211,7 +211,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	normalizedGeoscopes := getNormalizedGeoscopes(cfg.BidderInfos)
 	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes}
-	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
+	repo, moduleStageNames, shutdownModules, builtModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
@@ -265,21 +265,27 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
-	if cfg.Mile.Enabled {
-		mileStore, err := mileEndpoint.NewRedisSiteStore(cfg.Mile)
-		if err != nil {
-			return nil, err
+	// Register Mile endpoint if the module is enabled
+	if mileModuleInstance, ok := builtModules["mile.endpoint"]; ok {
+		if mileEp, ok := mileModuleInstance.(*mileModule.Module); ok {
+			// Inject the auction handler into the module
+			mileEp.SetAuctionHandler(openrtbEndpoint)
+
+			// Register endpoints provided by the module
+			for _, ep := range mileEp.GetEndpoints() {
+				if ep.Method == "POST" {
+					r.POST(ep.Path, ep.Handler)
+					glog.Infof("Registered Mile endpoint: POST %s", ep.Path)
+				}
+			}
+
+			// Register module shutdown (wrap to match func() signature)
+			r.shutdowns = append(r.shutdowns, func() {
+				if err := mileEp.Shutdown(); err != nil {
+					glog.Warningf("Mile module shutdown error: %v", err)
+				}
+			})
 		}
-		mileHandler, shutdownMile, err := mileEndpoint.NewHandler(cfg, mileStore, openrtbEndpoint, r.MetricsEngine, mileEndpoint.Hooks{})
-		if err != nil {
-			return nil, err
-		}
-		path := cfg.Mile.Endpoint
-		if path == "" {
-			path = "/mile/v1/request"
-		}
-		r.POST(path, mileHandler)
-		r.shutdowns = append(r.shutdowns, shutdownMile)
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)

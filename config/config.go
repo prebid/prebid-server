@@ -106,8 +106,6 @@ type Configuration struct {
 	Hooks       Hooks       `mapstructure:"hooks"`
 	Validations Validations `mapstructure:"validations"`
 	PriceFloors PriceFloors `mapstructure:"price_floors"`
-	// Mile exposes configuration for the Mile adapter-facing endpoint.
-	Mile Mile `mapstructure:"mile"`
 }
 
 type Admin struct {
@@ -116,27 +114,6 @@ type Admin struct {
 type PriceFloors struct {
 	Enabled bool              `mapstructure:"enabled"`
 	Fetcher PriceFloorFetcher `mapstructure:"fetcher"`
-}
-
-// Mile configures the optional Mile orchestration endpoint.
-type Mile struct {
-	Enabled           bool      `mapstructure:"enabled"`
-	Endpoint          string    `mapstructure:"endpoint"`
-	RequestTimeoutMs  int       `mapstructure:"request_timeout_ms"`
-	RedisTimeoutMs    int       `mapstructure:"redis_timeout_ms"`
-	MaxRequestSize    int64     `mapstructure:"max_request_size"`
-	AuthToken         string    `mapstructure:"auth_token"`
-	Redis             MileRedis `mapstructure:"redis"`
-	EnableHTTPCallout bool      `mapstructure:"enable_http_callout"`
-}
-
-// MileRedis configures the Redis backend used to fetch site settings.
-type MileRedis struct {
-	Addr     string `mapstructure:"addr"`
-	DB       int    `mapstructure:"db"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	TLS      bool   `mapstructure:"tls"`
 }
 
 type PriceFloorFetcher struct {

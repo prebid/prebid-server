@@ -1,4 +1,4 @@
-package mile
+package endpoint
 
 import (
 	"context"
@@ -28,12 +28,12 @@ type CustomData struct {
 
 // SiteConfig represents the Redis-stored schema for a Mile site.
 type SiteConfig struct {
-	SiteID      string                     `json:"siteId"`
-	PublisherID string                     `json:"publisherId"`
-	Bidders     []string                   `json:"bidders,omitempty"`
-	Placements  map[string]PlacementConfig `json:"placements"`
-	SiteConfig  map[string]any             `json:"siteConfig,omitempty"`
-	Ext         map[string]json.RawMessage `json:"ext,omitempty"`
+	SiteID       string                     `json:"siteId"`
+	PublisherID  string                     `json:"publisherId"`
+	Bidders      []string                   `json:"bidders,omitempty"`
+	Placements   map[string]PlacementConfig `json:"placements"`
+	SiteMetadata map[string]any             `json:"siteConfig,omitempty"`
+	Ext          map[string]json.RawMessage `json:"ext,omitempty"`
 }
 
 // PlacementConfig binds a placement to bidders and bidder params.

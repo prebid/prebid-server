@@ -1,9 +1,10 @@
 # Mile Endpoint Design
 
 ## References
-- Routing and OpenRTB handler construction: `router/router.go:254-284`
+- Module implementation: `modules/mile/endpoint/`
+- Module registration in router: `router/router.go:268-290`
 - Canonical auction handler returned by `openrtb2.NewEndpoint`: `endpoints/openrtb2/auction.go:90-134`
-- Auction handler request parsing, size limits, and timeouts: `endpoints/openrtb2/auction.go:430-477`
+- Module builder registration: `modules/builder.go`
 
 ## Goal
 Expose `POST /mile/v1/request` as a thin adapter-facing shim. It validates Mile payloads, enriches them with site/placement configuration from Redis, translates into an OpenRTB 2.x request, and forwards in-process to PBS’s existing `/openrtb2/auction` handler (no extra HTTP hop). Before/after hooks allow custom logic without touching PBS core.

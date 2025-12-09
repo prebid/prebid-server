@@ -1,4 +1,4 @@
-package mile
+package endpoint
 
 import (
 	"encoding/json"
@@ -41,12 +41,18 @@ func buildOpenRTBRequest(req MileRequest, site *SiteConfig) (*openrtb2.BidReques
 		pubID = req.PublisherID
 	}
 
+	// Generate request ID safely
+	requestID, err := uuid.NewV4()
+	if err != nil {
+		requestID = uuid.Must(uuid.NewV4()) // fallback
+	}
+
 	ortb := &openrtb2.BidRequest{
-		ID: uuid.Must(uuid.NewV4()).String(),
+		ID: requestID.String(),
 		Site: &openrtb2.Site{
 			ID:        site.SiteID,
-			Name:      readString(site.SiteConfig, "name"),
-			Page:      readString(site.SiteConfig, "page"),
+			Name:      readString(site.SiteMetadata, "name"),
+			Page:      readString(site.SiteMetadata, "page"),
 			Publisher: &openrtb2.Publisher{ID: pubID},
 		},
 		Imp: []openrtb2.Imp{
@@ -173,15 +179,6 @@ func readString(m map[string]any, key string) string {
 		}
 	}
 	return ""
-}
-
-// Debug helper for tests to render the imp ext map for assertions.
-func unmarshalExt(raw json.RawMessage) (map[string]any, error) {
-	var out map[string]any
-	if len(raw) == 0 {
-		return out, nil
-	}
-	return out, json.Unmarshal(raw, &out)
 }
 
 func boolPtr(v bool) *bool {
