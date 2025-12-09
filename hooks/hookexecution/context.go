@@ -20,7 +20,7 @@ type executionContext struct {
 	// holdReadLock indicates whether to hold moduleContexts read lock
 	// for the duration of hook group execution. This is needed for stages
 	// that run concurrently (bidder stages) to prevent concurrent map access.
-	holdReadLock    bool
+	holdReadLock bool
 }
 
 func (ctx executionContext) getModuleContext(moduleName string) hookstage.ModuleInvocationContext {
