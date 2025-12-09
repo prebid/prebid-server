@@ -19,10 +19,12 @@ hooks:
         auth_key: ${SCOPE3_API_KEY}  # Set SCOPE3_API_KEY environment variable
         endpoint: https://rtdp.scope3.com/prebid/prebid
         timeout_ms: 1000
-        cache_ttl_seconds: 60   # Cache segments for 60 seconds (default)
-        add_to_targeting: false # Set to true to add segments as individual targeting keys for GAM
-        masking:                # Optional privacy masking configuration
-          enabled: true         # Enable field masking before sending to Scope3
+        cache_ttl_seconds: 60               # Cache segments for 60 seconds (default)
+        add_to_targeting: false             # Set to true to add segments as individual targeting keys for GAM
+        add_scope3_targeting_section: false # Also set targeting in dedicated scope3 section
+        single_segment_key: ""              # When set, adds all segments as a comma separated value under a single targeting key
+        masking:                            # Optional privacy masking configuration
+          enabled: true                     # Enable field masking before sending to Scope3
           geo:
             preserve_metro: true      # Preserve DMA code (default: true)
             preserve_zip: true        # Preserve postal code (default: true)
@@ -46,12 +48,12 @@ hooks:
                 hook_sequence:
                   - module_code: "scope3.rtd"
                     hook_impl_code: "HandleEntrypointHook"
-          raw_auction_request:
+          auction_processed:
             groups:
               - timeout: 2000
                 hook_sequence:
                   - module_code: "scope3.rtd"
-                    hook_impl_code: "HandleRawAuctionHook"
+                    hook_impl_code: "HandleAuctionProcessedHook"
           auction_response:
             groups:
               - timeout: 5
@@ -73,6 +75,7 @@ hooks:
           "timeout_ms": 1000,
           "cache_ttl_seconds": 60,
           "add_to_targeting": false,
+          "add_scope3_targeting_section": false,
           "masking": {
             "enabled": true,
             "geo": {
@@ -306,7 +309,7 @@ The module forwards any fields that are not masked from the bid request to the S
 ### Auction Response Data
 The module adds audience segments to the auction response, giving publishers full control over how to use them:
 
-1. **Publisher Flexibility**: Segments are always returned in `ext.scope3.segments` for the publisher to decide where to send
+1. **Publisher Flexibility**: Segments are returned in `ext.scope3.segments` when configured for the publisher to decide where to send
 2. **Google Ad Manager (GAM)**: Individual targeting keys are added when `add_to_targeting: true` (e.g., `gmp_eligible=true`)
 3. **Other Ad Servers**: Publisher can forward segments to any ad server or system
 4. **Analytics**: Segment data is available for reporting and analysis
@@ -314,7 +317,7 @@ The module adds audience segments to the auction response, giving publishers ful
 ### Response Format Options
 The module provides segments in two formats:
 
-**Always available:**
+**When `add_scope3_targeting_section: true`:**
 ```json
 {
   "ext": {
