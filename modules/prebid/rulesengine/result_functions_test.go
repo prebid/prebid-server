@@ -9,6 +9,8 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v3/util/fetchutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,35 +82,74 @@ func TestNewProcessedAuctionRequestResultFunction(t *testing.T) {
 
 func TestExcludeBiddersCall(t *testing.T) {
 	tests := []struct {
-		name       string
-		argBidders []string
-		req        *openrtb_ext.RequestWrapper
+		name                 string
+		argBidders           []string
+		req                  *openrtb_ext.RequestWrapper
+		userSync             IdFetcherMock
+		ifSynced             *bool
+		expectedMutationsLen int
 	}{
 		{
-			name:       "exclude-one-bidder",
-			argBidders: []string{"bidder1"},
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:                 "exclude-one-bidder",
+			argBidders:           []string{"bidder1"},
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 1,
 		},
 		{
-			name:       "exclude_all_bidders",
-			argBidders: []string{"bidder1", "bidder2", "bidder3"},
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:                 "exclude_all_bidders",
+			argBidders:           []string{"bidder1", "bidder2", "bidder3"},
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 1,
 		},
 		{
-			name:       "no_bidders_to_exclude",
-			argBidders: []string{},
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:                 "no_bidders_to_exclude",
+			argBidders:           []string{},
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 0,
 		},
 		{
-			name:       "nil_bidders",
-			argBidders: nil,
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:                 "nil_bidders",
+			argBidders:           nil,
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 0,
+		},
+		{
+			name:                 "exclude-one-bidder_synced_valid_usersync",
+			argBidders:           []string{"bidder1"},
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 1,
+			ifSynced:             ptrutil.ToPtr(true),
+			userSync:             IdFetcherMock{uid: "test", exists: true, notExpired: true},
+		},
+		{
+			name:                 "exclude-one-bidder_not_synced_valid_usersync",
+			argBidders:           []string{"bidder1"},
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 0,
+			ifSynced:             ptrutil.ToPtr(false),
+			userSync:             IdFetcherMock{uid: "test", exists: true, notExpired: true},
+		},
+		{
+			name:                 "exclude-one-bidder_synced_invalid_usersync",
+			argBidders:           []string{"bidder1"},
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 0,
+			ifSynced:             ptrutil.ToPtr(true),
+			userSync:             IdFetcherMock{uid: "test", exists: false, notExpired: true},
+		},
+		{
+			name:                 "exclude-one-bidder_not_synced_invalid_usersync",
+			argBidders:           []string{"bidder1"},
+			req:                  mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			expectedMutationsLen: 1,
+			ifSynced:             ptrutil.ToPtr(false),
+			userSync:             IdFetcherMock{uid: "test", exists: true, notExpired: false},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			eb := &ExcludeBidders{Args: config.ResultFuncParams{Bidders: tt.argBidders}}
+			eb := &ExcludeBidders{Args: config.ResultFuncParams{Bidders: tt.argBidders, IfSyncedId: tt.ifSynced}}
 			hookResult := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
@@ -117,15 +158,38 @@ func TestExcludeBiddersCall(t *testing.T) {
 				AllowedBidders: make(map[string]struct{}),
 			}
 
-			err := eb.Call(tt.req, result, rules.ResultFunctionMeta{})
+			var us fetchutil.IdFetcher = &tt.userSync
+
+			payload := &hs.ProcessedAuctionRequestPayload{
+				Request:   tt.req,
+				Usersyncs: &us,
+			}
+			err := eb.Call(payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
-			assert.NotEmptyf(t, result.HookResult.ChangeSet, "change set is empty")
-			assert.Len(t, result.HookResult.ChangeSet.Mutations(), 1)
-			assert.Equal(t, hs.MutationDelete, result.HookResult.ChangeSet.Mutations()[0].Type())
+			assert.Len(t, result.HookResult.ChangeSet.Mutations(), tt.expectedMutationsLen)
+			if tt.expectedMutationsLen > 0 {
+				assert.NotEmptyf(t, result.HookResult.ChangeSet, "change set is empty")
+				assert.Equal(t, hs.MutationDelete, result.HookResult.ChangeSet.Mutations()[0].Type())
+			}
 
 		})
 	}
+}
+
+type IdFetcherMock struct {
+	uid        string
+	exists     bool
+	notExpired bool
+}
+
+func (fm *IdFetcherMock) GetUID(key string) (uid string, exists bool, notExpired bool) {
+	return fm.uid, fm.exists, fm.notExpired
+}
+
+// HasAnyLiveSyncs is not executed in the result functions, but needed to complete the IDFetcher Interface
+func (fm *IdFetcherMock) HasAnyLiveSyncs() bool {
+	return false
 }
 
 func TestIncludeBiddersName(t *testing.T) {
@@ -142,35 +206,74 @@ func TestExcludeBiddersName(t *testing.T) {
 
 func TestIncludeBiddersCall(t *testing.T) {
 	tests := []struct {
-		name       string
-		argBidders []string
-		req        *openrtb_ext.RequestWrapper
+		name            string
+		argBidders      []string
+		req             *openrtb_ext.RequestWrapper
+		userSync        IdFetcherMock
+		ifSynced        *bool
+		expectedBidders []string
 	}{
 		{
-			name:       "include_valid_bidders",
-			argBidders: []string{"bidder1", "bidder2"},
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:            "include_valid_bidders",
+			argBidders:      []string{"bidder1", "bidder2"},
+			expectedBidders: []string{"bidder1", "bidder2"},
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 		{
-			name:       "include_no_bidders",
-			argBidders: []string{},
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:            "include_no_bidders",
+			argBidders:      []string{},
+			expectedBidders: []string{},
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 		{
-			name:       "include_non_existing_bidders",
-			argBidders: []string{"bidder4"},
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:            "include_non_existing_bidders",
+			argBidders:      []string{"bidder4"},
+			expectedBidders: []string{"bidder4"},
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
 		},
 		{
-			name:       "nil_bidders",
-			argBidders: nil,
-			req:        mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			name:            "nil_bidders",
+			argBidders:      nil,
+			expectedBidders: nil,
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+		},
+		{
+			name:            "include_valid_bidders_synced_valid_usersync",
+			argBidders:      []string{"bidder1", "bidder2"},
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			ifSynced:        ptrutil.ToPtr(true),
+			userSync:        IdFetcherMock{uid: "test", exists: true, notExpired: true},
+			expectedBidders: []string{"bidder1", "bidder2"},
+		},
+		{
+			name:            "include_valid_bidders_not_synced_valid_usersync",
+			argBidders:      []string{"bidder1", "bidder2"},
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			ifSynced:        ptrutil.ToPtr(false),
+			userSync:        IdFetcherMock{uid: "test", exists: true, notExpired: true},
+			expectedBidders: []string{},
+		},
+		{
+			name:            "include_valid_bidders_synced_invalid_usersync",
+			argBidders:      []string{"bidder1", "bidder2"},
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			ifSynced:        ptrutil.ToPtr(true),
+			userSync:        IdFetcherMock{uid: "test", exists: false, notExpired: true},
+			expectedBidders: []string{},
+		},
+		{
+			name:            "include_valid_bidders_not_synced_invalid_usersync",
+			argBidders:      []string{"bidder1", "bidder2"},
+			req:             mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"}),
+			ifSynced:        ptrutil.ToPtr(false),
+			userSync:        IdFetcherMock{uid: "test", exists: false, notExpired: true},
+			expectedBidders: []string{"bidder1", "bidder2"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ib := &IncludeBidders{Args: config.ResultFuncParams{Bidders: tt.argBidders}}
+			ib := &IncludeBidders{Args: config.ResultFuncParams{Bidders: tt.argBidders, IfSyncedId: tt.ifSynced}}
 			hookResult := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
@@ -180,12 +283,19 @@ func TestIncludeBiddersCall(t *testing.T) {
 				AllowedBidders: make(map[string]struct{}),
 			}
 
-			err := ib.Call(tt.req, result, rules.ResultFunctionMeta{})
+			var us fetchutil.IdFetcher = &tt.userSync
+
+			payload := &hs.ProcessedAuctionRequestPayload{
+				Request:   tt.req,
+				Usersyncs: &us,
+			}
+
+			err := ib.Call(payload, result, rules.ResultFunctionMeta{})
 
 			assert.NoError(t, err)
 			assert.Emptyf(t, result.HookResult.ChangeSet, "change set is empty")
 			assert.Len(t, result.HookResult.ChangeSet.Mutations(), 0)
-			assert.Len(t, result.AllowedBidders, len(tt.argBidders))
+			assert.Len(t, result.AllowedBidders, len(tt.expectedBidders))
 		})
 	}
 }
