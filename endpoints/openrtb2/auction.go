@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
+	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/logger"
@@ -63,11 +64,15 @@ const observeBrowsingTopics = "Observe-Browsing-Topics"
 const observeBrowsingTopicsValue = "?1"
 
 var (
-	dntKey      string = http.CanonicalHeaderKey("DNT")
-	secGPCKey   string = http.CanonicalHeaderKey("Sec-GPC")
-	dntDisabled int8   = 0
-	dntEnabled  int8   = 1
-	notAmp      int8   = 0
+	dntKey             string = http.CanonicalHeaderKey("DNT")
+	secGPCKey          string = http.CanonicalHeaderKey("Sec-GPC")
+	secCHUAKey         string = http.CanonicalHeaderKey("Sec-CH-UA")
+	secCHUAMobileKey   string = http.CanonicalHeaderKey("Sec-CH-UA-Mobile")
+	secCHUAPlatformKey string = http.CanonicalHeaderKey("Sec-CH-UA-Platform")
+	saveDataKey        string = http.CanonicalHeaderKey("Save-Data")
+	dntDisabled        int8   = 0
+	dntEnabled         int8   = 1
+	notAmp             int8   = 0
 )
 
 var accountIdSearchPath = [...]struct {
@@ -240,6 +245,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 	secGPC := r.Header.Get("Sec-GPC")
+	clientHints := extractClientHints(r)
 
 	warnings := errortypes.WarningOnly(errL)
 
@@ -252,6 +258,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		LegacyLabels:               labels,
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
+		ClientHints:                clientHints,
 		ImpExtInfoMap:              impExtInfoMap,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
@@ -403,6 +410,17 @@ func sendAuctionResponse(
 func setBrowsingTopicsHeader(w http.ResponseWriter, r *http.Request) {
 	if value := r.Header.Get(secBrowsingTopics); value != "" {
 		w.Header().Set(observeBrowsingTopics, observeBrowsingTopicsValue)
+	}
+}
+
+// extractClientHints extracts low-entropy User-Agent Client Hints headers from the HTTP request.
+// These headers provide structured information about the user agent and are forwarded to bidders.
+func extractClientHints(r *http.Request) adapters.ClientHintHeaders {
+	return adapters.ClientHintHeaders{
+		SecCHUA:         r.Header.Get(secCHUAKey),
+		SecCHUAMobile:   r.Header.Get(secCHUAMobileKey),
+		SecCHUAPlatform: r.Header.Get(secCHUAPlatformKey),
+		SaveData:        r.Header.Get(saveDataKey),
 	}
 }
 

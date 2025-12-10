@@ -255,6 +255,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	errL = append(errL, gdprErrs...)
 
 	secGPC := r.Header.Get("Sec-GPC")
+	clientHints := extractClientHints(r)
 
 	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          reqWrapper,
@@ -264,6 +265,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
+		ClientHints:                clientHints,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
