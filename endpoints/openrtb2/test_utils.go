@@ -1754,14 +1754,14 @@ type mockUpdateResponseHook struct{}
 func (e mockUpdateResponseHook) HandleExitpointHook(
 	_ context.Context,
 	_ hookstage.ModuleInvocationContext,
-	_ hookstage.ExitpointPaylaod) (hookstage.HookResult[hookstage.ExitpointPaylaod], error) {
-	c := hookstage.ChangeSet[hookstage.ExitpointPaylaod]{}
+	_ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	c := hookstage.ChangeSet[hookstage.ExitpointPayload]{}
 	c.AddMutation(
-		func(payload hookstage.ExitpointPaylaod) (hookstage.ExitpointPaylaod, error) {
+		func(payload hookstage.ExitpointPayload) (hookstage.ExitpointPayload, error) {
 			payload.Response = &openrtb2.BidResponse{ID: "modified-id"}
 			payload.W.Header().Set("Content-Type", "application/json")
 			return payload, nil
 		}, hookstage.MutationUpdate, "exitpoint", "bidResponse.json-response")
 
-	return hookstage.HookResult[hookstage.ExitpointPaylaod]{ChangeSet: c}, nil
+	return hookstage.HookResult[hookstage.ExitpointPayload]{ChangeSet: c}, nil
 }

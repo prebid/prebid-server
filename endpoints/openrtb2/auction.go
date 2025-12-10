@@ -16,7 +16,6 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
@@ -24,6 +23,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb3"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
 	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
 	"github.com/prebid/prebid-server/v3/privacysandbox"
@@ -203,8 +203,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
@@ -218,6 +216,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 		defer cancel()
 	}
+
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(req, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
 
 	// Read Usersyncs/Cookie
 	decoder := usersync.Base64Decoder{}
@@ -261,6 +262,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	defer func() {
@@ -287,7 +290,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	err = setSeatNonBidRaw(req, auctionResponse)
 	if err != nil {
-		glog.Errorf("Error setting seat non-bid: %v", err)
+		logger.Errorf("Error setting seat non-bid: %v", err)
 	}
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
 }
@@ -357,7 +360,7 @@ func sendAuctionResponse(
 		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
 		if err != nil {
 			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
-			glog.Errorf(err.Error())
+			logger.Errorf("%v", err)
 			ao.Errors = append(ao.Errors, err)
 		} else {
 			response.Ext = ext
@@ -434,6 +437,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		errs = []error{err}
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	if limitedReqReader.N <= 0 {
 		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
@@ -454,7 +458,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
-			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
+			logger.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
 		}
 		return
 	}
@@ -502,7 +506,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
-			glog.Errorf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
+			logger.Errorf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
 		}
 		return
 	}
@@ -2174,4 +2178,29 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// processGDPR handles GDPR signal processing and policy building.
+// It returns the created privacy policy (if GDPR is enforced) and any errors encountered.
+func (deps *endpointDeps) processGDPR(req *openrtb_ext.RequestWrapper, accountGDPR config.AccountGDPR, requestType metrics.RequestType) (
+	gdpr.TCF2ConfigReader, gdpr.Signal, bool, []error) {
+
+	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, accountGDPR)
+
+	var gdprErrs []error
+
+	// Retrieve EEA countries configuration from either host or account settings
+	eeaCountries := gdpr.SelectEEACountries(deps.cfg.GDPR.EEACountries, accountGDPR.EEACountries)
+
+	// Make our best guess if GDPR applies
+	gdprDefaultValue := gdpr.ParseGDPRDefaultValue(req, deps.cfg.GDPR.DefaultValue, eeaCountries)
+	gdprSignal, err := gdpr.GetGDPR(req)
+	if err != nil {
+		gdprErrs = append(gdprErrs, err)
+	}
+
+	channelEnabled := tcf2Config.ChannelEnabled(exchange.ChannelTypeMap[requestType])
+	gdprEnforced := gdpr.EnforceGDPR(gdprSignal, gdprDefaultValue, channelEnabled)
+
+	return tcf2Config, gdprSignal, gdprEnforced, gdprErrs
 }

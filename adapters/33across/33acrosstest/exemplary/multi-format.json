@@ -8,7 +8,7 @@
           "format": [{"w": 728, "h": 90}]
         },
         "video": {
-          "w": 728, 
+          "w": 728,
           "h": 90,
           "protocols": [2],
           "playbackmethod": [2],
@@ -48,10 +48,9 @@
                 "format": [{"w": 728, "h": 90}]
               },
               "video": {
-                "w": 728, 
+                "w": 728,
                 "h": 90,
                 "protocols": [2],
-                "placement": 2,
                 "playbackmethod": [2],
                 "mimes": ["foo", "bar"]
               },
