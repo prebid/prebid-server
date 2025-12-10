@@ -1996,7 +1996,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, req
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(response); err != nil {
-		glog.Errorf("Failed to encode ORTB error response: %v", err)
+		logger.Errorf("Failed to encode ORTB error response: %v", err)
 	}
 }
 
@@ -2033,7 +2033,7 @@ func buildORTBErrorResponse(req *openrtb_ext.RequestWrapper, errs []error) *open
 	}
 	responseExtBytes, marshalErr := jsonutil.Marshal(responseExt)
 	if marshalErr != nil {
-		glog.Errorf("Failed to create response extension while building ORTB error response: %v", marshalErr)
+		logger.Errorf("Failed to create response extension while building ORTB error response: %v", marshalErr)
 	}
 	resp.Ext = responseExtBytes
 
