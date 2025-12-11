@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>stroeerCore: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/stroeerCore/stroeercore.go (84.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package stroeerCore
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type adapter struct {
+        URL    string `json:"url"`
+        Server config.Server
+}
+
+type response struct {
+        Bids []bidResponse `json:"bids"`
+}
+
+type bidResponse struct {
+        ID      string          `json:"id"`
+        BidID   string          `json:"bidId"`
+        CPM     float64         `json:"cpm"`
+        Width   int64           `json:"width"`
+        Height  int64           `json:"height"`
+        Ad      string          `json:"ad"`
+        CrID    string          `json:"crid"`
+        Mtype   string          `json:"mtype"`
+        ADomain []string        `json:"adomain,omitempty"`
+        Ext     json.RawMessage `json:"ext,omitempty"`
+        // Deprecated: The dsa will move to the bid response's ext.
+        DSA json.RawMessage `json:"dsa"`
+}
+
+func (b *bidResponse) resolveMediaType() (mt openrtb2.MarkupType, bt openrtb_ext.BidType, err error) <span class="cov8" title="1">{
+        switch b.Mtype </span>{
+        case "banner":<span class="cov8" title="1">
+                return openrtb2.MarkupBanner, openrtb_ext.BidTypeBanner, nil</span>
+        case "video":<span class="cov8" title="1">
+                return openrtb2.MarkupVideo, openrtb_ext.BidTypeVideo, nil</span>
+        default:<span class="cov8" title="1">
+                return mt, bt, fmt.Errorf("unable to determine media type for bid with id \"%s\"", b.BidID)</span>
+        }
+}
+
+func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if responseData.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Unexpected http status code: %d.", responseData.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var errors []error
+        stroeerResponse := response{}
+
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;stroeerResponse); err != nil </span><span class="cov0" title="0">{
+                errors = append(errors, err)
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(stroeerResponse.Bids))
+        bidderResponse.Currency = "EUR"
+
+        for _, bid := range stroeerResponse.Bids </span><span class="cov8" title="1">{
+                markupType, bidType, err := bid.resolveMediaType()
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("Bid media type error: %s", err.Error()),
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">openRtbBid := openrtb2.Bid{
+                        ID:      bid.ID,
+                        ImpID:   bid.BidID,
+                        W:       bid.Width,
+                        H:       bid.Height,
+                        Price:   bid.CPM,
+                        AdM:     bid.Ad,
+                        CrID:    bid.CrID,
+                        MType:   markupType,
+                        ADomain: bid.ADomain,
+                        Ext:     getBidExt(bid),
+                }
+
+                bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                        Bid:     &amp;openRtbBid,
+                        BidType: bidType,
+                })</span>
+        }
+
+        <span class="cov8" title="1">return bidderResponse, errors</span>
+}
+
+func getBidExt(bid bidResponse) json.RawMessage <span class="cov8" title="1">{
+        if bid.DSA == nil </span><span class="cov8" title="1">{
+                return bid.Ext
+        }</span>
+        <span class="cov8" title="1">extMap := map[string]json.RawMessage{}
+        if bid.Ext != nil </span><span class="cov8" title="1">{
+                _ = jsonutil.Unmarshal(bid.Ext, &amp;extMap)
+        }</span>
+        <span class="cov8" title="1">extMap["dsa"] = bid.DSA
+        ext, _ := json.Marshal(extMap)
+        return ext</span>
+}
+
+func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errors []error
+
+        for idx := range bidRequest.Imp </span><span class="cov8" title="1">{
+                imp := &amp;bidRequest.Imp[idx]
+                var bidderExt adapters.ExtImpBidder
+                if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">var stroeerExt openrtb_ext.ExtImpStroeerCore
+                if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;stroeerExt); err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">imp.TagID = stroeerExt.Sid</span>
+        }
+
+        <span class="cov8" title="1">reqJSON, err := json.Marshal(bidRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                errors = append(errors, err)
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        return []*adapters.RequestData{{
+                Method:  "POST",
+                Uri:     a.URL,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(bidRequest.Imp),
+        }}, errors</span>
+}
+
+// Builder builds a new instance of the StroeerCore adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                URL: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
