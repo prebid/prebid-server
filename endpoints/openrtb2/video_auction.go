@@ -324,6 +324,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	warnings := errortypes.WarningOnly(errL)
 
 	secGPC := r.Header.Get("Sec-GPC")
+	clientHints := extractClientHints(r)
 	auctionRequest := &exchange.AuctionRequest{
 		BidRequestWrapper:          bidReqWrapper,
 		Account:                    *account,
@@ -333,6 +334,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		LegacyLabels:               labels,
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
+		ClientHints:                clientHints,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
 		TCF2Config:                 tcf2Config,
