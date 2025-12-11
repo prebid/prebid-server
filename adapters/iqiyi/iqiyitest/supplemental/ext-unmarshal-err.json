@@ -21,7 +21,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "bad Iqiyi bidder ext",
+      "value": "error unmarshalling Iqiyi bidder params: cannot unmarshal openrtb_ext.ExtImpIqiyi.AccountID: expects \" or n, but found 1",
       "comparison": "literal"
     }
   ]

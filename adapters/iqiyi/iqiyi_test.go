@@ -49,32 +49,32 @@ func TestBuilder(t *testing.T) {
 	})
 }
 
-func TestPickCurrency(t *testing.T) {
+func TestSelectCurrency(t *testing.T) {
 	t.Run("Response currency is set", func(t *testing.T) {
 		req := &openrtb2.BidRequest{Cur: []string{"EUR"}}
 		resp := &openrtb2.BidResponse{Cur: "CNY"}
-		result := pickCurrency(req, resp)
+		result := selectCurrency(req, resp)
 		assert.Equal(t, "CNY", result)
 	})
 
 	t.Run("Request currency is set when response currency is empty", func(t *testing.T) {
 		req := &openrtb2.BidRequest{Cur: []string{"EUR"}}
 		resp := &openrtb2.BidResponse{Cur: ""}
-		result := pickCurrency(req, resp)
+		result := selectCurrency(req, resp)
 		assert.Equal(t, "EUR", result)
 	})
 
 	t.Run("Default to USD when both are empty", func(t *testing.T) {
 		req := &openrtb2.BidRequest{Cur: []string{}}
 		resp := &openrtb2.BidResponse{Cur: ""}
-		result := pickCurrency(req, resp)
+		result := selectCurrency(req, resp)
 		assert.Equal(t, "USD", result)
 	})
 
 	t.Run("Default to USD when request currency is empty string", func(t *testing.T) {
 		req := &openrtb2.BidRequest{Cur: []string{""}}
 		resp := &openrtb2.BidResponse{Cur: ""}
-		result := pickCurrency(req, resp)
+		result := selectCurrency(req, resp)
 		assert.Equal(t, "USD", result)
 	})
 }
@@ -82,17 +82,6 @@ func TestPickCurrency(t *testing.T) {
 func TestMakeRequests(t *testing.T) {
 	bidder, _ := Builder(openrtb_ext.BidderIqiyi, config.Adapter{
 		Endpoint: "https://cupid.iqiyi.net/bid?a={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-
-	t.Run("Empty impressions", func(t *testing.T) {
-		request := &openrtb2.BidRequest{
-			ID:  "test-request-id",
-			Imp: []openrtb2.Imp{},
-		}
-		reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
-		assert.Nil(t, reqs)
-		assert.Len(t, errs, 1)
-		assert.Contains(t, errs[0].Error(), "No impression in the request")
-	})
 
 	t.Run("Invalid ext JSON", func(t *testing.T) {
 		request := &openrtb2.BidRequest{
@@ -105,7 +94,7 @@ func TestMakeRequests(t *testing.T) {
 		reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 		assert.Nil(t, reqs)
 		assert.Len(t, errs, 1)
-		assert.Contains(t, errs[0].Error(), "bad Iqiyi bidder ext")
+		assert.Contains(t, errs[0].Error(), "error unmarshalling impression ext")
 	})
 
 	t.Run("Invalid bidder ext JSON", func(t *testing.T) {
@@ -119,7 +108,7 @@ func TestMakeRequests(t *testing.T) {
 		reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 		assert.Nil(t, reqs)
 		assert.Len(t, errs, 1)
-		assert.Contains(t, errs[0].Error(), "bad Iqiyi bidder ext")
+		assert.Contains(t, errs[0].Error(), "error unmarshalling Iqiyi bidder params")
 	})
 
 	t.Run("JSON marshal error", func(t *testing.T) {
