@@ -14,11 +14,17 @@ import (
 	"text/template"
 )
 
+const (
+	defaultBannerFormatIndex = 0
+	minBannerSize            = 0
+	defaultCurrency          = "USD"
+)
+
 type adapter struct {
 	endpoint *template.Template
 }
 
-func pickCurrency(req *openrtb2.BidRequest, resp *openrtb2.BidResponse) string {
+func selectCurrency(req *openrtb2.BidRequest, resp *openrtb2.BidResponse) string {
 	if resp.Cur != "" {
 		return resp.Cur
 	}
@@ -27,7 +33,7 @@ func pickCurrency(req *openrtb2.BidRequest, resp *openrtb2.BidResponse) string {
 		return req.Cur[0]
 	}
 
-	return "USD"
+	return defaultCurrency
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -53,36 +59,36 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpIqiyi) (string, err
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	if len(request.Imp) == 0 {
-		errs = append(errs, &errortypes.BadInput{Message: "No impression in the request"})
-		return nil, errs
-	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
-		errs = append(errs, &errortypes.BadInput{Message: "bad Iqiyi bidder ext"})
+		errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("error unmarshalling impression ext: %v", err)})
 		return nil, errs
 	}
 
 	var iqiyiExt openrtb_ext.ExtImpIqiyi
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &iqiyiExt); err != nil {
-		errs = append(errs, &errortypes.BadInput{Message: "bad Iqiyi bidder ext"})
+		errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("error unmarshalling Iqiyi bidder params: %v", err)})
 		return nil, errs
 	}
 
-	for i := range request.Imp {
-		imp := &request.Imp[i]
+	requestCopy := *request
+	requestCopy.Imp = make([]openrtb2.Imp, len(request.Imp))
+	copy(requestCopy.Imp, request.Imp)
+
+	for i := range requestCopy.Imp {
+		imp := &requestCopy.Imp[i]
 		if imp.Banner != nil {
-			b := *imp.Banner
-			if (b.W == nil || b.H == nil || *b.W == 0 || *b.H == 0) && len(b.Format) > 0 {
-				first := b.Format[0]
-				b.W = &first.W
-				b.H = &first.H
-				imp.Banner = &b
+			bannerCopy := *imp.Banner
+			if (bannerCopy.W == nil || bannerCopy.H == nil || *bannerCopy.W == minBannerSize || *bannerCopy.H == minBannerSize) && len(bannerCopy.Format) > defaultBannerFormatIndex {
+				first := bannerCopy.Format[defaultBannerFormatIndex]
+				bannerCopy.W = &first.W
+				bannerCopy.H = &first.H
+				imp.Banner = &bannerCopy
 			}
 		}
-		if imp.BidFloorCur == "" && imp.BidFloor > 0 {
-			imp.BidFloorCur = "USD"
+		if imp.BidFloorCur == "" && imp.BidFloor > minBannerSize {
+			imp.BidFloorCur = defaultCurrency
 		}
 	}
 
@@ -92,7 +98,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, errs
 	}
 
-	reqJson, err := json.Marshal(request)
+	reqJSON, err := json.Marshal(&requestCopy)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -105,9 +111,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     url,
-		Body:    reqJson,
+		Body:    reqJSON,
 		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}}, nil
 }
 
@@ -128,7 +134,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-	bidResponse.Currency = pickCurrency(internalRequest, &serverBidResponse)
+	bidResponse.Currency = selectCurrency(internalRequest, &serverBidResponse)
 
 	for _, seatbid := range serverBidResponse.SeatBid {
 		for i := range seatbid.Bid {
