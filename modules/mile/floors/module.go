@@ -81,14 +81,6 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 	siteUID := ""
 	country := ""
 
-	// First try to get IP from ModuleContext (passed from Entrypoint hook)
-	if moduleCtx.ModuleContext != nil {
-		if ipFromHeader, ok := moduleCtx.ModuleContext[deviceIPCtxKey].(string); ok && ipFromHeader != "" {
-			ip = ipFromHeader
-			fmt.Println("Using IP from headers (via ModuleContext):", ip)
-		}
-	}
-
 	if site, ok := req["site"].(map[string]interface{}); ok {
 		if ext, ok := site["ext"].(map[string]interface{}); ok {
 			if data, ok := ext["data"].(map[string]interface{}); ok {
@@ -119,6 +111,7 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 		fmt.Println("siteUID is empty after extraction, skipping floors injection")
 		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
 	}
+
 	siteConfig, ok := floorsConfig[siteUID]
 	if !ok {
 		// Get available config keys for debugging
@@ -135,10 +128,6 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			ua = uaStr
 		}
 
-		if ip == "" {
-			fmt.Println("ip is empty")
-		}
-
 		// Check if country is already present in device.geo.country
 		if geo, ok := device["geo"].(map[string]interface{}); ok {
 			fmt.Println("geo is", geo, "from request")
@@ -151,6 +140,14 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 
 	// Only resolve country from IP if not already present in request
 	if country == "" && f.geoResolver != nil {
+
+		// First try to get IP from ModuleContext (passed from Entrypoint hook)
+		if moduleCtx.ModuleContext != nil {
+			if ipFromHeader, ok := moduleCtx.ModuleContext[deviceIPCtxKey].(string); ok && ipFromHeader != "" {
+				ip = ipFromHeader
+				fmt.Println("Using IP from headers (via ModuleContext):", ip)
+			}
+		}
 		if ip != "" {
 			resolvedCountry, err := f.geoResolver.Resolve(ctx, ip)
 			if err != nil {
@@ -287,7 +284,6 @@ func (f *FloorsInjector) HandleBidderRequestHook(
 
 	if payload.Request != nil {
 		for _, impWrapper := range payload.Request.GetImp() {
-			fmt.Println("impWrapper is", impWrapper.BidFloor)
 			if impWrapper.BidFloor > 0 {
 				// Structure: impression_id -> bidder_name -> floor data
 				impressionFloors[impWrapper.ID] = map[string]interface{}{
