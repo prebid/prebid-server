@@ -14,6 +14,7 @@ import (
 type GlogLogger struct {
 	depth      int
 	slogLogger *slog.Logger
+	exitFunc   func(int) // allows testing Fatal without actually exiting
 }
 
 // Debug logs a debug-level message with the specified format and arguments.
@@ -50,6 +51,7 @@ func NewGlogLogger() Logger {
 	return &GlogLogger{
 		depth:      1,
 		slogLogger: slog.New(handler),
+		exitFunc:   os.Exit, // default to os.Exit, can be overridden for testing
 	}
 }
 
@@ -103,5 +105,5 @@ func (logger *GlogLogger) Fatal(msg string, args ...any) {
 // FatalContext logs at Fatal level with context using slog and terminates the program
 func (logger *GlogLogger) FatalContext(ctx context.Context, msg string, args ...any) {
 	logger.slogLogger.Log(ctx, LevelFatal, msg, args...)
-	os.Exit(1)
+	logger.exitFunc(1)
 }

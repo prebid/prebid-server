@@ -364,3 +364,74 @@ func TestGlogLogger_BothGlogAndSlogMethods(t *testing.T) {
 		logger.ErrorContext(ctx, "error with context")
 	}, "Both GlogLogger and SlogLogger methods should work on same instance")
 }
+
+func TestGlogLogger_FatalCallsExit(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger().(*GlogLogger)
+
+	// Track whether exit was called and with what code
+	exitCalled := false
+	exitCode := -1
+
+	// Override the exit function for testing
+	logger.exitFunc = func(code int) {
+		exitCalled = true
+		exitCode = code
+	}
+
+	// Call Fatal
+	logger.Fatal("fatal error message")
+
+	// Verify exit was called with code 1
+	assert.True(t, exitCalled, "Fatal should call exit function")
+	assert.Equal(t, 1, exitCode, "Fatal should exit with code 1")
+}
+
+func TestGlogLogger_FatalContextCallsExit(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger().(*GlogLogger)
+	ctx := context.Background()
+
+	// Track whether exit was called and with what code
+	exitCalled := false
+	exitCode := -1
+
+	// Override the exit function for testing
+	logger.exitFunc = func(code int) {
+		exitCalled = true
+		exitCode = code
+	}
+
+	// Call FatalContext
+	logger.FatalContext(ctx, "fatal error with context", "key", "value")
+
+	// Verify exit was called with code 1
+	assert.True(t, exitCalled, "FatalContext should call exit function")
+	assert.Equal(t, 1, exitCode, "FatalContext should exit with code 1")
+}
+
+func TestGlogLogger_FatalContextWithCustomContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger().(*GlogLogger)
+	ctx := context.WithValue(context.Background(), "requestID", "test-123")
+
+	// Track whether exit was called
+	exitCalled := false
+
+	// Override the exit function for testing
+	logger.exitFunc = func(code int) {
+		exitCalled = true
+	}
+
+	// Call FatalContext with custom context
+	logger.FatalContext(ctx, "fatal with custom context")
+
+	// Verify exit was called
+	assert.True(t, exitCalled, "FatalContext should call exit function even with custom context")
+}
