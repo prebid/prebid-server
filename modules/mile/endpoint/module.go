@@ -168,7 +168,7 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 
 	// Redis lookup
-	siteCfg, err := m.store.Get(ctx, mileReq.SiteID)
+	siteCfg, err := m.store.Get(ctx, mileReq.SiteID, mileReq.PlacementID)
 	if err != nil {
 		switch err {
 		case ErrSiteNotFound:
@@ -204,6 +204,7 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		writeError(w, http.StatusInternalServerError, "failed to encode auction request")
 		return
 	}
+	glog.V(3).Infof("mile: auction request site=%s placement=%s: %s", mileReq.SiteID, mileReq.PlacementID, string(auctionBody))
 
 	// Call auction in-process
 	auctionReq := r.Clone(ctx)

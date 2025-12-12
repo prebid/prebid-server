@@ -30,17 +30,15 @@ hooks:
 ```bash
 redis-cli SET mile:site:FKKJK '{
   "siteId":"FKKJK",
-  "publisherId":"123455",
-  "bidders":["appnexus","rubicon"],
-  "placements":{
-    "83954u44":{
-      "placementId":"83954u44",
-      "ad_unit":"banner_300x250",
-      "sizes":[[300,250]],
-      "floor":0.25,
-      "bidders":["appnexus","rubicon"],
-      "bidder_params":{"appnexus":{"placementId":123}}
-    }
+  "publisherId":123455,
+  "placement":{
+    "ad_unit":"banner_300x250",
+    "sizes":[[300,250]],
+    "floor":0.25,
+    "bidders":[
+      {"bidder":"appnexus","params":{"placementId":"123"}},
+      {"bidder":"rubicon","params":{"siteId":443328,"zoneId":3590690,"accountId":16482}}
+    ]
   },
   "siteConfig":{"page":"https://example.com/article/1"}
 }'

@@ -41,7 +41,7 @@ func transformToMileResponse(br *openrtb2.BidResponse) MileResponse {
 	for _, sb := range br.SeatBid {
 		for i := range sb.Bid {
 			b := &sb.Bid[i]
-			if b == nil || b.Price <= 0 || b.ImpID == "" {
+			if b.Price <= 0 || b.ImpID == "" {
 				continue
 			}
 			key := bidKey{impID: b.ImpID}

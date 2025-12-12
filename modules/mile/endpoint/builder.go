@@ -3,6 +3,8 @@ package endpoint
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -10,25 +12,19 @@ import (
 )
 
 var (
-	errMissingPlacement = errors.New("placement not found for site")
-	errNoBidders        = errors.New("no bidders configured for placement")
-	errNoSizes          = errors.New("no sizes configured for placement")
+	errNoBidders = errors.New("no bidders configured for placement")
+	errNoSizes   = errors.New("no sizes configured for placement")
 )
+
+var knownBidders = openrtb_ext.BuildBidderMap()
 
 func buildOpenRTBRequest(req MileRequest, site *SiteConfig) (*openrtb2.BidRequest, error) {
 	if site == nil {
 		return nil, ErrSiteNotFound
 	}
-	placement, ok := site.Placements[req.PlacementID]
-	if !ok {
-		return nil, errMissingPlacement
-	}
+	placement := site.Placement
 
-	bidders := placement.Bidders
-	if len(bidders) == 0 {
-		bidders = site.Bidders
-	}
-	if len(bidders) == 0 {
+	if len(placement.Bidders) == 0 {
 		return nil, errNoBidders
 	}
 
@@ -36,7 +32,7 @@ func buildOpenRTBRequest(req MileRequest, site *SiteConfig) (*openrtb2.BidReques
 		return nil, errNoSizes
 	}
 
-	pubID := site.PublisherID
+	pubID := site.PublisherID.String()
 	if pubID == "" {
 		pubID = req.PublisherID
 	}
@@ -57,21 +53,22 @@ func buildOpenRTBRequest(req MileRequest, site *SiteConfig) (*openrtb2.BidReques
 		},
 		Imp: []openrtb2.Imp{
 			{
-				ID:    placement.PlacementID,
+				ID:    req.PlacementID,
 				TagID: placement.AdUnit,
 			},
 		},
 	}
 
+	var aliases map[string]string
 	if placement.StoredRequest != "" {
-		ortb.Imp[0].Ext = buildImpExt(bidders, placement, req.CustomData, placement.StoredRequest)
+		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, placement.StoredRequest)
 	} else {
-		ortb.Imp[0].Ext = buildImpExt(bidders, placement, req.CustomData, "")
+		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, "")
 		ortb.Imp[0].Banner = buildBanner(placement.Sizes)
 		ortb.Imp[0].BidFloor = placement.Floor
 	}
 
-	reqExt := buildRequestExt(site.Ext)
+	reqExt := buildRequestExt(site.Ext, aliases)
 	if len(reqExt) > 0 {
 		ortb.Ext = reqExt
 	}
@@ -96,17 +93,29 @@ func buildBanner(sizes [][]int) *openrtb2.Banner {
 	return &openrtb2.Banner{Format: formats}
 }
 
-func buildImpExt(bidders []string, placement PlacementConfig, customData []CustomData, storedRequest string) json.RawMessage {
+func buildImpExt(placement PlacementConfig, customData []CustomData, storedRequest string) (json.RawMessage, map[string]string) {
 	prebid := openrtb_ext.ExtImpPrebid{
-		Bidder: make(map[string]json.RawMessage, len(bidders)),
+		Bidder: make(map[string]json.RawMessage, len(placement.Bidders)),
 	}
 
-	for _, bidder := range bidders {
-		if params, ok := placement.BidderParams[bidder]; ok && len(params) > 0 {
-			prebid.Bidder[bidder] = params
+	aliases := make(map[string]string)
+
+	for _, b := range placement.Bidders {
+		bidderName := b.Bidder
+		baseName := bidderName
+		if strings.HasSuffix(bidderName, "_server") {
+			baseName = strings.TrimSuffix(bidderName, "_server")
+			aliases[bidderName] = baseName
+		}
+		// Skip bidders that aren't known to PBS core. This prevents schema validation errors.
+		if _, ok := knownBidders[baseName]; !ok {
 			continue
 		}
-		prebid.Bidder[bidder] = json.RawMessage(`{}`)
+		if len(b.Params) > 0 {
+			prebid.Bidder[bidderName] = normalizeBidderParams(bidderName, b.Params)
+		} else {
+			prebid.Bidder[bidderName] = json.RawMessage(`{}`)
+		}
 	}
 
 	if len(customData) > 0 {
@@ -139,12 +148,12 @@ func buildImpExt(bidders []string, placement PlacementConfig, customData []Custo
 
 	rawExt, err := json.Marshal(extMap)
 	if err != nil {
-		return nil
+		return nil, aliases
 	}
-	return rawExt
+	return rawExt, aliases
 }
 
-func buildRequestExt(siteExt map[string]json.RawMessage) json.RawMessage {
+func buildRequestExt(siteExt map[string]json.RawMessage, aliases map[string]string) json.RawMessage {
 	priceGranularity := openrtb_ext.NewPriceGranularityDefault()
 	prebid := &openrtb_ext.ExtRequestPrebid{
 		Targeting: &openrtb_ext.ExtRequestTargeting{
@@ -152,6 +161,9 @@ func buildRequestExt(siteExt map[string]json.RawMessage) json.RawMessage {
 			IncludeBidderKeys: boolPtr(true),
 			IncludeWinners:    boolPtr(true),
 		},
+	}
+	if len(aliases) > 0 {
+		prebid.Aliases = aliases
 	}
 
 	ext := map[string]any{
@@ -183,4 +195,40 @@ func readString(m map[string]any, key string) string {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+// normalizeBidderParams fixes known type mismatches to satisfy bidder schemas.
+// Example: medianet requires string values for cid/crid; Redis may store them as numbers.
+func normalizeBidderParams(bidder string, params json.RawMessage) json.RawMessage {
+	if len(params) == 0 {
+		return params
+	}
+	if !strings.HasPrefix(bidder, "medianet") {
+		return params
+	}
+
+	var m map[string]any
+	if err := json.Unmarshal(params, &m); err != nil {
+		return params
+	}
+
+	coerceString := func(key string) {
+		if v, ok := m[key]; ok {
+			switch t := v.(type) {
+			case float64:
+				m[key] = fmt.Sprintf("%.0f", t)
+			case json.Number:
+				m[key] = t.String()
+			}
+		}
+	}
+
+	coerceString("cid")
+	coerceString("crid")
+
+	raw, err := json.Marshal(m)
+	if err != nil {
+		return params
+	}
+	return raw
 }

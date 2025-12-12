@@ -13,10 +13,10 @@ Expose `POST /mile/v1/request` as a thin adapter-facing shim. It validates Mile 
 1. Accept JSON (Content-Type: application/json), enforce configured body limit.
 2. Validate required fields and optional header token.
 3. Lookup `mile:site:{siteId}` in Redis; return 404 on miss, 502 on backend errors.
-4. Merge placement + site config → OpenRTB request:
+4. Merge placement config → OpenRTB request:
    - `site.id/publisher.id` from Redis (fallback to request.publisherId).
-   - `imp.id/tagid` from placement; banner formats from `sizes`; `bidfloor` from config.
-   - `imp.ext.prebid.bidder` per placement/site bidder list with bidder params.
+   - `imp.id` from request.placementId; `tagid` from placement.ad_unit; banner formats from `sizes`; `bidfloor` from config.
+   - `imp.ext.prebid.bidder` from placement bidders array with inline params.
    - `imp.ext.prebid.passthrough` carries `customData`; optional stored request id supported.
    - `req.ext.prebid.targeting` defaults to medium price granularity.
 5. Run `Before` hook (may mutate OpenRTB request).
@@ -30,19 +30,15 @@ Value example:
 ```json
 {
   "siteId": "FKKJK",
-  "publisherId": "123455",
-  "bidders": ["appnexus", "rubicon"],
-  "placements": {
-    "83954u44": {
-      "placementId": "83954u44",
-      "ad_unit": "banner_300x250",
-      "sizes": [[300,250]],
-      "floor": 0.25,
-      "bidders": ["appnexus", "rubicon"],
-      "bidder_params": {
-        "appnexus": {"placementId": 123}
-      }
-    }
+  "publisherId": 123455,
+  "placement": {
+    "ad_unit": "banner_300x250",
+    "sizes": [[300,250]],
+    "floor": 0.25,
+    "bidders": [
+      {"bidder": "appnexus", "params": {"placementId": "123"}},
+      {"bidder": "rubicon", "params": {"siteId": 443328, "zoneId": 3590690, "accountId": 16482}}
+    ]
   },
   "siteConfig": {"page": "https://example.com/article/1"}
 }

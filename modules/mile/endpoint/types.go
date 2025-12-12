@@ -29,21 +29,24 @@ type CustomData struct {
 // SiteConfig represents the Redis-stored schema for a Mile site.
 type SiteConfig struct {
 	SiteID       string                     `json:"siteId"`
-	PublisherID  string                     `json:"publisherId"`
-	Bidders      []string                   `json:"bidders,omitempty"`
-	Placements   map[string]PlacementConfig `json:"placements"`
+	PublisherID  json.Number                `json:"publisherId"`
+	Placement    PlacementConfig            `json:"placement"`
 	SiteMetadata map[string]any             `json:"siteConfig,omitempty"`
 	Ext          map[string]json.RawMessage `json:"ext,omitempty"`
 }
 
+// PlacementBidder represents a bidder configuration with its params.
+type PlacementBidder struct {
+	Bidder string          `json:"bidder"`
+	Params json.RawMessage `json:"params,omitempty"`
+}
+
 // PlacementConfig binds a placement to bidders and bidder params.
 type PlacementConfig struct {
-	PlacementID   string                     `json:"placementId"`
 	AdUnit        string                     `json:"ad_unit,omitempty"`
 	Sizes         [][]int                    `json:"sizes,omitempty"`
 	Floor         float64                    `json:"floor,omitempty"`
-	Bidders       []string                   `json:"bidders,omitempty"`
-	BidderParams  map[string]json.RawMessage `json:"bidder_params,omitempty"`
+	Bidders       []PlacementBidder          `json:"bidders,omitempty"`
 	Ext           map[string]json.RawMessage `json:"ext,omitempty"`
 	MediaTypes    map[string]json.RawMessage `json:"media_types,omitempty"`
 	Passthrough   map[string]json.RawMessage `json:"passthrough,omitempty"`
@@ -52,7 +55,7 @@ type PlacementConfig struct {
 
 // SiteStore fetches per-site configuration (backed by Redis in production).
 type SiteStore interface {
-	Get(ctx context.Context, siteID string) (*SiteConfig, error)
+	Get(ctx context.Context, siteID, placementID string) (*SiteConfig, error)
 	Close() error
 }
 

@@ -19,7 +19,7 @@ type mockStore struct {
 	err   error
 }
 
-func (m *mockStore) Get(ctx context.Context, siteID string) (*SiteConfig, error) {
+func (m *mockStore) Get(ctx context.Context, siteID, _ string) (*SiteConfig, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -101,9 +101,12 @@ func TestModuleHandle(t *testing.T) {
 			"FKKJK": {
 				SiteID:      "FKKJK",
 				PublisherID: "12345",
-				Bidders:     []string{"appnexus"},
-				Placements: map[string]PlacementConfig{
-					"p1": {PlacementID: "p1", Sizes: [][]int{{300, 250}}, Floor: 0.1},
+				Placement: PlacementConfig{
+					Sizes: [][]int{{300, 250}},
+					Floor: 0.1,
+					Bidders: []PlacementBidder{
+						{Bidder: "appnexus", Params: json.RawMessage(`{"placementId": "123"}`)},
+					},
 				},
 			},
 		},
@@ -179,9 +182,12 @@ func TestModuleHandleHooks(t *testing.T) {
 			"FKKJK": {
 				SiteID:      "FKKJK",
 				PublisherID: "12345",
-				Bidders:     []string{"appnexus"},
-				Placements: map[string]PlacementConfig{
-					"p1": {PlacementID: "p1", Sizes: [][]int{{300, 250}}, Floor: 0.1},
+				Placement: PlacementConfig{
+					Sizes: [][]int{{300, 250}},
+					Floor: 0.1,
+					Bidders: []PlacementBidder{
+						{Bidder: "appnexus", Params: json.RawMessage(`{}`)},
+					},
 				},
 			},
 		},
@@ -388,9 +394,11 @@ func TestModuleHandleAuthToken(t *testing.T) {
 			"FKKJK": {
 				SiteID:      "FKKJK",
 				PublisherID: "12345",
-				Bidders:     []string{"appnexus"},
-				Placements: map[string]PlacementConfig{
-					"p1": {PlacementID: "p1", Sizes: [][]int{{300, 250}}},
+				Placement: PlacementConfig{
+					Sizes: [][]int{{300, 250}},
+					Bidders: []PlacementBidder{
+						{Bidder: "appnexus", Params: json.RawMessage(`{}`)},
+					},
 				},
 			},
 		},

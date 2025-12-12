@@ -52,7 +52,7 @@ func NewRedisSiteStore(cfg *Config) (*RedisSiteStore, error) {
 }
 
 // Get retrieves the site configuration JSON and unmarshals it.
-func (s *RedisSiteStore) Get(ctx context.Context, siteID string) (*SiteConfig, error) {
+func (s *RedisSiteStore) Get(ctx context.Context, siteID, placementID string) (*SiteConfig, error) {
 	if siteID == "" {
 		return nil, fmt.Errorf("site id is required")
 	}
@@ -60,12 +60,20 @@ func (s *RedisSiteStore) Get(ctx context.Context, siteID string) (*SiteConfig, e
 	readCtx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
-	key := fmt.Sprintf(s.keyTemplate, siteID)
-	val, err := s.client.Get(readCtx, key).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return nil, ErrSiteNotFound
+	// Primary: new composite key mile:site:{siteId}|plcmt:{placementId}
+	primaryKey := fmt.Sprintf("mile:site:%s|plcmt:%s", siteID, placementID)
+	val, err := s.client.Get(readCtx, primaryKey).Result()
+	if err == redis.Nil {
+		// Fallback to legacy key mile:site:{siteId}
+		legacyKey := fmt.Sprintf(s.keyTemplate, siteID)
+		val, err = s.client.Get(readCtx, legacyKey).Result()
+		if err != nil {
+			if err == redis.Nil {
+				return nil, ErrSiteNotFound
+			}
+			return nil, fmt.Errorf("redis get failed: %w", err)
 		}
+	} else if err != nil {
 		return nil, fmt.Errorf("redis get failed: %w", err)
 	}
 
