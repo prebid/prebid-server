@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"flag"
 	"testing"
 
@@ -19,6 +20,7 @@ func TestNewGlogLogger(t *testing.T) {
 	glogLogger, ok := logger.(*GlogLogger)
 	assert.True(t, ok, "Logger should be of type *GlogLogger")
 	assert.Equal(t, 1, glogLogger.depth, "Default depth should be 1")
+	assert.NotNil(t, glogLogger.slogLogger, "slogLogger field should be initialized")
 }
 
 func TestGlogLogger_ImplementsLoggerInterface(t *testing.T) {
@@ -168,4 +170,197 @@ func TestGlogLogger_SpecialCharacters(t *testing.T) {
 	assert.NotPanics(t, func() {
 		logger.Infof("message with special chars: \n\t\"quotes\" and 'apostrophes'")
 	}, "Messages with special characters should not panic")
+}
+
+// Tests for StructuredLogger interface implementation on GlogLogger
+
+func TestGlogLogger_SlogDebug(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Debug("debug message")
+	}, "Debug should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Debug("debug with args", "key", "value", "number", 42)
+	}, "Debug with args should not panic")
+}
+
+func TestGlogLogger_SlogDebugContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.DebugContext(ctx, "debug with context")
+	}, "DebugContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.DebugContext(ctx, "debug context with args", "key", "value")
+	}, "DebugContext with args should not panic")
+}
+
+func TestGlogLogger_SlogInfo(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Info("info message")
+	}, "Info should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Info("info with args", "status", "ok")
+	}, "Info with args should not panic")
+}
+
+func TestGlogLogger_SlogInfoContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+	ctx := context.WithValue(context.Background(), "requestID", "12345")
+
+	assert.NotPanics(t, func() {
+		logger.InfoContext(ctx, "info with context")
+	}, "InfoContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.InfoContext(ctx, "info with context and args", "component", "test")
+	}, "InfoContext with args should not panic")
+}
+
+func TestGlogLogger_SlogWarn(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Warn("warning message")
+	}, "Warn should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Warn("warning with args", "severity", "medium")
+	}, "Warn with args should not panic")
+}
+
+func TestGlogLogger_SlogWarnContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.WarnContext(ctx, "warning with context")
+	}, "WarnContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.WarnContext(ctx, "warning with context", "severity", "medium")
+	}, "WarnContext with args should not panic")
+}
+
+func TestGlogLogger_SlogError(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Error("error message")
+	}, "Error should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Error("error with details", "code", 500, "err", "internal error")
+	}, "Error with args should not panic")
+}
+
+func TestGlogLogger_SlogErrorContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.ErrorContext(ctx, "error with context")
+	}, "ErrorContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.ErrorContext(ctx, "error with context", "component", "api")
+	}, "ErrorContext with args should not panic")
+}
+
+func TestGlogLogger_SlogAllLevels(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	// Test that all slog logging levels work together
+	assert.NotPanics(t, func() {
+		logger.Debug("debug")
+		logger.DebugContext(ctx, "debug context")
+		logger.Info("info")
+		logger.InfoContext(ctx, "info context")
+		logger.Warn("warn")
+		logger.WarnContext(ctx, "warn context")
+		logger.Error("error")
+		logger.ErrorContext(ctx, "error context")
+	}, "All slog logging levels should work without panic")
+}
+
+func TestGlogLogger_SlogWithVariousContexts(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	// Test with different context types
+	ctxWithValue := context.WithValue(context.Background(), "requestID", "abc123")
+	ctxBackground := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.InfoContext(ctxWithValue, "with value context")
+		logger.InfoContext(ctxBackground, "with background context")
+	}, "Different context types should work")
+}
+
+func TestGlogLogger_BothGlogAndSlogMethods(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	// Test that both old-style (Debugf, Infof) and new-style (Debug, Info) methods work
+	assert.NotPanics(t, func() {
+		logger.Debugf("debug formatted")
+		logger.Debug("debug structured")
+		logger.DebugContext(ctx, "debug with context")
+
+		logger.Infof("info formatted: %s", "test")
+		logger.Info("info structured", "key", "value")
+		logger.InfoContext(ctx, "info with context")
+
+		logger.Warnf("warn formatted")
+		logger.Warn("warn structured")
+		logger.WarnContext(ctx, "warn with context")
+
+		logger.Errorf("error formatted: %v", "error")
+		logger.Error("error structured", "err", "error")
+		logger.ErrorContext(ctx, "error with context")
+	}, "Both GlogLogger and SlogLogger methods should work on same instance")
 }
