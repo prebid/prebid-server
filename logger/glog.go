@@ -48,6 +48,22 @@ func NewGlogLogger() Logger {
 		Level: slog.LevelDebug, // Allow all levels, glog will handle filtering
 	})
 
+	// Customize the level-to-prefix mapping to support "F" for Fatal level
+	handler.ReplaceLevelString = func(l slog.Level) string {
+		switch {
+		case l < slog.LevelInfo:
+			return "D" // Debug
+		case l < slog.LevelWarn:
+			return "I" // Info
+		case l < slog.LevelError:
+			return "W" // Warn
+		case l < LevelFatal:
+			return "E" // Error
+		default:
+			return "F" // Fatal (for LevelFatal and above)
+		}
+	}
+
 	return &GlogLogger{
 		depth:      1,
 		slogLogger: slog.New(handler),
