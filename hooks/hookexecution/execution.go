@@ -71,40 +71,45 @@ func executeGroup[H any, P any](
 	rejected := make(chan struct{})
 	resp := make(chan hookResponse[P], len(group.Hooks))
 
-	// For concurrent stages (bidder request/response), hold read lock
-	// for the entire duration that goroutines are executing to prevent
-	// concurrent writes to moduleContexts map
-	if executionCtx.holdReadLock && executionCtx.moduleContexts != nil {
-		executionCtx.moduleContexts.RLock()
-		defer executionCtx.moduleContexts.RUnlock()
-	}
-
-	for _, hook := range group.Hooks {
-		var mCtx hookstage.ModuleInvocationContext
-
-		if executionCtx.holdReadLock {
-			// Lock already held, use lockless accessor
-			mCtx = executionCtx.getModuleContextLocked(hook.Module)
-		} else {
-			// Normal case: acquire and release lock per hook
-			mCtx = executionCtx.getModuleContext(hook.Module)
+	// For concurrent stages (bidder request/response), spawn goroutines
+	// and collect responses within a scoped lock to prevent concurrent
+	// map access to moduleContexts
+	hookResponses := func() []hookResponse[P] {
+		// Hold read lock for the duration that goroutines are spawned and executing
+		if executionCtx.holdReadLock && executionCtx.moduleContexts != nil {
+			executionCtx.moduleContexts.RLock()
+			defer executionCtx.moduleContexts.RUnlock()
 		}
 
-		mCtx.HookImplCode = hook.Code
-		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
-		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
-			defer wg.Done()
-			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
-		}(hook, mCtx)
-	}
+		for _, hook := range group.Hooks {
+			var mCtx hookstage.ModuleInvocationContext
 
-	go func() {
-		wg.Wait()
-		close(resp)
+			if executionCtx.holdReadLock {
+				// Lock already held, use lockless accessor
+				mCtx = executionCtx.getModuleContextLocked(hook.Module)
+			} else {
+				// Normal case: acquire and release lock per hook
+				mCtx = executionCtx.getModuleContext(hook.Module)
+			}
+
+			mCtx.HookImplCode = hook.Code
+			newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
+			wg.Add(1)
+			go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
+				defer wg.Done()
+				executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
+			}(hook, mCtx)
+		}
+
+		go func() {
+			wg.Wait()
+			close(resp)
+		}()
+
+		// Collect responses while lock is still held (goroutines are executing)
+		return collectHookResponses(resp, rejected)
 	}()
-
-	hookResponses := collectHookResponses(resp, rejected)
+	// Lock is now released - goroutines have completed
 
 	return handleHookResponses(executionCtx, hookResponses, payload, metricEngine)
 }
