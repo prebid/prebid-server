@@ -34,7 +34,7 @@ func (ctx executionContext) getModuleContext(moduleName string) hookstage.Module
 	if ctx.account != nil {
 		cfg, err := ctx.account.Hooks.Modules.ModuleConfig(moduleName)
 		if err != nil {
-			logger.Warnf("Failed to get account config for %s module: %s", moduleName, err)
+			logger.Warnf("Failed to get account config for %s module: %v", moduleName, err)
 		}
 
 		moduleInvocationCtx.AccountID = ctx.accountID
@@ -59,7 +59,7 @@ func (ctx executionContext) getModuleContextLocked(moduleName string) hookstage.
 	if ctx.account != nil {
 		cfg, err := ctx.account.Hooks.Modules.ModuleConfig(moduleName)
 		if err != nil {
-			logger.Warnf("Failed to get account config for %s module: %s", moduleName, err)
+			logger.Warnf("Failed to get account config for %s module: %v", moduleName, err)
 		}
 
 		moduleInvocationCtx.AccountID = ctx.accountID
