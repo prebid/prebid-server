@@ -7,6 +7,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
@@ -16,6 +17,14 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 
 	var events []MileAnalyticsEvent
 	if ao != nil {
+		// Extract floor metadata from hook execution outcomes
+		floorMetadata := extractFloorMetadataFromHooks(ao.HookExecutionOutcome)
+		fmt.Println("floorMetadata is", floorMetadata)
+
+		// Extract bidder-specific floors from hook execution outcomes
+		bidderFloors := extractBidderFloorsFromHooks(ao.HookExecutionOutcome)
+		fmt.Println("bidderFloors is", bidderFloors)
+
 		if ao.RequestWrapper != nil {
 			for _, imp := range ao.RequestWrapper.Imp {
 
@@ -23,6 +32,34 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 				var winningBidder, winningSize string
 				var winningPrice float64 = 0
 				biddersFloorMap := make(map[string]string)
+
+				// First, get configured bidders and initialize floor map with request floor
+				var confBidders ImpressionsExt
+				//if ao.RequestWrapper != nil {
+				err := json.Unmarshal(imp.Ext, &confBidders)
+				if err != nil {
+					return nil, err
+					//}
+				}
+				configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
+				i := 0
+				for k := range confBidders.Prebid.Bidder {
+					configuredBidders[i] = k
+
+					// Try to get bidder-specific floor from hooks first
+					if impFloors, hasImpFloors := bidderFloors[imp.ID]; hasImpFloors {
+						if floorVal, hasBidderFloor := impFloors[k]; hasBidderFloor {
+							biddersFloorMap[k] = fmt.Sprintf("%f", floorVal)
+						} else if imp.BidFloor > 0 {
+							// Fallback to request floor if bidder-specific floor not available from hooks
+							biddersFloorMap[k] = fmt.Sprintf("%f", imp.BidFloor)
+						}
+					} else if imp.BidFloor > 0 {
+						// Fallback to request floor if bidder-specific floor not available
+						biddersFloorMap[k] = fmt.Sprintf("%f", imp.BidFloor)
+					}
+					i++
+				}
 
 				if ao.Response != nil {
 					if ao.Response.SeatBid != nil {
@@ -38,7 +75,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 										//winningSize = bid.Ext.
 									}
 
-									// Extract floor value from bid response
+									// Override with floor value from bid response if available
 									if bid.Ext != nil {
 										var extBid openrtb_ext.ExtBid
 										if err := json.Unmarshal(bid.Ext, &extBid); err == nil {
@@ -52,20 +89,6 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 						}
 					}
 				}
-
-				var confBidders ImpressionsExt
-				//if ao.RequestWrapper != nil {
-				err := json.Unmarshal(imp.Ext, &confBidders)
-				if err != nil {
-					return nil, err
-					//}
-				}
-				configuredBidders := make([]string, len(confBidders.Prebid.Bidder))
-				i := 0
-				for k := range confBidders.Prebid.Bidder {
-					configuredBidders[i] = k
-					i++
-				}
 				var respExt RespExt
 				err = json.Unmarshal(ao.Response.Ext, &respExt)
 				if err != nil {
@@ -73,6 +96,25 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 				}
 
 				if ao.RequestWrapper != nil {
+
+					// Build metadata from floor metadata extracted from hooks
+					metadata := map[string][]string{
+						"prebid_server": []string{"1"},
+					}
+					// Add floor metadata (site_uid, country, platform, floor_url)
+					for k, v := range floorMetadata {
+						if strVal, ok := v.(string); ok {
+							metadata[k] = []string{strVal}
+						}
+					}
+
+					// Add floor values for each SSP per impression from bidderFloors
+					if sspFloors, hasImpFloors := bidderFloors[imp.ID]; hasImpFloors {
+						for sspName, floorVal := range sspFloors {
+							metadataKey := fmt.Sprintf("floor_%s", sspName)
+							metadata[metadataKey] = []string{fmt.Sprintf("%f", floorVal)}
+						}
+					}
 
 					logEntry := MileAnalyticsEvent{
 						//SessionID: ao.RequestWrapper
@@ -101,10 +143,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 						WinningSize:       winningSize,
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
 						FloorPrice:        imp.BidFloor,
-						MetaData: map[string][]string{
-							"prebid_server": {"1"},
-							"amp":           {"1"},
-						},
+						MetaData:          metadata,
 						BiddersFloorMeta: map[string]map[string]string{
 							"prebid_server": biddersFloorMap,
 						},
@@ -150,6 +189,12 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 
 	var events []MileAnalyticsEvent
 	if ao != nil {
+		// Extract floor metadata from hook execution outcomes
+		floorMetadata := extractFloorMetadataFromHooks(ao.HookExecutionOutcome)
+
+		// Extract bidder-specific floors from hook execution outcomes
+		bidderFloors := extractBidderFloorsFromHooks(ao.HookExecutionOutcome)
+
 		if ao.RequestWrapper != nil {
 			for _, imp := range ao.RequestWrapper.Imp {
 
@@ -165,6 +210,34 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 				var winningBidder, winningSize string
 				var winningPrice float64 = 0.0
 				biddersFloorMap := make(map[string]string)
+
+				// First, get configured bidders and initialize floor map with request floor
+				var impExt ImpressionsExt
+				//if ao.RequestWrapper != nil {
+				err := json.Unmarshal(imp.Ext, &impExt)
+				if err != nil {
+					return nil, err
+					//}
+				}
+				configuredBidders := make([]string, len(impExt.Prebid.Bidder))
+				i := 0
+				for k := range impExt.Prebid.Bidder {
+					configuredBidders[i] = k
+
+					// Try to get bidder-specific floor from hooks first
+					if impFloors, hasImpFloors := bidderFloors[imp.ID]; hasImpFloors {
+						if floorVal, hasBidderFloor := impFloors[k]; hasBidderFloor {
+							biddersFloorMap[k] = fmt.Sprintf("%f", floorVal)
+						} else if imp.BidFloor > 0 {
+							// Fallback to request floor if bidder-specific floor not available from hooks
+							biddersFloorMap[k] = fmt.Sprintf("%f", imp.BidFloor)
+						}
+					} else if imp.BidFloor > 0 {
+						// Fallback to request floor if bidder-specific floor not available
+						biddersFloorMap[k] = fmt.Sprintf("%f", imp.BidFloor)
+					}
+					i++
+				}
 
 				// Evaluate bids
 				if ao.AuctionResponse != nil {
@@ -186,7 +259,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 										//winningSize = bid.Ext.
 									}
 
-									// Extract floor value from bid response
+									// Override with floor value from bid response if available
 									if bid.Ext != nil {
 										var extBid openrtb_ext.ExtBid
 										if err := json.Unmarshal(bid.Ext, &extBid); err == nil {
@@ -199,20 +272,6 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 							}
 						}
 					}
-				}
-
-				var impExt ImpressionsExt
-				//if ao.RequestWrapper != nil {
-				err := json.Unmarshal(imp.Ext, &impExt)
-				if err != nil {
-					return nil, err
-					//}
-				}
-				configuredBidders := make([]string, len(impExt.Prebid.Bidder))
-				i := 0
-				for k := range impExt.Prebid.Bidder {
-					configuredBidders[i] = k
-					i++
 				}
 
 				var noBidBidders []string
@@ -236,6 +295,26 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 				}
 
 				if ao.RequestWrapper != nil {
+
+					// Build metadata from floor metadata extracted from hooks
+					metadata := map[string][]string{
+						"prebid_server": []string{"1"},
+						"amp":           []string{"1"},
+					}
+					// Add floor metadata (site_uid, country, platform, floor_url)
+					for k, v := range floorMetadata {
+						if strVal, ok := v.(string); ok {
+							metadata[k] = []string{strVal}
+						}
+					}
+
+					// Add floor values for each SSP per impression from bidderFloors
+					if sspFloors, hasImpFloors := bidderFloors[imp.ID]; hasImpFloors {
+						for sspName, floorVal := range sspFloors {
+							metadataKey := fmt.Sprintf("floor_%s", sspName)
+							metadata[metadataKey] = []string{fmt.Sprintf("%f", floorVal)}
+						}
+					}
 
 					logEntry := MileAnalyticsEvent{
 						//SessionID: ao.RequestWrapper
@@ -270,10 +349,7 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
 						ResponseTimes:     respExt.ResponseTimeMillis,
 						FloorPrice:        imp.BidFloor,
-						MetaData: map[string][]string{
-							"prebid_server": {"1"},
-							"amp":           {"1"},
-						},
+						MetaData:          metadata,
 						BiddersFloorMeta: map[string]map[string]string{
 							"prebid_server": biddersFloorMap,
 						},
@@ -338,4 +414,79 @@ func JsonifySetUIDObject(so *analytics.SetUIDObject, scope string) (*MileAnalyti
 	}
 	return logEntry, nil
 
+}
+
+// extractFloorMetadataFromHooks extracts floor-related data from hook execution outcomes
+func extractFloorMetadataFromHooks(outcomes []hookexecution.StageOutcome) map[string]interface{} {
+	metadata := make(map[string]interface{})
+
+	for _, stageOutcome := range outcomes {
+		for _, group := range stageOutcome.Groups {
+			for _, invocation := range group.InvocationResults {
+				// Look for floor-injection activity from mile.floors module
+				if invocation.HookID.ModuleCode == "mile.floors" {
+					for _, activity := range invocation.AnalyticsTags.Activities {
+						if activity.Name == "floor-injection" {
+							for _, result := range activity.Results {
+								if result.Values != nil {
+									// Merge values into metadata
+									for k, v := range result.Values {
+										metadata[k] = v
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return metadata
+}
+
+// extractBidderFloorsFromHooks extracts bidder-specific floor values from hook execution outcomes
+// Returns map[impression_id] -> map[bidder] -> floor_value
+func extractBidderFloorsFromHooks(outcomes []hookexecution.StageOutcome) map[string]map[string]float64 {
+	// Map of impression_id -> bidder -> floor value
+	impressionBidderFloors := make(map[string]map[string]float64)
+
+	for _, stageOutcome := range outcomes {
+		for _, group := range stageOutcome.Groups {
+			for _, invocation := range group.InvocationResults {
+				// Look for bidder-floors activity from mile.floors module
+				if invocation.HookID.ModuleCode == "mile.floors" {
+					for _, activity := range invocation.AnalyticsTags.Activities {
+						if activity.Name == "bidder-floors" {
+							for _, result := range activity.Results {
+								if result.Values != nil && result.AppliedTo.Bidder != "" {
+									// result.Values is map[impression_id] -> map[bidder] -> {floor, currency}
+									for impID, bidderData := range result.Values {
+										// impID is already a string key from the map
+										// Initialize impression map if needed
+										if _, exists := impressionBidderFloors[impID]; !exists {
+											impressionBidderFloors[impID] = make(map[string]float64)
+										}
+
+										// Extract bidder floor data
+										if bidderMap, ok := bidderData.(map[string]interface{}); ok {
+											for bidderName, floorData := range bidderMap {
+												if floorMap, ok := floorData.(map[string]interface{}); ok {
+													if floorVal, ok := floorMap["floor"].(float64); ok {
+														impressionBidderFloors[impID][bidderName] = floorVal
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return impressionBidderFloors
 }

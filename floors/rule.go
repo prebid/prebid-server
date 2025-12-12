@@ -248,7 +248,6 @@ func CreateRuleKeyWithSSP(floorSchema openrtb_ext.PriceFloorSchema, request *ope
 			value = getMediaType(imp.Imp)
 		case Size:
 			value = getSizeValue(imp.Imp)
-			fmt.Println("value", value)
 		case Domain:
 			value = getDomain(request)
 		case SiteDomain:
@@ -281,14 +280,12 @@ func CreateRuleKeyWithSSP(floorSchema openrtb_ext.PriceFloorSchema, request *ope
 }
 
 func getGPID(imp *openrtb_ext.ImpWrapper) string {
-
-	impExt, err := imp.GetImpExt()
-	if err == nil && impExt != nil {
-		prebidExt := impExt.GetPrebid()
-		if prebidExt != nil && prebidExt.AdUnitCode != "" {
-			return prebidExt.AdUnitCode
-		}
-		return imp.ID
+	impext, err := imp.GetImpExt()
+	if err != nil {
+		return ""
+	}
+	if impext != nil {
+		return impext.GetGpId()
 	}
 	return ""
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/mile/common"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
@@ -66,99 +67,133 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 	payload hookstage.RawAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 
+	// Parse the incoming OpenRTB request FIRST to extract values for analytics
+	var req map[string]interface{}
+	if err := json.Unmarshal(payload, &req); err != nil {
+		fmt.Println("Unmarshal failed:", err)
+		// If unmarshal fails, return original payload (fail open)
+		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, err
+	}
+
+	// Extract values needed for analytics and mutation
+	ip := ""
+	ua := ""
+	siteUID := ""
+	country := ""
+
+	if site, ok := req["site"].(map[string]interface{}); ok {
+		if ext, ok := site["ext"].(map[string]interface{}); ok {
+			if data, ok := ext["data"].(map[string]interface{}); ok {
+				if siteUIDVal, exists := data["site_uid"]; exists {
+					siteUID, ok = siteUIDVal.(string)
+					if !ok {
+						fmt.Println("site_uid is not a string, got type:", fmt.Sprintf("%T", siteUIDVal), "value:", siteUIDVal, ", skipping floors injection")
+						return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+					}
+				} else {
+					fmt.Println("site_uid key not found in site.ext.data, skipping floors injection")
+					return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+				}
+			} else {
+				fmt.Println("site.ext.data not found, skipping floors injection")
+				return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+			}
+		} else {
+			fmt.Println("site.ext not found, skipping floors injection")
+			return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+		}
+	} else {
+		fmt.Println("site not found in request, skipping floors injection")
+		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+	}
+	fmt.Println("siteID is", siteUID)
+	if siteUID == "" {
+		fmt.Println("siteUID is empty after extraction, skipping floors injection")
+		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+	}
+
+	siteConfig, ok := floorsConfig[siteUID]
+	if !ok {
+		// Get available config keys for debugging
+		availableKeys := make([]string, 0, len(floorsConfig))
+		for k := range floorsConfig {
+			availableKeys = append(availableKeys, k)
+		}
+		fmt.Println("site config not found for site id", siteUID, ", available configs:", availableKeys, ", skipping floors injection")
+		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+	}
+
+	if device, ok := req["device"].(map[string]interface{}); ok {
+		if uaStr, ok := device["ua"].(string); ok {
+			ua = uaStr
+		}
+
+		// Check if country is already present in device.geo.country
+		if geo, ok := device["geo"].(map[string]interface{}); ok {
+			fmt.Println("geo is", geo, "from request")
+			if countryCode, ok := geo["country"].(string); ok && countryCode != "" {
+				country = countryCode
+				fmt.Println("Country found in request:", country)
+			}
+		}
+	}
+
+	// Only resolve country from IP if not already present in request
+	if country == "" && f.geoResolver != nil {
+
+		// First try to get IP from ModuleContext (passed from Entrypoint hook)
+		if moduleCtx.ModuleContext != nil {
+			if ipFromHeader, ok := moduleCtx.ModuleContext[deviceIPCtxKey].(string); ok && ipFromHeader != "" {
+				ip = ipFromHeader
+				fmt.Println("Using IP from headers (via ModuleContext):", ip)
+			}
+		}
+		if ip != "" {
+			resolvedCountry, err := f.geoResolver.Resolve(ctx, ip)
+			if err != nil {
+				fmt.Println("Error resolving country from IP:", err)
+				return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, err
+			}
+			country = resolvedCountry
+			fmt.Println("Country resolved from IP:", country)
+		}
+	}
+
+	if country == "" {
+		fmt.Println("country is empty for ip", ip, ", using OC instead")
+		country = "OC"
+	}
+
+	platform := common.ClassifyDevicePlatform(ua)
+	fmt.Println("platform is", platform)
+	if platform == "" {
+		fmt.Println("platform is empty for ua", ua, ", skipping floors injection")
+		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+	}
+
+	if !slices.Contains(siteConfig.countries, country) {
+		fmt.Println("country is not in site config countries", country, ", available countries:", siteConfig.countries, ", using OC instead")
+		country = "OC"
+	}
+
+	if !slices.Contains(siteConfig.platforms, platform) {
+		fmt.Println("platform is not in site config platforms, got:", platform, ", available platforms:", siteConfig.platforms, ", skipping floors injection")
+		return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
+	}
+
+	// Build the floor URL using the extracted values
+	floorURL := "https://t-f.mile.so/floor-server/" + siteConfig.siteUID + "/" + country + "/" + platform + "/floor.json"
+	fmt.Println("Generated floor URL:", floorURL)
+
+	// Now create the mutation using the extracted values
 	c := hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
 	c.AddMutation(
 		func(orig hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
-			// Parse the incoming OpenRTB request
+			// Parse the request again in the mutation
 			var req map[string]interface{}
 			if err := json.Unmarshal(orig, &req); err != nil {
-				fmt.Println("Unmarshal failed:", err)
-				// If unmarshal fails, return original payload (fail open)
+				fmt.Println("Unmarshal failed in mutation:", err)
 				return orig, err
-			}
-
-			// get IP and ua from raw ortb request
-			ip := ""
-			ua := ""
-			country := ""
-
-			// First try to get IP from ModuleContext (passed from Entrypoint hook)
-			if moduleCtx.ModuleContext != nil {
-				if ipFromHeader, ok := moduleCtx.ModuleContext[deviceIPCtxKey].(string); ok && ipFromHeader != "" {
-					ip = ipFromHeader
-					fmt.Println("Using IP from headers (via ModuleContext):", ip)
-				}
-			}
-
-			siteUID := ""
-			if site, ok := req["site"].(map[string]interface{}); ok {
-				if ext, ok := site["ext"].(map[string]interface{}); ok {
-					if data, ok := ext["data"].(map[string]interface{}); ok {
-						siteUID, ok = data["site_uid"].(string)
-						if !ok {
-							fmt.Println("site_uid is not a string", data["site_uid"], ", skipping floors injection")
-							return orig, nil
-						}
-					}
-				}
-			}
-			fmt.Println("siteID is", siteUID)
-			siteConfig, ok := floorsConfig[siteUID]
-			if !ok {
-				fmt.Println("site config not found for site id", siteUID, ", skipping floors injection")
-				return orig, nil
-			}
-
-			if device, ok := req["device"].(map[string]interface{}); ok {
-				ua = device["ua"].(string)
-
-				if ip == "" {
-					fmt.Println("ip is empty")
-				}
-
-				// Check if country is already present in device.geo.country
-				if geo, ok := device["geo"].(map[string]interface{}); ok {
-					fmt.Println("geo is", geo, "from request")
-					if countryCode, ok := geo["country"].(string); ok && countryCode != "" {
-						country = countryCode
-						fmt.Println("Country found in request:", country)
-					}
-				}
-			}
-
-			// Only resolve country from IP if not already present in request
-			if country == "" && f.geoResolver != nil {
-				if ip != "" {
-					resolvedCountry, err := f.geoResolver.Resolve(ctx, ip)
-					if err != nil {
-						fmt.Println("Error resolving country from IP:", err)
-						return orig, err
-					}
-					country = resolvedCountry
-					fmt.Println("Country resolved from IP:", country)
-				}
-			}
-
-			if country == "" {
-				fmt.Println("country is empty for ip", ip, ", using OC instead")
-				country = "OC"
-			}
-
-			platform := common.ClassifyDevicePlatform(ua)
-			fmt.Println("platform is", platform)
-			if platform == "" {
-				fmt.Println("platform is empty for ua", ua, ", skipping floors injection")
-				return orig, nil
-			}
-
-			if !slices.Contains(siteConfig.countries, country) {
-				fmt.Println("country is not in site config countries", country, ", using OC instead")
-				country = "OC"
-			}
-
-			if !slices.Contains(siteConfig.platforms, platform) {
-				fmt.Println("platform is not in site config platforms", platform, "skipping floors injection")
-				return orig, nil
 			}
 
 			// Ensure ext and ext.prebid exist
@@ -181,10 +216,9 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 			}
 
 			// Inject floorendpoint - this triggers the fetch
-			// Don't set 'location' or 'fetchstatus' - Prebid Server sets these after fetch
+			// Use the floorURL variable from the outer scope
 			floors["floorendpoint"] = map[string]interface{}{
-				// "url": "https://floors.atmtd.com/floors.json?siteID=g35tzr",
-				"url": "https://t-f.mile.so/floor-server/" + siteConfig.siteUID + "/" + country + "/" + platform + "/floor.json",
+				"url": floorURL,
 			}
 
 			floors["enabled"] = true
@@ -204,8 +238,90 @@ func (f *FloorsInjector) HandleRawAuctionHook(
 		}, hookstage.MutationUpdate, "ext", "prebid", "floors",
 	)
 
-	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{
+	// Prepare analytics tags with floor information using the pre-computed values
+	analyticsTags := hookstage.HookResult[hookstage.RawAuctionRequestPayload]{
 		Reject:    false,
 		ChangeSet: c,
-	}, nil
+		AnalyticsTags: hookanalytics.Analytics{
+			Activities: []hookanalytics.Activity{
+				{
+					Name:   "floor-injection",
+					Status: hookanalytics.ActivityStatusSuccess,
+					Results: []hookanalytics.Result{
+						{
+							Status: hookanalytics.ResultStatusModify,
+							Values: map[string]interface{}{
+								"site_uid":  siteUID,
+								"country":   country,
+								"platform":  platform,
+								"floor_url": floorURL,
+							},
+							AppliedTo: hookanalytics.AppliedTo{
+								Request: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return analyticsTags, nil
+}
+
+// HandleBidderRequestHook captures bidder-specific floor values after SSP floors are applied
+func (f *FloorsInjector) HandleBidderRequestHook(
+	ctx context.Context,
+	moduleCtx hookstage.ModuleInvocationContext,
+	payload hookstage.BidderRequestPayload,
+) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+
+	// Extract bidder name from payload
+	bidderName := payload.Bidder
+
+	// Collect floor values organized by impression ID -> bidder -> floor data
+	impressionFloors := make(map[string]interface{})
+
+	if payload.Request != nil {
+		for _, impWrapper := range payload.Request.GetImp() {
+			if impWrapper.BidFloor > 0 {
+				// Structure: impression_id -> bidder_name -> floor data
+				impressionFloors[impWrapper.ID] = map[string]interface{}{
+					bidderName: map[string]interface{}{
+						"floor":    impWrapper.BidFloor,
+						"currency": impWrapper.BidFloorCur,
+					},
+				}
+			}
+		}
+	}
+
+	// Only return analytics tags if there are floors for this bidder
+	if len(impressionFloors) == 0 {
+		return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
+	}
+
+	// Return analytics tags with impression-centric floor data
+	result := hookstage.HookResult[hookstage.BidderRequestPayload]{
+		AnalyticsTags: hookanalytics.Analytics{
+			Activities: []hookanalytics.Activity{
+				{
+					Name:   "bidder-floors",
+					Status: hookanalytics.ActivityStatusSuccess,
+					Results: []hookanalytics.Result{
+						{
+							Status: hookanalytics.ResultStatusModify,
+							Values: impressionFloors,
+							AppliedTo: hookanalytics.AppliedTo{
+								Bidder:  bidderName,
+								Request: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return result, nil
 }
