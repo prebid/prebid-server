@@ -67,14 +67,13 @@ func executeGroup[H any, P any](
 	hookHandler hookHandler[H, P],
 	metricEngine metrics.MetricsEngine,
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
-	var wg sync.WaitGroup
-	rejected := make(chan struct{})
-	resp := make(chan hookResponse[P], len(group.Hooks))
-
 	// For concurrent stages (bidder request/response), spawn goroutines
 	// and collect responses within a scoped lock to prevent concurrent
 	// map access to moduleContexts
 	hookResponses := func() []hookResponse[P] {
+		var wg sync.WaitGroup
+		rejected := make(chan struct{})
+		resp := make(chan hookResponse[P], len(group.Hooks))
 		// Hold read lock for the duration that goroutines are spawned and executing
 		if executionCtx.holdReadLock && executionCtx.moduleContexts != nil {
 			executionCtx.moduleContexts.RLock()
