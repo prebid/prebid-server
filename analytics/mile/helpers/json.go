@@ -142,6 +142,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 						WinningBidder:     winningBidder,
 						WinningSize:       winningSize,
 						ConfiguredTimeout: ao.RequestWrapper.TMax,
+						SiteUID:           floorMetadata["site_uid"],
 						FloorPrice:        imp.BidFloor,
 						MetaData:          metadata,
 						BiddersFloorMeta: map[string]map[string]string{
