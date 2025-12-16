@@ -195,6 +195,7 @@ type MileAnalyticsEvent struct {
 }
 
 type ImpressionsExt struct {
+	GPID   string `json:"gpid"`
 	Tid    string `json:"tid"`
 	Prebid struct {
 		Bidder map[string]interface{} `json:"bidder"`

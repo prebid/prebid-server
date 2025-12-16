@@ -17,6 +17,7 @@ type impressionBidderData struct {
 	configuredBidders    []string
 	biddersFloorMap      map[string]string
 	biddersFloorPriceMap map[string]float64
+	gpID                 string
 }
 
 // bidResponseData holds data extracted from bid responses
@@ -37,6 +38,7 @@ func processImpressionBidders(imp *openrtb_ext.ImpWrapper, bidderFloors map[stri
 	configuredBidders := make([]string, 0, len(confBidders.Prebid.Bidder))
 	biddersFloorMap := make(map[string]string)
 	biddersFloorPriceMap := make(map[string]float64)
+	gpID := confBidders.GPID
 
 	for bidderName := range confBidders.Prebid.Bidder {
 		configuredBidders = append(configuredBidders, bidderName)
@@ -59,6 +61,7 @@ func processImpressionBidders(imp *openrtb_ext.ImpWrapper, bidderFloors map[stri
 		configuredBidders:    configuredBidders,
 		biddersFloorMap:      biddersFloorMap,
 		biddersFloorPriceMap: biddersFloorPriceMap,
+		gpID:                 gpID,
 	}, nil
 }
 
@@ -201,11 +204,9 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 
 	// Extract floor metadata from hook execution outcomes
 	floorMetadata := extractFloorMetadataFromHooks(ao.HookExecutionOutcome)
-	fmt.Println("floorMetadata is", floorMetadata)
 
 	// Extract bidder-specific floors from hook execution outcomes
 	bidderFloors := extractBidderFloorsFromHooks(ao.HookExecutionOutcome)
-	fmt.Println("bidderFloors is", bidderFloors)
 
 	// Combine floorMetadata and bidderFloors into a single map for easier downstream use
 	if floorMetadata == nil {
@@ -233,6 +234,8 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 
 		// Build metadata from floor information
 		floorMetadata := buildFloorMeta(bidderFloors, imp.ID, floorMetadata)
+		floorMetadata["prebid_server"]["gpID"] = bidderData.gpID
+		fmt.Println("floorMetadata is", floorMetadata)
 
 		// Calculate actual floor price from response or hooks
 		actualFloorPrice := calculateActualFloorPrice(
