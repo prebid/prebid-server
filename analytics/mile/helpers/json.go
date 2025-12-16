@@ -110,15 +110,19 @@ func processBidResponse(impID string, response *openrtb2.BidResponse, bidderData
 }
 
 // buildMetadata builds metadata from floor information
-func buildFloorMeta(bidderFloors map[string]map[string]float64, impID string, hookFloorMeta map[string]string) map[string]map[string]string {
+func buildFloorMeta(bidderFloors map[string]map[string]float64, impID string, requestMeta map[string]string) map[string]map[string]string {
 	floorMeta := map[string]map[string]string{
-		"prebid_server": hookFloorMeta,
+		"requestMeta": requestMeta,
 	}
 
 	// Add floor values for each SSP per impression from bidderFloors
 	if sspFloors, hasImpFloors := bidderFloors[impID]; hasImpFloors {
+		// Initialize sspFloors map if it doesn't exist
+		if _, exists := floorMeta["sspFloors"]; !exists {
+			floorMeta["sspFloors"] = make(map[string]string)
+		}
 		for sspName, floorVal := range sspFloors {
-			floorMeta["prebid_server"][sspName] = fmt.Sprintf("%f", floorVal)
+			floorMeta["sspFloors"][sspName] = fmt.Sprintf("%f", floorVal)
 		}
 	}
 
@@ -182,6 +186,7 @@ func buildMileAnalyticsEvent(
 		EventType:         "pbs_agg_adunit",
 		Section:           "",
 		BidBidders:        bidResponse.bidBiders,
+		Cpm:               bidResponse.winningPrice,
 		ConfiguredBidders: bidderData.configuredBidders,
 		TimedOutBidder:    respExt.getTimeoutBidders(requestWrapper.TMax),
 		WinningBidder:     bidResponse.winningBidder,
@@ -234,7 +239,7 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 
 		// Build metadata from floor information
 		floorMetadata := buildFloorMeta(bidderFloors, imp.ID, floorMetadata)
-		floorMetadata["prebid_server"]["gpID"] = bidderData.gpID
+		floorMetadata["requestMeta"]["gpID"] = bidderData.gpID
 		fmt.Println("floorMetadata is", floorMetadata)
 
 		// Calculate actual floor price from response or hooks
