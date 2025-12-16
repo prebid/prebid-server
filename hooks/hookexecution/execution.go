@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
@@ -69,45 +69,38 @@ func executeGroup[H any, P any](
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	rejected := make(chan struct{})
-	var rejectedOnce sync.Once
-	closeRejectedOnce := func() {
-		rejectedOnce.Do(func() {
-			close(rejected)
-		})
-	}
-	// Ensure the channel is closed when the function returns.
-	defer closeRejectedOnce()
-	hookResponses := make([]hookResponse[P], len(group.Hooks))
+	resp := make(chan hookResponse[P], len(group.Hooks))
 
-	for i, hook := range group.Hooks {
+	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
 		mCtx.HookImplCode = hook.Code
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], hookResp *hookResponse[P], moduleCtx hookstage.ModuleInvocationContext) {
+		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			if executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, hookResp, rejected) {
-				// When the first hook rejects, close the channel to signal all other hooks to stop.
-				closeRejectedOnce()
-			}
-		}(hook, &hookResponses[i], mCtx)
+			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
+		}(hook, mCtx)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(resp)
+	}()
+
+	hookResponses := collectHookResponses(resp, rejected)
 
 	return handleHookResponses(executionCtx, hookResponses, payload, metricEngine)
 }
 
-// executeHook executes a single hook and returns the rejected status.
 func executeHook[H any, P any](
 	moduleCtx hookstage.ModuleInvocationContext,
 	hw hooks.HookWrapper[H],
 	payload P,
 	hookHandler hookHandler[H, P],
 	timeout time.Duration,
-	resp *hookResponse[P],
+	resp chan<- hookResponse[P],
 	rejected <-chan struct{},
-) bool {
+) {
 	hookRespCh := make(chan hookResponse[P], 1)
 	startTime := time.Now()
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
@@ -115,7 +108,7 @@ func executeHook[H any, P any](
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				glog.Errorf("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
+				logger.Errorf("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
 					hw.Module, hw.Code, r, string(debug.Stack()))
 			}
 		}()
@@ -133,20 +126,30 @@ func executeHook[H any, P any](
 	case res := <-hookRespCh:
 		res.HookID = hookId
 		res.ExecutionTime = time.Since(startTime)
-		*resp = res
-		return res.Result.Reject
+		resp <- res
 	case <-time.After(timeout):
-		*resp = hookResponse[P]{
+		resp <- hookResponse[P]{
 			Err:           TimeoutError{},
 			ExecutionTime: time.Since(startTime),
 			HookID:        hookId,
 			Result:        hookstage.HookResult[P]{},
 		}
-		return false
 	case <-rejected:
-		// In this path, rejected has already been reported; no need to report it again.
-		return false
+		return
 	}
+}
+
+func collectHookResponses[P any](resp <-chan hookResponse[P], rejected chan<- struct{}) []hookResponse[P] {
+	hookResponses := make([]hookResponse[P], 0)
+	for r := range resp {
+		hookResponses = append(hookResponses, r)
+		if r.Result.Reject {
+			close(rejected)
+			break
+		}
+	}
+
+	return hookResponses
 }
 
 func handleHookResponses[P any](
