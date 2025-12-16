@@ -18,7 +18,7 @@ var (
 
 var knownBidders = openrtb_ext.BuildBidderMap()
 
-func buildOpenRTBRequest(req MileRequest, site *SiteConfig) (*openrtb2.BidRequest, error) {
+func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) (*openrtb2.BidRequest, error) {
 	if site == nil {
 		return nil, ErrSiteNotFound
 	}
@@ -53,7 +53,7 @@ func buildOpenRTBRequest(req MileRequest, site *SiteConfig) (*openrtb2.BidReques
 		},
 		Imp: []openrtb2.Imp{
 			{
-				ID:    req.PlacementID,
+				ID:    placementID,
 				TagID: placement.AdUnit,
 			},
 		},

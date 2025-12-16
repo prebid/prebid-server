@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,6 +29,22 @@ func (m *mockStore) Get(ctx context.Context, siteID, _ string) (*SiteConfig, err
 		return nil, ErrSiteNotFound
 	}
 	return site, nil
+}
+
+func (m *mockStore) GetMulti(ctx context.Context, siteID string, placementIDs []string) (map[string]*SiteConfig, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	site, ok := m.sites[siteID]
+	if !ok {
+		return nil, ErrSiteNotFound
+	}
+	// Return the same site config for all placements
+	result := make(map[string]*SiteConfig, len(placementIDs))
+	for _, placementID := range placementIDs {
+		result[placementID] = site
+	}
+	return result, nil
 }
 
 func (m *mockStore) Close() error { return nil }
@@ -128,7 +145,7 @@ func TestModuleHandle(t *testing.T) {
 	}
 	m.SetAuctionHandler(auctionHandler)
 
-	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementId":"p1","customData":[{"targeting":{"k":"v"}}]}`)
+	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementIds":["p1"],"customData":[{"targeting":{"k":"v"}}]}`)
 	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 
@@ -165,7 +182,7 @@ func TestModuleHandleSiteNotFound(t *testing.T) {
 	}
 	m.SetAuctionHandler(auctionHandler)
 
-	body := []byte(`{"siteId":"missing","publisherId":"12345","placementId":"p1"}`)
+	body := []byte(`{"siteId":"missing","publisherId":"12345","placementIds":["p1"]}`)
 	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 
@@ -222,7 +239,7 @@ func TestModuleHandleHooks(t *testing.T) {
 	}
 	m.SetAuctionHandler(auctionHandler)
 
-	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementId":"p1"}`)
+	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementIds":["p1"]}`)
 	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 
@@ -319,7 +336,7 @@ func TestModuleHandleNoAuctionHandler(t *testing.T) {
 	}
 	// Note: SetAuctionHandler not called
 
-	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementId":"p1"}`)
+	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementIds":["p1"]}`)
 	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 
@@ -378,7 +395,7 @@ func TestModuleHandleMissingRequiredFields(t *testing.T) {
 	}
 
 	// Missing siteId
-	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader([]byte(`{"publisherId":"123","placementId":"p1"}`)))
+	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader([]byte(`{"publisherId":"123","placementIds":["p1"]}`)))
 	rec := httptest.NewRecorder()
 
 	m.Handle(rec, req, nil)
@@ -417,7 +434,7 @@ func TestModuleHandleAuthToken(t *testing.T) {
 	}
 
 	// Without token - should fail
-	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementId":"p1"}`)
+	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementIds":["p1"]}`)
 	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 
@@ -437,4 +454,76 @@ func TestModuleHandleAuthToken(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200 with correct token, got %d: %s", rec.Code, rec.Body.String())
 	}
+}
+
+func TestModuleHandleMultiplePlacements(t *testing.T) {
+	store := &mockStore{
+		sites: map[string]*SiteConfig{
+			"FKKJK": {
+				SiteID:      "FKKJK",
+				PublisherID: "12345",
+				Placement: PlacementConfig{
+					Sizes: [][]int{{300, 250}},
+					Floor: 0.1,
+					Bidders: []PlacementBidder{
+						{Bidder: "appnexus", Params: json.RawMessage(`{"placementId": "123"}`)},
+					},
+				},
+			},
+		},
+	}
+
+	auctionCount := 0
+	auctionHandler := func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		auctionCount++
+		// Parse request to get placement ID for unique response
+		var req openrtb2.BidRequest
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &req)
+		impID := "unknown"
+		if len(req.Imp) > 0 {
+			impID = req.Imp[0].ID
+		}
+		w.WriteHeader(http.StatusOK)
+		resp := `{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"` + impID + `","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr"}]}]}`
+		_, _ = w.Write([]byte(resp))
+	}
+
+	m := &Module{
+		enabled:        true,
+		config:         &Config{Endpoint: "/mile/v1/request", MaxRequestSize: 512 * 1024},
+		store:          store,
+		requestTimeout: 0,
+		maxBody:        512 * 1024,
+	}
+	m.SetAuctionHandler(auctionHandler)
+
+	// Request with multiple placement IDs
+	body := []byte(`{"siteId":"FKKJK","publisherId":"12345","placementIds":["p1","p2","p3"]}`)
+	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+
+	m.Handle(rec, req, nil)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	// Verify auction was called for each placement
+	if auctionCount != 3 {
+		t.Fatalf("expected 3 auction calls, got %d", auctionCount)
+	}
+
+	var mileResp MileResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &mileResp))
+	require.Len(t, mileResp.Bids, 3)
+
+	// Verify we have bids for all placements
+	placementIDs := make(map[string]bool)
+	for _, bid := range mileResp.Bids {
+		placementIDs[bid.RequestID] = true
+	}
+	require.True(t, placementIDs["p1"], "expected bid for p1")
+	require.True(t, placementIDs["p2"], "expected bid for p2")
+	require.True(t, placementIDs["p3"], "expected bid for p3")
 }

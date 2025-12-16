@@ -84,6 +84,82 @@ func (s *RedisSiteStore) Get(ctx context.Context, siteID, placementID string) (*
 	return &site, nil
 }
 
+// GetMulti retrieves site configurations for multiple placements using Redis pipeline.
+func (s *RedisSiteStore) GetMulti(ctx context.Context, siteID string, placementIDs []string) (map[string]*SiteConfig, error) {
+	if siteID == "" {
+		return nil, fmt.Errorf("site id is required")
+	}
+	if len(placementIDs) == 0 {
+		return nil, fmt.Errorf("placement ids are required")
+	}
+
+	readCtx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+
+	// Build primary keys for all placements
+	primaryKeys := make([]string, len(placementIDs))
+	for i, placementID := range placementIDs {
+		primaryKeys[i] = fmt.Sprintf("mile:site:%s|plcmt:%s", siteID, placementID)
+	}
+
+	// Use pipeline to fetch all keys at once
+	pipe := s.client.Pipeline()
+	cmds := make([]*redis.StringCmd, len(primaryKeys))
+	for i, key := range primaryKeys {
+		cmds[i] = pipe.Get(readCtx, key)
+	}
+	_, _ = pipe.Exec(readCtx)
+
+	result := make(map[string]*SiteConfig, len(placementIDs))
+	var missingPlacements []int // indices of placements not found with primary key
+
+	for i, cmd := range cmds {
+		val, err := cmd.Result()
+		if err == redis.Nil {
+			missingPlacements = append(missingPlacements, i)
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("redis get failed for placement %s: %w", placementIDs[i], err)
+		}
+
+		var site SiteConfig
+		if err := json.Unmarshal([]byte(val), &site); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal site config for placement %s: %w", placementIDs[i], err)
+		}
+		result[placementIDs[i]] = &site
+	}
+
+	// Fallback to legacy key for missing placements
+	if len(missingPlacements) > 0 {
+		legacyKey := fmt.Sprintf(s.keyTemplate, siteID)
+		val, err := s.client.Get(readCtx, legacyKey).Result()
+		if err == redis.Nil {
+			// No legacy key either - check if we have any results
+			if len(result) == 0 {
+				return nil, ErrSiteNotFound
+			}
+			// Return partial results (some placements found, some not)
+			return result, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("redis get failed: %w", err)
+		}
+
+		var site SiteConfig
+		if err := json.Unmarshal([]byte(val), &site); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal site config: %w", err)
+		}
+
+		// Use the same site config for all missing placements
+		for _, idx := range missingPlacements {
+			result[placementIDs[idx]] = &site
+		}
+	}
+
+	return result, nil
+}
+
 // Close releases Redis resources.
 func (s *RedisSiteStore) Close() error {
 	return s.client.Close()

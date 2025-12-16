@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -167,8 +169,8 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		return
 	}
 
-	// Redis lookup
-	siteCfg, err := m.store.Get(ctx, mileReq.SiteID, mileReq.PlacementID)
+	// Redis lookup for all placements
+	siteConfigs, err := m.store.GetMulti(ctx, mileReq.SiteID, mileReq.PlacementIDs)
 	if err != nil {
 		switch err {
 		case ErrSiteNotFound:
@@ -181,30 +183,91 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		return
 	}
 
-	// Build OpenRTB request
-	ortbReq, err := buildOpenRTBRequest(mileReq, siteCfg)
+	// Process each placement in parallel
+	type auctionResult struct {
+		placementID string
+		bids        []MileBid
+		err         error
+	}
+
+	results := make(chan auctionResult, len(mileReq.PlacementIDs))
+	var wg sync.WaitGroup
+
+	for _, placementID := range mileReq.PlacementIDs {
+		siteCfg, ok := siteConfigs[placementID]
+		if !ok {
+			glog.Warningf("mile: no config found for placement %s, skipping", placementID)
+			continue
+		}
+
+		wg.Add(1)
+		go func(placementID string, siteCfg *SiteConfig) {
+			defer wg.Done()
+			bids, err := m.processPlacement(ctx, r, mileReq, placementID, siteCfg)
+			results <- auctionResult{placementID: placementID, bids: bids, err: err}
+		}(placementID, siteCfg)
+	}
+
+	// Close results channel when all goroutines complete
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Aggregate all bids
+	var allBids []MileBid
+	for result := range results {
+		if result.err != nil {
+			glog.Warningf("mile: auction failed for placement %s: %v", result.placementID, result.err)
+			continue
+		}
+		allBids = append(allBids, result.bids...)
+	}
+
+	// Build response
+	mileResp := MileResponse{Bids: allBids}
+	if mileResp.Bids == nil {
+		mileResp.Bids = []MileBid{}
+	}
+
+	mileRespBytes, err := json.Marshal(mileResp)
 	if err != nil {
 		m.onException(ctx, mileReq, err)
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusInternalServerError, "failed to encode response")
 		return
+	}
+
+	// Log request duration
+	glog.V(2).Infof("mile: request completed in %v for site=%s placements=%s", time.Since(start), mileReq.SiteID, strings.Join(mileReq.PlacementIDs, ","))
+
+	// Return response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(mileRespBytes); err != nil {
+		glog.Warningf("mile write response failed: %v", err)
+	}
+}
+
+// processPlacement runs an auction for a single placement and returns the bids.
+func (m *Module) processPlacement(ctx context.Context, r *http.Request, mileReq MileRequest, placementID string, siteCfg *SiteConfig) ([]MileBid, error) {
+	// Build OpenRTB request
+	ortbReq, err := buildOpenRTBRequest(mileReq, placementID, siteCfg)
+	if err != nil {
+		return nil, fmt.Errorf("build request failed: %w", err)
 	}
 
 	// Before hook
 	ortbReq, err = m.hooks.applyBefore(ctx, mileReq, siteCfg, ortbReq)
 	if err != nil {
-		m.onException(ctx, mileReq, err)
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
+		return nil, fmt.Errorf("before hook failed: %w", err)
 	}
 
 	// Marshal for auction
 	auctionBody, err := json.Marshal(ortbReq)
 	if err != nil {
-		m.onException(ctx, mileReq, err)
-		writeError(w, http.StatusInternalServerError, "failed to encode auction request")
-		return
+		return nil, fmt.Errorf("marshal request failed: %w", err)
 	}
-	glog.V(3).Infof("mile: auction request site=%s placement=%s: %s", mileReq.SiteID, mileReq.PlacementID, string(auctionBody))
+	glog.V(3).Infof("mile: auction request site=%s placement=%s: %s", mileReq.SiteID, placementID, string(auctionBody))
 
 	// Call auction in-process
 	auctionReq := r.Clone(ctx)
@@ -222,34 +285,33 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 	respBody, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		glog.Warningf("mile: failed to read auction response: %v", readErr)
+		return nil, fmt.Errorf("read response failed: %w", readErr)
 	}
 
 	// After hook
-	respBody, status, afterErr := m.hooks.applyAfter(ctx, mileReq, siteCfg, resp.StatusCode, respBody)
+	respBody, _, afterErr := m.hooks.applyAfter(ctx, mileReq, siteCfg, resp.StatusCode, respBody)
 	if afterErr != nil {
-		glog.Warningf("mile after hook failed: %v", afterErr)
+		glog.Warningf("mile after hook failed for placement %s: %v", placementID, afterErr)
 	}
 
-	// Transform auction response into bidder-style response
-	var mileRespBytes []byte
+	// Check for error status
 	if resp.StatusCode >= http.StatusBadRequest {
-		// Propagate error body/status as-is
-		mileRespBytes = respBody
-	} else {
-		mileRespBytes = m.toMileResponse(respBody)
-		status = http.StatusOK
+		return nil, fmt.Errorf("auction returned status %d", resp.StatusCode)
 	}
 
-	// Log request duration
-	glog.V(2).Infof("mile: request completed in %v for site=%s placement=%s", time.Since(start), mileReq.SiteID, mileReq.PlacementID)
-
-	// Return response
-	copyHeaders(w, resp.Header)
-	w.WriteHeader(status)
-	if _, err := w.Write(mileRespBytes); err != nil {
-		glog.Warningf("mile write response failed: %v", err)
+	// Parse and transform response
+	if len(respBody) == 0 {
+		return []MileBid{}, nil
 	}
+
+	var br openrtb2.BidResponse
+	if err := json.Unmarshal(respBody, &br); err != nil {
+		glog.Warningf("mile: failed to parse auction response for placement %s: %v", placementID, err)
+		return []MileBid{}, nil
+	}
+
+	mileResp := transformToMileResponse(&br)
+	return mileResp.Bids, nil
 }
 
 // toMileResponse converts the auction response JSON into the MileResponse format.
@@ -284,7 +346,7 @@ func (m *Module) onException(ctx context.Context, req MileRequest, err error) {
 	if m.hooks.OnException != nil && err != nil {
 		m.hooks.OnException(ctx, req, err)
 	}
-	glog.Warningf("mile: exception for site=%s placement=%s: %v", req.SiteID, req.PlacementID, err)
+	glog.Warningf("mile: exception for site=%s placements=%v: %v", req.SiteID, req.PlacementIDs, err)
 }
 
 func validateRequest(req MileRequest) error {
@@ -293,8 +355,8 @@ func validateRequest(req MileRequest) error {
 		return fmt.Errorf("siteId is required")
 	case req.PublisherID == "":
 		return fmt.Errorf("publisherId is required")
-	case req.PlacementID == "":
-		return fmt.Errorf("placementId is required")
+	case len(req.PlacementIDs) == 0:
+		return fmt.Errorf("placementIds is required")
 	default:
 		return nil
 	}

@@ -13,11 +13,11 @@ var ErrSiteNotFound = errors.New("site not found")
 
 // MileRequest is the incoming payload from MilePrebidAdapter.
 type MileRequest struct {
-	SiteID      string          `json:"siteId"`
-	PublisherID string          `json:"publisherId"`
-	PlacementID string          `json:"placementId"`
-	CustomData  []CustomData    `json:"customData,omitempty"`
-	Raw         json.RawMessage `json:"-"`
+	SiteID       string          `json:"siteId"`
+	PublisherID  string          `json:"publisherId"`
+	PlacementIDs []string        `json:"placementIds"`
+	CustomData   []CustomData    `json:"customData,omitempty"`
+	Raw          json.RawMessage `json:"-"`
 }
 
 // CustomData captures optional passthrough targeting/settings blocks.
@@ -56,6 +56,7 @@ type PlacementConfig struct {
 // SiteStore fetches per-site configuration (backed by Redis in production).
 type SiteStore interface {
 	Get(ctx context.Context, siteID, placementID string) (*SiteConfig, error)
+	GetMulti(ctx context.Context, siteID string, placementIDs []string) (map[string]*SiteConfig, error)
 	Close() error
 }
 
