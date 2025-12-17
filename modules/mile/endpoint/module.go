@@ -314,34 +314,6 @@ func (m *Module) processPlacement(ctx context.Context, r *http.Request, mileReq 
 	return mileResp.Bids, nil
 }
 
-// toMileResponse converts the auction response JSON into the MileResponse format.
-func (m *Module) toMileResponse(body []byte) []byte {
-	if len(body) == 0 {
-		empty := MileResponse{Bids: []MileBid{}}
-		raw, _ := json.Marshal(empty)
-		return raw
-	}
-
-	var br openrtb2.BidResponse
-	if err := json.Unmarshal(body, &br); err != nil {
-		// If parsing fails, return empty bids to avoid surfacing raw errors to the adapter
-		glog.Warningf("mile: failed to parse auction response: %v", err)
-		empty := MileResponse{Bids: []MileBid{}}
-		raw, _ := json.Marshal(empty)
-		return raw
-	}
-
-	resp := transformToMileResponse(&br)
-	raw, err := json.Marshal(resp)
-	if err != nil {
-		glog.Warningf("mile: failed to marshal mile response: %v", err)
-		empty := MileResponse{Bids: []MileBid{}}
-		raw, _ := json.Marshal(empty)
-		return raw
-	}
-	return raw
-}
-
 func (m *Module) onException(ctx context.Context, req MileRequest, err error) {
 	if m.hooks.OnException != nil && err != nil {
 		m.hooks.OnException(ctx, req, err)
@@ -376,12 +348,4 @@ func cloneHeaders(src http.Header) http.Header {
 		dst[k] = values
 	}
 	return dst
-}
-
-func copyHeaders(dst http.ResponseWriter, src http.Header) {
-	for k, v := range src {
-		for _, val := range v {
-			dst.Header().Add(k, val)
-		}
-	}
 }
