@@ -241,12 +241,12 @@ When both `geo_whitelist_endpoint` and `platform_whitelist_endpoint` are configu
 **Platform Whitelist Format** (`ts-platforms.json`):
 ```json
 {
-  "siteID1": ["m-android|chrome", "m-ios|safari", "w|chrome"],
-  "siteID2": ["w|safari", "w|edge"]
+  "siteID1": ["m-android/chrome", "m-ios/safari", "w/chrome"],
+  "siteID2": ["w/safari", "w/edge"]
 }
 ```
 
-**Platform Key Format**: `{device-os}|{browser}`
+**Platform Key Format**: `{device-os}/{browser}`
 - Device types: `m-android`, `m-ios`, `t-android`, `t-ios`, `w`
 - Browsers: `chrome`, `safari`, `ff`, `edge`, `opera`, `google search`, `samsung internet for android`, `amazon silk`
 

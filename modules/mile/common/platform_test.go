@@ -16,121 +16,121 @@ func TestClassifyDevicePlatform(t *testing.T) {
 		{
 			name:     "Android Chrome mobile",
 			ua:       "Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-			expected: "m-android|chrome",
+			expected: "m-android/chrome",
 		},
 		{
 			name:     "Android Samsung Internet",
 			ua:       "Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/20.0 Chrome/106.0.5249.126 Mobile Safari/537.36",
-			expected: "m-android|samsung internet for android",
+			expected: "m-android/samsung internet for android",
 		},
 		{
 			name:     "Android Edge",
 			ua:       "Mozilla/5.0 (Linux; Android 10; SM-G960F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 Edg/120.0.0.0",
-			expected: "m-android|edge",
+			expected: "m-android/edge",
 		},
 		{
 			name:     "Android Firefox",
 			ua:       "Mozilla/5.0 (Android 10; Mobile; rv:109.0) Gecko/109.0 Firefox/120.0",
-			expected: "m-android|ff",
+			expected: "m-android/ff",
 		},
 		// Mobile iOS
 		{
 			name:     "iPhone Safari",
 			ua:       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
-			expected: "m-ios|safari",
+			expected: "m-ios/safari",
 		},
 		{
 			name:     "iPhone Chrome (CriOS)",
 			ua:       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1",
-			expected: "m-ios|chrome",
+			expected: "m-ios/chrome",
 		},
 		{
 			name:     "iPhone Firefox (FxiOS)",
 			ua:       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/120.0 Mobile/15E148 Safari/605.1.15",
-			expected: "m-ios|ff",
+			expected: "m-ios/ff",
 		},
 		{
 			name:     "iPhone Edge (EdgiOS)",
 			ua:       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 EdgiOS/120.0.0.0 Mobile/15E148 Safari/604.1",
-			expected: "m-ios|edge",
+			expected: "m-ios/edge",
 		},
 		{
 			name:     "iPhone Google Search App",
 			ua:       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/280.0.586419231 Mobile/15E148 Safari/604.1",
-			expected: "m-ios|google search",
+			expected: "m-ios/google search",
 		},
 		{
 			name:     "iPod Safari",
 			ua:       "Mozilla/5.0 (iPod touch; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
-			expected: "m-ios|safari",
+			expected: "m-ios/safari",
 		},
 		// Tablet iOS
 		{
 			name:     "iPad Safari",
 			ua:       "Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
-			expected: "t-ios|safari",
+			expected: "t-ios/safari",
 		},
 		{
 			name:     "iPad Chrome",
 			ua:       "Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1",
-			expected: "t-ios|chrome",
+			expected: "t-ios/chrome",
 		},
 		{
 			name:     "iPad Google Search App",
 			ua:       "Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/280.0.586419231 Mobile/15E148 Safari/604.1",
-			expected: "t-ios|google search",
+			expected: "t-ios/google search",
 		},
 		// Tablet Android
 		{
 			name:     "Android tablet Chrome",
 			ua:       "Mozilla/5.0 (Linux; Android 12; SM-T870) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			expected: "t-android|chrome",
+			expected: "t-android/chrome",
 		},
 		{
 			name:     "Android tablet with tablet keyword",
 			ua:       "Mozilla/5.0 (Linux; Android 10; Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			expected: "t-android|chrome",
+			expected: "t-android/chrome",
 		},
 		{
 			name:     "Amazon Fire tablet (Silk)",
 			ua:       "Mozilla/5.0 (Linux; Android 11; KFTRWI) AppleWebKit/537.36 (KHTML, like Gecko) Silk/120.0.0.0 like Chrome/120.0.0.0 Safari/537.36",
-			expected: "t-android|amazon silk",
+			expected: "t-android/amazon silk",
 		},
 		// Desktop/Web
 		{
 			name:     "Windows Chrome",
 			ua:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			expected: "w|chrome",
+			expected: "w/chrome",
 		},
 		{
 			name:     "Windows Edge",
 			ua:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
-			expected: "w|edge",
+			expected: "w/edge",
 		},
 		{
 			name:     "Windows Firefox",
 			ua:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0",
-			expected: "w|ff",
+			expected: "w/ff",
 		},
 		{
 			name:     "Mac Safari",
 			ua:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15",
-			expected: "w|safari",
+			expected: "w/safari",
 		},
 		{
 			name:     "Mac Chrome",
 			ua:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			expected: "w|chrome",
+			expected: "w/chrome",
 		},
 		{
 			name:     "Linux Chrome",
 			ua:       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			expected: "w|chrome",
+			expected: "w/chrome",
 		},
 		{
 			name:     "Windows Opera",
 			ua:       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0",
-			expected: "w|opera",
+			expected: "w/opera",
 		},
 		// Edge cases
 		{
@@ -141,7 +141,7 @@ func TestClassifyDevicePlatform(t *testing.T) {
 		{
 			name:     "unknown browser defaults to chrome",
 			ua:       "Mozilla/5.0 (Windows NT 10.0) SomeUnknownBrowser/1.0",
-			expected: "w|chrome",
+			expected: "w/chrome",
 		},
 	}
 

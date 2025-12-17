@@ -17,7 +17,7 @@ import (
 // GeoWhitelist maps siteID to allowed country codes
 type GeoWhitelist map[string]map[string]struct{}
 
-// PlatformWhitelist maps siteID to allowed platform strings (e.g., "m-android|chrome")
+// PlatformWhitelist maps siteID to allowed platform strings (e.g., "m-android/chrome")
 type PlatformWhitelist map[string]map[string]struct{}
 
 // WhitelistClient fetches and caches the geo and platform whitelists
@@ -259,7 +259,7 @@ func (c *WhitelistClient) fetchPlatformWhitelist() error {
 		return fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// Parse JSON: {"siteID": ["m-android|chrome", "w|safari", ...]}
+	// Parse JSON: {"siteID": ["m-android/chrome", "w/safari", ...]}
 	var raw map[string][]string
 	if err := jsonutil.Unmarshal(body, &raw); err != nil {
 		return fmt.Errorf("failed to unmarshal: %w", err)

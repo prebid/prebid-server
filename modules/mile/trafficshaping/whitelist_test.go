@@ -29,17 +29,17 @@ func TestWhitelistClient_IsAllowed(t *testing.T) {
 			platformWL:  nil,
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    true,
 			description: "Should allow when whitelists are not loaded",
 		},
 		{
 			name:        "nil_geo_whitelist_fail_open",
 			geoWL:       nil,
-			platformWL:  &PlatformWhitelist{"site1": {"m-android|chrome": {}}},
+			platformWL:  &PlatformWhitelist{"site1": {"m-android/chrome": {}}},
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    true,
 			description: "Should allow when geo whitelist is not loaded",
 		},
@@ -49,87 +49,87 @@ func TestWhitelistClient_IsAllowed(t *testing.T) {
 			platformWL:  nil,
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    true,
 			description: "Should allow when platform whitelist is not loaded",
 		},
 		{
 			name:        "site_not_in_geo_whitelist_skip_shaping",
 			geoWL:       &GeoWhitelist{"other_site": {"US": {}}},
-			platformWL:  &PlatformWhitelist{"other_site": {"m-android|chrome": {}}},
+			platformWL:  &PlatformWhitelist{"other_site": {"m-android/chrome": {}}},
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    false,
 			description: "Should skip shaping when site not in geo whitelist",
 		},
 		{
 			name:        "site_not_in_platform_whitelist_skip_shaping",
 			geoWL:       &GeoWhitelist{"site1": {"US": {}}},
-			platformWL:  &PlatformWhitelist{"other_site": {"m-android|chrome": {}}},
+			platformWL:  &PlatformWhitelist{"other_site": {"m-android/chrome": {}}},
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    false,
 			description: "Should skip shaping when site not in platform whitelist",
 		},
 		{
 			name:        "geo_and_platform_match",
 			geoWL:       &GeoWhitelist{"site1": {"US": {}, "CA": {}}},
-			platformWL:  &PlatformWhitelist{"site1": {"m-android|chrome": {}, "w|safari": {}}},
+			platformWL:  &PlatformWhitelist{"site1": {"m-android/chrome": {}, "w/safari": {}}},
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    true,
 			description: "Should allow when both geo and platform match",
 		},
 		{
 			name:        "geo_matches_platform_not",
 			geoWL:       &GeoWhitelist{"site1": {"US": {}}},
-			platformWL:  &PlatformWhitelist{"site1": {"w|safari": {}}},
+			platformWL:  &PlatformWhitelist{"site1": {"w/safari": {}}},
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    false,
 			description: "Should deny when geo matches but platform doesn't",
 		},
 		{
 			name:        "platform_matches_geo_not",
 			geoWL:       &GeoWhitelist{"site1": {"CA": {}}},
-			platformWL:  &PlatformWhitelist{"site1": {"m-android|chrome": {}}},
+			platformWL:  &PlatformWhitelist{"site1": {"m-android/chrome": {}}},
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    false,
 			description: "Should deny when platform matches but geo doesn't",
 		},
 		{
 			name:        "neither_geo_nor_platform_match",
 			geoWL:       &GeoWhitelist{"site1": {"CA": {}}},
-			platformWL:  &PlatformWhitelist{"site1": {"w|safari": {}}},
+			platformWL:  &PlatformWhitelist{"site1": {"w/safari": {}}},
 			siteID:      "site1",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    false,
 			description: "Should deny when neither geo nor platform match",
 		},
 		{
 			name:        "empty_site_id_fail_open",
 			geoWL:       &GeoWhitelist{"site1": {"US": {}}},
-			platformWL:  &PlatformWhitelist{"site1": {"m-android|chrome": {}}},
+			platformWL:  &PlatformWhitelist{"site1": {"m-android/chrome": {}}},
 			siteID:      "",
 			country:     "US",
-			platform:    "m-android|chrome",
+			platform:    "m-android/chrome",
 			expected:    true,
 			description: "Should allow when site ID is empty",
 		},
 		{
 			name:        "multiple_sites_correct_match",
 			geoWL:       &GeoWhitelist{"site1": {"US": {}}, "site2": {"CA": {}}},
-			platformWL:  &PlatformWhitelist{"site1": {"m-android|chrome": {}}, "site2": {"w|safari": {}}},
+			platformWL:  &PlatformWhitelist{"site1": {"m-android/chrome": {}}, "site2": {"w/safari": {}}},
 			siteID:      "site2",
 			country:     "CA",
-			platform:    "w|safari",
+			platform:    "w/safari",
 			expected:    true,
 			description: "Should match correct site in multi-site whitelist",
 		},
@@ -243,8 +243,8 @@ func TestWhitelistClient_FetchGeoWhitelist(t *testing.T) {
 func TestWhitelistClient_FetchPlatformWhitelist(t *testing.T) {
 	t.Run("successful_fetch", func(t *testing.T) {
 		platformData := map[string][]string{
-			"site1": {"m-android|chrome", "w|safari"},
-			"site2": {"m-ios|safari", "t-ios|chrome"},
+			"site1": {"m-android/chrome", "w/safari"},
+			"site2": {"m-ios/safari", "t-ios/chrome"},
 		}
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -273,20 +273,20 @@ func TestWhitelistClient_FetchPlatformWhitelist(t *testing.T) {
 
 		// Check site1
 		site1Platforms := (*platformWL)["site1"]
-		assert.Contains(t, site1Platforms, "m-android|chrome")
-		assert.Contains(t, site1Platforms, "w|safari")
+		assert.Contains(t, site1Platforms, "m-android/chrome")
+		assert.Contains(t, site1Platforms, "w/safari")
 
 		// Check site2
 		site2Platforms := (*platformWL)["site2"]
-		assert.Contains(t, site2Platforms, "m-ios|safari")
-		assert.Contains(t, site2Platforms, "t-ios|chrome")
+		assert.Contains(t, site2Platforms, "m-ios/safari")
+		assert.Contains(t, site2Platforms, "t-ios/chrome")
 	})
 }
 
 func TestWhitelistClient_FetchAll(t *testing.T) {
 	t.Run("both_succeed", func(t *testing.T) {
 		geoData := map[string][]string{"site1": {"US"}}
-		platformData := map[string][]string{"site1": {"w|chrome"}}
+		platformData := map[string][]string{"site1": {"w/chrome"}}
 
 		geoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(geoData)
@@ -318,7 +318,7 @@ func TestWhitelistClient_FetchAll(t *testing.T) {
 	})
 
 	t.Run("geo_fails_platform_succeeds", func(t *testing.T) {
-		platformData := map[string][]string{"site1": {"w|chrome"}}
+		platformData := map[string][]string{"site1": {"w/chrome"}}
 
 		geoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -380,7 +380,7 @@ func TestWhitelistClient_RefreshLoop(t *testing.T) {
 	t.Run("refresh_on_interval", func(t *testing.T) {
 		var fetchCount int32
 		geoData := map[string][]string{"site1": {"US"}}
-		platformData := map[string][]string{"site1": {"w|chrome"}}
+		platformData := map[string][]string{"site1": {"w/chrome"}}
 
 		geoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&fetchCount, 1)
@@ -414,7 +414,7 @@ func TestWhitelistClient_RefreshLoop(t *testing.T) {
 
 	t.Run("stop_terminates_loop", func(t *testing.T) {
 		geoData := map[string][]string{"site1": {"US"}}
-		platformData := map[string][]string{"site1": {"w|chrome"}}
+		platformData := map[string][]string{"site1": {"w/chrome"}}
 
 		geoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(geoData)
@@ -455,7 +455,7 @@ func TestNewWhitelistClient(t *testing.T) {
 	t.Run("initial_fetch_on_creation", func(t *testing.T) {
 		var fetchCount int32
 		geoData := map[string][]string{"site1": {"US"}}
-		platformData := map[string][]string{"site1": {"w|chrome"}}
+		platformData := map[string][]string{"site1": {"w/chrome"}}
 
 		geoServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&fetchCount, 1)
@@ -505,6 +505,6 @@ func TestNewWhitelistClient(t *testing.T) {
 		assert.Nil(t, client.platformWhitelist.Load())
 
 		// IsAllowed should still work (fail-open)
-		assert.True(t, client.IsAllowed("site1", "US", "w|chrome"))
+		assert.True(t, client.IsAllowed("site1", "US", "w/chrome"))
 	})
 }

@@ -131,7 +131,7 @@ func TestIntegration_WithWhitelist(t *testing.T) {
 
 	platformWhitelistServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := map[string][]string{
-			"0OsUhO": {"w|chrome", "w|safari"},
+			"0OsUhO": {"w/chrome", "w/safari"},
 		}
 		json.NewEncoder(w).Encode(response)
 	}))
@@ -273,7 +273,7 @@ func TestIntegration_CompleteFlow(t *testing.T) {
 
 	platformWhitelistServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := map[string][]string{
-			"0OsUhO": {"w|chrome"},
+			"0OsUhO": {"w/chrome"},
 		}
 		json.NewEncoder(w).Encode(response)
 	}))
@@ -412,7 +412,7 @@ func TestIntegration_SiteNotInWhitelist(t *testing.T) {
 
 	platformWhitelistServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := map[string][]string{
-			"enabled-site": {"w|chrome"},
+			"enabled-site": {"w/chrome"},
 			// "disabled-site" is NOT in the whitelist
 		}
 		json.NewEncoder(w).Encode(response)
@@ -483,7 +483,7 @@ func TestIntegration_SiteNotInWhitelist(t *testing.T) {
 			name:           "enabled_site_with_matching_geo_platform",
 			siteID:         "enabled-site",                                                 // In whitelist
 			country:        "US",                                                           // Matches whitelist
-			ua:             "Mozilla/5.0 (Windows NT 10.0) Chrome/120.0.0.0 Safari/537.36", // w|chrome matches
+			ua:             "Mozilla/5.0 (Windows NT 10.0) Chrome/120.0.0.0 Safari/537.36", // w/chrome matches
 			expectAllowed:  true,
 			expectActivity: "applied",
 			description:    "Enabled site with matching geo/platform should proceed",
