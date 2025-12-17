@@ -20,7 +20,7 @@ func ClassifyDevicePlatform(ua string) string {
 		return ""
 	}
 
-	return deviceType + "|" + browser
+	return deviceType + "/" + browser
 }
 
 // detectDeviceType detects the device type and OS from user agent
