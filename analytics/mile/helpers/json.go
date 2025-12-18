@@ -8,6 +8,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"
+	"github.com/prebid/prebid-server/v3/exchange"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
@@ -226,6 +227,9 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 		}
 	}
 
+	// Extract floor-rejected bids from SeatNonBid
+	floorRejectedBids := extractFloorRejectedBids(ao.SeatNonBid)
+
 	var events []MileAnalyticsEvent
 	for _, imp := range ao.RequestWrapper.GetImp() {
 		// Process configured bidders and initialize floor maps
@@ -260,6 +264,12 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 			respExt,
 			floorMetadata,
 		)
+
+		// Add floor-rejected bid information if available
+		if rejectedData, hasRejected := floorRejectedBids[imp.ID]; hasRejected {
+			event.RejectedBidders = rejectedData.rejectedBidders
+			event.RejectedSizePrice = rejectedData.rejectedSizePrice
+		}
 
 		events = append(events, event)
 	}
@@ -298,6 +308,9 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 
 		// Extract bidder-specific floors from hook execution outcomes
 		bidderFloors := extractBidderFloorsFromHooks(ao.HookExecutionOutcome)
+
+		// Extract floor-rejected bids from SeatNonBid
+		floorRejectedBids := extractFloorRejectedBids(ao.SeatNonBid)
 
 		if ao.RequestWrapper != nil {
 			for _, imp := range ao.RequestWrapper.Imp {
@@ -477,6 +490,12 @@ func JsonifyAmpObject(ao *analytics.AmpObject, scope string) ([]MileAnalyticsEve
 						IsPBS: true,
 					}
 
+					// Add floor-rejected bid information if available
+					if rejectedData, hasRejected := floorRejectedBids[imp.ID]; hasRejected {
+						logEntry.RejectedBidders = rejectedData.rejectedBidders
+						logEntry.RejectedSizePrice = rejectedData.rejectedSizePrice
+					}
+
 					events = append(events, logEntry)
 				}
 			}
@@ -608,4 +627,73 @@ func extractBidderFloorsFromHooks(outcomes []hookexecution.StageOutcome) map[str
 	}
 
 	return impressionBidderFloors
+}
+
+// extractFloorRejectedBids extracts bids rejected due to floors enforcement from SeatNonBid
+// Returns map[impression_id] -> {bidders: []string, sizePrice: map[bidder]map[size]price}
+func extractFloorRejectedBids(seatNonBids []openrtb_ext.SeatNonBid) map[string]struct {
+	rejectedBidders   []string
+	rejectedSizePrice map[string]map[string]float64
+} {
+	result := make(map[string]struct {
+		rejectedBidders   []string
+		rejectedSizePrice map[string]map[string]float64
+	})
+
+	// Floor rejection status codes from exchange package
+	const responseRejectedBelowFloor = int(exchange.ResponseRejectedBelowFloor)         // 301 - Response Rejected - Below Floor
+	const responseRejectedBelowDealFloor = int(exchange.ResponseRejectedBelowDealFloor) // 304 - Response Rejected - Bid was Below Deal Floor
+
+	for _, seatNonBid := range seatNonBids {
+		bidderName := seatNonBid.Seat
+		for _, nonBid := range seatNonBid.NonBid {
+			// Check if this is a floor rejection
+			if nonBid.StatusCode == responseRejectedBelowFloor || nonBid.StatusCode == responseRejectedBelowDealFloor {
+				impID := nonBid.ImpId
+
+				// Initialize impression entry if needed
+				if _, exists := result[impID]; !exists {
+					result[impID] = struct {
+						rejectedBidders   []string
+						rejectedSizePrice map[string]map[string]float64
+					}{
+						rejectedBidders:   []string{},
+						rejectedSizePrice: make(map[string]map[string]float64),
+					}
+				}
+
+				// Add bidder to rejected list if not already present
+				entry := result[impID]
+				bidderFound := false
+				for _, b := range entry.rejectedBidders {
+					if b == bidderName {
+						bidderFound = true
+						break
+					}
+				}
+				if !bidderFound {
+					entry.rejectedBidders = append(entry.rejectedBidders, bidderName)
+				}
+
+				// Extract bid details if available
+				if nonBid.Ext != nil && nonBid.Ext.Prebid.Bid.Price > 0 {
+					size := ""
+					if nonBid.Ext.Prebid.Bid.W > 0 && nonBid.Ext.Prebid.Bid.H > 0 {
+						size = fmt.Sprintf("%dx%d", nonBid.Ext.Prebid.Bid.W, nonBid.Ext.Prebid.Bid.H)
+					}
+
+					if size != "" {
+						if entry.rejectedSizePrice[bidderName] == nil {
+							entry.rejectedSizePrice[bidderName] = make(map[string]float64)
+						}
+						entry.rejectedSizePrice[bidderName][size] = nonBid.Ext.Prebid.Bid.Price
+					}
+				}
+
+				result[impID] = entry
+			}
+		}
+	}
+
+	return result
 }
