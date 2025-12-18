@@ -45,18 +45,29 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 
 	ortb := &openrtb2.BidRequest{
 		ID: requestID.String(),
-		Site: &openrtb2.Site{
-			ID:        site.SiteID,
-			Name:      readString(site.SiteMetadata, "name"),
-			Page:      readString(site.SiteMetadata, "page"),
-			Publisher: &openrtb2.Publisher{ID: pubID},
-		},
 		Imp: []openrtb2.Imp{
 			{
 				ID:    placementID,
 				TagID: placement.AdUnit,
 			},
 		},
+	}
+
+	if req.BaseORTB != nil && req.BaseORTB.App != nil {
+		ortb.App = req.BaseORTB.App
+		// If publisher ID is missing in App, use the one from Redis or request
+		if ortb.App.Publisher == nil {
+			ortb.App.Publisher = &openrtb2.Publisher{ID: pubID}
+		} else if ortb.App.Publisher.ID == "" {
+			ortb.App.Publisher.ID = pubID
+		}
+	} else {
+		ortb.Site = &openrtb2.Site{
+			ID:        site.SiteID,
+			Name:      readString(site.SiteMetadata, "name"),
+			Page:      readString(site.SiteMetadata, "page"),
+			Publisher: &openrtb2.Publisher{ID: pubID},
+		}
 	}
 
 	if req.BaseORTB != nil {
@@ -67,6 +78,16 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 		ortb.Cur = req.BaseORTB.Cur
 		ortb.Source = req.BaseORTB.Source
 		ortb.Regs = req.BaseORTB.Regs
+		ortb.App = req.BaseORTB.App
+		ortb.AT = req.BaseORTB.AT
+		ortb.WSeat = req.BaseORTB.WSeat
+		ortb.BSeat = req.BaseORTB.BSeat
+		ortb.WLang = req.BaseORTB.WLang
+		ortb.BAdv = req.BaseORTB.BAdv
+		ortb.BCat = req.BaseORTB.BCat
+		ortb.BApp = req.BaseORTB.BApp
+		ortb.Test = req.BaseORTB.Test
+
 		if req.BaseORTB.Site != nil {
 			if ortb.Site.Page == "" {
 				ortb.Site.Page = req.BaseORTB.Site.Page
@@ -92,6 +113,7 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 			ortb.Imp[0].DisplayManagerVer = baseImp.DisplayManagerVer
 			ortb.Imp[0].ClickBrowser = baseImp.ClickBrowser
 			ortb.Imp[0].Exp = baseImp.Exp
+			ortb.Imp[0].PMP = baseImp.PMP
 			if baseImp.Banner != nil && len(placement.Sizes) == 0 {
 				ortb.Imp[0].Banner = baseImp.Banner
 			}
