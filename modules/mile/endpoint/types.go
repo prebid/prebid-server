@@ -13,11 +13,12 @@ var ErrSiteNotFound = errors.New("site not found")
 
 // MileRequest is the incoming payload from MilePrebidAdapter.
 type MileRequest struct {
-	SiteID       string          `json:"siteId"`
-	PublisherID  string          `json:"publisherId"`
-	PlacementIDs []string        `json:"placementIds"`
-	CustomData   []CustomData    `json:"customData,omitempty"`
-	Raw          json.RawMessage `json:"-"`
+	SiteID       string               `json:"siteId"`
+	PublisherID  string               `json:"publisherId"`
+	PlacementIDs []string             `json:"placementIds"`
+	CustomData   []CustomData         `json:"customData,omitempty"`
+	BaseORTB     *openrtb2.BidRequest `json:"-"`
+	Raw          json.RawMessage      `json:"-"`
 }
 
 // CustomData captures optional passthrough targeting/settings blocks.

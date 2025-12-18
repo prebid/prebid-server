@@ -28,7 +28,7 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 		return nil, errNoBidders
 	}
 
-	if len(placement.Sizes) == 0 && placement.StoredRequest == "" {
+	if len(placement.Sizes) == 0 && placement.StoredRequest == "" && (req.BaseORTB == nil || findImp(req.BaseORTB, placementID) == nil) {
 		return nil, errNoSizes
 	}
 
@@ -59,21 +59,98 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 		},
 	}
 
+	if req.BaseORTB != nil {
+		ortb.ID = req.BaseORTB.ID
+		ortb.Device = req.BaseORTB.Device
+		ortb.User = req.BaseORTB.User
+		ortb.TMax = req.BaseORTB.TMax
+		ortb.Cur = req.BaseORTB.Cur
+		ortb.Source = req.BaseORTB.Source
+		ortb.Regs = req.BaseORTB.Regs
+		if req.BaseORTB.Site != nil {
+			if ortb.Site.Page == "" {
+				ortb.Site.Page = req.BaseORTB.Site.Page
+			}
+			ortb.Site.Domain = req.BaseORTB.Site.Domain
+			ortb.Site.Ref = req.BaseORTB.Site.Ref
+			ortb.Site.Search = req.BaseORTB.Site.Search
+			ortb.Site.Mobile = req.BaseORTB.Site.Mobile
+			ortb.Site.Keywords = req.BaseORTB.Site.Keywords
+			ortb.Site.Cat = req.BaseORTB.Site.Cat
+			ortb.Site.SectionCat = req.BaseORTB.Site.SectionCat
+			ortb.Site.PageCat = req.BaseORTB.Site.PageCat
+			ortb.Site.PrivacyPolicy = req.BaseORTB.Site.PrivacyPolicy
+			ortb.Site.Ext = req.BaseORTB.Site.Ext
+		}
+		if baseImp := findImp(req.BaseORTB, placementID); baseImp != nil {
+			ortb.Imp[0].Secure = baseImp.Secure
+			ortb.Imp[0].Video = baseImp.Video
+			ortb.Imp[0].Native = baseImp.Native
+			ortb.Imp[0].Audio = baseImp.Audio
+			ortb.Imp[0].Instl = baseImp.Instl
+			ortb.Imp[0].DisplayManager = baseImp.DisplayManager
+			ortb.Imp[0].DisplayManagerVer = baseImp.DisplayManagerVer
+			ortb.Imp[0].ClickBrowser = baseImp.ClickBrowser
+			ortb.Imp[0].Exp = baseImp.Exp
+			if baseImp.Banner != nil && len(placement.Sizes) == 0 {
+				ortb.Imp[0].Banner = baseImp.Banner
+			}
+		}
+	}
+
 	var aliases map[string]string
 	if placement.StoredRequest != "" {
 		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, placement.StoredRequest)
 	} else {
 		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, "")
-		ortb.Imp[0].Banner = buildBanner(placement.Sizes)
+		if ortb.Imp[0].Banner == nil {
+			ortb.Imp[0].Banner = buildBanner(placement.Sizes)
+		}
 		ortb.Imp[0].BidFloor = placement.Floor
 	}
 
 	reqExt := buildRequestExt(site.Ext, aliases)
 	if len(reqExt) > 0 {
-		ortb.Ext = reqExt
+		if len(ortb.Ext) > 0 {
+			// Merge ext if already exists from BaseORTB
+			var baseExt map[string]json.RawMessage
+			_ = json.Unmarshal(ortb.Ext, &baseExt)
+			var newExt map[string]json.RawMessage
+			_ = json.Unmarshal(reqExt, &newExt)
+			for k, v := range newExt {
+				baseExt[k] = v
+			}
+			ortb.Ext, _ = json.Marshal(baseExt)
+		} else {
+			ortb.Ext = reqExt
+		}
 	}
 
 	return ortb, nil
+}
+
+func findImp(ortb *openrtb2.BidRequest, placementID string) *openrtb2.Imp {
+	if ortb == nil {
+		return nil
+	}
+	for i := range ortb.Imp {
+		var pID string
+		if len(ortb.Imp[i].Ext) > 0 {
+			var ext struct {
+				PlacementID string `json:"placementId"`
+			}
+			if err := json.Unmarshal(ortb.Imp[i].Ext, &ext); err == nil {
+				pID = ext.PlacementID
+			}
+		}
+		if pID == "" {
+			pID = ortb.Imp[i].TagID
+		}
+		if pID == placementID {
+			return &ortb.Imp[i]
+		}
+	}
+	return nil
 }
 
 func buildBanner(sizes [][]int) *openrtb2.Banner {

@@ -139,10 +139,18 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 
 	var mileReq MileRequest
-	if err := json.Unmarshal(reqBody, &mileReq); err != nil {
-		m.onException(ctx, mileReq, err)
-		writeError(w, http.StatusBadRequest, "invalid JSON payload")
-		return
+	if err := json.Unmarshal(reqBody, &mileReq); err == nil && mileReq.SiteID != "" {
+		// Standard MileRequest
+	} else {
+		// Try ORTB
+		var ortbReq openrtb2.BidRequest
+		if err := json.Unmarshal(reqBody, &ortbReq); err == nil && ortbReq.Site != nil {
+			mileReq = convertORTBToMile(&ortbReq)
+		} else {
+			m.onException(ctx, mileReq, fmt.Errorf("invalid JSON payload or missing siteId"))
+			writeError(w, http.StatusBadRequest, "invalid JSON payload or missing siteId")
+			return
+		}
 	}
 	mileReq.Raw = reqBody
 
@@ -178,7 +186,7 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 			writeError(w, http.StatusNotFound, fmt.Sprintf("site not found: %s", mileReq.SiteID))
 		default:
 			m.onException(ctx, mileReq, err)
-			writeError(w, http.StatusBadGateway, "failed to load site configuration")
+			writeError(w, http.StatusBadGateway, fmt.Sprintf("failed to load site configuration: %v", err))
 		}
 		return
 	}
@@ -348,4 +356,37 @@ func cloneHeaders(src http.Header) http.Header {
 		dst[k] = values
 	}
 	return dst
+}
+
+func convertORTBToMile(ortb *openrtb2.BidRequest) MileRequest {
+	if ortb == nil {
+		return MileRequest{}
+	}
+	mileReq := MileRequest{
+		BaseORTB: ortb,
+	}
+	if ortb.Site != nil {
+		mileReq.SiteID = ortb.Site.ID
+		if ortb.Site.Publisher != nil {
+			mileReq.PublisherID = ortb.Site.Publisher.ID
+		}
+	}
+	for _, imp := range ortb.Imp {
+		var pID string
+		if len(imp.Ext) > 0 {
+			var ext struct {
+				PlacementID string `json:"placementId"`
+			}
+			if err := json.Unmarshal(imp.Ext, &ext); err == nil {
+				pID = ext.PlacementID
+			}
+		}
+		if pID == "" {
+			pID = imp.TagID
+		}
+		if pID != "" {
+			mileReq.PlacementIDs = append(mileReq.PlacementIDs, pID)
+		}
+	}
+	return mileReq
 }

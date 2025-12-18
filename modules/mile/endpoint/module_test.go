@@ -527,3 +527,98 @@ func TestModuleHandleMultiplePlacements(t *testing.T) {
 	require.True(t, placementIDs["p2"], "expected bid for p2")
 	require.True(t, placementIDs["p3"], "expected bid for p3")
 }
+
+func TestModuleHandleORTB(t *testing.T) {
+	store := &mockStore{
+		sites: map[string]*SiteConfig{
+			"ViXOj3": {
+				SiteID:      "ViXOj3",
+				PublisherID: "590",
+				Placement: PlacementConfig{
+					Sizes: [][]int{{300, 250}},
+					Floor: 0.1,
+					Bidders: []PlacementBidder{
+						{Bidder: "appnexus", Params: json.RawMessage(`{"placementId": "123"}`)},
+					},
+				},
+			},
+		},
+	}
+
+	auctionCalled := false
+	var capturedReq openrtb2.BidRequest
+	auctionHandler := func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		auctionCalled = true
+		body, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(body, &capturedReq)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"22670","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr"}]}]}`))
+	}
+
+	m := &Module{
+		enabled:        true,
+		config:         &Config{Endpoint: "/mile/v1/request", MaxRequestSize: 512 * 1024},
+		store:          store,
+		requestTimeout: 0,
+		maxBody:        512 * 1024,
+	}
+	m.SetAuctionHandler(auctionHandler)
+
+	body := []byte(`{"id":"ff74969e-094c-44bb-8cb4-99b4f8c72421","imp":[{"id":"588f527f-9aaf-483b-ac4e-d29ba763b531","tagid":"22670","secure":1,"banner":{"format":[{"w":300,"h":250}]},"ext":{"placementId":"22670"}}],"site":{"id":"ViXOj3","publisher":{"id":"590"}}}`)
+	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+
+	m.Handle(rec, req, nil)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.True(t, auctionCalled)
+	require.Equal(t, "ff74969e-094c-44bb-8cb4-99b4f8c72421", capturedReq.ID)
+	require.Equal(t, "ViXOj3", capturedReq.Site.ID)
+	require.Equal(t, "590", capturedReq.Site.Publisher.ID)
+	require.Len(t, capturedReq.Imp, 1)
+	require.Equal(t, "22670", capturedReq.Imp[0].ID)
+
+	var mileResp MileResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &mileResp))
+	require.Len(t, mileResp.Bids, 1)
+	require.Equal(t, "22670", mileResp.Bids[0].RequestID)
+}
+
+func TestConvertORTBToMile(t *testing.T) {
+	raw := []byte(`{
+    "id": "ff74969e-094c-44bb-8cb4-99b4f8c72421",
+    "imp": [
+        {
+            "id": "588f527f-9aaf-483b-ac4e-d29ba763b531",
+            "tagid": "22670",
+            "secure": 1,
+            "banner": {
+                "format": [
+                    {
+                        "w": 300,
+                        "h": 250
+                    }
+                ]
+            },
+            "ext": {
+                "placementId": "22670"
+            }
+        }
+    ],
+    "site": {
+        "id": "ViXOj3",
+        "publisher": {
+            "id": "590"
+        }
+    }
+}`)
+	var ortb openrtb2.BidRequest
+	require.NoError(t, json.Unmarshal(raw, &ortb))
+	require.NotNil(t, ortb.Site)
+	require.Equal(t, "ViXOj3", ortb.Site.ID)
+
+	mileReq := convertORTBToMile(&ortb)
+	require.Equal(t, "ViXOj3", mileReq.SiteID)
+	require.Equal(t, "590", mileReq.PublisherID)
+	require.Equal(t, []string{"22670"}, mileReq.PlacementIDs)
+}
