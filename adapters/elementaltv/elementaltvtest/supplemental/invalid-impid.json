@@ -19,7 +19,7 @@
   "httpCalls":[
     {
       "expectedRequest":{
-        "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit1",
+        "uri":"https://pbs.elementaltv.io/processHeaderBid/unit1",
         "body":{
           "id":"req1-unit1",
           "imp":[
@@ -41,7 +41,22 @@
       },
       "mockResponse":{
         "status":200,
-        "body":"invalid-json"
+        "body":{
+          "id":"req1-imp1-resp1",
+          "seatbid":[
+            {
+              "bid":[
+                {
+                  "id":"req1-imp1-bid1",
+                  "impid":"invalid",
+                  "price":0.12,
+                  "adm":"<b>a banner</b>"
+                }
+              ]
+            }
+          ],
+          "cur":"USD"
+        }
       }
     }
   ],
@@ -50,7 +65,7 @@
   ],
   "expectedMakeBidsErrors":[
     {
-      "value":"invalid body: expect { or n, but found \"",
+      "value":"unknown impid: invalid",
       "comparison":"literal"
     }
   ]

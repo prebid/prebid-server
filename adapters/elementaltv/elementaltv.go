@@ -1,4 +1,4 @@
-package adoppler
+package elementaltv
 
 import (
 	"encoding/json"
@@ -17,8 +17,6 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-const DefaultClient = "app"
-
 var bidHeaders http.Header = map[string][]string{
 	"Accept":            {"application/json"},
 	"Content-Type":      {"application/json;charset=utf-8"},
@@ -33,24 +31,24 @@ type adsImpExt struct {
 	Video *adsVideoExt `json:"video"`
 }
 
-type AdopplerAdapter struct {
+type ElementalTvAdapter struct {
 	endpoint *template.Template
 }
 
-// Builder builds a new instance of the Adoppler adapter for the given bidder with the given config.
+// Builder builds a new instance of the ElementalTv adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &AdopplerAdapter{
+	bidder := &ElementalTvAdapter{
 		endpoint: template,
 	}
 	return bidder, nil
 }
 
-func (ads *AdopplerAdapter) MakeRequests(
+func (ads *ElementalTvAdapter) MakeRequests(
 	req *openrtb2.BidRequest,
 	info *adapters.ExtraRequestInfo,
 ) (
@@ -100,7 +98,7 @@ func (ads *AdopplerAdapter) MakeRequests(
 	return datas, errs
 }
 
-func (ads *AdopplerAdapter) MakeBids(
+func (ads *ElementalTvAdapter) MakeBids(
 	intReq *openrtb2.BidRequest,
 	extReq *adapters.RequestData,
 	resp *adapters.ResponseData,
@@ -193,33 +191,27 @@ func (ads *AdopplerAdapter) MakeBids(
 	return adsResp, nil
 }
 
-func (ads *AdopplerAdapter) bidUri(ext *openrtb_ext.ExtImpAdoppler) (string, error) {
+func (ads *ElementalTvAdapter) bidUri(ext *openrtb_ext.ExtImpElementalTv) (string, error) {
 	params := macros.EndpointTemplateParams{}
 	params.AdUnit = url.PathEscape(ext.AdUnit)
-	if ext.Client == "" {
-		params.AccountID = DefaultClient
-	} else {
-		params.AccountID = url.PathEscape(ext.Client)
-	}
-
 	return macros.ResolveMacros(ads.endpoint, params)
 }
 
-func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpAdoppler, error) {
+func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpElementalTv, error) {
 	var bext adapters.ExtImpBidder
 	err := jsonutil.Unmarshal(ext, &bext)
 	if err != nil {
 		return nil, err
 	}
 
-	var adsExt openrtb_ext.ExtImpAdoppler
+	var adsExt openrtb_ext.ExtImpElementalTv
 	err = jsonutil.Unmarshal(bext.Bidder, &adsExt)
 	if err != nil {
 		return nil, err
 	}
 
 	if adsExt.AdUnit == "" {
-		return nil, errors.New("$.imp.ext.adoppler.adunit required")
+		return nil, errors.New("$.imp.ext.bidder.adunit required")
 	}
 
 	return &adsExt, nil
