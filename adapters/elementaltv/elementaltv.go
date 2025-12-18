@@ -20,7 +20,7 @@ import (
 var bidHeaders http.Header = map[string][]string{
 	"Accept":            {"application/json"},
 	"Content-Type":      {"application/json;charset=utf-8"},
-	"X-OpenRTB-Version": {"2.5"},
+	"X-OpenRTB-Version": {"2.6"},
 }
 
 type adsVideoExt struct {
@@ -31,7 +31,7 @@ type adsImpExt struct {
 	Video *adsVideoExt `json:"video"`
 }
 
-type ElementalTvAdapter struct {
+type adapter struct {
 	endpoint *template.Template
 }
 
@@ -42,13 +42,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &ElementalTvAdapter{
+	bidder := &adapter{
 		endpoint: template,
 	}
 	return bidder, nil
 }
 
-func (ads *ElementalTvAdapter) MakeRequests(
+func (ads *adapter) MakeRequests(
 	req *openrtb2.BidRequest,
 	info *adapters.ExtraRequestInfo,
 ) (
@@ -98,7 +98,7 @@ func (ads *ElementalTvAdapter) MakeRequests(
 	return datas, errs
 }
 
-func (ads *ElementalTvAdapter) MakeBids(
+func (ads *adapter) MakeBids(
 	intReq *openrtb2.BidRequest,
 	extReq *adapters.RequestData,
 	resp *adapters.ResponseData,
@@ -191,7 +191,7 @@ func (ads *ElementalTvAdapter) MakeBids(
 	return adsResp, nil
 }
 
-func (ads *ElementalTvAdapter) bidUri(ext *openrtb_ext.ExtImpElementalTv) (string, error) {
+func (ads *adapter) bidUri(ext *openrtb_ext.ExtImpElementalTv) (string, error) {
 	params := macros.EndpointTemplateParams{}
 	params.AdUnit = url.PathEscape(ext.AdUnit)
 	return macros.ResolveMacros(ads.endpoint, params)
