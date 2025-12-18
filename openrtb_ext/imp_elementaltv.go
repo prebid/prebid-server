@@ -1,5 +1,5 @@
 package openrtb_ext
 
-type ExtImpElementalTv struct {
+type ExtImpElementalTV struct {
 	AdUnit string `json:"adunit"`
 }

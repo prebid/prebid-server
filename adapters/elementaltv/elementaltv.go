@@ -35,7 +35,7 @@ type adapter struct {
 	endpoint *template.Template
 }
 
-// Builder builds a new instance of the ElementalTv adapter for the given bidder with the given config.
+// Builder builds a new instance of the ElementalTV adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
@@ -191,20 +191,20 @@ func (ads *adapter) MakeBids(
 	return adsResp, nil
 }
 
-func (ads *adapter) bidUri(ext *openrtb_ext.ExtImpElementalTv) (string, error) {
+func (ads *adapter) bidUri(ext *openrtb_ext.ExtImpElementalTV) (string, error) {
 	params := macros.EndpointTemplateParams{}
 	params.AdUnit = url.PathEscape(ext.AdUnit)
 	return macros.ResolveMacros(ads.endpoint, params)
 }
 
-func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpElementalTv, error) {
+func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpElementalTV, error) {
 	var bext adapters.ExtImpBidder
 	err := jsonutil.Unmarshal(ext, &bext)
 	if err != nil {
 		return nil, err
 	}
 
-	var adsExt openrtb_ext.ExtImpElementalTv
+	var adsExt openrtb_ext.ExtImpElementalTV
 	err = jsonutil.Unmarshal(bext.Bidder, &adsExt)
 	if err != nil {
 		return nil, err
