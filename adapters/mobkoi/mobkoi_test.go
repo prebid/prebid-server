@@ -10,7 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderMobkoi, config.Adapter{
-		Endpoint: "http://any.url"},
+		Endpoint: "http://dev.mobkoi.com/bid"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {

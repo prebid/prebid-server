@@ -3,9 +3,9 @@ package hooks
 import (
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 type Stage string
@@ -210,7 +210,7 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
 			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
 		} else {
-			glog.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
+			logger.Warnf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 
