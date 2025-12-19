@@ -333,8 +333,6 @@ func validateRequest(req MileRequest) error {
 	switch {
 	case req.SiteID == "":
 		return fmt.Errorf("siteId is required")
-	case req.PublisherID == "":
-		return fmt.Errorf("publisherId is required")
 	case len(req.PlacementIDs) == 0:
 		return fmt.Errorf("placementIds is required")
 	default:

@@ -456,6 +456,46 @@ func TestModuleHandleAuthToken(t *testing.T) {
 	}
 }
 
+func TestModuleHandleMissingPublisherID(t *testing.T) {
+	store := &mockStore{
+		sites: map[string]*SiteConfig{
+			"FKKJK": {
+				SiteID:      "FKKJK",
+				PublisherID: "12345",
+				Placement: PlacementConfig{
+					Sizes: [][]int{{300, 250}},
+					Bidders: []PlacementBidder{
+						{Bidder: "appnexus", Params: json.RawMessage(`{}`)},
+					},
+				},
+			},
+		},
+	}
+
+	m := &Module{
+		enabled:        true,
+		config:         &Config{Endpoint: "/mile/v1/request", MaxRequestSize: 512 * 1024},
+		store:          store,
+		requestTimeout: 0,
+		maxBody:        512 * 1024,
+		auctionHandler: func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+		},
+	}
+
+	// Request without publisherId - should succeed now
+	body := []byte(`{"siteId":"FKKJK","placementIds":["p1"]}`)
+	req := httptest.NewRequest(http.MethodPost, "/mile/v1/request", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+
+	m.Handle(rec, req, nil)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 without publisherId, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestModuleHandleMultiplePlacements(t *testing.T) {
 	store := &mockStore{
 		sites: map[string]*SiteConfig{
