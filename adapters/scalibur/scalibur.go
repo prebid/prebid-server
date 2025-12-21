@@ -1,9 +1,11 @@
 package scalibur
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -14,13 +16,18 @@ import (
 )
 
 type adapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
 // Builder builds a new instance of the Scalibur adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	temp, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
 	return &adapter{
-		endpoint: config.Endpoint,
+		endpoint: temp,
 	}, nil
 }
 
@@ -139,13 +146,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, append(errs, err)
 	}
 
+	var endpointBuffer bytes.Buffer
+	if err := a.endpoint.Execute(&endpointBuffer, nil); err != nil {
+		return nil, []error{err}
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     endpointBuffer.String(),
 		Body:    reqJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),

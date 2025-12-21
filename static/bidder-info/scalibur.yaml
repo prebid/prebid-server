@@ -1,11 +1,13 @@
-endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid"
-endpointCompression: GZIP
+endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid-server"
 
 # Leave disabled: false → adapter enabled
 disabled: false
 
 maintainer:
-  email: "you@example.com"
+  email: "support@scalibur.io"
+supported-media-types:
+  - banner
+  - video
 
 gvlVendorID: 1471
 
@@ -25,9 +27,6 @@ capabilities:
 
 userSync:
   iframe:
-    url: "https://srv.scalibur.io/adserver/sync?type=iframe"
-  pixel:
-    url: "https://srv.scalibur.io/adserver/sync?type=pixel"
+    url: "https://srv.scalibur.io/adserver/sync?pbs=1&type=iframe&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
   supports:
     - iframe
-    - pixel
