@@ -7,6 +7,7 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 func newTestAdapter() adapters.Bidder {
 	adapter, _ := Builder(
 		openrtb_ext.BidderScalibur,
-		config.Adapter{Endpoint: "https://dev101.scalibur.io/adserver/ortb?type=prebid"},
+		config.Adapter{Endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid"},
 		config.Server{},
 	)
 	return adapter
@@ -27,6 +28,10 @@ func newTestAdapter() adapters.Bidder {
 // MAKE REQUESTS TESTS
 // ------------------------------------------------------------------------------------------
 //
+
+func TestJsonSamples(t *testing.T) {
+	adapterstest.RunJSONBidderTest(t, "scaliburtest", newTestAdapter())
+}
 
 func TestMakeRequests_SuccessBanner(t *testing.T) {
 	bidder := newTestAdapter()
@@ -59,7 +64,7 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 	require.Len(t, requests, 1)
 
 	r := requests[0]
-	assert.Equal(t, "https://dev101.scalibur.io/adserver/ortb?type=prebid", r.Uri)
+	assert.Equal(t, "https://srv.scalibur.io/adserver/ortb?type=prebid", r.Uri)
 	assert.Equal(t, "POST", r.Method)
 	assert.Contains(t, r.Headers.Get("Content-Type"), "application/json")
 
@@ -117,8 +122,8 @@ func TestMakeRequests_VideoDefaultsApplied(t *testing.T) {
 		ID: "req-video",
 		Imp: []openrtb2.Imp{
 			{
-				ID:  "v1",
-				Ext: ext,
+				ID:    "v1",
+				Ext:   ext,
 				Video: &openrtb2.Video{
 					// Intentionally empty → should fill defaults
 				},

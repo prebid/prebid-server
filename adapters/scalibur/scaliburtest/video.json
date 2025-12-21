@@ -1,0 +1,52 @@
+{
+  "mockBidRequest": {
+    "id": "test-video-req",
+    "imp": [{
+      "id": "video-imp-1",
+      "video": {
+        "mimes": ["video/mp4"],
+        "w": 640,
+        "h": 480
+      },
+      "ext": {
+        "bidder": {
+          "placementId": "46"
+        }
+      }
+    }]
+  },
+  "httpCalls": [{
+    "expectedUri": "https://srv.scalibur.io/adserver/ortb?type=prebid-server",
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-video-req",
+        "seatbid": [{
+          "bid": [{
+            "id": "bid-v1",
+            "impid": "video-imp-1",
+            "price": 1.5,
+            "crid": "cr-video",
+            "ext": {
+              "vastXml": "<VAST>...</VAST>"
+            }
+          }]
+        }],
+        "cur": "USD"
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "bid-v1",
+        "impid": "video-imp-1",
+        "price": 1.5,
+        "adm": "<VAST>...</VAST>",
+        "crid": "cr-video"
+      },
+      "type": "video"
+    }]
+  }]
+}

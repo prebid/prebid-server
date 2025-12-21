@@ -254,7 +254,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 // parseScaliburExt extracts Scalibur-specific parameters from the impression extension.
-func parseScaliburExt(impExt json.RawMessage) (*ExtImpScalibur, error) {
+func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(impExt, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -262,7 +262,7 @@ func parseScaliburExt(impExt json.RawMessage) (*ExtImpScalibur, error) {
 		}
 	}
 
-	var scaliburExt ExtImpScalibur
+	var scaliburExt openrtb_ext.ExtImpScalibur
 	if err := json.Unmarshal(bidderExt.Bidder, &scaliburExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to parse Scalibur params: %s", err.Error()),

@@ -1,0 +1,41 @@
+{
+  "mockBidRequest": {
+    "id": "test-video-url-req",
+    "imp": [{
+      "id": "video-imp-2",
+      "video": { "mimes": ["video/mp4"] },
+      "ext": { "bidder": { "placementId": "46" } }
+    }]
+  },
+  "httpCalls": [{
+    "expectedUri": "https://srv.scalibur.io/adserver/ortb?type=prebid-server",
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-video-url-req",
+        "seatbid": [{
+          "bid": [{
+            "id": "bid-v2",
+            "impid": "video-imp-2",
+            "price": 2.0,
+            "ext": {
+              "vastUrl": "https://cdn.scalibur.io/vast.xml"
+            }
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "bid-v2",
+        "impid": "video-imp-2",
+        "price": 2.0,
+        "adm": "<VAST version=\"3.0\"><Ad><Wrapper><VASTAdTagURI><![CDATA[https://cdn.scalibur.io/vast.xml]]></VASTAdTagURI></Wrapper></Ad></VAST>"
+      },
+      "type": "video"
+    }]
+  }]
+}
