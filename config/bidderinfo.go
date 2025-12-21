@@ -35,7 +35,7 @@ type BidderInfo struct {
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug" mapstructure:"debug"`
 	Geoscope                []string          `yaml:"geoscope" mapstructure:"geoscope"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
+	GVLVendorID             *uint16           `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
 
 	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
 
@@ -391,7 +391,7 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if aliasBidderInfo.ExtraAdapterInfo == "" {
 			aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
 		}
-		if aliasBidderInfo.GVLVendorID == 0 {
+		if aliasBidderInfo.GVLVendorID == nil {
 			aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
 		}
 		if aliasBidderInfo.Maintainer == nil {
@@ -433,8 +433,8 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
 	gvlVendorIds := make(map[openrtb_ext.BidderName]uint16, len(infos))
 	for name, info := range infos {
-		if info.IsEnabled() && info.GVLVendorID != 0 {
-			gvlVendorIds[openrtb_ext.BidderName(name)] = info.GVLVendorID
+		if info.IsEnabled() && info.GVLVendorID != nil && *info.GVLVendorID != 0 {
+			gvlVendorIds[openrtb_ext.BidderName(name)] = *info.GVLVendorID
 		}
 	}
 	return gvlVendorIds
@@ -727,7 +727,7 @@ func applyBidderInfoConfigOverrides(configBidderInfos nillableFieldBidderInfos, 
 		if configBidderInfo.bidderInfo.Debug != nil {
 			mergedBidderInfo.Debug = configBidderInfo.bidderInfo.Debug
 		}
-		if configBidderInfo.bidderInfo.GVLVendorID > 0 {
+		if configBidderInfo.bidderInfo.GVLVendorID != nil && *configBidderInfo.bidderInfo.GVLVendorID > 0 {
 			mergedBidderInfo.GVLVendorID = configBidderInfo.bidderInfo.GVLVendorID
 		}
 		if configBidderInfo.bidderInfo.XAPI.Username != "" {
