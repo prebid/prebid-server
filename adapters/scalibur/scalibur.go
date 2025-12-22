@@ -232,7 +232,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			}
 
 			// Determine bid type based on imp
-			bidType, err := getBidMediaType(imp)
+			bidType, err := getBidMediaType(bid, imp)
 			if err != nil {
 				continue
 			}
@@ -295,12 +295,22 @@ func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, erro
 }
 
 // getBidMediaType determines the media type based on the impression
-func getBidMediaType(imp *openrtb2.Imp) (openrtb_ext.BidType, error) {
-	if imp.Banner != nil {
+func getBidMediaType(bid openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidType, error) {
+	// 1 = Banner, 2 = Video, 3 = Audio, 4 = Native
+	switch bid.MType {
+	case 1:
 		return openrtb_ext.BidTypeBanner, nil
-	}
-	if imp.Video != nil {
+	case 2:
 		return openrtb_ext.BidTypeVideo, nil
 	}
-	return "", fmt.Errorf("unsupported media type for imp id=%s", imp.ID)
+
+	// Fallback for bidders not supporting mtype (non-multi-format requests)
+	if imp.Banner != nil && imp.Video == nil {
+		return openrtb_ext.BidTypeBanner, nil
+	}
+	if imp.Video != nil && imp.Banner == nil {
+		return openrtb_ext.BidTypeVideo, nil
+	}
+
+	return "", fmt.Errorf("unsupported or ambiguous media type for bid id=%s", bid.ID)
 }
