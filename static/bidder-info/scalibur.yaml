@@ -1,6 +1,7 @@
 endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid-server"
 
 # Leave disabled: false → adapter enabled
+compression: gzip
 disabled: false
 
 maintainer:
