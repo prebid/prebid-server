@@ -91,3 +91,5 @@ tmp/GeoLite2-Country.mmdb
 
 # Dependency directories
 node_modules/
+
+*590.json

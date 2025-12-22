@@ -71,7 +71,10 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 	}
 
 	if req.BaseORTB != nil {
-		ortb.ID = req.BaseORTB.ID
+		// Only override the generated ID if BaseORTB has a non-empty ID
+		if req.BaseORTB.ID != "" {
+			ortb.ID = req.BaseORTB.ID
+		}
 		ortb.Device = req.BaseORTB.Device
 		ortb.User = req.BaseORTB.User
 		ortb.TMax = req.BaseORTB.TMax
@@ -92,7 +95,12 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 			if ortb.Site.Page == "" {
 				ortb.Site.Page = req.BaseORTB.Site.Page
 			}
-			ortb.Site.Domain = req.BaseORTB.Site.Domain
+			if ortb.Site.Name == "" {
+				ortb.Site.Name = req.BaseORTB.Site.Name
+			}
+			if ortb.Site.Domain == "" {
+				ortb.Site.Domain = req.BaseORTB.Site.Domain
+			}
 			ortb.Site.Ref = req.BaseORTB.Site.Ref
 			ortb.Site.Search = req.BaseORTB.Site.Search
 			ortb.Site.Mobile = req.BaseORTB.Site.Mobile
@@ -122,31 +130,16 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 
 	var aliases map[string]string
 	if placement.StoredRequest != "" {
-		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, placement.StoredRequest)
+		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, placement.StoredRequest, req.BaseORTB, placementID)
 	} else {
-		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, "")
+		ortb.Imp[0].Ext, aliases = buildImpExt(placement, req.CustomData, "", req.BaseORTB, placementID)
 		if ortb.Imp[0].Banner == nil {
 			ortb.Imp[0].Banner = buildBanner(placement.Sizes)
 		}
 		ortb.Imp[0].BidFloor = placement.Floor
 	}
 
-	reqExt := buildRequestExt(site.Ext, aliases)
-	if len(reqExt) > 0 {
-		if len(ortb.Ext) > 0 {
-			// Merge ext if already exists from BaseORTB
-			var baseExt map[string]json.RawMessage
-			_ = json.Unmarshal(ortb.Ext, &baseExt)
-			var newExt map[string]json.RawMessage
-			_ = json.Unmarshal(reqExt, &newExt)
-			for k, v := range newExt {
-				baseExt[k] = v
-			}
-			ortb.Ext, _ = json.Marshal(baseExt)
-		} else {
-			ortb.Ext = reqExt
-		}
-	}
+	ortb.Ext = buildRequestExt(site.Ext, aliases, req.BaseORTB)
 
 	return ortb, nil
 }
@@ -192,7 +185,7 @@ func buildBanner(sizes [][]int) *openrtb2.Banner {
 	return &openrtb2.Banner{Format: formats}
 }
 
-func buildImpExt(placement PlacementConfig, customData []CustomData, storedRequest string) (json.RawMessage, map[string]string) {
+func buildImpExt(placement PlacementConfig, customData []CustomData, storedRequest string, baseORTB *openrtb2.BidRequest, placementID string) (json.RawMessage, map[string]string) {
 	prebid := openrtb_ext.ExtImpPrebid{
 		Bidder: make(map[string]json.RawMessage, len(placement.Bidders)),
 	}
@@ -223,7 +216,25 @@ func buildImpExt(placement PlacementConfig, customData []CustomData, storedReque
 		}
 	}
 
-	if storedRequest != "" {
+	// Check for storedauctionresponse from base ORTB request first
+	var storedAuctionResponseID string
+	if baseORTB != nil {
+		if baseImp := findImp(baseORTB, placementID); baseImp != nil && len(baseImp.Ext) > 0 {
+			var impExt map[string]json.RawMessage
+			if err := json.Unmarshal(baseImp.Ext, &impExt); err == nil {
+				if prebidExt, ok := impExt["prebid"]; ok {
+					var prebidData openrtb_ext.ExtImpPrebid
+					if err := json.Unmarshal(prebidExt, &prebidData); err == nil && prebidData.StoredAuctionResponse != nil {
+						storedAuctionResponseID = prebidData.StoredAuctionResponse.ID
+					}
+				}
+			}
+		}
+	}
+
+	if storedAuctionResponseID != "" {
+		prebid.StoredAuctionResponse = &openrtb_ext.ExtStoredAuctionResponse{ID: storedAuctionResponseID}
+	} else if storedRequest != "" {
 		prebid.StoredRequest = &openrtb_ext.ExtStoredRequest{ID: storedRequest}
 	}
 
@@ -252,17 +263,37 @@ func buildImpExt(placement PlacementConfig, customData []CustomData, storedReque
 	return rawExt, aliases
 }
 
-func buildRequestExt(siteExt map[string]json.RawMessage, aliases map[string]string) json.RawMessage {
-	priceGranularity := openrtb_ext.NewPriceGranularityDefault()
-	prebid := &openrtb_ext.ExtRequestPrebid{
-		Targeting: &openrtb_ext.ExtRequestTargeting{
+func buildRequestExt(siteExt map[string]json.RawMessage, aliases map[string]string, baseORTB *openrtb2.BidRequest) json.RawMessage {
+	var prebid *openrtb_ext.ExtRequestPrebid
+	if baseORTB != nil && len(baseORTB.Ext) > 0 {
+		var baseExt map[string]json.RawMessage
+		if err := json.Unmarshal(baseORTB.Ext, &baseExt); err == nil {
+			if prebidRaw, ok := baseExt["prebid"]; ok {
+				_ = json.Unmarshal(prebidRaw, &prebid)
+			}
+		}
+	}
+
+	if prebid == nil {
+		prebid = &openrtb_ext.ExtRequestPrebid{}
+	}
+
+	if prebid.Targeting == nil {
+		priceGranularity := openrtb_ext.NewPriceGranularityDefault()
+		prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
 			PriceGranularity:  &priceGranularity,
 			IncludeBidderKeys: boolPtr(true),
 			IncludeWinners:    boolPtr(true),
-		},
+		}
 	}
 	if len(aliases) > 0 {
-		prebid.Aliases = aliases
+		if prebid.Aliases == nil {
+			prebid.Aliases = aliases
+		} else {
+			for k, v := range aliases {
+				prebid.Aliases[k] = v
+			}
+		}
 	}
 
 	ext := map[string]any{

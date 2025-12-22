@@ -1,10 +1,15 @@
 package endpoint
 
-import "github.com/prebid/openrtb/v20/openrtb2"
+import (
+	"encoding/json"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+)
 
 // MileResponse is the bidder-style response expected by the Prebid.js adapter.
 type MileResponse struct {
-	Bids []MileBid `json:"bids"`
+	Bids []MileBid       `json:"bids"`
+	Ext  json.RawMessage `json:"ext,omitempty"`
 }
 
 // MileBid represents a single winning bid in Prebid.js adapter format.
@@ -24,8 +29,12 @@ type MileBid struct {
 
 // transformToMileResponse picks the highest CPM bid per impression and maps it to MileResponse.
 func transformToMileResponse(br *openrtb2.BidResponse) MileResponse {
-	if br == nil || len(br.SeatBid) == 0 {
+	if br == nil {
 		return MileResponse{Bids: []MileBid{}}
+	}
+
+	if len(br.SeatBid) == 0 {
+		return MileResponse{Bids: []MileBid{}, Ext: br.Ext}
 	}
 
 	type bidKey struct {
@@ -55,7 +64,7 @@ func transformToMileResponse(br *openrtb2.BidResponse) MileResponse {
 		}
 	}
 
-	resp := MileResponse{Bids: make([]MileBid, 0, len(best))}
+	resp := MileResponse{Bids: make([]MileBid, 0, len(best)), Ext: br.Ext}
 	for _, v := range best {
 		b := v.bid
 		resp.Bids = append(resp.Bids, MileBid{

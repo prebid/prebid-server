@@ -154,6 +154,20 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 	mileReq.Raw = reqBody
 
+	var debugRequested bool
+	if mileReq.BaseORTB != nil && len(mileReq.BaseORTB.Ext) > 0 {
+		var ext map[string]json.RawMessage
+		if err := json.Unmarshal(mileReq.BaseORTB.Ext, &ext); err == nil {
+			if prebidRaw, ok := ext["prebid"]; ok {
+				var prebid struct {
+					Debug bool `json:"debug"`
+				}
+				_ = json.Unmarshal(prebidRaw, &prebid)
+				debugRequested = prebid.Debug
+			}
+		}
+	}
+
 	// Auth token validation
 	if m.config.AuthToken != "" {
 		if token := r.Header.Get("X-Mile-Token"); token != m.config.AuthToken {
@@ -195,6 +209,7 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	type auctionResult struct {
 		placementID string
 		bids        []MileBid
+		ext         json.RawMessage
 		err         error
 	}
 
@@ -211,8 +226,8 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		wg.Add(1)
 		go func(placementID string, siteCfg *SiteConfig) {
 			defer wg.Done()
-			bids, err := m.processPlacement(ctx, r, mileReq, placementID, siteCfg)
-			results <- auctionResult{placementID: placementID, bids: bids, err: err}
+			bids, ext, err := m.processPlacement(ctx, r, mileReq, placementID, siteCfg)
+			results <- auctionResult{placementID: placementID, bids: bids, ext: ext, err: err}
 		}(placementID, siteCfg)
 	}
 
@@ -224,18 +239,32 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 	// Aggregate all bids
 	var allBids []MileBid
+	var allExt json.RawMessage
 	for result := range results {
 		if result.err != nil {
 			glog.Warningf("mile: auction failed for placement %s: %v", result.placementID, result.err)
 			continue
 		}
 		allBids = append(allBids, result.bids...)
+		if allExt == nil {
+			allExt = result.ext
+		}
 	}
 
 	// Build response
-	mileResp := MileResponse{Bids: allBids}
+	mileResp := MileResponse{Bids: allBids, Ext: allExt}
 	if mileResp.Bids == nil {
 		mileResp.Bids = []MileBid{}
+	}
+
+	if !debugRequested && len(mileResp.Ext) > 0 {
+		var ext map[string]json.RawMessage
+		if err := json.Unmarshal(mileResp.Ext, &ext); err == nil {
+			if _, ok := ext["debug"]; ok {
+				delete(ext, "debug")
+				mileResp.Ext, _ = json.Marshal(ext)
+			}
+		}
 	}
 
 	mileRespBytes, err := json.Marshal(mileResp)
@@ -257,23 +286,23 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 }
 
 // processPlacement runs an auction for a single placement and returns the bids.
-func (m *Module) processPlacement(ctx context.Context, r *http.Request, mileReq MileRequest, placementID string, siteCfg *SiteConfig) ([]MileBid, error) {
+func (m *Module) processPlacement(ctx context.Context, r *http.Request, mileReq MileRequest, placementID string, siteCfg *SiteConfig) ([]MileBid, json.RawMessage, error) {
 	// Build OpenRTB request
 	ortbReq, err := buildOpenRTBRequest(mileReq, placementID, siteCfg)
 	if err != nil {
-		return nil, fmt.Errorf("build request failed: %w", err)
+		return nil, nil, fmt.Errorf("build request failed: %w", err)
 	}
 
 	// Before hook
 	ortbReq, err = m.hooks.applyBefore(ctx, mileReq, siteCfg, ortbReq)
 	if err != nil {
-		return nil, fmt.Errorf("before hook failed: %w", err)
+		return nil, nil, fmt.Errorf("before hook failed: %w", err)
 	}
 
 	// Marshal for auction
 	auctionBody, err := json.Marshal(ortbReq)
 	if err != nil {
-		return nil, fmt.Errorf("marshal request failed: %w", err)
+		return nil, nil, fmt.Errorf("marshal request failed: %w", err)
 	}
 	glog.V(3).Infof("mile: auction request site=%s placement=%s: %s", mileReq.SiteID, placementID, string(auctionBody))
 
@@ -293,7 +322,7 @@ func (m *Module) processPlacement(ctx context.Context, r *http.Request, mileReq 
 
 	respBody, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		return nil, fmt.Errorf("read response failed: %w", readErr)
+		return nil, nil, fmt.Errorf("read response failed: %w", readErr)
 	}
 
 	// After hook
@@ -304,22 +333,22 @@ func (m *Module) processPlacement(ctx context.Context, r *http.Request, mileReq 
 
 	// Check for error status
 	if resp.StatusCode >= http.StatusBadRequest {
-		return nil, fmt.Errorf("auction returned status %d", resp.StatusCode)
+		return nil, nil, fmt.Errorf("auction returned status %d", resp.StatusCode)
 	}
 
 	// Parse and transform response
 	if len(respBody) == 0 {
-		return []MileBid{}, nil
+		return []MileBid{}, nil, nil
 	}
 
 	var br openrtb2.BidResponse
 	if err := json.Unmarshal(respBody, &br); err != nil {
 		glog.Warningf("mile: failed to parse auction response for placement %s: %v", placementID, err)
-		return []MileBid{}, nil
+		return []MileBid{}, nil, nil
 	}
 
 	mileResp := transformToMileResponse(&br)
-	return mileResp.Bids, nil
+	return mileResp.Bids, mileResp.Ext, nil
 }
 
 func (m *Module) onException(ctx context.Context, req MileRequest, err error) {
