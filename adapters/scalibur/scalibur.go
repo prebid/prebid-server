@@ -139,7 +139,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	requestCopy := *request
 	requestCopy.Imp = validImps
 	requestCopy.Cur = nil
-	requestCopy.Ext = nil
+
+	isDebug := request.Test == 1
+	if !isDebug && len(request.Ext) > 0 {
+		var extRequest openrtb_ext.ExtRequest
+		if err := json.Unmarshal(request.Ext, &extRequest); err == nil {
+			isDebug = extRequest.Prebid.Debug
+		}
+	}
+
+	if isDebug {
+		reqExt := openrtb_ext.ExtRequestScalibur{IsDebug: 1}
+		if reqExtJSON, err := json.Marshal(reqExt); err == nil {
+			requestCopy.Ext = reqExtJSON
+		}
+	} else {
+		requestCopy.Ext = nil
+	}
 
 	reqJSON, err := json.Marshal(requestCopy)
 	if err != nil {

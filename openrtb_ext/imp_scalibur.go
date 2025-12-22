@@ -5,3 +5,7 @@ type ExtImpScalibur struct {
 	BidFloor    *float64 `json:"bidfloor,omitempty"`    // optional, used as fallback
 	BidFloorCur string   `json:"bidfloorcur,omitempty"` // optional, defaults to USD if empty
 }
+
+type ExtRequestScalibur struct {
+	IsDebug int `json:"isDebug,omitempty"`
+}
