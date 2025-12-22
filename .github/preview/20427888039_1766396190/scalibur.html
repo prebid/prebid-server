@@ -1,0 +1,409 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>scalibur: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/scalibur/scalibur.go (79.4%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package scalibur
+
+import (
+        "bytes"
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "text/template"
+
+        "github.com/prebid/openrtb/v20/adcom1"
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+)
+
+type adapter struct {
+        endpoint *template.Template
+}
+
+// Builder builds a new instance of the Scalibur adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        temp, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;adapter{
+                endpoint: temp,
+        }, nil</span>
+}
+
+// MakeRequests creates the HTTP requests which should be made to fetch bids from Scalibur.
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+        var validImps []openrtb2.Imp
+
+        // Process each impression
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                scaliburExt, err := parseScaliburExt(imp.Ext)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">impCopy := imp
+
+                // Apply bid floor from params as fallback (matching JS logic)
+                if scaliburExt.BidFloor != nil &amp;&amp; *scaliburExt.BidFloor &gt; 0 </span><span class="cov8" title="1">{
+                        if impCopy.BidFloor == 0 </span><span class="cov8" title="1">{
+                                impCopy.BidFloor = *scaliburExt.BidFloor
+                        }</span>
+                }
+
+                // Apply bid floor currency from params
+                <span class="cov8" title="1">if scaliburExt.BidFloorCur != "" &amp;&amp; impCopy.BidFloorCur == "" </span><span class="cov8" title="1">{
+                        impCopy.BidFloorCur = scaliburExt.BidFloorCur
+                }</span>
+                <span class="cov8" title="1">if impCopy.BidFloorCur == "" </span><span class="cov8" title="1">{
+                        impCopy.BidFloorCur = "USD"
+                }</span>
+
+                // Prepare imp.ext with placementId and params
+                <span class="cov8" title="1">impExtData := make(map[string]interface{})
+                impExtData["placementId"] = scaliburExt.PlacementID
+
+                if scaliburExt.BidFloor != nil </span><span class="cov8" title="1">{
+                        impExtData["bidfloor"] = *scaliburExt.BidFloor
+                }</span>
+                <span class="cov8" title="1">if scaliburExt.BidFloorCur != "" </span><span class="cov8" title="1">{
+                        impExtData["bidfloorcur"] = scaliburExt.BidFloorCur
+                }</span>
+
+                // Preserve GPID if present
+                <span class="cov8" title="1">var rawExt map[string]json.RawMessage
+                if err := json.Unmarshal(imp.Ext, &amp;rawExt); err == nil </span><span class="cov8" title="1">{
+                        if gpid, ok := rawExt["gpid"]; ok </span><span class="cov0" title="0">{
+                                impExtData["gpid"] = json.RawMessage(gpid)
+                        }</span>
+                }
+
+                <span class="cov8" title="1">impExt, err := json.Marshal(impExtData)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">impCopy.Ext = impExt
+
+                // Apply video defaults (matching JS defaults)
+                if impCopy.Video != nil </span><span class="cov8" title="1">{
+                        videoCopy := *impCopy.Video
+
+                        // Note: In openrtb v20, field names are capitalized (MIMEs not Mimes)
+                        if len(videoCopy.MIMEs) == 0 </span><span class="cov8" title="1">{
+                                videoCopy.MIMEs = []string{"video/mp4"}
+                        }</span>
+                        <span class="cov8" title="1">if videoCopy.MinDuration == 0 </span><span class="cov8" title="1">{
+                                videoCopy.MinDuration = 1
+                        }</span>
+                        <span class="cov8" title="1">if videoCopy.MaxDuration == 0 </span><span class="cov8" title="1">{
+                                videoCopy.MaxDuration = 180
+                        }</span>
+                        <span class="cov8" title="1">if videoCopy.MaxBitRate == 0 </span><span class="cov8" title="1">{
+                                videoCopy.MaxBitRate = 30000
+                        }</span>
+                        <span class="cov8" title="1">if len(videoCopy.Protocols) == 0 </span><span class="cov8" title="1">{
+                                // Use adcom1.MediaCreativeSubtype for protocols in v20
+                                videoCopy.Protocols = []adcom1.MediaCreativeSubtype{2, 3, 5, 6}
+                        }</span>
+                        // Note: In openrtb v20, W and H are pointers
+                        <span class="cov8" title="1">if videoCopy.W == nil || *videoCopy.W == 0 </span><span class="cov8" title="1">{
+                                w := int64(640)
+                                videoCopy.W = &amp;w
+                        }</span>
+                        <span class="cov8" title="1">if videoCopy.H == nil || *videoCopy.H == 0 </span><span class="cov8" title="1">{
+                                h := int64(480)
+                                videoCopy.H = &amp;h
+                        }</span>
+                        <span class="cov8" title="1">if videoCopy.Placement == 0 </span><span class="cov8" title="1">{
+                                videoCopy.Placement = 1
+                        }</span>
+                        <span class="cov8" title="1">if videoCopy.Linearity == 0 </span><span class="cov8" title="1">{
+                                videoCopy.Linearity = 1
+                        }</span>
+
+                        <span class="cov8" title="1">impCopy.Video = &amp;videoCopy</span>
+                }
+
+                <span class="cov8" title="1">validImps = append(validImps, impCopy)</span>
+        }
+
+        // If no valid impressions, return errors
+        <span class="cov8" title="1">if len(validImps) == 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        // Create the outgoing request
+        <span class="cov8" title="1">requestCopy := *request
+        requestCopy.Imp = validImps
+        requestCopy.Cur = nil
+
+        isDebug := request.Test == 1
+        if !isDebug &amp;&amp; len(request.Ext) &gt; 0 </span><span class="cov0" title="0">{
+                var extRequest openrtb_ext.ExtRequest
+                if err := json.Unmarshal(request.Ext, &amp;extRequest); err == nil </span><span class="cov0" title="0">{
+                        isDebug = extRequest.Prebid.Debug
+                }</span>
+        }
+
+        <span class="cov8" title="1">if isDebug </span><span class="cov0" title="0">{
+                reqExt := openrtb_ext.ExtRequestScalibur{IsDebug: 1}
+                if reqExtJSON, err := json.Marshal(reqExt); err == nil </span><span class="cov0" title="0">{
+                        requestCopy.Ext = reqExtJSON
+                }</span>
+        } else<span class="cov8" title="1"> {
+                requestCopy.Ext = nil
+        }</span>
+
+        <span class="cov8" title="1">reqJSON, err := json.Marshal(requestCopy)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, append(errs, err)
+        }</span>
+
+        <span class="cov8" title="1">var endpointBuffer bytes.Buffer
+        if err := a.endpoint.Execute(&amp;endpointBuffer, nil); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        requestData := &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     endpointBuffer.String(),
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
+        }
+
+        return []*adapters.RequestData{requestData}, errs</span>
+}
+
+// MakeBids unpacks the server's response into bids.
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := json.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Failed to unmarshal response: %s", err.Error()),
+                }}
+        }</span>
+
+        // Parse the external request to get impression details
+        <span class="cov8" title="1">var bidReq openrtb2.BidRequest
+        if err := json.Unmarshal(externalRequest.Body, &amp;bidReq); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        // Build impression map for lookup
+        <span class="cov8" title="1">impMap := make(map[string]*openrtb2.Imp, len(bidReq.Imp))
+        for i := range bidReq.Imp </span><span class="cov8" title="1">{
+                impMap[bidReq.Imp[i].ID] = &amp;bidReq.Imp[i]
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidReq.Imp))
+
+        // Set currency
+        if bidResp.Cur != "" </span><span class="cov8" title="1">{
+                bidResponse.Currency = bidResp.Cur
+        }</span> else<span class="cov8" title="1"> {
+                bidResponse.Currency = "USD"
+        }</span>
+
+        // Process each seat bid
+        <span class="cov8" title="1">for _, seatBid := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for _, bid := range seatBid.Bid </span><span class="cov8" title="1">{
+                        // Find the corresponding imp
+                        imp, found := impMap[bid.ImpID]
+                        if !found </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+
+                        // Determine bid type based on imp
+                        <span class="cov8" title="1">bidType, err := getBidMediaType(imp)
+                        if err != nil </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidCopy := bid
+
+                        // Handle video VAST
+                        if bidType == openrtb_ext.BidTypeVideo </span><span class="cov0" title="0">{
+                                // Try to extract custom fields vastXml and vastUrl from bid response
+                                var bidExtData map[string]interface{}
+                                if bidBytes, err := json.Marshal(bid); err == nil </span><span class="cov0" title="0">{
+                                        if err := json.Unmarshal(bidBytes, &amp;bidExtData); err == nil </span><span class="cov0" title="0">{
+                                                if vastXML, ok := bidExtData["vastXml"].(string); ok &amp;&amp; vastXML != "" </span><span class="cov0" title="0">{
+                                                        bidCopy.AdM = vastXML
+                                                }</span> else<span class="cov0" title="0"> if vastURL, ok := bidExtData["vastUrl"].(string); ok &amp;&amp; vastURL != "" &amp;&amp; bidCopy.AdM == "" </span><span class="cov0" title="0">{
+                                                        // Wrap VAST URL in VAST wrapper
+                                                        bidCopy.AdM = fmt.Sprintf(`&lt;VAST version="3.0"&gt;&lt;Ad&gt;&lt;Wrapper&gt;&lt;VASTAdTagURI&gt;&lt;![CDATA[%s]]&gt;&lt;/VASTAdTagURI&gt;&lt;/Wrapper&gt;&lt;/Ad&gt;&lt;/VAST&gt;`, vastURL)
+                                                }</span>
+                                        }
+                                }
+                        }
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bidCopy,
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">if len(bidResponse.Bids) == 0 </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+// parseScaliburExt extracts Scalibur-specific parameters from the impression extension.
+func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := json.Unmarshal(impExt, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Failed to parse imp.ext: %s", err.Error()),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var scaliburExt openrtb_ext.ExtImpScalibur
+        if err := json.Unmarshal(bidderExt.Bidder, &amp;scaliburExt); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Failed to parse Scalibur params: %s", err.Error()),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if scaliburExt.PlacementID == "" </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "placementId is required",
+                }
+        }</span>
+
+        <span class="cov8" title="1">return &amp;scaliburExt, nil</span>
+}
+
+// getBidMediaType determines the media type based on the impression
+func getBidMediaType(imp *openrtb2.Imp) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        if imp.Banner != nil </span><span class="cov8" title="1">{
+                return openrtb_ext.BidTypeBanner, nil
+        }</span>
+        <span class="cov0" title="0">if imp.Video != nil </span><span class="cov0" title="0">{
+                return openrtb_ext.BidTypeVideo, nil
+        }</span>
+        <span class="cov0" title="0">return "", fmt.Errorf("unsupported media type for imp id=%s", imp.ID)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
