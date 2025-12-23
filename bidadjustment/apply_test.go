@@ -27,7 +27,7 @@ func TestGetAndApply(t *testing.T) {
 		expectedCurrency       string
 	}{
 		{
-			name: "CpmAdjustment",
+			name: "CpmAdjustment no seat",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  10.0,
@@ -36,14 +36,14 @@ func TestGetAndApply(t *testing.T) {
 			},
 			givenBidType: string(openrtb_ext.BidTypeBanner),
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"banner|bidderA|dealId": {
+				"banner|biddera|dealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    1.0,
 						Currency: adjCur,
 					},
 				},
-				"banner|bidderA|*": {
+				"banner|biddera|*": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 2.0,
@@ -56,7 +56,37 @@ func TestGetAndApply(t *testing.T) {
 			expectedCurrency: bidCur,
 		},
 		{
-			name: "StaticAdjustment",
+			name: "CpmAdjustment with seat",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  10.0,
+					DealID: "dealId",
+				},
+				Seat: "seatA",
+			},
+			givenBidType: string(openrtb_ext.BidTypeBanner),
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|seata|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+				"banner|seata|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
+			expectedBidPrice: 7.5,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "StaticAdjustment no seat",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  10.0,
@@ -65,14 +95,14 @@ func TestGetAndApply(t *testing.T) {
 			},
 			givenBidType: string(openrtb_ext.BidTypeBanner),
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"*|bidderA|dealId": {
+				"*|biddera|dealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    1.0,
 						Currency: adjCur,
 					},
 				},
-				"banner|bidderA|*": {
+				"banner|biddera|*": {
 					{
 						Type:     AdjustmentTypeStatic,
 						Value:    2.0,
@@ -86,7 +116,38 @@ func TestGetAndApply(t *testing.T) {
 			expectedCurrency: adjCur,
 		},
 		{
-			name: "MultiplierAdjustment",
+			name: "StaticAdjustment with seat",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  10.0,
+					DealID: "dealId",
+				},
+				Seat: "seatA",
+			},
+			givenBidType: string(openrtb_ext.BidTypeBanner),
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|seata|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+				"banner|seata|*": {
+					{
+						Type:     AdjustmentTypeStatic,
+						Value:    2.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          nil,
+			expectedBidPrice: 2.0,
+			expectedCurrency: adjCur,
+		},
+		{
+			name: "MultiplierAdjustment no seat",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  10.0,
@@ -95,7 +156,7 @@ func TestGetAndApply(t *testing.T) {
 			},
 			givenBidType: VideoInstream,
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"*|*|dealId": {
+				"*|*|dealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    1.0,
@@ -115,7 +176,37 @@ func TestGetAndApply(t *testing.T) {
 			expectedCurrency: bidCur,
 		},
 		{
-			name: "CpmAndMultiplierAdjustments",
+			name: "MultiplierAdjustment with seat",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  10.0,
+					DealID: "dealId",
+				},
+				Seat: "seatA",
+			},
+			givenBidType: VideoInstream,
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+				"video-instream|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          nil,
+			expectedBidPrice: 20.0,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "CpmAndMultiplierAdjustments no seat",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  10.0,
@@ -142,7 +233,35 @@ func TestGetAndApply(t *testing.T) {
 			expectedCurrency: bidCur,
 		},
 		{
-			name: "DealIdPresentAndNegativeAdjustedPrice",
+			name: "CpmAndMultiplierAdjustments with seat",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  10.0,
+					DealID: "dealId",
+				},
+				Seat: "seatA",
+			},
+			givenBidType: VideoInstream,
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"video-instream|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
+			expectedBidPrice: 17.5,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "DealIdPresentAndNegativeAdjustedPrice no seat",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  1.0,
@@ -151,7 +270,7 @@ func TestGetAndApply(t *testing.T) {
 			},
 			givenBidType: VideoInstream,
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"*|*|dealId": {
+				"*|*|dealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    1.0,
@@ -165,12 +284,60 @@ func TestGetAndApply(t *testing.T) {
 			expectedCurrency: bidCur,
 		},
 		{
-			name: "NoDealIdNegativeAdjustedPrice",
+			name: "DealIdPresentAndNegativeAdjustedPrice with seat",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  1.0,
+					DealID: "dealId",
+				},
+				Seat: "seatA",
+			},
+			givenBidType: VideoInstream,
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
+			expectedBidPrice: 0.0,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "NoDealIdNegativeAdjustedPrice no seat",
 			givenBidInfo: &adapters.TypedBid{
 				Bid: &openrtb2.Bid{
 					Price:  1.0,
 					DealID: "",
 				},
+			},
+			givenBidType: string(openrtb_ext.BidTypeAudio),
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.0,
+						Currency: adjCur,
+					},
+				},
+			},
+			givenBidderName:  "bidderA",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", adjCur, bidCur).Return(2.5, nil) },
+			expectedBidPrice: 0.1,
+			expectedCurrency: bidCur,
+		},
+		{
+			name: "NoDealIdNegativeAdjustedPrice with seat",
+			givenBidInfo: &adapters.TypedBid{
+				Bid: &openrtb2.Bid{
+					Price:  1.0,
+					DealID: "",
+				},
+				Seat: "seatA",
 			},
 			givenBidType: string(openrtb_ext.BidTypeAudio),
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
@@ -297,25 +464,26 @@ func TestApply(t *testing.T) {
 	}
 }
 
-func TestGet(t *testing.T) {
+func TestGetNoSeat(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		givenRuleToAdjustments map[string][]openrtb_ext.Adjustment
 		givenBidType           openrtb_ext.BidType
 		givenBidderName        openrtb_ext.BidderName
 		givenDealId            string
+		givenSeat              string
 		expected               []openrtb_ext.Adjustment
 	}{
 		{
 			name: "Priority1",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"banner|bidderA|dealId": {
+				"banner|biddera|dealid": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 1.1,
 					},
 				},
-				"banner|bidderA|*": {
+				"banner|biddera|*": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 2.0,
@@ -330,13 +498,13 @@ func TestGet(t *testing.T) {
 		{
 			name: "Priority2",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"banner|bidderA|*": {
+				"banner|biddera|*": {
 					{
 						Type:  AdjustmentTypeStatic,
 						Value: 5.0,
 					},
 				},
-				"banner|*|dealId": {
+				"banner|*|dealid": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 2.0,
@@ -351,14 +519,14 @@ func TestGet(t *testing.T) {
 		{
 			name: "Priority3",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"banner|*|dealId": {
+				"banner|*|dealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
 						Currency: "USD",
 					},
 				},
-				"*|bidderA|dealId": {
+				"*|biddera|dealid": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 1.1,
@@ -373,7 +541,7 @@ func TestGet(t *testing.T) {
 		{
 			name: "Priority4",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"*|bidderA|dealId": {
+				"*|biddera|dealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
@@ -402,7 +570,7 @@ func TestGet(t *testing.T) {
 						Currency: "USD",
 					},
 				},
-				"*|bidderA|*": {
+				"*|biddera|*": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 1.1,
@@ -417,14 +585,14 @@ func TestGet(t *testing.T) {
 		{
 			name: "Priority6",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"*|bidderA|*": {
+				"*|biddera|*": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
 						Currency: "USD",
 					},
 				},
-				"*|*|dealId": {
+				"*|*|dealid": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 1.1,
@@ -439,7 +607,7 @@ func TestGet(t *testing.T) {
 		{
 			name: "Priority7",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"*|*|dealId": {
+				"*|*|dealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    3.0,
@@ -463,8 +631,9 @@ func TestGet(t *testing.T) {
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
 				"*|*|*": {
 					{
-						Type:  AdjustmentTypeMultiplier,
-						Value: 1.1,
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
 					},
 				},
 				"banner|bidderA|dealId": {
@@ -477,15 +646,16 @@ func TestGet(t *testing.T) {
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderB",
 			givenDealId:     "dealId",
-			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
 		},
 		{
 			name: "NoDealID",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"banner|bidderA|*": {
+				"banner|biddera|*": {
 					{
-						Type:  AdjustmentTypeMultiplier,
-						Value: 1.1,
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
 					},
 				},
 				"banner|*|*": {
@@ -498,18 +668,18 @@ func TestGet(t *testing.T) {
 			givenBidType:    openrtb_ext.BidTypeBanner,
 			givenBidderName: "bidderA",
 			givenDealId:     "",
-			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
 		},
 		{
 			name: "NoPriorityRulesMatch",
 			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
-				"banner|bidderA|dealId": {
+				"banner|biddera|dealid": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 1.1,
 					},
 				},
-				"banner|bidderA|*": {
+				"banner|biddera|*": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 2.0,
@@ -525,7 +695,461 @@ func TestGet(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			adjArray := get(test.givenRuleToAdjustments, string(test.givenBidType), string(test.givenBidderName), test.givenDealId)
+			adjArray := get(test.givenRuleToAdjustments, string(test.givenBidType), test.givenSeat, string(test.givenBidderName), test.givenDealId)
+			assert.Equal(t, test.expected, adjArray)
+		})
+	}
+}
+
+func TestGetWithSeat(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		givenRuleToAdjustments map[string][]openrtb_ext.Adjustment
+		givenBidType           openrtb_ext.BidType
+		givenBidderName        openrtb_ext.BidderName
+		givenDealId            string
+		givenSeat              string
+		expected               []openrtb_ext.Adjustment
+	}{
+		{
+			name: "Priority1",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|seata|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+				"banner|biddera|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+		},
+		{
+			name: "Priority2",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|biddera|dealid": {
+					{
+						Type:  AdjustmentTypeStatic,
+						Value: 5.0,
+					},
+				},
+				"banner|seata|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 5.0}},
+		},
+		{
+			name: "Priority3",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|seata|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"banner|biddera|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority4",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|biddera|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"banner|*|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority5",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|*|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|seat|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority6",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|seata|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|biddera|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority7",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|biddera|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"banner|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority8",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|*|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|seata|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderB",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority9",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|seata|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|bidderb|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderB",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority10",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|bidderb|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|*|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderB",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority11",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|dealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderB",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "Priority12",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|biddera|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderB",
+			givenDealId:     "dealId",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "NoDealID Priority 1",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|seata|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"banner|biddera|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "NoDealID Priority 2",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|biddera|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"banner|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "NoDealID Priority 3",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|*|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|seata|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "NoDealID Priority 4",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|seata|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|biddera|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "NoDealID Priority 5",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|biddera|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"*|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "NoDealID Priority 6",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"*|*|*": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    3.0,
+						Currency: "USD",
+					},
+				},
+				"banner|bidderb|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeBanner,
+			givenBidderName: "bidderA",
+			givenDealId:     "",
+			givenSeat:       "seatA",
+			expected:        []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 3.0, Currency: "USD"}},
+		},
+		{
+			name: "NoPriorityRulesMatch",
+			givenRuleToAdjustments: map[string][]openrtb_ext.Adjustment{
+				"banner|seata|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+				"banner|seat2|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 2.0,
+					},
+				},
+			},
+			givenBidType:    openrtb_ext.BidTypeVideo,
+			givenBidderName: "bidderB",
+			givenDealId:     "diffDealId",
+			givenSeat:       "seatA",
+			expected:        nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			adjArray := get(test.givenRuleToAdjustments, string(test.givenBidType), test.givenSeat, string(test.givenBidderName), test.givenDealId)
 			assert.Equal(t, test.expected, adjArray)
 		})
 	}

@@ -27,7 +27,27 @@ func TestBuildRules(t *testing.T) {
 				},
 			},
 			expectedRules: map[string][]openrtb_ext.Adjustment{
-				"banner|bidderA|dealId": {
+				"banner|biddera|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+			},
+		},
+		{
+			name: "OneAdjustmentWithSeat",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"seatA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+						},
+					},
+				},
+			},
+			expectedRules: map[string][]openrtb_ext.Adjustment{
+				"banner|seata|dealid": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 1.1,
@@ -61,13 +81,13 @@ func TestBuildRules(t *testing.T) {
 				},
 			},
 			expectedRules: map[string][]openrtb_ext.Adjustment{
-				"banner|bidderA|dealId": {
+				"banner|biddera|dealid": {
 					{
 						Type:  AdjustmentTypeMultiplier,
 						Value: 1.1,
 					},
 				},
-				"banner|*|diffDealId": {
+				"banner|*|diffdealid": {
 					{
 						Type:     AdjustmentTypeCPM,
 						Value:    1.1,
@@ -92,7 +112,73 @@ func TestBuildRules(t *testing.T) {
 						Currency: "USD",
 					},
 				},
-				"video-outstream|bidderB|*": {
+				"video-outstream|bidderb|*": {
+					{
+						Type:     AdjustmentTypeStatic,
+						Value:    0.25,
+						Currency: "USD",
+					},
+				},
+			},
+		},
+		{
+			name: "MultipleAdjustmentsWithSeat",
+			givenBidAdjustments: &openrtb_ext.ExtRequestPrebidBidAdjustments{
+				MediaType: openrtb_ext.MediaType{
+					Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"seatA": {
+							"dealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}},
+						},
+						"*": {
+							"diffDealId": []openrtb_ext.Adjustment{{Type: AdjustmentTypeCPM, Value: 1.1, Currency: "USD"}},
+							"*":          []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 5.0, Currency: "USD"}},
+						},
+					},
+					VideoInstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"*": {
+							"*": []openrtb_ext.Adjustment{{Type: AdjustmentTypeMultiplier, Value: 1.1}, {Type: AdjustmentTypeCPM, Value: 0.18, Currency: "USD"}},
+						},
+					},
+					VideoOutstream: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+						"seatB": {
+							"*": []openrtb_ext.Adjustment{{Type: AdjustmentTypeStatic, Value: 0.25, Currency: "USD"}},
+						},
+					},
+				},
+			},
+			expectedRules: map[string][]openrtb_ext.Adjustment{
+				"banner|seata|dealid": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+				},
+				"banner|*|diffdealid": {
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    1.1,
+						Currency: "USD",
+					},
+				},
+				"banner|*|*": {
+					{
+						Type:     AdjustmentTypeStatic,
+						Value:    5.0,
+						Currency: "USD",
+					},
+				},
+				"video-instream|*|*": {
+					{
+						Type:  AdjustmentTypeMultiplier,
+						Value: 1.1,
+					},
+					{
+						Type:     AdjustmentTypeCPM,
+						Value:    0.18,
+						Currency: "USD",
+					},
+				},
+				"video-outstream|seatb|*": {
 					{
 						Type:     AdjustmentTypeStatic,
 						Value:    0.25,
