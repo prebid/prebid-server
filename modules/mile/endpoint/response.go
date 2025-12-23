@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // MileResponse is the bidder-style response expected by the Prebid.js adapter.
@@ -27,7 +28,7 @@ type MileBid struct {
 	MediaType  string  `json:"mediaType"`
 }
 
-// transformToMileResponse picks the highest CPM bid per impression and maps it to MileResponse.
+// transformToMileResponse identifies the winning bid per impression using PBS built-in targeting keys and maps it to MileResponse.
 func transformToMileResponse(br *openrtb2.BidResponse) MileResponse {
 	if br == nil {
 		return MileResponse{Bids: []MileBid{}}
@@ -37,15 +38,7 @@ func transformToMileResponse(br *openrtb2.BidResponse) MileResponse {
 		return MileResponse{Bids: []MileBid{}, Ext: br.Ext}
 	}
 
-	type bidKey struct {
-		impID string
-	}
-
-	// Track best bid per impression
-	best := make(map[bidKey]struct {
-		bid  *openrtb2.Bid
-		seat string
-	})
+	winners := make([]MileBid, 0)
 
 	for _, sb := range br.SeatBid {
 		for i := range sb.Bid {
@@ -53,36 +46,55 @@ func transformToMileResponse(br *openrtb2.BidResponse) MileResponse {
 			if b.Price <= 0 || b.ImpID == "" {
 				continue
 			}
-			key := bidKey{impID: b.ImpID}
-			prev, ok := best[key]
-			if !ok || b.Price > prev.bid.Price {
-				best[key] = struct {
-					bid  *openrtb2.Bid
-					seat string
-				}{bid: b, seat: sb.Seat}
+
+			// Check if this bid is a built-in winner by looking for targeting keys
+			if isWinner(b) {
+				winners = append(winners, MileBid{
+					RequestID:  b.ImpID,
+					CPM:        b.Price,
+					Currency:   br.Cur,
+					Width:      b.W,
+					Height:     b.H,
+					Ad:         b.AdM,
+					TTL:        fallbackTTL(b.Exp),
+					CreativeID: b.CrID,
+					NetRevenue: true,
+					Bidder:     sb.Seat,
+					MediaType:  inferMediaType(b),
+				})
 			}
 		}
 	}
 
-	resp := MileResponse{Bids: make([]MileBid, 0, len(best)), Ext: br.Ext}
-	for _, v := range best {
-		b := v.bid
-		resp.Bids = append(resp.Bids, MileBid{
-			RequestID:  b.ImpID,
-			CPM:        b.Price,
-			Currency:   br.Cur,
-			Width:      b.W,
-			Height:     b.H,
-			Ad:         b.AdM,
-			TTL:        fallbackTTL(b.Exp),
-			CreativeID: b.CrID,
-			NetRevenue: true,
-			Bidder:     v.seat,
-			MediaType:  inferMediaType(b),
-		})
+	return MileResponse{Bids: winners, Ext: br.Ext}
+}
+
+func isWinner(bid *openrtb2.Bid) bool {
+	if bid.Ext == nil {
+		return false
 	}
 
-	return resp
+	var bidExt openrtb_ext.ExtBid
+	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+		return false
+	}
+
+	if bidExt.Prebid == nil || bidExt.Prebid.Targeting == nil {
+		return false
+	}
+
+	// PBS Core adds targeting keys like "hb_bidder" for the overall winner of an impression.
+	// The key is formed by prefix + targetingKey. Default is "hb_bidder".
+	// We check for the presence of the bidder key without a bidder suffix.
+	for key := range bidExt.Prebid.Targeting {
+		// Default prefix is "hb". TargetingKey for bidder is "_bidder".
+		// So we look for "hb_bidder".
+		if key == "hb_bidder" {
+			return true
+		}
+	}
+
+	return false
 }
 
 func fallbackTTL(exp int64) int {

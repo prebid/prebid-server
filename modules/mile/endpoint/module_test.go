@@ -133,7 +133,7 @@ func TestModuleHandle(t *testing.T) {
 	auctionHandler := func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		auctionCalled = true
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"p1","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr"}]}]}`))
+		_, _ = w.Write([]byte(`{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"p1","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr","ext":{"prebid":{"targeting":{"hb_bidder":"appnexus"}}}}]}]}`))
 	}
 
 	m := &Module{
@@ -233,7 +233,7 @@ func TestModuleHandleHooks(t *testing.T) {
 			After: func(ctx context.Context, req MileRequest, site *SiteConfig, status int, body []byte) ([]byte, int, error) {
 				afterCalled = true
 				// Override auction response with a different bid
-				return []byte(`{"cur":"USD","seatbid":[{"seat":"override","bid":[{"impid":"p1","price":0.5,"adm":"<hooked>","w":320,"h":50,"crid":"cr-hook"}]}]}`), status, nil
+				return []byte(`{"cur":"USD","seatbid":[{"seat":"override","bid":[{"impid":"p1","price":0.5,"adm":"<hooked>","w":320,"h":50,"crid":"cr-hook","ext":{"prebid":{"targeting":{"hb_bidder":"override"}}}}]}]}`), status, nil
 			},
 		},
 	}
@@ -273,13 +273,13 @@ func TestTransformToMileResponse_PicksHighestPerImp(t *testing.T) {
 				Seat: "bidderA",
 				Bid: []openrtb2.Bid{
 					{ID: "b1", ImpID: "imp1", Price: 1.2, W: 300, H: 250, AdM: "<a1>", CrID: "cr1"},
-					{ID: "b2", ImpID: "imp2", Price: 0.5, W: 320, H: 50, AdM: "<a2>", CrID: "cr2"},
+					{ID: "b2", ImpID: "imp2", Price: 0.5, W: 320, H: 50, AdM: "<a2>", CrID: "cr2", Ext: json.RawMessage(`{"prebid":{"targeting":{"hb_bidder":"bidderA"}}}`)},
 				},
 			},
 			{
 				Seat: "bidderB",
 				Bid: []openrtb2.Bid{
-					{ID: "b3", ImpID: "imp1", Price: 1.5, W: 300, H: 250, AdM: "<b1>", CrID: "cr3"},
+					{ID: "b3", ImpID: "imp1", Price: 1.5, W: 300, H: 250, AdM: "<b1>", CrID: "cr3", Ext: json.RawMessage(`{"prebid":{"targeting":{"hb_bidder":"bidderB"}}}`)},
 				},
 			},
 		},
@@ -317,7 +317,7 @@ func TestTransformToMileResponse_InferBannerDefault(t *testing.T) {
 			{
 				Seat: "bidder",
 				Bid: []openrtb2.Bid{
-					{ID: "b1", ImpID: "imp1", Price: 1.0, W: 0, H: 0, AdM: "<ad>", CrID: "cr"},
+					{ID: "b1", ImpID: "imp1", Price: 1.0, W: 0, H: 0, AdM: "<ad>", CrID: "cr", Ext: json.RawMessage(`{"prebid":{"targeting":{"hb_bidder":"bidder"}}}`)},
 				},
 			},
 		},
@@ -525,7 +525,7 @@ func TestModuleHandleMultiplePlacements(t *testing.T) {
 			impID = req.Imp[0].ID
 		}
 		w.WriteHeader(http.StatusOK)
-		resp := `{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"` + impID + `","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr"}]}]}`
+		resp := `{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"` + impID + `","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr","ext":{"prebid":{"targeting":{"hb_bidder":"appnexus"}}}}]}]}`
 		_, _ = w.Write([]byte(resp))
 	}
 
@@ -592,7 +592,7 @@ func TestModuleHandleORTB(t *testing.T) {
 		body, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(body, &capturedReq)
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"22670","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr"}]}]}`))
+		_, _ = w.Write([]byte(`{"cur":"USD","seatbid":[{"seat":"appnexus","bid":[{"impid":"22670","price":0.1,"adm":"<ad>","w":300,"h":250,"crid":"cr","ext":{"prebid":{"targeting":{"hb_bidder":"appnexus"}}}}]}]}`))
 	}
 
 	m := &Module{

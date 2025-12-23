@@ -138,20 +138,29 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		return
 	}
 
-	var mileReq MileRequest
-	if err := json.Unmarshal(reqBody, &mileReq); err == nil && mileReq.SiteID != "" {
-		// Standard MileRequest
-	} else {
-		// Try ORTB
-		var ortbReq openrtb2.BidRequest
-		if err := json.Unmarshal(reqBody, &ortbReq); err == nil && ortbReq.Site != nil {
-			mileReq = convertORTBToMile(&ortbReq)
-		} else {
-			m.onException(ctx, mileReq, fmt.Errorf("invalid JSON payload or missing siteId"))
-			writeError(w, http.StatusBadRequest, "invalid JSON payload or missing siteId")
-			return
-		}
+	// Parse OpenRTB request only
+	var ortbReq openrtb2.BidRequest
+	if err := json.Unmarshal(reqBody, &ortbReq); err != nil {
+		m.onException(ctx, MileRequest{}, fmt.Errorf("invalid JSON payload: %w", err))
+		writeError(w, http.StatusBadRequest, "invalid JSON payload")
+		return
 	}
+	if ortbReq.Site == nil {
+		m.onException(ctx, MileRequest{}, fmt.Errorf("missing site object in OpenRTB request"))
+		writeError(w, http.StatusBadRequest, "missing site object in OpenRTB request")
+		return
+	}
+	if ortbReq.Device == nil {
+		m.onException(ctx, MileRequest{}, fmt.Errorf("missing device object in OpenRTB request"))
+		writeError(w, http.StatusBadRequest, "missing device object in OpenRTB request")
+		return
+	}
+	if ortbReq.User == nil {
+		m.onException(ctx, MileRequest{}, fmt.Errorf("missing user object in OpenRTB request"))
+		writeError(w, http.StatusBadRequest, "missing user object in OpenRTB request")
+		return
+	}
+	mileReq := convertORTBToMile(&ortbReq)
 	mileReq.Raw = reqBody
 
 	var debugRequested bool
@@ -391,6 +400,7 @@ func convertORTBToMile(ortb *openrtb2.BidRequest) MileRequest {
 	}
 	mileReq := MileRequest{
 		BaseORTB: ortb,
+		ImpIDMap: make(map[string]string),
 	}
 	if ortb.Site != nil {
 		mileReq.SiteID = ortb.Site.ID
@@ -413,6 +423,7 @@ func convertORTBToMile(ortb *openrtb2.BidRequest) MileRequest {
 		}
 		if pID != "" {
 			mileReq.PlacementIDs = append(mileReq.PlacementIDs, pID)
+			mileReq.ImpIDMap[pID] = imp.ID
 		}
 	}
 	return mileReq

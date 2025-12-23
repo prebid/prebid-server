@@ -43,11 +43,19 @@ func buildOpenRTBRequest(req MileRequest, placementID string, site *SiteConfig) 
 		requestID = uuid.Must(uuid.NewV4()) // fallback
 	}
 
+	// Determine the original imp.id to return as requestId
+	auctionImpID := placementID
+	if req.ImpIDMap != nil {
+		if originalID, ok := req.ImpIDMap[placementID]; ok && originalID != "" {
+			auctionImpID = originalID
+		}
+	}
+
 	ortb := &openrtb2.BidRequest{
 		ID: requestID.String(),
 		Imp: []openrtb2.Imp{
 			{
-				ID:    placementID,
+				ID:    auctionImpID,
 				TagID: placement.AdUnit,
 			},
 		},

@@ -17,6 +17,7 @@ type MileRequest struct {
 	PublisherID  string               `json:"publisherId"`
 	PlacementIDs []string             `json:"placementIds"`
 	CustomData   []CustomData         `json:"customData,omitempty"`
+	ImpIDMap     map[string]string    `json:"-"` // Map from placementId to original imp.id
 	BaseORTB     *openrtb2.BidRequest `json:"-"`
 	Raw          json.RawMessage      `json:"-"`
 }
