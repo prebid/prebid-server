@@ -64,6 +64,8 @@
       "hb_cache_id_Appnexus": "0",
       "hb_cache_path": "/pbcache/endpoint",
       "hb_cache_path_Appnex": "/pbcache/endpoint",
+      "hb_env": "amp",
+      "hb_env_Appnexus": "amp",
       "hb_pb": "2.00",
       "hb_pb_Appnexus": "2.00"
     },

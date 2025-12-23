@@ -49,8 +49,7 @@
           ],
           "Accept": [
             "application/json"
-          ],
-          "X-Integration-Type": ["1"]
+          ]
         },
         "body": {
           "id": "test-request-id",
@@ -99,7 +98,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "currency": "USD",
+          "cur": "USD",
           "seatbid": [
             {
               "bid": [

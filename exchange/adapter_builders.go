@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/aax"
 	"github.com/prebid/prebid-server/v3/adapters/aceex"
 	"github.com/prebid/prebid-server/v3/adapters/acuityads"
+	"github.com/prebid/prebid-server/v3/adapters/adagio"
 	"github.com/prebid/prebid-server/v3/adapters/adelement"
 	"github.com/prebid/prebid-server/v3/adapters/adf"
 	"github.com/prebid/prebid-server/v3/adapters/adgeneration"
@@ -35,8 +36,10 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/adview"
 	"github.com/prebid/prebid-server/v3/adapters/adxcg"
 	"github.com/prebid/prebid-server/v3/adapters/adyoulike"
+	"github.com/prebid/prebid-server/v3/adapters/afront"
 	"github.com/prebid/prebid-server/v3/adapters/aidem"
 	"github.com/prebid/prebid-server/v3/adapters/aja"
+	"github.com/prebid/prebid-server/v3/adapters/akcelo"
 	"github.com/prebid/prebid-server/v3/adapters/algorix"
 	"github.com/prebid/prebid-server/v3/adapters/alkimi"
 	"github.com/prebid/prebid-server/v3/adapters/amx"
@@ -63,14 +66,17 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/bigoad"
 	"github.com/prebid/prebid-server/v3/adapters/blasto"
 	"github.com/prebid/prebid-server/v3/adapters/bliink"
+	"github.com/prebid/prebid-server/v3/adapters/blis"
 	"github.com/prebid/prebid-server/v3/adapters/blue"
 	"github.com/prebid/prebid-server/v3/adapters/bluesea"
 	"github.com/prebid/prebid-server/v3/adapters/bmtm"
 	"github.com/prebid/prebid-server/v3/adapters/boldwin"
+	"github.com/prebid/prebid-server/v3/adapters/boldwin_rapid"
 	"github.com/prebid/prebid-server/v3/adapters/brave"
 	"github.com/prebid/prebid-server/v3/adapters/bwx"
 	cadentaperturemx "github.com/prebid/prebid-server/v3/adapters/cadent_aperture_mx"
 	"github.com/prebid/prebid-server/v3/adapters/ccx"
+	"github.com/prebid/prebid-server/v3/adapters/clydo"
 	"github.com/prebid/prebid-server/v3/adapters/cointraffic"
 	"github.com/prebid/prebid-server/v3/adapters/coinzilla"
 	"github.com/prebid/prebid-server/v3/adapters/colossus"
@@ -79,6 +85,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/connatix"
 	"github.com/prebid/prebid-server/v3/adapters/connectad"
 	"github.com/prebid/prebid-server/v3/adapters/consumable"
+	"github.com/prebid/prebid-server/v3/adapters/contxtful"
 	"github.com/prebid/prebid-server/v3/adapters/conversant"
 	"github.com/prebid/prebid-server/v3/adapters/copper6ssp"
 	"github.com/prebid/prebid-server/v3/adapters/cpmstar"
@@ -99,13 +106,17 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/eplanning"
 	"github.com/prebid/prebid-server/v3/adapters/epom"
 	"github.com/prebid/prebid-server/v3/adapters/escalax"
+	"github.com/prebid/prebid-server/v3/adapters/exco"
 	"github.com/prebid/prebid-server/v3/adapters/feedad"
+	"github.com/prebid/prebid-server/v3/adapters/flatads"
 	"github.com/prebid/prebid-server/v3/adapters/flipp"
 	"github.com/prebid/prebid-server/v3/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v3/adapters/frvradn"
+	"github.com/prebid/prebid-server/v3/adapters/fwssp"
 	"github.com/prebid/prebid-server/v3/adapters/gamma"
 	"github.com/prebid/prebid-server/v3/adapters/gamoshi"
 	"github.com/prebid/prebid-server/v3/adapters/globalsun"
+	"github.com/prebid/prebid-server/v3/adapters/goldbach"
 	"github.com/prebid/prebid-server/v3/adapters/gothamads"
 	"github.com/prebid/prebid-server/v3/adapters/grid"
 	"github.com/prebid/prebid-server/v3/adapters/gumgum"
@@ -140,6 +151,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/loyal"
 	"github.com/prebid/prebid-server/v3/adapters/lunamedia"
 	"github.com/prebid/prebid-server/v3/adapters/mabidder"
+	"github.com/prebid/prebid-server/v3/adapters/madsense"
 	"github.com/prebid/prebid-server/v3/adapters/madvertise"
 	"github.com/prebid/prebid-server/v3/adapters/marsmedia"
 	"github.com/prebid/prebid-server/v3/adapters/mediago"
@@ -153,9 +165,13 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/missena"
 	"github.com/prebid/prebid-server/v3/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/v3/adapters/mobilefuse"
+	"github.com/prebid/prebid-server/v3/adapters/mobkoi"
 	"github.com/prebid/prebid-server/v3/adapters/motorik"
+	"github.com/prebid/prebid-server/v3/adapters/msft"
+	"github.com/prebid/prebid-server/v3/adapters/nativery"
 	"github.com/prebid/prebid-server/v3/adapters/nativo"
 	"github.com/prebid/prebid-server/v3/adapters/nextmillennium"
+	"github.com/prebid/prebid-server/v3/adapters/nexx360"
 	"github.com/prebid/prebid-server/v3/adapters/nobid"
 	"github.com/prebid/prebid-server/v3/adapters/ogury"
 	"github.com/prebid/prebid-server/v3/adapters/oms"
@@ -178,6 +194,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/pwbid"
 	"github.com/prebid/prebid-server/v3/adapters/qt"
 	"github.com/prebid/prebid-server/v3/adapters/readpeak"
+	"github.com/prebid/prebid-server/v3/adapters/rediads"
 	"github.com/prebid/prebid-server/v3/adapters/relevantdigital"
 	"github.com/prebid/prebid-server/v3/adapters/resetdigital"
 	"github.com/prebid/prebid-server/v3/adapters/revcontent"
@@ -191,6 +208,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/seedingAlliance"
 	"github.com/prebid/prebid-server/v3/adapters/seedtag"
 	"github.com/prebid/prebid-server/v3/adapters/sharethrough"
+	"github.com/prebid/prebid-server/v3/adapters/showheroes"
 	"github.com/prebid/prebid-server/v3/adapters/silvermob"
 	"github.com/prebid/prebid-server/v3/adapters/silverpush"
 	"github.com/prebid/prebid-server/v3/adapters/smaato"
@@ -205,12 +223,15 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/sonobi"
 	"github.com/prebid/prebid-server/v3/adapters/sovrn"
 	"github.com/prebid/prebid-server/v3/adapters/sovrnXsp"
+	"github.com/prebid/prebid-server/v3/adapters/sparteo"
 	"github.com/prebid/prebid-server/v3/adapters/sspBC"
+	"github.com/prebid/prebid-server/v3/adapters/startio"
 	"github.com/prebid/prebid-server/v3/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/v3/adapters/taboola"
 	"github.com/prebid/prebid-server/v3/adapters/tappx"
 	"github.com/prebid/prebid-server/v3/adapters/teads"
 	"github.com/prebid/prebid-server/v3/adapters/telaria"
+	"github.com/prebid/prebid-server/v3/adapters/teqblaze"
 	"github.com/prebid/prebid-server/v3/adapters/theadx"
 	"github.com/prebid/prebid-server/v3/adapters/thetradedesk"
 	"github.com/prebid/prebid-server/v3/adapters/tpmn"
@@ -239,6 +260,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/yieldlab"
 	"github.com/prebid/prebid-server/v3/adapters/yieldmo"
 	"github.com/prebid/prebid-server/v3/adapters/yieldone"
+	"github.com/prebid/prebid-server/v3/adapters/zentotem"
 	"github.com/prebid/prebid-server/v3/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/v3/adapters/zeta_global_ssp"
 	"github.com/prebid/prebid-server/v3/adapters/zmaticoo"
@@ -254,6 +276,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAax:               aax.Builder,
 		openrtb_ext.BidderAceex:             aceex.Builder,
 		openrtb_ext.BidderAcuityAds:         acuityads.Builder,
+		openrtb_ext.BidderAdagio:            adagio.Builder,
 		openrtb_ext.BidderAdelement:         adelement.Builder,
 		openrtb_ext.BidderAdf:               adf.Builder,
 		openrtb_ext.BidderAdgeneration:      adgeneration.Builder,
@@ -283,8 +306,10 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdView:            adview.Builder,
 		openrtb_ext.BidderAdxcg:             adxcg.Builder,
 		openrtb_ext.BidderAdyoulike:         adyoulike.Builder,
+		openrtb_ext.BidderAfront:            afront.Builder,
 		openrtb_ext.BidderAidem:             aidem.Builder,
 		openrtb_ext.BidderAJA:               aja.Builder,
+		openrtb_ext.BidderAkcelo:            akcelo.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAlkimi:            alkimi.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
@@ -311,14 +336,17 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBigoAd:            bigoad.Builder,
 		openrtb_ext.BidderBlasto:            blasto.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
+		openrtb_ext.BidderBlis:              blis.Builder,
 		openrtb_ext.BidderBlue:              blue.Builder,
 		openrtb_ext.BidderBluesea:           bluesea.Builder,
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBoldwin:           boldwin.Builder,
+		openrtb_ext.BidderBoldwinRapid:      boldwin_rapid.Builder,
 		openrtb_ext.BidderBrave:             brave.Builder,
 		openrtb_ext.BidderBWX:               bwx.Builder,
 		openrtb_ext.BidderCadentApertureMX:  cadentaperturemx.Builder,
 		openrtb_ext.BidderCcx:               ccx.Builder,
+		openrtb_ext.BidderClydo:             clydo.Builder,
 		openrtb_ext.BidderCointraffic:       cointraffic.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
@@ -327,6 +355,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConnatix:          connatix.Builder,
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
 		openrtb_ext.BidderConsumable:        consumable.Builder,
+		openrtb_ext.BidderContxtful:         contxtful.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
 		openrtb_ext.BidderCopper6ssp:        copper6ssp.Builder,
 		openrtb_ext.BidderCpmstar:           cpmstar.Builder,
@@ -347,14 +376,18 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
 		openrtb_ext.BidderEscalax:           escalax.Builder,
+		openrtb_ext.BidderExco:              exco.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderFeedAd:            feedad.Builder,
+		openrtb_ext.BidderFlatads:           flatads.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
+		openrtb_ext.BidderFWSSP:             fwssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
 		openrtb_ext.BidderGamma:             gamma.Builder,
 		openrtb_ext.BidderGamoshi:           gamoshi.Builder,
 		openrtb_ext.BidderGlobalsun:         globalsun.Builder,
+		openrtb_ext.BidderGoldbach:          goldbach.Builder,
 		openrtb_ext.BidderGothamads:         gothamads.Builder,
 		openrtb_ext.BidderGrid:              grid.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
@@ -390,6 +423,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLoyal:             loyal.Builder,
 		openrtb_ext.BidderLunaMedia:         lunamedia.Builder,
 		openrtb_ext.BidderMabidder:          mabidder.Builder,
+		openrtb_ext.BidderMadSense:          madsense.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
@@ -400,13 +434,17 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMetaX:             metax.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,
+		openrtb_ext.BidderMicrosoft:         msft.Builder,
 		openrtb_ext.BidderMinuteMedia:       minutemedia.Builder,
 		openrtb_ext.BidderMissena:           missena.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
+		openrtb_ext.BidderMobkoi:            mobkoi.Builder,
 		openrtb_ext.BidderMotorik:           motorik.Builder,
+		openrtb_ext.BidderNativery:          nativery.Builder,
 		openrtb_ext.BidderNativo:            nativo.Builder,
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
+		openrtb_ext.BidderNexx360:           nexx360.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
 		openrtb_ext.BidderOgury:             ogury.Builder,
 		openrtb_ext.BidderOms:               oms.Builder,
@@ -429,6 +467,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPWBid:             pwbid.Builder,
 		openrtb_ext.BidderQT:                qt.Builder,
 		openrtb_ext.BidderReadpeak:          readpeak.Builder,
+		openrtb_ext.BidderRediads:           rediads.Builder,
 		openrtb_ext.BidderRelevantDigital:   relevantdigital.Builder,
 		openrtb_ext.BidderResetDigital:      resetdigital.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
@@ -442,6 +481,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
 		openrtb_ext.BidderScreencore:        screencore.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
+		openrtb_ext.BidderShowheroes:        showheroes.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
 		openrtb_ext.BidderSilverPush:        silverpush.Builder,
 		openrtb_ext.BidderSmaato:            smaato.Builder,
@@ -456,12 +496,15 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSovrnXsp:          sovrnXsp.Builder,
+		openrtb_ext.BidderSparteo:           sparteo.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
+		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
+		openrtb_ext.BidderTeqBlaze:          teqblaze.Builder,
 		openrtb_ext.BidderTheadx:            theadx.Builder,
 		openrtb_ext.BidderTheTradeDesk:      thetradedesk.Builder,
 		openrtb_ext.BidderTpmn:              tpmn.Builder,
@@ -489,6 +532,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
+		openrtb_ext.BidderZentotem:          zentotem.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
 		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,

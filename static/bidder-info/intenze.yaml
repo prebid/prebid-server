@@ -1,0 +1,4 @@
+aliasOf: "gothamads"
+endpoint: "http://lb-east.intenze.co/?pass={{.AccountID}}"
+maintainer:
+  email: "connect@intenze.co"

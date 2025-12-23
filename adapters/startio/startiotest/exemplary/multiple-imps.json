@@ -1,0 +1,551 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id-8cd85aed-25a6-4db0",
+    "imp": [
+      {
+        "id": "imp-id-1-27b9e54b56de702",
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "startio": {}
+            }
+          }
+        },
+        "banner": {
+          "w": 320,
+          "h": 480,
+          "pos": 7,
+          "mimes": [
+            "image/jpg",
+            "image/gif",
+            "text/html"
+          ],
+          "format": [
+            {
+              "w": 320,
+              "h": 480
+            }
+          ],
+          "api": [
+            5,
+            7
+          ],
+          "vcm": 1,
+          "id": "1"
+        }
+      },
+      {
+        "id": "imp-id-2-27b9e54b56de702",
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "startio": {}
+            }
+          }
+        },
+        "tagid": "999999-1111-8888-2222-77777777777",
+        "instl": 1,
+        "bidfloor": 0.2,
+        "bidfloorcur": "USD",
+        "video": {
+          "api": [
+            7
+          ],
+          "battr": [
+            16
+          ],
+          "companiontype": [
+            1,
+            2
+          ],
+          "h": 480,
+          "w": 320,
+          "skip": 1,
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "linearity": 1,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "pos": 7,
+          "startdelay": 0,
+          "placement": 4,
+          "skipmin": 0,
+          "skipafter": 0,
+          "companionad": [
+            {
+              "w": 320,
+              "h": 480,
+              "pos": 7,
+              "mimes": [
+                "image/jpg",
+                "image/gif"
+              ],
+              "api": [
+                3,
+                5,
+                6
+              ],
+              "vcm": 1
+            }
+          ],
+          "delivery": [],
+          "maxextended": 0
+        },
+        "metric": [
+          {
+            "type": "viewability",
+            "value": 0.97,
+            "vendor": "ZZZ"
+          }
+        ],
+        "displaymanager": "ZZZ",
+        "displaymanagerver": "42.42.42",
+        "secure": 1
+      },
+      {
+        "id": "imp-id-3-27b9e54b56de702",
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "startio": {}
+            }
+          }
+        },
+        "native": {
+          "ver": "1.1",
+          "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisherid001"
+      },
+      "id": "4204204209"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?identifier=test",
+        "body": {
+          "id": "auction-req-id-8cd85aed-25a6-4db0",
+          "imp": [
+            {
+              "id": "imp-id-1-27b9e54b56de702",
+              "ext": {
+                "prebid": {
+                  "bidder": {
+                    "startio": {}
+                  }
+                }
+              },
+              "banner": {
+                "w": 320,
+                "h": 480,
+                "pos": 7,
+                "mimes": [
+                  "image/jpg",
+                  "image/gif",
+                  "text/html"
+                ],
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 480
+                  }
+                ],
+                "api": [
+                  5,
+                  7
+                ],
+                "vcm": 1,
+                "id": "1"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisherid001"
+            },
+            "id": "4204204209"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id-1-27b9e54b56de702"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "bid-resp-id-675ad335fcb3286441b5",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+                  "impid": "imp-id-1-27b9e54b56de702",
+                  "price": 0.04,
+                  "adm": "<a href='https://advertiser.com/click' target='_blank'><img src='https://advertiser.com/banner.jpg' width='320' height='50' alt='Ad'></a>",
+                  "adomain": [
+                    "start.io"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ],
+              "seat": "seat-1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?identifier=test",
+        "body": {
+          "id": "auction-req-id-8cd85aed-25a6-4db0",
+          "imp": [
+            {
+              "id": "imp-id-2-27b9e54b56de702",
+              "ext": {
+                "prebid": {
+                  "bidder": {
+                    "startio": {}
+                  }
+                }
+              },
+              "tagid": "999999-1111-8888-2222-77777777777",
+              "instl": 1,
+              "bidfloor": 0.2,
+              "bidfloorcur": "USD",
+              "video": {
+                "api": [
+                  7
+                ],
+                "battr": [
+                  16
+                ],
+                "companiontype": [
+                  1,
+                  2
+                ],
+                "h": 480,
+                "w": 320,
+                "skip": 1,
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "linearity": 1,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "pos": 7,
+                "startdelay": 0,
+                "placement": 4,
+                "companionad": [
+                  {
+                    "w": 320,
+                    "h": 480,
+                    "pos": 7,
+                    "mimes": [
+                      "image/jpg",
+                      "image/gif"
+                    ],
+                    "api": [
+                      3,
+                      5,
+                      6
+                    ],
+                    "vcm": 1
+                  }
+                ]
+              },
+              "metric": [
+                {
+                  "type": "viewability",
+                  "value": 0.97,
+                  "vendor": "ZZZ"
+                }
+              ],
+              "displaymanager": "ZZZ",
+              "displaymanagerver": "42.42.42",
+              "secure": 1
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisherid001"
+            },
+            "id": "4204204209"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id-2-27b9e54b56de702"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "bid-resp-id-675ad335fcb3286441b5",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+                  "impid": "imp-id-2-27b9e54b56de702",
+                  "price": 0.03,
+                  "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='3.0'><Ad id='123'><InLine><AdSystem>Prebid</AdSystem><AdTitle>Sample Video Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile type='video/mp4' width='640' height='360' delivery='progressive'>https://advertiser.com/video.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adomain": [
+                    "start.io"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ],
+              "seat": "seat-1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?identifier=test",
+        "body": {
+          "id": "auction-req-id-8cd85aed-25a6-4db0",
+          "imp": [
+            {
+              "id": "imp-id-3-27b9e54b56de702",
+              "ext": {
+                "prebid": {
+                  "bidder": {
+                    "startio": {}
+                  }
+                }
+              },
+              "native": {
+                "ver": "1.1",
+                "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisherid001"
+            },
+            "id": "4204204209"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id-3-27b9e54b56de702"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "bid-resp-id-675ad335fcb3286441b5",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+                  "impid": "imp-id-3-27b9e54b56de702",
+                  "price": 0.5,
+                  "adid": "adid-29681110",
+                  "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"len\":90,\"text\":\"Title\"}},{\"id\":2,\"img\":{\"w\":320,\"h\":250,\"url\":\"https://img.image.com/product/image.jpg\"}},{\"id\":3,\"img\":{\"w\":50,\"h\":50,\"url\":\"https://img.image.com/product/icon.jpg\"}},{\"id\":4,\"data\":{\"type\":2,\"value\":\"Description\"}},{\"id\":5,\"data\":{\"type\":1,\"value\":\"Sponsored by Start.io\"}}],\"link\":{\"url\":\"https://click.url.com\"},\"imptrackers\":[\"https://impression.url.com\"],\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://event.url.com\"}],\"ver\":\"1.2\"}}",
+                  "adomain": [
+                    "start.io"
+                  ],
+                  "cid": "cid-958",
+                  "crid": "crid-29681110",
+                  "h": 250,
+                  "w": 300,
+                  "cat": [
+                    "IAB9-1"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "native"
+                    }
+                  }
+                }
+              ],
+              "seat": "seat-1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "id": "bid-resp-id-675ad335fcb3286441b5",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+            "impid": "imp-id-1-27b9e54b56de702",
+            "price": 0.04,
+            "adm": "<a href='https://advertiser.com/click' target='_blank'><img src='https://advertiser.com/banner.jpg' width='320' height='50' alt='Ad'></a>",
+            "adomain": [
+              "start.io"
+            ],
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "id": "bid-resp-id-675ad335fcb3286441b5",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+            "impid": "imp-id-2-27b9e54b56de702",
+            "price": 0.03,
+            "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='3.0'><Ad id='123'><InLine><AdSystem>Prebid</AdSystem><AdTitle>Sample Video Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile type='video/mp4' width='640' height='360' delivery='progressive'>https://advertiser.com/video.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adomain": [
+              "start.io"
+            ],
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "id": "bid-resp-id-675ad335fcb3286441b5",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+            "impid": "imp-id-3-27b9e54b56de702",
+            "cat": [
+              "IAB9-1"
+            ],
+            "h": 250,
+            "w": 300,
+            "cid": "cid-958",
+            "crid": "crid-29681110",
+            "adid": "adid-29681110",
+            "price": 0.5,
+            "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"len\":90,\"text\":\"Title\"}},{\"id\":2,\"img\":{\"w\":320,\"h\":250,\"url\":\"https://img.image.com/product/image.jpg\"}},{\"id\":3,\"img\":{\"w\":50,\"h\":50,\"url\":\"https://img.image.com/product/icon.jpg\"}},{\"id\":4,\"data\":{\"type\":2,\"value\":\"Description\"}},{\"id\":5,\"data\":{\"type\":1,\"value\":\"Sponsored by Start.io\"}}],\"link\":{\"url\":\"https://click.url.com\"},\"imptrackers\":[\"https://impression.url.com\"],\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://event.url.com\"}],\"ver\":\"1.2\"}}",
+            "adomain": [
+              "start.io"
+            ],
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

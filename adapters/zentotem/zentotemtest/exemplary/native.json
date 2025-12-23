@@ -1,0 +1,166 @@
+{
+  "mockBidRequest": {
+    "id": "o37934lssd34fgd",
+    "cur": [
+      "USD",
+      "RUB"
+    ],
+    "at": 2,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "bidfloor": 0.25,
+        "bidfloorcur": "USD",
+        "tagid": "ierui234fdfdf",
+        "secure": 1,
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"data\":{\"type\":12,\"len\":15}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627,\"mimes\":[\"image\/png\",\"image\/jpeg\",\"image\/gif\",\"text\/html\"]}},{\"id\":4,\"data\":{\"type\":2,\"len\":90}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+          "ver": "1.2"
+        }
+      }
+    ],
+    "device": {
+      "w": 375,
+      "h": 667,
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+      "ip": "69.75.122.146",
+      "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+      "language": "en",
+      "geo": {
+        "country": "USA",
+        "region": "CA",
+        "city": "Los Angeles"
+      }
+    },
+    "site": {
+      "id": "9fu48u347ru34o",
+      "domain": "some-domain",
+      "page": "some-page",
+      "publisher": {
+        "id": "p-93dj34di3344"
+      },
+      "cat": [
+        "IAB12",
+        "IAB17-12"
+      ]
+    },
+    "user": {
+      "id": "d92a55e6-3eda-44c4-a448-14830a4c6838",
+      "buyeruid": "213ba1a2425be71ec5080b1d64b8450c"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/bid?sspuid=prebid",
+        "body": {
+          "id": "o37934lssd34fgd",
+          "cur": [
+            "USD",
+            "RUB"
+          ],
+          "at": 2,
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "bidfloor": 0.25,
+              "bidfloorcur": "USD",
+              "tagid": "ierui234fdfdf",
+              "secure": 1,
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"data\":{\"type\":12,\"len\":15}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627,\"mimes\":[\"image\/png\",\"image\/jpeg\",\"image\/gif\",\"text\/html\"]}},{\"id\":4,\"data\":{\"type\":2,\"len\":90}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+                "ver": "1.2"
+              }
+            }
+          ],
+          "device": {
+            "w": 375,
+            "h": 667,
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+            "ip": "69.75.122.146",
+            "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+            "language": "en",
+            "geo": {
+              "country": "USA",
+              "region": "CA",
+              "city": "Los Angeles"
+            }
+          },
+          "site": {
+            "id": "9fu48u347ru34o",
+            "domain": "some-domain",
+            "page": "some-page",
+            "publisher": {
+              "id": "p-93dj34di3344"
+            },
+            "cat": [
+              "IAB12",
+              "IAB17-12"
+            ]
+          },
+          "user": {
+            "id": "d92a55e6-3eda-44c4-a448-14830a4c6838",
+            "buyeruid": "213ba1a2425be71ec5080b1d64b8450c"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "40",
+                  "impid": "1",
+                  "price": 150,
+                  "nurl": "some-test-nurl",
+                  "burl": "some-test-burl",
+                  "adm": "some-test-adm",
+                  "adid": "40",
+                  "adomain": [
+                    "app.apple.com"
+                  ],
+                  "crid": "40",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 4
+                }
+              ],
+              "seat": "boldwin"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "40",
+            "impid": "1",
+            "price": 150,
+            "nurl": "some-test-nurl",
+            "burl": "some-test-burl",
+            "adm": "some-test-adm",
+            "adid": "40",
+            "adomain": [
+              "app.apple.com"
+            ],
+            "crid": "40",
+            "w": 320,
+            "h": 50,
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

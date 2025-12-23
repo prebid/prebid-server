@@ -31,7 +31,7 @@ import (
 
 var errInvalidRequestExt = errors.New("request.ext is invalid")
 
-var channelTypeMap = map[metrics.RequestType]config.ChannelType{
+var ChannelTypeMap = map[metrics.RequestType]config.ChannelType{
 	metrics.ReqTypeAMP:       config.ChannelAMP,
 	metrics.ReqTypeORTB2App:  config.ChannelApp,
 	metrics.ReqTypeVideo:     config.ChannelVideo,
@@ -59,8 +59,6 @@ type requestSplitter struct {
 func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
-	gdprSignal gdpr.Signal,
-	gdprEnforced bool,
 	bidAdjustmentFactors map[string]float64,
 ) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 	req := auctionReq.BidRequestWrapper
@@ -115,12 +113,9 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 	}
 
-	consent, err := getConsent(req, gpp)
-	if err != nil {
-		errs = append(errs, err)
-	}
+	consent := gdpr.GetConsent(req, gpp)
 
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, requestAliases, channelTypeMap[auctionReq.LegacyLabels.RType], gpp)
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, rs.privacyConfig, &auctionReq.Account, requestAliases, ChannelTypeMap[auctionReq.LegacyLabels.RType], gpp)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -138,7 +133,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
 
-	if gdprEnforced {
+	if auctionReq.GDPREnforced {
 		privacyLabels.GDPREnforced = true
 		parsedConsent, err := vendorconsent.ParseString(consent)
 		if err == nil {
@@ -149,7 +144,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		gdprRequestInfo := gdpr.RequestInfo{
 			AliasGVLIDs: requestAliasesGVLIDs,
 			Consent:     consent,
-			GDPRSignal:  gdprSignal,
+			GDPRSignal:  auctionReq.GDPRSignal,
 			PublisherID: auctionReq.LegacyLabels.PubID,
 		}
 		gdprPerms = rs.gdprPermsBuilder(auctionReq.TCF2Config, gdprRequestInfo)
@@ -195,6 +190,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		// privacy blocking
 		if rs.isBidderBlockedByPrivacy(reqWrapperCopy, auctionReq.Activities, auctionPermissions, coreBidder, openrtb_ext.BidderName(bidder)) {
+			errs = append(errs, &errortypes.Warning{
+				Message:     fmt.Sprintf("bidder %q blocked by privacy settings", coreBidder),
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			})
 			continue
 		}
 
@@ -509,6 +508,14 @@ func buildRequestExtForBidder(bidder string, req *openrtb_ext.RequestWrapper, re
 	prebidNew := openrtb_ext.ExtRequestPrebid{
 		BidderParams:         reqExtBidderParams[bidder],
 		AlternateBidderCodes: alternateBidderCodes,
+	}
+
+	if prebid != nil && prebid.Aliases != nil {
+		if aliasValue, ok := prebid.Aliases[bidder]; ok {
+			prebidNew.Aliases = map[string]string{
+				bidder: aliasValue,
+			}
+		}
 	}
 
 	// Copy Allowed Fields
@@ -925,8 +932,9 @@ func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) ext
 	return cacheInstructions
 }
 
-func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
+func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions, account config.Account) (*targetData, []*errortypes.Warning) {
 	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
+		prefix, warning := getTargetDataPrefix(requestExtPrebid.Targeting.Prefix, account)
 		return &targetData{
 			alwaysIncludeDeals:        requestExtPrebid.Targeting.AlwaysIncludeDeals,
 			includeBidderKeys:         ptrutil.ValueOrDefault(requestExtPrebid.Targeting.IncludeBidderKeys),
@@ -937,10 +945,49 @@ func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstr
 			mediaTypePriceGranularity: ptrutil.ValueOrDefault(requestExtPrebid.Targeting.MediaTypePriceGranularity),
 			preferDeals:               requestExtPrebid.Targeting.PreferDeals,
 			priceGranularity:          ptrutil.ValueOrDefault(requestExtPrebid.Targeting.PriceGranularity),
+			prefix:                    prefix,
+		}, warning
+	}
+
+	return nil, nil
+}
+
+func getTargetDataPrefix(requestPrefix string, account config.Account) (string, []*errortypes.Warning) {
+	var warnings []*errortypes.Warning
+
+	maxLength := MaxKeyLength
+	if account.TruncateTargetAttribute != nil {
+		if *account.TruncateTargetAttribute > MinKeyLength {
+			maxLength = *account.TruncateTargetAttribute
+		}
+
+		if *account.TruncateTargetAttribute < MinKeyLength {
+			warnings = append(warnings, &errortypes.Warning{
+				WarningCode: errortypes.TooShortTargetingPrefixWarningCode,
+				Message:     "targeting prefix is shorter than 'MinKeyLength' value: increase prefix length",
+			})
+			return DefaultKeyPrefix, warnings
 		}
 	}
 
-	return nil
+	maxLength -= MinKeyLength
+	result := DefaultKeyPrefix
+
+	if requestPrefix != "" {
+		result = requestPrefix
+	} else if account.TargetingPrefix != "" {
+		result = account.TargetingPrefix
+	}
+
+	if len(result) > maxLength {
+		warnings = append(warnings, &errortypes.Warning{
+			WarningCode: errortypes.TooLongTargetingPrefixWarningCode,
+			Message:     "targeting prefix combined with key attribute is longer than 'settings.targeting.truncate-attr-chars' value: decrease prefix length or increase truncate-attr-chars",
+		})
+		return DefaultKeyPrefix, warnings
+	}
+
+	return result, warnings
 }
 
 // getDebugInfo returns the boolean flags that allow for debug information in bidResponse.Ext, the SeatBid.httpcalls slice, and
@@ -1007,6 +1054,10 @@ func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyD
 
 	if fpdToApply.App != nil {
 		reqWrapper.App = fpdToApply.App
+	}
+
+	if fpdToApply.Device != nil {
+		reqWrapper.Device = fpdToApply.Device
 	}
 
 	if fpdToApply.User != nil {

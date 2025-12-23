@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/metrics"
 
 	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -116,13 +116,14 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 		return uuidsToReturn, errs
 	}
 	defer anResp.Body.Close()
-	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
 	responseBody, err := io.ReadAll(anResp.Body)
-	if anResp.StatusCode != 200 {
+	if anResp.StatusCode != 200 || err != nil {
+		c.metrics.RecordPrebidCacheRequestTime(false, elapsedTime)
 		logError(&errs, "Prebid Cache call to %s returned %d: %s", c.putUrl, anResp.StatusCode, responseBody)
 		return uuidsToReturn, errs
 	}
+	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
 	currentIndex := 0
 	processResponse := func(uuidObj []byte, _ jsonparser.ValueType, _ int, err error) {
@@ -149,7 +150,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 
 func logError(errs *[]error, format string, a ...interface{}) {
 	msg := fmt.Sprintf(format, a...)
-	glog.Error(msg)
+	logger.Errorf(msg)
 	*errs = append(*errs, errors.New(msg))
 }
 

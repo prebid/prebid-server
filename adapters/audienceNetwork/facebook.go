@@ -433,7 +433,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (a *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+func (a *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, error) {
 	var (
 		rID   string
 		pubID string
@@ -445,15 +445,13 @@ func (a *adapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.
 	// corresponding imp's ID
 	rID, err = jsonparser.GetString(req.Body, "id")
 	if err != nil {
-		return &adapters.RequestData{}, []error{err}
+		return &adapters.RequestData{}, err
 	}
 
 	// The publisher ID is expected in the app object
 	pubID, err = jsonparser.GetString(req.Body, "app", "publisher", "id")
 	if err != nil {
-		return &adapters.RequestData{}, []error{
-			errors.New("path app.publisher.id not found in the request"),
-		}
+		return &adapters.RequestData{}, errors.New("path app.publisher.id not found in the request")
 	}
 
 	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", a.platformID, pubID, rID)
