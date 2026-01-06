@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -16,8 +18,6 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
-
-//const PREBID_INTEGRATION_TYPE = "1"
 
 type adapter struct {
 	bidderEndpointTemplate string
@@ -87,13 +87,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	bidderEndpoint, err := a.buildEndpointURL(supplySourceId)
 	if err != nil {
-		return nil, []error{errors.New("Failed to build endpoint URL")}
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	//headers.Add("x-integration-type", PREBID_INTEGRATION_TYPE) this will be parsed and added conditionally later
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     bidderEndpoint,
@@ -105,6 +104,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 func (a *adapter) buildEndpointURL(supplySourceId string) (string, error) {
 	if supplySourceId == "" {
+		if a.defaultEndpoint == "" {
+			return "", errors.New("Either supplySourceId or a default endpoint must be provided")
+		}
 		return a.defaultEndpoint, nil
 	}
 
@@ -176,6 +178,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		for _, bid := range seatBid.Bid {
 			bid := bid
 
+			resolveAuctionPriceMacros(&bid)
 			bidType, err := getBidType(bid.MType)
 
 			if err != nil {
@@ -231,4 +234,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		defaultEndpoint:        defaultEndpoint,
 		templateEndpoint:       template,
 	}, nil
+}
+
+func resolveAuctionPriceMacros(bid *openrtb2.Bid) {
+	if bid == nil {
+		return
+	}
+	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	bid.NURL = strings.ReplaceAll(bid.NURL, "${AUCTION_PRICE}", price)
+	bid.AdM = strings.ReplaceAll(bid.AdM, "${AUCTION_PRICE}", price)
+	bid.BURL = strings.ReplaceAll(bid.BURL, "${AUCTION_PRICE}", price)
 }

@@ -18,6 +18,7 @@ const (
 	FailedToMarshalErrorCode
 	FailedToUnmarshalErrorCode
 	InvalidImpFirstPartyDataErrorCode
+	BidderTemporarilyThrottledErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
@@ -39,6 +40,7 @@ const (
 	InvalidUserUIDsWarningCode
 	TooLongTargetingPrefixWarningCode
 	TooShortTargetingPrefixWarningCode
+	BidderBlockedByPrivacySettings
 )
 
 // Coder provides an error or warning code with severity.

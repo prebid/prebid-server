@@ -15,33 +15,38 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 	rw := BuildTestRequestWrapper()
 	rules := BuildTestRules(t)
 
-	result := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+	hookResult := hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 	}
+	result := ProcessedAuctionHookResult{
+		HookResult:     hookResult,
+		AllowedBidders: make(map[string]struct{}),
+	}
+
 	err := rules.Run(rw, &result)
 	assert.NoError(t, err, "unexpected error")
-	assert.NotEmptyf(t, result.ChangeSet, "change set is empty")
-	assert.Len(t, result.ChangeSet.Mutations(), 1)
-	assert.Equal(t, hs.MutationUpdate, result.ChangeSet.Mutations()[0].Type())
+	assert.NotEmptyf(t, result.HookResult.ChangeSet, "change set is empty")
+	assert.Len(t, result.HookResult.ChangeSet.Mutations(), 1)
+	assert.Equal(t, hs.MutationDelete, result.HookResult.ChangeSet.Mutations()[0].Type())
 }
 
-func BuildTestRules(t *testing.T) rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]] {
-	devCountryFunc, errDevCountry := rules.NewDeviceCountryIn(json.RawMessage(`{"countries": ["USA"]}`))
+func BuildTestRules(t *testing.T) rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult] {
+	devCountryFunc, errDevCountry := rules.NewDeviceCountryIn(json.RawMessage(`{"countries": ["JPN"]}`))
 	assert.NoError(t, errDevCountry, "unexpected error in NewDeviceCountryIn")
 	resFuncTrue, errNewIncludeBidders := NewIncludeBidders(json.RawMessage(`{"bidders": ["bidderA"]}`))
 	assert.NoError(t, errNewIncludeBidders, "unexpected error in NewIncludeBidders")
 	resFuncFalse, errNewExcludeBidders := NewExcludeBidders(json.RawMessage(`{"bidders": ["bidderB"]}`))
 	assert.NoError(t, errNewExcludeBidders, "unexpected error in NewExcludeBidders")
 
-	rules := rules.Tree[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
-		Root: &rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+	rules := rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+		Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 			SchemaFunction: devCountryFunc,
-			Children: map[string]*rules.Node[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{
+			Children: map[string]*rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
 				"true": {
-					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{resFuncTrue},
+					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{resFuncTrue},
 				},
 				"false": {
-					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, hs.HookResult[hs.ProcessedAuctionRequestPayload]]{resFuncFalse},
+					ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{resFuncFalse},
 				},
 			},
 		},

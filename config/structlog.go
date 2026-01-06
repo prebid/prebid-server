@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
+	logInternal "github.com/prebid/prebid-server/v3/logger"
 )
 
 type logMsg func(string, ...interface{})
@@ -20,7 +20,7 @@ var blocklistregexp = []*regexp.Regexp{
 // prefix if you want that name to be logged. Structs will append .<fieldname> recursively to the prefix
 // to document deeper structure.
 func logGeneral(v reflect.Value, prefix string) {
-	logGeneralWithLogger(v, prefix, glog.Infof)
+	logGeneralWithLogger(v, prefix, logInternal.Infof)
 }
 
 func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
@@ -45,7 +45,7 @@ func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
 
 func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Struct {
-		glog.Fatalf("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
+		logInternal.Fatalf("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
 	}
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
@@ -60,7 +60,7 @@ func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 
 func logMapWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	if v.Kind() != reflect.Map {
-		glog.Fatalf("LogMap called on type %s, whuch is not a map!", v.Type().String())
+		logInternal.Fatalf("LogMap called on type %s, whuch is not a map!", v.Type().String())
 	}
 	for _, k := range v.MapKeys() {
 		if k.Kind() == reflect.String && !allowedName(k.String()) {

@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
@@ -73,6 +73,7 @@ func executeGroup[H any, P any](
 
 	for _, hook := range group.Hooks {
 		mCtx := executionCtx.getModuleContext(hook.Module)
+		mCtx.HookImplCode = hook.Code
 		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
@@ -107,7 +108,7 @@ func executeHook[H any, P any](
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				glog.Errorf("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
+				logger.Errorf("OpenRTB auction recovered panic in module hook %s.%s: %v, Stack trace is: %v",
 					hw.Module, hw.Code, r, string(debug.Stack()))
 			}
 		}()
