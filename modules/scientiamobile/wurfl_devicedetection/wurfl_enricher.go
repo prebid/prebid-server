@@ -84,6 +84,10 @@ func (we wurflEnricher) EnrichDevice(device *openrtb2.Device) {
 		}
 	}
 	if device.OSV == "" {
+		if v, err := wd.String(advertisedDeviceOSVersionCapKey); err == nil {
+			device.OSV = v
+		}
+	}
 		if v, err := wd.String(advertisedDeviceOSCapKey); err == nil {
 			device.OSV = v
 		}
