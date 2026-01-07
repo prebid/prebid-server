@@ -23,3 +23,8 @@ capabilities:
       - banner
       - video
       - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
