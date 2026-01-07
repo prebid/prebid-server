@@ -57,7 +57,7 @@ type wurflDeviceDetection interface {
 type wurflEnricher struct {
 	// WurflData holds the WURFL data
 	WurflData wurflData
-\t// extCaps if true will enrich the device.ext field with all WURFL caps
+	// extCaps if true will enrich the device.ext field with all WURFL caps
 	// Default to enrich only with the wurfl_id
 	ExtCaps bool
 }
@@ -85,10 +85,6 @@ func (we wurflEnricher) EnrichDevice(device *openrtb2.Device) {
 	}
 	if device.OSV == "" {
 		if v, err := wd.String(advertisedDeviceOSVersionCapKey); err == nil {
-			device.OSV = v
-		}
-	}
-		if v, err := wd.String(advertisedDeviceOSCapKey); err == nil {
 			device.OSV = v
 		}
 	}
