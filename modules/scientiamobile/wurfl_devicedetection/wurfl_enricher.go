@@ -57,7 +57,7 @@ type wurflDeviceDetection interface {
 type wurflEnricher struct {
 	// WurflData holds the WURFL data
 	WurflData wurflData
-	// extCaps if true will enrchich the device.ext field with all WURFL caps
+\t// extCaps if true will enrich the device.ext field with all WURFL caps
 	// Default to enrich only with the wurfl_id
 	ExtCaps bool
 }
