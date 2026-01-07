@@ -125,11 +125,13 @@ func (we wurflEnricher) EnrichDevice(device *openrtb2.Device) {
 
 	wurflExtData, err := we.wurflExtData()
 	if err != nil {
+		glog.Warningf("could not create WURFL ext data: %s", err)
 		return
 	}
 	// merges the WURFL data in device.ext under the wurfl "namespace"
 	ext, err := sjson.SetRawBytes(device.Ext, ortb2WurflExtKey, wurflExtData)
 	if err != nil {
+		glog.Warningf("could not set WURFL ext data: %s", err)
 		return
 	}
 	device.Ext = ext
