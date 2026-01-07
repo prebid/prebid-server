@@ -305,7 +305,8 @@ func buildRequestExt(siteExt map[string]json.RawMessage, aliases map[string]stri
 	}
 
 	ext := map[string]any{
-		"prebid": prebid,
+		"prebid":      prebid,
+		"mile_source": "mile-bidder",
 	}
 
 	for k, v := range siteExt {

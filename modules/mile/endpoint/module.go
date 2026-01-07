@@ -37,6 +37,13 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 		return nil, fmt.Errorf("failed to create redis store: %w", err)
 	}
 
+	// Initialize request analytics if enabled
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	analytics, err := NewRequestAnalytics(config.Analytics, httpClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request analytics: %w", err)
+	}
+
 	return &Module{
 		enabled:        true,
 		config:         config,
@@ -44,6 +51,7 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 		deps:           deps,
 		requestTimeout: time.Duration(config.RequestTimeoutMs) * time.Millisecond,
 		maxBody:        config.MaxRequestSize,
+		analytics:      analytics,
 	}, nil
 }
 
@@ -57,6 +65,7 @@ type Module struct {
 	auctionHandler httprouter.Handle
 	requestTimeout time.Duration
 	maxBody        int64
+	analytics      *RequestAnalytics
 }
 
 // EndpointInfo describes an HTTP endpoint provided by this module.
@@ -99,6 +108,9 @@ func (m *Module) GetEndpoints() []EndpointInfo {
 
 // Shutdown releases resources held by the module.
 func (m *Module) Shutdown() error {
+	if m.analytics != nil {
+		m.analytics.Close()
+	}
 	if m.store != nil {
 		return m.store.Close()
 	}
@@ -162,6 +174,14 @@ func (m *Module) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 	mileReq := convertORTBToMile(&ortbReq)
 	mileReq.Raw = reqBody
+
+	// Log request to analytics pipeline
+	if m.analytics != nil {
+		fmt.Printf("[mile] Logging request to analytics for site=%s\n", mileReq.SiteID)
+		m.analytics.LogRequest(mileReq, r)
+	} else {
+		fmt.Println("[mile] Analytics is nil, skipping request logging")
+	}
 
 	var debugRequested bool
 	if mileReq.BaseORTB != nil && len(mileReq.BaseORTB.Ext) > 0 {

@@ -167,6 +167,7 @@ func buildMileAnalyticsEvent(
 	actualFloorPrice float64,
 	respExt RespExt,
 	floorMetadata map[string]map[string]string,
+	metaData map[string][]string,
 ) MileAnalyticsEvent {
 	return MileAnalyticsEvent{
 		Ip:              requestWrapper.Device.IP,
@@ -197,6 +198,7 @@ func buildMileAnalyticsEvent(
 		ConfiguredTimeout: requestWrapper.TMax,
 		SiteUID:           floorMetadata["prebid_server"]["site_uid"],
 		BiddersFloorMeta:  floorMetadata,
+		MetaData:          metaData,
 		IsPBS:             true,
 	}
 }
@@ -230,6 +232,26 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 	// Extract floor-rejected bids from SeatNonBid
 	floorRejectedBids := extractFloorRejectedBids(ao.SeatNonBid)
 
+	// Extract mile_source flag if present
+	mileSource := ""
+	if ao.RequestWrapper != nil && ao.RequestWrapper.BidRequest != nil && len(ao.RequestWrapper.BidRequest.Ext) > 0 {
+		var ext map[string]interface{}
+		if err := json.Unmarshal(ao.RequestWrapper.BidRequest.Ext, &ext); err == nil {
+			if source, ok := ext["mile_source"].(string); ok {
+				mileSource = source
+			}
+		}
+	}
+
+	// Prepare metadata
+	baseMetaData := map[string][]string{
+		"prebid_server": {"1"},
+		"auction":       {"1"},
+	}
+	if mileSource != "" {
+		baseMetaData["mile_source"] = []string{mileSource}
+	}
+
 	var events []MileAnalyticsEvent
 	for _, imp := range ao.RequestWrapper.GetImp() {
 		// Process configured bidders and initialize floor maps
@@ -242,9 +264,8 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 		bidResponse := processBidResponse(imp.ID, ao.Response, bidderData)
 
 		// Build metadata from floor information
-		floorMetadata := buildFloorMeta(bidderFloors, imp.ID, floorMetadata)
-		floorMetadata["requestMeta"]["gpID"] = bidderData.gpID
-		fmt.Println("floorMetadata is", floorMetadata)
+		impFloorMeta := buildFloorMeta(bidderFloors, imp.ID, floorMetadata)
+		impFloorMeta["requestMeta"]["gpID"] = bidderData.gpID
 
 		// Calculate actual floor price from response or hooks
 		actualFloorPrice := calculateActualFloorPrice(
@@ -262,7 +283,8 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]MileAnal
 			bidResponse,
 			actualFloorPrice,
 			respExt,
-			floorMetadata,
+			impFloorMeta,
+			baseMetaData,
 		)
 
 		// Add floor-rejected bid information if available
