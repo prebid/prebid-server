@@ -34,7 +34,6 @@ const (
 
 const (
 	outOfHomeDevice = "out_of_home_device"
-	trueString      = "true"
 )
 
 var vcaps = []string{
