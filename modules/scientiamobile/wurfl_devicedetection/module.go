@@ -91,7 +91,7 @@ func (m Module) HandleRawAuctionHook(
 	result := hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}
 
 	if invocationCtx.ModuleContext == nil {
-		// The module context has not be inizialized in the entrypoint hook.
+		// The module context has not been initialized in the entrypoint hook.
 		// This could be due to a not allowed publisher or an error.
 		// Return the payload as is
 		return result, hookexecution.NewFailure("module context has not been inizialized in the entrypoint hook")
