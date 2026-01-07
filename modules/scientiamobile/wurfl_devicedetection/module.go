@@ -94,7 +94,7 @@ func (m Module) HandleRawAuctionHook(
 		// The module context has not been initialized in the entrypoint hook.
 		// This could be due to a not allowed publisher or an error.
 		// Return the payload as is
-		return result, hookexecution.NewFailure("module context has not been inizialized in the entrypoint hook")
+		return result, hookexecution.NewFailure("module context has not been initialized in the entrypoint hook")
 	}
 
 	if isWURFLEnrichedRequest(payload) {
