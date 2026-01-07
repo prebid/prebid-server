@@ -18,7 +18,7 @@ const (
 	wurflHeaderCtxKey = "wurfl_header"
 )
 
-// declare conformity with  hookstage.RawActionRequest interface
+// declare conformity with hookstage.RawActionRequest interface
 var (
 	_ hookstage.RawAuctionRequest = Module{}
 	_ hookstage.Entrypoint        = Module{}
