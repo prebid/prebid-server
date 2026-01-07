@@ -56,7 +56,7 @@ func (wd wurflData) Float64(key string) (float64, error) {
 	}
 	result, err := strconv.ParseFloat(val, 64)
 	if err != nil {
-		return 0.0, fmt.Errorf("cound not parse %q to float64 for capability %q", val, key)
+\t\treturn 0.0, fmt.Errorf("could not parse %q to float64 for capability %q", val, key)
 	}
 	return result, nil
 }
