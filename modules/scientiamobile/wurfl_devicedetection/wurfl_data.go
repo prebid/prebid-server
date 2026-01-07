@@ -30,7 +30,7 @@ func (wd wurflData) Bool(key string) (bool, error) {
 	}
 	result, err := strconv.ParseBool(val)
 	if err != nil {
-		return false, fmt.Errorf("cound not parse %q to bool for capability %q", val, key)
+\t\treturn false, fmt.Errorf("could not parse %q to bool for capability %q", val, key)
 	}
 	return result, nil
 }
