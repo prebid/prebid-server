@@ -30,7 +30,7 @@ func (wd wurflData) Bool(key string) (bool, error) {
 	}
 	result, err := strconv.ParseBool(val)
 	if err != nil {
-\t\treturn false, fmt.Errorf("could not parse %q to bool for capability %q", val, key)
+		return false, fmt.Errorf("could not parse %q to bool for capability %q", val, key)
 	}
 	return result, nil
 }
@@ -43,7 +43,7 @@ func (wd wurflData) Int64(key string) (int64, error) {
 	}
 	result, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
-\t\treturn 0, fmt.Errorf("could not parse %q to int64 for capability %q", val, key)
+		return 0, fmt.Errorf("could not parse %q to int64 for capability %q", val, key)
 	}
 	return result, nil
 }
@@ -56,7 +56,7 @@ func (wd wurflData) Float64(key string) (float64, error) {
 	}
 	result, err := strconv.ParseFloat(val, 64)
 	if err != nil {
-\t\treturn 0.0, fmt.Errorf("could not parse %q to float64 for capability %q", val, key)
+		return 0.0, fmt.Errorf("could not parse %q to float64 for capability %q", val, key)
 	}
 	return result, nil
 }
