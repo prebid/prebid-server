@@ -43,7 +43,7 @@ func (wd wurflData) Int64(key string) (int64, error) {
 	}
 	result, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("cound not parse %q to int64 for capability %q", val, key)
+\t\treturn 0, fmt.Errorf("could not parse %q to int64 for capability %q", val, key)
 	}
 	return result, nil
 }
