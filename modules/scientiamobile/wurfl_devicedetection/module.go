@@ -101,7 +101,10 @@ func (m Module) HandleRawAuctionHook(
 		return result, nil
 	}
 
-	rawHeaders := invocationCtx.ModuleContext[wurflHeaderCtxKey].(map[string]string)
+	rawHeaders, ok := invocationCtx.ModuleContext[wurflHeaderCtxKey].(map[string]string)
+	if !ok {
+		return result, hookexecution.NewFailure("invalid module context type")
+	}
 	result.ChangeSet.AddMutation(func(payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
 		ortb2Device, err := getOrtb2Device(payload)
 		if err != nil {
