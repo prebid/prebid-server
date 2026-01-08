@@ -9,15 +9,15 @@ import (
 )
 
 const (
-	secCHUA                 = "Sec-CH-UA"
-	secCHUAPlatform         = "Sec-CH-UA-Platform"
-	secCHUAPlatformVersion  = "Sec-CH-UA-Platform-Version"
-	secCHUAMobile           = "Sec-CH-UA-Mobile"
-	secCHUAArch             = "Sec-CH-UA-Arch"
-	secCHUAModel            = "Sec-CH-UA-Model"
-	secCHUAFullVersion      = "Sec-CH-UA-Full-Version"
-	secCHUAFullVersionList  = "Sec-CH-UA-Full-Version-List"
-	userAgent               = "User-Agent"
+	secCHUA                = "Sec-CH-UA"
+	secCHUAPlatform        = "Sec-CH-UA-Platform"
+	secCHUAPlatformVersion = "Sec-CH-UA-Platform-Version"
+	secCHUAMobile          = "Sec-CH-UA-Mobile"
+	secCHUAArch            = "Sec-CH-UA-Arch"
+	secCHUAModel           = "Sec-CH-UA-Model"
+	secCHUAFullVersion     = "Sec-CH-UA-Full-Version"
+	secCHUAFullVersionList = "Sec-CH-UA-Full-Version-List"
+	userAgent              = "User-Agent"
 )
 
 func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[string]string {
