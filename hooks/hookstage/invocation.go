@@ -2,6 +2,8 @@ package hookstage
 
 import (
 	"encoding/json"
+	"iter"
+	"maps"
 	"sync"
 
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
@@ -81,9 +83,7 @@ func (mc *ModuleContext) GetAll() map[string]any {
 	mc.RLock()
 	defer mc.RUnlock()
 	result := make(map[string]any, len(mc.data))
-	for k, v := range mc.data {
-		result[k] = v
-	}
+	maps.Copy(result, mc.data)
 	return result
 }
 
@@ -97,7 +97,36 @@ func (mc *ModuleContext) SetAll(data map[string]any) {
 	if mc.data == nil {
 		mc.data = make(map[string]any)
 	}
-	for k, v := range data {
-		mc.data[k] = v
+	maps.Copy(mc.data, data)
+}
+
+var emptyMapIter iter.Seq2[string, any] = func(yield func(string, any) bool) {}
+
+// All returns an iterator over key-value pairs from the module context with read lock held
+func (mc *ModuleContext) All() iter.Seq2[string, any] {
+	if mc == nil || mc.data == nil {
+		return emptyMapIter
 	}
+
+	return func(yield func(string, any) bool) {
+		mc.RLock()
+		defer mc.RUnlock()
+		maps.All(mc.data)(yield)
+	}
+}
+
+// Insert adds the key-value pairs from seq to the module context with write lock held
+func (mc *ModuleContext) Insert(seq iter.Seq2[string, any]) {
+	if mc == nil {
+		return
+	}
+
+	mc.Lock()
+	defer mc.Unlock()
+
+	if mc.data == nil {
+		mc.data = make(map[string]any)
+	}
+
+	maps.Insert(mc.data, seq)
 }

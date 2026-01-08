@@ -59,8 +59,12 @@ func (mc *moduleContexts) put(moduleName string, mCtx *hookstage.ModuleContext) 
 		return
 	}
 
+	if mCtx == existingCtx {
+		return
+	}
+
 	// Add new data to existing context
-	existingCtx.SetAll(mCtx.GetAll())
+	existingCtx.Insert(mCtx.All())
 }
 
 func (mc *moduleContexts) get(moduleName string) (*hookstage.ModuleContext, bool) {
