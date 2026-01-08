@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/util/iterutil"
 )
 
 const (
@@ -71,7 +72,7 @@ func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[
 func makeBrandList(brandVersions []openrtb2.BrandVersion) string {
 	var builder strings.Builder
 	first := true
-	for _, version := range brandVersions {
+	for version := range iterutil.SlicePointerValues(brandVersions) {
 		if version.Brand == "" {
 			continue
 		}

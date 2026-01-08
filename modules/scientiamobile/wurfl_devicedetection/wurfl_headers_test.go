@@ -95,6 +95,29 @@ func TestMakeHeaders(t *testing.T) {
 				"Sec-CH-UA-Model":             `"Pixel 6"`,
 			},
 		},
+		{
+			name: "SUA with multiple browsers brand",
+			device: openrtb2.Device{
+				SUA: &openrtb2.UserAgent{
+					Browsers: []openrtb2.BrandVersion{
+						{Brand: "Chromium", Version: []string{"114"}},
+						{Brand: "Google Chrome", Version: []string{"114", "0", "5735"}},
+						{Brand: " Not A;Brand", Version: []string{"99"}},
+					},
+					Platform: &openrtb2.BrandVersion{
+						Brand:   "Windows",
+						Version: []string{"10", "0", "0"},
+					},
+				},
+			},
+			rawHeaders: map[string]string{},
+			expected: map[string]string{
+				"Sec-CH-UA":                   `"Chromium";v="114", "Google Chrome";v="114.0.5735", " Not A;Brand";v="99"`,
+				"Sec-CH-UA-Full-Version-List": `"Chromium";v="114", "Google Chrome";v="114.0.5735", " Not A;Brand";v="99"`,
+				"Sec-CH-UA-Platform":          `"Windows"`,
+				"Sec-CH-UA-Platform-Version":  `"10.0.0"`,
+			},
+		},
 	}
 
 	for _, test := range tests {
