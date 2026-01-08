@@ -62,7 +62,7 @@ type wurflEnricher struct {
 }
 
 // EnrichDevice enriches OpenRTB 2.x device with WURFL data
-func (we wurflEnricher) EnrichDevice(device *openrtb2.Device) {
+func (we *wurflEnricher) EnrichDevice(device *openrtb2.Device) {
 	wd := we.WurflData
 	if device.Make == "" {
 		if v, err := wd.String(brandNameCapKey); err == nil {
@@ -137,7 +137,7 @@ func (we wurflEnricher) EnrichDevice(device *openrtb2.Device) {
 }
 
 // wurflExtData returns the WURFL data in JSON format for the device.ext field
-func (we wurflEnricher) wurflExtData() ([]byte, error) {
+func (we *wurflEnricher) wurflExtData() ([]byte, error) {
 	if we.ExtCaps {
 		// return all WURFL data
 		return we.WurflData.MarshalJSON()
@@ -148,7 +148,7 @@ func (we wurflEnricher) wurflExtData() ([]byte, error) {
 
 // makeDeviceType returns an OpenRTB2 DeviceType from WURFL data
 // see https://www.scientiamobile.com/how-to-populate-iab-openrtb-device-object/
-func (we wurflEnricher) makeDeviceType() adcom1.DeviceType {
+func (we *wurflEnricher) makeDeviceType() adcom1.DeviceType {
 	wd := we.WurflData
 	unknownDeviceType := adcom1.DeviceType(0)
 

@@ -92,7 +92,7 @@ func TestWurflEnricher_EnrichDeviceExt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			device := &openrtb2.Device{Ext: tc.initialExt}
 
-			we := wurflEnricher{
+			we := &wurflEnricher{
 				WurflData: tc.wurflData,
 				ExtCaps:   true,
 			}
