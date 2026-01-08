@@ -50,16 +50,16 @@ func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[
 	headers[secCHUAFullVersionList] = brandList
 
 	if sua.Platform != nil {
-		headers[secCHUAPlatform] = escapeClientHintField(sua.Platform.Brand)
-		headers[secCHUAPlatformVersion] = escapeClientHintField(strings.Join(sua.Platform.Version, "."))
+		headers[secCHUAPlatform] = quoteClientHintField(sua.Platform.Brand)
+		headers[secCHUAPlatformVersion] = quoteClientHintField(strings.Join(sua.Platform.Version, "."))
 	}
 
 	if sua.Model != "" {
-		headers[secCHUAModel] = escapeClientHintField(sua.Model)
+		headers[secCHUAModel] = quoteClientHintField(sua.Model)
 	}
 
 	if sua.Architecture != "" {
-		headers[secCHUAArch] = escapeClientHintField(sua.Architecture)
+		headers[secCHUAArch] = quoteClientHintField(sua.Architecture)
 	}
 
 	if sua.Mobile != nil {
@@ -81,7 +81,7 @@ func makeBrandList(brandVersions []openrtb2.BrandVersion) string {
 		}
 		first = false
 
-		brandName := escapeClientHintField(version.Brand)
+		brandName := quoteClientHintField(version.Brand)
 		builder.WriteString(brandName)
 		builder.WriteString(`;v="`)
 		builder.WriteString(strings.Join(version.Version, "."))
@@ -90,6 +90,6 @@ func makeBrandList(brandVersions []openrtb2.BrandVersion) string {
 	return builder.String()
 }
 
-func escapeClientHintField(value string) string {
-	return `"` + strings.ReplaceAll(value, `"`, `\"`) + `"`
+func quoteClientHintField(value string) string {
+	return `"` + value + `"`
 }
