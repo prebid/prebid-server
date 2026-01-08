@@ -8,15 +8,15 @@ import (
 )
 
 const (
-	SEC_CH_UA                   = "Sec-CH-UA"
-	SEC_CH_UA_PLATFORM          = "Sec-CH-UA-Platform"
-	SEC_CH_UA_PLATFORM_VERSION  = "Sec-CH-UA-Platform-Version"
-	SEC_CH_UA_MOBILE            = "Sec-CH-UA-Mobile"
-	SEC_CH_UA_ARCH              = "Sec-CH-UA-Arch"
-	SEC_CH_UA_MODEL             = "Sec-CH-UA-Model"
-	SEC_CH_UA_FULL_VERSION      = "Sec-CH-UA-Full-Version"
-	SEC_CH_UA_FULL_VERSION_LIST = "Sec-CH-UA-Full-Version-List"
-	USER_AGENT                  = "User-Agent"
+	secCHUA                 = "Sec-CH-UA"
+	secCHUAPlatform         = "Sec-CH-UA-Platform"
+	secCHUAPlatformVersion  = "Sec-CH-UA-Platform-Version"
+	secCHUAMobile           = "Sec-CH-UA-Mobile"
+	secCHUAArch             = "Sec-CH-UA-Arch"
+	secCHUAModel            = "Sec-CH-UA-Model"
+	secCHUAFullVersion      = "Sec-CH-UA-Full-Version"
+	secCHUAFullVersionList  = "Sec-CH-UA-Full-Version-List"
+	userAgent               = "User-Agent"
 )
 
 func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[string]string {
@@ -33,7 +33,7 @@ func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[
 	headers := make(map[string]string)
 
 	if ua != "" {
-		headers[USER_AGENT] = ua
+		headers[userAgent] = ua
 	}
 
 	if sua == nil {
@@ -45,24 +45,24 @@ func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[
 	}
 
 	brandList := makeBrandList(sua.Browsers)
-	headers[SEC_CH_UA] = brandList
-	headers[SEC_CH_UA_FULL_VERSION_LIST] = brandList
+	headers[secCHUA] = brandList
+	headers[secCHUAFullVersionList] = brandList
 
 	if sua.Platform != nil {
-		headers[SEC_CH_UA_PLATFORM] = escapeClientHintField(sua.Platform.Brand)
-		headers[SEC_CH_UA_PLATFORM_VERSION] = escapeClientHintField(strings.Join(sua.Platform.Version, "."))
+		headers[secCHUAPlatform] = escapeClientHintField(sua.Platform.Brand)
+		headers[secCHUAPlatformVersion] = escapeClientHintField(strings.Join(sua.Platform.Version, "."))
 	}
 
 	if sua.Model != "" {
-		headers[SEC_CH_UA_MODEL] = escapeClientHintField(sua.Model)
+		headers[secCHUAModel] = escapeClientHintField(sua.Model)
 	}
 
 	if sua.Architecture != "" {
-		headers[SEC_CH_UA_ARCH] = escapeClientHintField(sua.Architecture)
+		headers[secCHUAArch] = escapeClientHintField(sua.Architecture)
 	}
 
 	if sua.Mobile != nil {
-		headers[SEC_CH_UA_MOBILE] = fmt.Sprintf("?%d", *sua.Mobile)
+		headers[secCHUAMobile] = fmt.Sprintf("?%d", *sua.Mobile)
 	}
 
 	return headers
