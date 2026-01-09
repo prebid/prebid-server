@@ -46,4 +46,6 @@ var invalidParams = []string{
 	`5`,
 	`4.2`,
 	`[]`,
+	`{"uid": "invalid_type"}`,
+	`{"keywords": "invalid_type"}`,
 }
