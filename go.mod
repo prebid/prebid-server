@@ -15,6 +15,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/glog v1.1.0
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.9
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/copystructure v1.2.0
@@ -46,6 +47,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
