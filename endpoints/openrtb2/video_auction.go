@@ -14,11 +14,11 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
@@ -304,6 +304,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(bidReqWrapper, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
+
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	if errs := deps.setFieldsImplicitly(r, bidReqWrapper, account); len(errs) > 0 {
 		errL = append(errL, errs...)
@@ -332,8 +335,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TCF2Config:                 tcf2Config,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 		Activities:                 activityControl,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
@@ -365,7 +371,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if bidReq.Test == 1 {
 		err = setSeatNonBidRaw(bidReqWrapper, auctionResponse)
 		if err != nil {
-			glog.Errorf("Error setting seat non-bid: %v", err)
+			logger.Errorf("Error setting seat non-bid: %v", err)
 		}
 		bidResp.Ext = response.Ext
 	}
@@ -435,7 +441,7 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	w.WriteHeader(status)
 	vo.Status = status
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
-	glog.Errorf("/openrtb2/video Critical error: %v", errors)
+	logger.Errorf("/openrtb2/video Critical error: %v", errors)
 	vo.Errors = append(vo.Errors, errL...)
 }
 

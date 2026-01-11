@@ -88,8 +88,6 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "request_over_head_time.make-bidder-requests", m.OverheadTimer[MakeBidderRequests])
 	ensureContains(t, registry, "bidder_server_response_time_seconds", m.BidderServerResponseTimer)
 	ensureContains(t, registry, "tmax_timeout", m.TMaxTimeoutCounter)
-	ensureContains(t, registry, "connection_want", m.ConnectionWantCounter)
-	ensureContains(t, registry, "connection_got", m.ConnectionGotCounter)
 
 	for module, stages := range moduleStageNames {
 		for _, stage := range stages {
@@ -143,6 +141,8 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
 	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
+	ensureContains(t, registry, name+".connection_dial_err", adapterMetrics.ConnDialErrors)
+	ensureContains(t, registry, name+".connection_dial_time", adapterMetrics.ConnDialTime)
 
 	ensureContains(t, registry, name+".response.validation.size.err", adapterMetrics.BidValidationCreativeSizeErrorMeter)
 	ensureContains(t, registry, name+".response.validation.size.warn", adapterMetrics.BidValidationCreativeSizeWarnMeter)
