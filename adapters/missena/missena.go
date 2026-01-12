@@ -51,13 +51,12 @@ type UserParams struct {
 	Settings  map[string]any `json:"settings,omitempty"`
 }
 
-type MissenaAdapter struct {
-	EndpointTemplate *template.Template
-}
+const (
+	currencyUSD = "USD"
+	currencyEUR = "EUR"
+)
 
-var defaultCur = "USD"
-
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the Missena adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
@@ -79,15 +78,15 @@ func getVersionString() string {
 func getCurrency(currencies []string) (string, error) {
 	eurAvailable := false
 	for _, cur := range currencies {
-		if cur == defaultCur {
-			return defaultCur, nil
+		if cur == currencyUSD {
+			return currencyUSD, nil
 		}
-		if cur == "EUR" {
+		if cur == currencyEUR {
 			eurAvailable = true
 		}
 	}
 	if eurAvailable {
-		return "EUR", nil
+		return currencyEUR, nil
 	}
 	return "", fmt.Errorf("no currency supported %v", currencies)
 }
@@ -106,7 +105,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 	}
 	cur, err := getCurrency(request.Cur)
 	if err != nil {
-		cur = defaultCur
+		cur = currencyUSD
 	}
 
 	var floor float64
@@ -115,7 +114,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		floor = imp.BidFloor
 		floorCur, err = getCurrency(request.Cur)
 		if err != nil {
-			floorCur = defaultCur
+			floorCur = currencyUSD
 			floor, err = requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, floorCur)
 			if err != nil {
 				return nil, err
