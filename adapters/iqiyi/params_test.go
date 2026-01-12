@@ -61,4 +61,3 @@ var invalidParams = []string{
 	`{"AccountID":"123"}`,
 	`{"account_id":"123"}`,
 }
-
