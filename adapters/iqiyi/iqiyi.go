@@ -79,8 +79,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	for i := range requestCopy.Imp {
 		imp := &requestCopy.Imp[i]
 		if imp.Banner != nil {
-			bannerCopy := *imp.Banner
-			if (bannerCopy.W == nil || bannerCopy.H == nil || *bannerCopy.W == minBannerSize || *bannerCopy.H == minBannerSize) && len(bannerCopy.Format) > defaultBannerFormatIndex {
+			banner := imp.Banner
+			if (banner.W == nil || banner.H == nil || *banner.W == minBannerSize || *banner.H == minBannerSize) && len(banner.Format) > defaultBannerFormatIndex {
+				bannerCopy := *banner
 				first := bannerCopy.Format[defaultBannerFormatIndex]
 				bannerCopy.W = &first.W
 				bannerCopy.H = &first.H
