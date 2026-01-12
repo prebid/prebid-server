@@ -293,6 +293,12 @@ func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordGvlListRequest() {
+	for _, thisME := range *me {
+		thisME.RecordGvlListRequest()
+	}
+}
+
 func (me *MultiMetricsEngine) RecordAdsCertReq(success bool) {
 	for _, thisME := range *me {
 		thisME.RecordAdsCertReq(success)
@@ -368,6 +374,25 @@ func (me *MultiMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLa
 func (me *MultiMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 	for _, thisME := range *me {
 		thisME.RecordModuleTimeout(labels)
+	}
+}
+
+// RecordAdapterThrottled across all engines
+func (me *MultiMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterThrottled(adapter)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnectionDialError(adapterName)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnectionDialTime(adapterName, dialStartTime)
 	}
 }
 
@@ -506,6 +531,9 @@ func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) 
 func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
 }
 
+func (me *NilMetricsEngine) RecordGvlListRequest() {
+}
+
 func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {
 
 }
@@ -545,4 +573,14 @@ func (me *NilMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLabe
 }
 
 func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
+}
+
+// RecordAdapterThrottled as a noop
+func (me *NilMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
+}
+
+func (me *NilMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+}
+
+func (me *NilMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
 }

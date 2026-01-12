@@ -3,9 +3,9 @@ package hooks
 import (
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 type Stage string
@@ -19,6 +19,7 @@ const (
 	StageRawBidderResponse        Stage = "raw_bidder_response"
 	StageAllProcessedBidResponses Stage = "all_processed_bid_responses"
 	StageAuctionResponse          Stage = "auction_response"
+	StageExitpoint                Stage = "exitpoint"
 )
 
 func (s Stage) String() string {
@@ -27,7 +28,7 @@ func (s Stage) String() string {
 
 func (s Stage) IsRejectable() bool {
 	return s != StageAllProcessedBidResponses &&
-		s != StageAuctionResponse
+		s != StageAuctionResponse && s != StageExitpoint
 }
 
 // ExecutionPlanBuilder is the interface that provides methods
@@ -41,6 +42,7 @@ type ExecutionPlanBuilder interface {
 	PlanForRawBidderResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse]
 	PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse]
+	PlanForExitpointStage(endpoint string, account *config.Account) Plan[hookstage.Exitpoint]
 }
 
 // Plan represents a slice of groups of hooks of a specific type grouped in the established order.
@@ -156,6 +158,16 @@ func (p PlanBuilder) PlanForAuctionResponseStage(endpoint string, account *confi
 	)
 }
 
+func (p PlanBuilder) PlanForExitpointStage(endpoint string, account *config.Account) Plan[hookstage.Exitpoint] {
+	return getMergedPlan(
+		p.hooks,
+		account,
+		endpoint,
+		StageExitpoint,
+		p.repo.GetExitpointHook,
+	)
+}
+
 type hookFn[T any] func(moduleName string) (T, bool)
 
 func getMergedPlan[T any](
@@ -198,7 +210,7 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
 			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
 		} else {
-			glog.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
+			logger.Warnf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 

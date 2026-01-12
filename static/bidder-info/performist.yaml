@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.performserv.com/openrtb/{{.PublisherID}}"
+aliasOf: "limelightDigital"
