@@ -1,5 +1,5 @@
 aliasOf: "teqblaze"
-endpoint: 'https://east-backend.mycodemedia.com/pbjs'
+endpoint: 'https://east-backend.mycodemedia.com/pserver'
 maintainer:
   email: 'support-platform@mycodemedia.com'
 capabilities:
