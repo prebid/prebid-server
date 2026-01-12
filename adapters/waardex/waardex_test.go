@@ -36,19 +36,6 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 
 // --- MakeRequests ---
 
-func TestMakeRequests_NoImpressions(t *testing.T) {
-	adapter := &waardexAdapter{
-		EndpointTemplate: template.Must(template.New("endpointTemplate").Parse("http://example.com?zone={{.ZoneID}}")),
-	}
-	request := &openrtb2.BidRequest{}
-
-	requests, errs := adapter.MakeRequests(request, &adapters.ExtraRequestInfo{})
-
-	assert.Nil(t, requests)
-	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Error(), "No impression in the bid request")
-}
-
 func TestMakeRequests_AllImpressionsInvalid(t *testing.T) {
 	adapter := &waardexAdapter{
 		EndpointTemplate: template.Must(template.New("endpointTemplate").Parse("http://example.com?zone={{.ZoneID}}")),
