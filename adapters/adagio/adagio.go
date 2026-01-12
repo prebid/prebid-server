@@ -2,7 +2,6 @@ package adagio
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -64,7 +63,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	if len(bidResponse.SeatBid) == 0 {
-		return nil, []error{errors.New("empty seatbid array")}
+		return nil, []error{&errortypes.BadServerResponse{Message: "empty seatbid array"}}
 	}
 
 	var errs []error
@@ -102,7 +101,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				Bid:      &bid,
 				BidMeta:  meta,
 				BidVideo: video,
-				Seat:     openrtb_ext.BidderName(seatBid.Seat),
 				BidType:  bidType,
 			}
 			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)

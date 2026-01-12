@@ -21,6 +21,16 @@ const (
 	BidderCurrency string = "USD"
 )
 
+// publisherExtPrebid defines the structure for publisher.ext.prebid used by RTBHouse adapter
+type publisherExtPrebid struct {
+	PublisherId string `json:"publisherId,omitempty"`
+}
+
+// publisherExt defines the structure for publisher.ext used by RTBHouse adapter
+type publisherExt struct {
+	Prebid *publisherExtPrebid `json:"prebid,omitempty"`
+}
+
 // RTBHouseAdapter implements the Bidder interface.
 type RTBHouseAdapter struct {
 	endpoint string
@@ -45,14 +55,23 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 	reqCopy := *openRTBRequest
 	reqCopy.Imp = []openrtb2.Imp{}
+
+	var publisherId string
+
 	for _, imp := range openRTBRequest.Imp {
+		rtbhouseExt, err := getImpressionExt(imp)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		// Extract publisherId from the first impression that has one
+		if publisherId == "" && rtbhouseExt.PublisherId != "" {
+			publisherId = rtbhouseExt.PublisherId
+		}
+
 		var bidFloorCur = imp.BidFloorCur
 		var bidFloor = imp.BidFloor
 		if bidFloorCur == "" && bidFloor == 0 {
-			rtbhouseExt, err := getImpressionExt(imp)
-			if err != nil {
-				return nil, []error{err}
-			}
 			if rtbhouseExt.BidFloor > 0 {
 				bidFloor = rtbhouseExt.BidFloor
 				bidFloorCur = BidderCurrency
@@ -90,9 +109,20 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		}
 		imp.Ext = newImpExt
 
+		// Remove PMP from impression
+		imp.PMP = nil
+
 		// Set the CUR of bid to BIDDER_CURRENCY after converting all floors
 		reqCopy.Cur = []string{BidderCurrency}
 		reqCopy.Imp = append(reqCopy.Imp, imp)
+	}
+
+	// Set publisher ID in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId if we found one
+	if publisherId != "" {
+		if err := setPublisherID(&reqCopy, publisherId); err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
 	}
 
 	openRTBRequestJSON, err := json.Marshal(reqCopy)
@@ -113,6 +143,60 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	requestsToBidder = append(requestsToBidder, requestToBidder)
 
 	return requestsToBidder, errs
+}
+
+// setPublisherID sets the publisherId in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId
+func setPublisherID(request *openrtb2.BidRequest, publisherId string) error {
+	var publisher *openrtb2.Publisher
+	if request.Site != nil {
+		// Create a copy of the site to avoid modifying the original request
+		siteCopy := *request.Site
+		request.Site = &siteCopy
+		publisher = request.Site.Publisher
+	} else if request.App != nil {
+		// Create a copy of the app to avoid modifying the original request
+		appCopy := *request.App
+		request.App = &appCopy
+		publisher = request.App.Publisher
+	} else {
+		// If neither site nor app exists, create a site object
+		request.Site = &openrtb2.Site{}
+	}
+
+	if publisher != nil {
+		// Create a copy of the publisher to avoid modifying the original request
+		publisherCopy := *publisher
+		publisher = &publisherCopy
+	} else {
+		publisher = &openrtb2.Publisher{}
+	}
+
+	// Set publisherId in publisher.ext.prebid.publisherId using local struct
+	var pubExt publisherExt
+	if publisher.Ext != nil {
+		if err := jsonutil.Unmarshal(publisher.Ext, &pubExt); err != nil {
+			return err
+		}
+	}
+	if pubExt.Prebid == nil {
+		pubExt.Prebid = &publisherExtPrebid{}
+	}
+	pubExt.Prebid.PublisherId = publisherId
+
+	publisherExtJSON, err := jsonutil.Marshal(pubExt)
+	if err != nil {
+		return err
+	}
+	publisher.Ext = publisherExtJSON
+
+	// Assign the updated publisher back to the appropriate object
+	if request.Site != nil {
+		request.Site.Publisher = publisher
+	} else if request.App != nil {
+		request.App.Publisher = publisher
+	}
+
+	return nil
 }
 
 func clearAuctionEnvironment(imp *openrtb2.Imp) (json.RawMessage, error) {

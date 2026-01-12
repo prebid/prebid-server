@@ -76,6 +76,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 	if len(errs) > 0 {
 		return nil, errs
 	}
+
 	return syncers, nil
 }
 
@@ -97,10 +98,13 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 	var bidderNames []string
 	var bidderNamesWithEndpoints []string
 	var syncerConfig namedSyncerConfig
+	var syncerConfigWithEndpoints []namedSyncerConfig
+
 	for _, bidder := range biddersSyncerConfig {
 		bidderNames = append(bidderNames, bidder.name)
 		if bidder.cfg.IFrame != nil || bidder.cfg.Redirect != nil {
 			bidderNamesWithEndpoints = append(bidderNamesWithEndpoints, bidder.name)
+			syncerConfigWithEndpoints = append(syncerConfigWithEndpoints, bidder)
 			syncerConfig = bidder
 		}
 	}
@@ -111,10 +115,16 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s share the same syncer key, but none define endpoints (iframe and/or redirect)", bidders)
 	}
 
-	if len(bidderNamesWithEndpoints) > 1 {
-		sort.Strings(bidderNamesWithEndpoints)
-		bidders := strings.Join(bidderNamesWithEndpoints, ", ")
-		return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", bidders)
+	if len(syncerConfigWithEndpoints) > 1 {
+		// allowed if all configs are identical
+		firstConfig := syncerConfigWithEndpoints[0].cfg
+		for _, config := range syncerConfigWithEndpoints[1:] {
+			if !firstConfig.Equal(&config.cfg) {
+				sort.Strings(bidderNamesWithEndpoints)
+				bidders := strings.Join(bidderNamesWithEndpoints, ", ")
+				return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints unless the configs are identical", bidders)
+			}
+		}
 	}
 
 	return syncerConfig, nil

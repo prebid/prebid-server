@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 // DataType constants
@@ -358,7 +358,7 @@ func (cfg *InMemoryCache) validate(dataType DataType, errs []error) []error {
 				errs = append(errs, fmt.Errorf("%s: in_memory_cache.size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.Size))
 			}
 			if cfg.RequestCacheSize > 0 || cfg.ImpCacheSize > 0 || cfg.RespCacheSize > 0 {
-				glog.Warningf("%s: in_memory_cache.request_cache_size_bytes, imp_cache_size_bytes and resp_cache_size_bytes do not apply to this section and will be ignored", section)
+				logger.Warnf("%s: in_memory_cache.request_cache_size_bytes, imp_cache_size_bytes and resp_cache_size_bytes do not apply to this section and will be ignored", section)
 			}
 		} else {
 			// dual (request and imp) caches
@@ -372,7 +372,7 @@ func (cfg *InMemoryCache) validate(dataType DataType, errs []error) []error {
 				errs = append(errs, fmt.Errorf("%s: in_memory_cache.resp_cache_size_bytes must be >= 0 when in_memory_cache.type=lru. Got %d", section, cfg.RespCacheSize))
 			}
 			if cfg.Size > 0 {
-				glog.Warningf("%s: in_memory_cache.size_bytes does not apply in this section and will be ignored", section)
+				logger.Warnf("%s: in_memory_cache.size_bytes does not apply in this section and will be ignored", section)
 			}
 		}
 	default:

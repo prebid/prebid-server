@@ -191,6 +191,27 @@ func generateAdUnit(imp openrtb2.Imp, adnuntiusExt openrtb_ext.ImpExtAdnunitus, 
 	if adnuntiusExt.MaxDeals > 0 {
 		adUnit.MaxDeals = adnuntiusExt.MaxDeals
 	}
+
+	if adnuntiusExt.Targeting.Category != nil {
+		adUnit.Category = adnuntiusExt.Targeting.Category
+	}
+
+	if adnuntiusExt.Targeting.Segments != nil {
+		adUnit.Segments = adnuntiusExt.Targeting.Segments
+	}
+
+	if adnuntiusExt.Targeting.Keywords != nil {
+		adUnit.Keywords = adnuntiusExt.Targeting.Keywords
+	}
+
+	if adnuntiusExt.Targeting.KeyValues != nil {
+		adUnit.KeyValues = adnuntiusExt.Targeting.KeyValues
+	}
+
+	if adnuntiusExt.Targeting.AdUnitMatchingLabel != nil {
+		adUnit.AdUnitMatchingLabel = adnuntiusExt.Targeting.AdUnitMatchingLabel
+	}
+
 	return adUnit
 }
 
