@@ -1,4 +1,4 @@
 aliasOf: "teqblaze"
-endpoint: "https://ads.nuba.io/openrtb2/auction"
+endpoint: "https://ads.nuba.io/pserver"
 maintainer:
   email: "ssp@nuba.io"
