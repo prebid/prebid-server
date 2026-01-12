@@ -2,9 +2,6 @@ endpoint: "https://pbs.production.agrvt.com/openrtb2/auction"
 maintainer:
   email: produit@alliancegravity.com
 gvlVendorID: 501
-gdpr:
-  enabled: true
-  default_value: "1"
 modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
