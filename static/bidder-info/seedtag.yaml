@@ -10,5 +10,5 @@ capabilities:
       - banner
 userSync:
   iframe:
-    url: "https://s.seedtag.com/cs/cookiesync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp_consent={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPP_SID}}&redirect={{.RedirectURL}}"
+    url: "https://s.seedtag.com/cs/cookiesync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp_consent={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
