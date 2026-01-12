@@ -23,13 +23,8 @@ type waardexAdapter struct {
 // MakeRequests prepares request information for prebid-server core
 func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	imps, impExts, impErrs := getImpressionsInfo(request.Imp)
+	impressionsByZone, impErrs := groupImpressionsByZone(request.Imp)
 	errs = append(errs, impErrs...)
-	if len(imps) == 0 {
-		return nil, errs
-	}
-
-	impressionsByZone := dispatchImpressions(imps, impExts)
 	if len(impressionsByZone) == 0 {
 		return nil, errs
 	}
@@ -45,50 +40,36 @@ func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *ada
 	return result, errs
 }
 
-// getImpressionsInfo checks each impression for validity and returns a copy for each impression with corresponding exts
-func getImpressionsInfo(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext.ExtImpWaardex, []error) {
-	impsCount := len(imps)
-	errors := make([]error, 0, impsCount)
-	resImps := make([]openrtb2.Imp, 0, impsCount)
-	resImpExts := make([]openrtb_ext.ExtImpWaardex, 0, impsCount)
-
-	for _, imp := range imps {
+// groupImpressionsByZone validates imps and groups them by Waardex-specific parameter `zoneId`.
+func groupImpressionsByZone(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp, []error) {
+	res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
+	errors := make([]error, 0, len(imps))
+	for idx := range imps {
+		imp := imps[idx]
 		impExt, err := getImpressionExt(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		// Additional validation is handled by the core JSON schema (static/bidder-params/waardex.json).
-		resImps = append(resImps, imp)
-		resImpExts = append(resImpExts, *impExt)
-	}
-	return resImps, resImpExts, errors
-}
-
-// Group impressions by Waardex-specific parameter `zoneId`
-func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaardex) map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp {
-	res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
-	for idx := range imps {
-		imp := imps[idx]
 		imp.Ext = nil
-		impExt := impsExt[idx]
+		// Additional validation is handled by the core JSON schema (static/bidder-params/waardex.json).
 		if isMultiFormatImp(&imp) {
 			splImps := splitMultiFormatImp(&imp)
 			if len(splImps) == 0 {
 				continue
 			}
-			if _, exists := res[impExt]; !exists {
-				res[impExt] = make([]openrtb2.Imp, 0, 4)
+			if _, exists := res[*impExt]; !exists {
+				res[*impExt] = make([]openrtb2.Imp, 0, 4)
 			}
-			res[impExt] = append(res[impExt], splImps...)
+			res[*impExt] = append(res[*impExt], splImps...)
 		} else {
-			if _, exists := res[impExt]; !exists {
-				res[impExt] = make([]openrtb2.Imp, 0, 4)
+			if _, exists := res[*impExt]; !exists {
+				res[*impExt] = make([]openrtb2.Imp, 0, 4)
 			}
-			res[impExt] = append(res[impExt], imp)
+			res[*impExt] = append(res[*impExt], imp)
 		}
 	}
-	return res
+	return res, errors
 }
 
 func isMultiFormatImp(imp *openrtb2.Imp) bool {

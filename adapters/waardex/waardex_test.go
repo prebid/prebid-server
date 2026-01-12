@@ -110,19 +110,20 @@ func makeImp(t *testing.T, id string, withBanner, withVideo, withNative, withAud
 	return imp
 }
 
-// --- getImpressionsInfo ---
+// --- groupImpressionsByZone ---
 
-func TestGetImpressionsInfo_FiltersInvalidAndKeepsValid(t *testing.T) {
+func TestGroupImpressionsByZone_FiltersInvalidAndKeepsValid(t *testing.T) {
 	validImp := makeImp(t, "1", true, false, false, false, 10)
 	invalidImp := openrtb2.Imp{ID: "2", Ext: json.RawMessage("malformed")}
 
-	imps, exts, errs := getImpressionsInfo([]openrtb2.Imp{validImp, invalidImp})
+	grouped, errs := groupImpressionsByZone([]openrtb2.Imp{validImp, invalidImp})
 
 	assert.Len(t, errs, 1, "expected one error for invalid imp ext")
-	require.Len(t, imps, 1)
-	require.Len(t, exts, 1)
-	assert.Equal(t, "1", imps[0].ID)
-	assert.Equal(t, 10, exts[0].ZoneId)
+	require.Len(t, grouped, 1)
+	group := grouped[openrtb_ext.ExtImpWaardex{ZoneId: 10}]
+	require.Len(t, group, 1)
+	assert.Equal(t, "1", group[0].ID)
+	assert.Nil(t, group[0].Ext)
 }
 
 func TestGetImpressionExt_BadImpExt(t *testing.T) {
@@ -144,17 +145,13 @@ func TestGetImpressionExt_BadBidderExt(t *testing.T) {
 	require.Error(t, err)
 }
 
-// --- dispatchImpressions ---
-
-func TestDispatchImpressions_GroupsByZoneAndSplitsMultiFormat(t *testing.T) {
+func TestGroupImpressionsByZone_GroupsByZoneAndSplitsMultiFormat(t *testing.T) {
 	imp1 := makeImp(t, "1", true, false, false, false, 100) // banner only
 	imp2 := makeImp(t, "2", true, true, false, false, 100)  // banner + video (multi)
 	imp3 := makeImp(t, "3", false, true, false, false, 200) // video only different zone
 
-	imps := []openrtb2.Imp{imp1, imp2, imp3}
-	exts := []openrtb_ext.ExtImpWaardex{{ZoneId: 100}, {ZoneId: 100}, {ZoneId: 200}}
-
-	grouped := dispatchImpressions(imps, exts)
+	grouped, errs := groupImpressionsByZone([]openrtb2.Imp{imp1, imp2, imp3})
+	require.Len(t, errs, 0)
 
 	// zone 100 should have imp1 and two split imps from imp2
 	g100 := grouped[openrtb_ext.ExtImpWaardex{ZoneId: 100}]
