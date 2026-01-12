@@ -118,6 +118,32 @@ func TestMakeHeaders(t *testing.T) {
 				"Sec-CH-UA-Platform-Version":  `"10.0.0"`,
 			},
 		},
+		{
+			name: "SUA with special characters requiring escaping (RFC 9651)",
+			device: openrtb2.Device{
+				SUA: &openrtb2.UserAgent{
+					Browsers: []openrtb2.BrandVersion{
+						{Brand: `Test"Brand`, Version: []string{"1", "0"}},
+						{Brand: `Test\Brand`, Version: []string{"2", "0"}},
+					},
+					Platform: &openrtb2.BrandVersion{
+						Brand:   `OS"Name`,
+						Version: []string{"1"},
+					},
+					Model:        `Device"Model\Name`,
+					Architecture: `arch\test`,
+				},
+			},
+			rawHeaders: map[string]string{},
+			expected: map[string]string{
+				"Sec-CH-UA":                   `"Test\"Brand";v="1.0", "Test\\Brand";v="2.0"`,
+				"Sec-CH-UA-Full-Version-List": `"Test\"Brand";v="1.0", "Test\\Brand";v="2.0"`,
+				"Sec-CH-UA-Platform":          `"OS\"Name"`,
+				"Sec-CH-UA-Platform-Version":  `"1"`,
+				"Sec-CH-UA-Model":             `"Device\"Model\\Name"`,
+				"Sec-CH-UA-Arch":              `"arch\\test"`,
+			},
+		},
 	}
 
 	for _, test := range tests {

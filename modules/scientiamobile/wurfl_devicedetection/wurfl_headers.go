@@ -20,6 +20,13 @@ const (
 	userAgent              = "User-Agent"
 )
 
+// clientHintEscaper escapes special characters in Client Hint header values per RFC 9651.
+// Only backslash and double-quote need escaping. Backslash must be escaped first.
+var clientHintEscaper = strings.NewReplacer(
+	`\`, `\\`, // Must escape backslash FIRST
+	`"`, `\"`, // Then escape quotes
+)
+
 func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[string]string {
 	sua := ortb2Device.SUA
 	ua := ortb2Device.UA
@@ -50,16 +57,16 @@ func makeHeaders(ortb2Device openrtb2.Device, rawHeaders map[string]string) map[
 	headers[secCHUAFullVersionList] = brandList
 
 	if sua.Platform != nil {
-		headers[secCHUAPlatform] = quoteClientHintField(sua.Platform.Brand)
-		headers[secCHUAPlatformVersion] = quoteClientHintField(strings.Join(sua.Platform.Version, "."))
+		headers[secCHUAPlatform] = quoteAndEscapeClientHintField(sua.Platform.Brand)
+		headers[secCHUAPlatformVersion] = quoteAndEscapeClientHintField(strings.Join(sua.Platform.Version, "."))
 	}
 
 	if sua.Model != "" {
-		headers[secCHUAModel] = quoteClientHintField(sua.Model)
+		headers[secCHUAModel] = quoteAndEscapeClientHintField(sua.Model)
 	}
 
 	if sua.Architecture != "" {
-		headers[secCHUAArch] = quoteClientHintField(sua.Architecture)
+		headers[secCHUAArch] = quoteAndEscapeClientHintField(sua.Architecture)
 	}
 
 	if sua.Mobile != nil {
@@ -81,7 +88,7 @@ func makeBrandList(brandVersions []openrtb2.BrandVersion) string {
 		}
 		first = false
 
-		brandName := quoteClientHintField(version.Brand)
+		brandName := quoteAndEscapeClientHintField(version.Brand)
 		builder.WriteString(brandName)
 		builder.WriteString(`;v="`)
 		builder.WriteString(strings.Join(version.Version, "."))
@@ -90,6 +97,9 @@ func makeBrandList(brandVersions []openrtb2.BrandVersion) string {
 	return builder.String()
 }
 
-func quoteClientHintField(value string) string {
-	return `"` + value + `"`
+// quoteAndEscapeClientHintField escapes special characters per RFC 9651 and wraps
+// the value in double quotes for use in HTTP Client Hint header values.
+// Backslashes and double-quotes are escaped as required by the structured field specification.
+func quoteAndEscapeClientHintField(value string) string {
+	return `"` + clientHintEscaper.Replace(value) + `"`
 }
