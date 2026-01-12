@@ -14,6 +14,6 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: "https://sync.justbidit2.xyz/user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    url: "https://sync.justbidit2.xyz/user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}&s={{.SspID}}"
     userMacro: "{UID}"
 endpointCompression: "GZIP"
