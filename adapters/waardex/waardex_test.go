@@ -187,6 +187,46 @@ func TestIsMultiFormatImp(t *testing.T) {
 	assert.False(t, isMultiFormatImp(&none))
 }
 
+func TestIsMultiFormatImp_MultiImpressionCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		imp       openrtb2.Imp
+		wantMulti bool
+	}{
+		{
+			name:      "banner+audio",
+			imp:       makeImp(t, "ba", true, false, false, true, 1),
+			wantMulti: true,
+		},
+		{
+			name:      "video+native",
+			imp:       makeImp(t, "vn", false, true, true, false, 1),
+			wantMulti: true,
+		},
+		{
+			name:      "banner+native+audio",
+			imp:       makeImp(t, "bna", true, false, true, true, 1),
+			wantMulti: true,
+		},
+		{
+			name:      "audio-only",
+			imp:       makeImp(t, "a", false, false, false, true, 1),
+			wantMulti: false,
+		},
+		{
+			name:      "native-only",
+			imp:       makeImp(t, "n", false, false, true, false, 1),
+			wantMulti: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantMulti, isMultiFormatImp(&tt.imp))
+		})
+	}
+}
+
 // --- splitMultiFormatImp ---
 
 func TestSplitMultiFormatImp_BannerVideoOnly(t *testing.T) {
