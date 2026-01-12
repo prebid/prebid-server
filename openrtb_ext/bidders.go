@@ -33,14 +33,11 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
-	BidderAdOcean,
 	BidderAdot,
 	BidderAdpone,
 	BidderAdprime,
 	BidderAdquery,
 	BidderAdrino,
-	BidderAdsInteractive,
-	BidderAdsinteractive,
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
@@ -410,14 +407,11 @@ const (
 	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
-	BidderAdOcean           BidderName = "adocean"
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
 	BidderAdquery           BidderName = "adquery"
 	BidderAdrino            BidderName = "adrino"
-	BidderAdsInteractive    BidderName = "ads_interactive"
-	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdTonos           BidderName = "adtonos"
