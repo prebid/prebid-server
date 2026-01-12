@@ -59,12 +59,12 @@ func groupImpressionsByZone(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpWaardex]
 				continue
 			}
 			if _, exists := res[*impExt]; !exists {
-				res[*impExt] = make([]openrtb2.Imp, 0, 4)
+				res[*impExt] = make([]openrtb2.Imp, 0, 2)
 			}
 			res[*impExt] = append(res[*impExt], splImps...)
 		} else {
 			if _, exists := res[*impExt]; !exists {
-				res[*impExt] = make([]openrtb2.Imp, 0, 4)
+				res[*impExt] = make([]openrtb2.Imp, 0, 2)
 			}
 			res[*impExt] = append(res[*impExt], imp)
 		}
