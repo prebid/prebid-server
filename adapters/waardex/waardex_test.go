@@ -138,6 +138,25 @@ func TestGetImpressionsInfo_FiltersInvalidAndKeepsValid(t *testing.T) {
 	assert.Equal(t, 10, exts[0].ZoneId)
 }
 
+func TestGetImpressionExt_BadImpExt(t *testing.T) {
+	imp := openrtb2.Imp{ID: "1", Ext: json.RawMessage("malformed")}
+
+	ext, err := getImpressionExt(&imp)
+
+	assert.Nil(t, ext)
+	require.Error(t, err)
+}
+
+func TestGetImpressionExt_BadBidderExt(t *testing.T) {
+	imp := openrtb2.Imp{ID: "1"}
+	imp.Ext = json.RawMessage(`{"bidder": "not-json"}`)
+
+	ext, err := getImpressionExt(&imp)
+
+	assert.Nil(t, ext)
+	require.Error(t, err)
+}
+
 // --- dispatchImpressions ---
 
 func TestDispatchImpressions_GroupsByZoneAndSplitsMultiFormat(t *testing.T) {
