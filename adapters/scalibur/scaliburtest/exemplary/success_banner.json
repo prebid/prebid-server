@@ -8,14 +8,21 @@
     }]
   },
   "httpCalls": [{
-    "expectedUri": "https://srv.scalibur.io/adserver/ortb?type=prebid-server",
     "expectedRequest": {
-      "id": "test-request-id",
-      "imp": [{
-        "id": "test-imp-id",
-        "banner": { "format": [{"w": 300, "h": 250}] },
-        "ext": { "placementId": "test-scl-placement" }
-      }]
+      "uri": "https://srv.scalibur.io/adserver/ortb?type=prebid-server",
+      "impIDs": ["test-imp-id"],
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "banner": { "format": [{"w": 300, "h": 250}] },
+          "bidfloorcur": "USD",
+          "ext": {
+            "placementId": "test-scl-placement",
+            "bidfloorcur": "USD"
+          }
+        }]
+      }
     },
     "mockResponse": {
       "status": 200,

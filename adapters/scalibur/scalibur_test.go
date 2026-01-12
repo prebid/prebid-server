@@ -17,7 +17,7 @@ import (
 func newTestAdapter() adapters.Bidder {
 	adapter, _ := Builder(
 		openrtb_ext.BidderScalibur,
-		config.Adapter{Endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid"},
+		config.Adapter{Endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid-server"},
 		config.Server{},
 	)
 	return adapter
@@ -58,13 +58,15 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 		Site: &openrtb2.Site{Page: "https://test.com"},
 	}
 
-	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
+	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{
+		CurrencyConversions: &mockConversions{},
+	})
 
 	require.Len(t, errs, 0)
 	require.Len(t, requests, 1)
 
 	r := requests[0]
-	assert.Equal(t, "https://srv.scalibur.io/adserver/ortb?type=prebid", r.Uri)
+	assert.Equal(t, "https://srv.scalibur.io/adserver/ortb?type=prebid-server", r.Uri)
 	assert.Equal(t, "POST", r.Method)
 	assert.Contains(t, r.Headers.Get("Content-Type"), "application/json")
 
@@ -76,7 +78,7 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 	imp := out.Imp[0]
 
 	assert.Equal(t, float64(1.25), imp.BidFloor)
-	assert.Equal(t, "EUR", imp.BidFloorCur)
+	assert.Equal(t, "USD", imp.BidFloorCur)
 
 	var outExt map[string]interface{}
 	require.NoError(t, json.Unmarshal(imp.Ext, &outExt))
@@ -122,8 +124,8 @@ func TestMakeRequests_VideoDefaultsApplied(t *testing.T) {
 		ID: "req-video",
 		Imp: []openrtb2.Imp{
 			{
-				ID:    "v1",
-				Ext:   ext,
+				ID:  "v1",
+				Ext: ext,
 				Video: &openrtb2.Video{
 					// Intentionally empty → should fill defaults
 				},
@@ -131,7 +133,10 @@ func TestMakeRequests_VideoDefaultsApplied(t *testing.T) {
 		},
 	}
 
-	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
+	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{
+		CurrencyConversions: &mockConversions{},
+	})
+
 	require.Len(t, errs, 0)
 	require.Len(t, requests, 1)
 
@@ -150,6 +155,16 @@ func TestMakeRequests_VideoDefaultsApplied(t *testing.T) {
 	assert.NotNil(t, v.H)
 	assert.NotZero(t, v.Placement)
 	assert.NotZero(t, v.Linearity)
+}
+
+type mockConversions struct{}
+
+func (m *mockConversions) GetRate(from string, to string) (float64, error) {
+	return 1.0, nil
+}
+
+func (m *mockConversions) GetRates() *map[string]map[string]float64 {
+	return nil
 }
 
 //
@@ -263,7 +278,6 @@ func TestMakeBids_InvalidJSON(t *testing.T) {
 
 	_, errs := bidder.MakeBids(&openrtb2.BidRequest{}, &adapters.RequestData{}, respData)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Error(), "Failed to unmarshal")
 }
 
 func ptrInt64(x int64) *int64 { return &x }

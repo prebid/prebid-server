@@ -28,6 +28,7 @@ capabilities:
 
 userSync:
   iframe:
-    url: "https://srv.scalibur.io/adserver/sync?type=iframe&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}[PBS_UID]"
+    url: "https://srv.scalibur.io/adserver/sync?type=iframe&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[PBS_UID]"
   supports:
     - iframe

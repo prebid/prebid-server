@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -21,7 +22,11 @@ type adapter struct {
 
 // Builder builds a new instance of the Scalibur adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	temp, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	endpoint := config.Endpoint
+	if endpoint == "" {
+		endpoint = "https://srv.scalibur.io/adserver/ortb?type=prebid-server"
+	}
+	temp, err := template.New("endpointTemplate").Parse(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
@@ -46,17 +51,24 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		impCopy := imp
 
-		// Apply bid floor from params as fallback (matching JS logic)
+		// Apply bid floor and currency
 		if scaliburExt.BidFloor != nil && *scaliburExt.BidFloor > 0 {
-			if impCopy.BidFloor == 0 {
-				impCopy.BidFloor = *scaliburExt.BidFloor
+			impCopy.BidFloor = *scaliburExt.BidFloor
+			if scaliburExt.BidFloorCur != "" {
+				impCopy.BidFloorCur = scaliburExt.BidFloorCur
 			}
 		}
 
-		// Apply bid floor currency from params
-		if scaliburExt.BidFloorCur != "" && impCopy.BidFloorCur == "" {
-			impCopy.BidFloorCur = scaliburExt.BidFloorCur
+		if impCopy.BidFloor > 0 && impCopy.BidFloorCur != "" && impCopy.BidFloorCur != "USD" {
+			convertedValue, err := reqInfo.ConvertCurrency(impCopy.BidFloor, impCopy.BidFloorCur, "USD")
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			impCopy.BidFloor = convertedValue
+			impCopy.BidFloorCur = "USD"
 		}
+
 		if impCopy.BidFloorCur == "" {
 			impCopy.BidFloorCur = "USD"
 		}
@@ -65,22 +77,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		impExtData := make(map[string]interface{})
 		impExtData["placementId"] = scaliburExt.PlacementID
 
-		if scaliburExt.BidFloor != nil {
-			impExtData["bidfloor"] = *scaliburExt.BidFloor
+		if impCopy.BidFloor > 0 {
+			impExtData["bidfloor"] = impCopy.BidFloor
 		}
-		if scaliburExt.BidFloorCur != "" {
-			impExtData["bidfloorcur"] = scaliburExt.BidFloorCur
-		}
+		impExtData["bidfloorcur"] = impCopy.BidFloorCur
 
 		// Preserve GPID if present
 		var rawExt map[string]json.RawMessage
-		if err := json.Unmarshal(imp.Ext, &rawExt); err == nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &rawExt); err == nil {
 			if gpid, ok := rawExt["gpid"]; ok {
 				impExtData["gpid"] = json.RawMessage(gpid)
 			}
 		}
 
-		impExt, err := json.Marshal(impExtData)
+		impExt, err := jsonutil.Marshal(impExtData)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -143,21 +153,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	isDebug := request.Test == 1
 	if !isDebug && len(request.Ext) > 0 {
 		var extRequest openrtb_ext.ExtRequest
-		if err := json.Unmarshal(request.Ext, &extRequest); err == nil {
+		if err := jsonutil.Unmarshal(request.Ext, &extRequest); err == nil {
 			isDebug = extRequest.Prebid.Debug
 		}
 	}
 
 	if isDebug {
 		reqExt := openrtb_ext.ExtRequestScalibur{IsDebug: 1}
-		if reqExtJSON, err := json.Marshal(reqExt); err == nil {
+		if reqExtJSON, err := jsonutil.Marshal(reqExt); err == nil {
 			requestCopy.Ext = reqExtJSON
 		}
 	} else {
 		requestCopy.Ext = nil
 	}
 
-	reqJSON, err := json.Marshal(requestCopy)
+	reqJSON, err := jsonutil.Marshal(requestCopy)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -195,15 +205,13 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Failed to unmarshal response: %s", err.Error()),
-		}}
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
 	}
 
 	// Parse the external request to get impression details
 	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+	if err := jsonutil.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 
@@ -241,15 +249,18 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 			// Handle video VAST
 			if bidType == openrtb_ext.BidTypeVideo {
-				// Try to extract custom fields vastXml and vastUrl from bid response
-				var bidExtData map[string]interface{}
-				if bidBytes, err := json.Marshal(bid); err == nil {
-					if err := json.Unmarshal(bidBytes, &bidExtData); err == nil {
-						if vastXML, ok := bidExtData["vastXml"].(string); ok && vastXML != "" {
-							bidCopy.AdM = vastXML
-						} else if vastURL, ok := bidExtData["vastUrl"].(string); ok && vastURL != "" && bidCopy.AdM == "" {
+				// Try to extract custom fields vastXml and vastUrl from bid.ext
+				var bidExtData struct {
+					VastXML string `json:"vastXml"`
+					VastURL string `json:"vastUrl"`
+				}
+				if bid.Ext != nil {
+					if err := jsonutil.Unmarshal(bid.Ext, &bidExtData); err == nil {
+						if bidExtData.VastXML != "" {
+							bidCopy.AdM = bidExtData.VastXML
+						} else if bidExtData.VastURL != "" && bidCopy.AdM == "" {
 							// Wrap VAST URL in VAST wrapper
-							bidCopy.AdM = fmt.Sprintf(`<VAST version="3.0"><Ad><Wrapper><VASTAdTagURI><![CDATA[%s]]></VASTAdTagURI></Wrapper></Ad></VAST>`, vastURL)
+							bidCopy.AdM = fmt.Sprintf(`<VAST version="3.0"><Ad><Wrapper><VASTAdTagURI><![CDATA[%s]]></VASTAdTagURI></Wrapper></Ad></VAST>`, bidExtData.VastURL)
 						}
 					}
 				}
@@ -272,14 +283,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 // parseScaliburExt extracts Scalibur-specific parameters from the impression extension.
 func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(impExt, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(impExt, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to parse imp.ext: %s", err.Error()),
 		}
 	}
 
 	var scaliburExt openrtb_ext.ExtImpScalibur
-	if err := json.Unmarshal(bidderExt.Bidder, &scaliburExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &scaliburExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Failed to parse Scalibur params: %s", err.Error()),
 		}
@@ -296,12 +307,15 @@ func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, erro
 
 // getBidMediaType determines the media type based on the impression
 func getBidMediaType(bid openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidType, error) {
-	// 1 = Banner, 2 = Video, 3 = Audio, 4 = Native
 	switch bid.MType {
-	case 1:
+	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
-	case 2:
+	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	}
 
 	// Fallback for bidders not supporting mtype (non-multi-format requests)
