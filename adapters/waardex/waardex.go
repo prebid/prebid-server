@@ -109,7 +109,7 @@ func isMultiFormatImp(imp *openrtb2.Imp) bool {
 }
 
 func splitMultiFormatImp(imp *openrtb2.Imp) []openrtb2.Imp {
-	splitImps := make([]openrtb2.Imp, 0, 4)
+	splitImps := make([]openrtb2.Imp, 0, 2)
 	if imp.Banner != nil {
 		impCopy := *imp
 		impCopy.Video = nil
