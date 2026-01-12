@@ -222,11 +222,12 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				we: &mockWurflDeviceDetection{
 					detectDeviceFunc: func(headers map[string]string) (wurflData, error) {
 						return wurflData{
-							"brand_name": "BrandX",
-							"model_name": "ModelY",
-							"is_mobile":  "true",
-							"is_phone":   "true",
-							"is_tablet":  "false",
+							"brand_name":  "BrandX",
+							"model_name":  "ModelY",
+							"is_mobile":   "true",
+							"is_phone":    "true",
+							"is_tablet":   "false",
+							"form_factor": "Other Mobile",
 						}, nil
 					},
 				},
@@ -257,11 +258,12 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				we: &mockWurflDeviceDetection{
 					detectDeviceFunc: func(headers map[string]string) (wurflData, error) {
 						return wurflData{
-							"brand_name": "BrandX",
-							"model_name": "ModelY",
-							"is_mobile":  "true",
-							"is_phone":   "true",
-							"is_tablet":  "false",
+							"brand_name":  "BrandX",
+							"model_name":  "ModelY",
+							"is_mobile":   "true",
+							"is_phone":    "true",
+							"is_tablet":   "false",
+							"form_factor": "Other Mobile",
 						}, nil
 					},
 				},
@@ -278,11 +280,12 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				we: &mockWurflDeviceDetection{
 					detectDeviceFunc: func(headers map[string]string) (wurflData, error) {
 						return wurflData{
-							"brand_name": "BrandX",
-							"model_name": "ModelY",
-							"is_mobile":  "true",
-							"is_phone":   "true",
-							"is_tablet":  "false",
+							"brand_name":  "BrandX",
+							"model_name":  "ModelY",
+							"is_mobile":   "true",
+							"is_phone":    "true",
+							"is_tablet":   "false",
+							"form_factor": "Other Mobile",
 						}, nil
 					},
 				},
@@ -306,12 +309,13 @@ func TestHandleRawAuctionHook(t *testing.T) {
 					"devicetype": 1,
 					"ext": {
             "wurfl": {
-							"brand_name": "BrandX",
-							"model_name": "ModelY",
-							"is_mobile":  "true",
-							"is_phone":   "true",
-							"is_tablet":  "false"
-            } 
+							"brand_name":  "BrandX",
+							"model_name":  "ModelY",
+							"is_mobile":   "true",
+							"is_phone":    "true",
+							"is_tablet":   "false",
+							"form_factor": "Other Mobile"
+            }
           }
 				}
 			}`,
@@ -322,11 +326,12 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				we: &mockWurflDeviceDetection{
 					detectDeviceFunc: func(headers map[string]string) (wurflData, error) {
 						return wurflData{
-							"brand_name": "BrandX",
-							"model_name": "ModelY",
-							"is_mobile":  "true",
-							"is_phone":   "true",
-							"is_tablet":  "false",
+							"brand_name":  "BrandX",
+							"model_name":  "ModelY",
+							"is_mobile":   "true",
+							"is_phone":    "true",
+							"is_tablet":   "false",
+							"form_factor": "Other Mobile",
 						}, nil
 					},
 				},
@@ -351,12 +356,13 @@ func TestHandleRawAuctionHook(t *testing.T) {
 					"ext": {
             "test": 1,
             "wurfl": {
-							"brand_name": "BrandX",
-							"model_name": "ModelY",
-							"is_mobile":  "true",
-							"is_phone":   "true",
-							"is_tablet":  "false"
-            } 
+							"brand_name":  "BrandX",
+							"model_name":  "ModelY",
+							"is_mobile":   "true",
+							"is_phone":    "true",
+							"is_tablet":   "false",
+							"form_factor": "Other Mobile"
+            }
           }
 				}
 			}`,

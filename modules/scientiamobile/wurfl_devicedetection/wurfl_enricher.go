@@ -15,6 +15,7 @@ const (
 	completeDeviceNameCapKey        = "complete_device_name"
 	densityClassCapKey              = "density_class"
 	formFactorCapKey                = "form_factor"
+	isConsoleCapKey                 = "is_console"
 	isConnectedTVCapKey             = "is_connected_tv"
 	isFullDesktopCapKey             = "is_full_desktop"
 	isMobileCapKey                  = "is_mobile"
@@ -34,6 +35,17 @@ const (
 
 const (
 	outOfHomeDevice = "out_of_home_device"
+)
+
+// WURFL form_factor values
+const (
+	formFactorDesktop        = "Desktop"
+	formFactorSmartphone     = "Smartphone"
+	formFactorFeaturePhone   = "Feature Phone"
+	formFactorTablet         = "Tablet"
+	formFactorSmartTV        = "Smart-TV"
+	formFactorOtherNonMobile = "Other Non-Mobile"
+	formFactorOtherMobile    = "Other Mobile"
 )
 
 var vcaps = []string{
@@ -152,66 +164,42 @@ func (we *wurflEnricher) makeDeviceType() adcom1.DeviceType {
 	wd := we.WurflData
 	unknownDeviceType := adcom1.DeviceType(0)
 
-	isMobile, err := wd.Bool(isMobileCapKey)
-	if err != nil {
-		glog.Warning(err)
-	}
-
-	isPhone, err := wd.Bool(isPhoneCapKey)
-	if err != nil {
-		glog.Warning(err)
-	}
-
-	isTablet, err := wd.Bool(isTabletCapKey)
-	if err != nil {
-		glog.Warning(err)
-	}
-
-	if isMobile {
-		if isPhone || isTablet {
-			return adcom1.DeviceMobile
-		}
-		return adcom1.DeviceConnected
-	}
-
-	isFullDesktop, err := wd.Bool(isFullDesktopCapKey)
-	if err != nil {
-		glog.Warning(err)
-	}
-	if isFullDesktop {
-		return adcom1.DevicePC
-	}
-
-	isConnectedTV, err := wd.Bool(isConnectedTVCapKey)
-	if err != nil {
-		glog.Warning(err)
-	}
-	if isConnectedTV {
-		return adcom1.DeviceTV
-	}
-
-	if isPhone {
-		return adcom1.DevicePhone
-	}
-
-	if isTablet {
-		return adcom1.DeviceTablet
-	}
-
-	isOTT, err := wd.Bool(isOTTCapKey)
-	if err != nil {
-		glog.Warning(err)
-	}
-	if isOTT {
+	// Priority 1: Check is_ott
+	if isOTT, err := wd.Bool(isOTTCapKey); err == nil && isOTT {
 		return adcom1.DeviceSetTopBox
 	}
 
-	isOOH, err := wd.String(physicalFormFactorCapKey)
-	if err != nil {
-		glog.Warning(err)
+	// Priority 2: Check is_console
+	if isConsole, err := wd.Bool(isConsoleCapKey); err == nil && isConsole {
+		return adcom1.DeviceConnected
 	}
-	if isOOH == outOfHomeDevice {
+
+	// Priority 3: Check physical_form_factor for out_of_home_device
+	if physicalFormFactor, err := wd.String(physicalFormFactorCapKey); err == nil && physicalFormFactor == outOfHomeDevice {
 		return adcom1.DeviceOOH
 	}
-	return unknownDeviceType
+
+	// Priority 4: Check if form_factor exists and switch on its value
+	formFactor, err := wd.String(formFactorCapKey)
+	if err != nil {
+		// form_factor not available, return unknown
+		return unknownDeviceType
+	}
+
+	switch formFactor {
+	case formFactorDesktop:
+		return adcom1.DevicePC
+	case formFactorSmartphone, formFactorFeaturePhone:
+		return adcom1.DevicePhone
+	case formFactorTablet:
+		return adcom1.DeviceTablet
+	case formFactorSmartTV:
+		return adcom1.DeviceTV
+	case formFactorOtherNonMobile:
+		return adcom1.DeviceConnected
+	case formFactorOtherMobile:
+		return adcom1.DeviceMobile
+	default:
+		return unknownDeviceType
+	}
 }

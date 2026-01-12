@@ -116,86 +116,87 @@ func TestWurflEnricher_MakeDeviceType(t *testing.T) {
 		expected adcom1.DeviceType
 	}{
 		{
-			name: "Mobile device - isMobile true, isPhone true",
+			name: "Mobile device - form_factor Other Mobile",
 			data: wurflData{
-				"is_mobile": "true",
-				"is_phone":  "true",
+				"form_factor": "Other Mobile",
 			},
 			expected: adcom1.DeviceMobile,
 		},
 		{
-			name: "Mobile device - isMobile true, isTablet true",
+			name: "Smartphone device - form_factor Smartphone",
 			data: wurflData{
-				"is_mobile": "true",
-				"is_tablet": "true",
-			},
-			expected: adcom1.DeviceMobile,
-		},
-		{
-			name: "Connected TV",
-			data: wurflData{
-				"is_connected_tv": "true",
-			},
-			expected: adcom1.DeviceTV,
-		},
-		{
-			name: "Full desktop",
-			data: wurflData{
-				"is_full_desktop": "true",
-			},
-			expected: adcom1.DevicePC,
-		},
-		{
-			name: "Phone device",
-			data: wurflData{
-				"is_phone": "true",
+				"form_factor": "Smartphone",
 			},
 			expected: adcom1.DevicePhone,
 		},
 		{
-			name: "Tablet device",
+			name: "Feature Phone device - form_factor Feature Phone",
 			data: wurflData{
-				"is_tablet": "true",
+				"form_factor": "Feature Phone",
+			},
+			expected: adcom1.DevicePhone,
+		},
+		{
+			name: "Connected TV - form_factor Smart-TV",
+			data: wurflData{
+				"form_factor": "Smart-TV",
+			},
+			expected: adcom1.DeviceTV,
+		},
+		{
+			name: "Full desktop - form_factor Desktop",
+			data: wurflData{
+				"form_factor": "Desktop",
+			},
+			expected: adcom1.DevicePC,
+		},
+		{
+			name: "Tablet device - form_factor Tablet",
+			data: wurflData{
+				"form_factor": "Tablet",
 			},
 			expected: adcom1.DeviceTablet,
 		},
 		{
-			name: "Set-top box (OTT)",
+			name: "Connected device - form_factor Other Non-Mobile",
 			data: wurflData{
-				"is_ott": "true",
+				"form_factor": "Other Non-Mobile",
+			},
+			expected: adcom1.DeviceConnected,
+		},
+		{
+			name: "Set-top box (OTT) - is_ott has priority",
+			data: wurflData{
+				"is_ott":      "true",
+				"form_factor": "Desktop",
 			},
 			expected: adcom1.DeviceSetTopBox,
 		},
 		{
-			name: "Out-of-home device",
+			name: "Console device - is_console has priority",
+			data: wurflData{
+				"is_console":  "true",
+				"form_factor": "Desktop",
+			},
+			expected: adcom1.DeviceConnected,
+		},
+		{
+			name: "Out-of-home device - physical_form_factor has priority",
 			data: wurflData{
 				"physical_form_factor": "out_of_home_device",
+				"form_factor":          "Desktop",
 			},
 			expected: adcom1.DeviceOOH,
 		},
 		{
-			name:     "Unknown device type - no relevant flags",
+			name:     "Unknown device type - no form_factor",
 			data:     wurflData{},
 			expected: adcom1.DeviceType(0),
 		},
 		{
-			name: "Error parsing isMobile",
+			name: "Unknown device type - invalid form_factor",
 			data: wurflData{
-				"is_mobile": "not_a_bool",
-			},
-			expected: adcom1.DeviceType(0),
-		},
-		{
-			name: "Error parsing isConnectedTV",
-			data: wurflData{
-				"is_connected_tv": "not_a_bool",
-			},
-			expected: adcom1.DeviceType(0),
-		},
-		{
-			name: "Error parsing physicalFormFactor",
-			data: wurflData{
-				"physical_form_factor": "",
+				"form_factor": "Unknown",
 			},
 			expected: adcom1.DeviceType(0),
 		},
