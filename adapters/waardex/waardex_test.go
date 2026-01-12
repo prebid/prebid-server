@@ -2,8 +2,10 @@ package waardex
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"testing"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -30,6 +32,70 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
+}
+
+// --- MakeRequests ---
+
+func TestMakeRequests_NoImpressions(t *testing.T) {
+	adapter := &waardexAdapter{
+		EndpointTemplate: template.Must(template.New("endpointTemplate").Parse("http://example.com?zone={{.ZoneID}}")),
+	}
+	request := &openrtb2.BidRequest{}
+
+	requests, errs := adapter.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	assert.Nil(t, requests)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Error(), "No impression in the bid request")
+}
+
+func TestMakeRequests_AllImpressionsInvalid(t *testing.T) {
+	adapter := &waardexAdapter{
+		EndpointTemplate: template.Must(template.New("endpointTemplate").Parse("http://example.com?zone={{.ZoneID}}")),
+	}
+	request := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{
+			{ID: "1", Ext: json.RawMessage("malformed")},
+		},
+	}
+
+	requests, errs := adapter.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	assert.Nil(t, requests)
+	require.Len(t, errs, 1)
+}
+
+func TestMakeRequests_DispatchEmptyReturnsNil(t *testing.T) {
+	adapter := &waardexAdapter{
+		EndpointTemplate: template.Must(template.New("endpointTemplate").Parse("http://example.com?zone={{.ZoneID}}")),
+	}
+	// audio+native is multi-format but splitMultiFormatImp returns no imps
+	request := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{makeImp(t, "1", false, false, true, true, 7)},
+	}
+
+	requests, errs := adapter.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	assert.Nil(t, requests)
+	assert.Len(t, errs, 0)
+}
+
+func TestMakeRequests_BuildAdapterRequestError(t *testing.T) {
+	failTemplate, err := template.New("endpointTemplate").Funcs(template.FuncMap{
+		"fail": func() (string, error) { return "", errors.New("boom") },
+	}).Parse("{{fail}}")
+	require.NoError(t, err)
+
+	adapter := &waardexAdapter{EndpointTemplate: failTemplate}
+	request := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{makeImp(t, "1", true, false, false, false, 7)},
+	}
+
+	requests, errs := adapter.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	assert.Len(t, requests, 0)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Error(), "boom")
 }
 
 // --- Helpers ---

@@ -22,15 +22,15 @@ type waardexAdapter struct {
 
 // MakeRequests prepares request information for prebid-server core
 func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-    var errs []error
-    if len(request.Imp) == 0 {
-        return nil, []error{newBadInputError("No impression in the bid request")}
-    }
-    imps, impExts, impErrs := getImpressionsInfo(request.Imp)
-    errs = append(errs, impErrs...)
-    if len(imps) == 0 {
-        return nil, errs
-    }
+	var errs []error
+	if len(request.Imp) == 0 {
+		return nil, []error{newBadInputError("No impression in the bid request")}
+	}
+	imps, impExts, impErrs := getImpressionsInfo(request.Imp)
+	errs = append(errs, impErrs...)
+	if len(imps) == 0 {
+		return nil, errs
+	}
 
 	impressionsByZone := dispatchImpressions(imps, impExts)
 	if len(impressionsByZone) == 0 {
@@ -55,34 +55,40 @@ func getImpressionsInfo(imps []openrtb2.Imp) ([]openrtb2.Imp, []openrtb_ext.ExtI
 	resImps := make([]openrtb2.Imp, 0, impsCount)
 	resImpExts := make([]openrtb_ext.ExtImpWaardex, 0, impsCount)
 
-    for _, imp := range imps {
-        impExt, err := getImpressionExt(&imp)
-        if err != nil {
-            errors = append(errors, err)
-            continue
-        }
-        // Additional validation is handled by the core JSON schema (static/bidder-params/waardex.json).
-        resImps = append(resImps, imp)
-        resImpExts = append(resImpExts, *impExt)
-    }
-    return resImps, resImpExts, errors
+	for _, imp := range imps {
+		impExt, err := getImpressionExt(&imp)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		// Additional validation is handled by the core JSON schema (static/bidder-params/waardex.json).
+		resImps = append(resImps, imp)
+		resImpExts = append(resImpExts, *impExt)
+	}
+	return resImps, resImpExts, errors
 }
 
 // Group impressions by Waardex-specific parameter `zoneId`
 func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpWaardex) map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp {
-    res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
-    for idx := range imps {
-        imp := imps[idx]
-        imp.Ext = nil
-        impExt := impsExt[idx]
-        if _, exists := res[impExt]; !exists {
-            res[impExt] = make([]openrtb2.Imp, 0, 4)
-        }
-        if isMultiFormatImp(&imp) {
-            splImps := splitMultiFormatImp(&imp)
-            res[impExt] = append(res[impExt], splImps...)
-        } else {
-            res[impExt] = append(res[impExt], imp)
+	res := make(map[openrtb_ext.ExtImpWaardex][]openrtb2.Imp)
+	for idx := range imps {
+		imp := imps[idx]
+		imp.Ext = nil
+		impExt := impsExt[idx]
+		if isMultiFormatImp(&imp) {
+			splImps := splitMultiFormatImp(&imp)
+			if len(splImps) == 0 {
+				continue
+			}
+			if _, exists := res[impExt]; !exists {
+				res[impExt] = make([]openrtb2.Imp, 0, 4)
+			}
+			res[impExt] = append(res[impExt], splImps...)
+		} else {
+			if _, exists := res[impExt]; !exists {
+				res[impExt] = make([]openrtb2.Imp, 0, 4)
+			}
+			res[impExt] = append(res[impExt], imp)
 		}
 	}
 	return res
@@ -141,7 +147,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpWaardex, error) {
 }
 
 func (adapter *waardexAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpWaardex, imps []openrtb2.Imp) (*adapters.RequestData, error) {
-    newBidRequest := createBidRequest(prebidBidRequest, imps)
+	newBidRequest := createBidRequest(prebidBidRequest, imps)
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
 		return nil, err
@@ -166,21 +172,21 @@ func (adapter *waardexAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.Bi
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp) *openrtb2.BidRequest {
-    bidRequest := *prebidBidRequest
-    bidRequest.Imp = imps
-    if bidRequest.Site != nil {
-        // Need to copy Site as Request is a shallow copy
-        site := *bidRequest.Site
-        site.Publisher = nil
-        bidRequest.Site = &site
-    }
-    if bidRequest.App != nil {
-        // Need to copy App as Request is a shallow copy
-        app := *bidRequest.App
-        app.Publisher = nil
-        bidRequest.App = &app
-    }
-    return &bidRequest
+	bidRequest := *prebidBidRequest
+	bidRequest.Imp = imps
+	if bidRequest.Site != nil {
+		// Need to copy Site as Request is a shallow copy
+		site := *bidRequest.Site
+		site.Publisher = nil
+		bidRequest.Site = &site
+	}
+	if bidRequest.App != nil {
+		// Need to copy App as Request is a shallow copy
+		app := *bidRequest.App
+		app.Publisher = nil
+		bidRequest.App = &app
+	}
+	return &bidRequest
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
@@ -213,10 +219,10 @@ func (adapter *waardexAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 	}
 
 	seatBid := bidResp.SeatBid[0]
-    bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-    if bidResp.Cur != "" {
-        bidResponse.Currency = bidResp.Cur
-    }
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	var errs []error
 	for i := 0; i < len(seatBid.Bid); i++ {
 		bid := seatBid.Bid[i]
