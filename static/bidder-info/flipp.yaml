@@ -1,4 +1,4 @@
-endpoint: "https://cdn-gateflipp.flippback.com/flyer-locator-service/prebid_campaigns"
+endpoint: "https://ads-flipp.com/flyer-locator-service/prebid_campaigns"
 maintainer:
   email: prebid@flipp.com
 capabilities:
