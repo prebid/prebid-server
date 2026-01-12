@@ -217,18 +217,20 @@ func (adapter *waardexAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
     if bidResp.Cur != "" {
         bidResponse.Currency = bidResp.Cur
     }
+	var errs []error
 	for i := 0; i < len(seatBid.Bid); i++ {
 		bid := seatBid.Bid[i]
 		bidType, err := getMediaTypeForBid(&bid)
 		if err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
 			BidType: bidType,
 		})
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 // getMediaTypeForImp figures out which media type this bid is for
