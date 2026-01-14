@@ -2,7 +2,6 @@ aliasOf: "vidazoo"
 endpoint: "https://exchange.opamarketplace.com/openrtb/"
 maintainer:
   email: "dev@vidazoo.com"
-gvlVendorID: 1456
 userSync:
   iframe:
     url: https://sync.opamarketplace.com/api/user/html/67f69a9d7b21b12f05f32769?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
