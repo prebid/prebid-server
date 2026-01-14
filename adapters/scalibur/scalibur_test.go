@@ -124,8 +124,8 @@ func TestMakeRequests_VideoDefaultsApplied(t *testing.T) {
 		ID: "req-video",
 		Imp: []openrtb2.Imp{
 			{
-				ID:  "v1",
-				Ext: ext,
+				ID:    "v1",
+				Ext:   ext,
 				Video: &openrtb2.Video{
 					// Intentionally empty → should fill defaults
 				},
@@ -278,6 +278,62 @@ func TestMakeBids_InvalidJSON(t *testing.T) {
 
 	_, errs := bidder.MakeBids(&openrtb2.BidRequest{}, &adapters.RequestData{}, respData)
 	require.Len(t, errs, 1)
+}
+
+func TestMakeBids_ImpNotFound(t *testing.T) {
+	bidder := newTestAdapter()
+
+	mockReq := &openrtb2.BidRequest{
+		ID: "req1",
+		Imp: []openrtb2.Imp{
+			{ID: "1"},
+		},
+	}
+
+	mockReqData := &adapters.RequestData{
+		Body: []byte(`{"id":"req1","imp":[{"id":"1"}]}`),
+	}
+
+	mockResp := &openrtb2.BidResponse{
+		ID: "resp1",
+		SeatBid: []openrtb2.SeatBid{
+			{
+				Bid: []openrtb2.Bid{
+					{
+						ID:    "b1",
+						ImpID: "non-existent",
+					},
+				},
+			},
+		},
+	}
+
+	respData := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body: func() []byte {
+			b, _ := json.Marshal(mockResp)
+			return b
+		}(),
+	}
+
+	_, errs := bidder.MakeBids(mockReq, mockReqData, respData)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Error(), "Invalid bid imp ID non-existent")
+}
+
+func TestGetBidMediaType_Error(t *testing.T) {
+	bid := openrtb2.Bid{
+		ID:    "bid1",
+		ImpID: "imp1",
+	}
+	imp := &openrtb2.Imp{
+		ID: "imp1",
+		// No banner or video
+	}
+
+	_, err := getBidMediaType(bid, imp)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported or ambiguous media type")
 }
 
 func ptrInt64(x int64) *int64 { return &x }

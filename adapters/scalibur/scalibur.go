@@ -22,11 +22,7 @@ type adapter struct {
 
 // Builder builds a new instance of the Scalibur adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	endpoint := config.Endpoint
-	if endpoint == "" {
-		endpoint = "https://srv.scalibur.io/adserver/ortb?type=prebid-server"
-	}
-	temp, err := template.New("endpointTemplate").Parse(endpoint)
+	temp, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
@@ -236,13 +232,17 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			// Find the corresponding imp
 			imp, found := impMap[bid.ImpID]
 			if !found {
-				continue
+				return nil, []error{&errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Invalid bid imp ID %s", bid.ImpID),
+				}}
 			}
 
 			// Determine bid type based on imp
 			bidType, err := getBidMediaType(bid, imp)
 			if err != nil {
-				continue
+				return nil, []error{&errortypes.BadServerResponse{
+					Message: err.Error(),
+				}}
 			}
 
 			bidCopy := bid
