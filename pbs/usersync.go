@@ -2,6 +2,7 @@ package pbs
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,10 +10,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/server/ssl"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/usersync"
 )
 
@@ -24,6 +24,7 @@ type UserSyncDeps struct {
 	RecaptchaSecret  string
 	HostCookieConfig *config.HostCookie
 	PriorityGroups   [][]string
+	CertPool         *x509.CertPool
 }
 
 // Struct for parsing json in google's response
@@ -35,7 +36,7 @@ type googleResponse struct {
 func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 	ts := &http.Transport{
 		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: &tls.Config{RootCAs: ssl.GetRootCAPool()},
+		TLSClientConfig: &tls.Config{RootCAs: deps.CertPool},
 	}
 
 	client := &http.Client{
@@ -50,7 +51,7 @@ func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 		// read the entire response body to ensure full connection reuse if there's an
 		// error while decoding the json
 		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-			glog.Errorf("Captcha verify draining response body failed: %v", err)
+			logger.Errorf("Captcha verify draining response body failed: %v", err)
 		}
 		resp.Body.Close()
 	}()
@@ -78,9 +79,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 
 	err := deps.VerifyRecaptcha(rr)
 	if err != nil {
-		if glog.V(2) {
-			glog.Infof("Opt Out failed recaptcha: %v", err)
-		}
+		logger.Infof("Opt Out failed recaptcha: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

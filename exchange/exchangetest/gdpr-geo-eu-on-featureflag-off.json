@@ -1,6 +1,6 @@
 {
     "assume_gdpr_applies": true,
-    "gdpr_enabled": false,
+    "gdpr_enforced": false,
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",

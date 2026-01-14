@@ -1,0 +1,142 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-no-mediatype",
+    "imp": [
+      {
+        "id": "test-imp-no-mediatype",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "NOMEDIA123",
+            "placementId": "no-mediatype-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "no-mediatype-site",
+      "domain": "nomediatype.example.com",
+      "page": "https://nomediatype.example.com/test"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/NOMEDIA123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-no-mediatype",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "no-mediatype-placement"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "NOMEDIA123",
+              "version": "v1"
+            }
+          },
+          "ortb2": {
+            "id": "test-request-no-mediatype",
+            "imp": [
+              {
+                "id": "test-imp-no-mediatype",
+                "banner": {
+                  "format": [
+                    {
+                      "w": 300,
+                      "h": 250
+                    }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "customerId": "NOMEDIA123",
+                    "placementId": "no-mediatype-placement"
+                  }
+                }
+              }
+            ],
+            "site": {
+              "id": "no-mediatype-site",
+              "domain": "nomediatype.example.com",
+              "page": "https://nomediatype.example.com/test"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-no-mediatype"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "cpm": 2.50,
+            "width": 300,
+            "height": 250,
+            "requestId": "test-imp-banner",
+            "adm": "<div style=\"width:300px;height:250px;background:#f0f0f0;text-align:center;line-height:250px;\">Contxtful Demo Ad</div>",
+            "ttl": 300,
+            "creativeId": "demo-creative-123",
+            "netRevenue": true,
+            "mediaType": "banner",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
+            "ext": {
+              "contxtful": {
+                "reseller": "demo-reseller",
+                "version": "v1.0"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "contxtful-test-imp-banner",
+            "impid": "test-imp-banner",
+            "price": 2.50,
+            "adm": "<div style=\"width:300px;height:250px;background:#f0f0f0;text-align:center;line-height:250px;\">Contxtful Demo Ad</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "demo-creative-123",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-impression?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/DEMO123/pbs-billing?b=contxtful-test-imp-banner&a=DEMO123&bidder=contxtful&impId=test-imp-banner&price=2.50&traceId=&random=0.000000&domain=example.com&adRequestId=test-request-banner&w=300&h=250&f=b",
+            "ext": {
+              "contxtful": {
+                "reseller": "demo-reseller",
+                "version": "v1.0"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+} 
