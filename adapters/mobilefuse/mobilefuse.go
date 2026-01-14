@@ -18,14 +18,6 @@ type MobileFuseAdapter struct {
 	Endpoint string
 }
 
-type ExtMf struct {
-	MediaType string `json:"media_type"`
-}
-
-type BidExt struct {
-	Mf ExtMf `json:"mf"`
-}
-
 type ExtSkadn struct {
 	Skadn json.RawMessage `json:"skadn"`
 }
@@ -77,12 +69,11 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 
 	for _, seatbid := range incomingBidResponse.SeatBid {
 		for i := range seatbid.Bid {
-			bidType := getBidType(seatbid.Bid[i])
 			seatbid.Bid[i].Ext = nil
 
 			outgoingBidResponse.Bids = append(outgoingBidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatbid.Bid[i],
-				BidType: bidType,
+				BidType: getBidType(seatbid.Bid[i]),
 			})
 		}
 	}
@@ -201,17 +192,14 @@ func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobile
 }
 
 func getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
-	if bid.Ext != nil {
-		var bidExt BidExt
-		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
-		if err == nil {
-			if bidExt.Mf.MediaType == "video" {
-				return openrtb_ext.BidTypeVideo
-			} else if bidExt.Mf.MediaType == "native" {
-				return openrtb_ext.BidTypeNative
-			}
-		}
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+	default:
+		return openrtb_ext.BidTypeBanner
 	}
-
-	return openrtb_ext.BidTypeBanner
 }
