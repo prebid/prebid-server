@@ -215,6 +215,15 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		logger.Fatalf("Failed to init hook modules: %v", err)
 	}
 
+	// Validate execution plan configuration
+	if cfg.Hooks.Enabled {
+		if errs = hooks.ValidateExecutionPlan(cfg.Hooks, repo); len(errs) > 0 {
+			for _, err = range errs {
+				logger.Warnf("%s", err.Error())
+			}
+		}
+	}
+
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
