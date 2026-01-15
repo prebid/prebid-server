@@ -1,12 +1,12 @@
 name: Adapter Code Coverage
 
 on:
-  pull_request_target:
+  pull_request:
     paths: ["adapters/*/*.go"]
 
 permissions:
-  pull-requests: write
   contents: write
+  pull-requests: write
 
 jobs:
   run-coverage:
@@ -21,8 +21,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
 
       - name: Discover Adapter Directories
         id: get_directories
