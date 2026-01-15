@@ -1,12 +1,2 @@
-endpoint: "http://{{.AccountID}}.trustedmarketplace.io/ads/processHeaderBid/{{.AdUnit}}"
-maintainer:
-  email: pbs@adoppler.com
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
-  site:
-    mediaTypes:
-      - banner
-      - video
+endpoint: "https://pbs.elementaltv.io/ads/processHeaderBid/{{.AdUnit}}"
+aliasOf: "elementaltv"
