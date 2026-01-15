@@ -119,7 +119,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 	if len(accountIDs) == 0 {
 		return nil, nil
 	}
-	u := fetcher.EndpointURL
+	u := *fetcher.EndpointURL
 	q := u.Query()
 	if !fetcher.UseRfcCompliantBuilder {
 		q.Set("account-ids", `["`+strings.Join(accountIDs, `","`)+`"]`)
