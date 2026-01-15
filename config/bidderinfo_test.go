@@ -89,7 +89,7 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
-			GVLVendorID: 42,
+			GVLVendorID: ptrutil.ToPtr[uint16](42),
 			Capabilities: &CapabilitiesInfo{
 				App: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative},
@@ -142,7 +142,7 @@ func TestProcessBidderInfo(t *testing.T) {
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
-					GVLVendorID: 42,
+					GVLVendorID: ptrutil.ToPtr[uint16](42),
 				},
 			},
 			expectError: "",
@@ -203,7 +203,7 @@ func TestProcessBidderInfo(t *testing.T) {
 						},
 					},
 					ExtraAdapterInfo: "extra-info",
-					GVLVendorID:      42,
+					GVLVendorID:      ptrutil.ToPtr[uint16](42),
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
@@ -255,7 +255,7 @@ func TestProcessBidderInfo(t *testing.T) {
 						},
 					},
 					ExtraAdapterInfo: "extra-info",
-					GVLVendorID:      42,
+					GVLVendorID:      ptrutil.ToPtr[uint16](42),
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
@@ -316,7 +316,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			},
 		},
 		ExtraAdapterInfo: "extra-info",
-		GVLVendorID:      42,
+		GVLVendorID:      ptrutil.ToPtr[uint16](42),
 		Maintainer: &MaintainerInfo{
 			Email: "some-email@domain.com",
 		},
@@ -364,7 +364,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			},
 		},
 		ExtraAdapterInfo: "alias-extra-info",
-		GVLVendorID:      43,
+		GVLVendorID:      ptrutil.ToPtr[uint16](43),
 		Maintainer: &MaintainerInfo{
 			Email: "alias-email@domain.com",
 		},
@@ -561,10 +561,10 @@ func mockNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
 
 func TestToGVLVendorIDMap(t *testing.T) {
 	givenBidderInfos := BidderInfos{
-		"bidderA": BidderInfo{Disabled: false, GVLVendorID: 0},
-		"bidderB": BidderInfo{Disabled: false, GVLVendorID: 100},
-		"bidderC": BidderInfo{Disabled: true, GVLVendorID: 0},
-		"bidderD": BidderInfo{Disabled: true, GVLVendorID: 200},
+		"bidderA": BidderInfo{Disabled: false, GVLVendorID: ptrutil.ToPtr[uint16](0)},
+		"bidderB": BidderInfo{Disabled: false, GVLVendorID: ptrutil.ToPtr[uint16](100)},
+		"bidderC": BidderInfo{Disabled: true, GVLVendorID: ptrutil.ToPtr[uint16](0)},
+		"bidderD": BidderInfo{Disabled: true, GVLVendorID: ptrutil.ToPtr[uint16](200)},
 	}
 
 	expectedGVLVendorIDMap := map[openrtb_ext.BidderName]uint16{
@@ -594,7 +594,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			Maintainer: &MaintainerInfo{
 				Email: "maintainer@bidderA.com",
 			},
-			GVLVendorID: 1,
+			GVLVendorID: ptrutil.ToPtr[uint16](1),
 			Capabilities: &CapabilitiesInfo{
 				App: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{
@@ -618,7 +618,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			Maintainer: &MaintainerInfo{
 				Email: "maintainer@bidderB.com",
 			},
-			GVLVendorID: 2,
+			GVLVendorID: ptrutil.ToPtr[uint16](2),
 			Capabilities: &CapabilitiesInfo{
 				Site: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{
@@ -659,7 +659,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			Maintainer: &MaintainerInfo{
 				Email: "maintainer@bidderD.com",
 			},
-			GVLVendorID: 3,
+			GVLVendorID: ptrutil.ToPtr[uint16](3),
 			Capabilities: &CapabilitiesInfo{
 				DOOH: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{
@@ -2209,15 +2209,15 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 		},
 		{
 			description:            "Don't override GVLVendorID",
-			givenFsBidderInfos:     BidderInfos{"a": {GVLVendorID: 5}},
+			givenFsBidderInfos:     BidderInfos{"a": {GVLVendorID: ptrutil.ToPtr[uint16](5)}},
 			givenConfigBidderInfos: nillableFieldBidderInfos{"a": {bidderInfo: BidderInfo{Syncer: &Syncer{Key: "override"}}}},
-			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: ptrutil.ToPtr[uint16](5), Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override GVLVendorID",
 			givenFsBidderInfos:     BidderInfos{"a": {}},
-			givenConfigBidderInfos: nillableFieldBidderInfos{"a": {bidderInfo: BidderInfo{GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}}},
-			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+			givenConfigBidderInfos: nillableFieldBidderInfos{"a": {bidderInfo: BidderInfo{GVLVendorID: ptrutil.ToPtr[uint16](5), Syncer: &Syncer{Key: "override"}}}},
+			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: ptrutil.ToPtr[uint16](5), Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description: "Don't override XAPI",
@@ -2396,7 +2396,7 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
-			GVLVendorID: 42,
+			GVLVendorID: ptrutil.ToPtr[uint16](42),
 			Capabilities: &CapabilitiesInfo{
 				App: &PlatformInfo{
 					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
@@ -2446,6 +2446,94 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 		},
 	}
 	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")
+}
+
+func TestAliasGVLVendorIDInheritance(t *testing.T) {
+	testCases := []struct {
+		name                string
+		parentGVLVendorID   *uint16
+		aliasGVLVendorID    *uint16
+		expectedAliasGVLID  *uint16
+		expectedInGVLMap    bool
+		expectedGVLMapValue uint16
+		description         string
+	}{
+		{
+			name:                "alias with nil GVL ID inherits from parent",
+			parentGVLVendorID:   ptrutil.ToPtr[uint16](42),
+			aliasGVLVendorID:    nil,
+			expectedAliasGVLID:  ptrutil.ToPtr[uint16](42),
+			expectedInGVLMap:    true,
+			expectedGVLMapValue: 42,
+			description:         "When alias GVLVendorID is nil, it should inherit parent's GVL vendor ID",
+		},
+		{
+			name:                "alias with zero GVL ID uses its own value",
+			parentGVLVendorID:   ptrutil.ToPtr[uint16](42),
+			aliasGVLVendorID:    ptrutil.ToPtr[uint16](0),
+			expectedAliasGVLID:  ptrutil.ToPtr[uint16](0),
+			expectedInGVLMap:    false,
+			expectedGVLMapValue: 0,
+			description:         "When alias GVLVendorID is 0, it should keep its own value and not inherit",
+		},
+		{
+			name:                "alias with non-zero GVL ID uses its own value",
+			parentGVLVendorID:   ptrutil.ToPtr[uint16](42),
+			aliasGVLVendorID:    ptrutil.ToPtr[uint16](99),
+			expectedAliasGVLID:  ptrutil.ToPtr[uint16](99),
+			expectedInGVLMap:    true,
+			expectedGVLMapValue: 99,
+			description:         "When alias GVLVendorID is non-zero, it should keep its own value",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			parentBidderInfo := BidderInfo{
+				Disabled:    false,
+				GVLVendorID: tc.parentGVLVendorID,
+				Maintainer: &MaintainerInfo{
+					Email: "test@example.com",
+				},
+				Capabilities: &CapabilitiesInfo{
+					Site: &PlatformInfo{
+						MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+					},
+				},
+			}
+
+			aliasBidderInfo := BidderInfo{
+				AliasOf:     "parentBidder",
+				Disabled:    false,
+				GVLVendorID: tc.aliasGVLVendorID,
+			}
+
+			bidderInfos := BidderInfos{
+				"parentBidder": parentBidderInfo,
+				"aliasBidder":  aliasBidderInfo,
+			}
+
+			aliasNillableFields := map[string]aliasNillableFields{
+				"aliasBidder": {},
+			}
+
+			result, err := processBidderAliases(aliasNillableFields, bidderInfos)
+			assert.NoError(t, err)
+
+			processedAlias := result["aliasBidder"]
+			assert.NotNil(t, processedAlias.GVLVendorID, tc.description)
+			assert.Equal(t, *tc.expectedAliasGVLID, *processedAlias.GVLVendorID, tc.description)
+			gvlMap := result.ToGVLVendorIDMap()
+			if tc.expectedInGVLMap {
+				vendorID, exists := gvlMap["aliasBidder"]
+				assert.True(t, exists, "Alias should appear in GVL vendor map: "+tc.description)
+				assert.Equal(t, tc.expectedGVLMapValue, vendorID, "GVL vendor ID in map should match expected value")
+			} else {
+				_, exists := gvlMap["aliasBidder"]
+				assert.False(t, exists, "Alias should not appear in GVL vendor map: "+tc.description)
+			}
+		})
+	}
 }
 
 func TestValidateGeoscope(t *testing.T) {
