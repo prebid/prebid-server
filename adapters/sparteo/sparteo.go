@@ -3,6 +3,8 @@ package sparteo
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
@@ -13,19 +15,20 @@ import (
 )
 
 type adapter struct {
-	endpoint   string
-	bidderName string
+	endpoint string
 }
 
 type extBidWrapper struct {
 	Prebid openrtb_ext.ExtBidPrebid `json:"prebid"`
 }
 
+const unknownValue = "unknown"
+
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &adapter{
-		endpoint:   cfg.Endpoint,
-		bidderName: string(bidderName),
-	}, nil
+	bidder := &adapter{
+		endpoint: cfg.Endpoint,
+	}
+	return bidder, nil
 }
 
 func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSparteo, error) {
@@ -47,32 +50,20 @@ func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSparteo, error) {
 
 func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	request := *req
+	var errs []error
 
 	request.Imp = make([]openrtb2.Imp, len(req.Imp))
 	copy(request.Imp, req.Imp)
 
-	if req.Site != nil {
-		siteCopy := *req.Site
-		request.Site = &siteCopy
-	}
-
-	if req.Site != nil && req.Site.Publisher != nil {
-		publisherCopy := *req.Site.Publisher
-		request.Site.Publisher = &publisherCopy
-	}
-
-	var errs []error
-	var siteNetworkId string
-
+	var networkID string
 	for i, imp := range request.Imp {
 		extImpSparteo, err := parseExt(&imp)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		if siteNetworkId == "" && extImpSparteo.NetworkId != "" {
-			siteNetworkId = extImpSparteo.NetworkId
+		if networkID == "" && extImpSparteo.NetworkId != "" {
+			networkID = extImpSparteo.NetworkId
 		}
 
 		var extMap map[string]interface{}
@@ -86,62 +77,101 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 			sparteoMap = make(map[string]interface{})
 			extMap["sparteo"] = sparteoMap
 		}
-
 		paramsMap, ok := sparteoMap["params"].(map[string]interface{})
 		if !ok {
 			paramsMap = make(map[string]interface{})
 			sparteoMap["params"] = paramsMap
 		}
-
-		bidderObj, ok := extMap["bidder"].(map[string]interface{})
-		if ok {
+		if bidderObj, ok := extMap["bidder"].(map[string]interface{}); ok {
 			delete(extMap, "bidder")
-
-			for key, value := range bidderObj {
-				paramsMap[key] = value
+			for k, v := range bidderObj {
+				paramsMap[k] = v
 			}
 		}
-
 		updatedExt, err := jsonutil.Marshal(extMap)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("ignoring imp id=%s, error while marshaling updated ext, err: %s", imp.ID, err))
 			continue
 		}
-
 		request.Imp[i].Ext = updatedExt
 	}
 
-	if request.Site != nil && request.Site.Publisher != nil && siteNetworkId != "" {
-		var pubExt map[string]interface{}
-		if request.Site.Publisher.Ext != nil {
-			if err := jsonutil.Unmarshal(request.Site.Publisher.Ext, &pubExt); err != nil {
-				pubExt = make(map[string]interface{})
-			}
-		} else {
-			pubExt = make(map[string]interface{})
+	var sb strings.Builder
+	sb.WriteString("network_id=")
+	sb.WriteString(url.QueryEscape(networkID))
+
+	var pubToUpdate *openrtb2.Publisher
+	var pubExtPath string
+
+	if req.Site != nil {
+		siteCopy := *req.Site
+		request.Site = &siteCopy
+		if req.Site.Publisher != nil {
+			pubCopy := *req.Site.Publisher
+			request.Site.Publisher = &pubCopy
 		}
 
-		var paramsMap map[string]interface{}
-		if raw, ok := pubExt["params"]; ok {
-			if paramsMap, ok = raw.(map[string]interface{}); !ok {
-				paramsMap = make(map[string]interface{})
-			}
-		} else {
-			paramsMap = make(map[string]interface{})
-		}
+		pubToUpdate = ensurePublisher(request.Site.Publisher)
+		request.Site.Publisher = pubToUpdate
+		pubExtPath = "site.publisher.ext"
 
-		paramsMap["networkId"] = siteNetworkId
-		pubExt["params"] = paramsMap
-
-		updatedPubExt, err := jsonutil.Marshal(pubExt)
-		if err != nil {
+		domain := resolveSiteDomain(request.Site)
+		if domain == "" {
+			domain = unknownValue
 			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Error marshaling site.publisher.ext: %s", err),
+				Message: "Domain not found. Missing the site.domain or the site.page field",
 			})
-		} else {
-			request.Site.Publisher.Ext = jsonutil.RawMessage(updatedPubExt)
 		}
+		sb.WriteString("&site_domain=")
+		sb.WriteString(url.QueryEscape(domain))
+	} else if req.App != nil {
+		appCopy := *req.App
+		request.App = &appCopy
+		if req.App.Publisher != nil {
+			pubCopy := *req.App.Publisher
+			request.App.Publisher = &pubCopy
+		}
+
+		pubToUpdate = ensurePublisher(request.App.Publisher)
+		request.App.Publisher = pubToUpdate
+		pubExtPath = "app.publisher.ext"
+
+		appDomain := resolveAppDomain(request.App)
+		if appDomain == "" {
+			appDomain = unknownValue
+		}
+		sb.WriteString("&app_domain=")
+		sb.WriteString(url.QueryEscape(appDomain))
+
+		bundle := resolveBundle(request.App)
+		if bundle == "" {
+			bundle = unknownValue
+			errs = append(errs, &errortypes.BadInput{
+				Message: "Bundle not found. Missing the app.bundle field.",
+			})
+		}
+		sb.WriteString("&bundle=")
+		sb.WriteString(url.QueryEscape(bundle))
+	} else {
+		// NO CONTEXT (Fallback)
+		request.Site = &openrtb2.Site{}
+		pubToUpdate = ensurePublisher(request.Site.Publisher)
+		request.Site.Publisher = pubToUpdate
+		pubExtPath = "site.publisher.ext"
 	}
+
+	ext, err := updatePublisherExtension(&pubToUpdate.Ext, networkID, pubExtPath)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		pubToUpdate.Ext = ext
+	}
+
+	uri, err := url.Parse(a.endpoint)
+	if err != nil {
+		return nil, []error{fmt.Errorf("invalid endpoint URL %q: %w", a.endpoint, err)}
+	}
+	uri.RawQuery = sb.String()
 
 	body, err := jsonutil.Marshal(request)
 	if err != nil {
@@ -151,7 +181,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 
 	requestData := &adapters.RequestData{
 		Method: http.MethodPost,
-		Uri:    a.endpoint,
+		Uri:    uri.String(),
 		Body:   body,
 		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
 		Headers: http.Header{
@@ -160,6 +190,97 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, reqInfo *adapters.Extra
 	}
 
 	return []*adapters.RequestData{requestData}, errs
+}
+
+func normalizeHostname(host string) string {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return ""
+	}
+
+	u, err := url.Parse(host)
+	if err != nil || u.Hostname() == "" {
+		if i := strings.Index(host, ":"); i >= 0 {
+			host = host[:i]
+		} else if i := strings.Index(host, "/"); i >= 0 {
+			host = host[:i]
+		}
+	} else {
+		host = u.Hostname()
+	}
+
+	host = strings.ToLower(host)
+	host = strings.TrimSuffix(host, ".")
+	host = strings.TrimPrefix(host, "www.")
+
+	if host == "null" {
+		return ""
+	}
+	return host
+}
+
+func resolveSiteDomain(site *openrtb2.Site) string {
+	if site != nil {
+		if d := normalizeHostname(site.Domain); d != "" {
+			return d
+		}
+		if fromPage := normalizeHostname(site.Page); fromPage != "" {
+			return fromPage
+		}
+	}
+	return ""
+}
+
+func resolveAppDomain(app *openrtb2.App) string {
+	if app != nil {
+		if d := normalizeHostname(app.Domain); d != "" {
+			return d
+		}
+	}
+	return ""
+}
+
+func resolveBundle(app *openrtb2.App) string {
+	if app == nil {
+		return ""
+	}
+	raw := strings.TrimSpace(app.Bundle)
+	if raw == "" || strings.EqualFold(raw, "null") {
+		return ""
+	}
+	return raw
+}
+
+func ensurePublisher(p *openrtb2.Publisher) *openrtb2.Publisher {
+	if p == nil {
+		p = &openrtb2.Publisher{}
+	}
+	if p.Ext == nil {
+		p.Ext = jsonutil.RawMessage("{}")
+	}
+	return p
+}
+
+func updatePublisherExtension(targetExt *jsonutil.RawMessage, networkID, fieldPath string) ([]byte, error) {
+	var pubExt map[string]interface{}
+	if err := jsonutil.Unmarshal(*targetExt, &pubExt); err != nil {
+		pubExt = make(map[string]interface{})
+	}
+
+	params, ok := pubExt["params"].(map[string]interface{})
+	if !ok {
+		params = make(map[string]interface{})
+		pubExt["params"] = params
+	}
+	params["networkId"] = networkID
+
+	updated, err := jsonutil.Marshal(pubExt)
+	if err != nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Error marshaling %s: %s", fieldPath, err),
+		}
+	}
+	return updated, nil
 }
 
 func (a *adapter) MakeBids(req *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
