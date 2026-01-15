@@ -1017,7 +1017,7 @@ func TestExecutionPlanDoesNotIncludeDisabledModules(t *testing.T) {
 	assert.Equal(t, expectedPlan, plan, "Disabled module hook should not be included in the plan")
 }
 
-func TestValidateExecutionPlan_TableDriven(t *testing.T) {
+func TestValidateExecutionPlan(t *testing.T) {
 	tests := []struct {
 		name              string
 		hooks             map[string]interface{}
