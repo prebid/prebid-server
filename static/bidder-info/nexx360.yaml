@@ -1,6 +1,7 @@
 endpoint: "http://fast.nexx360.io/prebid-server"
 maintainer:
   email: "tech@nexx360.io"
+gvlVendorID: 965
 endpointCompression: gzip
 geoscope:
   - global
