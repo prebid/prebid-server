@@ -66,19 +66,25 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 	}
 
 	outgoingBidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
+	var errors []error
 	for _, seatbid := range incomingBidResponse.SeatBid {
 		for i := range seatbid.Bid {
+			bidType, err := getBidType(seatbid.Bid[i])
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
 			seatbid.Bid[i].Ext = nil
 
 			outgoingBidResponse.Bids = append(outgoingBidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatbid.Bid[i],
-				BidType: getBidType(seatbid.Bid[i]),
+				BidType: bidType,
 			})
 		}
 	}
 
-	return outgoingBidResponse, nil
+	return outgoingBidResponse, errors
 }
 
 func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (*adapters.RequestData, []error) {
@@ -191,15 +197,17 @@ func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobile
 	return validImps, nil
 }
 
-func getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner
+		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative
+		return openrtb_ext.BidTypeNative, nil
 	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo
+		return openrtb_ext.BidTypeVideo, nil
 	default:
-		return openrtb_ext.BidTypeBanner
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType \"%d\" for impression ID \"%s\"", bid.MType, bid.ImpID),
+		}
 	}
 }
