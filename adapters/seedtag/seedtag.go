@@ -51,6 +51,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	requestCopy := *request
+	// Set the CUR of bid to USD after converting all floors
+	requestCopy.Cur = []string{"USD"}
 	requestCopy.Imp = imps
 	requestJSON, err := jsonutil.Marshal(requestCopy)
 	if err != nil {
