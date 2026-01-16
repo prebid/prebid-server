@@ -2,11 +2,14 @@ package pubstack
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/docker/go-units"
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error) {
@@ -14,12 +17,23 @@ func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error)
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		// read the entire response body to ensure full connection reuse if there's an
+		// error while decoding the json
+		if _, err := io.Copy(io.Discard, res.Body); err != nil {
+			logger.Errorf("[pubstack] Draining config response body failed: %v", err)
+		}
+		res.Body.Close()
+	}()
 
-	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+	}
+
 	c := Configuration{}
 	err = json.NewDecoder(res.Body).Decode(&c)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode config: %w", err)
 	}
 	return &c, nil
 }

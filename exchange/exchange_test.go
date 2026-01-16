@@ -73,10 +73,10 @@ func TestNewExchange(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -123,10 +123,10 @@ func TestCharacterEscape(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -333,7 +333,7 @@ func TestDebugBehaviour(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.requestSplitter = requestSplitter{
 		me:               &metricsConf.NilMetricsEngine{},
@@ -499,7 +499,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.requestSplitter = requestSplitter{
 		me:               e.me,
@@ -581,6 +581,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 	}
 	mockCurrencyConverter := currency.NewRateConverter(
 		mockCurrencyClient,
+		60*time.Second,
 		"currency.fake.com",
 		24*time.Hour,
 	)
@@ -748,6 +749,7 @@ func TestAdapterCurrency(t *testing.T) {
 	}
 	currencyConverter := currency.NewRateConverter(
 		mockCurrencyClient,
+		60*time.Second,
 		"currency.fake.com",
 		24*time.Hour,
 	)
@@ -832,6 +834,7 @@ func TestFloorsSignalling(t *testing.T) {
 	}
 	currencyConverter := currency.NewRateConverter(
 		mockCurrencyClient,
+		60*time.Second,
 		"currency.com",
 		24*time.Hour,
 	)
@@ -1130,7 +1133,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
 	e.requestSplitter = requestSplitter{
@@ -1226,9 +1229,9 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	pbc := pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine)
 
 	gdprPermsBuilder := fakePermissionsBuilder{
@@ -1429,7 +1432,7 @@ func TestBidReturnsCreative(t *testing.T) {
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
 
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	//Run tests
 	for _, test := range testCases {
@@ -1585,10 +1588,10 @@ func TestBidResponseCurrency(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -1741,7 +1744,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
@@ -1817,10 +1820,10 @@ func TestRaceIntegration(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	auctionRequest := &AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)},
@@ -1925,10 +1928,10 @@ func TestPanicRecovery(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(&http.Client{}, cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -1991,10 +1994,10 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
@@ -2121,10 +2124,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	var gdprDefaultValue string
+	var gdprSignal gdpr.Signal
 	if spec.AssumeGDPRApplies {
 		gdprDefaultValue = "1"
+		gdprSignal = gdpr.SignalYes
 	} else {
 		gdprDefaultValue = "0"
+		gdprSignal = gdpr.SignalNo
 	}
 
 	privacyConfig := config.Privacy{
@@ -2135,13 +2141,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enforce: spec.EnforceLMT,
 		},
 		GDPR: config.GDPR{
-			Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
 			EEACountries:    eeac,
 			EEACountriesMap: eeacMap,
-			TCF2: config.TCF2{
-				Enabled: spec.GDPREnabled,
-			},
 		},
 	}
 	bidIdGenerator := &fakeBidIDGenerator{}
@@ -2201,6 +2203,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		HookExecutor:  &hookexecution.EmptyHookExecutor{},
 		TCF2Config:    gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, config.AccountGDPR{}),
 		Activities:    activityControl,
+		GDPRSignal:    gdprSignal,
+		GDPREnforced:  spec.GDPREnforced,
 	}
 
 	if spec.MultiBid != nil {
@@ -2432,11 +2436,6 @@ func newExchangeForTests(t *testing.T, filename string, aliases map[string]strin
 		bidderToSyncerKey[string(bidderName)] = string(bidderName)
 	}
 
-	gdprDefaultValue := gdpr.SignalYes
-	if privacyConfig.GDPR.DefaultValue == "0" {
-		gdprDefaultValue = gdpr.SignalNo
-	}
-
 	var hostSChainNode *openrtb2.SupplyChainNode
 	if exSpec.HostSChainFlag {
 		hostSChainNode = &openrtb2.SupplyChainNode{
@@ -2466,8 +2465,7 @@ func newExchangeForTests(t *testing.T, filename string, aliases map[string]strin
 		me:                       metricsEngine,
 		cache:                    &wellBehavedCache{},
 		cacheTime:                0,
-		currencyConverter:        currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		gdprDefaultValue:         gdprDefaultValue,
+		currencyConverter:        currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0)),
 		gdprPermsBuilder:         gdprPermsBuilder,
 		privacyConfig:            privacyConfig,
 		categoriesFetcher:        categoriesFetcher,
@@ -2614,7 +2612,7 @@ func TestCategoryMapping(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -2669,7 +2667,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -2721,7 +2719,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
@@ -2803,7 +2801,7 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be no bid rejection messages")
@@ -2881,7 +2879,7 @@ func TestCategoryDedupe(t *testing.T) {
 				},
 			}
 			deduplicateGenerator := fakeBooleanGenerator{value: tt.dedupeGeneratorValue}
-			bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &deduplicateGenerator, &SeatNonBidBuilder{})
+			bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &deduplicateGenerator, &SeatNonBidBuilder{}, config.Account{})
 
 			assert.Nil(t, err)
 			assert.Equal(t, 3, len(rejections))
@@ -2950,7 +2948,7 @@ func TestNoCategoryDedupe(t *testing.T) {
 
 		adapterBids[bidderName1] = &seatBid
 
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 		assert.Equal(t, nil, err, "Category mapping error should be empty")
 		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
@@ -3015,7 +3013,7 @@ func TestCategoryMappingBidderName(t *testing.T) {
 	adapterBids[bidderName1] = &seatBid1
 	adapterBids[bidderName2] = &seatBid2
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
@@ -3069,7 +3067,7 @@ func TestCategoryMappingBidderNameNoCategories(t *testing.T) {
 	adapterBids[bidderName1] = &seatBid1
 	adapterBids[bidderName2] = &seatBid2
 
-	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 	assert.Empty(t, rejections, "There should be 0 bid rejection messages")
@@ -3170,7 +3168,7 @@ func TestBidRejectionErrors(t *testing.T) {
 
 		adapterBids[bidderName] = &seatBid
 
-		bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *test.reqExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *test.reqExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 		if len(test.expectedCatDur) > 0 {
 			// Bid deduplication case
@@ -3233,7 +3231,7 @@ func TestCategoryMappingTwoBiddersOneBidEachNoCategorySamePrice(t *testing.T) {
 		adapterBids[bidderNameApn1] = &seatBidApn1
 		adapterBids[bidderNameApn2] = &seatBidApn2
 
-		bidCategory, _, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{})
+		bidCategory, _, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &randomDeduplicateBidBooleanGenerator{}, &SeatNonBidBuilder{}, config.Account{})
 
 		assert.NoError(t, err, "Category mapping error should be empty")
 		assert.Len(t, rejections, 1, "There should be 1 bid rejection message")
@@ -3317,7 +3315,7 @@ func TestCategoryMappingTwoBiddersManyBidsEachNoCategorySamePrice(t *testing.T) 
 	adapterBids[bidderNameApn1] = &seatBidApn1
 	adapterBids[bidderNameApn2] = &seatBidApn2
 
-	_, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &fakeBooleanGenerator{value: true}, &SeatNonBidBuilder{})
+	_, adapterBids, rejections, err := applyCategoryMapping(context.TODO(), *requestExt.Prebid.Targeting, adapterBids, categoriesFetcher, targData, &fakeBooleanGenerator{value: true}, &SeatNonBidBuilder{}, config.Account{})
 
 	assert.NoError(t, err, "Category mapping error should be empty")
 
@@ -4142,7 +4140,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 	e.me = &metricsConf.NilMetricsEngine{}
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	e.gdprPermsBuilder = fakePermissionsBuilder{
 		permissions: &permissionsMock{
 			allowAllBidders: true,
@@ -4508,7 +4506,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 	e.me = &metricsConf.NilMetricsEngine{}
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	e.gdprPermsBuilder = fakePermissionsBuilder{
 		permissions: &permissionsMock{
 			allowAllBidders: true,
@@ -4573,10 +4571,10 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
-	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -4909,7 +4907,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
 
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 
 	ImpExtInfoMap := make(map[string]ImpExtInfo)
 	ImpExtInfoMap["1"] = ImpExtInfo{}
@@ -5105,7 +5103,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 			allowAllBidders: true,
 		},
 	}.Builder
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
 	e.requestSplitter = requestSplitter{
@@ -5498,7 +5496,7 @@ func (ms *MockSigner) Sign(destinationURL string, body []byte) (string, error) {
 }
 
 type exchangeSpec struct {
-	GDPREnabled                bool                   `json:"gdpr_enabled"`
+	GDPREnforced               bool                   `json:"gdpr_enforced"`
 	FloorsEnabled              bool                   `json:"floors_enabled"`
 	IncomingRequest            exchangeRequest        `json:"incomingRequest"`
 	OutgoingRequests           map[string]*bidderSpec `json:"outgoingRequests"`
@@ -5660,6 +5658,14 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 	return
 }
 
+func (b *validatingBidder) logHealthCheck(success bool) {
+	// This is a no-op.
+}
+
+func (b *validatingBidder) shouldRequest() bool {
+	return true
+}
+
 type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
@@ -5775,6 +5781,13 @@ func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderReque
 	panic("Panic! Panic! The world is ending!")
 }
 
+func (panicingAdapter) logHealthCheck(success bool) {
+	// This is a no-op, but it is required to implement the Adapter interface.
+}
+func (panicingAdapter) shouldRequest() bool {
+	return true
+}
+
 func blankAdapterConfig(bidderList []openrtb_ext.BidderName) map[string]config.Adapter {
 	adapters := make(map[string]config.Adapter)
 	for _, b := range bidderList {
@@ -5875,7 +5888,7 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 
 	e := new(exchange)
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	e.requestSplitter = requestSplitter{
 		me:               e.me,
 		gdprPermsBuilder: e.gdprPermsBuilder,
@@ -6513,65 +6526,142 @@ func TestGetBidderPreferredMediaType(t *testing.T) {
 	}
 }
 
-func TestIsEEACountry(t *testing.T) {
-	eeaCountries := []string{"FRA", "DEU", "ITA", "ESP", "NLD"}
-
-	tests := []struct {
-		name     string
-		country  string
-		eeaList  []string
-		expected bool
-	}{
-		{
-			name:     "Country_in_EEA",
-			country:  "FRA",
-			eeaList:  eeaCountries,
-			expected: true,
-		},
-		{
-			name:     "Country_in_EEA_lowercase",
-			country:  "fra",
-			eeaList:  eeaCountries,
-			expected: true,
-		},
-		{
-			name:     "Country_not_in_EEA",
-			country:  "USA",
-			eeaList:  eeaCountries,
-			expected: false,
-		},
-		{
-			name:     "Empty_country_string",
-			country:  "",
-			eeaList:  eeaCountries,
-			expected: false,
-		},
-		{
-			name:     "EEA_list_is_empty",
-			country:  "FRA",
-			eeaList:  []string{},
-			expected: false,
-		},
-		{
-			name:     "EEA_list_is_nil",
-			country:  "FRA",
-			eeaList:  nil,
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isEEACountry(tt.country, tt.eeaList)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 type mockRequestValidator struct {
 	errors []error
 }
 
 func (mrv *mockRequestValidator) ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ortb.ValidationConfig, index int, aliases map[string]string, hasStoredResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error {
 	return mrv.errors
+}
+
+func TestAmpEnv(t *testing.T) {
+	type aTest struct {
+		desc                  string
+		requestType           metrics.RequestType
+		expectedEnvInResponse string
+	}
+	testCases := []aTest{
+		{
+			desc:                  "Amp request",
+			requestType:           "amp",
+			expectedEnvInResponse: "amp",
+		},
+		{
+			desc:                  "Non amp request",
+			requestType:           "video",
+			expectedEnvInResponse: "",
+		},
+	}
+
+	// Set up test
+	type PrebidExt struct {
+		Prebid struct {
+			Targeting map[string]string `json:"targeting"`
+		} `json:"prebid"`
+	}
+
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	categoriesFetcher, err := newCategoryFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+
+	e := new(exchange)
+
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
+	e.gdprPermsBuilder = fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+		},
+	}.Builder
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
+	e.categoriesFetcher = categoriesFetcher
+	e.requestSplitter = requestSplitter{
+		me:               &metricsConf.NilMetricsEngine{},
+		gdprPermsBuilder: e.gdprPermsBuilder,
+	}
+	e.bidIDGenerator = &fakeBidIDGenerator{GenerateBidID: false, ReturnError: false}
+	e.singleFormatBidders = map[openrtb_ext.BidderName]struct{}{
+		"bidder": {},
+	}
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte(""),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{
+						ID:    "bid-id",
+						ImpID: "impression-id",
+					},
+					BidType: openrtb_ext.BidTypeBanner,
+				},
+			},
+		},
+	}
+
+	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, ""),
+	}
+	ctx := context.Background()
+
+	priceGran := openrtb_ext.PriceGranularity{
+		Precision: ptrutil.ToPtr(2),
+		Ranges:    []openrtb_ext.GranularityRange{},
+	}
+
+	bidRequest := &openrtb2.BidRequest{
+		ID: "request-id",
+		Imp: []openrtb2.Imp{{
+			ID:     "impression-id",
+			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
+		}},
+	}
+
+	reqWrapper := openrtb_ext.RequestWrapper{BidRequest: bidRequest}
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		t.Fatalf("cannot get request ext: %v", err)
+	}
+
+	requestExt.SetPrebid(&openrtb_ext.ExtRequestPrebid{
+		Targeting: &openrtb_ext.ExtRequestTargeting{
+			PriceGranularity:  &priceGran,
+			IncludeBidderKeys: ptrutil.ToPtr(true),
+			IncludeWinners:    ptrutil.ToPtr(true),
+		},
+	})
+
+	for _, test := range testCases {
+		auctionRequest := &AuctionRequest{
+			BidRequestWrapper: &reqWrapper,
+			Account:           config.Account{DebugAllow: true},
+			UserSyncs:         &emptyUsersync{},
+			StartTime:         time.Now(),
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+			RequestType:       test.requestType,
+		}
+
+		// Run test
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, &DebugLog{})
+		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
+
+		var responseExt PrebidExt
+		err = json.Unmarshal(outBidResponse.SeatBid[0].Bid[0].Ext, &responseExt)
+		assert.NoErrorf(t, err, "%s. Failed to Unmarshal HoldAuction response. The error: %v \n", test.desc, err)
+		assert.Equalf(t, test.expectedEnvInResponse, responseExt.Prebid.Targeting["hb_env"], "Response mismatch")
+	}
 }

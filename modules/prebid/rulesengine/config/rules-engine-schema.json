@@ -8,13 +8,31 @@
       "type": "boolean",
       "description": "pending"
     },
+    "generate_rules_from_bidderconfig": {
+      "type": "boolean",
+      "description": "If true, rules will be generated from the bidder config. If false, all rules must be defined in the rulesets."
+    },
+    "set_definitions": {
+      "type": "object",
+      "properties": {
+        "country_groups": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "timestamp": {
       "type": "string",
       "description": "pending"
     },
     "rulesets": {
       "type": "array",
-      "minItems": 1,
       "items": {
         "type": "object",
         "properties": {
