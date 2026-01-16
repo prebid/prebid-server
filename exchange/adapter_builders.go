@@ -17,15 +17,12 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/admatic"
 	"github.com/prebid/prebid-server/v3/adapters/admixer"
 	"github.com/prebid/prebid-server/v3/adapters/adnuntius"
-	"github.com/prebid/prebid-server/v3/adapters/adocean"
 	"github.com/prebid/prebid-server/v3/adapters/adoppler"
 	"github.com/prebid/prebid-server/v3/adapters/adot"
 	"github.com/prebid/prebid-server/v3/adapters/adpone"
 	"github.com/prebid/prebid-server/v3/adapters/adprime"
 	"github.com/prebid/prebid-server/v3/adapters/adquery"
 	"github.com/prebid/prebid-server/v3/adapters/adrino"
-	"github.com/prebid/prebid-server/v3/adapters/ads_interactive"
-	"github.com/prebid/prebid-server/v3/adapters/adsinteractive"
 	"github.com/prebid/prebid-server/v3/adapters/adtarget"
 	"github.com/prebid/prebid-server/v3/adapters/adtelligent"
 	"github.com/prebid/prebid-server/v3/adapters/adtonos"
@@ -76,6 +73,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/bwx"
 	cadentaperturemx "github.com/prebid/prebid-server/v3/adapters/cadent_aperture_mx"
 	"github.com/prebid/prebid-server/v3/adapters/ccx"
+	"github.com/prebid/prebid-server/v3/adapters/clydo"
 	"github.com/prebid/prebid-server/v3/adapters/cointraffic"
 	"github.com/prebid/prebid-server/v3/adapters/coinzilla"
 	"github.com/prebid/prebid-server/v3/adapters/colossus"
@@ -166,6 +164,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/v3/adapters/mobkoi"
 	"github.com/prebid/prebid-server/v3/adapters/motorik"
+	"github.com/prebid/prebid-server/v3/adapters/msft"
 	"github.com/prebid/prebid-server/v3/adapters/nativery"
 	"github.com/prebid/prebid-server/v3/adapters/nativo"
 	"github.com/prebid/prebid-server/v3/adapters/nextmillennium"
@@ -284,15 +283,12 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdmatic:           admatic.Builder,
 		openrtb_ext.BidderAdmixer:           admixer.Builder,
 		openrtb_ext.BidderAdnuntius:         adnuntius.Builder,
-		openrtb_ext.BidderAdOcean:           adocean.Builder,
 		openrtb_ext.BidderAdoppler:          adoppler.Builder,
 		openrtb_ext.BidderAdot:              adot.Builder,
 		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdprime:           adprime.Builder,
 		openrtb_ext.BidderAdquery:           adquery.Builder,
 		openrtb_ext.BidderAdrino:            adrino.Builder,
-		openrtb_ext.BidderAdsInteractive:    ads_interactive.Builder,
-		openrtb_ext.BidderAdsinteractive:    adsinteractive.Builder,
 		openrtb_ext.BidderAdtarget:          adtarget.Builder,
 		openrtb_ext.BidderAdtrgtme:          adtrgtme.Builder,
 		openrtb_ext.BidderAdtelligent:       adtelligent.Builder,
@@ -343,6 +339,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBWX:               bwx.Builder,
 		openrtb_ext.BidderCadentApertureMX:  cadentaperturemx.Builder,
 		openrtb_ext.BidderCcx:               ccx.Builder,
+		openrtb_ext.BidderClydo:             clydo.Builder,
 		openrtb_ext.BidderCointraffic:       cointraffic.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
@@ -430,6 +427,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMetaX:             metax.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,
+		openrtb_ext.BidderMicrosoft:         msft.Builder,
 		openrtb_ext.BidderMinuteMedia:       minutemedia.Builder,
 		openrtb_ext.BidderMissena:           missena.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
