@@ -1,0 +1,47 @@
+{
+    "description": "Auction Exitpoint",
+    "config": {
+        "mockBidders": [
+            {
+                "bidderName": "pubmatic",
+                "currency": "USD",
+                "price": 1.00
+            }
+        ]
+    },
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [
+            {
+                "id": "some-impression-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "pubmatic": {
+                        "publisherId": 12345
+                    }
+                }
+            }
+        ],
+        "tmax": 500,
+        "test": 1,
+        "ext": {
+            "prebid": {
+                "trace": "verbose"
+            }
+        }
+    },
+    "expectedBidResponse": {
+        "id": "modified-id"
+    },
+    "expectedReturnCode": 200
+}
