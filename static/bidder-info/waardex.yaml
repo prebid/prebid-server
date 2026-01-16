@@ -14,6 +14,8 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: "https://sync.justbidit2.xyz/user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}&s={{.SspID}}"
-    userMacro: "{UID}"
+  # waardex supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address support@waardex.com to ask about enabling user sync.
+  supports:
+    - redirect
 endpointCompression: "GZIP"
