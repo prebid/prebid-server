@@ -336,4 +336,16 @@ func TestGetBidMediaType_Error(t *testing.T) {
 	assert.Contains(t, err.Error(), "unsupported or ambiguous media type")
 }
 
+func TestParseScaliburExt_ErrorCases(t *testing.T) {
+	// Case 1: Invalid JSON for imp.ext
+	_, err := parseScaliburExt(json.RawMessage(`{invalid`))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Failed to parse imp.ext")
+
+	// Case 2: Missing placementId
+	_, err = parseScaliburExt(json.RawMessage(`{"bidder": {"bidfloor": 1.0}}`))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "placementId is required")
+}
+
 func ptrInt64(x int64) *int64 { return &x }
