@@ -5,8 +5,7 @@ on:
     paths: ["adapters/*/*.go"]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   run-coverage:
@@ -28,7 +27,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const utils = require('./.github/workflows/helpers/pull-request-utils.js')            
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
             function directoryExtractor(filepath, status) {
               // extract directory name only if file is not removed and file is in adapters directory
               if (status != "removed" && filepath.startsWith("adapters/") && filepath.split("/").length > 2) {
@@ -54,7 +53,7 @@ jobs:
 
           # generate coverage for adapter
           cd ./adapters
-          for directory in $directories; do 
+          for directory in $directories; do
             cd $directory
             coverage_profile_path="${PWD}/${directory}.out"
             go test -coverprofile="${coverage_profile_path}"
@@ -64,46 +63,18 @@ jobs:
           done
           echo "coverage_dir=${temp_dir}" >> $GITHUB_OUTPUT
 
-          # remove pull request branch files
-          cd ..
-          rm -f -r ./*
-
-      - name: Checkout Coverage Preview Branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: coverage-preview
-          repository: prebid/prebid-server
-
-      - name: Upload Coverage Results
+      - name: Save PR Context
         if: steps.run_coverage.outputs.coverage_dir != ''
-        id: commit_coverage
         run: |
-          directory=.github/preview/${{ github.run_id }}_$(date +%s)
-          mkdir -p $directory
-          cp -r ${{ steps.run_coverage.outputs.coverage_dir }}/*.html ./$directory
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add $directory/*
-          git commit -m 'Add coverage files'
-          git push origin coverage-preview
-          echo "remote_coverage_preview_dir=${directory}" >> $GITHUB_OUTPUT
+          mkdir -p ${{ steps.run_coverage.outputs.coverage_dir }}/metadata
+          echo '${{ github.event.pull_request.number }}' > ${{ steps.run_coverage.outputs.coverage_dir }}/metadata/pr_number
+          echo '${{ github.event.pull_request.head.sha }}' > ${{ steps.run_coverage.outputs.coverage_dir }}/metadata/head_sha
+          echo '${{ steps.get_directories.outputs.result }}' > ${{ steps.run_coverage.outputs.coverage_dir }}/metadata/directories
 
-      - name: Checkout Master Branch
-        if: steps.get_directories.outputs.result != ''
-        run: git checkout master
-
-      - name: Add Coverage Summary To Pull Request
-        if: steps.run_coverage.outputs.coverage_dir != '' && steps.commit_coverage.outputs.remote_coverage_preview_dir != ''
-        uses: actions/github-script@v7
+      - name: Upload Coverage Artifacts
+        if: steps.run_coverage.outputs.coverage_dir != ''
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
-            const helper = utils.coverageHelper({
-              github, context,
-              headSha: '${{ github.event.pull_request.head.sha }}', 
-              tmpCoverageDir: '${{ steps.run_coverage.outputs.coverage_dir }}', 
-              remoteCoverageDir: '${{ steps.commit_coverage.outputs.remote_coverage_preview_dir }}'
-            })
-            const adapterDirectories = JSON.parse('${{ steps.get_directories.outputs.result }}')
-            await helper.AddCoverageSummary(adapterDirectories)
+          name: coverage-results
+          path: ${{ steps.run_coverage.outputs.coverage_dir }}
+          retention-days: 1
