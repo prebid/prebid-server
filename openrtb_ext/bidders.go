@@ -33,15 +33,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
-	BidderAdOcean,
 	BidderAdoppler,
 	BidderAdot,
 	BidderAdpone,
 	BidderAdprime,
 	BidderAdquery,
 	BidderAdrino,
-	BidderAdsInteractive,
-	BidderAdsinteractive,
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
@@ -87,10 +84,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBluesea,
 	BidderBmtm,
 	BidderBoldwin,
+	BidderBoldwinRapid,
 	BidderBrave,
 	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
+	BidderClydo,
 	BidderCointraffic,
 	BidderCoinzilla,
 	BidderColossus,
@@ -177,6 +176,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMetaX,
 	BidderMgid,
 	BidderMgidX,
+	BidderMicrosoft,
 	BidderMinuteMedia,
 	BidderMissena,
 	BidderMobfoxpb,
@@ -407,15 +407,12 @@ const (
 	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
-	BidderAdOcean           BidderName = "adocean"
 	BidderAdoppler          BidderName = "adoppler"
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
 	BidderAdquery           BidderName = "adquery"
 	BidderAdrino            BidderName = "adrino"
-	BidderAdsInteractive    BidderName = "ads_interactive"
-	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdTonos           BidderName = "adtonos"
@@ -461,10 +458,12 @@ const (
 	BidderBluesea           BidderName = "bluesea"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
+	BidderBoldwinRapid      BidderName = "boldwin_rapid"
 	BidderBrave             BidderName = "brave"
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
+	BidderClydo             BidderName = "clydo"
 	BidderCointraffic       BidderName = "cointraffic"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
@@ -551,6 +550,7 @@ const (
 	BidderMetaX             BidderName = "metax"
 	BidderMgid              BidderName = "mgid"
 	BidderMgidX             BidderName = "mgidX"
+	BidderMicrosoft         BidderName = "msft"
 	BidderMinuteMedia       BidderName = "minutemedia"
 	BidderMissena           BidderName = "missena"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
