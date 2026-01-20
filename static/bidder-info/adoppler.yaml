@@ -1,2 +1,0 @@
-endpoint: "https://pbs.elementaltv.io/ads/processHeaderBid/{{.AdUnit}}"
-aliasOf: "elementaltv"
