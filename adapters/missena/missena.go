@@ -122,6 +122,8 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		}
 	}
 
+	// Extract EIDs from user.ext. Unmarshal errors are intentionally ignored
+	// to allow requests to proceed without EIDs, as they are optional.
 	var eids []openrtb2.EID
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
