@@ -112,13 +112,13 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpWaardex, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: fmt.Sprintf("imp.ext is invalid: %s", err.Error()),
 		}
 	}
 	var waardexExt openrtb_ext.ExtImpWaardex
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &waardexExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: fmt.Sprintf("imp.ext.bidder is invalid: %s", err.Error()),
 		}
 	}
 	return &waardexExt, nil

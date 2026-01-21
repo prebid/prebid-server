@@ -46,11 +46,11 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "expect { or n, but found \"",
+      "value": "imp.ext is invalid: expect { or n, but found \"",
       "comparison": "literal"
     },
     {
-      "value": "expect { or n, but found \"",
+      "value": "imp.ext.bidder is invalid: expect { or n, but found \"",
       "comparison": "literal"
     }
   ],
