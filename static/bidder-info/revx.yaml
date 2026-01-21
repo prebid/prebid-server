@@ -1,4 +1,4 @@
-endpoint:  "https://prebid-use.atomex.net"
+endpoint:  "https://prebid-use.atomex.net?ag=PREBID"
 
 maintainer:
   email: prebidsupport@revx.io

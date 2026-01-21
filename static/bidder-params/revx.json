@@ -3,13 +3,5 @@
   "title": "RevX Adapter Params",
   "description": "A schema which validates params accepted by the RevX adapter",
   "type": "object",
-  "properties": {
-    "pubname": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Required publisher identifier used for dynamic endpoint routing"
-    }
-  },
-  "required": ["pubname"],
-  "additionalProperties": false
+  "properties": {}
 }
