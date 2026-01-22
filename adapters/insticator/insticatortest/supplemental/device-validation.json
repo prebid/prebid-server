@@ -56,7 +56,7 @@
             "1.22.22.1"
           ]
         },
-        "uri": "https://insticator.example.com/v1/pbs",
+        "uri": "https://insticator.example.com/v1/pbs?publisherId=test-publisher-id",
         "body": {
           "device": {
             "ip": "1.22.22.1"
@@ -120,7 +120,7 @@
                 {
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                   "impid": "test-imp-id",
-                  "price": 0.500000,
+                  "price": 0.5,
                   "adm": "some-test-vast-ad",
                   "mtype": 2,
                   "crid": "crid_10",
@@ -160,7 +160,8 @@
               }
             }
           },
-          "type": "video"
+          "type": "video",
+          "seat": "insticator"
         }
       ]
     }

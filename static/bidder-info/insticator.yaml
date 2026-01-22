@@ -1,7 +1,11 @@
 endpoint: "https://ex.ingage.tech/v1/prebidserver"
+extra_info: '{"app_endpoint":"https://aex.ingage.tech/v1/prebidserver"}'
+endpointCompression: GZIP
 maintainer:
   email: "prebid@insticator.com"
 gvlVendorID: 910
+openrtb:
+  version: "2.6"
 capabilities:
   app:
     mediaTypes:
