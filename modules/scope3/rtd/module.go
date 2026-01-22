@@ -16,11 +16,11 @@ import (
 	"time"
 
 	"github.com/coocood/freecache"
-	"github.com/golang/glog"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
@@ -416,7 +416,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 	// Cache the result
 	err = m.cache.Set(cacheKey, []byte(strings.Join(segments, scope3CacheKeySeparator)), m.cfg.CacheTTL)
 	if err != nil {
-		glog.Infof("could not set segments in cache: %v", err)
+		logger.Infof("could not set segments in cache: %v", err)
 	}
 
 	return segments, nil
