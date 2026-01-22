@@ -110,6 +110,7 @@
                   "crid": "100",
                   "w": 320,
                   "h": 50,
+                  "mtype": 1,
                   "ext": {
                     "prebid": {
                       "type": "banner"
@@ -139,6 +140,7 @@
             "crid": "100",
             "w": 320,
             "h": 50,
+            "mtype": 1,
             "ext": {
               "prebid": {
                 "type": "banner"

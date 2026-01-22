@@ -118,6 +118,7 @@
                   "crid": "100",
                   "w": 1280,
                   "h": 720,
+                  "mtype": 2,
                   "ext": {
                     "prebid": {
                       "type": "video"
@@ -147,6 +148,7 @@
             "crid": "100",
             "w": 1280,
             "h": 720,
+            "mtype": 2,
             "ext": {
               "prebid": {
                 "type": "video"
