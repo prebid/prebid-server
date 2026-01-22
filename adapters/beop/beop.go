@@ -163,14 +163,15 @@ func (a *adapter) MakeBids(
 	bidResponseFinal := adapters.NewBidderResponseWithBidsCapacity(len(responseBody.SeatBid[0].Bid))
 	seatBid := responseBody.SeatBid[0]
 	var errors []error
-	for _, bid := range seatBid.Bid {
+	for i := range seatBid.Bid {
+		bid := &seatBid.Bid[i]
 		bidType, err := getMediaTypeForBid(bid)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 		bidResponseFinal.Bids = append(bidResponseFinal.Bids, &adapters.TypedBid{
-			Bid:     &bid,
+			Bid:     bid,
 			BidType: bidType,
 		})
 	}
