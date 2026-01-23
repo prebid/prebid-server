@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="3.0">
+  <Ad id="bid1" sequence="1">
+    <InLine>
+      <AdSystem>bidder1</AdSystem>
+      <AdTitle>Ad bid1</AdTitle>
+      <Impression></Impression>
+      <Advertiser>advertiser1.com</Advertiser>
+      <Pricing model="CPM" currency="USD">7.50</Pricing>
+      <Creatives>
+        <Creative id="creative-bid1">
+          <Linear>
+            <Duration>00:00:30</Duration>
+            <MediaFiles>
+              <MediaFile delivery="progressive" type="video/mp4"></MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+  <Ad id="bid2" sequence="2">
+    <InLine>
+      <AdSystem>bidder2</AdSystem>
+      <AdTitle>Ad bid2</AdTitle>
+      <Impression></Impression>
+      <Advertiser>advertiser2.com</Advertiser>
+      <Pricing model="CPM" currency="USD">5.00</Pricing>
+      <Creatives>
+        <Creative id="creative-bid2">
+          <Linear>
+            <Duration>00:00:15</Duration>
+            <MediaFiles>
+              <MediaFile delivery="progressive" type="video/mp4"></MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+  <Ad id="bid3" sequence="3">
+    <InLine>
+      <AdSystem>bidder1</AdSystem>
+      <AdTitle>Ad bid3</AdTitle>
+      <Impression></Impression>
+      <Advertiser>advertiser3.com</Advertiser>
+      <Pricing model="CPM" currency="USD">4.00</Pricing>
+      <Creatives>
+        <Creative id="creative-bid3">
+          <Linear>
+            <Duration>00:00:15</Duration>
+            <MediaFiles>
+              <MediaFile delivery="progressive" type="video/mp4"></MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+</VAST>

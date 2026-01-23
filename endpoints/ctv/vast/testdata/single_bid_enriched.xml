@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="3.0">
+  <Ad id="bid123" sequence="1">
+    <InLine>
+      <AdSystem>testbidder</AdSystem>
+      <AdTitle>Test Ad</AdTitle>
+      <Impression><![CDATA[http://example.com/impression]]></Impression>
+      <Advertiser>example.com</Advertiser>
+      <Pricing model="CPM" currency="USD">5.50</Pricing>
+      <Creatives>
+        <Creative id="creative-bid123">
+          <Linear>
+            <Duration>00:00:30</Duration>
+            <MediaFiles>
+              <MediaFile delivery="progressive" type="video/mp4"><![CDATA[http://example.com/video.mp4]]></MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+      <Extensions>
+        <Extension type="prebid">{"categories":["IAB1-1"],"deal_id":"deal456"}</Extension>
+      </Extensions>
+    </InLine>
+  </Ad>
+</VAST>

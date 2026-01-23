@@ -168,6 +168,7 @@ const (
 	DemandWeb     DemandSource = "web"
 	DemandApp     DemandSource = "app"
 	DemandDOOH    DemandSource = "dooh"
+	DemandCTV     DemandSource = "ctv"
 	DemandUnknown DemandSource = "unknown"
 )
 
@@ -176,6 +177,7 @@ func DemandTypes() []DemandSource {
 		DemandWeb,
 		DemandApp,
 		DemandDOOH,
+		DemandCTV,
 		DemandUnknown,
 	}
 }
@@ -187,6 +189,7 @@ const (
 	ReqTypeORTB2DOOH RequestType = "openrtb2-dooh"
 	ReqTypeAMP       RequestType = "amp"
 	ReqTypeVideo     RequestType = "video"
+	ReqTypeCTV       RequestType = "ctv"
 )
 
 func RequestTypes() []RequestType {
@@ -196,6 +199,7 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2DOOH,
 		ReqTypeAMP,
 		ReqTypeVideo,
+		ReqTypeCTV,
 	}
 }
 
@@ -204,6 +208,7 @@ const (
 	EndpointAuction EndpointType = "auction"
 	EndpointVideo   EndpointType = "video"
 	EndpointAmp     EndpointType = "amp"
+	EndpointCTV     EndpointType = "ctv"
 )
 
 func EndpointTypes() []EndpointType {
@@ -211,6 +216,7 @@ func EndpointTypes() []EndpointType {
 		EndpointAuction,
 		EndpointVideo,
 		EndpointAmp,
+		EndpointCTV,
 	}
 }
 
@@ -228,6 +234,8 @@ func GetEndpointFromRequestType(requestType RequestType) EndpointType {
 		requestEndpoint = EndpointAmp
 	case ReqTypeVideo:
 		requestEndpoint = EndpointVideo
+	case ReqTypeCTV:
+		requestEndpoint = EndpointCTV
 	}
 
 	return requestEndpoint
