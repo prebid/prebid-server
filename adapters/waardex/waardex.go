@@ -16,12 +16,12 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-type waardexAdapter struct {
+type adapter struct {
 	EndpointTemplate *template.Template
 }
 
 // MakeRequests prepares request information for prebid-server core
-func (adapter *waardexAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	impressionsByZone, impErrs := groupImpressionsByZone(request.Imp)
 	errs = append(errs, impErrs...)
@@ -124,7 +124,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpWaardex, error) {
 	return &waardexExt, nil
 }
 
-func (adapter *waardexAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpWaardex, imps []openrtb2.Imp) (*adapters.RequestData, error) {
+func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpWaardex, imps []openrtb2.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, imps)
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
@@ -168,13 +168,13 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
-func (adapter *waardexAdapter) buildEndpointURL(params *openrtb_ext.ExtImpWaardex) (string, error) {
+func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpWaardex) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{ZoneID: strconv.Itoa(params.ZoneId)}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
 // MakeBids translates Waardex bid response to prebid-server specific format
-func (adapter *waardexAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -254,7 +254,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &waardexAdapter{
+	bidder := &adapter{
 		EndpointTemplate: urlTemplate,
 	}
 	return bidder, nil
