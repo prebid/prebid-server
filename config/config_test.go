@@ -225,6 +225,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "account_defaults.privacy.topicsdomain", "", cfg.AccountDefaults.Privacy.PrivacySandbox.TopicsDomain)
 	cmpBools(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.Enabled)
 	cmpInts(t, "account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800, cfg.AccountDefaults.Privacy.PrivacySandbox.CookieDeprecation.TTLSec)
+	cmpStrings(t, "account_defaults.stored_request.array_merge", "replace", string(cfg.AccountDefaults.StoredRequest.ArrayMerge))
 
 	cmpBools(t, "account_defaults.events.enabled", false, cfg.AccountDefaults.Events.Enabled)
 
@@ -579,6 +580,8 @@ account_defaults:
             cookiedeprecation:
                 enabled: true
                 ttl_sec: 86400
+    stored_request:
+        array_merge: "replace"
 tmax_adjustments:
   enabled: true
   bidder_response_duration_min_ms: 700
@@ -726,6 +729,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.period_sec", 2000, cfg.AccountDefaults.PriceFloors.Fetcher.Period)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_age_sec", 6000, cfg.AccountDefaults.PriceFloors.Fetcher.MaxAge)
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
+	cmpStrings(t, "account_defaults.stored_request.array_merge", "replace", string(cfg.AccountDefaults.StoredRequest.ArrayMerge))
 
 	assert.Equal(t, RoundingModeUp, cfg.AccountDefaults.BidRounding)
 
