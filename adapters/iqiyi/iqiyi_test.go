@@ -352,6 +352,56 @@ func TestMakeBids(t *testing.T) {
 	})
 }
 
+func TestGetBidVideo(t *testing.T) {
+	t.Run("Empty Cat and zero Dur", func(t *testing.T) {
+		bid := &openrtb2.Bid{
+			ID:  "test-bid-id",
+			Cat: []string{},
+			Dur: 0,
+		}
+		bidVideo := getBidVideo(bid)
+		assert.NotNil(t, bidVideo)
+		assert.Equal(t, "", bidVideo.PrimaryCategory)
+		assert.Equal(t, 0, bidVideo.Duration)
+	})
+
+	t.Run("Cat has values", func(t *testing.T) {
+		bid := &openrtb2.Bid{
+			ID:  "test-bid-id",
+			Cat: []string{"IAB1", "IAB2"},
+			Dur: 0,
+		}
+		bidVideo := getBidVideo(bid)
+		assert.NotNil(t, bidVideo)
+		assert.Equal(t, "IAB1", bidVideo.PrimaryCategory)
+		assert.Equal(t, 0, bidVideo.Duration)
+	})
+
+	t.Run("Dur greater than zero", func(t *testing.T) {
+		bid := &openrtb2.Bid{
+			ID:  "test-bid-id",
+			Cat: []string{},
+			Dur: 30,
+		}
+		bidVideo := getBidVideo(bid)
+		assert.NotNil(t, bidVideo)
+		assert.Equal(t, "", bidVideo.PrimaryCategory)
+		assert.Equal(t, 30, bidVideo.Duration)
+	})
+
+	t.Run("Both Cat and Dur have values", func(t *testing.T) {
+		bid := &openrtb2.Bid{
+			ID:  "test-bid-id",
+			Cat: []string{"IAB1-5", "IAB2"},
+			Dur: 60,
+		}
+		bidVideo := getBidVideo(bid)
+		assert.NotNil(t, bidVideo)
+		assert.Equal(t, "IAB1-5", bidVideo.PrimaryCategory)
+		assert.Equal(t, 60, bidVideo.Duration)
+	})
+}
+
 func TestGetMediaTypeForImp(t *testing.T) {
 	t.Run("Banner type", func(t *testing.T) {
 		bid := openrtb2.Bid{
