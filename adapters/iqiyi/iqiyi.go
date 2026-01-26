@@ -144,8 +144,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				return nil, []error{err}
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatbid.Bid[i],
-				BidType: mediaType,
+				Bid:      &seatbid.Bid[i],
+				BidType:  mediaType,
+				BidVideo: getBidVideo(&seatbid.Bid[i]),
 			})
 		}
 	}
@@ -166,4 +167,15 @@ func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 			Message: fmt.Sprintf("Unsupported mtype %d for bid %s", bid.MType, bid.ID),
 		}
 	}
+}
+
+func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+	bidVideo := openrtb_ext.ExtBidPrebidVideo{}
+	if len(bid.Cat) > 0 {
+		bidVideo.PrimaryCategory = bid.Cat[0]
+	}
+	if bid.Dur > 0 {
+		bidVideo.Duration = int(bid.Dur)
+	}
+	return &bidVideo
 }
