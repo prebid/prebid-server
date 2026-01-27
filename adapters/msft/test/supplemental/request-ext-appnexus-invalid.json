@@ -1,0 +1,40 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {},
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "displaymanagerver": "any-display-manager-version",
+        "ext": {
+          "bidder": {
+            "placement_id": 1
+          }
+        }
+      }
+    ],
+    "ext": {
+      "appnexus": {
+        "brand_category_uniqueness": "wrong-format"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "malformed request ext.appnexus",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -24,6 +24,8 @@ const MAX_IMPRESSIONS_PUBMATIC = 30
 
 const ae = "ae"
 
+const BidderPubMatic = "pubmatic"
+
 type PubmaticAdapter struct {
 	URI        string
 	bidderName string
@@ -37,8 +39,9 @@ type pubmaticBidExt struct {
 }
 
 type pubmaticWrapperExt struct {
-	ProfileID int `json:"profile,omitempty"`
-	VersionID int `json:"version,omitempty"`
+	ProfileID  int    `json:"profile,omitempty"`
+	VersionID  int    `json:"version,omitempty"`
+	BidderCode string `json:"biddercode,omitempty"`
 }
 
 type pubmaticBidExtVideo struct {
@@ -384,6 +387,19 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 			return pmReqExt, err
 		}
 		pmReqExt.Wrapper = wrpExt
+	}
+
+	if pmReqExt.Wrapper == nil {
+		pmReqExt.Wrapper = &pubmaticWrapperExt{}
+	}
+
+	// Always set bidder code to default
+	pmReqExt.Wrapper.BidderCode = BidderPubMatic
+
+	// Override bidder code if alias exists
+	for alias := range reqExt.Prebid.Aliases {
+		pmReqExt.Wrapper.BidderCode = alias
+		break
 	}
 
 	if acatBytes, ok := reqExtBidderParams["acat"]; ok {
