@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/docker/go-units"
-	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/v3/logger"
 )
 
 func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error) {
@@ -21,7 +21,7 @@ func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error)
 		// read the entire response body to ensure full connection reuse if there's an
 		// error while decoding the json
 		if _, err := io.Copy(io.Discard, res.Body); err != nil {
-			glog.Errorf("[pubstack] Draining config response body failed: %v", err)
+			logger.Errorf("[pubstack] Draining config response body failed: %v", err)
 		}
 		res.Body.Close()
 	}()
