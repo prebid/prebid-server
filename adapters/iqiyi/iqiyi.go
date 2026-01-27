@@ -146,7 +146,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &seatbid.Bid[i],
 				BidType:  mediaType,
-				BidVideo: getBidVideo(&seatbid.Bid[i]),
+				BidVideo: getBidVideo(&seatbid.Bid[i], mediaType),
 			})
 		}
 	}
@@ -169,7 +169,10 @@ func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func getBidVideo(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+func getBidVideo(bid *openrtb2.Bid, bidType openrtb_ext.BidType) *openrtb_ext.ExtBidPrebidVideo {
+	if bidType != openrtb_ext.BidTypeVideo {
+		return nil
+	}
 	bidVideo := openrtb_ext.ExtBidPrebidVideo{}
 	if len(bid.Cat) > 0 {
 		bidVideo.PrimaryCategory = bid.Cat[0]
