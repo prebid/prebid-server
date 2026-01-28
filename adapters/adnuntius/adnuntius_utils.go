@@ -32,7 +32,7 @@ func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) {
+func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool, extUser openrtb_ext.ExtUser) (string, []error) {
 	uri, err := url.Parse(a.endpoint)
 	if err != nil {
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
@@ -78,6 +78,15 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 
 	if noCookies {
 		q.Set("noCookies", "true")
+	}
+
+	if extUser.Eids != nil && len(extUser.Eids) > 0 {
+		if len(extUser.Eids[0].UIDs) > 0 {
+			eidsJSON, err := jsonutil.Marshal(extUser.Eids)
+			if err == nil {
+				q.Set("eids", string(eidsJSON))
+			}
+		}
 	}
 
 	q.Set("tzo", strconv.Itoa(tzo))
