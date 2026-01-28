@@ -2,6 +2,7 @@ package bidadjustment
 
 import (
 	"math"
+	"strings"
 
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -15,7 +16,7 @@ const (
 	Delimiter                = "|"
 )
 
-const maxNumOfCombos = 8
+const maxNumOfCombos = 12
 const pricePrecision float64 = 10000 // Rounds to 4 Decimal Places
 const minBid = 0.1
 
@@ -23,7 +24,7 @@ const minBid = 0.1
 func Apply(rules map[string][]openrtb_ext.Adjustment, bidInfo *adapters.TypedBid, bidderName openrtb_ext.BidderName, currency string, reqInfo *adapters.ExtraRequestInfo, bidType string) (float64, string) {
 	var adjustments []openrtb_ext.Adjustment
 	if len(rules) > 0 {
-		adjustments = get(rules, bidType, string(bidderName), bidInfo.Bid.DealID)
+		adjustments = get(rules, bidType, string(bidInfo.Seat), string(bidderName), bidInfo.Bid.DealID)
 	} else {
 		return bidInfo.Bid.Price, currency
 	}
@@ -67,27 +68,58 @@ func apply(adjustments []openrtb_ext.Adjustment, bidPrice float64, currency stri
 // get() should return the highest priority slice of adjustments from the map that we can match with the given bid info
 // given the bid info, we create the same format of combinations that's present in the key of the ruleToAdjustments map
 // the slice is ordered by priority from highest to lowest, as soon as we find a match, we return that slice
-func get(rules map[string][]openrtb_ext.Adjustment, bidType, bidderName, dealID string) []openrtb_ext.Adjustment {
+func get(rules map[string][]openrtb_ext.Adjustment, bidType, seat, bidderName, dealID string) []openrtb_ext.Adjustment {
 	priorityRules := [maxNumOfCombos]string{}
-	if dealID != "" {
-		priorityRules[0] = bidType + Delimiter + bidderName + Delimiter + dealID
-		priorityRules[1] = bidType + Delimiter + bidderName + Delimiter + WildCard
-		priorityRules[2] = bidType + Delimiter + WildCard + Delimiter + dealID
-		priorityRules[3] = WildCard + Delimiter + bidderName + Delimiter + dealID
-		priorityRules[4] = bidType + Delimiter + WildCard + Delimiter + WildCard
-		priorityRules[5] = WildCard + Delimiter + bidderName + Delimiter + WildCard
-		priorityRules[6] = WildCard + Delimiter + WildCard + Delimiter + dealID
-		priorityRules[7] = WildCard + Delimiter + WildCard + Delimiter + WildCard
+
+	// lowercase the parameter to make the rules it case insensitive
+	bidType = strings.ToLower(bidType)
+	bidderName = strings.ToLower(bidderName)
+	dealID = strings.ToLower(dealID)
+	seat = strings.ToLower(seat)
+
+	if seat != "" {
+		if dealID != "" {
+			priorityRules[0] = bidType + Delimiter + seat + Delimiter + dealID          // type|seat|dealID
+			priorityRules[1] = bidType + Delimiter + bidderName + Delimiter + dealID    // type|bidder|dealID
+			priorityRules[2] = bidType + Delimiter + seat + Delimiter + WildCard        // type|seat|*
+			priorityRules[3] = bidType + Delimiter + bidderName + Delimiter + WildCard  // type|bidder|*
+			priorityRules[4] = bidType + Delimiter + WildCard + Delimiter + dealID      // type|*|dealID
+			priorityRules[5] = WildCard + Delimiter + seat + Delimiter + dealID         // *|seat|dealID
+			priorityRules[6] = WildCard + Delimiter + bidderName + Delimiter + dealID   // *|bidder|dealID
+			priorityRules[7] = bidType + Delimiter + WildCard + Delimiter + WildCard    // type|*|*
+			priorityRules[8] = WildCard + Delimiter + seat + Delimiter + WildCard       // *|seat|*
+			priorityRules[9] = WildCard + Delimiter + bidderName + Delimiter + WildCard // *|bidder|*
+			priorityRules[10] = WildCard + Delimiter + WildCard + Delimiter + dealID    // *|*|dealID
+			priorityRules[11] = WildCard + Delimiter + WildCard + Delimiter + WildCard  // *|*|*
+		} else {
+			priorityRules[0] = bidType + Delimiter + seat + Delimiter + WildCard        // type|seat|*
+			priorityRules[1] = bidType + Delimiter + bidderName + Delimiter + WildCard  // type|bidder|*
+			priorityRules[2] = bidType + Delimiter + WildCard + Delimiter + WildCard    // type|*|*
+			priorityRules[3] = WildCard + Delimiter + seat + Delimiter + WildCard       // *|seat|*
+			priorityRules[4] = WildCard + Delimiter + bidderName + Delimiter + WildCard // *|bidder|*
+			priorityRules[5] = WildCard + Delimiter + WildCard + Delimiter + WildCard   // *|*|*
+		}
 	} else {
-		priorityRules[0] = bidType + Delimiter + bidderName + Delimiter + WildCard
-		priorityRules[1] = bidType + Delimiter + WildCard + Delimiter + WildCard
-		priorityRules[2] = WildCard + Delimiter + bidderName + Delimiter + WildCard
-		priorityRules[3] = WildCard + Delimiter + WildCard + Delimiter + WildCard
+		if dealID != "" {
+			priorityRules[0] = bidType + Delimiter + bidderName + Delimiter + dealID    // type|bidder|dealID
+			priorityRules[1] = bidType + Delimiter + bidderName + Delimiter + WildCard  // type|bidder|*
+			priorityRules[2] = bidType + Delimiter + WildCard + Delimiter + dealID      // type|*|dealID
+			priorityRules[3] = WildCard + Delimiter + bidderName + Delimiter + dealID   // *|bidder|dealID
+			priorityRules[4] = bidType + Delimiter + WildCard + Delimiter + WildCard    // type|*|*
+			priorityRules[5] = WildCard + Delimiter + bidderName + Delimiter + WildCard // *|bidder|*
+			priorityRules[6] = WildCard + Delimiter + WildCard + Delimiter + dealID     // *|*|dealID
+			priorityRules[7] = WildCard + Delimiter + WildCard + Delimiter + WildCard   // *|*|*
+		} else {
+			priorityRules[0] = bidType + Delimiter + bidderName + Delimiter + WildCard  // type|bidder|*
+			priorityRules[1] = bidType + Delimiter + WildCard + Delimiter + WildCard    // type|*|*
+			priorityRules[2] = WildCard + Delimiter + bidderName + Delimiter + WildCard // *|bidder|*
+			priorityRules[3] = WildCard + Delimiter + WildCard + Delimiter + WildCard   // *|*|*
+		}
 	}
 
 	for _, rule := range priorityRules {
-		if _, ok := rules[rule]; ok {
-			return rules[rule]
+		if matchingRule, ok := rules[rule]; ok {
+			return matchingRule
 		}
 	}
 	return nil
