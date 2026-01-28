@@ -5,12 +5,13 @@
   "type": "object",
 
   "properties": {
-    "spid": {
+    "publisherId": {
       "type": "string",
       "minLength": 1,
-      "description": "Unique supply partner ID provided by T-Advertising"
+      "maxLength": 32,
+      "description": "Unique ID of the publisher/supply partner provided by T-Advertising"
     }
   },
 
-  "required": ["spid"]
+  "required": ["publisherId"]
 }
