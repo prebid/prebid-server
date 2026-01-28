@@ -1,0 +1,21 @@
+# We have the following regional endpoint domains: useast, uswest
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: "http://REGION.justbidit2.xyz:8800/hb?zone={{.ZoneID}}"
+maintainer:
+  email: it@waardex.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+  # waardex supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address support@waardex.com to ask about enabling user sync.
+  supports:
+    - redirect
+endpointCompression: "GZIP"
