@@ -83,7 +83,7 @@ type accountValidator interface {
 type evidenceExtractor interface {
 	fromHeaders(request *http.Request, httpHeaderKeys []dd.EvidenceKey) []stringEvidence
 	fromSuaPayload(payload []byte) []stringEvidence
-	extract(ctx hookstage.ModuleContext) ([]onpremise.Evidence, string, error)
+	extract(ctx *hookstage.ModuleContext) ([]onpremise.Evidence, string, error)
 }
 
 func (m Module) HandleEntrypointHook(
