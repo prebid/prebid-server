@@ -206,6 +206,8 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 		Hooks:   make([]HookWrapper[T], 0, len(cfg.HookSequence)),
 	}
 
+	// Hook lookup and assembly. Hooks not found in repository are silently skipped
+	// as they are reported at startup via ValidateExecutionPlan().
 	for _, hookCfg := range cfg.HookSequence {
 		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
 			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})

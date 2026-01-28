@@ -217,9 +217,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// Validate execution plan configuration
 	if cfg.Hooks.Enabled {
-		if errs = hooks.ValidateExecutionPlan(cfg.Hooks, repo); len(errs) > 0 {
-			for _, err = range errs {
-				logger.Warnf("%s", err.Error())
+		if validationErrs := hooks.ValidateExecutionPlan(cfg.Hooks, repo); len(validationErrs) > 0 {
+			for _, validationErr := range validationErrs {
+				logger.Warnf("%v", validationErr)
 			}
 		}
 	}
