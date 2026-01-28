@@ -1,0 +1,25 @@
+endpoint: ""
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email:  dev@emetriq.com
+gvlVendorID: 213
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+#userSync:
+#  redirect:
+#    url: ""
+#    userMacro: ""
