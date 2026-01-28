@@ -33,7 +33,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
-	BidderAdoppler,
 	BidderAdot,
 	BidderAdpone,
 	BidderAdprime,
@@ -114,6 +113,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDmx,
 	BidderDXKulture,
 	BidderDriftPixel,
+	BidderElementalTV,
 	BidderEmtv,
 	BidderEmxDigital,
 	BidderEPlanning,
@@ -407,7 +407,6 @@ const (
 	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
-	BidderAdoppler          BidderName = "adoppler"
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
@@ -488,6 +487,7 @@ const (
 	BidderDmx               BidderName = "dmx"
 	BidderDXKulture         BidderName = "dxkulture"
 	BidderDriftPixel        BidderName = "driftpixel"
+	BidderElementalTV       BidderName = "elementaltv"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"

@@ -4,11 +4,9 @@
     "imp":[
       {
         "id":"imp1",
-        "video":{
-          "minduration":120,
-          "mimes":[
-            "video/mp4"
-          ]
+        "banner":{
+          "w":100,
+          "h":200
         },
         "ext":{
           "bidder":{
@@ -17,12 +15,10 @@
         }
       },
       {
-        "id":"imp2",
-        "video":{
-          "minduration":120,
-          "mimes":[
-            "video/mp4"
-          ]
+        "id":"imp1",
+        "banner":{
+          "w":100,
+          "h":200
         },
         "ext":{
           "bidder":{
@@ -35,17 +31,15 @@
   "httpCalls":[
     {
       "expectedRequest":{
-        "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit1",
+        "uri":"https://pbs.elementaltv.io/processHeaderBid/unit1",
         "body":{
           "id":"req1-unit1",
           "imp":[
             {
               "id":"imp1",
-              "video":{
-                "minduration":120,
-                "mimes":[
-                  "video/mp4"
-                ]
+              "banner":{
+                "w":100,
+                "h":200
               },
               "ext":{
                 "bidder":{
@@ -67,15 +61,8 @@
                 {
                   "id":"req1-imp1-bid1",
                   "impid":"imp1",
-                  "price":0.24,
-                  "adm":"<VAST />",
-                  "cat":[
-                    "IAB1",
-                    "IAB2"
-                  ],
-                  "ext":{
-
-                  }
+                  "price":0.12,
+                  "adm":"<b>a banner</b>"
                 }
               ]
             }
@@ -86,17 +73,15 @@
     },
     {
       "expectedRequest":{
-        "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit2",
+        "uri":"https://pbs.elementaltv.io/processHeaderBid/unit2",
         "body":{
           "id":"req1-unit2",
           "imp":[
             {
-              "id":"imp2",
-              "video":{
-                "minduration":120,
-                "mimes":[
-                  "video/mp4"
-                ]
+              "id":"imp1",
+              "banner":{
+                "w":100,
+                "h":200
               },
               "ext":{
                 "bidder":{
@@ -106,25 +91,20 @@
             }
           ]
         },
-        "impIDs":["imp2"]
+        "impIDs":["imp1"]
       },
       "mockResponse":{
         "status":200,
         "body":{
-          "id":"req1-imp2-resp2",
+          "id":"req1-imp1-resp1",
           "seatbid":[
             {
               "bid":[
                 {
-                  "id":"req1-imp2-bid2",
-                  "impid":"imp2",
-                  "price":0.24,
-                  "adm":"<VAST />",
-                  "cat":[
-                    "IAB1",
-                    "IAB2"
-                  ],
-                  "ext":""
+                  "id":"req1-imp1-bid1",
+                  "impid":"imp1",
+                  "price":0.12,
+                  "adm":"<b>a banner</b>"
                 }
               ]
             }
@@ -134,13 +114,16 @@
       }
     }
   ],
+  "expectedBidResponses":[
+
+  ],
   "expectedMakeBidsErrors":[
     {
-      "value":"$.seatbid.bid.ext.ads.video required",
+      "value":"duplicate $.imp.id imp1",
       "comparison":"literal"
     },
     {
-      "value":"expect { or n, but found \"",
+      "value":"duplicate $.imp.id imp1",
       "comparison":"literal"
     }
   ]
