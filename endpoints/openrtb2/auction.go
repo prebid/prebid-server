@@ -1731,7 +1731,9 @@ func mergeWithArrayConcat(base, patch []byte, arrayFields []string) ([]byte, err
 		}
 
 		if len(patchArr) > 0 && len(baseArr) > 0 {
-			combined := append(baseArr, patchArr...)
+			combined := make([]interface{}, len(baseArr)+len(patchArr))
+			copy(combined, baseArr)
+			copy(combined[len(baseArr):], patchArr)
 			patchObj[field] = combined
 		}
 	}
