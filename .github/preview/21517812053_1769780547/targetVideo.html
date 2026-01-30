@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>targetVideo: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/targetVideo/targetvideo.go (93.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package targetVideo
+
+import (
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+type impExtPrebid struct {
+        Prebid *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errors []error
+        totalImps := len(request.Imp)
+        adapterRequests := make([]*adapters.RequestData, 0, totalImps)
+
+        // Split multi-imp request into multiple ad server requests. SRA is currently not recommended.
+        for i := 0; i &lt; totalImps; i++ </span><span class="cov8" title="1">{
+                adapterReq, err := a.makeRequest(*request, request.Imp[i])
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">adapterRequests = append(adapterRequests, adapterReq)</span>
+        }
+
+        <span class="cov8" title="1">return adapterRequests, errors</span>
+}
+
+func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) <span class="cov8" title="1">{
+
+        // For now, this adapter sends one imp per request, but we still
+        // iterate over all imps in the request to perform the required
+        // imp.ext transformation.
+        request.Imp = []openrtb2.Imp{imp}
+
+        for i := range request.Imp </span><span class="cov8" title="1">{
+
+                var extBidder adapters.ExtImpBidder
+                if err := jsonutil.Unmarshal(imp.Ext, &amp;extBidder); err != nil </span><span class="cov8" title="1">{
+                        return nil, &amp;errortypes.BadInput{Message: "Invalid ext.bidder"}
+                }</span>
+                <span class="cov8" title="1">var extImpTargetVideo openrtb_ext.ExtImpTargetVideo
+                if err := jsonutil.Unmarshal(extBidder.Bidder, &amp;extImpTargetVideo); err != nil </span><span class="cov8" title="1">{
+                        return nil, &amp;errortypes.BadInput{Message: "Placement ID missing"}
+                }</span>
+                <span class="cov8" title="1">var prebid *openrtb_ext.ExtImpPrebid
+                if extBidder.Prebid == nil </span><span class="cov8" title="1">{
+                        prebid = &amp;openrtb_ext.ExtImpPrebid{}
+                }</span>
+                <span class="cov8" title="1">if prebid.StoredRequest == nil </span><span class="cov8" title="1">{
+                        prebid.StoredRequest = &amp;openrtb_ext.ExtStoredRequest{}
+                }</span>
+                <span class="cov8" title="1">prebid.StoredRequest.ID = fmt.Sprintf("%d", extImpTargetVideo.PlacementId)
+
+                ext := impExtPrebid{
+                        Prebid: prebid,
+                }
+
+                extRaw, err := jsonutil.Marshal(ext)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, &amp;errortypes.BadInput{Message: fmt.Sprintf("error building imp.ext, err: %s", err)}
+                }</span>
+
+                <span class="cov8" title="1">request.Imp[i].Ext = extRaw</span>
+
+        }
+
+        <span class="cov8" title="1">reqJSON, err := jsonutil.Marshal(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        //fmt.Println("TARGET VIDEO reqJson: ", string(reqJSON))
+
+        return &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     a.endpoint,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }, nil</span>
+}
+
+func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(httpRes) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if statusError := adapters.CheckResponseStatusCodeForErrors(httpRes); statusError != nil </span><span class="cov8" title="1">{
+                return nil, []error{statusError}
+        }</span>
+
+        <span class="cov8" title="1">bidResp, errResp := prepareBidResponse(httpRes.Body)
+        if errResp != nil </span><span class="cov0" title="0">{
+                return nil, []error{errResp}
+        }</span>
+
+        <span class="cov8" title="1">br := adapters.NewBidderResponse()
+        var errs []error
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range sb.Bid </span><span class="cov8" title="1">{
+                        bid := sb.Bid[i]
+                        br.Bids = append(br.Bids, &amp;adapters.TypedBid{Bid: &amp;bid, BidType: openrtb_ext.BidTypeVideo})
+                        br.Currency = bidResp.Cur
+                }</span>
+        }
+        <span class="cov8" title="1">return br, errs</span>
+}
+
+func prepareBidResponse(body []byte) (openrtb2.BidResponse, error) <span class="cov8" title="1">{
+        var response openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(body, &amp;response); err != nil </span><span class="cov0" title="0">{
+                return response, err
+        }</span>
+        <span class="cov8" title="1">return response, nil</span>
+}
+
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                endpoint: cfg.Endpoint,
+        }
+        return bidder, nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
