@@ -72,7 +72,7 @@ func (ads *adapter) MakeRequests(
 		r.ID = req.ID + "-" + ext.AdUnit
 		r.Imp = []openrtb2.Imp{imp}
 
-		body, err := json.Marshal(r)
+		body, err := jsonutil.Marshal(r)
 		if err != nil {
 			errs = append(errs, err)
 			continue
