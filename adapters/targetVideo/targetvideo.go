@@ -1,7 +1,6 @@
 package targetVideo
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -22,8 +21,8 @@ type impExtPrebid struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errors []error
 	totalImps := len(request.Imp)
-	errors := make([]error, 0)
 	adapterRequests := make([]*adapters.RequestData, 0, totalImps)
 
 	// Split multi-imp request into multiple ad server requests. SRA is currently not recommended.
@@ -50,11 +49,11 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 
 		var extBidder adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &extBidder); err != nil {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Invalid ext.bidder")}
+			return nil, &errortypes.BadInput{Message: "Invalid ext.bidder"}
 		}
 		var extImpTargetVideo openrtb_ext.ExtImpTargetVideo
 		if err := jsonutil.Unmarshal(extBidder.Bidder, &extImpTargetVideo); err != nil {
-			return nil, &errortypes.BadInput{Message: fmt.Sprintf("Placement ID missing")}
+			return nil, &errortypes.BadInput{Message: "Placement ID missing"}
 		}
 		var prebid *openrtb_ext.ExtImpPrebid
 		if extBidder.Prebid == nil {
@@ -78,7 +77,7 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 
 	}
 
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +111,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	}
 
 	br := adapters.NewBidderResponse()
-	errs := []error{}
+	var errs []error
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
