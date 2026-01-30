@@ -235,12 +235,6 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func newBadInputError(message string) error {
-	return &errortypes.BadInput{
-		Message: message,
-	}
-}
-
 func newBadServerResponseError(message string) error {
 	return &errortypes.BadServerResponse{
 		Message: message,
