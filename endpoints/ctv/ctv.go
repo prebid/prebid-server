@@ -145,21 +145,21 @@ func (deps *CTVEndpointDeps) HandleVast(w http.ResponseWriter, r *http.Request, 
 	// Write VAST response
 	w.WriteHeader(http.StatusOK)
 	w.Write(vastXML)
-	
+
 	labels.PubID = queryParams.PublisherID
 	labels.RequestStatus = metrics.RequestStatusOK
 }
 
 // CTVQueryParams holds parsed query parameters
 type CTVQueryParams struct {
-	PublisherID      string
-	StoredRequestID  string
-	Width            int
-	Height           int
-	MinDuration      int
-	MaxDuration      int
-	Macros           map[string]string
-	DebugEnabled     bool
+	PublisherID     string
+	StoredRequestID string
+	Width           int
+	Height          int
+	MinDuration     int
+	MaxDuration     int
+	Macros          map[string]string
+	DebugEnabled    bool
 }
 
 // parseQueryParams extracts and validates query parameters
@@ -167,10 +167,10 @@ func (deps *CTVEndpointDeps) parseQueryParams(r *http.Request) (*CTVQueryParams,
 	query := r.URL.Query()
 
 	params := &CTVQueryParams{
-		PublisherID:      query.Get("publisher_id"),
-		StoredRequestID:  query.Get("stored_request_id"),
-		Macros:           make(map[string]string),
-		DebugEnabled:     query.Get("debug") == "1",
+		PublisherID:     query.Get("publisher_id"),
+		StoredRequestID: query.Get("stored_request_id"),
+		Macros:          make(map[string]string),
+		DebugEnabled:    query.Get("debug") == "1",
 	}
 
 	// Parse dimensions
@@ -263,7 +263,7 @@ func (deps *CTVEndpointDeps) buildBidRequest(ctx context.Context, params *CTVQue
 
 	// Build request
 	bidRequest := &openrtb2.BidRequest{
-		ID: requestID,
+		ID:  requestID,
 		Imp: []openrtb2.Imp{imp},
 		Device: &openrtb2.Device{
 			UA: "", // Could be populated from headers

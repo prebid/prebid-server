@@ -20,13 +20,13 @@ const (
 
 // PlacementRules defines where to place enrichment data
 type PlacementRules struct {
-	Price       Placement
-	Currency    Placement
-	Advertiser  Placement
-	Categories  Placement
-	Duration    Placement
-	IDs         Placement
-	DealID      Placement
+	Price      Placement
+	Currency   Placement
+	Advertiser Placement
+	Categories Placement
+	Duration   Placement
+	IDs        Placement
+	DealID     Placement
 }
 
 // Placement defines where a field should be placed

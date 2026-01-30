@@ -231,10 +231,10 @@ func FormatEmptyVAST(config Config) ([]byte, error) {
 	}
 
 	vast := model.NewEmptyVAST(version)
-	
+
 	factory := NewFormatterFactory()
 	formatter := factory.CreateFormatter(config)
-	
+
 	return formatter.Format(vast)
 }
 

@@ -103,7 +103,7 @@ func TestMergeCTVVastConfig_ProfileOverridesAll(t *testing.T) {
 	}
 
 	profile := &CTVVast{
-		MaxAdsInPod:     15,
+		MaxAdsInPod:       15,
 		SelectionStrategy: "TOP_N",
 	}
 
@@ -219,7 +219,7 @@ func TestMergeCTVVastConfig_NilInputs(t *testing.T) {
 	result := MergeCTVVastConfig(nil, nil, nil)
 
 	defaults := CTVVastDefaults()
-	
+
 	if result.Receiver != defaults.Receiver {
 		t.Errorf("Expected default receiver, got %s", result.Receiver)
 	}

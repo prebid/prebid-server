@@ -2,17 +2,17 @@ package config
 
 // CTVVast holds CTV VAST endpoint configuration
 type CTVVast struct {
-	Enabled              bool              `mapstructure:"enabled" json:"enabled"`
-	Receiver             string            `mapstructure:"receiver" json:"receiver"` // "GAM_SSU" or "GENERIC"
-	VastVersionDefault   string            `mapstructure:"vast_version_default" json:"vast_version_default"`
-	DefaultCurrency      string            `mapstructure:"default_currency" json:"default_currency"`
-	MaxAdsInPod          int               `mapstructure:"max_ads_in_pod" json:"max_ads_in_pod"`
-	SelectionStrategy    string            `mapstructure:"selection_strategy" json:"selection_strategy"` // "SINGLE" or "TOP_N"
-	CollisionPolicy      string            `mapstructure:"collision_policy" json:"collision_policy"`     // "VAST_WINS" or "OPENRTB_WINS"
-	PlacementRules       PlacementRules    `mapstructure:"placement_rules" json:"placement_rules"`
-	MacroConfig          MacroConfig       `mapstructure:"macro_config" json:"macro_config"`
-	IncludeDebugIDs      bool              `mapstructure:"include_debug_ids" json:"include_debug_ids"`
-	StoredRequestsEnabled bool             `mapstructure:"stored_requests_enabled" json:"stored_requests_enabled"`
+	Enabled               bool           `mapstructure:"enabled" json:"enabled"`
+	Receiver              string         `mapstructure:"receiver" json:"receiver"` // "GAM_SSU" or "GENERIC"
+	VastVersionDefault    string         `mapstructure:"vast_version_default" json:"vast_version_default"`
+	DefaultCurrency       string         `mapstructure:"default_currency" json:"default_currency"`
+	MaxAdsInPod           int            `mapstructure:"max_ads_in_pod" json:"max_ads_in_pod"`
+	SelectionStrategy     string         `mapstructure:"selection_strategy" json:"selection_strategy"` // "SINGLE" or "TOP_N"
+	CollisionPolicy       string         `mapstructure:"collision_policy" json:"collision_policy"`     // "VAST_WINS" or "OPENRTB_WINS"
+	PlacementRules        PlacementRules `mapstructure:"placement_rules" json:"placement_rules"`
+	MacroConfig           MacroConfig    `mapstructure:"macro_config" json:"macro_config"`
+	IncludeDebugIDs       bool           `mapstructure:"include_debug_ids" json:"include_debug_ids"`
+	StoredRequestsEnabled bool           `mapstructure:"stored_requests_enabled" json:"stored_requests_enabled"`
 }
 
 // PlacementRules defines where OpenRTB fields should be placed in VAST
@@ -28,15 +28,15 @@ type PlacementRules struct {
 
 // MacroConfig defines macro expansion configuration
 type MacroConfig struct {
-	Enabled              bool                       `mapstructure:"enabled" json:"enabled"`
-	UnknownMacroPolicy   string                     `mapstructure:"unknown_macro_policy" json:"unknown_macro_policy"` // "KEEP", "REMOVE", or "ERROR"
-	Mappings             map[string]MacroMapping    `mapstructure:"mappings" json:"mappings"`
+	Enabled            bool                    `mapstructure:"enabled" json:"enabled"`
+	UnknownMacroPolicy string                  `mapstructure:"unknown_macro_policy" json:"unknown_macro_policy"` // "KEEP", "REMOVE", or "ERROR"
+	Mappings           map[string]MacroMapping `mapstructure:"mappings" json:"mappings"`
 }
 
 // MacroMapping defines how a macro should be expanded
 type MacroMapping struct {
-	Source       string `mapstructure:"source" json:"source"`             // "query", "header", "context", or "default"
-	Key          string `mapstructure:"key" json:"key"`                   // Key to lookup in source
+	Source       string `mapstructure:"source" json:"source"`               // "query", "header", "context", or "default"
+	Key          string `mapstructure:"key" json:"key"`                     // Key to lookup in source
 	DefaultValue string `mapstructure:"default_value" json:"default_value"` // Default if not found
 }
 
@@ -97,10 +97,10 @@ func MergeCTVVastConfig(host, account, profile *CTVVast) CTVVast {
 		if account.CollisionPolicy != "" {
 			result.CollisionPolicy = account.CollisionPolicy
 		}
-		
+
 		// Merge placement rules (account overrides host)
 		mergePlacementRules(&result.PlacementRules, &account.PlacementRules)
-		
+
 		// Merge macro config
 		mergeMacroConfig(&result.MacroConfig, &account.MacroConfig)
 	}
@@ -125,10 +125,10 @@ func MergeCTVVastConfig(host, account, profile *CTVVast) CTVVast {
 		if profile.CollisionPolicy != "" {
 			result.CollisionPolicy = profile.CollisionPolicy
 		}
-		
+
 		// Merge placement rules (profile overrides account)
 		mergePlacementRules(&result.PlacementRules, &profile.PlacementRules)
-		
+
 		// Merge macro config
 		mergeMacroConfig(&result.MacroConfig, &profile.MacroConfig)
 	}
@@ -166,7 +166,7 @@ func mergeMacroConfig(base *MacroConfig, override *MacroConfig) {
 	if override.UnknownMacroPolicy != "" {
 		base.UnknownMacroPolicy = override.UnknownMacroPolicy
 	}
-	
+
 	// Merge mappings
 	if override.Mappings != nil {
 		if base.Mappings == nil {

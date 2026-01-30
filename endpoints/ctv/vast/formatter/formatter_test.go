@@ -74,8 +74,8 @@ func TestGenericFormatter_DefaultVersion(t *testing.T) {
 			{
 				ID: "test-ad",
 				InLine: &model.InLine{
-					AdSystem: &model.AdSystem{Value: "Test"},
-					AdTitle:  "Test",
+					AdSystem:   &model.AdSystem{Value: "Test"},
+					AdTitle:    "Test",
 					Impression: []model.Impression{{Value: "http://test.com"}},
 				},
 			},

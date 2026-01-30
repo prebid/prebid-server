@@ -12,7 +12,7 @@ import (
 // TestGoldenFiles tests VAST formatting against golden files
 func TestGoldenFiles(t *testing.T) {
 	testDataDir := "../testdata"
-	
+
 	tests := []struct {
 		name       string
 		goldenFile string
@@ -32,34 +32,34 @@ func TestGoldenFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			vast := tt.buildVAST()
-			
+
 			config := Config{
 				Profile:        tt.receiver,
 				DefaultVersion: vast.Version,
 			}
-			
+
 			factory := NewFormatterFactory()
 			formatter := factory.CreateFormatter(config)
-			
+
 			output, err := formatter.Format(vast)
 			if err != nil {
 				t.Fatalf("Format failed: %v", err)
 			}
-			
+
 			// Read golden file
 			goldenPath := filepath.Join(testDataDir, tt.goldenFile)
 			expected, err := os.ReadFile(goldenPath)
 			if err != nil {
 				t.Fatalf("Failed to read golden file: %v", err)
 			}
-			
+
 			// Normalize whitespace for comparison
 			normalizedOutput := model.NormalizeWhitespace(string(output))
 			normalizedExpected := model.NormalizeWhitespace(string(expected))
-			
+
 			if normalizedOutput != normalizedExpected {
 				t.Errorf("Output doesn't match golden file.\nExpected:\n%s\n\nGot:\n%s", normalizedExpected, normalizedOutput)
-				
+
 				// Optionally update golden file in development
 				if os.Getenv("UPDATE_GOLDEN") == "1" {
 					err := os.WriteFile(goldenPath, output, 0644)

@@ -116,7 +116,7 @@ func TestEnricher_CreateNewAd(t *testing.T) {
 	if len(ad.InLine.Category) != 0 {
 		t.Errorf("Expected 0 inline categories (should be in extensions), got %d", len(ad.InLine.Category))
 	}
-	
+
 	// Check extensions for categories
 	if ad.InLine.Extensions == nil || len(ad.InLine.Extensions.Extension) == 0 {
 		t.Error("Expected extensions with categories")
@@ -140,7 +140,7 @@ func TestEnricher_EnrichExistingVAST(t *testing.T) {
 	}
 
 	targetVAST := model.NewEmptyVAST("4.0")
-	
+
 	// Since AdM is empty, it will create new ad, not enrich existing
 	// Let's test with valid VAST in AdM
 	vastXML := `<VAST version="4.0">
@@ -152,7 +152,7 @@ func TestEnricher_EnrichExistingVAST(t *testing.T) {
 			</InLine>
 		</Ad>
 	</VAST>`
-	
+
 	bid.AdM = vastXML
 
 	err := enricher.Enrich(targetVAST, bid, "bidder1", response, 1)
@@ -165,7 +165,7 @@ func TestEnricher_EnrichExistingVAST(t *testing.T) {
 	}
 
 	ad := targetVAST.Ad[0]
-	
+
 	// With VAST_WINS, existing advertiser should not be overwritten
 	if ad.InLine.Advertiser != "Existing Advertiser" {
 		t.Errorf("Expected existing advertiser to be preserved, got %s", ad.InLine.Advertiser)
