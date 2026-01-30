@@ -300,7 +300,7 @@ func (m *Module) HandleAuctionResponseHook(
 					newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "prebid.targeting."+segmentKeyVal[0], segmentKeyVal[1])
 					if err != nil {
 						logger.Errorf("Failed to add targeting to bid: %v", err)
-						return payload, err
+						continue
 					}
 					payload.BidResponse.Ext = newPayload
 				}
@@ -323,11 +323,13 @@ func (m *Module) HandleAuctionResponseHook(
 						for _, segment := range segments {
 							segmentKeyVal := strings.Split(segment, scope3Separator)
 							if len(segmentKeyVal) != 2 {
+								logger.Infof("Skipping malformed segment in bid targeting: %s", segment)
 								continue
 							}
 							newPayload, err := sjson.SetBytes(bid.Ext, "prebid.targeting."+segmentKeyVal[0], segmentKeyVal[1])
 							if err != nil {
-								return payload, err
+								logger.Errorf("Failed to add targeting to bid: %v", err)
+								continue
 							}
 							bid.Ext = newPayload
 						}
