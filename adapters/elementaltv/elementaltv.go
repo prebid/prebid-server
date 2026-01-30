@@ -211,7 +211,7 @@ func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpElementalTV, error) {
 
 	if adsExt.AdUnit == "" {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("$.imp.ext.bidder.adunit required"),
+			Message: "$.imp.ext.bidder.adunit required",
 		}
 	}
 
