@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 
 	"github.com/benbjohnson/clock"
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/analytics/agma"
 	"github.com/prebid/prebid-server/v3/analytics/clients"
 	"github.com/prebid/prebid-server/v3/analytics/filesystem"
 	"github.com/prebid/prebid-server/v3/analytics/pubstack"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
@@ -23,7 +23,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
 			modules["filelogger"] = mod
 		} else {
-			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
+			logger.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
 	}
 
@@ -40,7 +40,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["pubstack"] = pubstackModule
 		} else {
-			glog.Errorf("Could not initialize PubstackModule: %v", err)
+			logger.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
 
@@ -52,7 +52,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["agma"] = agmaModule
 		} else {
-			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
+			logger.Errorf("Could not initialize Agma Anayltics: %v", err)
 		}
 	}
 
