@@ -2,7 +2,6 @@ package elementaltv
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -211,7 +210,9 @@ func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpElementalTV, error) {
 	}
 
 	if adsExt.AdUnit == "" {
-		return nil, errors.New("$.imp.ext.bidder.adunit required")
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("$.imp.ext.bidder.adunit required"),
+		}
 	}
 
 	return &adsExt, nil
