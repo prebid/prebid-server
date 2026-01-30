@@ -1,7 +1,7 @@
 endpoint: "https://east-api.harion-ma.com/pserver"
 maintainer:
   email: "adtech@markappmedia.site"
-gvlVendorID: 883
+gvlVendorID: 1406
 capabilities:
   site:
     mediaTypes:
