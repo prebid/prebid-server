@@ -1,4 +1,4 @@
-package selector
+package vast
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/core"
+	
 )
 
 // PriceSelector implements BidSelector by sorting bids by price
@@ -20,7 +20,7 @@ type bidWithSeat struct {
 
 // Select implements BidSelector.Select
 // Collects bids, filters, sorts by price (desc), dealid (desc), id (asc), and applies strategy
-func (s *PriceSelector) Select(req *openrtb2.BidRequest, resp *openrtb2.BidResponse, cfg core.ReceiverConfig) ([]core.SelectedBid, []string, error) {
+func (s *PriceSelector) Select(req *openrtb2.BidRequest, resp *openrtb2.BidResponse, cfg ReceiverConfig) ([]SelectedBid, []string, error) {
 	if resp == nil {
 		return nil, []string{"response is nil"}, nil
 	}
@@ -69,7 +69,7 @@ func (s *PriceSelector) collectBids(resp *openrtb2.BidResponse) []bidWithSeat {
 }
 
 // filterBids removes invalid bids based on configuration
-func (s *PriceSelector) filterBids(bids []bidWithSeat, cfg core.ReceiverConfig, warnings *[]string) []bidWithSeat {
+func (s *PriceSelector) filterBids(bids []bidWithSeat, cfg ReceiverConfig, warnings *[]string) []bidWithSeat {
 	var valid []bidWithSeat
 
 	for _, b := range bids {
@@ -115,7 +115,7 @@ func (s *PriceSelector) sortBids(bids []bidWithSeat) {
 }
 
 // getCurrency returns the currency from response or config default
-func (s *PriceSelector) getCurrency(resp *openrtb2.BidResponse, cfg core.ReceiverConfig) string {
+func (s *PriceSelector) getCurrency(resp *openrtb2.BidResponse, cfg ReceiverConfig) string {
 	if resp.Cur != "" {
 		return resp.Cur
 	}
@@ -123,7 +123,7 @@ func (s *PriceSelector) getCurrency(resp *openrtb2.BidResponse, cfg core.Receive
 }
 
 // applyStrategy applies SINGLE or TOP_N strategy
-func (s *PriceSelector) applyStrategy(bids []bidWithSeat, cfg core.ReceiverConfig, currency string, warnings *[]string) []core.SelectedBid {
+func (s *PriceSelector) applyStrategy(bids []bidWithSeat, cfg ReceiverConfig, currency string, warnings *[]string) []SelectedBid {
 	if cfg.SelectionStrategy == "SINGLE" {
 		return s.selectSingle(bids, currency)
 	}
@@ -132,13 +132,13 @@ func (s *PriceSelector) applyStrategy(bids []bidWithSeat, cfg core.ReceiverConfi
 }
 
 // selectSingle returns only the first (highest price) bid
-func (s *PriceSelector) selectSingle(bids []bidWithSeat, currency string) []core.SelectedBid {
+func (s *PriceSelector) selectSingle(bids []bidWithSeat, currency string) []SelectedBid {
 	if len(bids) == 0 {
 		return nil
 	}
 
 	b := bids[0]
-	return []core.SelectedBid{
+	return []SelectedBid{
 		{
 			Bid:      *b.bid,
 			Seat:     b.seat,
@@ -149,7 +149,7 @@ func (s *PriceSelector) selectSingle(bids []bidWithSeat, currency string) []core
 }
 
 // selectTopN returns up to MaxAdsInPod bids with sequence assignment
-func (s *PriceSelector) selectTopN(bids []bidWithSeat, cfg core.ReceiverConfig, currency string, warnings *[]string) []core.SelectedBid {
+func (s *PriceSelector) selectTopN(bids []bidWithSeat, cfg ReceiverConfig, currency string, warnings *[]string) []SelectedBid {
 	maxAds := cfg.MaxAdsInPod
 	if maxAds <= 0 {
 		maxAds = 10 // Default
@@ -161,14 +161,14 @@ func (s *PriceSelector) selectTopN(bids []bidWithSeat, cfg core.ReceiverConfig, 
 		*warnings = append(*warnings, fmt.Sprintf("limited to %d ads (from %d bids)", maxAds, len(bids)))
 	}
 
-	result := make([]core.SelectedBid, count)
+	result := make([]SelectedBid, count)
 	for i := 0; i < count; i++ {
 		b := bids[i]
 		
 		// Determine sequence
 		sequence := s.getSequence(b.bid, i)
 		
-		result[i] = core.SelectedBid{
+		result[i] = SelectedBid{
 			Bid:      *b.bid,
 			Seat:     b.seat,
 			Sequence: sequence,
@@ -191,8 +191,8 @@ func (s *PriceSelector) getSequence(bid *openrtb2.Bid, index int) int {
 }
 
 // extractMetadata builds CanonicalMeta from a bid
-func (s *PriceSelector) extractMetadata(bid *openrtb2.Bid, seat string, currency string, slotInPod int) core.CanonicalMeta {
-	meta := core.CanonicalMeta{
+func (s *PriceSelector) extractMetadata(bid *openrtb2.Bid, seat string, currency string, slotInPod int) CanonicalMeta {
+	meta := CanonicalMeta{
 		BidID:     bid.ID,
 		ImpID:     bid.ImpID,
 		DealID:    bid.DealID,
@@ -230,4 +230,11 @@ func parseInt(s string) int {
 		return 0
 	}
 	return val
+}
+// NewSelector creates a BidSelector based on the selection strategy
+// Currently only supports price-based selection
+func NewSelector(strategy string) BidSelector {
+// For now, we always return PriceSelector
+// In the future, we might support different strategies
+return &PriceSelector{}
 }

@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/pipeline"
+	
 )
 
 // VastHandler handles HTTP requests for CTV VAST responses
@@ -46,7 +46,7 @@ func (h *VastHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Build VAST from bid response
 	cfg := getReceiverConfig(r)
-	vastResult, err := pipeline.BuildVastFromBidResponse(ctx, req, resp, cfg)
+	vastResult, err := BuildVastFromBidResponse(ctx, req, resp, cfg)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("VAST generation failed: %v", err), http.StatusInternalServerError)
 		return
@@ -155,7 +155,7 @@ func (h *VastHandlerForTesting) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 	// Build VAST from bid response
 	cfg := h.MockConfig
-	vastResult, err := pipeline.BuildVastFromBidResponse(ctx, req, resp, cfg)
+	vastResult, err := BuildVastFromBidResponse(ctx, req, resp, cfg)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("VAST generation failed: %v", err), http.StatusInternalServerError)
 		return
@@ -185,7 +185,7 @@ func (h *VastHandlerForTesting) DebugHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	cfg := h.MockConfig
-	vastResult, err := pipeline.BuildVastFromBidResponse(ctx, req, resp, cfg)
+	vastResult, err := BuildVastFromBidResponse(ctx, req, resp, cfg)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("VAST generation failed: %v", err), http.StatusInternalServerError)
 		return

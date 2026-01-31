@@ -1,24 +1,24 @@
-package pipeline
+package vast
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/core"
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/format"
+	
+	
 	"github.com/prebid/prebid-server/v3/modules/ctv/vast/model"
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/selector"
+	
 )
 
 // BuildVastFromBidResponse is the main entrypoint function that orchestrates the complete pipeline
 // It takes an OpenRTB bid request/response and produces a VAST XML response
-func BuildVastFromBidResponse(ctx context.Context, req *openrtb2.BidRequest, resp *openrtb2.BidResponse, cfg core.ReceiverConfig) (core.VastResult, error) {
+func BuildVastFromBidResponse(ctx context.Context, req *openrtb2.BidRequest, resp *openrtb2.BidResponse, cfg ReceiverConfig) (VastResult, error) {
 	// Step 1: Create selector and select bids
-	bidSelector := selector.NewSelector(cfg.SelectionStrategy)
+	bidSelector := NewSelector(cfg.SelectionStrategy)
 	selected, selectorWarnings, err := bidSelector.Select(req, resp, cfg)
 	if err != nil {
-		return core.VastResult{
+		return VastResult{
 			NoAd:     true,
 			Warnings: selectorWarnings,
 			Errors:   []error{fmt.Errorf("selector failed: %w", err)},
@@ -31,7 +31,7 @@ func BuildVastFromBidResponse(ctx context.Context, req *openrtb2.BidRequest, res
 
 	// Step 3: If no bids selected, return no-ad VAST
 	if len(selected) == 0 {
-		return core.VastResult{
+		return VastResult{
 			VastXML:  model.BuildNoAdVast(cfg.VastVersionDefault),
 			NoAd:     true,
 			Warnings: allWarnings,
@@ -47,7 +47,7 @@ func BuildVastFromBidResponse(ctx context.Context, req *openrtb2.BidRequest, res
 		// Parse existing VAST from bid.adm or create skeleton
 		vast, parseWarnings, err := model.ParseVastOrSkeleton(selected[i].Bid.AdM, cfg)
 		if err != nil {
-			return core.VastResult{
+			return VastResult{
 				NoAd:     true,
 				Warnings: append(allWarnings, fmt.Sprintf("failed to parse VAST for bid %s: %v", selected[i].Bid.ID, err)),
 				Errors:   []error{fmt.Errorf("parse failed for bid %s: %w", selected[i].Bid.ID, err)},
@@ -92,12 +92,12 @@ func BuildVastFromBidResponse(ctx context.Context, req *openrtb2.BidRequest, res
 	}
 
 	// Step 5: Create formatter
-	formatter := format.NewFormatter()
+	formatter := NewFormatter()
 
 	// Step 6: Format all ads into final VAST XML
 	xml, formatWarnings, err := formatter.Format(vasts, cfg)
 	if err != nil {
-		return core.VastResult{
+		return VastResult{
 			NoAd:     true,
 			Warnings: append(allWarnings, formatWarnings...),
 			Errors:   []error{fmt.Errorf("formatter failed: %w", err)},
@@ -107,7 +107,7 @@ func BuildVastFromBidResponse(ctx context.Context, req *openrtb2.BidRequest, res
 	allWarnings = append(allWarnings, formatWarnings...)
 
 	// Step 7: Return successful result
-	return core.VastResult{
+	return VastResult{
 		VastXML:  xml,
 		NoAd:     false,
 		Warnings: allWarnings,
@@ -119,7 +119,7 @@ func BuildVastFromBidResponse(ctx context.Context, req *openrtb2.BidRequest, res
 // The real enricher will be in the enrich package
 type stubEnricher struct{}
 
-func (e *stubEnricher) Enrich(v *model.VastAd, meta core.CanonicalMeta, cfg core.ReceiverConfig) ([]string, error) {
+func (e *stubEnricher) Enrich(v *model.VastAd, meta CanonicalMeta, cfg ReceiverConfig) ([]string, error) {
 	// Minimal enrichment - just ensure basic structure exists
 	// The enrich package will have the full implementation
 	return nil, nil

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/pipeline"
+	
 )
 
 func TestVastHandler_GET_Success(t *testing.T) {
@@ -375,7 +375,7 @@ func TestBuildVastFromBidResponse_Integration(t *testing.T) {
 		},
 	}
 
-	result, err := pipeline.BuildVastFromBidResponse(context.Background(), req, resp, cfg)
+	result, err := BuildVastFromBidResponse(context.Background(), req, resp, cfg)
 
 	if err != nil {
 		t.Fatalf("BuildVastFromBidResponse failed: %v", err)

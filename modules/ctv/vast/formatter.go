@@ -1,19 +1,18 @@
-package format
+package vast
 
 import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/core"
 	"github.com/prebid/prebid-server/v3/modules/ctv/vast/model"
 )
 
 // Formatter implements the Formatter interface for GAM_SSU receiver
-type Formatter struct{}
+type GamSsuFormatter struct{}
 
 // NewFormatter creates a new VAST formatter
-func NewFormatter() core.Formatter {
-	return &Formatter{}
+func NewFormatter() *GamSsuFormatter {
+	return &GamSsuFormatter{}
 }
 
 // Format implements Formatter.Format for GAM_SSU receiver
@@ -23,7 +22,7 @@ func NewFormatter() core.Formatter {
 // - Sets Ad.id from the ad's existing ID (should be set during enrichment to meta.AdID or meta.BidID)
 // - Sets sequence attribute if multiple ads are present
 // - Preserves the enriched InLine subtree and any tracking InnerXML
-func (f *Formatter) Format(ads []*model.VastAd, cfg core.ReceiverConfig) ([]byte, []string, error) {
+func (f *GamSsuFormatter) Format(ads []*model.VastAd, cfg ReceiverConfig) ([]byte, []string, error) {
 	if len(ads) == 0 {
 		// Return empty VAST with no ads
 		return model.BuildNoAdVast(cfg.VastVersionDefault), nil, nil

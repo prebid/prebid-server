@@ -1,4 +1,4 @@
-package format
+package vast
 
 import (
 	"os"
@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/core"
+	
 	"github.com/prebid/prebid-server/v3/modules/ctv/vast/model"
 )
 
 func TestFormatter_Format_EmptyAds(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "3.0",
 	}
 
@@ -39,7 +39,7 @@ func TestFormatter_Format_EmptyAds(t *testing.T) {
 
 func TestFormatter_Format_SingleAd(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "3.0",
 		Receiver:           "GAM_SSU",
 	}
@@ -103,7 +103,7 @@ func TestFormatter_Format_SingleAd(t *testing.T) {
 
 func TestFormatter_Format_MultipleAds_Pod(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "4.0",
 		Receiver:           "GAM_SSU",
 		MaxAdsInPod:        3,
@@ -222,7 +222,7 @@ func TestFormatter_Format_MultipleAds_Pod(t *testing.T) {
 
 func TestFormatter_Format_WithPresetSequence(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "3.0",
 	}
 
@@ -267,7 +267,7 @@ func TestFormatter_Format_WithPresetSequence(t *testing.T) {
 
 func TestFormatter_Format_NilAd(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "3.0",
 	}
 
@@ -312,7 +312,7 @@ func TestFormatter_Format_NilAd(t *testing.T) {
 
 func TestFormatter_Format_MissingInLine(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "3.0",
 	}
 
@@ -344,7 +344,7 @@ func TestFormatter_Format_MissingInLine(t *testing.T) {
 
 func TestFormatter_Format_DefaultVersion(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "", // Empty version
 	}
 
@@ -375,7 +375,7 @@ func TestFormatter_Format_DefaultVersion(t *testing.T) {
 
 func TestFormatter_Format_PreservesExtensions(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "3.0",
 	}
 
@@ -421,7 +421,7 @@ func TestFormatter_Format_PreservesExtensions(t *testing.T) {
 // Golden tests using testdata files
 func TestFormatter_Format_Golden_SingleAd(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "3.0",
 		Receiver:           "GAM_SSU",
 	}
@@ -482,7 +482,7 @@ func TestFormatter_Format_Golden_SingleAd(t *testing.T) {
 
 func TestFormatter_Format_Golden_AdPod(t *testing.T) {
 	formatter := NewFormatter()
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		VastVersionDefault: "4.0",
 		Receiver:           "GAM_SSU",
 		MaxAdsInPod:        3,

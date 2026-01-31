@@ -1,18 +1,18 @@
-package selector
+package vast
 
 import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/modules/ctv/vast/core"
+	
 )
 
 func TestPriceSelector_Select_NilResponse(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "SINGLE",
 	}
 
+	selector := &PriceSelector{}
 	selected, warnings, err := selector.Select(nil, nil, cfg)
 
 	if err != nil {
@@ -27,8 +27,7 @@ func TestPriceSelector_Select_NilResponse(t *testing.T) {
 }
 
 func TestPriceSelector_Select_EmptyResponse(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "SINGLE",
 	}
 
@@ -37,6 +36,7 @@ func TestPriceSelector_Select_EmptyResponse(t *testing.T) {
 		SeatBid: []openrtb2.SeatBid{},
 	}
 
+	selector := &PriceSelector{}
 	selected, warnings, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -51,8 +51,7 @@ func TestPriceSelector_Select_EmptyResponse(t *testing.T) {
 }
 
 func TestPriceSelector_Select_SingleStrategy(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "SINGLE",
 		DefaultCurrency:   "USD",
 	}
@@ -72,6 +71,7 @@ func TestPriceSelector_Select_SingleStrategy(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, warnings, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -112,8 +112,7 @@ func TestPriceSelector_Select_SingleStrategy(t *testing.T) {
 }
 
 func TestPriceSelector_Select_TopNStrategy(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "TOP_N",
 		MaxAdsInPod:       3,
 		DefaultCurrency:   "USD",
@@ -136,6 +135,7 @@ func TestPriceSelector_Select_TopNStrategy(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, warnings, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -175,8 +175,7 @@ func TestPriceSelector_Select_TopNStrategy(t *testing.T) {
 }
 
 func TestPriceSelector_FilterBids_Price(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "SINGLE",
 		DefaultCurrency:   "USD",
 	}
@@ -196,6 +195,7 @@ func TestPriceSelector_FilterBids_Price(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, warnings, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -215,8 +215,7 @@ func TestPriceSelector_FilterBids_Price(t *testing.T) {
 }
 
 func TestPriceSelector_FilterBids_AdM(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy:  "SINGLE",
 		DefaultCurrency:    "USD",
 		AllowSkeletonVast: false,
@@ -236,6 +235,7 @@ func TestPriceSelector_FilterBids_AdM(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, _, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -250,8 +250,7 @@ func TestPriceSelector_FilterBids_AdM(t *testing.T) {
 }
 
 func TestPriceSelector_FilterBids_AllowSkeletonVast(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy:  "TOP_N",
 		MaxAdsInPod:        5,
 		DefaultCurrency:    "USD",
@@ -272,6 +271,7 @@ func TestPriceSelector_FilterBids_AllowSkeletonVast(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, _, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -283,8 +283,7 @@ func TestPriceSelector_FilterBids_AllowSkeletonVast(t *testing.T) {
 }
 
 func TestPriceSelector_SortBids_DealPriority(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "TOP_N",
 		MaxAdsInPod:       3,
 		DefaultCurrency:   "USD",
@@ -305,6 +304,7 @@ func TestPriceSelector_SortBids_DealPriority(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, warnings, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -324,8 +324,7 @@ func TestPriceSelector_SortBids_DealPriority(t *testing.T) {
 }
 
 func TestPriceSelector_SortBids_IdStability(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "TOP_N",
 		MaxAdsInPod:       3,
 		DefaultCurrency:   "USD",
@@ -346,6 +345,7 @@ func TestPriceSelector_SortBids_IdStability(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, _, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
@@ -365,7 +365,6 @@ func TestPriceSelector_SortBids_IdStability(t *testing.T) {
 }
 
 func TestPriceSelector_ExtractMetadata(t *testing.T) {
-	selector := &PriceSelector{}
 
 	dur30 := int64(30)
 
@@ -380,6 +379,7 @@ func TestPriceSelector_ExtractMetadata(t *testing.T) {
 		Dur:     dur30,
 	}
 
+	selector := &PriceSelector{}
 	meta := selector.extractMetadata(bid, "bidder1", "EUR", 2)
 
 	if meta.BidID != "bid1" {
@@ -415,16 +415,16 @@ func TestPriceSelector_ExtractMetadata(t *testing.T) {
 }
 
 func TestPriceSelector_GetCurrency(t *testing.T) {
-	selector := &PriceSelector{}
 
 	// Test with response currency
 	resp := &openrtb2.BidResponse{
 		Cur: "EUR",
 	}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		DefaultCurrency: "USD",
 	}
 
+	selector := &PriceSelector{}
 	currency := selector.getCurrency(resp, cfg)
 	if currency != "EUR" {
 		t.Errorf("Expected EUR from response, got %s", currency)
@@ -439,8 +439,7 @@ func TestPriceSelector_GetCurrency(t *testing.T) {
 }
 
 func TestPriceSelector_MultipleSeatBids(t *testing.T) {
-	selector := &PriceSelector{}
-	cfg := core.ReceiverConfig{
+	cfg := ReceiverConfig{
 		SelectionStrategy: "TOP_N",
 		MaxAdsInPod:       4,
 		DefaultCurrency:   "USD",
@@ -467,6 +466,7 @@ func TestPriceSelector_MultipleSeatBids(t *testing.T) {
 		},
 	}
 
+	selector := &PriceSelector{}
 	selected, _, err := selector.Select(nil, resp, cfg)
 
 	if err != nil {
