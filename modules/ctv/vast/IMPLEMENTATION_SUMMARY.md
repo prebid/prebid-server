@@ -309,13 +309,37 @@ Example output:
 
 This is a cosmetic issue and doesn't break VAST parsing, but should be addressed in future iterations.
 
+## Infrastructure Changes
+
+### Metrics (`metrics/metrics.go`)
+
+Added CTV-specific metric types to Prebid Server's metrics system:
+
+**New Constants:**
+- `DemandCTV` - Demand source type for CTV traffic
+- `ReqTypeCTV` - Request type for CTV VAST requests
+- `EndpointCTV` - Endpoint type for CTV VAST endpoint
+
+**Purpose:**
+- Enables separate tracking of CTV traffic in metrics
+- Allows monitoring CTV endpoint performance independently
+- Standard practice for new endpoints in Prebid Server
+- Required for proper metrics aggregation and reporting
+
+**Usage:**
+When CTV VAST endpoint is registered with Prebid Server router, these metric types will be used to:
+- Track request counts by endpoint type
+- Monitor response times for CTV requests
+- Separate CTV demand from web/app/DOOH traffic
+- Enable dashboards and alerts specific to CTV traffic
+
 ## Next Steps
 
 1. **Enricher Implementation:** Complete VastEnricher with full metadata placement logic
 2. **Implement Query Parsing:** Complete `buildOpenRTBRequestFromQuery()` function
 3. **Auction Integration:** Integrate `callAuctionPipeline()` with main Prebid Server
 4. **Configuration:** Add VAST module to Prebid Server config structure
-5. **Router Integration:** Register handler with Prebid Server HTTP router
+5. **Router Integration:** Register handler with Prebid Server HTTP router (using metrics.EndpointCTV)
 6. **End-to-End Testing:** Test with real auction responses
 7. **Additional Receivers:** Support for FREEWHEEL and other receivers beyond GAM_SSU
 
