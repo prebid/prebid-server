@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.0">
+  <Ad id="bid-001-xyz" sequence="1">
+    <InLine>
+      <AdSystem>BidderA</AdSystem>
+      <AdTitle>Pre-Roll Ad</AdTitle>
+      <Advertiser>advertiser-a.com</Advertiser>
+      <Pricing model="CPM" currency="USD">15.00</Pricing>
+      <Creatives>
+        <Creative id="creative-a1">
+          <Linear>
+            <Duration>00:00:15</Duration>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+  <Ad id="bid-002-xyz" sequence="2">
+    <InLine>
+      <AdSystem>BidderB</AdSystem>
+      <AdTitle>Mid-Roll Ad</AdTitle>
+      <Advertiser>advertiser-b.com</Advertiser>
+      <Pricing model="CPM" currency="USD">12.00</Pricing>
+      <Creatives>
+        <Creative id="creative-b1">
+          <Linear>
+            <Duration>00:00:30</Duration>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+  <Ad id="bid-003-xyz" sequence="3">
+    <InLine>
+      <AdSystem>BidderC</AdSystem>
+      <AdTitle>Post-Roll Ad</AdTitle>
+      <Advertiser>advertiser-c.com</Advertiser>
+      <Pricing model="CPM" currency="EUR">10.50</Pricing>
+      <Creatives>
+        <Creative id="creative-c1">
+          <Linear>
+            <Duration>00:00:30</Duration>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+</VAST>

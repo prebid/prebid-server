@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="3.0">
+  <Ad id="bid-abc123">
+    <InLine>
+      <AdSystem>PrebidBidder</AdSystem>
+      <AdTitle>Premium Video Ad</AdTitle>
+      <Advertiser>example-advertiser.com</Advertiser>
+      <Pricing model="CPM" currency="USD">12.50</Pricing>
+      <Creatives>
+        <Creative id="creative-456">
+          <Linear>
+            <Duration>00:00:30</Duration>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+</VAST>
