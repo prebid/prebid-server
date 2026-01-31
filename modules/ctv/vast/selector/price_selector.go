@@ -69,7 +69,7 @@ func (s *PriceSelector) collectBids(resp *openrtb2.BidResponse) []bidWithSeat {
 }
 
 // filterBids removes invalid bids based on configuration
-func (s *PriceSelector) filterBids(bids []bidWithSeat, cfg vast.ReceiverConfig, warnings *[]string) []bidWithSeat {
+func (s *PriceSelector) filterBids(bids []bidWithSeat, cfg core.ReceiverConfig, warnings *[]string) []bidWithSeat {
 	var valid []bidWithSeat
 
 	for _, b := range bids {
@@ -115,7 +115,7 @@ func (s *PriceSelector) sortBids(bids []bidWithSeat) {
 }
 
 // getCurrency returns the currency from response or config default
-func (s *PriceSelector) getCurrency(resp *openrtb2.BidResponse, cfg vast.ReceiverConfig) string {
+func (s *PriceSelector) getCurrency(resp *openrtb2.BidResponse, cfg core.ReceiverConfig) string {
 	if resp.Cur != "" {
 		return resp.Cur
 	}
@@ -123,7 +123,7 @@ func (s *PriceSelector) getCurrency(resp *openrtb2.BidResponse, cfg vast.Receive
 }
 
 // applyStrategy applies SINGLE or TOP_N strategy
-func (s *PriceSelector) applyStrategy(bids []bidWithSeat, cfg vast.ReceiverConfig, currency string, warnings *[]string) []vast.SelectedBid {
+func (s *PriceSelector) applyStrategy(bids []bidWithSeat, cfg core.ReceiverConfig, currency string, warnings *[]string) []core.SelectedBid {
 	if cfg.SelectionStrategy == "SINGLE" {
 		return s.selectSingle(bids, currency)
 	}
@@ -132,13 +132,13 @@ func (s *PriceSelector) applyStrategy(bids []bidWithSeat, cfg vast.ReceiverConfi
 }
 
 // selectSingle returns only the first (highest price) bid
-func (s *PriceSelector) selectSingle(bids []bidWithSeat, currency string) []vast.SelectedBid {
+func (s *PriceSelector) selectSingle(bids []bidWithSeat, currency string) []core.SelectedBid {
 	if len(bids) == 0 {
 		return nil
 	}
 
 	b := bids[0]
-	return []vast.SelectedBid{
+	return []core.SelectedBid{
 		{
 			Bid:      *b.bid,
 			Seat:     b.seat,
@@ -149,7 +149,7 @@ func (s *PriceSelector) selectSingle(bids []bidWithSeat, currency string) []vast
 }
 
 // selectTopN returns up to MaxAdsInPod bids with sequence assignment
-func (s *PriceSelector) selectTopN(bids []bidWithSeat, cfg vast.ReceiverConfig, currency string, warnings *[]string) []vast.SelectedBid {
+func (s *PriceSelector) selectTopN(bids []bidWithSeat, cfg core.ReceiverConfig, currency string, warnings *[]string) []core.SelectedBid {
 	maxAds := cfg.MaxAdsInPod
 	if maxAds <= 0 {
 		maxAds = 10 // Default
@@ -161,14 +161,14 @@ func (s *PriceSelector) selectTopN(bids []bidWithSeat, cfg vast.ReceiverConfig, 
 		*warnings = append(*warnings, fmt.Sprintf("limited to %d ads (from %d bids)", maxAds, len(bids)))
 	}
 
-	result := make([]vast.SelectedBid, count)
+	result := make([]core.SelectedBid, count)
 	for i := 0; i < count; i++ {
 		b := bids[i]
 		
 		// Determine sequence
 		sequence := s.getSequence(b.bid, i)
 		
-		result[i] = vast.SelectedBid{
+		result[i] = core.SelectedBid{
 			Bid:      *b.bid,
 			Seat:     b.seat,
 			Sequence: sequence,
@@ -191,8 +191,8 @@ func (s *PriceSelector) getSequence(bid *openrtb2.Bid, index int) int {
 }
 
 // extractMetadata builds CanonicalMeta from a bid
-func (s *PriceSelector) extractMetadata(bid *openrtb2.Bid, seat string, currency string, slotInPod int) vast.CanonicalMeta {
-	meta := vast.CanonicalMeta{
+func (s *PriceSelector) extractMetadata(bid *openrtb2.Bid, seat string, currency string, slotInPod int) core.CanonicalMeta {
+	meta := core.CanonicalMeta{
 		BidID:     bid.ID,
 		ImpID:     bid.ImpID,
 		DealID:    bid.DealID,
