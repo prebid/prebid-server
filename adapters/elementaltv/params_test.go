@@ -23,7 +23,7 @@ func TestInvalidParams(t *testing.T) {
 
 	for _, p := range invalidParams {
 		err := validator.Validate(openrtb_ext.BidderElementalTV, json.RawMessage(p))
-		require.Error(t, err, "Schema rejected valid params: %s", p)
+		require.Error(t, err, "Schema allowed invalid params: %s", p)
 	}
 }
 
