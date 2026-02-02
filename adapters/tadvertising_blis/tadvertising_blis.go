@@ -42,10 +42,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	//if Site struct exists
 	if request.Site != nil {
 		siteCopy := *request.Site
-		sitePublisherCopy := *request.Site.Publisher
 		request.Site = &siteCopy
-		request.Site.Publisher = &sitePublisherCopy
+
 		if request.Site.Publisher != nil {
+			sitePublisherCopy := *request.Site.Publisher
+			request.Site.Publisher = &sitePublisherCopy
+			request.Site.Publisher.ID = impExtBidder.PublisherId
+		} else {
+			request.Site.Publisher = &openrtb2.Publisher{}
 			request.Site.Publisher.ID = impExtBidder.PublisherId
 		}
 	} else {

@@ -22,9 +22,6 @@
       }
     ],
     "site": {
-      "publisher": {
-        "id": "123"
-      }
     },
     "device": {
       "ua": "test-user-agent",
