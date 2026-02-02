@@ -12,9 +12,8 @@ func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	require.NoErrorf(t, err, "Failed to fetch the json schema: %v", err)
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderElementalTV, json.RawMessage(p)); err != nil {
-			t.Errorf("Schema rejected valid params: %s", p)
-		}
+		err := validator.Validate(openrtb_ext.BidderElementalTV, json.RawMessage(p))
+		require.NoError(t, err, "Schema rejected valid params: %s", p)
 	}
 }
 
@@ -23,9 +22,8 @@ func TestInvalidParams(t *testing.T) {
 	require.NoErrorf(t, err, "Failed to fetch the json schema: %v", err)
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderElementalTV, json.RawMessage(p)); err == nil {
-			t.Errorf("Schema allowed invalid params: %s", p)
-		}
+		err := validator.Validate(openrtb_ext.BidderElementalTV, json.RawMessage(p))
+		require.Error(t, err, "Schema rejected valid params: %s", p)
 	}
 }
 
