@@ -45,11 +45,8 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://example.endpoint/123",
+                "uri": "https://example.endpoint/",
                 "headers": {
-                    "X-Publisher-Id": [
-                        "123"
-                    ]
                 },
                 "impIDs": [
                     "testimp"
@@ -82,6 +79,7 @@
                         ],
                         "page": "http://lh.example.com/prebid_server_kitchen_sink.html?pbjs_debug=true",
                         "publisher": {
+                            "id": "123",
                             "domain": "example.com"
                         }
                     },

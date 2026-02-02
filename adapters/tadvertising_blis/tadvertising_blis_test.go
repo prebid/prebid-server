@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderTAdvertisingBlis, config.Adapter{
-		Endpoint: "https://example.endpoint/{{.PublisherID}}"},
+		Endpoint: "https://example.endpoint/"},
 		config.Server{ExternalUrl: "http://example.server", GvlID: 1, DataCenter: "2"})
 
 	require.NoError(t, buildErr)

@@ -1,4 +1,4 @@
-endpoint: "test.examle.com/{{.PublisherID}}"
+endpoint: "test.examle.com/"
 endpointCompression: gzip
 geoscope:
   - global
