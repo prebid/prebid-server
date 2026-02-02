@@ -57,7 +57,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	for i := range request.Imp {
-		setImpExtData(&request.Imp[i])
+		err := setImpExtData(&request.Imp[i])
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
 	}
 
 	body, err := jsonutil.Marshal(request)
@@ -113,18 +117,21 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidderResponse, bidErrors
 }
 
-func setImpExtData(imp *openrtb2.Imp) {
+func setImpExtData(imp *openrtb2.Imp) error {
 	var ext impExt
 	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
-		return
+		//if unmarshalling fails, proceed with the request
+		return nil
 	}
 	if ext.Data != nil && ext.Data.AdServer != nil && ext.Data.AdServer.AdSlot != "" {
 		ext.Gpid = ext.Data.AdServer.AdSlot
 		extJSON, err := jsonutil.Marshal(ext)
-		if err == nil {
-			imp.Ext = extJSON
+		if err != nil {
+			return err
 		}
+		imp.Ext = extJSON
 	}
+	return nil
 }
 
 func getHeaders(request *openrtb2.BidRequest) http.Header {
