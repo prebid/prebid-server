@@ -12,9 +12,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderElementalTV, config.Adapter{
 		Endpoint: "https://pbs.elementaltv.io/processHeaderBid/{{.AdUnit}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	require.NoError(t, buildErr, "Builder returned unexpected error")
 
 	adapterstest.RunJSONBidderTest(t, "elementaltvtest", bidder)
 }
