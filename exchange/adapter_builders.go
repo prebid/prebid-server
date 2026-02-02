@@ -17,15 +17,12 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/admatic"
 	"github.com/prebid/prebid-server/v3/adapters/admixer"
 	"github.com/prebid/prebid-server/v3/adapters/adnuntius"
-	"github.com/prebid/prebid-server/v3/adapters/adocean"
 	"github.com/prebid/prebid-server/v3/adapters/adoppler"
 	"github.com/prebid/prebid-server/v3/adapters/adot"
 	"github.com/prebid/prebid-server/v3/adapters/adpone"
 	"github.com/prebid/prebid-server/v3/adapters/adprime"
 	"github.com/prebid/prebid-server/v3/adapters/adquery"
 	"github.com/prebid/prebid-server/v3/adapters/adrino"
-	"github.com/prebid/prebid-server/v3/adapters/ads_interactive"
-	"github.com/prebid/prebid-server/v3/adapters/adsinteractive"
 	"github.com/prebid/prebid-server/v3/adapters/adtarget"
 	"github.com/prebid/prebid-server/v3/adapters/adtelligent"
 	"github.com/prebid/prebid-server/v3/adapters/adtonos"
@@ -99,7 +96,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/displayio"
 	"github.com/prebid/prebid-server/v3/adapters/dmx"
 	"github.com/prebid/prebid-server/v3/adapters/driftpixel"
-	"github.com/prebid/prebid-server/v3/adapters/dxkulture"
 	evolution "github.com/prebid/prebid-server/v3/adapters/e_volution"
 	"github.com/prebid/prebid-server/v3/adapters/edge226"
 	"github.com/prebid/prebid-server/v3/adapters/emtv"
@@ -288,15 +284,12 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdmatic:           admatic.Builder,
 		openrtb_ext.BidderAdmixer:           admixer.Builder,
 		openrtb_ext.BidderAdnuntius:         adnuntius.Builder,
-		openrtb_ext.BidderAdOcean:           adocean.Builder,
 		openrtb_ext.BidderAdoppler:          adoppler.Builder,
 		openrtb_ext.BidderAdot:              adot.Builder,
 		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdprime:           adprime.Builder,
 		openrtb_ext.BidderAdquery:           adquery.Builder,
 		openrtb_ext.BidderAdrino:            adrino.Builder,
-		openrtb_ext.BidderAdsInteractive:    ads_interactive.Builder,
-		openrtb_ext.BidderAdsinteractive:    adsinteractive.Builder,
 		openrtb_ext.BidderAdtarget:          adtarget.Builder,
 		openrtb_ext.BidderAdtrgtme:          adtrgtme.Builder,
 		openrtb_ext.BidderAdtelligent:       adtelligent.Builder,
@@ -370,7 +363,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDisplayio:         displayio.Builder,
 		openrtb_ext.BidderEdge226:           edge226.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
-		openrtb_ext.BidderDXKulture:         dxkulture.Builder,
 		openrtb_ext.BidderDriftPixel:        driftpixel.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,

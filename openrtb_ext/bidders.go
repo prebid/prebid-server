@@ -33,15 +33,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
-	BidderAdOcean,
 	BidderAdoppler,
 	BidderAdot,
 	BidderAdpone,
 	BidderAdprime,
 	BidderAdquery,
 	BidderAdrino,
-	BidderAdsInteractive,
-	BidderAdsinteractive,
 	BidderAdtarget,
 	BidderAdtrgtme,
 	BidderAdtelligent,
@@ -115,7 +112,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDisplayio,
 	BidderEdge226,
 	BidderDmx,
-	BidderDXKulture,
 	BidderDriftPixel,
 	BidderEmtv,
 	BidderEmxDigital,
@@ -411,15 +407,12 @@ const (
 	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
-	BidderAdOcean           BidderName = "adocean"
 	BidderAdoppler          BidderName = "adoppler"
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
 	BidderAdquery           BidderName = "adquery"
 	BidderAdrino            BidderName = "adrino"
-	BidderAdsInteractive    BidderName = "ads_interactive"
-	BidderAdsinteractive    BidderName = "adsinteractive"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdTonos           BidderName = "adtonos"
@@ -493,7 +486,6 @@ const (
 	BidderDisplayio         BidderName = "displayio"
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
-	BidderDXKulture         BidderName = "dxkulture"
 	BidderDriftPixel        BidderName = "driftpixel"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
