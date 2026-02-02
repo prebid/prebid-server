@@ -111,7 +111,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDisplayio,
 	BidderEdge226,
 	BidderDmx,
-	BidderDXKulture,
 	BidderDriftPixel,
 	BidderElementalTV,
 	BidderEmtv,
@@ -485,7 +484,6 @@ const (
 	BidderDisplayio         BidderName = "displayio"
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
-	BidderDXKulture         BidderName = "dxkulture"
 	BidderDriftPixel        BidderName = "driftpixel"
 	BidderElementalTV       BidderName = "elementaltv"
 	BidderEmtv              BidderName = "emtv"
