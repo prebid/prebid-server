@@ -94,7 +94,8 @@
                   "adomain": ["advertiser.com"],
                   "crid": "creative-123",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype": 1
                 }
               ],
               "seat": "proxistore"
@@ -118,7 +119,8 @@
             "adomain": ["advertiser.com"],
             "crid": "creative-123",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype": 1
           },
           "type": "banner"
         }

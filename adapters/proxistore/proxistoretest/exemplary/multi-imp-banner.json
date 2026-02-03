@@ -93,7 +93,8 @@
                   "adm": "<div>Ad 1</div>",
                   "crid": "creative-1",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype": 1
                 },
                 {
                   "id": "bid-2",
@@ -102,7 +103,8 @@
                   "adm": "<div>Ad 2</div>",
                   "crid": "creative-2",
                   "w": 728,
-                  "h": 90
+                  "h": 90,
+                  "mtype": 1
                 }
               ],
               "seat": "proxistore"
@@ -125,7 +127,8 @@
             "adm": "<div>Ad 1</div>",
             "crid": "creative-1",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype": 1
           },
           "type": "banner"
         },
@@ -137,7 +140,8 @@
             "adm": "<div>Ad 2</div>",
             "crid": "creative-2",
             "w": 728,
-            "h": 90
+            "h": 90,
+            "mtype": 1
           },
           "type": "banner"
         }
