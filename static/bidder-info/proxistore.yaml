@@ -1,0 +1,24 @@
+# We have the following regional endpoint domains: us-east and us-west
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: "https://api.proxistore.com/v3/rtb/openrtb"
+geoscope:
+  - EUR
+maintainer:
+  email: support@proxistore.com
+gvlVendorID: 418
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: https://abs.proxistore.com/v3/rtb/sync/prebid-server/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}
+    userMacro: $UID
+  iframe:
+    url: https://abs.proxistore.com/v3/rtb/sync/prebid-server/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}
+    userMacro: $UID
