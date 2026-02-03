@@ -265,6 +265,7 @@ func TestFetchAccountsDoesNotAccumulateQueryParams(t *testing.T) {
 	_, errs = fetcher.FetchAccounts(context.Background(), []string{"acc-2"})
 	assert.Empty(t, errs)
 
+	assert.Equal(t, 2, len(seen))
 	assert.Equal(t, []string{"acc-1"}, seen[0])
 	assert.Equal(t, []string{"acc-2"}, seen[1])
 }
@@ -293,6 +294,7 @@ func TestFetchAccountsDoesNotAccumulateQueryParamsRfcCompliant(t *testing.T) {
 	_, errs = fetcher.FetchAccounts(context.Background(), []string{"acc-2"})
 	assert.Empty(t, errs)
 
+	assert.Equal(t, 2, len(seen))
 	assert.Equal(t, []string{"acc-1"}, seen[0])
 	assert.Equal(t, []string{"acc-2"}, seen[1])
 }
