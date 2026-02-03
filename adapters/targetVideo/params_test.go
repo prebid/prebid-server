@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	if err != nil {
-		t.Fatalf("Failed to fetch the json-schemas. %v", err)
-	}
+	require.NoError(t, err, "Failed to fetch the json-schemas")
 
 	for _, validParam := range validParams {
 		if err := validator.Validate(openrtb_ext.BidderTargetVideo, json.RawMessage(validParam)); err != nil {
@@ -22,9 +21,7 @@ func TestValidParams(t *testing.T) {
 
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	if err != nil {
-		t.Fatalf("Failed to fetch the json-schemas. %v", err)
-	}
+	require.NoError(t, err, "Failed to fetch the json-schemas")
 
 	for _, invalidParam := range invalidParams {
 		if err := validator.Validate(openrtb_ext.BidderTargetVideo, json.RawMessage(invalidParam)); err == nil {

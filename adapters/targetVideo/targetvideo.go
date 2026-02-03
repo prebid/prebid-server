@@ -86,8 +86,6 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	//fmt.Println("TARGET VIDEO reqJson: ", string(reqJSON))
-
 	return &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
