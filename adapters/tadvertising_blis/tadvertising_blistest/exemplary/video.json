@@ -47,6 +47,8 @@
             "expectedRequest": {
                 "uri": "https://example.endpoint/",
                 "headers": {
+                    "Content-Type": ["application/json"],
+                    "X-Emetriq-Test": ["success"]
                 },
                 "impIDs": [
                     "testimp"
