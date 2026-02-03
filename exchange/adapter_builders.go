@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"github.com/prebid/prebid-server/v3/adapters/proxistore"
 	"github.com/prebid/prebid-server/v4/adapters"
 	ttx "github.com/prebid/prebid-server/v4/adapters/33across"
 	"github.com/prebid/prebid-server/v4/adapters/aax"
@@ -454,6 +455,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPangle:            pangle.Builder,
 		openrtb_ext.BidderPGAMSsp:           pgamssp.Builder,
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,
+		openrtb_ext.BidderProxistore:        proxistore.Builder,
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPubrise:           pubrise.Builder,

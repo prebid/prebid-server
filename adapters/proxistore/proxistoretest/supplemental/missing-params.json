@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "website": "example.com"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp[test-imp-id]: website and language are required bidder params",
+      "comparison": "literal"
+    }
+  ]
+}
