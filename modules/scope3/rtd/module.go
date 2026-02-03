@@ -310,7 +310,7 @@ func (m *Module) HandleAuctionResponseHook(
 			if m.cfg.AddScope3TargetingSection {
 				newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "scope3.segments", segments)
 				if err != nil {
-					return payload, err
+					logger.Errorf("Failed to add scope3 section to bid response ext: %v", err)
 				}
 				payload.BidResponse.Ext = newPayload
 			}
@@ -339,7 +339,7 @@ func (m *Module) HandleAuctionResponseHook(
 					if m.cfg.AddScope3TargetingSection {
 						newPayload, err := sjson.SetBytes(bid.Ext, "scope3.segments", segments)
 						if err != nil {
-							return payload, err
+							logger.Errorf("Failed to add scope3 section to bid response ext: %v", err)
 						}
 						bid.Ext = newPayload
 					}
