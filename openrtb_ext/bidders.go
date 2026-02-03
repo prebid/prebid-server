@@ -200,6 +200,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRelevantDigital,
 	BidderResetDigital,
 	BidderRevcontent,
+	BidderRevX,
 	BidderRichaudience,
 	BidderRise,
 	BidderRoulax,
@@ -261,7 +262,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
 	BidderZmaticoo,
-	BidderRevX,
 }
 
 func GetAliasBidderToParent() map[BidderName]BidderName {

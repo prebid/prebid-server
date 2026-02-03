@@ -1,8 +1,6 @@
 endpoint:  "https://prebid-use.atomex.net?ag=PREBID"
-
 maintainer:
   email: prebidsupport@revx.io
-
 gvlVendorID: 375  
 capabilities:
   app:

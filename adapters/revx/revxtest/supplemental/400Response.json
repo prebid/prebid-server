@@ -64,7 +64,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Received 400 Bad Request from endpoint: prebid-use.atomex.net/ag=PUB123",
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

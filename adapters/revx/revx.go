@@ -57,14 +57,8 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	// Handle specific status codes first
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Received 400 Bad Request from endpoint: %s", a.endPoint),
-		}}
 	}
 
 	// For all other status codes
@@ -102,7 +96,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	bidResponse.Bids = typedBids
 	bidResponse.Currency = serverBidResponse.Cur
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
