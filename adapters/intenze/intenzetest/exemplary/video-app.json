@@ -27,9 +27,14 @@
       {
         "id": "some-impression-id",
         "tagid": "ogTAGID",
-        "banner": {
-          "w": 320,
-          "h": 50
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
         },
         "ext": {
           "bidder": {
@@ -59,7 +64,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://us-e-node1.gothamads.com/?pass=accountId",
+        "uri": "http://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -71,9 +76,14 @@
           "imp": [
             {
               "id": "some-impression-id",
-              "banner": {
-                "w": 320,
-                "h": 50
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 120,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
               },
               "tagid": "ogTAGID"
             }
@@ -95,18 +105,59 @@
           },
           "tmax": 1000
         },
-        "impIDs":["some-impression-id"]
+        "impIDs": [
+          "some-impression-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
-        "body": "invalid response"
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 1280,
+                  "h": 720,
+                  "mtype": 2
+                }
+              ],
+              "seat": "intenze"
+            }
+          ],
+          "cur": "USD"
+        }
       }
     }
   ],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Bad Server Response",
-      "comparison": "literal"
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "some-impression-id",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 1280,
+            "h": 720,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }

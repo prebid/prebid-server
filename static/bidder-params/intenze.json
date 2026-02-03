@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Gothamads Adapter Params",
-    "description": "A schema which validates params accepted by the Gothamads adapter",
+    "title": "Intenze Adapter Params",
+    "description": "A schema which validates params accepted by the Intenze adapter",
     "type": "object",
     "properties": {
         "accountId": {

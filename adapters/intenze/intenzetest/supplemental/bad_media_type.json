@@ -11,24 +11,25 @@
     "user": {
       "buyeruid": "awesome-user"
     },
-    "site": {
-      "page": "test.com",
+    "app": {
       "publisher": {
         "id": "123456789"
-      }
+      },
+      "cat": [
+        "IAB22-1"
+      ],
+      "bundle": "com.app.awesome",
+      "name": "Awesome App",
+      "domain": "awesomeapp.com",
+      "id": "123456789"
     },
     "imp": [
       {
-        "id": "some-impression-id",
+        "id": "1",
         "tagid": "ogTAGID",
-        "video": {
-          "mimes": [
-            "video/mp4"
-          ],
-          "w": 640,
-          "h": 480,
-          "minduration": 120,
-          "maxduration": 150
+        "banner": {
+          "w": 320,
+          "h": 50
         },
         "ext": {
           "bidder": {
@@ -58,7 +59,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://us-e-node1.gothamads.com/?pass=accountId",
+        "uri": "http://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -69,21 +70,22 @@
           },
           "imp": [
             {
-              "id": "some-impression-id",
-              "tagid": "ogTAGID",
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "minduration": 120,
-                "maxduration": 150,
-                "w": 640,
-                "h": 480
-              }
+              "id": "1",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "tagid": "ogTAGID"
             }
           ],
-          "site": {
-            "page": "test.com",
+          "app": {
+            "id": "123456789",
+            "name": "Awesome App",
+            "bundle": "com.app.awesome",
+            "domain": "awesomeapp.com",
+            "cat": [
+              "IAB22-1"
+            ],
             "publisher": {
               "id": "123456789"
             }
@@ -93,7 +95,9 @@
           },
           "tmax": 1000
         },
-        "impIDs":["some-impression-id"]
+        "impIDs": [
+          "1"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -104,24 +108,19 @@
               "bid": [
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "some-impression-id",
+                  "impid": "test-imp-id",
                   "price": 3.5,
                   "adm": "awesome-markup",
                   "adomain": [
                     "awesome.com"
                   ],
                   "crid": "20",
-                  "w": 1280,
-                  "h": 720,
-                  "ext": {
-                    "prebid": {
-                      "type": "video"
-                    }
-                  },
-                  "mtype": 2
+                  "w": 320,
+                  "h": 50
                 }
               ],
-              "seat": "gothamads"
+              "mtype": 0,
+              "seat": "intenze"
             }
           ],
           "cur": "USD"
@@ -129,31 +128,10 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "some-impression-id",
-            "price": 3.5,
-            "adm": "awesome-markup",
-            "adomain": [
-              "awesome.com"
-            ],
-            "crid": "20",
-            "w": 1280,
-            "h": 720,
-            "ext": {
-              "prebid": {
-                "type": "video"
-              }
-            },
-            "mtype": 2
-          },
-          "type": "video"
-        }
-      ]
+      "value": "unsupported MType 0",
+      "comparison": "literal"
     }
   ]
 }
