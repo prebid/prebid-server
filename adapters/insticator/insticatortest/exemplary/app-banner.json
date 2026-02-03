@@ -34,7 +34,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://insticator.example.com/v1/pbs?publisherId=test-publisher-id",
+        "uri": "https://insticator-app.example.com/v1/pbs?publisherId=test-publisher-id",
         "body": {
           "device": {
             "ip": "1.1.1.2"
