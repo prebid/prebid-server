@@ -257,7 +257,7 @@ func TestFetchAccountsDoesNotAccumulateQueryParams(t *testing.T) {
 
 	fetcher := NewFetcher(server.Client(), server.URL, false)
 
-	// first fetcher call 
+	// first fetcher call
 	_, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1"})
 	assert.Empty(t, errs)
 
