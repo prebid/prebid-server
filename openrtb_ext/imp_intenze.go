@@ -1,5 +1,5 @@
 package openrtb_ext
 
-type ExtGothamAds struct {
+type ExtIntenze struct {
 	AccountID string `json:"accountId"`
 }
