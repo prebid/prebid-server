@@ -1,0 +1,111 @@
+{
+  "mockBidRequest": {
+    "id": "test-zero-price-request-id",
+    "imp": [
+      {
+        "id": "test-zero-price-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-zero-price-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/zero-price",
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=test-zero-price-placement",
+        "body": {
+          "id": "test-zero-price-request-id",
+          "imp": [
+            {
+              "id": "test-zero-price-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "test-zero-price-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "test-zero-price-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com/zero-price",
+            "domain": "example.com"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-OpenRTB-Version": [
+            "2.6"
+          ]
+        },
+        "impIDs": ["test-zero-price-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-zero-price-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-zero-price-bid-id",
+                  "impid": "test-zero-price-imp-id",
+                  "price": 0.0,
+                  "adm": "<div>test zero price ad</div>",
+                  "crid": "test-zero-price-creative-id",
+                  "w": 300,
+                  "h": 250,
+                  "adomain": ["example.com"]
+                }
+              ],
+              "seat": "resetdigital"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "price 0.000000 <= 0 filtered out",
+      "comparison": "literal"
+    }
+  ]
+}

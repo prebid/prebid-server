@@ -11,4 +11,5 @@ import (
 type ModuleDeps struct {
 	HTTPClient    *http.Client
 	RateConvertor *currency.RateConverter
+	Geoscope      map[string][]string
 }
