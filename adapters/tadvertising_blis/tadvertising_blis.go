@@ -60,7 +60,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
-	headers.Add("X-EMETRIQ-TEST", "success")
 
 	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {

@@ -19,6 +19,24 @@
         "tagid": "test-tag-id",
         "bidfloor": 0,
         "secure": 1
+      },
+      {
+        "ext": {
+          "bidder": {
+            "publisherId": "123"
+          }
+        },
+        "id": "test-impression-id2",
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "pos": 0,
+          "api": [
+          ]
+        },
+        "tagid": "test-tag-id2",
+        "bidfloor": 0,
+        "secure": 1
       }
     ],
     "site": {
@@ -83,7 +101,8 @@
           "Content-Type": ["application/json"]
         },
         "impIDs": [
-          "test-impression-id"
+          "test-impression-id",
+          "test-impression-id2"
         ],
         "body": {
           "id": "test-request-id",
@@ -102,6 +121,21 @@
                   "publisherId": "123"
                 }
               }
+            },
+            {
+              "ext": {
+                "bidder": {
+                  "publisherId": "123"
+                }
+              },
+              "id": "test-impression-id2",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "pos": 0
+              },
+              "tagid": "test-tag-id2",
+              "secure": 1
             }
           ],
           "site": {
@@ -184,6 +218,27 @@
                     "IAB2",
                     "IAB2-3"
                   ]
+                },
+                {
+                  "id": "1",
+                  "impid": "2",
+                  "price": 0.78740156,
+                  "protocol": 0,
+                  "adm": "<html><h3>I am an ad</h3></html>",
+                  "adomain": [
+                    "emetriq.com"
+                  ],
+                  "cid": "ay35w7m",
+                  "crid": "id8tke3f",
+                  "attr": [],
+                  "api": 0,
+                  "mtype": 1,
+                  "w": 300,
+                  "h": 250,
+                  "cat": [
+                    "IAB2",
+                    "IAB2-3"
+                  ]
                 }
               ],
               "seat": "2271"
@@ -205,6 +260,27 @@
           "bid": {
             "id": "1",
             "impid": "1",
+            "price": 0.78740156,
+            "mtype": 1,
+            "adm": "<html><h3>I am an ad</h3></html>",
+            "adomain": [
+              "emetriq.com"
+            ],
+            "cid": "ay35w7m",
+            "crid": "id8tke3f",
+            "w": 300,
+            "h": 250,
+            "cat": [
+              "IAB2",
+              "IAB2-3"
+            ]
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "1",
+            "impid": "2",
             "price": 0.78740156,
             "mtype": 1,
             "adm": "<html><h3>I am an ad</h3></html>",

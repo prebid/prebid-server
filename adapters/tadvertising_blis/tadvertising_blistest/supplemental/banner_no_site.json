@@ -21,10 +21,6 @@
         "secure": 1
       }
     ],
-    "site": {
-      "publisher": {
-      }
-    },
     "device": {
       "ua": "test-user-agent",
       "geo": {
@@ -79,8 +75,7 @@
       "expectedRequest": {
         "uri": "https://example.endpoint/",
         "headers": {
-          "Content-Type": ["application/json"],
-          "X-Emetriq-Test": ["success"]
+          "Content-Type": ["application/json"]
         },
         "impIDs": [
           "test-impression-id"
