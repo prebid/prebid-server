@@ -311,8 +311,9 @@ func (m *Module) HandleAuctionResponseHook(
 				newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "scope3.segments", segments)
 				if err != nil {
 					logger.Errorf("Failed to add scope3 section to bid response ext: %v", err)
+				} else {
+					payload.BidResponse.Ext = newPayload
 				}
-				payload.BidResponse.Ext = newPayload
 			}
 
 			// also add to seatbid[].bid[]
@@ -340,8 +341,9 @@ func (m *Module) HandleAuctionResponseHook(
 						newPayload, err := sjson.SetBytes(bid.Ext, "scope3.segments", segments)
 						if err != nil {
 							logger.Errorf("Failed to add scope3 section to bid response ext: %v", err)
+						} else {
+							bid.Ext = newPayload
 						}
-						bid.Ext = newPayload
 					}
 				}
 			}
