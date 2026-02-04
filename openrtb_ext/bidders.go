@@ -130,7 +130,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGamoshi,
 	BidderGlobalsun,
 	BidderGoldbach,
-	BidderGothamads,
 	BidderGrid,
 	BidderGumGum,
 	BidderHuaweiAds,
@@ -140,6 +139,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderInfyTV,
 	BidderInMobi,
 	BidderInsticator,
+	BidderIntenze,
 	BidderInteractiveoffers,
 	BidderIntertech,
 	BidderInvibes,
@@ -255,6 +255,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTriplelift,
 	BidderTripleliftNative,
 	BidderTrustedstack,
+	BidderTrustX,
 	BidderUcfunnel,
 	BidderUndertone,
 	BidderUnicorn,
@@ -504,7 +505,6 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
 	BidderGoldbach          BidderName = "goldbach"
-	BidderGothamads         BidderName = "gothamads"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
@@ -514,6 +514,7 @@ const (
 	BidderInfyTV            BidderName = "infytv"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInsticator        BidderName = "insticator"
+	BidderIntenze           BidderName = "intenze"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderIntertech         BidderName = "intertech"
 	BidderInvibes           BidderName = "invibes"
@@ -629,6 +630,7 @@ const (
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"
 	BidderTrustedstack      BidderName = "trustedstack"
+	BidderTrustX            BidderName = "trustx"
 	BidderUcfunnel          BidderName = "ucfunnel"
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
