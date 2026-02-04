@@ -96,7 +96,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/displayio"
 	"github.com/prebid/prebid-server/v3/adapters/dmx"
 	"github.com/prebid/prebid-server/v3/adapters/driftpixel"
-	"github.com/prebid/prebid-server/v3/adapters/dxkulture"
 	evolution "github.com/prebid/prebid-server/v3/adapters/e_volution"
 	"github.com/prebid/prebid-server/v3/adapters/edge226"
 	"github.com/prebid/prebid-server/v3/adapters/emtv"
@@ -114,7 +113,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/gamoshi"
 	"github.com/prebid/prebid-server/v3/adapters/globalsun"
 	"github.com/prebid/prebid-server/v3/adapters/goldbach"
-	"github.com/prebid/prebid-server/v3/adapters/gothamads"
 	"github.com/prebid/prebid-server/v3/adapters/grid"
 	"github.com/prebid/prebid-server/v3/adapters/gumgum"
 	"github.com/prebid/prebid-server/v3/adapters/huaweiads"
@@ -124,6 +122,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/infytv"
 	"github.com/prebid/prebid-server/v3/adapters/inmobi"
 	"github.com/prebid/prebid-server/v3/adapters/insticator"
+	"github.com/prebid/prebid-server/v3/adapters/intenze"
 	"github.com/prebid/prebid-server/v3/adapters/interactiveoffers"
 	"github.com/prebid/prebid-server/v3/adapters/intertech"
 	"github.com/prebid/prebid-server/v3/adapters/invibes"
@@ -201,7 +200,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/v3/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/v3/adapters/sa_lunamedia"
-	"github.com/prebid/prebid-server/v3/adapters/screencore"
 	"github.com/prebid/prebid-server/v3/adapters/seedingAlliance"
 	"github.com/prebid/prebid-server/v3/adapters/seedtag"
 	"github.com/prebid/prebid-server/v3/adapters/sharethrough"
@@ -237,6 +235,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/triplelift"
 	"github.com/prebid/prebid-server/v3/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/v3/adapters/trustedstack"
+	"github.com/prebid/prebid-server/v3/adapters/trustx"
 	"github.com/prebid/prebid-server/v3/adapters/ucfunnel"
 	"github.com/prebid/prebid-server/v3/adapters/undertone"
 	"github.com/prebid/prebid-server/v3/adapters/unicorn"
@@ -363,7 +362,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDisplayio:         displayio.Builder,
 		openrtb_ext.BidderEdge226:           edge226.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
-		openrtb_ext.BidderDXKulture:         dxkulture.Builder,
 		openrtb_ext.BidderDriftPixel:        driftpixel.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
@@ -382,7 +380,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGamoshi:           gamoshi.Builder,
 		openrtb_ext.BidderGlobalsun:         globalsun.Builder,
 		openrtb_ext.BidderGoldbach:          goldbach.Builder,
-		openrtb_ext.BidderGothamads:         gothamads.Builder,
 		openrtb_ext.BidderGrid:              grid.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
 		openrtb_ext.BidderHuaweiAds:         huaweiads.Builder,
@@ -392,6 +389,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInfyTV:            infytv.Builder,
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
 		openrtb_ext.BidderInsticator:        insticator.Builder,
+		openrtb_ext.BidderIntenze:           intenze.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
 		openrtb_ext.BidderIntertech:         intertech.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
@@ -473,7 +471,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
 		openrtb_ext.BidderSeedtag:           seedtag.Builder,
 		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
-		openrtb_ext.BidderScreencore:        screencore.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
 		openrtb_ext.BidderShowheroes:        showheroes.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
@@ -507,6 +504,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTriplelift:        triplelift.Builder,
 		openrtb_ext.BidderTripleliftNative:  triplelift_native.Builder,
 		openrtb_ext.BidderTrustedstack:      trustedstack.Builder,
+		openrtb_ext.BidderTrustX:            trustx.Builder,
 		openrtb_ext.BidderUcfunnel:          ucfunnel.Builder,
 		openrtb_ext.BidderUndertone:         undertone.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
