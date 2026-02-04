@@ -86,7 +86,7 @@ func processImps(impList []openrtb2.Imp) (imp []openrtb2.Imp, tagId string, plac
 		delete(impExtMap, "bidder")
 		impExtMap["nexx360"] = nexx360ExtMap
 
-		impExtJSON, err := json.Marshal(impExtMap)
+		impExtJSON, err := jsonutil.Marshal(impExtMap)
 		if err != nil {
 			return nil, "", "", &errortypes.BadInput{
 				Message: err.Error(),
