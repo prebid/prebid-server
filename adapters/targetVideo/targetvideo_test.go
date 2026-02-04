@@ -12,7 +12,7 @@ import (
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderTargetVideo, config.Adapter{
 		Endpoint: "http://localhost/pbs"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	
+
 	require.NoError(t, buildErr, "Builder returned unexpected error")
 
 	adapterstest.RunJSONBidderTest(t, "targetvideotest", bidder)
