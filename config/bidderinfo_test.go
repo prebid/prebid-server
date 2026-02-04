@@ -1598,6 +1598,445 @@ func TestBidderInfoIsEnabled(t *testing.T) {
 	}
 }
 
+func TestSyncerEqual(t *testing.T) {
+	testCases := []struct {
+		name     string
+		syncer1  *Syncer
+		syncer2  *Syncer
+		expected bool
+	}{
+		{
+			name:     "nil",
+			syncer1:  nil,
+			syncer2:  nil,
+			expected: true,
+		},
+		{
+			name:     "nil-syncer1",
+			syncer1:  nil,
+			syncer2:  &Syncer{Key: "anyKey"},
+			expected: false,
+		},
+		{
+			name:     "nil-syncer2",
+			syncer1:  &Syncer{Key: "anyKey"},
+			syncer2:  nil,
+			expected: false,
+		},
+		{
+			name: "different-key",
+			syncer1: &Syncer{
+				Key:         "key1",
+				ExternalURL: "https://example.com",
+			},
+			syncer2: &Syncer{
+				Key:         "key2",
+				ExternalURL: "https://example.com",
+			},
+			expected: false,
+		},
+		{
+			name: "different-external-url",
+			syncer1: &Syncer{
+				Key:         "key",
+				ExternalURL: "https://example1.com",
+			},
+			syncer2: &Syncer{
+				Key:         "key",
+				ExternalURL: "https://example2.com",
+			},
+			expected: false,
+		},
+		{
+			name: "same-supports-nil-vs-empty",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: nil,
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{},
+			},
+			expected: true,
+		},
+		{
+			name: "different-supports-ordered",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: []string{"iframe"},
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{"redirect"},
+			},
+			expected: false,
+		},
+		{
+			name: "different-supports-unordered",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: []string{"iframe", "redirect"},
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{"redirect", "iframe"},
+			},
+			expected: true,
+		},
+		{
+			name: "different-iframe-endpoints",
+			syncer1: &Syncer{
+				Key: "key",
+				IFrame: &SyncerEndpoint{
+					URL: "https://iframe1.com",
+				},
+			},
+			syncer2: &Syncer{
+				Key: "key",
+				IFrame: &SyncerEndpoint{
+					URL: "https://iframe2.com",
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "different-redirect-endpoints",
+			syncer1: &Syncer{
+				Key: "key",
+				Redirect: &SyncerEndpoint{
+					URL: "https://redirect1.com",
+				},
+			},
+			syncer2: &Syncer{
+				Key: "key",
+				Redirect: &SyncerEndpoint{
+					URL: "https://redirect2.com",
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "different-support-cors",
+			syncer1: &Syncer{
+				Key:         "key",
+				SupportCORS: ptrutil.ToPtr(true),
+			},
+			syncer2: &Syncer{
+				Key:         "key",
+				SupportCORS: ptrutil.ToPtr(false),
+			},
+			expected: false,
+		},
+		{
+			name: "different-format-override",
+			syncer1: &Syncer{
+				Key:            "key",
+				FormatOverride: "i",
+			},
+			syncer2: &Syncer{
+				Key:            "key",
+				FormatOverride: "b",
+			},
+			expected: false,
+		},
+		{
+			name: "different-enabled",
+			syncer1: &Syncer{
+				Key:     "key",
+				Enabled: ptrutil.ToPtr(true),
+			},
+			syncer2: &Syncer{
+				Key:     "key",
+				Enabled: ptrutil.ToPtr(false),
+			},
+			expected: false,
+		},
+		{
+			name: "different-skip-when",
+			syncer1: &Syncer{
+				Key: "key",
+				SkipWhen: &SkipWhen{
+					GDPR: true,
+				},
+			},
+			syncer2: &Syncer{
+				Key: "key",
+				SkipWhen: &SkipWhen{
+					GDPR: false,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "same-complete",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: []string{"iframe", "redirect"},
+				IFrame: &SyncerEndpoint{
+					URL:         "https://iframe.com",
+					RedirectURL: "https://redirect.com",
+					UserMacro:   "$UID",
+				},
+				Redirect: &SyncerEndpoint{
+					URL:       "https://redirect.com",
+					UserMacro: "$UID",
+				},
+				ExternalURL:    "https://external.com",
+				SupportCORS:    ptrutil.ToPtr(true),
+				FormatOverride: "i",
+				Enabled:        ptrutil.ToPtr(true),
+				SkipWhen: &SkipWhen{
+					GDPR:   true,
+					GPPSID: []string{"1", "2"},
+				},
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{"redirect", "iframe"},
+				IFrame: &SyncerEndpoint{
+					URL:         "https://iframe.com",
+					RedirectURL: "https://redirect.com",
+					UserMacro:   "$UID",
+				},
+				Redirect: &SyncerEndpoint{
+					URL:       "https://redirect.com",
+					UserMacro: "$UID",
+				},
+				ExternalURL:    "https://external.com",
+				SupportCORS:    ptrutil.ToPtr(true),
+				FormatOverride: "i",
+				Enabled:        ptrutil.ToPtr(true),
+				SkipWhen: &SkipWhen{
+					GDPR:   true,
+					GPPSID: []string{"2", "1"},
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.syncer1.Equal(test.syncer2)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestSkipWhenEqual(t *testing.T) {
+	testCases := []struct {
+		name      string
+		skipWhen1 *SkipWhen
+		skipWhen2 *SkipWhen
+		expected  bool
+	}{
+		{
+			name:      "nil",
+			skipWhen1: nil,
+			skipWhen2: nil,
+			expected:  true,
+		},
+		{
+			name:      "nil-skipWhen1",
+			skipWhen1: nil,
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"1"}},
+			expected:  false,
+		},
+		{
+			name:      "nil-skipWhen2",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1"}},
+			skipWhen2: nil,
+			expected:  false,
+		},
+		{
+			name:      "empty",
+			skipWhen1: &SkipWhen{GDPR: false, GPPSID: []string{}},
+			skipWhen2: &SkipWhen{GDPR: false, GPPSID: []string{}},
+			expected:  true,
+		},
+		{
+			name:      "same",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			expected:  true,
+		},
+		{
+			name:      "different-gdpr",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: false, GPPSID: []string{"1", "2"}},
+			expected:  false,
+		},
+		{
+			name:      "different-gppsid",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"1", "3"}},
+			expected:  false,
+		},
+		{
+			name:      "same-gppsid-unordered",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"2", "1"}},
+			expected:  true,
+		},
+		{
+			name:      "nil-vs-empty-slice",
+			skipWhen1: &SkipWhen{GDPR: false, GPPSID: nil},
+			skipWhen2: &SkipWhen{GDPR: false, GPPSID: []string{}},
+			expected:  true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.skipWhen1.Equal(test.skipWhen2)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestSyncerEndpointEqual(t *testing.T) {
+	testCases := []struct {
+		name      string
+		endpoint1 *SyncerEndpoint
+		endpoint2 *SyncerEndpoint
+		expected  bool
+	}{
+		{
+			name:      "nil",
+			endpoint1: nil,
+			endpoint2: nil,
+			expected:  true,
+		},
+		{
+			name:      "nil-endpoint1",
+			endpoint1: nil,
+			endpoint2: &SyncerEndpoint{URL: "https://example.com"},
+			expected:  false,
+		},
+		{
+			name:      "nil-endpoint2",
+			endpoint1: &SyncerEndpoint{URL: "https://example.com"},
+			endpoint2: nil,
+			expected:  false,
+		},
+		{
+			name: "empty",
+			endpoint1: &SyncerEndpoint{
+				URL:         "",
+				RedirectURL: "",
+				ExternalURL: "",
+				UserMacro:   "",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "",
+				RedirectURL: "",
+				ExternalURL: "",
+				UserMacro:   "",
+			},
+			expected: true,
+		},
+		{
+			name: "same",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: true,
+		},
+		{
+			name: "different-url",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync1.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync2.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-redirect-url",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host1.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host2.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-external-url",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host1.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host2.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-user-macro",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$USER_ID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-user-macro-case-sensitive",
+			endpoint1: &SyncerEndpoint{
+				URL:       "https://sync.example.com",
+				UserMacro: "$uid",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:       "https://sync.example.com",
+				UserMacro: "$UID",
+			},
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.endpoint1.Equal(test.endpoint2)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
 func TestSyncerDefined(t *testing.T) {
 	testCases := []struct {
 		name        string
