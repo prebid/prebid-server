@@ -2,7 +2,6 @@ package hookstage
 
 import (
 	"encoding/json"
-	"iter"
 	"maps"
 	"sync"
 
@@ -95,38 +94,7 @@ func (mc *ModuleContext) SetAll(data map[string]any) {
 	mc.Lock()
 	defer mc.Unlock()
 	if mc.data == nil {
-		mc.data = make(map[string]any)
+		mc.data = make(map[string]any, len(data))
 	}
 	maps.Copy(mc.data, data)
-}
-
-var emptyMapIter iter.Seq2[string, any] = func(yield func(string, any) bool) {}
-
-// All returns an iterator over key-value pairs from the module context with read lock held
-func (mc *ModuleContext) All() iter.Seq2[string, any] {
-	if mc == nil || mc.data == nil {
-		return emptyMapIter
-	}
-
-	return func(yield func(string, any) bool) {
-		mc.RLock()
-		defer mc.RUnlock()
-		maps.All(mc.data)(yield)
-	}
-}
-
-// Insert adds the key-value pairs from seq to the module context with write lock held
-func (mc *ModuleContext) Insert(seq iter.Seq2[string, any]) {
-	if mc == nil {
-		return
-	}
-
-	mc.Lock()
-	defer mc.Unlock()
-
-	if mc.data == nil {
-		mc.data = make(map[string]any)
-	}
-
-	maps.Insert(mc.data, seq)
 }
