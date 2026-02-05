@@ -80,7 +80,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 		q.Set("noCookies", "true")
 	}
 
-	if extUser.Eids != nil && len(extUser.Eids) > 0 {
+	if len(extUser.Eids) > 0 {
 		if len(extUser.Eids[0].UIDs) > 0 {
 			eidsJSON, err := jsonutil.Marshal(extUser.Eids)
 			if err == nil {

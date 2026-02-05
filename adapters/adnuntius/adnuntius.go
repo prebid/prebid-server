@@ -104,7 +104,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 	var extUser openrtb_ext.ExtUser
 	if ortbRequest.User != nil && ortbRequest.User.Ext != nil {
 		if err := jsonutil.Unmarshal(ortbRequest.User.Ext, &extUser); err != nil {
-			return nil, []error{fmt.Errorf("failed to parse Ext User: %v", err)}
+			return nil, []error{fmt.Errorf("failed to parse Ext User: %w", err)}
 		}
 	}
 
