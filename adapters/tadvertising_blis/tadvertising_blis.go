@@ -39,7 +39,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}}
 	}
 
-	//if Site struct exists
 	if request.Site != nil {
 		siteCopy := *request.Site
 		request.Site = &siteCopy
