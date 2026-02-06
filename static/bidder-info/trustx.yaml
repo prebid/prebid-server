@@ -1,9 +1,19 @@
-aliasOf: grid
+endpoint: "https://ads.trustx.org/pbs"
 maintainer:
-  email: "grid-tech@themediagrid.com"
-gvlVendorID: 686
+  email: "prebid@trustx.org"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
 userSync:
+  iframe:
+    url: "https://static.cdn.trustx.org/x/user_sync.html?source=pbs&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
   redirect:
-    url: "https://x.bidswitch.net/check_uuid/{{.RedirectURL}}?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"
-    userMacro: "${BSW_UUID}"
-    
+    url: "https://sync.trustx.org/usync-pbs?us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
