@@ -48,17 +48,6 @@ const (
 	formFactorOtherMobile    = "Other Mobile"
 )
 
-var vcaps = []string{
-	advertisedDeviceOSCapKey,
-	advertisedDeviceOSVersionCapKey,
-	completeDeviceNameCapKey,
-	isFullDesktopCapKey,
-	isMobileCapKey,
-	isPhoneCapKey,
-	formFactorCapKey,
-	pixelDensityCapKey,
-}
-
 // wurflDeviceDetection wraps the methods for the WURFL device detection
 type wurflDeviceDetection interface {
 	DeviceDetection(headers map[string]string) (wurflData, error)

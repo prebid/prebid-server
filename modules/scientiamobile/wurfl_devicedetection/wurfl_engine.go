@@ -13,6 +13,18 @@ import (
 // declare conformity with  wurflDeviceDetection interface
 var _ wurflDeviceDetection = (*wurflEngine)(nil)
 
+// vcaps is the list of WURFL virtual capabilities to request
+var vcaps = []string{
+	advertisedDeviceOSCapKey,
+	advertisedDeviceOSVersionCapKey,
+	completeDeviceNameCapKey,
+	isFullDesktopCapKey,
+	isMobileCapKey,
+	isPhoneCapKey,
+	formFactorCapKey,
+	pixelDensityCapKey,
+}
+
 // newWurflEngine creates a new Enricher
 func newWurflEngine(c config) (wurflDeviceDetection, error) {
 	wengine, err := wurfl.Create(c.WURFLFilePath,
@@ -108,6 +120,7 @@ func (e *wurflEngine) validate() error {
 		brandNameCapKey,
 		densityClassCapKey,
 		isConnectedTVCapKey,
+		isConsoleCapKey,
 		isOTTCapKey,
 		isTabletCapKey,
 		modelNameCapKey,
