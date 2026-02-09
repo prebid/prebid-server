@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,9 +14,8 @@ func TestValidParams(t *testing.T) {
 	require.NoError(t, err, "Failed to fetch the json-schemas")
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderTargetVideo, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected targetVideo params: %s", validParam)
-		}
+		assert.NoError(t, validator.Validate(openrtb_ext.BidderTargetVideo, json.RawMessage(validParam)),
+			"Schema rejected targetVideo params: %s", validParam)
 	}
 }
 
@@ -24,9 +24,8 @@ func TestInvalidParams(t *testing.T) {
 	require.NoError(t, err, "Failed to fetch the json-schemas")
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderTargetVideo, json.RawMessage(invalidParam)); err == nil {
-			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
-		}
+		assert.Error(t, validator.Validate(openrtb_ext.BidderTargetVideo, json.RawMessage(invalidParam)),
+			"Schema should have rejected unexpected params: %s", invalidParam)
 	}
 }
 
