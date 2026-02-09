@@ -1,0 +1,15 @@
+{
+    "mockBidRequest": {
+      "id": "test-invalid-video-zero-height",
+      "imp": [
+        {
+          "id": "1",
+          "video": { "w": 640, "h": 0, "mimes": ["video/mp4"] },
+          "ext": { "bidder": { "placementId": "abc" } }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      { "value": "missing or invalid video width/height", "comparison": "contains" }
+    ]
+  }
