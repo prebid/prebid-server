@@ -167,11 +167,11 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
 	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
-	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", true, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
 	cmpBools(t, "accounts.filesystem.enabled", false, cfg.Accounts.Files.Enabled)
 	cmpStrings(t, "accounts.filesystem.directorypath", "./stored_requests/data/by_id", cfg.Accounts.Files.Path)
 	cmpStrings(t, "accounts.http.endpoint", "", cfg.Accounts.HTTP.Endpoint)
-	cmpBools(t, "accounts.http.use_rfc3986_compliant_request_builder", false, cfg.Accounts.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "accounts.http.use_rfc3986_compliant_request_builder", true, cfg.Accounts.HTTP.UseRfcCompliantBuilder)
 	cmpStrings(t, "accounts.in_memory_cache.type", "none", cfg.Accounts.InMemoryCache.Type)
 	cmpInts(t, "accounts.in_memory_cache.ttl_seconds", 0, cfg.Accounts.InMemoryCache.TTL)
 	cmpInts(t, "accounts.in_memory_cache.size_bytes", 0, cfg.Accounts.InMemoryCache.Size)
@@ -369,7 +369,7 @@ accounts:
     directorypath: "./example_directory"
   http:
     endpoint: "https://prebid.org"
-    use_rfc3986_compliant_request_builder: true
+    use_rfc3986_compliant_request_builder: false
   in_memory_cache:
     type: "lru"
     ttl_seconds: 300
@@ -656,11 +656,11 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "stored_request_timeout_ms", 75, cfg.StoredRequestsTimeout)
 	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
 	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
-	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", true, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
 	cmpBools(t, "accounts.filesystem.enabled", true, cfg.Accounts.Files.Enabled)
 	cmpStrings(t, "accounts.filesystem.directorypath", "./example_directory", cfg.Accounts.Files.Path)
 	cmpStrings(t, "accounts.http.endpoint", "https://prebid.org", cfg.Accounts.HTTP.Endpoint)
-	cmpBools(t, "accounts.http.use_rfc3986_compliant_request_builder", true, cfg.Accounts.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "accounts.http.use_rfc3986_compliant_request_builder", false, cfg.Accounts.HTTP.UseRfcCompliantBuilder)
 	cmpStrings(t, "accounts.in_memory_cache.type", "lru", cfg.Accounts.InMemoryCache.Type)
 	cmpInts(t, "accounts.in_memory_cache.ttl_seconds", 300, cfg.Accounts.InMemoryCache.TTL)
 	cmpInts(t, "accounts.in_memory_cache.size_bytes", 1000, cfg.Accounts.InMemoryCache.Size)
