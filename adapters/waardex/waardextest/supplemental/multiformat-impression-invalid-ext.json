@@ -1,0 +1,58 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "multi-adunit",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": "malformed"
+      },
+      {
+        "id": "multi-adunit-2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "not-json"
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp.ext is invalid: expect { or n, but found \"",
+      "comparison": "literal"
+    },
+    {
+      "value": "imp.ext.bidder is invalid: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": []
+}

@@ -1,0 +1,187 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000002",
+    "imp": [
+      {
+        "id": "banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 201,
+            "host": "tag.test.com"
+          }
+        }
+      },
+      {
+        "id": "banner-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 201,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/multi-zone.html",
+      "publisher": {
+        "id": "3"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    },
+    "cur": [
+      "USD"
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?zone=201",
+        "body": {
+          "id": "0000000000002",
+          "imp": [
+            {
+              "id": "banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            },
+            {
+              "id": "banner-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com/multi-zone.html"
+          },
+          "user": {
+            "buyeruid": "A-38327932832"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "banner-1",
+          "banner-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-0001",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-201-1",
+                  "impid": "banner-1",
+                  "price": 1.1,
+                  "cid": "5001",
+                  "crid": "6001",
+                  "adid": "6001",
+                  "adm": "<!-- admarkup 1 -->",
+                  "mtype": 1,
+                  "adomain": [
+                    "example-1.com"
+                  ],
+                  "w": 300,
+                  "h": 250
+                },
+                {
+                  "id": "bid-201-2",
+                  "impid": "banner-2",
+                  "price": 1.4,
+                  "cid": "5002",
+                  "crid": "6002",
+                  "adid": "6002",
+                  "adm": "<!-- admarkup 2 -->",
+                  "mtype": 1,
+                  "adomain": [
+                    "example-2.com"
+                  ],
+                  "w": 300,
+                  "h": 600
+                }
+              ]
+            }
+          ],
+          "bidid": "resp-0001-bid",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-201-1",
+            "impid": "banner-1",
+            "price": 1.1,
+            "adm": "<!-- admarkup 1 -->",
+            "adomain": [
+              "example-1.com"
+            ],
+            "cid": "5001",
+            "adid": "6001",
+            "crid": "6001",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-201-2",
+            "impid": "banner-2",
+            "price": 1.4,
+            "adm": "<!-- admarkup 2 -->",
+            "adomain": [
+              "example-2.com"
+            ],
+            "cid": "5002",
+            "adid": "6002",
+            "crid": "6002",
+            "w": 300,
+            "h": 600,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
