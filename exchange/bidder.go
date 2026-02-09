@@ -224,6 +224,8 @@ func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			if reqInfo.GlobalPrivacyControlHeader == "1" {
 				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 			}
+			// Forward low-entropy Client Hints headers if present
+			addClientHintsHeaders(reqData[i].Headers, reqInfo.ClientHints)
 			if bidRequestOptions.addCallSignHeader {
 				startSignRequestTime := time.Now()
 				signatureMessage, err := adsCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
@@ -921,4 +923,29 @@ func (bidder *BidderAdapter) shouldRequest() bool {
 		return bidder.config.ThrottleConfig.simulateOnly
 	}
 	return true
+}
+
+// Client Hints header constants
+const (
+	secCHUAHeader         = "Sec-CH-UA"
+	secCHUAMobileHeader   = "Sec-CH-UA-Mobile"
+	secCHUAPlatformHeader = "Sec-CH-UA-Platform"
+	saveDataHeader        = "Save-Data"
+)
+
+// addClientHintsHeaders adds low-entropy User-Agent Client Hints headers
+// to the outgoing bidder request if they have non-empty values.
+func addClientHintsHeaders(headers http.Header, clientHints adapters.ClientHintHeaders) {
+	if clientHints.SecCHUA != "" {
+		headers.Add(secCHUAHeader, clientHints.SecCHUA)
+	}
+	if clientHints.SecCHUAMobile != "" {
+		headers.Add(secCHUAMobileHeader, clientHints.SecCHUAMobile)
+	}
+	if clientHints.SecCHUAPlatform != "" {
+		headers.Add(secCHUAPlatformHeader, clientHints.SecCHUAPlatform)
+	}
+	if clientHints.SaveData != "" {
+		headers.Add(saveDataHeader, clientHints.SaveData)
+	}
 }
