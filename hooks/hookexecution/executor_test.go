@@ -58,22 +58,24 @@ func TestEmptyHookExecutor(t *testing.T) {
 }
 
 func TestExecuteEntrypointStage(t *testing.T) {
-	const body string = `{"name": "John", "last_name": "Doe"}`
+	const body string = `{"name": "John", "last_name": "Doe", "site": {"publisher": {"id": "account-id"}}}`
 	const urlString string = "https://prebid.com/openrtb2/auction"
 
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
 
 	testCases := []struct {
-		description            string
-		givenBody              string
-		givenUrl               string
-		givenPlanBuilder       hooks.ExecutionPlanBuilder
-		expectedBody           string
-		expectedHeader         http.Header
-		expectedQuery          url.Values
-		expectedReject         *RejectError
-		expectedModuleContexts *moduleContexts
-		expectedStageOutcomes  []StageOutcome
+		description               string
+		givenBody                 string
+		givenUrl                  string
+		givenPlanBuilder          hooks.ExecutionPlanBuilder
+		givenHostConfiguration    *config.Configuration
+		givenAccountConfiguration *config.Account
+		expectedBody              string
+		expectedHeader            http.Header
+		expectedQuery             url.Values
+		expectedReject            *RejectError
+		expectedModuleContexts    *moduleContexts
+		expectedStageOutcomes     []StageOutcome
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -350,6 +352,378 @@ func TestExecuteEntrypointStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "ABTests are applied with percentages",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleABPlanBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBody:   body,
+			expectedHeader: http.Header{},
+			expectedQuery:  url.Values{},
+			expectedReject: nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityHttpRequest,
+					Stage:  hooks.StageEntrypoint.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:      "ABTests with Accounts Host Config",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleABPlanAccountBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-id"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-uid"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBody:   body,
+			expectedHeader: http.Header{},
+			expectedQuery:  url.Values{},
+			expectedReject: nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityHttpRequest,
+					Stage:  hooks.StageEntrypoint.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusRun,
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:      "ABTests with DefaultAccountExecutionPlan",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleABPlanBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+					DefaultAccountExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBody:   body,
+			expectedHeader: http.Header{},
+			expectedQuery:  url.Values{},
+			expectedReject: nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityHttpRequest,
+					Stage:  hooks.StageEntrypoint.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -359,7 +733,11 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPost, test.givenUrl, reader)
 			assert.NoError(t, err)
 
-			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			cfg := test.givenHostConfiguration
+			if cfg == nil {
+				cfg = &config.Configuration{}
+			}
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
 			newBody, reject := exec.ExecuteEntrypointStage(req, body)
 
 			assert.Equal(t, test.expectedReject, reject, "Unexpected stage reject.")
@@ -385,7 +763,7 @@ func TestMetricsAreGatheredDuringHookExecution(t *testing.T) {
 
 	metricEngine := &metrics.MetricsEngineMock{}
 	builder := TestAllHookResultsBuilder{}
-	exec := NewHookExecutor(TestAllHookResultsBuilder{}, "/openrtb2/auction", metricEngine)
+	exec := NewHookExecutor(TestAllHookResultsBuilder{}, "/openrtb2/auction", metricEngine, NewABTests(&config.Configuration{}))
 	moduleName := "module.x-1"
 	moduleLabels := metrics.ModuleLabels{
 		Module: moduleReplacer.Replace(moduleName),
@@ -421,14 +799,16 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
 
 	testCases := []struct {
-		description            string
-		givenBody              string
-		givenUrl               string
-		givenPlanBuilder       hooks.ExecutionPlanBuilder
-		expectedBody           string
-		expectedReject         *RejectError
-		expectedModuleContexts *moduleContexts
-		expectedStageOutcomes  []StageOutcome
+		description               string
+		givenBody                 string
+		givenUrl                  string
+		givenPlanBuilder          hooks.ExecutionPlanBuilder
+		givenHostConfiguration    *config.Configuration
+		givenAccountConfiguration *config.Account
+		expectedBody              string
+		expectedReject            *RejectError
+		expectedModuleContexts    *moduleContexts
+		expectedStageOutcomes     []StageOutcome
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -664,11 +1044,392 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "ABTests are applied with percentages",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleABPlanBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBody:   body,
+			expectedReject: nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionRequest,
+					Stage:  hooks.StageRawAuctionRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:      "ABTests with Accounts Host Config",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleABPlanAccountBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-id"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-uid"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBody:   body,
+			expectedReject: nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionRequest,
+					Stage:  hooks.StageRawAuctionRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:      "ABTests with config.Account applied",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleABPlanBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(false),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(false),
+							},
+						},
+					},
+				},
+			},
+			givenAccountConfiguration: &config.Account{
+				ID: "account-id",
+				Hooks: config.AccountHooks{
+					ExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBody:   body,
+			expectedReject: nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionRequest,
+					Stage:  hooks.StageRawAuctionRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			cfg := test.givenHostConfiguration
+			if cfg == nil {
+				cfg = &config.Configuration{}
+			}
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+
+			account := test.givenAccountConfiguration
+			if account == nil {
+				account = &config.Account{ID: "account-id"}
+			}
+			exec.SetAccount(account)
 
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
@@ -696,13 +1457,15 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 	reqUpdated := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}}
 
 	testCases := []struct {
-		description            string
-		givenPlanBuilder       hooks.ExecutionPlanBuilder
-		givenRequest           openrtb_ext.RequestWrapper
-		expectedRequest        openrtb2.BidRequest
-		expectedErr            error
-		expectedModuleContexts *moduleContexts
-		expectedStageOutcomes  []StageOutcome
+		description               string
+		givenPlanBuilder          hooks.ExecutionPlanBuilder
+		givenRequest              openrtb_ext.RequestWrapper
+		givenHostConfiguration    *config.Configuration
+		givenAccountConfiguration *config.Account
+		expectedRequest           openrtb2.BidRequest
+		expectedErr               error
+		expectedModuleContexts    *moduleContexts
+		expectedStageOutcomes     []StageOutcome
 	}{
 		{
 			description:            "Request not changed if hook execution plan empty",
@@ -882,11 +1645,252 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "ABTests are applied with percentages",
+			givenPlanBuilder: TestWithModuleABPlanBuilder{},
+			givenRequest:     openrtb_ext.RequestWrapper{BidRequest: &req},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedRequest: req,
+			expectedErr:     nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionRequest,
+					Stage:  hooks.StageProcessedAuctionRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:      "ABTests with Accounts Host Config",
+			givenPlanBuilder: TestWithModuleABPlanAccountBuilder{},
+			givenRequest:     openrtb_ext.RequestWrapper{BidRequest: &req},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-id"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-uid"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedRequest: req,
+			expectedErr:     nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionRequest,
+					Stage:  hooks.StageProcessedAuctionRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(ti *testing.T) {
-			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			cfg := test.givenHostConfiguration
+			if cfg == nil {
+				cfg = &config.Configuration{}
+			}
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+			exec.SetAccount(&config.Account{ID: "account-id"})
 
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
@@ -923,14 +1927,16 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description            string
-		givenBidderRequest     *openrtb2.BidRequest
-		givenPlanBuilder       hooks.ExecutionPlanBuilder
-		expectedBidderRequest  *openrtb2.BidRequest
-		expectedReject         *RejectError
-		expectedModuleContexts *moduleContexts
-		expectedStageOutcomes  []StageOutcome
-		privacyConfig          *config.AccountPrivacy
+		description               string
+		givenBidderRequest        *openrtb2.BidRequest
+		givenPlanBuilder          hooks.ExecutionPlanBuilder
+		givenHostConfiguration    *config.Configuration
+		givenAccountConfiguration *config.Account
+		expectedBidderRequest     *openrtb2.BidRequest
+		expectedReject            *RejectError
+		expectedModuleContexts    *moduleContexts
+		expectedStageOutcomes     []StageOutcome
+		privacyConfig             *config.AccountPrivacy
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -1152,11 +2158,253 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:        "ABTests are applied with percentages",
+			givenBidderRequest: &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
+			givenPlanBuilder:   TestWithModuleABPlanBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBidderRequest: expectedBidderRequest,
+			expectedReject:        nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entity(bidderName),
+					Stage:  hooks.StageBidderRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:        "ABTests with Accounts Host Config",
+			givenBidderRequest: &openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}},
+			givenPlanBuilder:   TestWithModuleABPlanAccountBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-id"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-uid"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBidderRequest: expectedBidderRequest,
+			expectedReject:        nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entity(bidderName),
+					Stage:  hooks.StageBidderRequest.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			cfg := test.givenHostConfiguration
+			if cfg == nil {
+				cfg = &config.Configuration{}
+			}
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+			exec.SetAccount(&config.Account{ID: "account-id"})
+
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
 			exec.SetActivityControl(ac)
@@ -1177,46 +2425,6 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 	}
 }
 
-func getModuleActivities(componentName string, allowTransmitUserFPD, allowTransmitPreciseGeo bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: &config.AllowActivities{
-			TransmitUserFPD:    buildDefaultActivityConfig(componentName, allowTransmitUserFPD),
-			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allowTransmitPreciseGeo),
-		},
-	}
-}
-
-func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: &config.AllowActivities{
-			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
-		},
-	}
-}
-
-func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
-	return &config.AccountPrivacy{
-		AllowActivities: &config.AllowActivities{
-			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allow),
-		},
-	}
-}
-
-func buildDefaultActivityConfig(componentName string, allow bool) config.Activity {
-	return config.Activity{
-		Default: ptrutil.ToPtr(true),
-		Rules: []config.ActivityRule{
-			{
-				Allow: allow,
-				Condition: config.ActivityCondition{
-					ComponentName: []string{componentName},
-					ComponentType: []string{"general"},
-				},
-			},
-		},
-	}
-}
-
 func TestExecuteRawBidderResponseStage(t *testing.T) {
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
 	resp := adapters.BidderResponse{Bids: []*adapters.TypedBid{{DealPriority: 1}}}
@@ -1224,13 +2432,15 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 	vEntity := entity("the-bidder")
 
 	testCases := []struct {
-		description            string
-		givenPlanBuilder       hooks.ExecutionPlanBuilder
-		givenBidderResponse    adapters.BidderResponse
-		expectedBidderResponse adapters.BidderResponse
-		expectedReject         *RejectError
-		expectedModuleContexts *moduleContexts
-		expectedStageOutcomes  []StageOutcome
+		description               string
+		givenPlanBuilder          hooks.ExecutionPlanBuilder
+		givenBidderResponse       adapters.BidderResponse
+		givenHostConfiguration    *config.Configuration
+		givenAccountConfiguration *config.Account
+		expectedBidderResponse    adapters.BidderResponse
+		expectedReject            *RejectError
+		expectedModuleContexts    *moduleContexts
+		expectedStageOutcomes     []StageOutcome
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -1408,11 +2618,252 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:         "ABTests are applied with percentages",
+			givenPlanBuilder:    TestWithModuleABPlanBuilder{},
+			givenBidderResponse: resp,
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBidderResponse: expResp,
+			expectedReject:         nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: vEntity,
+					Stage:  hooks.StageRawBidderResponse.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:         "ABTests with Accounts Host Config",
+			givenPlanBuilder:    TestWithModuleABPlanAccountBuilder{},
+			givenBidderResponse: resp,
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-id"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-uid"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBidderResponse: expResp,
+			expectedReject:         nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: vEntity,
+					Stage:  hooks.StageRawBidderResponse.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(ti *testing.T) {
-			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			cfg := test.givenHostConfiguration
+			if cfg == nil {
+				cfg = &config.Configuration{}
+			}
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+			exec.SetAccount(&config.Account{ID: "account-id"})
 
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
@@ -1445,13 +2896,15 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description             string
-		givenBiddersResponse    map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-		givenPlanBuilder        hooks.ExecutionPlanBuilder
-		expectedBiddersResponse map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-		expectedReject          *RejectError
-		expectedModuleContexts  *moduleContexts
-		expectedStageOutcomes   []StageOutcome
+		description               string
+		givenBiddersResponse      map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		givenPlanBuilder          hooks.ExecutionPlanBuilder
+		givenHostConfiguration    *config.Configuration
+		givenAccountConfiguration *config.Account
+		expectedBiddersResponse   map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		expectedReject            *RejectError
+		expectedModuleContexts    *moduleContexts
+		expectedStageOutcomes     []StageOutcome
 	}{
 		{
 			description: "Payload not changed if hook execution plan empty",
@@ -1683,11 +3136,256 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "ABTests are applied with percentages",
+			givenBiddersResponse: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+				"some-bidder": {Bids: []*entities.PbsOrtbBid{{DealPriority: 1}}},
+			},
+			givenPlanBuilder: TestWithModuleABPlanBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBiddersResponse: expectedAllProcBidResponses,
+			expectedReject:          nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAllProcessedBidResponses,
+					Stage:  hooks.StageAllProcessedBidResponses.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "ABTests with Accounts Host Config",
+			givenBiddersResponse: map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{
+				"some-bidder": {Bids: []*entities.PbsOrtbBid{{DealPriority: 1}}},
+			},
+			givenPlanBuilder: TestWithModuleABPlanAccountBuilder{},
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-id"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-uid"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedBiddersResponse: expectedAllProcBidResponses,
+			expectedReject:          nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAllProcessedBidResponses,
+					Stage:  hooks.StageAllProcessedBidResponses.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			cfg := test.givenHostConfiguration
+			if cfg == nil {
+				cfg = &config.Configuration{}
+			}
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+			exec.SetAccount(&config.Account{ID: "account-id"})
 
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
@@ -1714,13 +3412,15 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 	expResp := &openrtb2.BidResponse{CustomData: "new-custom-data"}
 
 	testCases := []struct {
-		description            string
-		givenPlanBuilder       hooks.ExecutionPlanBuilder
-		givenResponse          *openrtb2.BidResponse
-		expectedResponse       *openrtb2.BidResponse
-		expectedReject         *RejectError
-		expectedModuleContexts *moduleContexts
-		expectedStageOutcomes  []StageOutcome
+		description               string
+		givenPlanBuilder          hooks.ExecutionPlanBuilder
+		givenResponse             *openrtb2.BidResponse
+		givenHostConfiguration    *config.Configuration
+		givenAccountConfiguration *config.Account
+		expectedResponse          *openrtb2.BidResponse
+		expectedReject            *RejectError
+		expectedModuleContexts    *moduleContexts
+		expectedStageOutcomes     []StageOutcome
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -1928,11 +3628,252 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "ABTests are applied with percentages",
+			givenPlanBuilder: TestWithModuleABPlanBuilder{},
+			givenResponse:    resp,
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								PercentActive:   ptr(uint16(0)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedResponse: resp,
+			expectedReject:   nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionResponse,
+					Stage:  hooks.StageAuctionResponse.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:      "ABTests with Accounts Host Config",
+			givenPlanBuilder: TestWithModuleABPlanAccountBuilder{},
+			givenResponse:    resp,
+			givenHostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:      "module-1",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-id"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+							{
+								ModuleCode:      "module-2",
+								Enabled:         ptr(true),
+								Accounts:        []string{"account-uid"},
+								PercentActive:   ptr(uint16(100)),
+								LogAnalyticsTag: ptr(true),
+							},
+						},
+					},
+				},
+			},
+			expectedResponse: resp,
+			expectedReject:   nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": hookstage.ModuleContext(nil),
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionResponse,
+					Stage:  hooks.StageAuctionResponse.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: "run",
+														Values: map[string]interface{}{
+															"module": "module-1",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-1",
+										HookImplCode: "foo",
+									},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{
+										Activities: []hookanalytics.Activity{
+											{
+												Name:   "core-module-abtests",
+												Status: hookanalytics.ActivityStatusSuccess,
+												Results: []hookanalytics.Result{
+													{
+														Status: hookanalytics.ResultStatusSkip,
+														Values: map[string]interface{}{
+															"module": "module-2",
+														},
+														AppliedTo: hookanalytics.AppliedTo{
+															Bidder:   "",
+															BidIds:   []string(nil),
+															ImpIds:   []string(nil),
+															Request:  false,
+															Response: false,
+														},
+													},
+												},
+											},
+										},
+									},
+									HookID: HookID{
+										ModuleCode:   "module-2",
+										HookImplCode: "",
+									},
+									Status:        StatusSuccess,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			cfg := test.givenHostConfiguration
+			if cfg == nil {
+				cfg = &config.Configuration{}
+			}
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+			exec.SetAccount(&config.Account{ID: "account-id"})
 
 			privacyConfig := getModuleActivities("foo", false, false)
 			ac := privacy.NewActivityControl(privacyConfig)
@@ -2315,7 +4256,8 @@ func TestExecuteExitpointStage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := NewHookExecutor(tt.fields.planBuilder, tt.fields.endpoint, tt.fields.metricEngine)
+			abTests := NewABTests(&config.Configuration{})
+			e := NewHookExecutor(tt.fields.planBuilder, tt.fields.endpoint, tt.fields.metricEngine, abTests)
 			e.SetAccount(tt.fields.account)
 			e.SetActivityControl(tt.fields.activityControl)
 			newResponse := e.ExecuteExitpointStage(tt.args.response, tt.args.w)
@@ -2336,7 +4278,7 @@ func TestExecuteExitpointStage(t *testing.T) {
 func TestInterStageContextCommunication(t *testing.T) {
 	body := []byte(`{"foo": "bar"}`)
 	reader := bytes.NewReader(body)
-	exec := NewHookExecutor(TestWithModuleContextsPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+	exec := NewHookExecutor(TestWithModuleContextsPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(&config.Configuration{}))
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	assert.NoError(t, err)
 
@@ -2437,6 +4379,46 @@ func TestInterStageContextCommunication(t *testing.T) {
 			"auction-response-ctx-2":    "some-ctx-2",
 		},
 	}}, exec.moduleContexts, "Wrong module contexts after executing auction-response hook.")
+}
+
+func getModuleActivities(componentName string, allowTransmitUserFPD, allowTransmitPreciseGeo bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
+			TransmitUserFPD:    buildDefaultActivityConfig(componentName, allowTransmitUserFPD),
+			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allowTransmitPreciseGeo),
+		},
+	}
+}
+
+func getTransmitUFPDActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
+			TransmitUserFPD: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func getTransmitPreciseGeoActivityConfig(componentName string, allow bool) *config.AccountPrivacy {
+	return &config.AccountPrivacy{
+		AllowActivities: &config.AllowActivities{
+			TransmitPreciseGeo: buildDefaultActivityConfig(componentName, allow),
+		},
+	}
+}
+
+func buildDefaultActivityConfig(componentName string, allow bool) config.Activity {
+	return config.Activity{
+		Default: ptrutil.ToPtr(true),
+		Rules: []config.ActivityRule{
+			{
+				Allow: allow,
+				Condition: config.ActivityCondition{
+					ComponentName: []string{componentName},
+					ComponentType: []string{"general"},
+				},
+			},
+		},
+	}
 }
 
 type TestApplyHookMutationsBuilder struct {
@@ -3065,6 +5047,256 @@ func (e TestAllHookResultsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[h
 	}
 }
 
+type TestWithModuleABPlanBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestWithModuleABPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawAuctionRequest] {
+	return hooks.Plan[hookstage.RawAuctionRequest]{
+		hooks.Group[hookstage.RawAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.RawAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return hooks.Plan[hookstage.BidderRequest]{
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
+	return hooks.Plan[hookstage.RawBidderResponse]{
+		hooks.Group[hookstage.RawBidderResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.RawBidderResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
+	return hooks.Plan[hookstage.AllProcessedBidResponses]{
+		hooks.Group[hookstage.AllProcessedBidResponses]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.AllProcessedBidResponses]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.AuctionResponse] {
+	return hooks.Plan[hookstage.AuctionResponse]{
+		hooks.Group[hookstage.AuctionResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AuctionResponse]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.AuctionResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AuctionResponse]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+type TestWithModuleABPlanAccountBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestWithModuleABPlanAccountBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanAccountBuilder) PlanForRawAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawAuctionRequest] {
+	return hooks.Plan[hookstage.RawAuctionRequest]{
+		hooks.Group[hookstage.RawAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.RawAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanAccountBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanAccountBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return hooks.Plan[hookstage.BidderRequest]{
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanAccountBuilder) PlanForRawBidderResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.RawBidderResponse] {
+	return hooks.Plan[hookstage.RawBidderResponse]{
+		hooks.Group[hookstage.RawBidderResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.RawBidderResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.RawBidderResponse]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanAccountBuilder) PlanForAllProcessedBidResponsesStage(_ string, _ *config.Account) hooks.Plan[hookstage.AllProcessedBidResponses] {
+	return hooks.Plan[hookstage.AllProcessedBidResponses]{
+		hooks.Group[hookstage.AllProcessedBidResponses]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.AllProcessedBidResponses]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AllProcessedBidResponses]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleABPlanAccountBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account) hooks.Plan[hookstage.AuctionResponse] {
+	return hooks.Plan[hookstage.AuctionResponse]{
+		hooks.Group[hookstage.AuctionResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AuctionResponse]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.AuctionResponse]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.AuctionResponse]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
+func ptr[T any](val T) *T {
+	return &val
+}
+
 type TestMultipleHooksUpdatePayloadBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -3083,5 +5315,84 @@ func (e TestMultipleHooksUpdatePayloadBuilder) PlanForExitpointStage(_ string, _
 				{Module: "module-2", Code: "json-response", Hook: mockUpdateResponseAgainHook{}},
 			},
 		},
+	}
+}
+
+func TestGetABTestTargetingKeywords(t *testing.T) {
+	testCases := []struct {
+		description       string
+		hostConfiguration *config.Configuration
+		expectedKeywords  map[string]string
+	}{
+		{
+			description: "No targeting keywords configured",
+			hostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:    "module-1",
+								Enabled:       ptr(true),
+								PercentActive: ptr(uint16(100)),
+							},
+						},
+					},
+				},
+			},
+			expectedKeywords: map[string]string{},
+		},
+		{
+			description: "Module with targeting keyword configured - run",
+			hostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:        "module-1",
+								Enabled:           ptr(true),
+								PercentActive:     ptr(uint16(100)),
+								AdServerTargeting: "hb_ab_module1",
+							},
+						},
+					},
+				},
+			},
+			expectedKeywords: map[string]string{
+				"hb_ab_module1": "1",
+			},
+		},
+		{
+			description: "Module with targeting keyword configured - skip",
+			hostConfiguration: &config.Configuration{
+				Hooks: config.Hooks{
+					Enabled: true,
+					HostExecutionPlan: config.HookExecutionPlan{
+						ABTests: []config.ABTest{
+							{
+								ModuleCode:        "module-1",
+								Enabled:           ptr(true),
+								PercentActive:     ptr(uint16(0)),
+								AdServerTargeting: "hb_ab_module1",
+							},
+						},
+					},
+				},
+			},
+			expectedKeywords: map[string]string{
+				"hb_ab_module1": "0",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			exec := NewHookExecutor(hooks.EmptyPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(test.hostConfiguration))
+
+			keywords := exec.GetABTestTargetingKeywords()
+
+			assert.Equal(t, test.expectedKeywords, keywords)
+		})
 	}
 }
