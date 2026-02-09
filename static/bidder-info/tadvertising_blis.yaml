@@ -13,7 +13,3 @@ capabilities:
     mediaTypes:
       - banner
       - video
-#userSync:
-#  redirect:
-#    url: ""
-#    userMacro: ""
