@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -678,12 +680,20 @@ func BuildBidderStringSlice() []string {
 	return slice
 }
 
+var (
+	bidderNameHashSetOnce sync.Once
+	bidderNameHashSet     map[string]struct{}
+)
+
 func BuildBidderNameHashSet() map[string]struct{} {
-	hashSet := make(map[string]struct{})
-	for _, name := range CoreBidderNames() {
-		hashSet[string(name)] = struct{}{}
-	}
-	return hashSet
+	bidderNameHashSetOnce.Do(func() {
+		bidderNameHashSet = make(map[string]struct{})
+		for _, name := range CoreBidderNames() {
+			bidderNameHashSet[string(name)] = struct{}{}
+		}
+	})
+
+	return maps.Clone(bidderNameHashSet)
 }
 
 // bidderNameLookup is a map of the lower case version of the bidder name to the precise BidderName value.
