@@ -24,15 +24,14 @@ func (parser *parserDSA) setContent(extJsonBytes []byte) error {
 }
 
 // getValue: Returns the DSA value as a string, defaultly returns empty-string.
-func (parser parserDSA) getValue(request *openrtb2.BidRequest) (dsa string) {
+func (parser parserDSA) getValue(request *openrtb2.BidRequest) interface{} {
 	if request == nil || request.Regs == nil {
-		return
+		return nil
 	}
-	parser.setContent(request.Regs.Ext)
-	if parser.DSA != nil {
-		dsa = fmt.Sprint(parser.DSA)
+	if parser.setContent(request.Regs.Ext) != nil {
+		return nil
 	}
-	return
+	return parser.DSA
 }
 
 // parserGDPR: Struct used to extract pair of GDPR/Consent of a jsonutil.
@@ -68,9 +67,9 @@ func (parser parserGDPR) getValue(field string, request *openrtb2.BidRequest) (g
 	if request != nil {
 		switch {
 		case field == "consent_requirement" && request.Regs != nil:
-			gdpr = "false"
-			if ptrInt8ToBool(request.Regs.GDPR) {
-				gdpr = "true"
+			gdpr = "true"
+			if !ptrInt8ToBool(request.Regs.GDPR) {
+				gdpr = "false"
 			}
 		case field == "consent_string" && request.User != nil:
 			gdpr = request.User.Consent
