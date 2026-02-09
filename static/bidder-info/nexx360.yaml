@@ -18,3 +18,10 @@ capabilities:
       - video
       - native
       - audio
+userSync:
+  redirect:
+    url: "https://fast.nexx360.io/usermatchredir/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gppsid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "$UID"
+  iframe:
+    url: "https://fast.nexx360.io/usermatchredir/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gppsid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "$UID"
