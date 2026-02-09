@@ -54,6 +54,7 @@ type Account struct {
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
 	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
+	StoredRequest           AccountStoredRequest                        `mapstructure:"stored_request" json:"stored_request"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -395,3 +396,18 @@ func (ip *IPv4) Validate(errs []error) []error {
 	}
 	return errs
 }
+
+// AccountStoredRequest represents account-specific stored request configuration
+type AccountStoredRequest struct {
+	ArrayMerge ArrayMergeMode `mapstructure:"array_merge" json:"array_merge"`
+}
+
+// ArrayMergeMode defines how array fields are merged during stored request processing
+// "replace" (default): Arrays are replaced, RFC 7386 behavior
+// "concat": Arrays are concatenated
+type ArrayMergeMode string
+
+const (
+	ArrayMergeReplace ArrayMergeMode = "replace"
+	ArrayMergeConcat  ArrayMergeMode = "concat"
+)
