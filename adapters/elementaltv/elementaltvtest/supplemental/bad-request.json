@@ -19,7 +19,7 @@
   "httpCalls":[
     {
       "expectedRequest":{
-        "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit1",
+        "uri":"https://pbs.elementaltv.io/processHeaderBid/unit1",
         "body":{
           "id":"req1-unit1",
           "imp":[
@@ -40,12 +40,18 @@
         "impIDs":["imp1"]
       },
       "mockResponse":{
-        "status":204,
+        "status":400,
         "body":""
       }
     }
   ],
   "expectedBidResponses":[
 
+  ],
+  "expectedMakeBidsErrors":[
+    {
+      "value":"bad request",
+      "comparison":"literal"
+    }
   ]
 }
