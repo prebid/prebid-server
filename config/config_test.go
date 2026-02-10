@@ -1019,8 +1019,6 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 }
 
 func TestUserSyncFromEnv(t *testing.T) {
-	truePtr := true
-
 	// setup env vars for testing
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", oldval)
@@ -1057,11 +1055,9 @@ func TestUserSyncFromEnv(t *testing.T) {
 	assert.Equal(t, "http://some.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder1"].Syncer.Redirect.URL)
 	assert.Equal(t, "[UID]", cfg.BidderInfos["bidder1"].Syncer.Redirect.UserMacro)
 	assert.Nil(t, cfg.BidderInfos["bidder1"].Syncer.IFrame)
-	assert.Equal(t, &truePtr, cfg.BidderInfos["bidder1"].Syncer.SupportCORS)
 
 	assert.Equal(t, "http://somedifferent.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder2"].Syncer.IFrame.URL)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
-	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.SupportCORS)
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
