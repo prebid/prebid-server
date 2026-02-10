@@ -48,9 +48,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var errs []error
 	var validImps []*impCtx
 
-	for i := range request.Imp {
-		imp := request.Imp[i]
-
+	for _, imp := range request.Imp {
 		ext, err := preprocessImp(&imp)
 		if err != nil {
 			errs = append(errs, err)
