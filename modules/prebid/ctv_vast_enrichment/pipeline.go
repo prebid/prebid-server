@@ -24,7 +24,7 @@
 //
 //	processor := vast.NewProcessor(cfg, selector, enricher, formatter)
 //	result := processor.Process(bidRequest, bidResponse)
-package vast
+package ctv_vast_enrichment
 
 import (
 	"context"

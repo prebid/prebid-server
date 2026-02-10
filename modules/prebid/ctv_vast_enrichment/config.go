@@ -1,4 +1,4 @@
-package vast
+package ctv_vast_enrichment
 
 // CTVVastConfig represents the configuration for CTV VAST processing.
 // It supports PBS-style layered configuration where profile overrides account,

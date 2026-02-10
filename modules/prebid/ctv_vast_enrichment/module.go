@@ -1,4 +1,4 @@
-package vast
+package ctv_vast_enrichment
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/model"
@@ -75,11 +77,13 @@ func (m Module) HandleRawBidderResponseHook(
 	// Convert config to ReceiverConfig
 	receiverCfg := configToReceiverConfig(mergedCfg)
 
-	// Process each bid
+	// Build modified bids list
+	modifiedBids := make([]*adapters.TypedBid, 0, len(payload.BidderResponse.Bids))
 	changesMade := false
-	for i := range payload.BidderResponse.Bids {
-		typedBid := payload.BidderResponse.Bids[i]
+
+	for _, typedBid := range payload.BidderResponse.Bids {
 		if typedBid == nil || typedBid.Bid == nil {
+			modifiedBids = append(modifiedBids, typedBid)
 			continue
 		}
 
@@ -87,6 +91,7 @@ func (m Module) HandleRawBidderResponseHook(
 
 		// Skip non-video bids (no AdM or not VAST)
 		if bid.AdM == "" {
+			modifiedBids = append(modifiedBids, typedBid)
 			continue
 		}
 
@@ -94,6 +99,7 @@ func (m Module) HandleRawBidderResponseHook(
 		vastDoc, err := model.ParseVastAdm(bid.AdM)
 		if err != nil {
 			// Not valid VAST, skip enrichment
+			modifiedBids = append(modifiedBids, typedBid)
 			continue
 		}
 
@@ -113,24 +119,33 @@ func (m Module) HandleRawBidderResponseHook(
 		// Format back to XML
 		xmlBytes, err := enrichedVast.Marshal()
 		if err != nil {
-			// Keep original AdM on format error
+			// Keep original bid on format error
+			modifiedBids = append(modifiedBids, typedBid)
 			continue
 		}
 
-		// Update bid with enriched VAST
-		bid.AdM = string(xmlBytes)
+		// Create new bid with enriched VAST
+		enrichedBid := &openrtb2.Bid{}
+		*enrichedBid = *bid
+		enrichedBid.AdM = string(xmlBytes)
+
+		// Create new TypedBid with enriched bid
+		enrichedTypedBid := &adapters.TypedBid{
+			Bid:          enrichedBid,
+			BidType:      typedBid.BidType,
+			BidVideo:     typedBid.BidVideo,
+			DealPriority: typedBid.DealPriority,
+			Seat:         typedBid.Seat,
+		}
+		modifiedBids = append(modifiedBids, enrichedTypedBid)
 		changesMade = true
 	}
 
-	// If we made changes, set mutation
+	// If we made changes, set mutation via ChangeSet
 	if changesMade {
-		result.ChangeSet.AddMutation(
-			func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
-				return payload, nil
-			},
-			hookstage.MutationUpdate,
-			"ctv-vast-enrichment",
-		)
+		changeSet := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
+		changeSet.RawBidderResponse().Bids().UpdateBids(modifiedBids)
+		result.ChangeSet = changeSet
 	}
 
 	return result, nil

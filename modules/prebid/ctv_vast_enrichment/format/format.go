@@ -4,7 +4,7 @@ package format
 import (
 	"encoding/xml"
 
-	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
+	vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
 	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/model"
 )
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
+	vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
 )
 
 // PriceSelector selects bids based on price-based ranking.

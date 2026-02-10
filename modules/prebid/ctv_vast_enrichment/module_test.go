@@ -1,4 +1,4 @@
-package vast
+package ctv_vast_enrichment
 
 import (
 	"context"
@@ -188,6 +188,13 @@ func TestHandleRawBidderResponseHook_EnrichesVAST(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, result.Errors)
 
+	// Apply mutations from ChangeSet
+	for _, mut := range result.ChangeSet.Mutations() {
+		newPayload, err := mut.Apply(payload)
+		require.NoError(t, err)
+		payload = newPayload
+	}
+
 	// Verify the bid was enriched
 	enrichedAdM := payload.BidderResponse.Bids[0].Bid.AdM
 	assert.Contains(t, enrichedAdM, "Pricing")
@@ -319,6 +326,13 @@ func TestHandleRawBidderResponseHook_MergesHostAndAccountConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, result.Errors)
 
+	// Apply mutations from ChangeSet
+	for _, mut := range result.ChangeSet.Mutations() {
+		newPayload, err := mut.Apply(payload)
+		require.NoError(t, err)
+		payload = newPayload
+	}
+
 	// Verify EUR currency was used (account overrides host)
 	enrichedAdM := payload.BidderResponse.Bids[0].Bid.AdM
 	assert.Contains(t, enrichedAdM, "EUR")
@@ -365,6 +379,13 @@ func TestHandleRawBidderResponseHook_MultipleBids(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, result.Errors)
 
+	// Apply mutations from ChangeSet
+	for _, mut := range result.ChangeSet.Mutations() {
+		newPayload, err := mut.Apply(payload)
+		require.NoError(t, err)
+		payload = newPayload
+	}
+
 	// Both bids should be enriched
 	assert.Contains(t, payload.BidderResponse.Bids[0].Bid.AdM, "1.500000")
 	assert.Contains(t, payload.BidderResponse.Bids[1].Bid.AdM, "2.000000")
@@ -403,6 +424,13 @@ func TestHandleRawBidderResponseHook_PreservesExistingPricing(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Empty(t, result.Errors)
+
+	// Apply mutations from ChangeSet
+	for _, mut := range result.ChangeSet.Mutations() {
+		newPayload, err := mut.Apply(payload)
+		require.NoError(t, err)
+		payload = newPayload
+	}
 
 	// Original pricing should be preserved (VAST wins)
 	enrichedAdM := payload.BidderResponse.Bids[0].Bid.AdM
@@ -492,12 +520,12 @@ func TestConfigToReceiverConfig(t *testing.T) {
 
 func TestEnrichVastDocument(t *testing.T) {
 	testCases := []struct {
-		name           string
-		inputVast      string
-		meta           CanonicalMeta
-		cfg            ReceiverConfig
-		expectPricing  bool
-		expectAdomain  bool
+		name          string
+		inputVast     string
+		meta          CanonicalMeta
+		cfg           ReceiverConfig
+		expectPricing bool
+		expectAdomain bool
 	}{
 		{
 			name:      "adds pricing when missing",

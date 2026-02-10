@@ -1,4 +1,4 @@
-package vast
+package ctv_vast_enrichment
 
 import (
 	"testing"

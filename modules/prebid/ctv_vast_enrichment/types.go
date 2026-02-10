@@ -1,6 +1,6 @@
 // Package vast provides CTV VAST processing capabilities for Prebid Server.
 // It includes bid selection, VAST enrichment, and formatting for various receivers.
-package vast
+package ctv_vast_enrichment
 
 import (
 	"github.com/prebid/openrtb/v20/openrtb2"
