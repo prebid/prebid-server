@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "test-banner",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.rtb-stack.com",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "test-banner",
+              "ext": {
+                "tagid": "test-banner",
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "{\"id\"data.lost"
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
+}

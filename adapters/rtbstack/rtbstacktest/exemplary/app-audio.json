@@ -1,0 +1,148 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid.app"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    },
+    "imp": [
+      {
+        "id": "imp-app-audio-short",
+        "audio": {
+          "mimes": ["audio/mpeg", "audio/mp4"],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "app-audio-short",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-app-audio-long",
+        "audio": {
+          "mimes": ["audio/mpeg", "audio/mp4"],
+          "minduration": 15,
+          "maxduration": 60
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "app-audio-long",
+            "customParams": {}
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.rtb-stack.com",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid.app"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "imp-app-audio-short",
+              "audio": {
+                "mimes": ["audio/mpeg", "audio/mp4"],
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "tagid": "app-audio-short",
+              "ext": {
+                "tagid": "app-audio-short",
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            },
+            {
+              "id": "imp-app-audio-long",
+              "audio": {
+                "mimes": ["audio/mpeg", "audio/mp4"],
+                "minduration": 15,
+                "maxduration": 60
+              },
+              "tagid": "app-audio-long",
+              "ext": {
+                "tagid": "app-audio-long"
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-app-audio-short", "imp-app-audio-long"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-app-audio-short-1",
+                  "impid": "imp-app-audio-short",
+                  "price": 0.75,
+                  "adm": "<audio src='short.mp3'></audio>",
+                  "crid": "crid-app-audio-short-1"
+                },
+                {
+                  "id": "bid-app-audio-long-1",
+                  "impid": "imp-app-audio-long",
+                  "price": 1.25,
+                  "adm": "<audio src='long.mp3'></audio>",
+                  "crid": "crid-app-audio-long-1"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-app-audio-short-1",
+            "impid": "imp-app-audio-short",
+            "price": 0.75,
+            "adm": "<audio src='short.mp3'></audio>",
+            "crid": "crid-app-audio-short-1"
+          },
+          "type": "audio"
+        },
+        {
+          "bid": {
+            "id": "bid-app-audio-long-1",
+            "impid": "imp-app-audio-long",
+            "price": 1.25,
+            "adm": "<audio src='long.mp3'></audio>",
+            "crid": "crid-app-audio-long-1"
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}

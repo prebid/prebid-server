@@ -1,0 +1,140 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-audio-small",
+        "audio": {
+          "mimes": ["audio/mpeg", "audio/mp4"],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "site-audio-small",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-audio-large",
+        "audio": {
+          "mimes": ["audio/mpeg", "audio/mp4"],
+          "minduration": 15,
+          "maxduration": 60
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "site-audio-large",
+            "customParams": {}
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.rtb-stack.com",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com",
+            "domain": "example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-audio-small",
+              "audio": {
+                "mimes": ["audio/mpeg", "audio/mp4"],
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "tagid": "site-audio-small",
+              "ext": {
+                "tagid": "site-audio-small",
+                "customParams": { "foo": "bar" }
+              }
+            },
+            {
+              "id": "imp-audio-large",
+              "audio": {
+                "mimes": ["audio/mpeg", "audio/mp4"],
+                "minduration": 15,
+                "maxduration": 60
+              },
+              "tagid": "site-audio-large",
+              "ext": { "tagid": "site-audio-large" }
+            }
+          ]
+        },
+        "impIDs": ["imp-audio-small", "imp-audio-large"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-site-audio-small-1",
+                  "impid": "imp-audio-small",
+                  "price": 0.75,
+                  "adm": "<audio src='small.mp3'></audio>",
+                  "crid": "crid-site-audio-small-1"
+                },
+                {
+                  "id": "bid-site-audio-large-1",
+                  "impid": "imp-audio-large",
+                  "price": 1.25,
+                  "adm": "<audio src='large.mp3'></audio>",
+                  "crid": "crid-site-audio-large-1"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-site-audio-small-1",
+            "impid": "imp-audio-small",
+            "price": 0.75,
+            "adm": "<audio src='small.mp3'></audio>",
+            "crid": "crid-site-audio-small-1"
+          },
+          "type": "audio"
+        },
+        {
+          "bid": {
+            "id": "bid-site-audio-large-1",
+            "impid": "imp-audio-large",
+            "price": 1.25,
+            "adm": "<audio src='large.mp3'></audio>",
+            "crid": "crid-site-audio-large-1"
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}

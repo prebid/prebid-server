@@ -1,0 +1,69 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-partial",
+    "site": {
+      "page": "https://example.com",
+      "domain": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-valid",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "valid-tag",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-invalid",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": "invalid-json"
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.rtb-stack.com",
+        "body": {
+          "id": "test-request-partial",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-valid",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "tagid": "valid-tag",
+              "ext": {
+                "tagid": "valid-tag",
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-valid"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+
+  "expectedMakeRequestsErrors": [],
+
+  "expectedBidResponses": []
+}

@@ -1,0 +1,181 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com",
+      "domain": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-basic",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "basic",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-empty-custom",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "empty-custom",
+            "customParams": {}
+          }
+        }
+      },
+      {
+        "id": "imp-nested-custom",
+        "banner": {
+          "format": [{ "w": 970, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "nested",
+            "customParams": {
+              "placement": {
+                "position": "top",
+                "sticky": true
+              },
+              "sizes": ["970x250", "728x90"]
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.rtb-stack.com",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-basic",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "tagid": "basic",
+              "ext": {
+                "tagid": "basic",
+                "customParams": { "foo": "bar" }
+              }
+            },
+            {
+              "id": "imp-empty-custom",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "tagid": "empty-custom",
+              "ext": {
+                "tagid": "empty-custom"
+              }
+            },
+            {
+              "id": "imp-nested-custom",
+              "banner": { "format": [{ "w": 970, "h": 250 }] },
+              "tagid": "nested",
+              "ext": {
+                "tagid": "nested",
+                "customParams": {
+                  "placement": {
+                    "position": "top",
+                    "sticky": true
+                  },
+                  "sizes": ["970x250", "728x90"]
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-basic", "imp-empty-custom", "imp-nested-custom"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-basic-1",
+                  "impid": "imp-basic",
+                  "price": 1.25,
+                  "adm": "<div>Banner 728x90</div>",
+                  "crid": "crid-basic-1"
+                },
+                {
+                  "id": "bid-empty-1",
+                  "impid": "imp-empty-custom",
+                  "price": 0.75,
+                  "adm": "<div>Banner 300x250</div>",
+                  "crid": "crid-empty-1"
+                },
+                {
+                  "id": "bid-nested-1",
+                  "impid": "imp-nested-custom",
+                  "price": 2.50,
+                  "adm": "<div>Banner 970x250</div>",
+                  "crid": "crid-nested-1"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-basic-1",
+            "impid": "imp-basic",
+            "price": 1.25,
+            "adm": "<div>Banner 728x90</div>",
+            "crid": "crid-basic-1"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-empty-1",
+            "impid": "imp-empty-custom",
+            "price": 0.75,
+            "adm": "<div>Banner 300x250</div>",
+            "crid": "crid-empty-1"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-nested-1",
+            "impid": "imp-nested-custom",
+            "price": 2.50,
+            "adm": "<div>Banner 970x250</div>",
+            "crid": "crid-nested-1"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

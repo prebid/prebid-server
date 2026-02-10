@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "RTBStack Adapter Params",
+  "description": "A schema which validates params accepted by the RTBStack adapter",
+
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "description": "Url provided for pbs auction."
+    },
+    "tagId": {
+      "type": "string",
+      "description": "AdUnit tag id."
+    },
+    "customParams": {
+      "type": "object",
+      "description": "Custom values for targeting."
+    }
+  },
+
+  "required": ["endpoint", "tagId"]
+}

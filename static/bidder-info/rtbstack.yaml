@@ -1,0 +1,16 @@
+endpoint: "http://{{.Host}}"
+maintainer:
+  email: "prebid@admixer.net"
+gvlVendorID: 511
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native

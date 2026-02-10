@@ -198,6 +198,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/rise"
 	"github.com/prebid/prebid-server/v3/adapters/roulax"
 	"github.com/prebid/prebid-server/v3/adapters/rtbhouse"
+	"github.com/prebid/prebid-server/v3/adapters/rtbstack"
 	"github.com/prebid/prebid-server/v3/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/v3/adapters/sa_lunamedia"
 	"github.com/prebid/prebid-server/v3/adapters/seedingAlliance"
@@ -528,5 +529,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 		openrtb_ext.BidderZetaGlobalSsp:     zeta_global_ssp.Builder,
 		openrtb_ext.BidderZmaticoo:          zmaticoo.Builder,
+		openrtb_ext.BidderRTBStack:          rtbstack.Builder,
 	}
 }

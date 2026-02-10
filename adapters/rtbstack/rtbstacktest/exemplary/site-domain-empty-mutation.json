@@ -1,0 +1,59 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-basic",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "ext": {
+          "bidder": {
+            "endpoint": "http://test.rtb-stack.com",
+            "tagId": "basic",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.rtb-stack.com",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-basic",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "tagid": "basic",
+              "ext": {
+                "tagid": "basic",
+                "customParams": { "foo": "bar" }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-basic"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}
