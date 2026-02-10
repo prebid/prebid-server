@@ -8,9 +8,10 @@ capabilities:
       - banner
       - video
       - native
-
+      - audio
   app:
     mediaTypes:
       - banner
       - video
       - native
+      - audio
