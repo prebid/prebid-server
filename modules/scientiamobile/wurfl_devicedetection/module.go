@@ -18,7 +18,7 @@ const (
 	wurflHeaderCtxKey = "wurfl_header"
 )
 
-// declare conformity with hookstage.RawActionRequest interface
+// declare conformity with hookstage.RawAuctionRequest interface
 var (
 	_ hookstage.RawAuctionRequest = Module{}
 	_ hookstage.Entrypoint        = Module{}
@@ -82,7 +82,7 @@ func (m Module) HandleEntrypointHook(ctx context.Context, invocationCtx hookstag
 	return result, nil
 }
 
-// HandleRawAuctioneHook implements hookstage.RawAuctionRequest.
+// HandleRawAuctionHook implements hookstage.RawAuctionRequest.
 func (m Module) HandleRawAuctionHook(
 	ctx context.Context,
 	invocationCtx hookstage.ModuleInvocationContext,
@@ -159,7 +159,7 @@ func (m Module) isPublisherAllowed(payload []byte) bool {
 	return found
 }
 
-// getOrbt2Device extracts the openrtb2.Device from the bid request body.
+// getOrtb2Device extracts the openrtb2.Device from the bid request body.
 func getOrtb2Device(payload []byte) (openrtb2.Device, error) {
 	device := openrtb2.Device{}
 	b, t, _, err := jsonparser.Get(payload, "device")
