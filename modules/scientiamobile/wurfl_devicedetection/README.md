@@ -50,8 +50,7 @@ To enable the WURFL module, the `wurfl` build tag must be specified:
 go build -tags wurfl .
 ```
 
-If the `wurfl` tag is not provided, the module will compile a demo version that returns sample data,
-allowing basic testing without an Infuze license.
+If the `wurfl` tag is not provided, the module will fail to initialize at startup.
 
 ### Configuring the WURFL Module
 
@@ -212,14 +211,6 @@ To enable automatic updates, ensure that `wurfl_snapshot_url` is correctly confi
 
 Sample request data for testing is available in the module's `sample` directory.
 Using the `auction` endpoint, you can observe WURFL-enriched device data in the response.
-
-#### Start in demo mode
-
-To test the WURFL module without an Infuze license:
-
-```bash
-go run .
-```
 
 ### Sample Response
 
