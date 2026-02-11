@@ -15,7 +15,6 @@ const (
 	secCHUAMobile          = "Sec-CH-UA-Mobile"
 	secCHUAArch            = "Sec-CH-UA-Arch"
 	secCHUAModel           = "Sec-CH-UA-Model"
-	secCHUAFullVersion     = "Sec-CH-UA-Full-Version"
 	secCHUAFullVersionList = "Sec-CH-UA-Full-Version-List"
 	userAgent              = "User-Agent"
 )
