@@ -1,0 +1,486 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>rtbhouse: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v3/adapters/rtbhouse/rtbhouse.go (92.5%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package rtbhouse
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/buger/jsonparser"
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v3/adapters"
+        "github.com/prebid/prebid-server/v3/config"
+        "github.com/prebid/prebid-server/v3/errortypes"
+        "github.com/prebid/prebid-server/v3/openrtb_ext"
+        "github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+const (
+        BidderCurrency string = "USD"
+)
+
+// publisherExtPrebid defines the structure for publisher.ext.prebid used by RTBHouse adapter
+type publisherExtPrebid struct {
+        PublisherId string `json:"publisherId,omitempty"`
+}
+
+// publisherExt defines the structure for publisher.ext used by RTBHouse adapter
+type publisherExt struct {
+        Prebid *publisherExtPrebid `json:"prebid,omitempty"`
+}
+
+// RTBHouseAdapter implements the Bidder interface.
+type RTBHouseAdapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the RTBHouse adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;RTBHouseAdapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+// MakeRequests prepares the HTTP requests which should be made to fetch bids.
+func (adapter *RTBHouseAdapter) MakeRequests(
+        openRTBRequest *openrtb2.BidRequest,
+        reqInfo *adapters.ExtraRequestInfo,
+) (
+        requestsToBidder []*adapters.RequestData,
+        errs []error,
+) <span class="cov8" title="1">{
+
+        reqCopy := *openRTBRequest
+        reqCopy.Imp = []openrtb2.Imp{}
+
+        var publisherId string
+
+        for _, imp := range openRTBRequest.Imp </span><span class="cov8" title="1">{
+                impExtMap := make(map[string]interface{})
+                err := json.Unmarshal(imp.Ext, &amp;impExtMap)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadInput{
+                                Message: "Bidder extension not provided or can't be unmarshalled",
+                        }}
+                }</span>
+
+                <span class="cov8" title="1">rtbhouseExt, err := getImpressionExt(impExtMap)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, []error{err}
+                }</span>
+
+                // Extract publisherId from the first impression that has one
+                <span class="cov8" title="1">if publisherId == "" &amp;&amp; rtbhouseExt.PublisherId != "" </span><span class="cov8" title="1">{
+                        publisherId = rtbhouseExt.PublisherId
+                }</span>
+
+                <span class="cov8" title="1">var bidFloorCur = imp.BidFloorCur
+                var bidFloor = imp.BidFloor
+                if bidFloorCur == "" &amp;&amp; bidFloor == 0 </span><span class="cov8" title="1">{
+                        if rtbhouseExt.BidFloor &gt; 0 </span><span class="cov8" title="1">{
+                                bidFloor = rtbhouseExt.BidFloor
+                                bidFloorCur = BidderCurrency
+                                if len(reqCopy.Cur) &gt; 0 </span><span class="cov8" title="1">{
+                                        bidFloorCur = reqCopy.Cur[0]
+                                }</span>
+                        }
+                }
+
+                // Check if imp comes with bid floor amount defined in a foreign currency
+                <span class="cov8" title="1">if bidFloor &gt; 0 &amp;&amp; bidFloorCur != "" &amp;&amp; strings.ToUpper(bidFloorCur) != BidderCurrency </span><span class="cov8" title="1">{
+                        // Convert to US dollars
+                        convertedValue, err := reqInfo.ConvertCurrency(bidFloor, bidFloorCur, BidderCurrency)
+                        if err != nil </span><span class="cov8" title="1">{
+                                return nil, []error{err}
+                        }</span>
+
+                        <span class="cov8" title="1">bidFloorCur = BidderCurrency
+                        bidFloor = convertedValue</span>
+                }
+
+                <span class="cov8" title="1">if bidFloor &gt; 0 &amp;&amp; bidFloorCur == BidderCurrency </span><span class="cov8" title="1">{
+                        // Update after conversion. All imp elements inside request.Imp are shallow copies
+                        // therefore, their non-pointer values are not shared memory and are safe to modify.
+                        imp.BidFloorCur = bidFloorCur
+                        imp.BidFloor = bidFloor
+                }</span>
+
+                <span class="cov8" title="1">if imp.TagID == "" </span><span class="cov8" title="1">{
+                        imp.TagID = getTagIDFromImpExt(impExtMap, imp.ID)
+                }</span>
+
+                // remove PAAPI signals
+                <span class="cov8" title="1">clearAuctionEnvironment(impExtMap)
+                newImpExt, err := json.Marshal(impExtMap)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        return nil, errs
+                }</span>
+                <span class="cov8" title="1">imp.Ext = newImpExt
+
+                // Remove PMP from impression
+                imp.PMP = nil
+
+                // Set the CUR of bid to BIDDER_CURRENCY after converting all floors
+                reqCopy.Cur = []string{BidderCurrency}
+                reqCopy.Imp = append(reqCopy.Imp, imp)</span>
+        }
+
+        // Set publisher ID in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId if we found one
+        <span class="cov8" title="1">if publisherId != "" </span><span class="cov8" title="1">{
+                if err := setPublisherID(&amp;reqCopy, publisherId); err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        return nil, errs
+                }</span>
+        }
+
+        <span class="cov8" title="1">openRTBRequestJSON, err := json.Marshal(reqCopy)
+        if err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        requestToBidder := &amp;adapters.RequestData{
+                Method:  "POST",
+                Uri:     adapter.endpoint,
+                Body:    openRTBRequestJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
+        }
+        requestsToBidder = append(requestsToBidder, requestToBidder)
+
+        return requestsToBidder, errs</span>
+}
+
+// setPublisherID sets the publisherId in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId
+func setPublisherID(request *openrtb2.BidRequest, publisherId string) error <span class="cov8" title="1">{
+        var publisher *openrtb2.Publisher
+        if request.Site != nil </span><span class="cov8" title="1">{
+                // Create a copy of the site to avoid modifying the original request
+                siteCopy := *request.Site
+                request.Site = &amp;siteCopy
+                publisher = request.Site.Publisher
+        }</span> else<span class="cov8" title="1"> if request.App != nil </span><span class="cov8" title="1">{
+                // Create a copy of the app to avoid modifying the original request
+                appCopy := *request.App
+                request.App = &amp;appCopy
+                publisher = request.App.Publisher
+        }</span> else<span class="cov8" title="1"> {
+                // If neither site nor app exists, create a site object
+                request.Site = &amp;openrtb2.Site{}
+        }</span>
+
+        <span class="cov8" title="1">if publisher != nil </span><span class="cov8" title="1">{
+                // Create a copy of the publisher to avoid modifying the original request
+                publisherCopy := *publisher
+                publisher = &amp;publisherCopy
+        }</span> else<span class="cov8" title="1"> {
+                publisher = &amp;openrtb2.Publisher{}
+        }</span>
+
+        // Set publisherId in publisher.ext.prebid.publisherId using local struct
+        <span class="cov8" title="1">var pubExt publisherExt
+        if publisher.Ext != nil </span><span class="cov0" title="0">{
+                if err := jsonutil.Unmarshal(publisher.Ext, &amp;pubExt); err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+        <span class="cov8" title="1">if pubExt.Prebid == nil </span><span class="cov8" title="1">{
+                pubExt.Prebid = &amp;publisherExtPrebid{}
+        }</span>
+        <span class="cov8" title="1">pubExt.Prebid.PublisherId = publisherId
+
+        publisherExtJSON, err := jsonutil.Marshal(pubExt)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">publisher.Ext = publisherExtJSON
+
+        // Assign the updated publisher back to the appropriate object
+        if request.Site != nil </span><span class="cov8" title="1">{
+                request.Site.Publisher = publisher
+        }</span> else<span class="cov8" title="1"> if request.App != nil </span><span class="cov8" title="1">{
+                request.App.Publisher = publisher
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func clearAuctionEnvironment(impExtMap map[string]interface{}) <span class="cov8" title="1">{
+        keysToDelete := []string{"ae", "igs", "paapi"}
+        for _, key := range keysToDelete </span><span class="cov8" title="1">{
+                delete(impExtMap, key)
+        }</span>
+}
+
+func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string <span class="cov8" title="1">{
+        // imp.ext.gpid
+        if gpid, ok := impExtMap["gpid"].(string); ok &amp;&amp; gpid != "" </span><span class="cov8" title="1">{
+                return gpid
+        }</span>
+
+        <span class="cov8" title="1">dataMap, hasData := impExtMap["data"].(map[string]interface{})
+        if hasData </span><span class="cov8" title="1">{
+                // imp.ext.data.adserver.adslot
+                if adserver, ok := dataMap["adserver"].(map[string]interface{}); ok </span><span class="cov8" title="1">{
+                        if adslot, ok := adserver["adslot"].(string); ok &amp;&amp; adslot != "" </span><span class="cov8" title="1">{
+                                return adslot
+                        }</span>
+                }
+
+                // imp.ext.data.pbadslot
+                <span class="cov8" title="1">if pbAdSlot, ok := dataMap["pbadslot"].(string); ok &amp;&amp; pbAdSlot != "" </span><span class="cov8" title="1">{
+                        return pbAdSlot
+                }</span>
+        }
+
+        // imp.ID as fallback
+        <span class="cov8" title="1">if impID != "" </span><span class="cov8" title="1">{
+                return impID
+        }</span>
+
+        <span class="cov0" title="0">return ""</span>
+}
+
+func getImpressionExt(impExtMap map[string]interface{}) (*openrtb_ext.ExtImpRTBHouse, error) <span class="cov8" title="1">{
+        // Check for bidder parameters in imp.ext.bidder
+        bidderVal, ok := impExtMap["bidder"]
+        if !ok </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "Bidder extension not provided or can't be unmarshalled",
+                }
+        }</span>
+
+        <span class="cov8" title="1">bidderBytes, err := json.Marshal(bidderVal)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "Bidder extension not provided or can't be unmarshalled",
+                }
+        }</span>
+
+        <span class="cov8" title="1">var rtbhouseExt openrtb_ext.ExtImpRTBHouse
+        if err := jsonutil.Unmarshal(bidderBytes, &amp;rtbhouseExt); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "Error while unmarshaling bidder extension",
+                }
+        }</span>
+        <span class="cov8" title="1">return &amp;rtbhouseExt, nil</span>
+}
+
+const unexpectedStatusCodeFormat = "" +
+        "Unexpected status code: %d. Run with request.debug = 1 for more info"
+
+// MakeBids unpacks the server's response into Bids.
+func (adapter *RTBHouseAdapter) MakeBids(
+        openRTBRequest *openrtb2.BidRequest,
+        requestToBidder *adapters.RequestData,
+        bidderRawResponse *adapters.ResponseData,
+) (
+        bidderResponse *adapters.BidderResponse,
+        errs []error,
+) <span class="cov8" title="1">{
+        switch bidderRawResponse.StatusCode </span>{
+        case http.StatusOK:<span class="cov8" title="1">
+                break</span>
+        case http.StatusNoContent:<span class="cov8" title="1">
+                return nil, nil</span>
+        case http.StatusBadRequest:<span class="cov8" title="1">
+                err := &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),
+                }
+                return nil, []error{err}</span>
+        default:<span class="cov8" title="1">
+                err := &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),
+                }
+                return nil, []error{err}</span>
+        }
+
+        <span class="cov8" title="1">var openRTBBidderResponse openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(bidderRawResponse.Body, &amp;openRTBBidderResponse); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidsCapacity := len(openRTBBidderResponse.SeatBid[0].Bid)
+        bidderResponse = adapters.NewBidderResponseWithBidsCapacity(bidsCapacity)
+        var typedBid *adapters.TypedBid
+        for _, seatBid := range openRTBBidderResponse.SeatBid </span><span class="cov8" title="1">{
+                for _, bid := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := bid
+                        bidType, err := getMediaTypeForBid(bid)
+                        resolveMacros(&amp;bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        } else<span class="cov8" title="1"> {
+                                typedBid = &amp;adapters.TypedBid{
+                                        Bid:     &amp;bid,
+                                        BidType: bidType,
+                                }
+
+                                // for native bid responses fix Adm field
+                                if typedBid.BidType == openrtb_ext.BidTypeNative </span><span class="cov8" title="1">{
+                                        bid.AdM, err = getNativeAdm(bid.AdM)
+                                        if err != nil </span><span class="cov8" title="1">{
+                                                errs = append(errs, err)
+                                                continue</span>
+                                        }
+                                }
+
+                                <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, typedBid)</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">bidderResponse.Currency = BidderCurrency
+
+        return bidderResponse, errs</span>
+
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative, nil</span>
+        default:<span class="cov8" title="1">
+                return "", fmt.Errorf("unrecognized bid type in response from rtbhouse for bid %s", bid.ImpID)</span>
+        }
+}
+
+func getNativeAdm(adm string) (string, error) <span class="cov8" title="1">{
+        nativeAdm := make(map[string]interface{})
+        err := jsonutil.Unmarshal([]byte(adm), &amp;nativeAdm)
+        if err != nil </span><span class="cov8" title="1">{
+                return adm, errors.New("unable to unmarshal native adm")
+        }</span>
+
+        // move bid.adm.native to bid.adm
+        <span class="cov8" title="1">if _, ok := nativeAdm["native"]; ok </span><span class="cov8" title="1">{
+                //using jsonparser to avoid marshaling, encode escape, etc.
+                value, dataType, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+                if err != nil || dataType != jsonparser.Object </span><span class="cov8" title="1">{
+                        return adm, errors.New("unable to get native adm")
+                }</span>
+                <span class="cov8" title="1">adm = string(value)</span>
+        }
+
+        <span class="cov8" title="1">return adm, nil</span>
+}
+
+func resolveMacros(bid *openrtb2.Bid) <span class="cov8" title="1">{
+        if bid != nil </span><span class="cov8" title="1">{
+                price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+                bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+                bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
+        }</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
