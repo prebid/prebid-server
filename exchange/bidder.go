@@ -19,13 +19,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v3/bidadjustment"
 	"github.com/prebid/prebid-server/v3/config/util"
 	"github.com/prebid/prebid-server/v3/currency"
 	"github.com/prebid/prebid-server/v3/exchange/entities"
 	"github.com/prebid/prebid-server/v3/experiment/adscert"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	loggerI "github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/version"
 
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -111,10 +111,11 @@ func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 		Client:     client,
 		me:         me,
 		config: bidderAdapterConfig{
-			Debug:               cfg.Debug,
-			DisableConnMetrics:  cfg.Metrics.Disabled.AdapterConnectionMetrics,
-			DebugInfo:           config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
-			EndpointCompression: endpointCompression,
+			Debug:                  cfg.Debug,
+			DisableConnMetrics:     cfg.Metrics.Disabled.AdapterConnectionMetrics,
+			DisableConnDialMetrics: cfg.Metrics.Disabled.AdapterConnectionDialMetrics,
+			DebugInfo:              config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
+			EndpointCompression:    endpointCompression,
 			ThrottleConfig: bidderAdapterThrottleConfig{
 				enabled:                 cfg.Client.Throttle.EnableThrottling,
 				simulateOnly:            cfg.Client.Throttle.SimulateThrottlingOnly,
@@ -152,11 +153,12 @@ type BidderAdapter struct {
 }
 
 type bidderAdapterConfig struct {
-	Debug               config.Debug
-	DisableConnMetrics  bool
-	DebugInfo           config.DebugInfo
-	EndpointCompression string
-	ThrottleConfig      bidderAdapterThrottleConfig
+	Debug                  config.Debug
+	DisableConnMetrics     bool
+	DisableConnDialMetrics bool
+	DebugInfo              config.DebugInfo
+	EndpointCompression    string
+	ThrottleConfig         bidderAdapterThrottleConfig
 }
 
 type bidderAdapterThrottleConfig struct {
@@ -568,7 +570,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // Bidder interface.
 func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	if bidder.shouldRequest() {
-		return bidder.doRequestImpl(ctx, req, glog.Warningf, bidderRequestStartTime, tmaxAdjustments)
+		return bidder.doRequestImpl(ctx, req, loggerI.Warnf, bidderRequestStartTime, tmaxAdjustments)
 	}
 	return &httpCallInfo{
 		request: req,
@@ -596,7 +598,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	// If adapter connection metrics are not disabled, add the client trace
 	// to get complete connection info into our metrics
 	if !bidder.config.DisableConnMetrics {
-		ctx = bidder.addClientTrace(ctx)
+		ctx = bidder.addClientTrace(ctx, bidder.config.DisableConnDialMetrics)
 	}
 	bidder.me.RecordOverheadTime(metrics.PreBidder, time.Since(bidderRequestStartTime))
 
@@ -636,6 +638,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			err:     err,
 		}
 	}
+	defer httpResp.Body.Close()
 
 	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
@@ -644,7 +647,6 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			err:     err,
 		}
 	}
-	defer httpResp.Body.Close()
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
 		if httpResp.StatusCode >= 500 {
@@ -671,14 +673,25 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData, logger util.LogMsg) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
-	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
-	if toReq != nil && len(errL) == 0 {
+
+	toReq, errMakeTimeoutNotification := timeoutBidder.MakeTimeoutNotification(req)
+	if toReq != nil && errMakeTimeoutNotification == nil {
 		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
 		if err == nil {
 			httpReq.Header = req.Headers
 			httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			if err == nil {
+				defer func() {
+					if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
+						loggerI.Errorf("TimeoutNotification: Draining response body failed %v", err)
+					}
+					httpResp.Body.Close()
+				}()
+			}
+
 			success := (err == nil && httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 			bidder.me.RecordTimeoutNotice(success)
+
 			if bidder.config.Debug.TimeoutNotification.Log && !(bidder.config.Debug.TimeoutNotification.FailOnly && success) {
 				var msg string
 				if err == nil {
@@ -697,16 +710,15 @@ func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			}
 		}
 	} else if bidder.config.Debug.TimeoutNotification.Log {
-		reqJSON, err := jsonutil.Marshal(req)
+		reqJSON, errMarshal := jsonutil.Marshal(req)
 		var msg string
-		if err == nil {
-			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errL[0].Error(), string(reqJSON))
+		if errMarshal == nil {
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request(%s)", errMarshal.Error(), string(reqJSON))
 		} else {
-			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errL[0].Error(), err.Error())
+			msg = fmt.Sprintf("TimeoutNotification: Failed to generate timeout request: error(%s), bidder request marshal failed(%s)", errMakeTimeoutNotification.Error(), errMarshal.Error())
 		}
 		util.LogRandomSample(msg, logger, bidder.config.Debug.TimeoutNotification.SamplingRate)
 	}
-
 }
 
 type httpCallInfo struct {
@@ -718,8 +730,8 @@ type httpCallInfo struct {
 // This function adds an httptrace.ClientTrace object to the context so, if connection with the bidder
 // endpoint is established, we can keep track of whether the connection was newly created, reused, and
 // the time from the connection request, to the connection creation.
-func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context {
-	var connStart, dnsStart, tlsStart time.Time
+func (bidder *BidderAdapter) addClientTrace(ctx context.Context, dialMetricsDisabled bool) context.Context {
+	var connStart, dnsStart, tlsStart, dialStart time.Time
 
 	trace := &httptrace.ClientTrace{
 		// GetConn is called before a connection is created or retrieved from an idle pool
@@ -764,6 +776,26 @@ func (bidder *BidderAdapter) addClientTrace(ctx context.Context) context.Context
 			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
 		},
 	}
+
+	if !dialMetricsDisabled {
+		// ConnectStart is called when a new connection's Dial begins.
+		trace.ConnectStart = func(network, addr string) {
+			dialStart = time.Now()
+		}
+
+		// ConnectDone is called when a new connection's Dial completes.
+		// The provided err indicates whether the connection completed
+		// successfully.
+		trace.ConnectDone = func(network, addr string, err error) {
+			dialStartTime := time.Since(dialStart)
+			bidder.me.RecordAdapterConnectionDialTime(bidder.BidderName, dialStartTime)
+
+			if err != nil {
+				bidder.me.RecordAdapterConnectionDialError(bidder.BidderName)
+			}
+		}
+	}
+
 	return httptrace.WithClientTrace(ctx, trace)
 }
 

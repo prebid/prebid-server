@@ -2,6 +2,7 @@ package rulesengine
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +13,7 @@ func TestGet(t *testing.T) {
 			hashedConfig: "hash1",
 		},
 	}
-	cache := NewCache()
+	cache := NewCache(0)
 	cache.m.Store(innerStorage)
 
 	testCases := []struct {
@@ -47,7 +48,7 @@ func TestSet(t *testing.T) {
 			hashedConfig: "hash1",
 		},
 	}
-	cache := NewCache()
+	cache := NewCache(0)
 	cache.m.Store(innerStorage)
 
 	testCases := []struct {
@@ -161,7 +162,7 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
-	cache := NewCache()
+	cache := NewCache(0)
 	cache.m.Store(originalInnerStorage)
 
 	for _, tc := range testCases {
@@ -173,4 +174,47 @@ func TestDelete(t *testing.T) {
 			assert.Equal(t, tc.expectedStorage, actualStorage)
 		})
 	}
+}
+
+func TestExpired(t *testing.T) {
+	testCases := []struct {
+		name               string
+		inTimestamp        time.Time
+		refreshRateSeconds int
+		expectedResult     bool
+	}{
+		{
+			name:               "expired",
+			inTimestamp:        mockTimeUtil{}.Now().Add(-6 * time.Second),
+			refreshRateSeconds: 5,
+			expectedResult:     true,
+		},
+		{
+			name:               "not_expired",
+			inTimestamp:        mockTimeUtil{}.Now().Add(-4 * time.Second),
+			refreshRateSeconds: 5,
+			expectedResult:     false,
+		},
+		{
+			name:               "no_refresh_rate",
+			inTimestamp:        mockTimeUtil{}.Now().Add(-10 * time.Second),
+			refreshRateSeconds: 0,
+			expectedResult:     false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := NewCache(tc.refreshRateSeconds)
+			c.t = mockTimeUtil{}
+			res := c.Expired(tc.inTimestamp)
+			assert.Equal(t, tc.expectedResult, res)
+		})
+	}
+}
+
+type mockTimeUtil struct{}
+
+func (mt mockTimeUtil) Now() time.Time {
+	return time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 }
