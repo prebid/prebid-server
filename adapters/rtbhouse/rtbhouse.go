@@ -233,7 +233,7 @@ func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
 			}
 		}
 
-		// imp.ext.data.pbAdSlot
+		// imp.ext.data.pbadslot
 		if pbAdSlot, ok := dataMap["pbadslot"].(string); ok && pbAdSlot != "" {
 			return pbAdSlot
 		}
@@ -248,16 +248,9 @@ func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
 }
 
 func getImpressionExt(impExtMap map[string]interface{}) (*openrtb_ext.ExtImpRTBHouse, error) {
-	var bidderVal interface{}
-	var found bool
-
 	// Check for bidder parameters in imp.ext.bidder
-	if val, ok := impExtMap["bidder"]; ok {
-		bidderVal = val
-		found = true
-	}
-
-	if !found {
+	bidderVal, ok := impExtMap["bidder"]
+	if !ok {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not provided or can't be unmarshalled",
 		}

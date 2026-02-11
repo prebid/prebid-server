@@ -16,7 +16,7 @@
         "ext": {
           "gpid": "gpid_value",
           "data": {
-            "pbAdSlot": "pbslot_value"
+            "pbadslot": "pbslot_value"
           },
           "bidder": {
             "publisherId": "12345"
@@ -50,7 +50,7 @@
                 },
                 "gpid": "gpid_value",
                 "data": {
-                  "pbAdSlot": "pbslot_value"
+                  "pbadslot": "pbslot_value"
                 }
               },
               "id": "test-imp-id",
