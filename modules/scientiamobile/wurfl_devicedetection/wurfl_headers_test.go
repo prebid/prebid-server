@@ -119,6 +119,22 @@ func TestMakeHeaders(t *testing.T) {
 			},
 		},
 		{
+			name: "SUA with special characters in version strings (RFC 9651)",
+			device: openrtb2.Device{
+				SUA: &openrtb2.UserAgent{
+					Browsers: []openrtb2.BrandVersion{
+						{Brand: "Chrome", Version: []string{`1", "Injected";v="99`}},
+						{Brand: "Brand", Version: []string{`1\2`}},
+					},
+				},
+			},
+			rawHeaders: map[string]string{},
+			expected: map[string]string{
+				"Sec-CH-UA":                   `"Chrome";v="1\", \"Injected\";v=\"99", "Brand";v="1\\2"`,
+				"Sec-CH-UA-Full-Version-List": `"Chrome";v="1\", \"Injected\";v=\"99", "Brand";v="1\\2"`,
+			},
+		},
+		{
 			name: "SUA with special characters requiring escaping (RFC 9651)",
 			device: openrtb2.Device{
 				SUA: &openrtb2.UserAgent{

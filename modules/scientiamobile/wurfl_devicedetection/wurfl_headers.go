@@ -90,7 +90,7 @@ func makeBrandList(brandVersions []openrtb2.BrandVersion) string {
 		brandName := quoteAndEscapeClientHintField(version.Brand)
 		builder.WriteString(brandName)
 		builder.WriteString(`;v="`)
-		builder.WriteString(strings.Join(version.Version, "."))
+		builder.WriteString(clientHintEscaper.Replace(strings.Join(version.Version, ".")))
 		builder.WriteString(`"`)
 	}
 	return builder.String()
