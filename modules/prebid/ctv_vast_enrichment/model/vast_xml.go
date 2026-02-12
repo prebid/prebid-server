@@ -256,6 +256,8 @@ func BuildSkeletonInlineVastWithDuration(version string, durationSec int) *Vast 
 
 // Marshal serializes the Vast struct to XML bytes with XML header.
 func (v *Vast) Marshal() ([]byte, error) {
+	// Clear InnerXML fields to prevent duplicate content
+	v.clearInnerXML()
 	output, err := xml.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return nil, err
@@ -265,11 +267,36 @@ func (v *Vast) Marshal() ([]byte, error) {
 
 // MarshalCompact serializes the Vast struct to XML bytes without indentation.
 func (v *Vast) MarshalCompact() ([]byte, error) {
+	// Clear InnerXML fields to prevent duplicate content
+	v.clearInnerXML()
 	output, err := xml.Marshal(v)
 	if err != nil {
 		return nil, err
 	}
 	return append([]byte(xml.Header), output...), nil
+}
+
+// clearInnerXML clears all InnerXML fields to prevent duplicate content during marshaling.
+// InnerXML is used during parsing to preserve unknown elements, but must be cleared
+// before marshaling to avoid outputting both structured fields AND raw XML.
+func (v *Vast) clearInnerXML() {
+	for i := range v.Ads {
+		v.Ads[i].InnerXML = ""
+		if v.Ads[i].InLine != nil {
+			v.Ads[i].InLine.InnerXML = ""
+			if v.Ads[i].InLine.Creatives != nil {
+				for j := range v.Ads[i].InLine.Creatives.Creative {
+					v.Ads[i].InLine.Creatives.Creative[j].InnerXML = ""
+					if v.Ads[i].InLine.Creatives.Creative[j].Linear != nil {
+						v.Ads[i].InLine.Creatives.Creative[j].Linear.InnerXML = ""
+					}
+				}
+			}
+		}
+		if v.Ads[i].Wrapper != nil {
+			v.Ads[i].Wrapper.InnerXML = ""
+		}
+	}
 }
 
 // Unmarshal parses XML bytes into a Vast struct.
