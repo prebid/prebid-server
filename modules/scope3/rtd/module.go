@@ -10,22 +10,21 @@ import (
 	"errors"
 	"fmt"
 	"hash"
-	"maps"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/coocood/freecache"
-	"github.com/golang/glog"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/modules/moduledeps"
 	"github.com/prebid/prebid-server/v3/util/iterutil"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/tidwall/sjson"
 )
 
 // Builder is the entry point for the module
@@ -37,13 +36,16 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 	}
 
 	if cfg.Endpoint == "" {
-		cfg.Endpoint = "https://rtdp.scope3.com/prebid/rtii"
+		cfg.Endpoint = DefaultScope3RTDURL
 	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 1000 // 1000ms default
 	}
 	if cfg.CacheTTL == 0 {
 		cfg.CacheTTL = 60 // 60 seconds default
+	}
+	if cfg.CacheSize == 0 {
+		cfg.CacheSize = 10 * 1024 * 1024 // 10MB
 	}
 
 	// Set masking defaults and validate configuration
@@ -76,7 +78,7 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 			Timeout:   time.Duration(cfg.Timeout) * time.Millisecond,
 			Transport: deps.HTTPClient.Transport,
 		},
-		cache: freecache.NewCache(10 * 1024 * 1024),
+		cache: freecache.NewCache(cfg.CacheSize),
 		sha256Pool: &sync.Pool{
 			New: func() any {
 				return sha256.New()
@@ -87,24 +89,35 @@ func Builder(config json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 
 const (
 	// keys for miCtx
-	asyncRequestKey = "scope3.AsyncRequest"
+	asyncRequestKey         = "scope3.AsyncRequest"
+	scope3MacroKey          = "scope3_macro"
+	scope3IncludeKey        = "scope3_include"
+	scope3Separator         = ";"
+	scope3CacheKeySeparator = "|"
 )
+
+var scope3MacroKeyPlusSeparator = scope3MacroKey + scope3Separator
+var scope3IncludeKeyPlusSeparator = scope3IncludeKey + scope3Separator
+
+const DefaultScope3RTDURL = "https://rtdp.scope3.com/prebid/prebid"
 
 var (
 	// Declare hooks
-	_ hookstage.Entrypoint        = (*Module)(nil)
-	_ hookstage.RawAuctionRequest = (*Module)(nil)
-	_ hookstage.AuctionResponse   = (*Module)(nil)
+	_ hookstage.Entrypoint              = (*Module)(nil)
+	_ hookstage.ProcessedAuctionRequest = (*Module)(nil)
+	_ hookstage.AuctionResponse         = (*Module)(nil)
 )
 
 // Config holds module configuration
 type Config struct {
-	Endpoint       string        `json:"endpoint"`
-	AuthKey        string        `json:"auth_key"`
-	Timeout        int           `json:"timeout_ms"`
-	CacheTTL       int           `json:"cache_ttl_seconds"` // Cache segments for this many seconds
-	AddToTargeting bool          `json:"add_to_targeting"`  // Add segments as individual targeting keys
-	Masking        MaskingConfig `json:"masking"`           // Privacy masking configuration
+	Endpoint                  string        `json:"endpoint"`
+	AuthKey                   string        `json:"auth_key"`
+	Timeout                   int           `json:"timeout_ms"`
+	CacheTTL                  int           `json:"cache_ttl_seconds"`            // Cache segments for this many seconds
+	CacheSize                 int           `json:"cache_size"`                   // Maximum size of segment cache in bytes
+	AddToTargeting            bool          `json:"add_to_targeting"`             // Add segments as individual targeting keys
+	AddScope3TargetingSection bool          `json:"add_scope3_targeting_section"` // Add segments as individual targeting keys in Scope3 targeting section
+	Masking                   MaskingConfig `json:"masking"`                      // Privacy masking configuration
 }
 
 // MaskingConfig controls what user data is masked before sending to Scope3
@@ -143,29 +156,19 @@ type userExt struct {
 
 // Response types for Scope3 API
 type Scope3Response struct {
-	Data []Scope3Data `json:"data"`
+	AEESignals `json:"aee_signals"`
 }
 
-type Scope3Data struct {
-	Destination string          `json:"destination"`
-	Imp         []Scope3ImpData `json:"imp"`
+type AEESignals struct {
+	Include []string            `json:"include,omitempty"`
+	Exclude []string            `json:"exclude,omitempty"`
+	Macro   string              `json:"macro,omitempty"` // base64
+	Bidders []map[string]Bidder `json:"bidders,omitempty"`
 }
 
-type Scope3ImpData struct {
-	ID  string     `json:"id"`
-	Ext *Scope3Ext `json:"ext,omitempty"`
-}
-
-type Scope3Ext struct {
-	Scope3 *Scope3ExtData `json:"scope3"`
-}
-
-type Scope3ExtData struct {
-	Segments []Scope3Segment `json:"segments"`
-}
-
-type Scope3Segment struct {
-	ID string `json:"id"`
+type Bidder struct {
+	Segments []string `json:"segments,omitempty"`
+	Deals    []string `json:"deals,omitempty"`
 }
 
 // Module implements the Scope3 RTD module
@@ -192,13 +195,13 @@ func (m *Module) HandleEntrypointHook(
 }
 
 // HandleRawAuctionHook is called early in the auction to fetch Scope3 data
-func (m *Module) HandleRawAuctionHook(
+func (m *Module) HandleProcessedAuctionHook(
 	ctx context.Context,
 	miCtx hookstage.ModuleInvocationContext,
-	payload hookstage.RawAuctionRequestPayload,
-) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	var ret hookstage.HookResult[hookstage.RawAuctionRequestPayload]
-	analyticsNamePrefix := "HandleRawAuctionHook."
+	payload hookstage.ProcessedAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	var ret hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]
+	analyticsNamePrefix := "HandleProcessedAuctionHook."
 
 	asyncRequest, ok := miCtx.ModuleContext[asyncRequestKey].(*AsyncRequest)
 	if !ok {
@@ -216,25 +219,8 @@ func (m *Module) HandleRawAuctionHook(
 		return ret, nil
 	}
 
-	// Parse OpenRTB request here rather than HandleProcessedAuctionHook to get a copy to avoid parallel mutation issues
-	var bidRequest openrtb2.BidRequest
-	if err := jsonutil.Unmarshal(payload, &bidRequest); err != nil {
-		// Log error but don't fail the auction
-		ret.AnalyticsTags = hookanalytics.Analytics{
-			Activities: []hookanalytics.Activity{{
-				Name:   analyticsNamePrefix + "bidRequest.unmarshal",
-				Status: hookanalytics.ActivityStatusError,
-				Results: []hookanalytics.Result{{
-					Status: hookanalytics.ResultStatusError,
-					Values: map[string]interface{}{"error": err.Error()},
-				}},
-			}},
-		}
-		return ret, nil
-	}
-
 	// Start async request to Scope3
-	asyncRequest.fetchScope3SegmentsAsync(&bidRequest)
+	asyncRequest.fetchScope3SegmentsAsync(payload.Request.BidRequest)
 
 	return ret, nil
 }
@@ -302,42 +288,64 @@ func (m *Module) HandleAuctionResponseHook(
 	// Add segments to the auction response
 	ret.ChangeSet.AddMutation(
 		func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
-			// Add Scope3 segments to the response ext so publisher can use them
-			if payload.BidResponse.Ext == nil {
-				payload.BidResponse.Ext = json.RawMessage("{}")
-			}
-
-			var extMap map[string]interface{}
-			if err = jsonutil.Unmarshal(payload.BidResponse.Ext, &extMap); err != nil {
-				extMap = make(map[string]interface{})
-			}
-
 			// Add segments as individual targeting keys for GAM integration
 			if m.cfg.AddToTargeting {
-				prebidMap, ok := extMap["prebid"].(map[string]interface{})
-				if !ok {
-					prebidMap = make(map[string]interface{})
-					extMap["prebid"] = prebidMap
-				}
-				targetingMap, ok := prebidMap["targeting"].(map[string]interface{})
-				if !ok {
-					targetingMap = make(map[string]interface{})
-					prebidMap["targeting"] = targetingMap
-				}
 				// Add each segment as individual targeting key
 				for _, segment := range segments {
-					targetingMap[segment] = "true"
+					segmentKeyVal := strings.Split(segment, scope3Separator)
+					if len(segmentKeyVal) != 2 {
+						logger.Infof("Skipping malformed segment: %s", segment)
+						continue
+					}
+					newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "prebid.targeting."+segmentKeyVal[0], segmentKeyVal[1])
+					if err != nil {
+						logger.Errorf("Failed to add targeting to bid: %v", err)
+						continue
+					}
+					payload.BidResponse.Ext = newPayload
 				}
 			}
 
-			// Always add to a dedicated scope3 section for publisher flexibility
-			extMap["scope3"] = map[string]interface{}{
-				"segments": segments,
+			// Add to a dedicated scope3 section for publisher flexibility when configured
+			if m.cfg.AddScope3TargetingSection {
+				newPayload, err := sjson.SetBytes(payload.BidResponse.Ext, "scope3.segments", segments)
+				if err != nil {
+					logger.Errorf("Failed to add scope3 section to bid response ext: %v", err)
+				} else {
+					payload.BidResponse.Ext = newPayload
+				}
 			}
 
-			extResp, err := jsonutil.Marshal(extMap)
-			if err == nil {
-				payload.BidResponse.Ext = extResp
+			// also add to seatbid[].bid[]
+			for seatBid := range iterutil.SlicePointerValues(payload.BidResponse.SeatBid) {
+				for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
+					// Add segments as individual targeting keys for GAM integration
+					if m.cfg.AddToTargeting {
+						for _, segment := range segments {
+							segmentKeyVal := strings.Split(segment, scope3Separator)
+							if len(segmentKeyVal) != 2 {
+								logger.Infof("Skipping malformed segment in bid targeting: %s", segment)
+								continue
+							}
+							newPayload, err := sjson.SetBytes(bid.Ext, "prebid.targeting."+segmentKeyVal[0], segmentKeyVal[1])
+							if err != nil {
+								logger.Errorf("Failed to add targeting to bid: %v", err)
+								continue
+							}
+							bid.Ext = newPayload
+						}
+					}
+
+					// Always add to a dedicated scope3 section for publisher flexibility
+					if m.cfg.AddScope3TargetingSection {
+						newPayload, err := sjson.SetBytes(bid.Ext, "scope3.segments", segments)
+						if err != nil {
+							logger.Errorf("Failed to add scope3 section to bid response ext: %v", err)
+						} else {
+							bid.Ext = newPayload
+						}
+					}
+				}
 			}
 
 			return payload, nil
@@ -356,7 +364,7 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 
 	// Check cache first
 	if segments, err := m.cache.Get(cacheKey); err == nil {
-		return strings.Split(string(segments), ","), nil
+		return strings.Split(string(segments), scope3CacheKeySeparator), nil
 	}
 
 	// Apply privacy masking before sending to Scope3
@@ -402,26 +410,19 @@ func (m *Module) fetchScope3Segments(ctx context.Context, bidRequest *openrtb2.B
 		return nil, err
 	}
 
-	// Extract unique segments (exclude destination)
-	segmentMap := make(map[string]bool)
-	for data := range iterutil.SlicePointerValues(scope3Resp.Data) {
-		// Extract actual segments from impression-level data
-		for imp := range iterutil.SlicePointerValues(data.Imp) {
-			if imp.Ext != nil && imp.Ext.Scope3 != nil {
-				for segment := range iterutil.SlicePointerValues(imp.Ext.Scope3.Segments) {
-					segmentMap[segment.ID] = true
-				}
-			}
-		}
+	segments := []string{}
+	if len(scope3Resp.Include) > 0 {
+		segmentsStr := scope3IncludeKeyPlusSeparator + strings.Join(scope3Resp.Include, ",")
+		segments = append(segments, segmentsStr)
+	}
+	if scope3Resp.Macro != "" {
+		segments = append(segments, scope3MacroKeyPlusSeparator+scope3Resp.Macro)
 	}
 
-	// Convert to slice
-	segments := slices.AppendSeq(make([]string, 0, len(segmentMap)), maps.Keys(segmentMap))
-
 	// Cache the result
-	err = m.cache.Set(cacheKey, []byte(strings.Join(segments, ",")), m.cfg.CacheTTL)
+	err = m.cache.Set(cacheKey, []byte(strings.Join(segments, scope3CacheKeySeparator)), m.cfg.CacheTTL)
 	if err != nil {
-		glog.Infof("could not set segments in cache: %v", err)
+		logger.Infof("could not set segments in cache: %v", err)
 	}
 
 	return segments, nil
