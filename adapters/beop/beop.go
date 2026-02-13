@@ -47,12 +47,7 @@ func (a *adapter) getRequestExtImpBeop(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBe
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpBeop) (string, error) {
-	url, err := url.Parse(a.endpoint)
-	if err != nil {
-		return "", &errortypes.Warning{
-			Message: "Failed to parse endpoint",
-		}
-	}
+	url, _ := url.Parse(a.endpoint)
 	query := url.Query()
 	if pid := params.BeopPublisherID; len(pid) != 0 {
 		query.Set("pid", pid)
