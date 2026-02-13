@@ -1,0 +1,142 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid.app"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    },
+    "imp": [
+      {
+        "id": "imp-app-native-small",
+        "native": {
+          "ver": "1.1",
+          "request": "{\"ver\":\"1.0\",\"layout\":1,\"adunit\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":120,\"hmin\":120,\"mimes\":[\"image/jpeg\",\"image/png\"]}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":100}}]}"
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "app-native-small",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-app-native-large",
+        "native": {
+          "ver": "1.1",
+          "request": "{\"ver\":\"1.0\",\"layout\":2,\"adunit\":2,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":300,\"mimes\":[\"image/jpeg\",\"image/png\"]}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":150}}]}"
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "app-native-large",
+            "customParams": {}
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid.app"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "imp-app-native-small",
+              "native": {
+                "ver": "1.1",
+                "request": "{\"ver\":\"1.0\",\"layout\":1,\"adunit\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":120,\"hmin\":120,\"mimes\":[\"image/jpeg\",\"image/png\"]}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":100}}]}"
+              },
+              "tagid": "app-native-small",
+              "ext": {
+                "tagid": "app-native-small",
+                "customParams": { "foo": "bar" }
+              }
+            },
+            {
+              "id": "imp-app-native-large",
+              "native": {
+                "ver": "1.1",
+                "request": "{\"ver\":\"1.0\",\"layout\":2,\"adunit\":2,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":300,\"mimes\":[\"image/jpeg\",\"image/png\"]}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":150}}]}"
+              },
+              "tagid": "app-native-large",
+              "ext": { "tagid": "app-native-large" }
+            }
+          ]
+        },
+        "impIDs": ["imp-app-native-small", "imp-app-native-large"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-app-native-small-1",
+                  "impid": "imp-app-native-small",
+                  "price": 1.5,
+                  "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Small App Native Ad\"}}]}}",
+                  "crid": "crid-app-native-small-1"
+                },
+                {
+                  "id": "bid-app-native-large-1",
+                  "impid": "imp-app-native-large",
+                  "price": 2.75,
+                  "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Large App Native Ad\"}}]}}",
+                  "crid": "crid-app-native-large-1"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-app-native-small-1",
+            "impid": "imp-app-native-small",
+            "price": 1.5,
+            "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Small App Native Ad\"}}]}}",
+            "crid": "crid-app-native-small-1"
+          },
+          "type": "native"
+        },
+        {
+          "bid": {
+            "id": "bid-app-native-large-1",
+            "impid": "imp-app-native-large",
+            "price": 2.75,
+            "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Large App Native Ad\"}}]}}",
+            "crid": "crid-app-native-large-1"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
