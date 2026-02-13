@@ -278,7 +278,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderZeroClickFraud,
 	BidderZetaGlobalSsp,
 	BidderZmaticoo,
-	BidderPixfuture,
 }
 
 func GetAliasBidderToParent() map[BidderName]BidderName {
