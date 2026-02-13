@@ -43,11 +43,6 @@ func (a *adapter) getRequestExtImpBeop(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBe
 			Message: "ext.bidder not provided",
 		}
 	}
-	if beopExt.BeopPublisherID == "" && beopExt.BeopNetworkID == "" {
-		return nil, &errortypes.BadInput{
-			Message: "Missing pid or nid parameters",
-		}
-	}
 	return &beopExt, nil
 }
 
