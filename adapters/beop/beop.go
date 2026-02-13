@@ -165,5 +165,8 @@ func (a *adapter) MakeBids(
 			BidType: bidType,
 		})
 	}
+	if len(bidResponseFinal.Bids) == 0 {
+		return nil, errors
+	}
 	return bidResponseFinal, errors
 }
