@@ -201,6 +201,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOwnAdx,
 	BidderPangle,
 	BidderPGAMSsp,
+	BidderPixfuture,
 	BidderPlaydigo,
 	BidderPubmatic,
 	BidderPubrise,
