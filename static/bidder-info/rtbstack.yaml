@@ -1,4 +1,4 @@
-endpoint: "http://{{.Host}}"
+endpoint: "https://{{.Host}}.rtb-stack.com"
 maintainer:
   email: "prebid@admixer.net"
 gvlVendorID: 511

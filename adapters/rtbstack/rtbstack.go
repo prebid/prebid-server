@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-const endpointMacro = "http://{{.Host}}"
-
 type adapter struct {
-	endpoint string
+	endpoint *template.Template
 }
 
 // impCtx represents the context containing an OpenRTB impression and its corresponding RTBStack extension configuration.
@@ -33,8 +33,13 @@ type extImpRTBStack struct {
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	tpl, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint: tpl,
 	}
 	return bidder, nil
 }
@@ -71,7 +76,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		request.Imp = append(request.Imp, v.imp)
 	}
 
-	endpoint := a.buildEndpointURL(validImps[0].rtbStackExt)
+	endpoint, err := a.buildEndpointURL(validImps[0].rtbStackExt)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	var newRequest openrtb2.BidRequest
 	newRequest = *request
@@ -134,8 +142,27 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, []error{}
 }
 
-func (a *adapter) buildEndpointURL(ext *openrtb_ext.ExtImpRTBStack) string {
-	return strings.Replace(a.endpoint, endpointMacro, ext.Endpoint, -1)
+func (a *adapter) buildEndpointURL(ext *openrtb_ext.ExtImpRTBStack) (string, error) {
+	// Normalize host to avoid accidental protocol prefixes and domains accidentally included
+	host := ext.Host
+	host = strings.TrimPrefix(host, "http://")
+	host = strings.TrimPrefix(host, "https://")
+
+	endpointParams := macros.EndpointTemplateParams{Host: host}
+	baseURL, err := macros.ResolveMacros(a.endpoint, endpointParams)
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve endpoint: %v", err)
+	}
+
+	if ext.Query == "" {
+		return baseURL, nil
+	}
+
+	if strings.HasPrefix(ext.Query, "/") {
+		return baseURL + ext.Query, nil
+	}
+
+	return baseURL + "/" + ext.Query, nil
 }
 
 func preprocessImp(

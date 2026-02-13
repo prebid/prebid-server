@@ -5,9 +5,13 @@
 
   "type": "object",
   "properties": {
-    "endpoint": {
+    "host": {
       "type": "string",
-      "description": "Url provided for pbs auction."
+      "description": "Subdomain host used for RTBStack requests."
+    },
+    "query": {
+      "type": "string",
+      "description": "Path and query string appended to the RTBStack endpoint."
     },
     "tagId": {
       "type": "string",
@@ -19,5 +23,5 @@
     }
   },
 
-  "required": ["endpoint", "tagId"]
+  "required": ["host", "query", "tagId"]
 }

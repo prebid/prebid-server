@@ -12,7 +12,8 @@
         },
         "ext": {
           "bidder": {
-            "endpoint": "http://test.rtb-stack.com",
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
             "tagId": "basic",
             "customParams": {
               "foo": "bar"
@@ -26,7 +27,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://test.rtb-stack.com",
+        "uri": "https://test.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
         "body": {
           "id": "test-request-id",
           "site": {

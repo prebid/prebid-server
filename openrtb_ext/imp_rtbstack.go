@@ -1,7 +1,8 @@
 package openrtb_ext
 
 type ExtImpRTBStack struct {
-	Endpoint     string                 `json:"endpoint,omitempty"`
+	Host         string                 `json:"host,omitempty"`
+	Query        string                 `json:"query,omitempty"`
 	TagId        string                 `json:"tagid,omitempty"`
 	CustomParams map[string]interface{} `json:"customParams,omitempty"`
 }
