@@ -13,9 +13,7 @@
           ]
         },
         "ext": {
-          "bidder": {
-            "placementId": 12345678
-          }
+          "bidder": {}
         }
       }
     ]
@@ -38,9 +36,7 @@
                 ]
               },
               "ext": {
-                "bidder": {
-                  "placementId": 12345678
-                }
+                "bidder": {}
               }
             }
           ]

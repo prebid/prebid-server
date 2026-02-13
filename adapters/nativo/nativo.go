@@ -1,7 +1,6 @@
 package nativo
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -24,7 +24,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	requestJSON, err := json.Marshal(request)
+	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -54,7 +54,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
