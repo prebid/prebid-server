@@ -15,4 +15,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: "https://sync.pixfuture.com/cookiesync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://sync.pixfuture.com/cookiesync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}"
+    userMacro: "${UID}"
