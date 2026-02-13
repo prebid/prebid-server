@@ -85,13 +85,19 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
+	// Step 1: Check if body is empty to avoid unnecessary unmarshal overhead
+	if len(response.Body) == 0 {
+		return nil, nil // Or return a specific error if Pixfuture always expects a body
+	}
+
+	// Step 2: The Unmarshal call (Lines 88-92)
 	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Invalid response format: " + err.Error(),
+			Message: fmt.Sprintf("Invalid response format: %s", err.Error()),
 		}}
 	}
 
-	// Pre-calculate total number of bids to avoid slice reallocations
+	// Pre-calculate total number of bids
 	expectedBids := 0
 	for i := range bidResp.SeatBid {
 		expectedBids += len(bidResp.SeatBid[i].Bid)
@@ -102,7 +108,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	var errs []error
 	for i := range bidResp.SeatBid {
-		for _, bid := range bidResp.SeatBid[i].Bid {
+		// Use index j to avoid copying the large openrtb2.Bid struct
+		for j := range bidResp.SeatBid[i].Bid {
+			bid := &bidResp.SeatBid[i].Bid[j]
+
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errs = append(errs, &errortypes.BadServerResponse{
@@ -112,23 +121,20 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     bid,
 				BidType: bidType,
 			})
 		}
 	}
 
 	if len(bidResponse.Bids) == 0 {
-		if len(errs) > 0 {
-			return nil, errs
-		}
-		return nil, nil
+		return nil, errs
 	}
 
 	return bidResponse, errs
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	// First try standard MType field (OpenRTB 2.6)
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
@@ -145,9 +151,12 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 			Type string `json:"type"`
 		} `json:"prebid"`
 	}
-	if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Failed to parse bid ext for impression %s: %v", bid.ImpID, err),
+
+	if len(bid.Ext) > 0 {
+		if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Failed to parse bid ext for impression %s: %v", bid.ImpID, err),
+			}
 		}
 	}
 
