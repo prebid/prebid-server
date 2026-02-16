@@ -115,7 +115,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "currency": "EUR",
+          "cur": "EUR",
           "seatbid": [
             {
               "bid": [
