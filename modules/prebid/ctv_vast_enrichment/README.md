@@ -32,7 +32,28 @@ modules/prebid/ctv_vast_enrichment/
 
 ## Integracja z PBS
 
-Moduł jest zgodny ze standardowym wzorcem modułów Prebid Server:
+Moduł jest zgodny ze standardowym wzorcem modułów Prebid Server.
+
+### Rejestracja w `modules/builder.go`
+
+Moduł musi być zarejestrowany w pliku `modules/builder.go`, który jest centralnym rejestrem wszystkich modułów PBS:
+
+```go
+import (
+    prebidCtvVastEnrichment "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
+)
+
+var newModuleBuilders = map[string]map[string]interface{}{
+    "prebid": {
+        "ctv_vast_enrichment": prebidCtvVastEnrichment.Builder,
+    },
+}
+```
+
+> **Uwaga:** Nazwa pakietu Go to `ctv_vast_enrichment`, ale subpakiety (enrich, select, format) używają aliasu `vast` do importu pakietu nadrzędnego:
+> ```go
+> import vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
+> ```
 
 ### `module.go` - Główny Punkt Wejścia
 
@@ -59,27 +80,54 @@ Moduł działa na etapie hooka **RawBidderResponse**, przetwarzając odpowiedź 
 
 1. Parsuje VAST XML z pola `AdM` bida
 2. Wzbogaca VAST o pricing, advertiser i metadane kategorii
-3. Aktualizuje pole `AdM` bida wzbogaconym VAST XML
+3. Tworzy nowy `*adapters.TypedBid` z nowym `*openrtb2.Bid` zawierającym wzbogacony AdM
+4. Zwraca mutację przez `changeSet.RawBidderResponse().Bids().UpdateBids(modifiedBids)`
 
-### Konfiguracja
+> **Wzorzec ChangeSet:** Hook nie modyfikuje payload bezpośrednio. Zamiast tego buduje nowy slice `[]adapters.TypedBid` i rejestruje mutację przez `UpdateBids()`. PBS stosuje mutację po powrocie z hooka — zgodnie ze wzorcem z modułu `ortb2blocking`.
 
-Moduł używa warstwowej konfiguracji w stylu PBS:
+### Konfiguracja PBS (`pbs.json`)
+
+Aby moduł został wywołany podczas aukcji, wymagana jest konfiguracja `host_execution_plan` w sekcji `hooks`:
 
 ```json
 {
-  "modules": {
-    "prebid": {
-      "ctv_vast_enrichment": {
-        "enabled": true,
-        "receiver": "GAM_SSU",
-        "default_currency": "USD",
-        "vast_version_default": "3.0",
-        "max_ads_in_pod": 10
+  "hooks": {
+    "enabled": true,
+    "modules": {
+      "prebid": {
+        "ctv_vast_enrichment": {
+          "enabled": true,
+          "receiver": "GAM_SSU",
+          "default_currency": "USD"
+        }
+      }
+    },
+    "host_execution_plan": {
+      "endpoints": {
+        "/openrtb2/auction": {
+          "stages": {
+            "raw_bidder_response": {
+              "groups": [
+                {
+                  "timeout": 1000,
+                  "hook_sequence": [
+                    {
+                      "module_code": "prebid.ctv_vast_enrichment",
+                      "hook_impl_code": "code123"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }
 }
 ```
+
+> **Ważne:** Sam `enabled_modules` nie wystarczy. PBS wymaga jawnego `host_execution_plan` z definicją stage `raw_bidder_response` i `module_code: "prebid.ctv_vast_enrichment"`, aby hook został faktycznie wywołany.
 
 Konfiguracja na poziomie konta nadpisuje ustawienia na poziomie hosta.
 
@@ -179,6 +227,9 @@ Funkcje pomocnicze:
 - `BuildNoAdVast()` - Tworzy pusty VAST (brak reklam)
 - `BuildSkeletonInlineVast()` - Tworzy minimalny szkielet VAST
 - `Marshal()` / `MarshalCompact()` - Serializacja do XML
+- `clearInnerXML()` - Czyści pola `InnerXML` przed serializacją (zapobiega duplikowaniu elementów)
+
+> **Fix XML:** Struktury VAST używają tagu `,innerxml` do zachowania surowego XML podczas parsowania. Przed `Marshal()` wywoływana jest `clearInnerXML()`, która zeruje pola `InnerXML` na strukturach `Ad`, `InLine`, `Wrapper`, `Creative` i `Linear`, zapobiegając duplikowaniu elementów w wynikowym XML.
 
 #### `parser.go`
 
@@ -255,23 +306,51 @@ Budowanie końcowego VAST XML:
 
 ### Jako Moduł PBS (Rekomendowane)
 
-Moduł jest automatycznie wywoływany podczas pipeline aukcji gdy włączony w konfiguracji:
+Moduł jest automatycznie wywoływany podczas pipeline aukcji gdy włączony w konfiguracji.
 
-```yaml
-# Konfiguracja PBS
-hooks:
-  enabled_modules:
-    - prebid.ctv_vast_enrichment
+**1. Upewnij się, że moduł jest zarejestrowany w `modules/builder.go`** (patrz sekcja "Rejestracja" wyżej).
 
-modules:
-  prebid:
-    ctv_vast_enrichment:
-      enabled: true
-      default_currency: "USD"
-      receiver: "GAM_SSU"
+**2. Dodaj konfigurację hooks do `pbs.json`:**
+
+```json
+{
+  "hooks": {
+    "enabled": true,
+    "modules": {
+      "prebid": {
+        "ctv_vast_enrichment": {
+          "enabled": true,
+          "default_currency": "USD",
+          "receiver": "GAM_SSU"
+        }
+      }
+    },
+    "host_execution_plan": {
+      "endpoints": {
+        "/openrtb2/auction": {
+          "stages": {
+            "raw_bidder_response": {
+              "groups": [
+                {
+                  "timeout": 1000,
+                  "hook_sequence": [
+                    {
+                      "module_code": "prebid.ctv_vast_enrichment",
+                      "hook_impl_code": "code123"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
-Nadpisanie na poziomie konta:
+**3. Nadpisanie na poziomie konta** (opcjonalne):
 ```json
 {
   "hooks": {

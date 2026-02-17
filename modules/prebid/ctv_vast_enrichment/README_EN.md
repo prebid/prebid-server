@@ -32,7 +32,28 @@ modules/prebid/ctv_vast_enrichment/
 
 ## PBS Module Integration
 
-This module follows the standard Prebid Server module pattern:
+This module follows the standard Prebid Server module pattern.
+
+### Registration in `modules/builder.go`
+
+The module must be registered in `modules/builder.go`, which is the central registry of all PBS modules:
+
+```go
+import (
+    prebidCtvVastEnrichment "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
+)
+
+var newModuleBuilders = map[string]map[string]interface{}{
+    "prebid": {
+        "ctv_vast_enrichment": prebidCtvVastEnrichment.Builder,
+    },
+}
+```
+
+> **Note:** The Go package name is `ctv_vast_enrichment`, but subpackages (enrich, select, format) use the `vast` alias when importing the parent package:
+> ```go
+> import vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
+> ```
 
 ### \`module.go\` - Main Entry Point
 
@@ -59,7 +80,10 @@ The module runs at the **RawBidderResponse** hook stage, processing each bidder'
 
 1. Parses the VAST XML from the bid's \`AdM\` field
 2. Enriches the VAST with pricing, advertiser, and category metadata
-3. Updates the bid's \`AdM\` with the enriched VAST XML
+3. Creates a new `*adapters.TypedBid` with a new `*openrtb2.Bid` containing the enriched AdM
+4. Returns the mutation via `changeSet.RawBidderResponse().Bids().UpdateBids(modifiedBids)`
+
+> **ChangeSet Pattern:** The hook does not modify the payload directly. Instead, it builds a new `[]adapters.TypedBid` slice and registers the mutation via `UpdateBids()`. PBS applies the mutation after the hook returns — following the pattern from the `ortb2blocking` module.
 
 ### Configuration
 
@@ -176,11 +200,14 @@ Go structures mapping VAST XML elements:
 - \`Pricing\`, \`Impression\`, \`Extensions\` - Metadata and tracking
 
 Helper functions:
-- \`BuildNoAdVast()\` - Creates empty VAST (no ads)
-- \`BuildSkeletonInlineVast()\` - Creates minimal VAST skeleton
-- \`Marshal()\` / \`MarshalCompact()\` - Serialize to XML
+- `BuildNoAdVast()` - Creates empty VAST (no ads)
+- `BuildSkeletonInlineVast()` - Creates minimal VAST skeleton
+- `Marshal()` / `MarshalCompact()` - Serialize to XML
+- `clearInnerXML()` - Clears `InnerXML` fields before serialization (prevents element duplication)
 
-#### \`parser.go\`
+> **XML Fix:** VAST structures use the `,innerxml` tag to preserve raw XML during parsing. Before `Marshal()`, `clearInnerXML()` is called to zero out `InnerXML` fields on `Ad`, `InLine`, `Wrapper`, `Creative`, and `Linear` structs, preventing duplicate elements in the output XML.
+
+#### `parser.go`
 
 VAST XML parser:
 
@@ -255,24 +282,52 @@ Building final VAST XML:
 
 ### As PBS Module (Recommended)
 
-The module is automatically invoked during the auction pipeline when enabled in configuration:
+The module is automatically invoked during the auction pipeline when enabled in configuration.
 
-\`\`\`yaml
-# PBS config
-hooks:
-  enabled_modules:
-    - prebid.ctv_vast_enrichment
+**1. Ensure the module is registered in `modules/builder.go`** (see "Registration" section above).
 
-modules:
-  prebid:
-    ctv_vast_enrichment:
-      enabled: true
-      default_currency: "USD"
-      receiver: "GAM_SSU"
-\`\`\`
+**2. Add hooks configuration to `pbs.json`:**
 
-Account-level override:
-\`\`\`json
+```json
+{
+  "hooks": {
+    "enabled": true,
+    "modules": {
+      "prebid": {
+        "ctv_vast_enrichment": {
+          "enabled": true,
+          "default_currency": "USD",
+          "receiver": "GAM_SSU"
+        }
+      }
+    },
+    "host_execution_plan": {
+      "endpoints": {
+        "/openrtb2/auction": {
+          "stages": {
+            "raw_bidder_response": {
+              "groups": [
+                {
+                  "timeout": 1000,
+                  "hook_sequence": [
+                    {
+                      "module_code": "prebid.ctv_vast_enrichment",
+                      "hook_impl_code": "code123"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**3. Account-level override** (optional):
+```json
 {
   "hooks": {
     "modules": {
@@ -283,7 +338,7 @@ Account-level override:
     }
   }
 }
-\`\`\`
+```
 
 ### Standalone Pipeline (for HTTP handler)
 
