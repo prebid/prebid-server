@@ -59,8 +59,8 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	var publisherId string
 
 	for _, imp := range openRTBRequest.Imp {
-		impExtMap := make(map[string]interface{})
-		err := json.Unmarshal(imp.Ext, &impExtMap)
+		var impExtMap map[string]interface{}
+		err := jsonutil.Unmarshal(imp.Ext, &impExtMap)
 		if err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: "Bidder extension not provided or can't be unmarshalled",
@@ -219,7 +219,6 @@ func clearAuctionEnvironment(impExtMap map[string]interface{}) {
 }
 
 func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
-	// imp.ext.gpid
 	if gpid, ok := impExtMap["gpid"].(string); ok && gpid != "" {
 		return gpid
 	}
@@ -233,7 +232,6 @@ func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
 			}
 		}
 
-		// imp.ext.data.pbadslot
 		if pbAdSlot, ok := dataMap["pbadslot"].(string); ok && pbAdSlot != "" {
 			return pbAdSlot
 		}
@@ -252,11 +250,11 @@ func getImpressionExt(impExtMap map[string]interface{}) (*openrtb_ext.ExtImpRTBH
 	bidderVal, ok := impExtMap["bidder"]
 	if !ok {
 		return nil, &errortypes.BadInput{
-			Message: "Bidder extension not provided or can't be unmarshalled",
+			Message: "Bidder extension not provided",
 		}
 	}
 
-	bidderBytes, err := json.Marshal(bidderVal)
+	bidderBytes, err := jsonutil.Marshal(bidderVal)
 	if err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not provided or can't be unmarshalled",
