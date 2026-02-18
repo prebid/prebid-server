@@ -206,8 +206,7 @@
             "dataAttr2": "dataVal2"
           },
           "bidder": {
-            "video": {
-            },
+            "video": {},
             "accountId": 1001,
             "siteId": 113932,
             "zoneId": 535510
@@ -414,8 +413,7 @@
               "video": {
                 "placement": 3,
                 "ext": {
-                  "rp": {
-                  }
+                  "rp": {}
                 },
                 "mimes": [
                   "video/mp4"
@@ -473,7 +471,9 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -497,7 +497,7 @@
                   }
                 }
               ],
-              "seat": "adman"
+              "seat": "rubicon"
             }
           ],
           "cur": "USD"
@@ -520,7 +520,10 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "type": "video"
+                "type": "video",
+                "meta": {
+                  "seat": "rubicon"
+                }
               }
             }
           },

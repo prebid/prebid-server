@@ -3,14 +3,16 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/sliceutil"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -21,15 +23,18 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	AliasOf          string `yaml:"aliasOf" mapstructure:"aliasOf"`
-	Disabled         bool   `yaml:"disabled" mapstructure:"disabled"`
-	Endpoint         string `yaml:"endpoint" mapstructure:"endpoint"`
-	ExtraAdapterInfo string `yaml:"extra_info" mapstructure:"extra_info"`
+	AliasOf          string       `yaml:"aliasOf" mapstructure:"aliasOf"`
+	WhiteLabelOnly   bool         `yaml:"whiteLabelOnly" mapstructure:"whiteLabelOnly"`
+	Disabled         bool         `yaml:"disabled" mapstructure:"disabled"`
+	Endpoint         string       `yaml:"endpoint" mapstructure:"endpoint"`
+	ExtraAdapterInfo string       `yaml:"extra_info" mapstructure:"extra_info"`
+	OpenRTB          *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
 
 	Maintainer              *MaintainerInfo   `yaml:"maintainer" mapstructure:"maintainer"`
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities" mapstructure:"capabilities"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug" mapstructure:"debug"`
+	Geoscope                []string          `yaml:"geoscope" mapstructure:"geoscope"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
 
 	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
@@ -43,8 +48,7 @@ type BidderInfo struct {
 	PlatformID string `yaml:"platform_id" mapstructure:"platform_id"`
 	AppSecret  string `yaml:"app_secret" mapstructure:"app_secret"`
 	// EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
-	EndpointCompression string       `yaml:"endpointCompression" mapstructure:"endpointCompression"`
-	OpenRTB             *OpenRTBInfo `yaml:"openrtb" mapstructure:"openrtb"`
+	EndpointCompression string `yaml:"endpointCompression" mapstructure:"endpointCompression"`
 }
 
 type aliasNillableFields struct {
@@ -136,9 +140,42 @@ type Syncer struct {
 	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
 }
 
+func (s *Syncer) Equal(other *Syncer) bool {
+	if s == nil && other == nil {
+		return true
+	}
+
+	if s == nil || other == nil {
+		return false
+	}
+
+	return s.Key == other.Key &&
+		sliceutil.EqualIgnoreOrder(s.Supports, other.Supports) &&
+		s.IFrame.Equal(other.IFrame) &&
+		s.Redirect.Equal(other.Redirect) &&
+		s.ExternalURL == other.ExternalURL &&
+		ptrutil.Equal(s.SupportCORS, other.SupportCORS) &&
+		s.FormatOverride == other.FormatOverride &&
+		ptrutil.Equal(s.Enabled, other.Enabled) &&
+		s.SkipWhen.Equal(other.SkipWhen)
+}
+
 type SkipWhen struct {
 	GDPR   bool     `yaml:"gdpr" mapstructure:"gdpr"`
 	GPPSID []string `yaml:"gpp_sid" mapstructure:"gpp_sid"`
+}
+
+func (s *SkipWhen) Equal(other *SkipWhen) bool {
+	if s == nil && other == nil {
+		return true
+	}
+
+	if s == nil || other == nil {
+		return false
+	}
+
+	return s.GDPR == other.GDPR &&
+		sliceutil.EqualIgnoreOrder(s.GPPSID, other.GPPSID)
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint
@@ -198,8 +235,23 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
+func (s *SyncerEndpoint) Equal(other *SyncerEndpoint) bool {
+	if s == nil && other == nil {
+		return true
+	}
+
+	if s == nil || other == nil {
+		return false
+	}
+
+	return s.URL == other.URL &&
+		s.RedirectURL == other.RedirectURL &&
+		s.ExternalURL == other.ExternalURL &&
+		s.UserMacro == other.UserMacro
+}
+
 func (bi BidderInfo) IsEnabled() bool {
-	return !bi.Disabled
+	return !bi.WhiteLabelOnly && !bi.Disabled
 }
 
 // Defined returns true if at least one field exists, except for the supports field.
@@ -233,7 +285,7 @@ const (
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalf("%v", err)
 	}
 
 	bidderInfos := make(map[string][]byte)
@@ -407,15 +459,24 @@ func (infos BidderInfos) validate(errs []error) []error {
 }
 
 func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName string) error {
-	if len(aliasBidderInfo.AliasOf) > 0 {
-		if parentBidder, ok := infos[aliasBidderInfo.AliasOf]; ok {
-			if len(parentBidder.AliasOf) > 0 {
-				return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
-			}
-		} else {
-			return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
-		}
+	if aliasBidderInfo.AliasOf == "" {
+		return nil
 	}
+
+	if aliasBidderInfo.WhiteLabelOnly {
+		return fmt.Errorf("bidder: %s is an alias and cannot be set as white label only", bidderName)
+	}
+
+	parentBidder, parentBidderFound := infos[aliasBidderInfo.AliasOf]
+
+	if !parentBidderFound {
+		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+	}
+
+	if len(parentBidder.AliasOf) > 0 {
+		return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+	}
+
 	return nil
 }
 
@@ -427,6 +488,8 @@ var testEndpointTemplateParams = macros.EndpointTemplateParams{
 	SourceId:    "anySourceID",
 	AdUnit:      "anyAdUnit",
 	MediaType:   "MediaType",
+	Region:      "anyRegion",
+	PartnerId:   "anyPartnerId",
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
@@ -463,6 +526,9 @@ func validateAdapterEndpoint(endpoint string, bidderName string, errs []error) [
 
 func validateInfo(bidder BidderInfo, infos BidderInfos, bidderName string) error {
 	if err := validateMaintainer(bidder.Maintainer, bidderName); err != nil {
+		return err
+	}
+	if err := validateGeoscope(bidder.Geoscope, bidderName); err != nil {
 		return err
 	}
 	if err := validateCapabilities(bidder.Capabilities, bidderName); err != nil {
@@ -575,6 +641,38 @@ func validatePlatformInfo(info *PlatformInfo) error {
 	for index, mediaType := range info.MediaTypes {
 		if mediaType != "banner" && mediaType != "video" && mediaType != "native" && mediaType != "audio" {
 			return fmt.Errorf("unrecognized media type at index %d: %s", index, mediaType)
+		}
+	}
+
+	return nil
+}
+
+func validateGeoscope(geoscope []string, bidderName string) error {
+	// ISO 3166-1 alpha-3 country codes are uppercase 3-letter codes
+	for i, code := range geoscope {
+		code = strings.ToUpper(strings.TrimSpace(code))
+
+		if code == "GLOBAL" || code == "EEA" {
+			continue
+		}
+
+		// Handle exclusion pattern with "!" prefix
+		exclusion := ""
+		if strings.HasPrefix(code, "!") {
+			exclusion = "!"
+			code = code[1:]
+		}
+
+		if len(code) != 3 {
+			return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must be a 3-letter ISO 3166-1 alpha-3 country code",
+				i, code, exclusion, bidderName)
+		}
+
+		for _, char := range code {
+			if char < 'A' || char > 'Z' {
+				return fmt.Errorf("invalid geoscope entry at index %d: %s for adapter: %s%s - must contain only uppercase letters A-Z",
+					i, code, exclusion, bidderName)
+			}
 		}
 	}
 

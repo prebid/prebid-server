@@ -1,0 +1,18 @@
+{
+  "mockBidRequest": {
+    "id": "invalid-imp-ext-format",
+    "imp": [
+      {
+        "id": "invalid-imp-ext-format",
+        "ext": "123"
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid imp.ext for impression index 0. Error Information: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -14,11 +14,11 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/hooks"
 	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/ortb"
 	"github.com/prebid/prebid-server/v3/privacy"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
@@ -176,6 +176,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, []error{err}, &vo, &debugLog)
 		return
 	}
+	labels.RequestSize = len(requestJson)
 
 	resolvedRequest := requestJson
 	if debugLog.DebugEnabledOrOverridden {
@@ -265,7 +266,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := ortb.SetDefaults(bidReqWrapper); err != nil {
+	if err := ortb.SetDefaults(bidReqWrapper, deps.cfg.TmaxDefault); err != nil {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
@@ -303,6 +304,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(bidReqWrapper, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
+
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	if errs := deps.setFieldsImplicitly(r, bidReqWrapper, account); len(errs) > 0 {
 		errL = append(errL, errs...)
@@ -331,8 +335,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TCF2Config:                 tcf2Config,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 		Activities:                 activityControl,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
@@ -364,7 +371,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if bidReq.Test == 1 {
 		err = setSeatNonBidRaw(bidReqWrapper, auctionResponse)
 		if err != nil {
-			glog.Errorf("Error setting seat non-bid: %v", err)
+			logger.Errorf("Error setting seat non-bid: %v", err)
 		}
 		bidResp.Ext = response.Ext
 	}
@@ -434,7 +441,7 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	w.WriteHeader(status)
 	vo.Status = status
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
-	glog.Errorf("/openrtb2/video Critical error: %v", errors)
+	logger.Errorf("/openrtb2/video Critical error: %v", errors)
 	vo.Errors = append(vo.Errors, errL...)
 }
 
@@ -549,7 +556,7 @@ func buildVideoResponse(bidresponse *openrtb2.BidResponse, podErrors []PodError)
 			if err := jsonutil.UnmarshalValid(bid.Ext, &tempRespBidExt); err != nil {
 				return nil, err
 			}
-			if tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)] == "" {
+			if findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.VastCacheKey, seatBid.Seat)) == "" {
 				continue
 			}
 
@@ -558,10 +565,10 @@ func buildVideoResponse(bidresponse *openrtb2.BidResponse, podErrors []PodError)
 			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				HbPb:       tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbpbConstantKey, seatBid.Seat)],
-				HbPbCatDur: tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbCategoryDurationKey, seatBid.Seat)],
-				HbCacheID:  tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbVastCacheKey, seatBid.Seat)],
-				HbDeal:     tempRespBidExt.Prebid.Targeting[formatTargetingKey(openrtb_ext.HbDealIDConstantKey, seatBid.Seat)],
+				HbPb:       findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.PbKey, seatBid.Seat)),
+				HbPbCatDur: findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.CategoryDurationKey, seatBid.Seat)),
+				HbCacheID:  findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.VastCacheKey, seatBid.Seat)),
+				HbDeal:     findTargetingByKey(tempRespBidExt.Prebid.Targeting, formatTargetingKey(openrtb_ext.DealKey, seatBid.Seat)),
 			}
 
 			adPod := findAdPod(podId, adPods)
@@ -605,6 +612,17 @@ func formatTargetingKey(key openrtb_ext.TargetingKey, bidderName string) string 
 		return string(fullKey[0:exchange.MaxKeyLength])
 	}
 	return fullKey
+}
+
+func findTargetingByKey(targetingMap map[string]string, keyWithoutPrefix string) string {
+	for k, v := range targetingMap {
+		prefixIndex := strings.Index(k, "_")
+		// find potentially truncated key in original key name without prefixes
+		if prefixIndex > 0 && strings.HasPrefix(keyWithoutPrefix, k[prefixIndex:]) {
+			return v
+		}
+	}
+	return ""
 }
 
 func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {

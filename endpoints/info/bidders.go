@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -18,22 +18,22 @@ var invalidBaseAdaptersOnlyMsg = []byte(`Invalid value for 'baseadaptersonly' qu
 func NewBiddersEndpoint(bidders config.BidderInfos) httprouter.Handle {
 	responseAll, err := prepareBiddersResponseAll(bidders)
 	if err != nil {
-		glog.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
+		logger.Fatalf("error creating /info/bidders endpoint all bidders response: %v", err)
 	}
 
 	responseAllBaseOnly, err := prepareBiddersResponseAllBaseOnly(bidders)
 	if err != nil {
-		glog.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
+		logger.Fatalf("error creating /info/bidders endpoint all bidders (base adapters only) response: %v", err)
 	}
 
 	responseEnabledOnly, err := prepareBiddersResponseEnabledOnly(bidders)
 	if err != nil {
-		glog.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
+		logger.Fatalf("error creating /info/bidders endpoint enabled only response: %v", err)
 	}
 
 	responseEnabledOnlyBaseOnly, err := prepareBiddersResponseEnabledOnlyBaseOnly(bidders)
 	if err != nil {
-		glog.Fatalf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
+		logger.Fatalf("error creating /info/bidders endpoint enabled only (base adapters only) response: %v", err)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -106,12 +106,12 @@ func prepareResponse(bidders config.BidderInfos, p bidderPredicate) ([]byte, err
 }
 
 func prepareBiddersResponseAll(bidders config.BidderInfos) ([]byte, error) {
-	filterNone := func(_ config.BidderInfo) bool { return true }
+	filterNone := func(info config.BidderInfo) bool { return !info.WhiteLabelOnly }
 	return prepareResponse(bidders, filterNone)
 }
 
 func prepareBiddersResponseAllBaseOnly(bidders config.BidderInfos) ([]byte, error) {
-	filterBaseOnly := func(info config.BidderInfo) bool { return len(info.AliasOf) == 0 }
+	filterBaseOnly := func(info config.BidderInfo) bool { return !info.WhiteLabelOnly && len(info.AliasOf) == 0 }
 	return prepareResponse(bidders, filterBaseOnly)
 }
 
@@ -137,6 +137,6 @@ func writeResponse(w http.ResponseWriter, data []byte) {
 
 func writeWithErrorHandling(w http.ResponseWriter, data []byte) {
 	if _, err := w.Write(data); err != nil {
-		glog.Errorf("error writing response to /info/bidders: %v", err)
+		logger.Errorf("error writing response to /info/bidders: %v", err)
 	}
 }
