@@ -80,7 +80,8 @@
       "expectedRequest": {
         "uri": "https://example.endpoint/",
         "headers": {
-          "Content-Type": ["application/json"]
+          "Content-Type": ["application/json"],
+          "X-Supply-Partner-Id": ["123"]
         },
         "impIDs": [
           "test-impression-id"
