@@ -19,6 +19,10 @@
         "pbsBufferMs": {
             "type": "number",
             "description": "TMax buffer, default is 250"
+        },
+        "useSourceBidderCode": {
+            "type": "boolean",
+            "description": "Use the bidder code of the actual server-side bidder in bid responses"
         }
     },
     "required": [
