@@ -39,9 +39,8 @@ type Syncer interface {
 
 // Sync represents a user sync to be performed by the user's device.
 type Sync struct {
-	URL         string
-	Type        SyncType
-	SupportCORS bool
+	URL  string
+	Type SyncType
 }
 
 type standardSyncer struct {
@@ -49,7 +48,6 @@ type standardSyncer struct {
 	defaultSyncType SyncType
 	iframe          *template.Template
 	redirect        *template.Template
-	supportCORS     bool
 	formatOverride  string
 }
 
@@ -67,7 +65,6 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer, bidder st
 	syncer := standardSyncer{
 		key:             syncerConfig.Key,
 		defaultSyncType: resolveDefaultSyncType(syncerConfig),
-		supportCORS:     syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
 		formatOverride:  syncerConfig.FormatOverride,
 	}
 
@@ -237,9 +234,8 @@ func (s standardSyncer) GetSync(syncTypes []SyncType, userSyncMacros macros.User
 	}
 
 	sync := Sync{
-		URL:         url,
-		Type:        syncType,
-		SupportCORS: s.supportCORS,
+		URL:  url,
+		Type: syncType,
 	}
 	return sync, nil
 }

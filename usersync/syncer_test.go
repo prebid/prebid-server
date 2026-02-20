@@ -11,7 +11,6 @@ import (
 
 func TestNewSyncer(t *testing.T) {
 	var (
-		supportCORS      = true
 		hostConfig       = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
 		macroValues      = macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
 		iframeConfig     = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
@@ -107,7 +106,6 @@ func TestNewSyncer(t *testing.T) {
 	for _, test := range testCases {
 		syncerConfig := config.Syncer{
 			Key:         test.givenKey,
-			SupportCORS: &supportCORS,
 			IFrame:      test.givenIFrameConfig,
 			Redirect:    test.givenRedirectConfig,
 			ExternalURL: test.givenExternalURL,
@@ -120,7 +118,6 @@ func TestNewSyncer(t *testing.T) {
 			if assert.IsType(t, standardSyncer{}, result, test.description+":result_type") {
 				result := result.(standardSyncer)
 				assert.Equal(t, test.givenKey, result.key, test.description+":key")
-				assert.Equal(t, supportCORS, result.supportCORS, test.description+":cors")
 				assert.Equal(t, test.expectedDefault, result.defaultSyncType, test.description+":default_sync")
 
 				if test.expectedIFrame == "" {
@@ -682,14 +679,14 @@ func TestSyncerGetSync(t *testing.T) {
 			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
 			givenSyncTypes: []SyncType{SyncTypeIFrame},
 			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
-			expectedSync:   Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame, SupportCORS: false},
+			expectedSync:   Sync{URL: "iframe,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeIFrame},
 		},
 		{
 			description:    "Redirect",
 			givenSyncer:    standardSyncer{iframe: iframeTemplate, redirect: redirectTemplate},
 			givenSyncTypes: []SyncType{SyncTypeRedirect},
 			givenMacros:    macros.UserSyncPrivacy{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"},
-			expectedSync:   Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect, SupportCORS: false},
+			expectedSync:   Sync{URL: "redirect,gdpr:A,gdprconsent:B,ccpa:C", Type: SyncTypeRedirect},
 		},
 		{
 			description:    "Macro Error",
