@@ -67,7 +67,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			}}
 		}
 
-		rtbhouseExt, err := getImpressionExt(impExtMap)
+		rtbhouseExt, err := getImpressionExt(imp.Ext)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -238,31 +238,19 @@ func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
 	}
 
 	// imp.ID as fallback
-	if impID != "" {
-		return impID
-	}
-
-	return ""
+	return impID
 }
 
-func getImpressionExt(impExtMap map[string]interface{}) (*openrtb_ext.ExtImpRTBHouse, error) {
-	// Check for bidder parameters in imp.ext.bidder
-	bidderVal, ok := impExtMap["bidder"]
-	if !ok {
-		return nil, &errortypes.BadInput{
-			Message: "Bidder extension not provided",
-		}
-	}
-
-	bidderBytes, err := jsonutil.Marshal(bidderVal)
-	if err != nil {
+func getImpressionExt(impExt json.RawMessage) (*openrtb_ext.ExtImpRTBHouse, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := jsonutil.Unmarshal(impExt, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not provided or can't be unmarshalled",
 		}
 	}
 
 	var rtbhouseExt openrtb_ext.ExtImpRTBHouse
-	if err := jsonutil.Unmarshal(bidderBytes, &rtbhouseExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &rtbhouseExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
