@@ -391,9 +391,6 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		if aliasBidderInfo.ExtraAdapterInfo == "" {
 			aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
 		}
-		if aliasBidderInfo.GVLVendorID == 0 {
-			aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
-		}
 		if aliasBidderInfo.Maintainer == nil {
 			aliasBidderInfo.Maintainer = parentBidderInfo.Maintainer
 		}
