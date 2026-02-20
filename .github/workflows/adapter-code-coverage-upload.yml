@@ -1,0 +1,103 @@
+name: Adapter Code Coverage Upload
+
+on:
+  workflow_run:
+    workflows: ["Adapter Code Coverage"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  upload-coverage:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-results
+          path: coverage-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Artifacts Exist
+        id: check_artifacts
+        run: |
+          if [ -d "coverage-results/metadata" ]; then
+            echo "has_artifacts=true" >> $GITHUB_OUTPUT
+            echo "pr_number=$(cat coverage-results/metadata/pr_number)" >> $GITHUB_OUTPUT
+            echo "head_sha=$(cat coverage-results/metadata/head_sha)" >> $GITHUB_OUTPUT
+            echo "directories=$(cat coverage-results/metadata/directories)" >> $GITHUB_OUTPUT
+          else
+            echo "has_artifacts=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout Coverage Preview Branch
+        if: steps.check_artifacts.outputs.has_artifacts == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: coverage-preview
+          repository: prebid/prebid-server
+
+      - name: Upload Coverage Results
+        if: steps.check_artifacts.outputs.has_artifacts == 'true'
+        id: commit_coverage
+        run: |
+          directory=.github/preview/${{ github.event.workflow_run.id }}_$(date +%s)
+          mkdir -p $directory
+          cp -r coverage-results/*.html ./$directory 2>/dev/null || true
+          cp -r coverage-results/*.txt ./$directory 2>/dev/null || true
+
+          # Check if there are files to commit
+          if [ -z "$(ls -A $directory 2>/dev/null)" ]; then
+            echo "No coverage files to upload"
+            echo "has_files=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add $directory/*
+          git commit -m 'Add coverage files'
+          git push origin coverage-preview
+          echo "remote_coverage_preview_dir=${directory}" >> $GITHUB_OUTPUT
+          echo "has_files=true" >> $GITHUB_OUTPUT
+
+      # Checkout master branch to access the helper script at
+      # .github/workflows/helpers/pull-request-utils.js
+      # which may not exist on the coverage-preview branch
+      - name: Checkout Master Branch
+        if: steps.check_artifacts.outputs.has_artifacts == 'true' && steps.commit_coverage.outputs.has_files == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          repository: prebid/prebid-server
+
+      - name: Add Coverage Summary To Pull Request
+        if: steps.check_artifacts.outputs.has_artifacts == 'true' && steps.commit_coverage.outputs.has_files == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+
+            const prNumber = parseInt('${{ steps.check_artifacts.outputs.pr_number }}');
+            const headSha = '${{ steps.check_artifacts.outputs.head_sha }}';
+            const remoteCoverageDir = '${{ steps.commit_coverage.outputs.remote_coverage_preview_dir }}';
+            const adapterDirectories = JSON.parse('${{ steps.check_artifacts.outputs.directories }}');
+
+            // Read coverage text files for summary
+            const tmpCoverageDir = 'coverage-results';
+
+            const helper = utils.coverageHelper({
+              github,
+              context: { payload: { pull_request: { number: prNumber } } },
+              headSha: headSha,
+              tmpCoverageDir: tmpCoverageDir,
+              remoteCoverageDir: remoteCoverageDir
+            })
+            await helper.AddCoverageSummary(adapterDirectories)
