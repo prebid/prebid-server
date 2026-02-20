@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": "malformed"
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp.ext is invalid: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": []
+}

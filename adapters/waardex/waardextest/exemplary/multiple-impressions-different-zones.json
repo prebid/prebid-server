@@ -1,0 +1,227 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000003",
+    "imp": [
+      {
+        "id": "banner-3",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 301,
+            "host": "tag.test.com"
+          }
+        }
+      },
+      {
+        "id": "banner-4",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 302,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/multi-zone.html",
+      "publisher": {
+        "id": "3"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    },
+    "cur": [
+      "USD"
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?zone=301",
+        "body": {
+          "id": "0000000000003",
+          "imp": [
+            {
+              "id": "banner-3",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com/multi-zone.html"
+          },
+          "user": {
+            "buyeruid": "A-38327932832"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "banner-3"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-0002",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-301-1",
+                  "impid": "banner-3",
+                  "price": 0.95,
+                  "cid": "7001",
+                  "crid": "8001",
+                  "adid": "8001",
+                  "adm": "<!-- admarkup 3 -->",
+                  "mtype": 1,
+                  "adomain": [
+                    "example-3.com"
+                  ],
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "bidid": "resp-0002-bid",
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?zone=302",
+        "body": {
+          "id": "0000000000003",
+          "imp": [
+            {
+              "id": "banner-4",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com/multi-zone.html"
+          },
+          "user": {
+            "buyeruid": "A-38327932832"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "banner-4"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-0003",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-302-1",
+                  "impid": "banner-4",
+                  "price": 0.75,
+                  "cid": "7002",
+                  "crid": "8002",
+                  "adid": "8002",
+                  "adm": "<!-- admarkup 4 -->",
+                  "mtype": 1,
+                  "adomain": [
+                    "example-4.com"
+                  ],
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ],
+          "bidid": "resp-0003-bid",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-301-1",
+            "impid": "banner-3",
+            "price": 0.95,
+            "adm": "<!-- admarkup 3 -->",
+            "adomain": [
+              "example-3.com"
+            ],
+            "cid": "7001",
+            "adid": "8001",
+            "crid": "8001",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-302-1",
+            "impid": "banner-4",
+            "price": 0.75,
+            "adm": "<!-- admarkup 4 -->",
+            "adomain": [
+              "example-4.com"
+            ],
+            "cid": "7002",
+            "adid": "8002",
+            "crid": "8002",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
