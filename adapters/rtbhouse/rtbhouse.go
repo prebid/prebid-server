@@ -114,7 +114,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 		// remove PAAPI signals
 		clearAuctionEnvironment(impExtMap)
-		newImpExt, err := json.Marshal(impExtMap)
+		newImpExt, err := jsonutil.Marshal(impExtMap)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
