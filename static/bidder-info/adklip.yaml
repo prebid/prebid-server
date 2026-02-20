@@ -1,0 +1,8 @@
+aliasOf: aso
+endpoint: "https://srv.adklip.net/pbs/bidder?zid={{.ZoneID}}"
+maintainer:
+  email: "support@adklip.com"
+userSync:
+  redirect:
+    url: "https://track.adklip.net/sync/v2?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usp={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "{uid}"
