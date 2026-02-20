@@ -50,6 +50,7 @@ type Configuration struct {
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	VTrack            VTrack          `mapstructure:"vtrack"`
 	Event             Event           `mapstructure:"event"`
+	Video             Video           `mapstructure:"video"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
@@ -548,6 +549,10 @@ type VTrack struct {
 
 type Event struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
+}
+
+type Video struct {
+	EnableDeprecatedEndpoint bool `mapstructure:"enable_deprecated_endpoint"`
 }
 
 type HostCookie struct {
@@ -1122,6 +1127,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("vtrack.enabled", true)
 
 	v.SetDefault("event.timeout_ms", 1000)
+
+	v.SetDefault("video.enable_deprecated_endpoint", false)
 
 	v.SetDefault("user_sync.priority_groups", [][]string{})
 

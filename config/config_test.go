@@ -168,6 +168,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
 	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
 	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "video.enable_deprecated_endpoint", false, cfg.Video.EnableDeprecatedEndpoint)
 	cmpBools(t, "accounts.filesystem.enabled", false, cfg.Accounts.Files.Enabled)
 	cmpStrings(t, "accounts.filesystem.directorypath", "./stored_requests/data/by_id", cfg.Accounts.Files.Path)
 	cmpStrings(t, "accounts.http.endpoint", "", cfg.Accounts.HTTP.Endpoint)
@@ -422,6 +423,8 @@ gdpr:
       vendor_exceptions: ["foo10"]
     special_feature1:
       vendor_exceptions: ["fooSP1"]
+video:
+  enable_deprecated_endpoint: true
 ccpa:
   enforce: true
 lmt:
@@ -685,6 +688,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", 3, cfg.CacheClient.IdleConnTimeout)
 	cmpInts(t, "gdpr.host_vendor_id", 15, cfg.GDPR.HostVendorID)
 	cmpStrings(t, "gdpr.default_value", "1", cfg.GDPR.DefaultValue)
+	cmpBools(t, "video.enable_deprecated_endpoint", true, cfg.Video.EnableDeprecatedEndpoint)
 	cmpStrings(t, "host_schain_node.asi", "pbshostcompany.com", cfg.HostSChainNode.ASI)
 	cmpStrings(t, "host_schain_node.sid", "00001", cfg.HostSChainNode.SID)
 	cmpStrings(t, "host_schain_node.rid", "BidRequest", cfg.HostSChainNode.RID)
