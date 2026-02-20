@@ -1233,6 +1233,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.privacy.privacysandbox.topicsdomain", "")
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false)
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
+	v.SetDefault("account_defaults.stored_request.array_merge", "replace")
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.BindEnv("account_defaults.privacy.dsa.default")
