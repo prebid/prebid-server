@@ -1,0 +1,34 @@
+{
+    "description": "Bid request has blocked app",
+    "config": {
+        "ortb_error_response": true,
+        "blockedApps": ["blocked-app-id"]
+    },
+    "mockBidRequest": {
+        "id": "req-id",
+        "imp": [
+            {
+                "id": "imp-id",
+                "banner": {
+                    "w": 1,
+                    "h": 1
+                }
+            }
+        ],
+        "app": {
+            "id": "blocked-app-id"
+        }
+    },
+    "expectedReturnCode": 503,
+    "expectedBidResponse": {
+        "id": "req-id",
+        "nbr": 7,
+        "ext": {
+            "prebid": {
+                "errors": [
+                    "Prebid-server does not process requests from App ID: blocked-app-id"
+                ]
+            }
+        }
+    }
+}

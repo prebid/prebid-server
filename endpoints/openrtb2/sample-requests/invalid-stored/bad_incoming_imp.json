@@ -37,5 +37,5 @@
     "tmax": 500
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: Invalid JSON Document"
+  "expectedErrorMessage": "Invalid request: Invalid JSON in Imp[0] of Incoming Request: invalid character '\"' after object key:value pair at offset 132"
 }
