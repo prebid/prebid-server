@@ -20,9 +20,15 @@ jobs:
         if: "!contains(github.event.pull_request.labels.*.name, 'do not port') && github.event.pull_request.merged"
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_NUMBER: ${{ github.event.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
         run: |
-          echo -e "A PR was merged over on PBS-Go\n\n- [https://github.com/prebid/prebid-server/pull/${{github.event.number}}](https://github.com/prebid/prebid-server/pull/${{github.event.number}})\n- timestamp: ${{ github.event.pull_request.merged_at}}" > msg
-          export msg=$(cat msg)
-          gh issue create --repo prebid/prebid-server-java --title "Port PR from PBS-Go: ${{ github.event.pull_request.title }}" \
-              --body "$msg" \
+          BODY="A PR was merged over on PBS-Go
+
+          - https://github.com/prebid/prebid-server/pull/${PR_NUMBER}
+          - timestamp: ${PR_MERGED_AT}"
+          gh issue create --repo prebid/prebid-server-java \
+              --title "Port PR from PBS-Go: ${PR_TITLE}" \
+              --body "${BODY}" \
               --label auto
