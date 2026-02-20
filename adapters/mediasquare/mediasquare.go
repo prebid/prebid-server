@@ -33,7 +33,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	msqParams := initMsqParams(request)
-	msqParams.Test = (request.Test == int8(1))
 	for _, imp := range request.Imp {
 		var (
 			bidderExt   adapters.ExtImpBidder
@@ -88,7 +87,6 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, msqParams *msqParame
 	} else {
 		err = errorWriter("<makeRequest> jsonutil.Marshal", err, false)
 	}
-
 	return
 }
 
