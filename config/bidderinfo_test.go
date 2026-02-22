@@ -516,7 +516,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					AliasOf: "bidderA",
 				},
 			},
-			expectedErr: errors.New("bidder: bidderA not found for an alias: bidderB"),
+			expectedErr: errors.New("alias 'bidderB' references a nonexistent bidder 'bidderA'"),
 		},
 		{
 			description: "bidder info not found for an alias",
@@ -698,21 +698,21 @@ func TestValidateAliases(t *testing.T) {
 			bidderName:  "b",
 			bidderInfo:  BidderInfo{AliasOf: "nonexistent"},
 			bidderInfos: BidderInfos{},
-			expectedErr: errors.New("bidder: nonexistent not found for an alias: b"), // does this make sense? should it be reversed?
+			expectedErr: errors.New("alias 'b' references a nonexistent bidder 'nonexistent'"),
 		},
 		{
 			name:        "alias-of-alias",
 			bidderName:  "b",
 			bidderInfo:  BidderInfo{AliasOf: "a"},
 			bidderInfos: BidderInfos{"a": BidderInfo{AliasOf: "foo"}},
-			expectedErr: errors.New("bidder: a cannot be an alias of an alias: b"), // does this make sense? should it be reversed?
+			expectedErr: errors.New("alias 'b' cannot reference another alias 'a'"),
 		},
 		{
 			name:        "whitelabelonly",
 			bidderName:  "b",
 			bidderInfo:  BidderInfo{AliasOf: "a", WhiteLabelOnly: true},
 			bidderInfos: BidderInfos{"a": BidderInfo{}},
-			expectedErr: errors.New("bidder: b is an alias and cannot be set as white label only"),
+			expectedErr: errors.New("bidder 'b' is an alias and cannot be set as white label only"),
 		},
 	}
 
