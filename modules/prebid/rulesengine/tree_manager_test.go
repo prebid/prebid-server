@@ -23,9 +23,11 @@ func TestTreeManagerShutdown(t *testing.T) {
 
 	var wg sync.WaitGroup
 	var err error
-	wg.Go(func() {
+	wg.Add(1)
+	go func() {
 		err = tm.Run(cache)
-	})
+		wg.Done()
+	}()
 
 	tm.Shutdown()
 
