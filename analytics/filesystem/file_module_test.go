@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestImplementation(t *testing.T) {
+	require.Implements(t, (*analytics.Module)(nil), new(fileLogger))
+}
+
 func TestAmpObject_ToJson(t *testing.T) {
 	ao := &analytics.AmpObject{
 		Status:             http.StatusOK,
