@@ -1,31 +1,15 @@
 package filesystem
 
 import (
+	"bytes"
 	"net/http"
-	"os"
-	"strings"
 	"testing"
 
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"
 	"github.com/prebid/prebid-server/v3/config"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/stretchr/testify/require"
 )
-
-const TEST_DIR string = "testFiles"
-
-type MockLogger struct {
-	mock.Mock
-}
-
-func (ml *MockLogger) Debug(v ...interface{}) {
-	ml.Called(v)
-}
-
-func (ml *MockLogger) Flush() {
-	ml.Called()
-}
 
 func TestAmpObject_ToJson(t *testing.T) {
 	ao := &analytics.AmpObject{
@@ -34,27 +18,27 @@ func TestAmpObject_ToJson(t *testing.T) {
 		AuctionResponse:    &openrtb2.BidResponse{},
 		AmpTargetingValues: map[string]string{},
 	}
-	if aoJson := jsonifyAmpObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
-		t.Fatalf("AmpObject failed to convert to json")
-	}
+	b := new(bytes.Buffer)
+	jsonifyAmpObject(b, ao)
+	require.NotContains(t, b.String(), "Transactional Logs Error")
 }
 
 func TestAuctionObject_ToJson(t *testing.T) {
 	ao := &analytics.AuctionObject{
 		Status: http.StatusOK,
 	}
-	if aoJson := jsonifyAuctionObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
-		t.Fatalf("AuctionObject failed to convert to json")
-	}
+	b := new(bytes.Buffer)
+	jsonifyAuctionObject(b, ao)
+	require.NotContains(t, b.String(), "Transactional Logs Error")
 }
 
 func TestVideoObject_ToJson(t *testing.T) {
 	vo := &analytics.VideoObject{
 		Status: http.StatusOK,
 	}
-	if voJson := jsonifyVideoObject(vo); strings.Contains(voJson, "Transactional Logs Error") {
-		t.Fatalf("AuctionObject failed to convert to json")
-	}
+	b := new(bytes.Buffer)
+	jsonifyVideoObject(b, vo)
+	require.NotContains(t, b.String(), "Transactional Logs Error")
 }
 
 func TestSetUIDObject_ToJson(t *testing.T) {
@@ -63,9 +47,9 @@ func TestSetUIDObject_ToJson(t *testing.T) {
 		Bidder: "any-bidder",
 		UID:    "uid string",
 	}
-	if soJson := jsonifySetUIDObject(so); strings.Contains(soJson, "Transactional Logs Error") {
-		t.Fatalf("SetUIDObject failed to convert to json")
-	}
+	b := new(bytes.Buffer)
+	jsonifySetUIDObject(b, so)
+	require.NotContains(t, b.String(), "Transactional Logs Error")
 }
 
 func TestCookieSyncObject_ToJson(t *testing.T) {
@@ -73,9 +57,9 @@ func TestCookieSyncObject_ToJson(t *testing.T) {
 		Status:       http.StatusOK,
 		BidderStatus: []*analytics.CookieSyncBidder{},
 	}
-	if csoJson := jsonifyCookieSync(cso); strings.Contains(csoJson, "Transactional Logs Error") {
-		t.Fatalf("CookieSyncObject failed to convert to json")
-	}
+	b := new(bytes.Buffer)
+	jsonifyCookieSync(b, cso)
+	require.NotContains(t, b.String(), "Transactional Logs Error")
 }
 
 func TestLogNotificationEventObject_ToJson(t *testing.T) {
@@ -87,38 +71,21 @@ func TestLogNotificationEventObject_ToJson(t *testing.T) {
 			ID: "id",
 		},
 	}
-	if neoJson := jsonifyNotificationEventObject(neo); strings.Contains(neoJson, "Transactional Logs Error") {
-		t.Fatalf("NotificationEventObject failed to convert to json")
-	}
+	b := new(bytes.Buffer)
+	jsonifyNotificationEventObject(b, neo)
+	require.NotContains(t, b.String(), "Transactional Logs Error")
 }
 
 func TestFileLogger_LogObjects(t *testing.T) {
-	if _, err := os.Stat(TEST_DIR); os.IsNotExist(err) {
-		if err = os.MkdirAll(TEST_DIR, 0755); err != nil {
-			t.Fatalf("Could not create test directory for FileLogger")
-		}
-	}
-	defer os.RemoveAll(TEST_DIR)
-	if fl, err := NewFileLogger(TEST_DIR + "//test"); err == nil {
+	if fl, err := NewFileLogger(t.TempDir() + "/test"); err == nil {
 		fl.LogAuctionObject(&analytics.AuctionObject{})
 		fl.LogVideoObject(&analytics.VideoObject{})
 		fl.LogAmpObject(&analytics.AmpObject{})
 		fl.LogSetUIDObject(&analytics.SetUIDObject{})
 		fl.LogCookieSyncObject(&analytics.CookieSyncObject{})
 		fl.LogNotificationEventObject(&analytics.NotificationEvent{})
+		fl.Shutdown()
 	} else {
 		t.Fatalf("Couldn't initialize file logger: %v", err)
 	}
-}
-
-func TestFileLoggerShutdown(t *testing.T) {
-	mockLogger := &MockLogger{}
-	fl := &FileLogger{
-		Logger: mockLogger,
-	}
-	mockLogger.On("Flush").Return(nil)
-
-	fl.Shutdown()
-
-	mockLogger.AssertNumberOfCalls(t, "Flush", 1)
 }
