@@ -14,7 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "placementId": "12345678"
+            "placementId": 12345678
           }
         }
       }
@@ -39,46 +39,23 @@
               },
               "ext": {
                 "bidder": {
-                  "placementId": "12345678"
+                  "placementId": 12345678
                 }
               }
             }
           ]
         },
-        "impIDs":["nativo-id"]
+        "impIDs": ["nativo-id"]
       },
       "mockResponse": {
         "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "bid-id",
-                  "impid": "nativo-id-2",
-                  "price": 3.5,
-                  "w": 300,
-                  "h": 50
-                }
-              ],
-              "seat": "nativo"
-            }
-          ],
-          "cur": "USD"
-        }
+        "body": "invalid-body"
       }
-    }
-  ],
-  "expectedBidResponses": [
-    {
-      "currency": "USD",
-      "bids": []
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Failed to parse impression \"nativo-id-2\" mediatype",
+      "value": "Bad Server Response",
       "comparison": "literal"
     }
   ]
