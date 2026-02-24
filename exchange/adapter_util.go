@@ -128,6 +128,10 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"liftoff":         `Bidder "liftoff" is no longer available in Prebid Server. If you're looking to use the Vungle Exchange adapter, please rename it to "vungle" in your configuration.`,
 		"gothamads":       `Bidder "gothamads" is no longer available in Prebid Server. Please rename it to "intenze" in your configuration.`,
 		"intertech":       `Bidder "intertech" is no longer available in Prebid Server. Please update your configuration.`,
+		"adocean":         `Bidder "adocean" is no longer available in Prebid Server. Please update your configuration.`,
+		"dxkulture":       `Bidder "dxkulture" is no longer available in Prebid Server. Please update your configuration.`,
+		"mobupps":         `Bidder "mobupps" is no longer available in Prebid Server. Please update your configuration.`,
+		"vimayx":          `Bidder "vimayx" is no longer available in Prebid Server. Please update your configuration.`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
