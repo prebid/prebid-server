@@ -373,6 +373,9 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		}
 
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
+		// Note: The aliasBidderInfo.GVLVendorID is intentionally never set to the parent's
+		// GVLVendorID. Each alias must declare its own GVL Vendor ID, as inheriting from the
+		// parent is not safe for legal reasons.
 		if aliasBidderInfo.AppSecret == "" {
 			aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
 		}
