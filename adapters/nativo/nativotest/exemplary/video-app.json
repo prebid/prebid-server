@@ -136,7 +136,15 @@
                   ],
                   "crid": "20",
                   "w": 1280,
-                  "h": 720
+                  "h": 720,
+                  "ext": {
+                    "prebid": {
+                      "meta": {
+                        "rendererName": "NativoRenderer",
+                        "rendererVersion": "1.0.0"
+                      }
+                    }
+                  }
                 }
               ],
               "seat": "nativo"

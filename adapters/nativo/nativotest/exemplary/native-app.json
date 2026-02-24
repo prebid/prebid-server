@@ -124,7 +124,15 @@
                     "adomain": [
                       "awesome.com"
                     ],
-                    "crid": "20"
+                    "crid": "20",
+                    "ext": {
+                      "prebid": {
+                        "meta": {
+                          "rendererName": "NativoRenderer",
+                          "rendererVersion": "1.0.0"
+                        }
+                      }
+                    }
                   }
                 ],
                 "seat": "nativo"
