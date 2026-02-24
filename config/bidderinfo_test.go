@@ -73,7 +73,6 @@ aliasOf: bidderA
 func TestLoadBidderInfoFromDisk(t *testing.T) {
 	// should appear in result in mixed case
 	bidder := "stroeerCore"
-	trueValue := true
 
 	adapterConfigs := make(map[string]Adapter)
 	adapterConfigs[strings.ToLower(bidder)] = Adapter{}
@@ -115,7 +114,6 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 					ExternalURL: "https://redirect.host",
 					UserMacro:   "#UID",
 				},
-				SupportCORS: &trueValue,
 			},
 		},
 	}
@@ -1402,11 +1400,6 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 }
 
 func TestSyncerOverride(t *testing.T) {
-	var (
-		trueValue  = true
-		falseValue = false
-	)
-
 	testCases := []struct {
 		description   string
 		givenOriginal *Syncer
@@ -1466,12 +1459,6 @@ func TestSyncerOverride(t *testing.T) {
 			givenOriginal: &Syncer{ExternalURL: "original"},
 			givenOverride: &Syncer{ExternalURL: "override"},
 			expected:      &Syncer{ExternalURL: "override"},
-		},
-		{
-			description:   "Override SupportCORS",
-			givenOriginal: &Syncer{SupportCORS: &trueValue},
-			givenOverride: &Syncer{SupportCORS: &falseValue},
-			expected:      &Syncer{SupportCORS: &falseValue},
 		},
 		{
 			description:   "Override Partial - Other Fields Untouched",
@@ -1716,18 +1703,6 @@ func TestSyncerEqual(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "different-support-cors",
-			syncer1: &Syncer{
-				Key:         "key",
-				SupportCORS: ptrutil.ToPtr(true),
-			},
-			syncer2: &Syncer{
-				Key:         "key",
-				SupportCORS: ptrutil.ToPtr(false),
-			},
-			expected: false,
-		},
-		{
 			name: "different-format-override",
 			syncer1: &Syncer{
 				Key:            "key",
@@ -1782,7 +1757,6 @@ func TestSyncerEqual(t *testing.T) {
 					UserMacro: "$UID",
 				},
 				ExternalURL:    "https://external.com",
-				SupportCORS:    ptrutil.ToPtr(true),
 				FormatOverride: "i",
 				Enabled:        ptrutil.ToPtr(true),
 				SkipWhen: &SkipWhen{
@@ -1803,7 +1777,6 @@ func TestSyncerEqual(t *testing.T) {
 					UserMacro: "$UID",
 				},
 				ExternalURL:    "https://external.com",
-				SupportCORS:    ptrutil.ToPtr(true),
 				FormatOverride: "i",
 				Enabled:        ptrutil.ToPtr(true),
 				SkipWhen: &SkipWhen{
@@ -2071,11 +2044,6 @@ func TestSyncerDefined(t *testing.T) {
 		{
 			name:        "externalurl-only",
 			givenSyncer: &Syncer{ExternalURL: "anyURL"},
-			expected:    true,
-		},
-		{
-			name:        "supportscors-only",
-			givenSyncer: &Syncer{SupportCORS: ptrutil.ToPtr(false)},
 			expected:    true,
 		},
 		{
