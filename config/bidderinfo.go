@@ -464,17 +464,17 @@ func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName s
 	}
 
 	if aliasBidderInfo.WhiteLabelOnly {
-		return fmt.Errorf("bidder: %s is an alias and cannot be set as white label only", bidderName)
+		return fmt.Errorf("bidder '%s' is an alias and cannot be set as white label only", bidderName)
 	}
 
 	parentBidder, parentBidderFound := infos[aliasBidderInfo.AliasOf]
 
 	if !parentBidderFound {
-		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+		return fmt.Errorf("alias '%s' references a nonexistent bidder '%s'", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	if len(parentBidder.AliasOf) > 0 {
-		return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+		return fmt.Errorf("alias '%s' cannot reference another alias '%s'", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	return nil
