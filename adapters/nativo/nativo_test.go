@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
 	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBidderNativo(t *testing.T) {
@@ -230,4 +232,36 @@ func TestGetMediaTypeForImp(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMakeBidsNativoRenderer(t *testing.T) {
+	bidder := &adapter{endpoint: "https://foo.io/?src=prebid"}
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{
+			{ID: "test-imp", Banner: &openrtb2.Banner{}},
+		},
+		Ext: json.RawMessage(`{"prebid":{"sdk":{"renderers":[{"name":"NativoRenderer","version":"1.0.0"}]}}}`),
+	}
+
+	response := &adapters.ResponseData{
+		StatusCode: 200,
+		Body: json.RawMessage(`{
+			"id": "test-response-id",
+			"seatbid": [{"bid": [{"id": "bid-id", "impid": "test-imp", "price": 3.5}], "seat": "nativo"}],
+			"cur": "USD"
+		}`),
+	}
+
+	bidderResp, errs := bidder.MakeBids(request, nil, response)
+
+	require.Empty(t, errs)
+	require.Len(t, bidderResp.Bids, 1)
+
+	bid := bidderResp.Bids[0]
+	assert.Equal(t, openrtb_ext.BidTypeBanner, bid.BidType)
+	require.NotNil(t, bid.BidMeta)
+	assert.Equal(t, "NativoRenderer", bid.BidMeta.RendererName)
+	assert.Equal(t, "1.0.0", bid.BidMeta.RendererVersion)
 }
