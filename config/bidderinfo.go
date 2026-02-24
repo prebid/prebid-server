@@ -127,9 +127,6 @@ type Syncer struct {
 	// ExternalURL is available as a macro to the RedirectURL template.
 	ExternalURL string `yaml:"externalUrl" mapstructure:"external_url"`
 
-	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
-	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
-
 	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
 	FormatOverride string `yaml:"formatOverride" mapstructure:"format_override"`
 
@@ -154,7 +151,6 @@ func (s *Syncer) Equal(other *Syncer) bool {
 		s.IFrame.Equal(other.IFrame) &&
 		s.Redirect.Equal(other.Redirect) &&
 		s.ExternalURL == other.ExternalURL &&
-		ptrutil.Equal(s.SupportCORS, other.SupportCORS) &&
 		s.FormatOverride == other.FormatOverride &&
 		ptrutil.Equal(s.Enabled, other.Enabled) &&
 		s.SkipWhen.Equal(other.SkipWhen)
@@ -264,7 +260,6 @@ func (s *Syncer) Defined() bool {
 		s.IFrame != nil ||
 		s.Redirect != nil ||
 		s.ExternalURL != "" ||
-		s.SupportCORS != nil ||
 		s.FormatOverride != "" ||
 		s.SkipWhen != nil
 }
@@ -803,10 +798,6 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 
 	if s.ExternalURL != "" {
 		copy.ExternalURL = s.ExternalURL
-	}
-
-	if s.SupportCORS != nil {
-		copy.SupportCORS = s.SupportCORS
 	}
 
 	return &copy
