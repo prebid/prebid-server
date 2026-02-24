@@ -153,13 +153,17 @@
               "crid": "20",
               "adomain": [
                 "awesome.com"
-              ]
+              ],
+              "ext": {
+                "prebid": {
+                  "meta": {
+                    "rendererName": "NativoRenderer",
+                    "rendererVersion": "1.0.0"
+                  }
+                }
+              }
             },
-            "type": "native",
-            "meta": {
-              "rendererName": "NativoRenderer",
-              "rendererVersion": "1.0.0"
-            }
+            "type": "native"
           }
         ]
       }

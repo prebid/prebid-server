@@ -157,13 +157,17 @@
             ],
             "crid": "20",
             "w": 320,
-            "h": 50
+            "h": 50,
+            "ext": {
+              "prebid": {
+                "meta": {
+                  "rendererName": "NativoRenderer",
+                  "rendererVersion": "1.0.0"
+                }
+              }
+            }
           },
-          "type": "banner",
-          "meta": {
-            "rendererName": "NativoRenderer",
-            "rendererVersion": "1.0.0"
-          }
+          "type": "banner"
         }
       ]
     }
