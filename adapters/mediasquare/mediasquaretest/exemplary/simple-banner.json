@@ -58,7 +58,9 @@
     "regs": {
       "gdpr": 1,
       "ext": {
-        "dsa": "mediasquare-test"
+        "dsa": {
+          "msq_test": 42
+        }
       }
     },
     "user": {
@@ -126,7 +128,10 @@
             "consent_required": true,
             "consent_string": "there-is-a-real-cs-in-it"
           },
-          "dsa": "mediasquare-test",
+          "dsa": {
+            "msq_test": 42
+          },
+          "pbjs": "prebid-test-version",
           "tech": {
             "device": {
               "geo": {
@@ -146,10 +151,14 @@
                 "id": "MEDIA_SQUARE"
               },
               "content": {}
+            },
+            "user": {
+              "consent": "there-is-a-real-cs-in-it"
             }
           },
           "type": "pbs",
-          "test": true
+          "test": true,
+          "user_uid": ""
         },
         "impIDs": [
           "2c35e25e-e7d3-41bf-b810-06a449f456b9",
