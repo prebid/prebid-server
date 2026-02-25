@@ -1,0 +1,19 @@
+{
+  "title": "RiseMediaTech",
+  "description": "Prebid Server adapter for RiseMediaTech",
+  "type": "object",
+  "properties": {
+    "bidfloor": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Bid Floor Price"
+    },
+    "testMode": {
+      "type": "integer",
+      "enum": [0, 1],
+      "description": "Test Mode parameter to indicate test request"
+    }
+  },
+  "additionalProperties": false,
+  "required": []
+}
