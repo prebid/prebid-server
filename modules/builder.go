@@ -2,6 +2,7 @@ package modules
 
 import (
 	fiftyonedegreesDevicedetection "github.com/prebid/prebid-server/v3/modules/fiftyonedegrees/devicedetection"
+	prebidCtvVastEnrichment "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
 	prebidOrtb2blocking "github.com/prebid/prebid-server/v3/modules/prebid/ortb2blocking"
 	prebidRulesengine "github.com/prebid/prebid-server/v3/modules/prebid/rulesengine"
 	scope3Rtd "github.com/prebid/prebid-server/v3/modules/scope3/rtd"
@@ -15,8 +16,9 @@ func builders() ModuleBuilders {
 			"devicedetection": fiftyonedegreesDevicedetection.Builder,
 		},
 		"prebid": {
-			"ortb2blocking": prebidOrtb2blocking.Builder,
-			"rulesengine":   prebidRulesengine.Builder,
+			"ctv_vast_enrichment": prebidCtvVastEnrichment.Builder,
+			"ortb2blocking":       prebidOrtb2blocking.Builder,
+			"rulesengine":         prebidRulesengine.Builder,
 		},
 		"scope3": {
 			"rtd": scope3Rtd.Builder,
