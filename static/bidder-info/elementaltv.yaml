@@ -1,0 +1,14 @@
+endpoint: "https://pbs.elementaltv.io/ads/processHeaderBid/{{.AdUnit}}"
+maintainer:
+  email: support@elementaltv.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
