@@ -235,7 +235,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, r.MetricsEngine, gdpr.VendorListURLMaker)
-	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher, r.MetricsEngine)
+	liveGVLVendorIDs := gdpr.NewLiveGVLVendorIDs()
+	refreshInterval := time.Duration(cfg.GDPR.GVLRefreshInterval) * time.Second
+	gvlVendorIDTask := gdpr.NewGVLVendorIDTickerTask(refreshInterval, generalHttpClient, gdpr.VendorListURLMaker, liveGVLVendorIDs)
+	gvlVendorIDTask.Start()
+	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, liveGVLVendorIDs, vendorListFetcher, r.MetricsEngine)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
