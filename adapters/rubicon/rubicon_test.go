@@ -776,6 +776,99 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 		"Unexpected VideoType. Got %s. Expected %s", videoExt.VideoType, "rewarded")
 }
 
+func TestOpenRTBRequestWithTooManySegments(t *testing.T) {
+	generateDataEntry := func(segtax int, idFrom int, idTo int) openrtb2.Data {
+		segment := make([]openrtb2.Segment, idTo-idFrom)
+
+		for i := 0; i < idTo-idFrom; i++ {
+			segment[i] = openrtb2.Segment{
+				ID: strconv.Itoa(idFrom + i),
+			}
+		}
+
+		return openrtb2.Data{
+			Segment: segment,
+			Ext:     json.RawMessage(`{"segtax": ` + strconv.Itoa(segtax) + `}`),
+		}
+	}
+
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					{W: 300, H: 250},
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891
+				}
+			}`),
+		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
+		User: &openrtb2.User{
+			Data: []openrtb2.Data{
+				generateDataEntry(4, 1, 50),
+				generateDataEntry(4, 50, 150),
+			},
+		},
+		Site: &openrtb2.Site{
+			Content: &openrtb2.Content{
+				Data: []openrtb2.Data{
+					generateDataEntry(5, 50, 100),
+					generateDataEntry(500, 3, 8),
+					generateDataEntry(600, 1, 3),
+					generateDataEntry(6, 100, 150),
+				},
+			},
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb2.BidRequest{}
+	reqErr := json.Unmarshal(reqs[0].Body, rubiconReq)
+	assert.NoError(t, reqErr, "Unexpected error while decoding request.")
+
+	userExt := &rubiconUserExt{}
+	userErr := json.Unmarshal(rubiconReq.User.Ext, userExt)
+	assert.NoError(t, userErr, "Error unmarshalling request.user.ext object.")
+	userExtRpTarget := map[string][]string{}
+	userErr = json.Unmarshal(userExt.RP.Target, &userExtRpTarget)
+	assert.NoError(t, userErr, "Error unmarshalling request.user.ext.rp.target object.")
+
+	siteExt := &rubiconSiteExt{}
+	siteErr := json.Unmarshal(rubiconReq.Site.Ext, siteExt)
+	assert.NoError(t, siteErr, "Error unmarshalling request.site.ext object.")
+	siteExtRpTarget := map[string][]string{}
+	siteErr = json.Unmarshal(siteExt.RP.Target, &siteExtRpTarget)
+	assert.NoError(t, userErr, "Error unmarshalling request.site.ext.rp.target object.")
+
+	generateRange := func(from int, to int) []string {
+		a := make([]string, to-from)
+		for i := 0; i < to-from; i++ {
+			a[i] = strconv.Itoa(from + i)
+		}
+
+		return a
+	}
+
+	assert.Equal(t, userExtRpTarget["iab"], generateRange(1, 101))
+
+	assert.Equal(t, siteExtRpTarget["iab"], generateRange(50, 143))
+	assert.Equal(t, siteExtRpTarget["tax500"], generateRange(3, 8))
+	assert.Equal(t, siteExtRpTarget["tax600"], generateRange(1, 3))
+}
+
 func TestOpenRTBEmptyResponse(t *testing.T) {
 	httpResp := &adapters.ResponseData{
 		StatusCode: http.StatusNoContent,
