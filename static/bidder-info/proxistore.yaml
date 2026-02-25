@@ -1,0 +1,28 @@
+endpoint: "https://api.proxistore.com/v3/rtb/openrtb"
+geoscope:
+  - EEA
+maintainer:
+  email: support@proxistore.com
+gvlVendorID: 418
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+userSync:
+  redirect:
+    url: https://abs.proxistore.com/v3/rtb/sync/prebid-server/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}
+    userMacro: $UID
+  iframe:
+    url: https://abs.proxistore.com/v3/rtb/sync/prebid-server/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}
+    userMacro: $UID
