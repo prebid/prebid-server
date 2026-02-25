@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/spf13/viper"
@@ -50,6 +50,7 @@ type Configuration struct {
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	VTrack            VTrack          `mapstructure:"vtrack"`
 	Event             Event           `mapstructure:"event"`
+	Video             Video           `mapstructure:"video"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
@@ -79,8 +80,6 @@ type Configuration struct {
 	AccountDefaults Account `mapstructure:"account_defaults"`
 	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
 	accountDefaultsJSON json.RawMessage
-	// CertsUseSystem will use the host OS certificates instead of embedded certs.
-	CertsUseSystem bool `mapstructure:"certificates_use_system"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
@@ -176,11 +175,11 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.ExtCacheURL.validate(errs)
 	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
 	if cfg.AccountDefaults.Disabled {
-		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
+		logger.Warnf(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
 
 	if cfg.AccountDefaults.Events.Enabled {
-		glog.Warning(`account_defaults.events has no effect as the feature is under development.`)
+		logger.Warnf(`account_defaults.events has no effect as the feature is under development.`)
 	}
 
 	errs = cfg.Experiment.validate(errs)
@@ -292,7 +291,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
 	}
 	if cfg.HostVendorID == 0 {
-		glog.Warning("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
+		logger.Warnf("gdpr.host_vendor_id was not specified. Host company GDPR checks will be skipped.")
 	}
 	if cfg.AMPException {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
@@ -552,6 +551,10 @@ type Event struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
 }
 
+type Video struct {
+	EnableDeprecatedEndpoint bool `mapstructure:"enable_deprecated_endpoint"`
+}
+
 type HostCookie struct {
 	Domain             string `mapstructure:"domain"`
 	Family             string `mapstructure:"family"`
@@ -595,7 +598,7 @@ type DisabledMetrics struct {
 	AdapterConnectionMetrics bool `mapstructure:"adapter_connections_metrics"`
 
 	// True if we don't want to collect metrics on dial time and dial errors
-	AdapterConnectionDialMetrics bool `mapstructure:"adapter_connection_dial_metrics"`
+	AdapterConnectionDialMetrics bool `mapstructure:"adapter_connections_dial_metrics"`
 
 	// True if we don't want to collect the per adapter buyer UID scrubbed metric
 	AdapterBuyerUIDScrubbed bool `mapstructure:"adapter_buyeruid_scrubbed"`
@@ -757,7 +760,8 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
-		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		logger.Fatalf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES)
+
 		return nil, err
 	}
 
@@ -847,7 +851,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ex
 	}
 	c.BidderInfos = mergedBidderInfos
 
-	glog.Info("Logging the resolved configuration:")
+	logger.Infof("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(v); len(errs) > 0 {
 		return &c, errortypes.NewAggregateError("validation errors", errs)
@@ -890,7 +894,7 @@ func setConfigBidderInfoNillableFields(v *viper.Viper, bidderInfos BidderInfos) 
 func (cfg *Configuration) MarshalAccountDefaults() error {
 	var err error
 	if cfg.accountDefaultsJSON, err = jsonutil.Marshal(cfg.AccountDefaults); err != nil {
-		glog.Warningf("converting %+v to json: %v", cfg.AccountDefaults, err)
+		logger.Warnf("converting %+v to json: %v", cfg.AccountDefaults, err)
 	}
 	return err
 }
@@ -998,7 +1002,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.account_stored_responses", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
-	v.SetDefault("metrics.disabled_metrics.adapter_connection_dial_metrics", true)
+	v.SetDefault("metrics.disabled_metrics.adapter_connections_dial_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_buyeruid_scrubbed", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
@@ -1040,7 +1044,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
-	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
 	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)
@@ -1124,12 +1128,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("event.timeout_ms", 1000)
 
+	v.SetDefault("video.enable_deprecated_endpoint", false)
+
 	v.SetDefault("user_sync.priority_groups", [][]string{})
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.http.endpoint", "")
-	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 	v.SetDefault("accounts.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("accounts.in_memory_cache.size_bytes", 0)
@@ -1252,7 +1258,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)
 
-	v.SetDefault("certificates_use_system", false)
 	v.SetDefault("certificates_file", "")
 
 	v.SetDefault("auto_gen_source_tid", true)

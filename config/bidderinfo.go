@@ -3,14 +3,16 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/util/sliceutil"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -125,9 +127,6 @@ type Syncer struct {
 	// ExternalURL is available as a macro to the RedirectURL template.
 	ExternalURL string `yaml:"externalUrl" mapstructure:"external_url"`
 
-	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
-	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
-
 	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
 	FormatOverride string `yaml:"formatOverride" mapstructure:"format_override"`
 
@@ -138,9 +137,41 @@ type Syncer struct {
 	SkipWhen *SkipWhen `yaml:"skipwhen" mapstructure:"skipwhen"`
 }
 
+func (s *Syncer) Equal(other *Syncer) bool {
+	if s == nil && other == nil {
+		return true
+	}
+
+	if s == nil || other == nil {
+		return false
+	}
+
+	return s.Key == other.Key &&
+		sliceutil.EqualIgnoreOrder(s.Supports, other.Supports) &&
+		s.IFrame.Equal(other.IFrame) &&
+		s.Redirect.Equal(other.Redirect) &&
+		s.ExternalURL == other.ExternalURL &&
+		s.FormatOverride == other.FormatOverride &&
+		ptrutil.Equal(s.Enabled, other.Enabled) &&
+		s.SkipWhen.Equal(other.SkipWhen)
+}
+
 type SkipWhen struct {
 	GDPR   bool     `yaml:"gdpr" mapstructure:"gdpr"`
 	GPPSID []string `yaml:"gpp_sid" mapstructure:"gpp_sid"`
+}
+
+func (s *SkipWhen) Equal(other *SkipWhen) bool {
+	if s == nil && other == nil {
+		return true
+	}
+
+	if s == nil || other == nil {
+		return false
+	}
+
+	return s.GDPR == other.GDPR &&
+		sliceutil.EqualIgnoreOrder(s.GPPSID, other.GPPSID)
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint
@@ -200,6 +231,21 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
+func (s *SyncerEndpoint) Equal(other *SyncerEndpoint) bool {
+	if s == nil && other == nil {
+		return true
+	}
+
+	if s == nil || other == nil {
+		return false
+	}
+
+	return s.URL == other.URL &&
+		s.RedirectURL == other.RedirectURL &&
+		s.ExternalURL == other.ExternalURL &&
+		s.UserMacro == other.UserMacro
+}
+
 func (bi BidderInfo) IsEnabled() bool {
 	return !bi.WhiteLabelOnly && !bi.Disabled
 }
@@ -214,7 +260,6 @@ func (s *Syncer) Defined() bool {
 		s.IFrame != nil ||
 		s.Redirect != nil ||
 		s.ExternalURL != "" ||
-		s.SupportCORS != nil ||
 		s.FormatOverride != "" ||
 		s.SkipWhen != nil
 }
@@ -235,7 +280,7 @@ const (
 func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 	bidderConfigs, err := os.ReadDir(r.Path)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalf("%v", err)
 	}
 
 	bidderInfos := make(map[string][]byte)
@@ -414,17 +459,17 @@ func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName s
 	}
 
 	if aliasBidderInfo.WhiteLabelOnly {
-		return fmt.Errorf("bidder: %s is an alias and cannot be set as white label only", bidderName)
+		return fmt.Errorf("bidder '%s' is an alias and cannot be set as white label only", bidderName)
 	}
 
 	parentBidder, parentBidderFound := infos[aliasBidderInfo.AliasOf]
 
 	if !parentBidderFound {
-		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+		return fmt.Errorf("alias '%s' references a nonexistent bidder '%s'", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	if len(parentBidder.AliasOf) > 0 {
-		return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+		return fmt.Errorf("alias '%s' cannot reference another alias '%s'", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	return nil
@@ -438,6 +483,8 @@ var testEndpointTemplateParams = macros.EndpointTemplateParams{
 	SourceId:    "anySourceID",
 	AdUnit:      "anyAdUnit",
 	MediaType:   "MediaType",
+	Region:      "anyRegion",
+	PartnerId:   "anyPartnerId",
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
@@ -751,10 +798,6 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 
 	if s.ExternalURL != "" {
 		copy.ExternalURL = s.ExternalURL
-	}
-
-	if s.SupportCORS != nil {
-		copy.SupportCORS = s.SupportCORS
 	}
 
 	return &copy

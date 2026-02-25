@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
@@ -21,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/gdpr"
+	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/macros"
 	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
@@ -458,7 +458,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		syncTypes := tf.ForBidder(syncerChoice.Bidder)
 		sync, err := syncerChoice.Syncer.GetSync(syncTypes, m)
 		if err != nil {
-			glog.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
+			logger.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
 			continue
 		}
 
@@ -466,9 +466,8 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 			BidderCode: syncerChoice.Bidder,
 			NoCookie:   true,
 			UsersyncInfo: cookieSyncResponseSync{
-				URL:         sync.URL,
-				Type:        string(sync.Type),
-				SupportCORS: sync.SupportCORS,
+				URL:  sync.URL,
+				Type: string(sync.Type),
 			},
 		})
 	}
@@ -536,9 +535,8 @@ func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.Co
 			BidderCode: b.BidderCode,
 			NoCookie:   b.NoCookie,
 			UsersyncInfo: &analytics.UsersyncInfo{
-				URL:         b.UsersyncInfo.URL,
-				Type:        b.UsersyncInfo.Type,
-				SupportCORS: b.UsersyncInfo.SupportCORS,
+				URL:  b.UsersyncInfo.URL,
+				Type: b.UsersyncInfo.Type,
 			},
 		}
 	}
@@ -604,9 +602,8 @@ type cookieSyncResponseBidder struct {
 }
 
 type cookieSyncResponseSync struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	SupportCORS bool   `json:"supportCORS,omitempty"`
+	URL  string `json:"url,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 type cookieSyncResponseDebug struct {
