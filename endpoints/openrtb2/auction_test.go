@@ -43,6 +43,7 @@ import (
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const jsonFileExtension string = ".json"
@@ -1205,7 +1206,7 @@ func TestStoredRequests(t *testing.T) {
 		assert.Len(t, errs, 0, "No errors should be returned")
 		storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs := deps.getStoredRequests(context.Background(), json.RawMessage(requestData), impInfo)
 		assert.Len(t, errs, 0, "No errors should be returned")
-		newRequest, impExtInfoMap, errList := deps.processStoredRequests(json.RawMessage(requestData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest)
+		newRequest, impExtInfoMap, errList := deps.processStoredRequests(json.RawMessage(requestData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest, nil)
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -2499,7 +2500,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		assert.Empty(t, errs, test.description)
 		storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs := deps.getStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
 		assert.Empty(t, errs, test.description)
-		newRequest, _, errList := deps.processStoredRequests(json.RawMessage(test.givenRawData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest)
+		newRequest, _, errList := deps.processStoredRequests(json.RawMessage(test.givenRawData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest, nil)
 		assert.Empty(t, errList, test.description)
 
 		if err := jsonutil.UnmarshalValid(newRequest, req); err != nil {
@@ -6613,6 +6614,365 @@ func TestProcessGDPR(t *testing.T) {
 			assert.Equal(t, tc.expectedGDPRSignal, gdprSignal)
 			assert.Len(t, gdprErrs, tc.expectedErrorCount)
 			assert.NotNil(t, tcf2Config)
+		})
+	}
+}
+
+func TestMergeWithArrayConcat(t *testing.T) {
+	tests := []struct {
+		name           string
+		base           string
+		patch          string
+		expectedResult string
+		expectError    bool
+	}{
+		{
+			name:           "empty base request should return patch unchanged",
+			base:           ``,
+			patch:          `{"bcat":["IAB1"]}`,
+			expectedResult: `{"bcat":["IAB1"]}`,
+			expectError:    false,
+		},
+		{
+			name:           "empty patch request should return base unchanged",
+			base:           `{"bcat":["IAB1"]}`,
+			patch:          ``,
+			expectedResult: `{"bcat":["IAB1"]}`,
+			expectError:    false,
+		},
+		{
+			name:  "empty array in patch request should clear base (RFC 7386 semantics)",
+			base:  `{"bcat":["IAB1","IAB2"]}`,
+			patch: `{"bcat":[]}`,
+			expectedResult: `{
+				"bcat":[]
+			}`,
+			expectError: false,
+		},
+		{
+			name:  "empty array in base request with non-empty patch should use patch",
+			base:  `{"bcat":[]}`,
+			patch: `{"bcat":["IAB1"]}`,
+			expectedResult: `{
+				"bcat":["IAB1"]
+			}`,
+			expectError: false,
+		},
+		{
+			name:  "only base request has bcat - should preserve base",
+			base:  `{"bcat":["IAB1","IAB2"]}`,
+			patch: `{"id":"req1"}`,
+			expectedResult: `{
+				"bcat":["IAB1","IAB2"],
+				"id":"req1"
+			}`,
+			expectError: false,
+		},
+		{
+			name:  "only patch request has bcat - should preserve patch",
+			base:  `{"site":{"id":"1"}}`,
+			patch: `{"bcat":["IAB3"]}`,
+			expectedResult: `{
+				"bcat":["IAB3"],
+				"site":{"id":"1"}
+			}`,
+			expectError: false,
+		},
+		{
+			name:  "array fields are concatenated",
+			base:  `{"bcat":["IAB1"],"badv":["evil.com"]}`,
+			patch: `{"bcat":["IAB2"],"badv":["bad.com"]}`,
+			expectedResult: `{
+				"bcat":["IAB1","IAB2"],
+				"badv":["evil.com","bad.com"]
+			}`,
+			expectError: false,
+		},
+		{
+			name:  "non-array fields should follow RFC 7386 merge",
+			base:  `{"bcat":["IAB1"],"site":{"id":"1","name":"base"}}`,
+			patch: `{"bcat":["IAB2"],"site":{"name":"patch"},"id":"req1"}`,
+			expectedResult: `{
+				"bcat":["IAB1","IAB2"],
+				"site":{"id":"1","name":"patch"},
+				"id":"req1"
+			}`,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := mergeWithArrayConcat([]byte(tt.base), []byte(tt.patch), []string{"bcat", "badv", "foo"})
+
+			if tt.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			var expected, actual map[string]interface{}
+			err = json.Unmarshal([]byte(tt.expectedResult), &expected)
+			require.NoError(t, err, "test case has invalid expected JSON")
+
+			err = json.Unmarshal(result, &actual)
+			require.NoError(t, err, "result is not valid JSON")
+
+			assert.Equal(t, expected, actual)
+		})
+	}
+}
+
+func TestProcessStoredRequests_HasStoredBidRequestArrayMerge(t *testing.T) {
+	tests := []struct {
+		name                string
+		incomingRequest     string
+		storedBidRequestID  string
+		storedBidRequest    string
+		arrayMergeMode      config.ArrayMergeMode
+		generateRequestID   bool
+		storedHasUUID       bool
+		expectedRequest     string
+		hasStoredBidRequest bool
+	}{
+		{
+			name:               "concat mode - both have bcat and badv",
+			incomingRequest:    `{"bcat":["IAB3"],"badv":["competitor.com"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			storedBidRequestID: "stored1",
+			storedBidRequest:   `{"bcat":["IAB1"],"badv":["evil.com"],"id":"storereq2"}`,
+			arrayMergeMode:     config.ArrayMergeConcat,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB1","IAB3"],
+				"badv":["evil.com","competitor.com"]
+			}`,
+			hasStoredBidRequest: true,
+		},
+		{
+			name:               "replace mode - incoming replaces stored",
+			incomingRequest:    `{"bcat":["IAB3"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			storedBidRequestID: "stored1",
+			storedBidRequest:   `{"bcat":["IAB1","IAB2"]}`,
+			arrayMergeMode:     config.ArrayMergeReplace,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB3"]
+			}`,
+			hasStoredBidRequest: true,
+		},
+		{
+			name:               "default mode - should replace",
+			incomingRequest:    `{"bcat":["IAB3"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			storedBidRequestID: "stored1",
+			storedBidRequest:   `{"bcat":["IAB1","IAB2"]}`,
+			arrayMergeMode:     "",
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB3"]
+			}`,
+			hasStoredBidRequest: true,
+		},
+		{
+			name:               "concat mode - empty incoming array clears stored",
+			incomingRequest:    `{"bcat":[],"id":"req1","imp":[{"id":"imp1"}]}`,
+			storedBidRequestID: "stored1",
+			storedBidRequest:   `{"bcat":["IAB1","IAB2"]}`,
+			arrayMergeMode:     config.ArrayMergeConcat,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":[]
+			}`,
+			hasStoredBidRequest: true,
+		},
+		{
+			name:            "no stored request - incoming unchanged",
+			incomingRequest: `{"bcat":["IAB1"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			arrayMergeMode:  config.ArrayMergeConcat,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB1"]
+			}`,
+			hasStoredBidRequest: false,
+		},
+		{
+			name:               "UUID generation with concat mode",
+			incomingRequest:    `{"bcat":["IAB3"],"imp":[{"id":"imp1"}]}`,
+			storedBidRequestID: "stored1",
+			storedBidRequest:   `{"bcat":["IAB1","IAB2"],"site":{"id":"site1"},"id":"{{UUID}}"}`,
+			arrayMergeMode:     config.ArrayMergeConcat,
+			storedHasUUID:      true,
+			expectedRequest: `
+			{
+				"id":"test-generated-uuid-12345",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB3","IAB1","IAB2"],
+				"site":{"id":"site1"}
+			}`,
+			hasStoredBidRequest: true,
+		},
+		{
+			name:               "UUID generation with replace mode - stored request wins",
+			incomingRequest:    `{"bcat":["IAB3"],"imp":[{"id":"imp1"}]}`,
+			storedBidRequestID: "stored1",
+			storedBidRequest:   `{"bcat":["IAB1","IAB2"],"site":{"id":"site1"},"id":"{{UUID}}"}`,
+			arrayMergeMode:     config.ArrayMergeReplace,
+			storedHasUUID:      true,
+			expectedRequest: `
+			{
+				"id":"test-generated-uuid-12345",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB1","IAB2"],
+				"site":{"id":"site1"}
+			}`,
+			hasStoredBidRequest: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deps := &endpointDeps{
+				cfg: &config.Configuration{
+					GenerateRequestID: tt.generateRequestID,
+				},
+				uuidGenerator: fakeUUIDGenerator{id: "test-generated-uuid-12345"},
+			}
+			account := &config.Account{
+				StoredRequest: config.AccountStoredRequest{
+					ArrayMerge: tt.arrayMergeMode,
+				},
+			}
+
+			storedRequests := map[string]json.RawMessage{}
+			if tt.hasStoredBidRequest {
+				storedRequests[tt.storedBidRequestID] = json.RawMessage(tt.storedBidRequest)
+			}
+
+			impInfo, errs := parseImpInfo([]byte(tt.incomingRequest))
+			require.Empty(t, errs)
+
+			result, _, errs := deps.processStoredRequests(
+				[]byte(tt.incomingRequest),
+				impInfo,
+				storedRequests,
+				nil,
+				tt.storedBidRequestID,
+				tt.hasStoredBidRequest,
+				account,
+			)
+
+			require.Empty(t, errs)
+			assert.JSONEq(t, tt.expectedRequest, string(result))
+		})
+	}
+}
+
+func TestProcessStoredRequests_DefaultRequestArrayMerge(t *testing.T) {
+	tests := []struct {
+		name            string
+		incomingRequest string
+		defaultRequest  string
+		arrayMergeMode  config.ArrayMergeMode
+		expectedRequest string
+	}{
+		{
+			name:            "concat mode - both default and incoming have bcat",
+			incomingRequest: `{"bcat":["IAB3"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			defaultRequest:  `{"bcat":["IAB1","IAB2"]}`,
+			arrayMergeMode:  config.ArrayMergeConcat,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB1","IAB2","IAB3"]
+			}`,
+		},
+		{
+			name:            "replace mode - incoming wins",
+			incomingRequest: `{"bcat":["IAB3"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			defaultRequest:  `{"bcat":["IAB1","IAB2"]}`,
+			arrayMergeMode:  config.ArrayMergeReplace,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB3"]
+			}`,
+		},
+		{
+			name:            "default mode - should replace",
+			incomingRequest: `{"bcat":["IAB3"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			defaultRequest:  `{"bcat":["IAB1","IAB2"]}`,
+			arrayMergeMode:  "",
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB3"]
+			}`,
+		},
+		{
+			name:            "concat mode - empty incoming array clears stored",
+			incomingRequest: `{"bcat":[],"id":"req1","imp":[{"id":"imp1"}]}`,
+			defaultRequest:  `{"bcat":["IAB1","IAB2"]}`,
+			arrayMergeMode:  config.ArrayMergeConcat,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":[]
+			}`,
+		},
+		{
+			name:            "no default stored request - incoming unchanged",
+			incomingRequest: `{"bcat":["IAB1"],"id":"req1","imp":[{"id":"imp1"}]}`,
+			arrayMergeMode:  config.ArrayMergeConcat,
+			expectedRequest: `
+			{
+				"id":"req1",
+				"imp":[{"id":"imp1"}],
+				"bcat":["IAB1"]
+			}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deps := &endpointDeps{
+				defaultRequest: true,
+				defReqJSON:     json.RawMessage(tt.defaultRequest),
+			}
+			account := &config.Account{
+				StoredRequest: config.AccountStoredRequest{
+					ArrayMerge: tt.arrayMergeMode,
+				},
+			}
+
+			impInfo, errs := parseImpInfo([]byte(tt.incomingRequest))
+			require.Empty(t, errs)
+
+			result, _, errs := deps.processStoredRequests(
+				[]byte(tt.incomingRequest),
+				impInfo,
+				nil,
+				nil,
+				"",
+				false,
+				account,
+			)
+
+			require.Empty(t, errs)
+			assert.JSONEq(t, tt.expectedRequest, string(result))
 		})
 	}
 }

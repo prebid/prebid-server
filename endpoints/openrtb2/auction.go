@@ -532,7 +532,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(requestJson, impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest); len(errs) > 0 {
+	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(requestJson, impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest, account); len(errs) > 0 {
 		return
 	}
 
@@ -1689,7 +1689,69 @@ func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []b
 	return storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs
 }
 
-func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []ImpExtPrebidData, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage, storedBidRequestId string, hasStoredBidRequest bool) ([]byte, map[string]exchange.ImpExtInfo, []error) {
+// mergeWithArrayConcat performs JSON merge with array concatenation for specific fields.
+// For the specified arrayFields (e.g., "bcat", "badv"), arrays are concatenated
+// All other fields follow RFC 7386 JSON Merge Patch semantics.
+// Empty arrays inside the patch request will clear the base request arrays (preserving RFC 7386 semantics).
+func mergeWithArrayConcat(base, patch []byte, arrayFields []string) ([]byte, error) {
+	if len(base) == 0 {
+		return patch, nil
+	}
+	if len(patch) == 0 {
+		return base, nil
+	}
+
+	// Parse both JSON documents
+	var baseObj, patchObj map[string]interface{}
+	if err := jsonutil.UnmarshalValid(base, &baseObj); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal base request: %w", err)
+	}
+	if err := jsonutil.UnmarshalValid(patch, &patchObj); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal patch request: %w", err)
+	}
+
+	// For each array field, concat if both exist and are non-empty arrays, otherwise preserve RFC 7386 semantics
+	for _, field := range arrayFields {
+		baseVal, ok := baseObj[field]
+		if !ok {
+			continue
+		}
+		patchVal, ok := patchObj[field]
+		if !ok {
+			continue
+		}
+
+		baseArr, ok := baseVal.([]interface{})
+		if !ok {
+			continue
+		}
+		patchArr, ok := patchVal.([]interface{})
+		if !ok {
+			continue
+		}
+
+		if len(patchArr) > 0 && len(baseArr) > 0 {
+			combined := make([]interface{}, len(baseArr)+len(patchArr))
+			copy(combined, baseArr)
+			copy(combined[len(baseArr):], patchArr)
+			patchObj[field] = combined
+		}
+	}
+
+	// Perform RFC 7386 merge on the modified objects
+	baseBytes, err := jsonutil.Marshal(baseObj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal base object: %w", err)
+	}
+	patchBytes, err := jsonutil.Marshal(patchObj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal patch object: %w", err)
+	}
+
+	return jsonpatch.MergePatch(baseBytes, patchBytes)
+}
+
+func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []ImpExtPrebidData, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage, storedBidRequestId string, hasStoredBidRequest bool, account *config.Account) ([]byte, map[string]exchange.ImpExtInfo, []error) {
 	bidRequestID, err := getBidRequestID(storedRequests[storedBidRequestId])
 	if err != nil {
 		return nil, nil, []error{err}
@@ -1697,6 +1759,14 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
+
+	useConcatMode := account != nil && account.StoredRequest.ArrayMerge == config.ArrayMergeConcat
+	merge := func(base, patch []byte) ([]byte, error) {
+		if useConcatMode {
+			return mergeWithArrayConcat(base, patch, []string{"bcat", "badv"})
+		}
+		return jsonpatch.MergePatch(base, patch)
+	}
 
 	if hasStoredBidRequest {
 		isAppRequest, err := checkIfAppRequest(requestJson)
@@ -1713,13 +1783,14 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
 				return nil, nil, errL
 			}
-			resolvedRequest, err = jsonpatch.MergePatch(requestJson, uuidPatch)
+
+			resolvedRequest, err = merge(requestJson, uuidPatch)
 			if err != nil {
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
 				return nil, nil, errL
 			}
 		} else {
-			resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
+			resolvedRequest, err = merge(storedRequests[storedBidRequestId], requestJson)
 			if err != nil {
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
 				return nil, nil, errL
@@ -1729,7 +1800,7 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 
 	// apply default stored request
 	if deps.defaultRequest {
-		merged, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
+		merged, err := merge(deps.defReqJSON, resolvedRequest)
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(resolvedRequest)
 			if hasErr {
