@@ -1,4 +1,4 @@
-package missena
+package alliance_gravity
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderMissena, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderAllianceGravity, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,24 +27,22 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderMissena, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderAllianceGravity, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
 }
 
 var validParams = []string{
-	`{"apiKey": "PA-123456"}`,
-	`{"apiKey": "PA-123456", "placement": "sticky"}`,
-	`{"apiKey": "PA-123456", "sample": "test-sample"}`,
+	`{"srid":"11223344"}`,
+	`{"srid":"1122334455"}`,
+	`{"srid":"0"}`,
+	`{"srid":"11223344","other_params":"hoge"}`,
 }
 
 var invalidParams = []string{
-	`{"apiKey": ""}`,
-	`{"apiKey": 42}`,
-	`{"placement": 111}`,
-	`{"placement": "sticky"}`,
-	`{"apiKey": "PA-123456", "placement": 111}`,
-	`{"sample": "test-sample"}`,
-	`{"apiKey": "PA-123456", "sample": 111}`,
+	`{}`,
+	`null`,
+	`12345`,
+	`{"id":123456}`,
 }
