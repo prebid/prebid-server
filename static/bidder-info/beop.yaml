@@ -1,0 +1,12 @@
+endpoint: "https://hb.collectiveaudience.co/rtb/bid"
+endpointCompression: gzip
+maintainer:
+  email: tech@collectiveaudience.co
+gvlVendorID: 666
+openrtb:
+  version: 2.6
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
