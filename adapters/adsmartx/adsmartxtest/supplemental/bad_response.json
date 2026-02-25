@@ -1,0 +1,40 @@
+{
+  "mockBidRequest": {
+    "id": "bad-response-request",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": {} }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.adsmartx.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "bad-response-request",
+          "imp": [
+            {
+              "id": "1",
+              "banner": { "w": 300, "h": 250 },
+              "ext": { "bidder": {} }
+            }
+          ]
+        },
+        "impIDs": ["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "not-json"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "expect \\{ or n, but found",
+      "comparison": "regex"
+    }
+  ]
+}

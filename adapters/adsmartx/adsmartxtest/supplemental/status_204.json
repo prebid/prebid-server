@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "status-204",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": {} }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.adsmartx.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "status-204",
+          "imp": [
+            {
+              "id": "1",
+              "banner": { "w": 300, "h": 250 },
+              "ext": { "bidder": {} }
+            }
+          ]
+        },
+        "impIDs": ["1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

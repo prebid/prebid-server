@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "test-video-request",
+    "device": {
+      "ip": "10.0.0.1",
+      "ua": "Mozilla/5.0"
+    },
+    "site": {
+      "page": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "video-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [1, 2],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 1.0,
+            "siteId": "site-456"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.adsmartx.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "test-video-request",
+          "imp": [
+            {
+              "id": "video-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [1, 2],
+                "w": 640,
+                "h": 480
+              },
+              "bidfloor": 1.0,
+              "ext": {
+                "bidder": {
+                  "bidfloor": 1.0,
+                  "siteId": "site-456"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          },
+          "device": {
+            "ip": "10.0.0.1",
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": ["video-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-video-request",
+          "seatbid": [
+            {
+              "seat": "adsmartx",
+              "bid": [
+                {
+                  "id": "video-bid-id",
+                  "impid": "video-imp-id",
+                  "price": 5.0,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "video-creative-001",
+                  "w": 640,
+                  "h": 480,
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-id",
+            "impid": "video-imp-id",
+            "price": 5.0,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "video-creative-001",
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
