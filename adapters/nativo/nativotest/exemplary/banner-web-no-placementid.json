@@ -11,17 +11,11 @@
     "user": {
       "buyeruid": "awesome-user"
     },
-    "app": {
+    "site": {
+      "page": "test.com",
       "publisher": {
         "id": "123456789"
-      },
-      "cat": [
-        "IAB22-1"
-      ],
-      "bundle": "com.app.awesome",
-      "name": "Awesome App",
-      "domain": "awesomeapp.com",
-      "id": "123456789"
+      }
     },
     "imp": [
       {
@@ -32,24 +26,10 @@
           "h": 50
         },
         "ext": {
-          "bidder": {
-            "placementId": 12345678
-          }
+          "bidder": {}
         }
       }
-    ],
-    "ext": {
-      "prebid": {
-        "sdk": {
-          "renderers": [
-            {
-              "name": "NativoRenderer",
-              "version": "1.0.0"
-            }
-          ]
-        }
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
@@ -66,26 +46,18 @@
           "imp": [
             {
               "id": "some-impression-id",
+              "tagid": "ogTAGID",
               "banner": {
                 "w": 320,
                 "h": 50
               },
-              "tagid": "ogTAGID",
               "ext": {
-                "bidder": {
-                  "placementId": 12345678
-                }
+                "bidder": {}
               }
             }
           ],
-          "app": {
-            "id": "123456789",
-            "name": "Awesome App",
-            "bundle": "com.app.awesome",
-            "domain": "awesomeapp.com",
-            "cat": [
-              "IAB22-1"
-            ],
+          "site": {
+            "page": "test.com",
             "publisher": {
               "id": "123456789"
             }
@@ -93,21 +65,9 @@
           "user": {
             "buyeruid": "awesome-user"
           },
-          "tmax": 1000,
-          "ext": {
-            "prebid": {
-              "sdk": {
-                "renderers": [
-                  {
-                    "name": "NativoRenderer",
-                    "version": "1.0.0"
-                  }
-                ]
-              }
-            }
-          }
+          "tmax": 1000
         },
-        "impIDs":["some-impression-id"]
+        "impIDs": ["some-impression-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -126,27 +86,13 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50,
-                  "ext": {
-                    "prebid": {
-                      "meta": {
-                        "rendererName": "NativoRenderer",
-                        "rendererVersion": "1.0.0"
-                      }
-                    }
-                  }
+                  "h": 50
                 }
               ],
               "seat": "nativo"
             }
           ],
-          "cur": "USD",
-          "ext": {
-            "responsetimemillis": {
-              "nativo": 154
-            },
-            "tmaxrequest": 1000
-          }
+          "cur": "USD"
         }
       }
     }
@@ -160,20 +106,12 @@
             "impid": "some-impression-id",
             "price": 3.5,
             "adm": "awesome-markup",
+            "crid": "20",
             "adomain": [
               "awesome.com"
             ],
-            "crid": "20",
             "w": 320,
-            "h": 50,
-            "ext": {
-              "prebid": {
-                "meta": {
-                  "rendererName": "NativoRenderer",
-                  "rendererVersion": "1.0.0"
-                }
-              }
-            }
+            "h": 50
           },
           "type": "banner"
         }
