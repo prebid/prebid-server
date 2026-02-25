@@ -23,12 +23,8 @@ type adapter struct {
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	pub2impressions, imps, err := getImpressionsInfo(request.Imp)
-	if len(imps) == 0 {
-		return nil, err
-	}
+	pub2impressions, err := getImpressionsInfo(request.Imp)
 	errs = append(errs, err...)
-
 	if len(pub2impressions) == 0 {
 		return nil, errs
 	}
@@ -45,29 +41,25 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	return result, errs
 }
 
-// getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
-func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp, []openrtb2.Imp, []error) {
+// getImpressionsInfo checks each impression for validity and returns valid impressions grouped by ext params
+func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp, []error) {
 	var errors []error
-	resImps := make([]openrtb2.Imp, 0, len(imps))
 	res := make(map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp)
 
-	for imp := range iterutil.SlicePointerValues(imps) {
-		impExt, err := getImpressionExt(imp)
+	for i := range imps {
+		imp := imps[i] // value copy so compatImpression does not mutate the original request
+		impExt, err := getImpressionExt(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		// Dispatch impressions.
-		// Group impressions by the Matterfull-specific parameter `pid`.
-		if err := compatImpression(imp); err != nil {
+		if err := compatImpression(&imp); err != nil {
 			errors = append(errors, err)
 			continue
 		}
-
-		res[impExt] = append(res[impExt], *imp)
-		resImps = append(resImps, *imp)
+		res[impExt] = append(res[impExt], imp)
 	}
-	return res, resImps, errors
+	return res, errors
 }
 
 // Alter impression info to comply with Matterfull platform requirements
@@ -220,11 +212,14 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	return bidResponse, nil
 }
 
-// getMediaTypeForImp figures out which media type this bid is for
+// getMediaTypeForImpID figures out which media type this bid is for
 func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for imp := range iterutil.SlicePointerValues(imps) {
-		if imp.ID == impID && imp.Video != nil {
-			return openrtb_ext.BidTypeVideo
+		if imp.ID == impID {
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo
+			}
+			return openrtb_ext.BidTypeBanner
 		}
 	}
 	return openrtb_ext.BidTypeBanner
@@ -234,7 +229,7 @@ func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		return nil, fmt.Errorf("unable to parse endpoint url template: %w", err)
 	}
 
 	bidder := &adapter{
