@@ -94,6 +94,7 @@ type testConfigValues struct {
 	RealParamsValidator bool                           `json:"realParamsValidator"`
 	BidderInfos         map[string]bidderInfoOverrides `json:"bidderInfoOverrides"`
 	PreferredMediaType  openrtb_ext.PreferredMediaType `json:"preferredmediatype"`
+	ORTBErrorResponse   bool                           `json:"ortb_error_response"`
 }
 type bidderInfoOverrides struct {
 	OpenRTB      *OpenRTBInfo      `json:"openrtb"`

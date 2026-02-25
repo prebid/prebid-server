@@ -49,6 +49,8 @@ type ExtResponsePrebid struct {
 	Targeting        map[string]string `json:"targeting,omitempty"`
 	// SeatNonBid holds the array of Bids which are either rejected, no bids inside bidresponse.ext.prebid.seatnonbid
 	SeatNonBid []SeatNonBid `json:"seatnonbid,omitempty"`
+	// Errors holds error messages from the server for ORTB-compliant error responses
+	Errors []string `json:"errors,omitempty"`
 }
 
 // FledgeResponse defines the contract for bidresponse.ext.fledge

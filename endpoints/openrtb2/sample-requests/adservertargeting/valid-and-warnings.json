@@ -206,7 +206,6 @@
     ],
     "bidid": "test bid id",
     "cur": "USD",
-    "nbr": 0,
     "ext": {
       "warnings": {
         "general": [

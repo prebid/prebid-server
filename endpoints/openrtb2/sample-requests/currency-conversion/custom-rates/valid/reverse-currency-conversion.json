@@ -46,7 +46,6 @@
   "expectedBidResponse": {
       "id":"some-request-id",
       "bidid":"test bid id",
-      "nbr":0,
       "cur": "USD",
       "seatbid": [
         {

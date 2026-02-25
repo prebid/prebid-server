@@ -99,8 +99,7 @@
       }
     ],
     "bidid": "test bid id",
-    "cur": "EUR",
-    "nbr": 0
+    "cur": "EUR"
   },
   "expectedReturnCode": 200
 }

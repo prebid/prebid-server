@@ -8,7 +8,7 @@
     "site": {
       "page": "test.somepage.com"
     },
-    "user": { },
+    "user": {},
     "imp": [
       {
         "id": "my-imp-id",
@@ -64,22 +64,21 @@
     }
   },
   "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "cur": "USD",
-      "nbr":0,
-      "seatbid": [
-        {
-          "bid": [
-            {
-              "id": "appnexus-bid",
-              "impid": "my-imp-id",
-              "price": 0
-            }
-          ],
-          "seat": "appnexus"
-        }
-      ]
+    "id": "some-request-id",
+    "bidid": "test bid id",
+    "cur": "USD",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "my-imp-id",
+            "price": 0
+          }
+        ],
+        "seat": "appnexus"
+      }
+    ]
   },
   "expectedReturnCode": 200
 }

@@ -11,5 +11,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: expect { or n, but found"
+  "expectedErrorMessage": "Invalid request: Invalid JSON in Incoming Request: invalid character ']' looking for beginning of value at offset 18"
 }
