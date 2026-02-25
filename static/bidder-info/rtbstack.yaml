@@ -1,0 +1,17 @@
+endpoint: "https://{{.Host}}.rtb-stack.com"
+maintainer:
+  email: "prebid@admixer.net"
+gvlVendorID: 511
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio

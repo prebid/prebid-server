@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "RTBStack Adapter Params",
+  "description": "A schema which validates params accepted by the RTBStack adapter",
+
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Subdomain host used for RTBStack requests."
+    },
+    "query": {
+      "type": "string",
+      "description": "Path and query string appended to the RTBStack endpoint."
+    },
+    "tagId": {
+      "type": "string",
+      "description": "AdUnit tag id."
+    },
+    "customParams": {
+      "type": "object",
+      "description": "Custom values for targeting."
+    }
+  },
+
+  "required": ["host", "query", "tagId"]
+}

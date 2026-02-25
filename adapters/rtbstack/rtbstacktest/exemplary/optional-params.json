@@ -1,0 +1,182 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com",
+      "domain": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-basic",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "basic",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+
+      {
+        "id": "imp-empty-custom",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "empty-custom",
+            "customParams": {}
+          }
+        }
+      },
+
+      {
+        "id": "imp-numeric-bool",
+        "banner": {
+          "format": [{ "w": 320, "h": 50 }]
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "numeric-bool",
+            "customParams": {
+              "floor": 0.45,
+              "enabled": true,
+              "count": 3
+            }
+          }
+        }
+      },
+
+      {
+        "id": "imp-nested-custom",
+        "banner": {
+          "format": [{ "w": 970, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "nested",
+            "customParams": {
+              "placement": {
+                "position": "top",
+                "sticky": true
+              },
+              "sizes": ["970x250", "728x90"]
+            }
+          }
+        }
+      },
+
+      {
+        "id": "imp-no-custom",
+        "banner": {
+          "format": [{ "w": 468, "h": 60 }]
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "no-custom"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-basic",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "tagid": "basic",
+              "ext": {
+                "tagid": "basic",
+                "customParams": { "foo": "bar" }
+              }
+            },
+
+            {
+              "id": "imp-empty-custom",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "tagid": "empty-custom",
+              "ext": {
+                "tagid": "empty-custom"
+              }
+            },
+
+            {
+              "id": "imp-numeric-bool",
+              "banner": { "format": [{ "w": 320, "h": 50 }] },
+              "tagid": "numeric-bool",
+              "ext": {
+                "tagid": "numeric-bool",
+                "customParams": {
+                  "floor": 0.45,
+                  "enabled": true,
+                  "count": 3
+                }
+              }
+            },
+
+            {
+              "id": "imp-nested-custom",
+              "banner": { "format": [{ "w": 970, "h": 250 }] },
+              "tagid": "nested",
+              "ext": {
+                "tagid": "nested",
+                "customParams": {
+                  "placement": {
+                    "position": "top",
+                    "sticky": true
+                  },
+                  "sizes": ["970x250", "728x90"]
+                }
+              }
+            },
+
+            {
+              "id": "imp-no-custom",
+              "banner": { "format": [{ "w": 468, "h": 60 }] },
+              "tagid": "no-custom",
+              "ext": {
+                "tagid": "no-custom"
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-basic",
+          "imp-empty-custom",
+          "imp-numeric-bool",
+          "imp-nested-custom",
+          "imp-no-custom"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}

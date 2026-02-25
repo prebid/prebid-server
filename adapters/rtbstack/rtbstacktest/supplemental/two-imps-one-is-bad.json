@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-partial",
+    "site": {
+      "page": "https://example.com",
+      "domain": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-valid",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "ext": {
+          "bidder": {
+            "host": "test",
+            "query": "prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "valid-tag",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-invalid",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": "invalid-json"
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+        "body": {
+          "id": "test-request-partial",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-valid",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "tagid": "valid-tag",
+              "ext": {
+                "tagid": "valid-tag",
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-valid"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+
+  "expectedMakeRequestsErrors": [],
+
+  "expectedBidResponses": []
+}
