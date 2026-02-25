@@ -25,7 +25,7 @@ type EndpointTemplateParams struct {
 	PartnerId   string
 	Region      string
 	PlacementID string
-    NetworkId   string
+	NetworkId   string
 	SiteDomain  string
 	AppDomain   string
 	Bundle      string
