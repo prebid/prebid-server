@@ -50,6 +50,7 @@ type Configuration struct {
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	VTrack            VTrack          `mapstructure:"vtrack"`
 	Event             Event           `mapstructure:"event"`
+	Video             Video           `mapstructure:"video"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
@@ -79,8 +80,6 @@ type Configuration struct {
 	AccountDefaults Account `mapstructure:"account_defaults"`
 	// accountDefaultsJSON is the internal serialized form of AccountDefaults used for json merge
 	accountDefaultsJSON json.RawMessage
-	// CertsUseSystem will use the host OS certificates instead of embedded certs.
-	CertsUseSystem bool `mapstructure:"certificates_use_system"`
 	// Local private file containing SSL certificates
 	PemCertsFile string `mapstructure:"certificates_file"`
 	// Custom headers to handle request timeouts from queueing infrastructure
@@ -550,6 +549,10 @@ type VTrack struct {
 
 type Event struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
+}
+
+type Video struct {
+	EnableDeprecatedEndpoint bool `mapstructure:"enable_deprecated_endpoint"`
 }
 
 type HostCookie struct {
@@ -1041,7 +1044,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
-	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
 	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)
@@ -1125,12 +1128,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("event.timeout_ms", 1000)
 
+	v.SetDefault("video.enable_deprecated_endpoint", false)
+
 	v.SetDefault("user_sync.priority_groups", [][]string{})
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.http.endpoint", "")
-	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 	v.SetDefault("accounts.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("accounts.in_memory_cache.size_bytes", 0)
@@ -1253,7 +1258,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)
 
-	v.SetDefault("certificates_use_system", false)
 	v.SetDefault("certificates_file", "")
 
 	v.SetDefault("auto_gen_source_tid", true)
