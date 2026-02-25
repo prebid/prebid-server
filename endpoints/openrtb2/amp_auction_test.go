@@ -2508,3 +2508,206 @@ func TestAmpAuctionDebugWarningsOnly(t *testing.T) {
 		assert.Equal(t, test.expectedWarnings, response.ORTB2.Ext.Warnings)
 	}
 }
+
+// errorFetcher implements stored_requests.Fetcher and forces an error on FetchRequests
+type errorFetcher struct{ err error }
+
+func (f *errorFetcher) FetchRequests(_ context.Context, _ []string, _ []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+	return nil, nil, []error{f.err}
+}
+
+func (f *errorFetcher) FetchResponses(_ context.Context, _ []string) (map[string]json.RawMessage, []error) {
+	return nil, nil
+}
+
+func baseDepsForAmpAuctionTest(storedReqs map[string]json.RawMessage, storedResps map[string]json.RawMessage) *endpointDeps {
+	return &endpointDeps{
+		uuidGenerator:     fakeUUIDGenerator{id: "foo", err: nil},
+		storedReqFetcher:  &mockAmpStoredReqFetcher{data: storedReqs},
+		storedRespFetcher: &mockAmpStoredResponseFetcher{data: storedResps},
+		cfg: &config.Configuration{
+			StoredRequestsTimeout: 50,
+			GDPR:                  config.GDPR{Enabled: false},
+		},
+	}
+}
+
+func TestLoadRequestJSONForAmp(t *testing.T) {
+	tests := []struct {
+		name         string
+		setupDeps    func() *endpointDeps
+		url          string
+		wantErrCount int
+		wantErrMsg   string
+		validateReq  func(t *testing.T, br *openrtb2.BidRequest)
+	}{
+		{
+			name: "missing tag_id returns error",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(nil, nil)
+			},
+			url:          "/openrtb2/auction/amp",
+			wantErrCount: 1,
+			wantErrMsg:   "AMP requests require an AMP tag_id",
+		},
+		{
+			name: "fetcher error is propagated",
+			setupDeps: func() *endpointDeps {
+				deps := baseDepsForAmpAuctionTest(nil, nil)
+				deps.storedReqFetcher = &errorFetcher{err: fmt.Errorf("fetch error")}
+				return deps
+			},
+			url:          "/openrtb2/auction/amp?tag_id=abc",
+			wantErrCount: 1,
+			wantErrMsg:   "fetch error",
+		},
+		{
+			name: "missing stored request returns error",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{}, nil)
+			},
+			url:          "/openrtb2/auction/amp?tag_id=missing",
+			wantErrCount: 1,
+			wantErrMsg:   "No AMP config found for tag_id 'missing'",
+		},
+		{
+			name: "invalid stored JSON returns unmarshal error",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"bad": json.RawMessage("{")}, nil)
+			},
+			url:          "/openrtb2/auction/amp?tag_id=bad",
+			wantErrCount: 1,
+		},
+		{
+			name: "stored response not found returns error",
+			setupDeps: func() *endpointDeps {
+				req := json.RawMessage(`{
+					"id":"r1",
+					"imp":[{"id":"imp1","banner":{},"ext":{"prebid":{"storedauctionresponse":{"id":"sar1"}}}}]
+				}`)
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": req}, map[string]json.RawMessage{})
+			},
+			url:          "/openrtb2/auction/amp?tag_id=t1",
+			wantErrCount: 1,
+		},
+		{
+			name: "GenerateRequestID flag generates new ID",
+			setupDeps: func() *endpointDeps {
+				req := json.RawMessage(`{"id":"orig","imp":[{"id":"i1","banner":{}}]}`)
+				deps := baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": req}, nil)
+				deps.cfg.GenerateRequestID = true
+				return deps
+			},
+			url: "/openrtb2/auction/amp?tag_id=t1",
+			validateReq: func(t *testing.T, br *openrtb2.BidRequest) {
+				assert.Equal(t, "foo", br.ID, "generated ID should be 'foo'")
+			},
+		},
+		{
+			name: "UUID template is replaced with generated ID",
+			setupDeps: func() *endpointDeps {
+				req := json.RawMessage(`{"id":"{{UUID}}","imp":[{"id":"i1","banner":{}}]}`)
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": req}, nil)
+			},
+			url: "/openrtb2/auction/amp?tag_id=t1",
+			validateReq: func(t *testing.T, br *openrtb2.BidRequest) {
+				assert.Equal(t, "foo", br.ID, "generated ID should be 'foo'")
+			},
+		},
+		{
+			name: "debug flag sets Test to 1",
+			setupDeps: func() *endpointDeps {
+				req := json.RawMessage(`{"id":"r1","imp":[{"id":"i1","banner":{}}]}`)
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": req}, nil)
+			},
+			url: "/openrtb2/auction/amp?tag_id=t1&debug=1",
+			validateReq: func(t *testing.T, br *openrtb2.BidRequest) {
+				assert.Equal(t, int8(1), br.Test, "Test flag should be set to 1")
+			},
+		},
+		{
+			name: "zero imps returns validation error",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": json.RawMessage(`{"id":"r1","imp":[]}`)}, nil)
+			},
+			url:          "/openrtb2/auction/amp?tag_id=t1",
+			wantErrCount: 1,
+			wantErrMsg:   "data for tag_id='t1' does not define the required imp array",
+		},
+		{
+			name: "multiple imps returns validation error",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t2": json.RawMessage(`{"id":"r2","imp":[{"id":"a","banner":{}},{"id":"b","banner":{}}]}`)}, nil)
+			},
+			url:          "/openrtb2/auction/amp?tag_id=t2",
+			wantErrCount: 1,
+			wantErrMsg:   "data for tag_id 't2' includes 2 imp elements. Only one is allowed",
+		},
+		{
+			name: "app field present returns error",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": json.RawMessage(`{"id":"r1","imp":[{"id":"i1","banner":{}}],"app":{}}`)}, nil)
+			},
+			url:          "/openrtb2/auction/amp?tag_id=t1",
+			wantErrCount: 1,
+			wantErrMsg:   "request.app must not exist in AMP stored requests.",
+		},
+		{
+			name: "secure field is forced to 1 when nil",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": json.RawMessage(`{"id":"r1","imp":[{"id":"i1","banner":{}}]}`)}, nil)
+			},
+			url: "/openrtb2/auction/amp?tag_id=t1",
+			validateReq: func(t *testing.T, br *openrtb2.BidRequest) {
+				require.NotNil(t, br.Imp[0].Secure, "secure should not be nil")
+				assert.Equal(t, int8(1), *br.Imp[0].Secure, "secure should be forced to 1")
+			},
+		},
+		{
+			name: "secure field is forced to 1 when 0",
+			setupDeps: func() *endpointDeps {
+				return baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t2": json.RawMessage(`{"id":"r2","imp":[{"id":"i1","banner":{},"secure":0}]}`)}, nil)
+			},
+			url: "/openrtb2/auction/amp?tag_id=t2",
+			validateReq: func(t *testing.T, br *openrtb2.BidRequest) {
+				require.NotNil(t, br.Imp[0].Secure, "secure should not be nil")
+				assert.Equal(t, int8(1), *br.Imp[0].Secure, "secure should be forced to 1")
+			},
+		},
+		{
+			name: "URL params override stored request fields",
+			setupDeps: func() *endpointDeps {
+				deps := baseDepsForAmpAuctionTest(map[string]json.RawMessage{"t1": json.RawMessage(`{"id":"r1","site":{"page":"https://old"},"imp":[{"id":"i1","banner":{},"tagid":"oldslot"}]}`)}, nil)
+				deps.cfg.AMPTimeoutAdjustment = 0
+				return deps
+			},
+			url: "/openrtb2/auction/amp?tag_id=t1&curl=https://example.org/page&slot=newslot&timeout=1000",
+			validateReq: func(t *testing.T, br *openrtb2.BidRequest) {
+				require.NotNil(t, br.Site, "site should not be nil")
+				assert.Equal(t, "https://example.org/page", br.Site.Page, "Site.Page should be overridden by curl param")
+				assert.Equal(t, "newslot", br.Imp[0].TagID, "TagID should be overridden by slot param")
+				assert.Equal(t, int64(1000), br.TMax, "TMax should be set from timeout param")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deps := tt.setupDeps()
+			r := httptest.NewRequest(http.MethodGet, tt.url, nil)
+
+			br, _, _, _, errs := deps.loadRequestJSONForAmp(r, metrics.Labels{})
+
+			require.Len(t, errs, tt.wantErrCount, "unexpected number of errors")
+
+			if tt.wantErrMsg != "" {
+				require.NotEmpty(t, errs, "expected error but got none")
+				assert.Contains(t, errs[0].Error(), tt.wantErrMsg, "error message should contain expected text")
+			}
+
+			if tt.validateReq != nil {
+				tt.validateReq(t, br)
+			}
+		})
+	}
+}
