@@ -165,7 +165,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// to compute the auction timeout.
 	start := time.Now()
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine)
+	abTests := hookexecution.NewABTests(deps.cfg)
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAuction, deps.metricsEngine, abTests)
 
 	ao := analytics.AuctionObject{
 		Status:    http.StatusOK,
@@ -377,6 +378,11 @@ func sendAuctionResponse(
 		if len(warns) > 0 {
 			ao.Errors = append(ao.Errors, warns...)
 		}
+
+		if err := addABTestTargetingKeywords(response, hookExecutor); err != nil {
+			glog.Errorf("Failed to add A/B test targeting keywords: %v", err)
+			ao.Errors = append(ao.Errors, err)
+		}
 	}
 
 	// Fixes #231
@@ -397,6 +403,38 @@ func sendAuctionResponse(
 	}
 
 	return labels, ao
+}
+
+// addABTestTargetingKeywords adds A/B test targeting keywords to the BidResponse's targeting map using the data provided by the HookStageExecutor.
+func addABTestTargetingKeywords(response *openrtb2.BidResponse, hookExecutor hookexecution.HookStageExecutor) error {
+	targetingKeywords := hookExecutor.GetABTestTargetingKeywords()
+	if len(targetingKeywords) == 0 {
+		return nil
+	}
+
+	var respExt openrtb_ext.ExtBidResponse
+	if err := jsonutil.Unmarshal(response.Ext, &respExt); err != nil {
+		return fmt.Errorf("failed to unmarshal response.ext: %w", err)
+	}
+
+	if respExt.Prebid == nil {
+		respExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
+	}
+	if respExt.Prebid.Targeting == nil {
+		respExt.Prebid.Targeting = make(map[string]string)
+	}
+
+	for keyword, value := range targetingKeywords {
+		respExt.Prebid.Targeting[keyword] = value
+	}
+
+	extBytes, err := jsonutil.Marshal(respExt)
+	if err != nil {
+		return fmt.Errorf("failed to marshal response.ext: %w", err)
+	}
+	response.Ext = extBytes
+
+	return nil
 }
 
 // setBrowsingTopicsHeader always set the Observe-Browsing-Topics header to a value of ?1 if the Sec-Browsing-Topics is present in request
