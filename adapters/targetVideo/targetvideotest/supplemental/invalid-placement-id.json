@@ -1,0 +1,41 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Placement ID missing",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id-video",
+    "cur": ["EUR"],
+    "imp": [
+      {
+        "id": "test-imp-id-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "test"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "site": {
+      "domain": "www.publisher.com",
+      "page": "http://www.publisher.com/some/path",
+      "ext": {
+        "amp": 0
+      }
+    }
+  },
+  "httpCalls": []
+}
