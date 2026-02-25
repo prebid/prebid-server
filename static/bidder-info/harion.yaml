@@ -1,0 +1,17 @@
+aliasOf: "teqblaze"
+endpoint: "https://east-api.harion-ma.com/pserver"
+maintainer:
+  email: "adtech@markappmedia.site"
+gvlVendorID: 1406
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
