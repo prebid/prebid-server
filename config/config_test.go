@@ -1137,7 +1137,7 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	assert.Equal(t, `{"extrainfo": true}`, cfg.BidderInfos["bidder1"].ExtraAdapterInfo)
 
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Debug.Allow)
-	assert.Equal(t, uint16(42), cfg.BidderInfos["bidder1"].GVLVendorID)
+	assert.Equal(t, uint16(42), *cfg.BidderInfos["bidder1"].GVLVendorID)
 
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Experiment.AdsCert.Enabled)
 	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
