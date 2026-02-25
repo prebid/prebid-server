@@ -18,15 +18,15 @@ type Exitpoint interface {
 	HandleExitpointHook(
 		context.Context,
 		ModuleInvocationContext,
-		ExitpointPaylaod,
-	) (HookResult[ExitpointPaylaod], error)
+		ExitpointPayload,
+	) (HookResult[ExitpointPayload], error)
 }
 
 // ExitpointPayload contains a response of any type and a ResponseWriter.
 // The response is typically of type *openrtb2.BidResponse and can be modified
 // based on the module’s implementation.
 // Modules can also add custom headers depending on their response type.
-type ExitpointPaylaod struct {
+type ExitpointPayload struct {
 	Response any
 	W        http.ResponseWriter
 }

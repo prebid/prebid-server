@@ -44,7 +44,6 @@ var validParams = []string{
 	`{"placementId": "test-113", "parallax": true}`,
 	`{"placementId": "test-113", "parallax": false}`,
 	`{"placementId": "test-113", "parallax": false, "publisherPath": "/hubvisor"}`,
-	`{"placementId": "test-113", "parallax": false, "publisherPath": ""}`,
 }
 
 var invalidParams = []string{
@@ -55,4 +54,5 @@ var invalidParams = []string{
 	`{"placementId": 142, "parallax": true}`,
 	`{"placementId": "test-114", "parallax": 1}`,
 	`{"placementId": "test-114", "parallax": true, "publisherPath": 111}`,
+	`{"placementId": "test-113", "parallax": false, "publisherPath": ""}`,
 }

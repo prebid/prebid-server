@@ -1,0 +1,122 @@
+{
+  "mockBidRequest": {
+    "id": "test-video-request-id",
+    "imp": [
+      {
+        "id": "test-video-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 3, 5, 6],
+          "w": 640,
+          "h": 480,
+          "linearity": 1,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-video-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/video",
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=test-video-placement",
+        "body": {
+          "id": "test-video-request-id",
+          "imp": [
+            {
+              "id": "test-video-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 3, 5, 6],
+                "w": 640,
+                "h": 480,
+                "linearity": 1,
+                "maxduration": 30
+              },
+              "tagid": "test-video-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "test-video-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com/video",
+            "domain": "example.com"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-OpenRTB-Version": [
+            "2.6"
+          ]
+        },
+        "impIDs": ["test-video-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-video-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-video-bid-id",
+                  "impid": "test-video-imp-id",
+                  "price": 5.01,
+                  "adm": "<VAST version=\"3.0\"><Ad id=\"123\"></Ad></VAST>",
+                  "crid": "test-video-creative-id",
+                  "w": 640,
+                  "h": 480,
+                  "adomain": ["example.com"],
+                  "mtype": 2
+                }
+              ],
+              "seat": "resetdigital"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-video-bid-id",
+            "impid": "test-video-imp-id",
+            "price": 5.01,
+            "adm": "<VAST version=\"3.0\"><Ad id=\"123\"></Ad></VAST>",
+            "crid": "test-video-creative-id",
+            "w": 640,
+            "h": 480,
+            "adomain": ["example.com"],
+            "mtype": 2
+          },
+          "type": "video",
+          "seat": "resetdigital"
+        }
+      ]
+    }
+  ]
+}

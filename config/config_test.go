@@ -158,6 +158,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_debug", true, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", true, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_connections_dial_metrics", true, cfg.Metrics.Disabled.AdapterConnectionDialMetrics)
 	cmpBools(t, "adapter_buyeruid_scrubbed", true, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", false, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "", cfg.PemCertsFile)
@@ -167,6 +168,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.http.endpoint", "", cfg.StoredRequests.HTTP.Endpoint)
 	cmpStrings(t, "stored_requests.http.amp_endpoint", "", cfg.StoredRequests.HTTP.AmpEndpoint)
 	cmpBools(t, "stored_requests.http.use_rfc3986_compliant_request_builder", false, cfg.StoredRequests.HTTP.UseRfcCompliantBuilder)
+	cmpBools(t, "video.enable_deprecated_endpoint", false, cfg.Video.EnableDeprecatedEndpoint)
 	cmpBools(t, "accounts.filesystem.enabled", false, cfg.Accounts.Files.Enabled)
 	cmpStrings(t, "accounts.filesystem.directorypath", "./stored_requests/data/by_id", cfg.Accounts.Files.Path)
 	cmpStrings(t, "accounts.http.endpoint", "", cfg.Accounts.HTTP.Endpoint)
@@ -421,6 +423,8 @@ gdpr:
       vendor_exceptions: ["foo10"]
     special_feature1:
       vendor_exceptions: ["fooSP1"]
+video:
+  enable_deprecated_endpoint: true
 ccpa:
   enforce: true
 lmt:
@@ -483,6 +487,7 @@ metrics:
     account_debug: false
     account_stored_responses: false
     adapter_connections_metrics: true
+    adapter_connections_dial_metrics: true
     adapter_buyeruid_scrubbed: false
     adapter_gdpr_request_blocked: true
     account_modules_metrics: true
@@ -683,6 +688,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", 3, cfg.CacheClient.IdleConnTimeout)
 	cmpInts(t, "gdpr.host_vendor_id", 15, cfg.GDPR.HostVendorID)
 	cmpStrings(t, "gdpr.default_value", "1", cfg.GDPR.DefaultValue)
+	cmpBools(t, "video.enable_deprecated_endpoint", true, cfg.Video.EnableDeprecatedEndpoint)
 	cmpStrings(t, "host_schain_node.asi", "pbshostcompany.com", cfg.HostSChainNode.ASI)
 	cmpStrings(t, "host_schain_node.sid", "00001", cfg.HostSChainNode.SID)
 	cmpStrings(t, "host_schain_node.rid", "BidRequest", cfg.HostSChainNode.RID)
@@ -918,6 +924,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_debug", false, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", false, cfg.Metrics.Disabled.AccountStoredResponses)
 	cmpBools(t, "adapter_connections_metrics", true, cfg.Metrics.Disabled.AdapterConnectionMetrics)
+	cmpBools(t, "adapter_connections_dial_metrics", true, cfg.Metrics.Disabled.AdapterConnectionDialMetrics)
 	cmpBools(t, "adapter_buyeruid_scrubbed", false, cfg.Metrics.Disabled.AdapterBuyerUIDScrubbed)
 	cmpBools(t, "adapter_gdpr_request_blocked", true, cfg.Metrics.Disabled.AdapterGDPRRequestBlocked)
 	cmpStrings(t, "certificates_file", "/etc/ssl/cert.pem", cfg.PemCertsFile)
@@ -1016,8 +1023,6 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 }
 
 func TestUserSyncFromEnv(t *testing.T) {
-	truePtr := true
-
 	// setup env vars for testing
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", oldval)
@@ -1054,11 +1059,9 @@ func TestUserSyncFromEnv(t *testing.T) {
 	assert.Equal(t, "http://some.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder1"].Syncer.Redirect.URL)
 	assert.Equal(t, "[UID]", cfg.BidderInfos["bidder1"].Syncer.Redirect.UserMacro)
 	assert.Nil(t, cfg.BidderInfos["bidder1"].Syncer.IFrame)
-	assert.Equal(t, &truePtr, cfg.BidderInfos["bidder1"].Syncer.SupportCORS)
 
 	assert.Equal(t, "http://somedifferent.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder2"].Syncer.IFrame.URL)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
-	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.SupportCORS)
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
