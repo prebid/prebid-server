@@ -5,13 +5,20 @@
       {
         "id": "test-imp-id",
         "video": {
-          "w": 728, 
+          "w": 728,
           "h": 90,
-          "protocols": [2],
+          "protocols": [
+            2
+          ],
           "placement": 1,
           "startdelay": -2,
-          "playbackmethod": [2],
-          "mimes": ["foo", "bar"]
+          "playbackmethod": [
+            2
+          ],
+          "mimes": [
+            "foo",
+            "bar"
+          ]
         },
         "ext": {
           "bidder": {
@@ -27,11 +34,10 @@
       }
     }
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://insticator.example.com/v1/pbs",
+        "uri": "https://insticator.example.com/v1/pbs?publisherId=test-publisher-id",
         "body": {
           "ext": {
             "insticator": {
@@ -46,15 +52,22 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
+              "id": "test-imp-id",
               "video": {
-                "w": 728, 
+                "w": 728,
                 "h": 90,
-                "protocols": [2],
+                "protocols": [
+                  2
+                ],
                 "placement": 1,
                 "startdelay": -2,
-                "playbackmethod": [2],
-                "mimes": ["foo", "bar"]
+                "playbackmethod": [
+                  2
+                ],
+                "mimes": [
+                  "foo",
+                  "bar"
+                ]
               },
               "ext": {
                 "insticator": {
@@ -70,7 +83,9 @@
             }
           }
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -79,21 +94,26 @@
           "seatbid": [
             {
               "seat": "insticator",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
-                "price": 0.500000,
-                "adm": "some-test-vast-ad",
-                "mtype": 2,
-                "crid": "crid_10",
-                "h": 90,
-                "w": 728,
-                "ext": {
-                  "insticator": {
-                    "mediaType": "video"
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.5,
+                  "adm": "some-test-vast-ad",
+                  "adomain": ["insticator.com"],
+                  "cat": ["IAB1-1"],
+                  "dur": 30,
+                  "mtype": 2,
+                  "crid": "crid_10",
+                  "h": 90,
+                  "w": 728,
+                  "ext": {
+                    "insticator": {
+                      "mediaType": "video"
+                    }
                   }
                 }
-              }]
+              ]
             }
           ],
           "cur": "USD"
@@ -101,7 +121,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -112,6 +131,9 @@
             "impid": "test-imp-id",
             "price": 0.5,
             "adm": "some-test-vast-ad",
+            "adomain": ["insticator.com"],
+            "cat": ["IAB1-1"],
+            "dur": 30,
             "crid": "crid_10",
             "w": 728,
             "mtype": 2,
@@ -122,7 +144,17 @@
               }
             }
           },
-          "type": "video"
+          "BidMeta": {
+            "advertiserDomains": ["insticator.com"],
+            "mediaType": "video",
+            "primaryCatId": "IAB1-1"
+          },
+          "BidVideo": {
+            "duration": 30,
+            "primary_category": "IAB1-1"
+          },
+          "type": "video",
+          "seat": "insticator"
         }
       ]
     }

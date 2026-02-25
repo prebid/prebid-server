@@ -59,7 +59,7 @@
             "1.22.22.1"
           ]
         },
-        "uri": "https://insticator.example.com/v1/pbs",
+        "uri": "https://insticator-app.example.com/v1/pbs?publisherId=test-publisher-id",
         "body": {
           "device": {
             "ip": "1.22.22.1",
@@ -125,8 +125,11 @@
                 {
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                   "impid": "test-imp-id",
-                  "price": 0.500000,
+                  "price": 0.5,
                   "adm": "some-test-vast-ad",
+                  "adomain": ["insticator.com"],
+                  "cat": ["IAB1-1"],
+                  "dur": 30,
                   "mtype": 2,
                   "crid": "crid_10",
                   "h": 90,
@@ -155,6 +158,9 @@
             "impid": "test-imp-id",
             "price": 0.5,
             "adm": "some-test-vast-ad",
+            "adomain": ["insticator.com"],
+            "cat": ["IAB1-1"],
+            "dur": 30,
             "crid": "crid_10",
             "w": 728,
             "mtype": 2,
@@ -165,7 +171,17 @@
               }
             }
           },
-          "type": "video"
+          "BidMeta": {
+            "advertiserDomains": ["insticator.com"],
+            "mediaType": "video",
+            "primaryCatId": "IAB1-1"
+          },
+          "BidVideo": {
+            "duration": 30,
+            "primary_category": "IAB1-1"
+          },
+          "type": "video",
+          "seat": "insticator"
         }
       ]
     }

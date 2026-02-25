@@ -3,6 +3,7 @@ package insticator
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -24,7 +25,12 @@ type impInsticatorExt struct {
 }
 
 type adapter struct {
-	endpoint string
+	endpoint  string
+	extraInfo ExtraInfo
+}
+
+type ExtraInfo struct {
+	AppEndpoint string `json:"app_endpoint,omitempty"`
 }
 
 type reqExt struct {
@@ -54,10 +60,51 @@ type bidInsticatorExt struct {
 
 // Builder builds a new instance of the Insticator adapter with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	extraInfo, err := parseExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:  config.Endpoint,
+		extraInfo: extraInfo,
 	}
 	return bidder, nil
+}
+
+func parseExtraInfo(v string) (ExtraInfo, error) {
+	if len(v) == 0 {
+		return ExtraInfo{}, nil
+	}
+
+	var extraInfo ExtraInfo
+	if err := jsonutil.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
+	}
+
+	return extraInfo, nil
+}
+
+// buildEndpointURL builds the endpoint URL with publisherId query parameter
+func (a *adapter) buildEndpointURL(publisherId string, request *openrtb2.BidRequest) string {
+	// Use app endpoint from extra_info if this is an app request
+	baseEndpoint := a.endpoint
+	if request.App != nil && a.extraInfo.AppEndpoint != "" {
+		baseEndpoint = a.extraInfo.AppEndpoint
+	}
+
+	// Append publisherId as query parameter
+	if publisherId != "" {
+		parsedURL, err := url.Parse(baseEndpoint)
+		if err == nil {
+			query := parsedURL.Query()
+			query.Set("publisherId", publisherId)
+			parsedURL.RawQuery = query.Encode()
+			return parsedURL.String()
+		}
+	}
+
+	return baseEndpoint
 }
 
 // getMediaTypeForBid figures out which media type this bid is for
@@ -76,6 +123,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 	var groupedImps = make(map[string][]openrtb2.Imp)
+	var publisherId string
 
 	reqExt, err := makeReqExt(request)
 	if err != nil {
@@ -89,14 +137,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	isPublisherIdPopulated := false // Flag to track if populatePublisherId has been called
 
 	for i := 0; i < len(request.Imp); i++ {
-		impCopy, impKey, publisherId, err := makeImps(request.Imp[i])
+		impCopy, impKey, impPublisherId, err := makeImps(request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		// Populate publisher.id from imp extension
+		// Populate publisher.id from imp extension (only once)
 		if !isPublisherIdPopulated {
+			publisherId = impPublisherId
 			populatePublisherId(publisherId, &requestCopy)
 			isPublisherIdPopulated = true
 		}
@@ -118,7 +167,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	for _, impList := range groupedImps {
-		if adapterReq, err := a.makeRequest(&requestCopy, impList); err == nil {
+		if adapterReq, err := a.makeRequest(&requestCopy, impList, publisherId); err == nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		} else {
 			errs = append(errs, err)
@@ -127,13 +176,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return adapterRequests, errs
 }
 
-func (a *adapter) makeRequest(request *openrtb2.BidRequest, impList []openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, impList []openrtb2.Imp, publisherId string) (*adapters.RequestData, error) {
 	request.Imp = impList
 
 	reqJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
+
+	// Build endpoint URL with publisherId query parameter
+	endpointURL := a.buildEndpointURL(publisherId, request)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -156,7 +208,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, impList []openrtb2.I
 
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     endpointURL,
 		Body:    reqJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -186,13 +238,51 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			bid := &seatBid.Bid[i]
 			bidType := getMediaTypeForBid(bid)
 			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: bidType,
+				Bid:      &seatBid.Bid[i],
+				BidType:  bidType,
+				BidMeta:  getBidMeta(bid, bidType),
+				BidVideo: getBidVideo(bid, bidType),
+				Seat:     openrtb_ext.BidderName(seatBid.Seat),
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 	return bidResponse, nil
+}
+
+// getBidMeta extracts metadata from the bid for brand safety and reporting
+func getBidMeta(bid *openrtb2.Bid, bidType openrtb_ext.BidType) *openrtb_ext.ExtBidPrebidMeta {
+	meta := &openrtb_ext.ExtBidPrebidMeta{
+		MediaType: string(bidType),
+	}
+
+	if len(bid.ADomain) > 0 {
+		meta.AdvertiserDomains = bid.ADomain
+	}
+
+	if len(bid.Cat) > 0 {
+		meta.PrimaryCategoryID = bid.Cat[0]
+		meta.SecondaryCategoryIDs = bid.Cat[1:]
+	}
+
+	return meta
+}
+
+// getBidVideo extracts video-specific metadata from the bid
+func getBidVideo(bid *openrtb2.Bid, bidType openrtb_ext.BidType) *openrtb_ext.ExtBidPrebidVideo {
+	if bidType != openrtb_ext.BidTypeVideo {
+		return nil
+	}
+
+	var primaryCategory string
+	if len(bid.Cat) > 0 {
+		primaryCategory = bid.Cat[0]
+	}
+
+	return &openrtb_ext.ExtBidPrebidVideo{
+		Duration:        int(bid.Dur),
+		PrimaryCategory: primaryCategory,
+	}
 }
 
 func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, string, error) {
@@ -229,13 +319,13 @@ func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, string, error) {
 	// Validate Video if it exists
 	if imp.Video != nil {
 		if err := validateVideoParams(imp.Video); err != nil {
-			return openrtb2.Imp{}, insticatorExt.AdUnitId, insticatorExt.PublisherId, &errortypes.BadInput{
+			return openrtb2.Imp{}, "", insticatorExt.PublisherId, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 	}
 
-	// Return the imp, AdUnitId, and no error
+	// Return the imp, adUnitId as groupKey, publisherId, and no error
 	return imp, insticatorExt.AdUnitId, insticatorExt.PublisherId, nil
 }
 
