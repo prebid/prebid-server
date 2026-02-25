@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "app1"
+    },
+    "imp": [
+      {
+        "id": "imp1",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "pix_id": "55463"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "id": "app1"
+          },
+          "imp": [
+            {
+              "id": "imp1",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 360
+              },
+              "ext": {
+                "bidder": {
+                  "pix_id": "55463"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid1",
+                  "impid": "imp1",
+                  "price": 1.23,
+                  "adm": "<vast></vast>",
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid1",
+            "impid": "imp1",
+            "price": 1.23,
+            "adm": "<vast></vast>",
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}

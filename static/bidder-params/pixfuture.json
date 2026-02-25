@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "PixFuture Adapter Params",
+  "description": "A schema which validates params accepted by the PixFuture adapter",
+  "type": "object",
+  "properties": {
+    "pix_id": {
+      "type": "string",
+      "description": "PixFuture placement ID",
+      "minLength": 3
+    }
+  },
+  "required": [
+    "pix_id"
+  ]
+}
