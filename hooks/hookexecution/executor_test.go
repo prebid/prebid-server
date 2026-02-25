@@ -3085,3 +3085,113 @@ func (e TestMultipleHooksUpdatePayloadBuilder) PlanForExitpointStage(_ string, _
 		},
 	}
 }
+
+// TestSequentialMutationExecution proves that mutations are applied in config order,
+// not completion order, using channel-based synchronization (no flaky time.Sleep).
+func TestSequentialMutationExecution(t *testing.T) {
+	// Setup: Create channels to control hook completion order
+	hook1Done := make(chan struct{})
+	hook2Done := make(chan struct{})
+	hook3Done := make(chan struct{})
+
+	// Plan: Hook execution will complete in order 2 → 3 → 1 (out of config order)
+	// But mutations must apply in config order: 1 → 2 → 3
+	planBuilder := &testSequentialMutationPlanBuilder{
+		hook1: mockSequencedHook{
+			id:        "hook-1",
+			value:     "1",
+			waitFor:   hook2Done, // Hook-1 waits for hook-2 to complete
+			completed: hook1Done,
+		},
+		hook2: mockSequencedHook{
+			id:        "hook-2",
+			value:     "2",
+			waitFor:   nil, // Hook-2 completes immediately
+			completed: hook2Done,
+		},
+		hook3: mockSequencedHook{
+			id:        "hook-3",
+			value:     "3",
+			waitFor:   hook2Done, // Hook-3 waits for hook-2, completes before hook-1
+			completed: hook3Done,
+		},
+	}
+
+	executor := NewHookExecutor(planBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+
+	// Execute stage
+	initialRequest := &openrtb2.BidRequest{ID: "test-request"}
+	payload := &openrtb_ext.RequestWrapper{BidRequest: initialRequest}
+	rejectErr := executor.ExecuteProcessedAuctionStage(payload)
+
+	// Verify no rejection
+	assert.Nil(t, rejectErr, "Stage should not be rejected")
+
+	// CRITICAL ASSERTION: This proves mutations are applied in config order
+	//
+	// Expected behavior (config order 1→2→3):
+	//   Hook-1: CustomData = "" + "1" = "1"
+	//   Hook-2: CustomData = "1" + "2" = "12"
+	//   Hook-3: CustomData = "12" + "3" = "123" ✓
+	//
+	// Wrong behavior (completion order 2→3→1):
+	//   Hook-2: CustomData = "" + "2" = "2"
+	//   Hook-3: CustomData = "2" + "3" = "23"
+	//   Hook-1: CustomData = "23" + "1" = "231" ✗
+	//
+	// If this assertion passes, mutations were applied in config order!
+	assert.Equal(t, "123", payload.BidRequest.User.CustomData,
+		"Mutations must be applied in config order (1→2→3), not completion order (2→3→1)")
+
+	// Verify all hooks completed
+	select {
+	case <-hook1Done:
+	default:
+		t.Error("Hook-1 should have completed")
+	}
+	select {
+	case <-hook2Done:
+	default:
+		t.Error("Hook-2 should have completed")
+	}
+	select {
+	case <-hook3Done:
+	default:
+		t.Error("Hook-3 should have completed")
+	}
+
+	// Verify hook outcomes are in config order in the results
+	outcomes := executor.GetOutcomes()
+	assert.Len(t, outcomes, 1, "Should have one stage outcome")
+
+	stageOutcome := outcomes[0]
+	assert.Len(t, stageOutcome.Groups, 1, "Should have one group")
+
+	groupOutcome := stageOutcome.Groups[0]
+	assert.Len(t, groupOutcome.InvocationResults, 3, "Should have three hook results")
+
+	// Verify hooks are recorded in config order
+	assert.Equal(t, "hook-1", groupOutcome.InvocationResults[0].HookID.HookImplCode)
+	assert.Equal(t, "hook-2", groupOutcome.InvocationResults[1].HookID.HookImplCode)
+	assert.Equal(t, "hook-3", groupOutcome.InvocationResults[2].HookID.HookImplCode)
+}
+
+type testSequentialMutationPlanBuilder struct {
+	hooks.EmptyPlanBuilder
+	hook1, hook2, hook3 mockSequencedHook
+}
+
+func (p *testSequentialMutationPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
+			Timeout: 500 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
+				// Config order: 1, 2, 3
+				// Completion order will be: 2, 3, 1 (controlled by channels)
+				{Module: "seq-test", Code: "hook-1", Hook: p.hook1},
+				{Module: "seq-test", Code: "hook-2", Hook: p.hook2},
+				{Module: "seq-test", Code: "hook-3", Hook: p.hook3},
+			},
+		},
+	}
+}
