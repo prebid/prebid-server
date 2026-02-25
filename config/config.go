@@ -478,6 +478,7 @@ type Analytics struct {
 	File     FileLogs      `mapstructure:"file"`
 	Agma     AgmaAnalytics `mapstructure:"agma"`
 	Pubstack Pubstack      `mapstructure:"pubstack"`
+	Pubxai   Pubxai        `mapstructure:"pubxai"`
 }
 
 type CurrencyConverter struct {
@@ -539,6 +540,16 @@ type PubstackBuffer struct {
 	BufferSize string `mapstructure:"size"`
 	EventCount int    `mapstructure:"count"`
 	Timeout    string `mapstructure:"timeout"`
+}
+
+type Pubxai struct {
+	Enabled                      bool   `mapstructure:"enabled"`
+	Endpoint                     string `mapstructure:"endpoint"`
+	Publisherid                  string `mapstructure:"publisherid"`
+	BufferInterval               string `mapstructure:"buffer_interval"`
+	BufferSize                   string `mapstructure:"buffer_size"`
+	SamplingPercentage           int    `mapstructure:"sampling_percentage"`
+	ConfigurationRefreshInterval string `mapstructure:"configuration_refresh_interval"`
 }
 
 type VTrack struct {
@@ -1161,6 +1172,13 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("analytics.pubstack.buffers.size", "2MB")
 	v.SetDefault("analytics.pubstack.buffers.count", 100)
 	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
+	v.SetDefault("analytics.pubxai.enabled", false)
+	v.SetDefault("analytics.pubxai.endpoint", "https://api.pubx.ai/v1")
+	v.SetDefault("analytics.pubxai.publisherid", "change-me")
+	v.SetDefault("analytics.pubxai.buffer_interval", "5s")
+	v.SetDefault("analytics.pubxai.buffer_size", "1KB")
+	v.SetDefault("analytics.pubxai.sampling_percentage", 30)
+	v.SetDefault("analytics.pubxai.configuration_refresh_interval", "2h")
 	v.SetDefault("analytics.agma.enabled", false)
 	v.SetDefault("analytics.agma.endpoint.url", "https://go.pbs.agma-analytics.de/v1/prebid-server")
 	v.SetDefault("analytics.agma.endpoint.timeout", "2s")
