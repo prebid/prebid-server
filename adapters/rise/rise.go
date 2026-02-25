@@ -17,12 +17,18 @@ import (
 
 // adapter is a Rise implementation of the adapters.Bidder interface.
 type adapter struct {
-	endpointURL string
+	endpointURL     string
+	testEndpointURL string
 }
+
+const (
+	testEndpoint = "https://pbs.yellowblue.io/pbs-test"
+)
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	return &adapter{
-		endpointURL: config.Endpoint,
+		endpointURL:     config.Endpoint,
+		testEndpointURL: testEndpoint,
 	}, nil
 }
 
@@ -45,7 +51,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 
 	return append(requestsToBidder, &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.endpointURL + "?publisher_id=" + org,
+		Uri:     a.buildEndpoint(openRTBRequest.Test, org),
 		Body:    openRTBRequestJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
@@ -125,4 +131,14 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	default:
 		return "", fmt.Errorf("unsupported MType %d", bid.MType)
 	}
+}
+
+// Helper func for building endpoint url
+func (a *adapter) buildEndpoint(testParam int8, org string) string {
+	endpoint := a.endpointURL
+	if testParam == 1 {
+		endpoint = testEndpoint
+	}
+
+	return endpoint + "?publisher_id=" + org
 }
