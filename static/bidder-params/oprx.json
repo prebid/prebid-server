@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "OptimizeRx Adapter Params",
+  "description": "A schema which validates params accepted by the OptimizeRx adapter",
+  "type": "object",
+
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Key"
+    },
+    "placement_id": {
+      "type": "integer",
+      "description": "Placement ID"
+    },
+    "width": {
+      "type": "integer",
+      "description": "Banner Width"
+    },
+    "height": {
+      "type": "integer",
+      "description": "Banner Height"
+    },
+    "bid_floor": {
+      "type": "number",
+      "description": "Bidding Price Floor"
+    },
+    "npi": {
+      "type": "string",
+      "description": "NPI"
+    },
+    "ndc": {
+      "type": "string",
+      "description": "NDC"
+    },
+    "type": {
+      "type": "string",
+      "description": "Type of Bid/Impression"
+    }
+  },
+
+  "required": ["key", "placement_id", "type"]
+}
