@@ -1,0 +1,127 @@
+{
+  "mockBidRequest": {
+    "app": {
+      "bundle": "com.example.app"
+    },
+    "id": "req-id",
+    "device": {
+      "ifa": "device-ifa",
+      "ip": "1.1.1.1",
+      "ua": "device-ua"
+    },
+    "imp": [
+      {
+        "ext": {
+          "bidder": {
+            "accountid": "100000099"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "id": "imp-id"
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://cupid.iqiyi.net/bid?a=100000099",
+        "body": {
+          "app": {
+            "bundle": "com.example.app"
+          },
+          "id": "req-id",
+          "device": {
+            "ifa": "device-ifa",
+            "ip": "1.1.1.1",
+            "ua": "device-ua"
+          },
+          "imp": [
+            {
+              "ext": {
+                "bidder": {
+                  "accountid": "100000099"
+                }
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ],
+                "w": 320,
+                "h": 50
+              },
+              "id": "imp-id"
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "ext": {
+                    "prebid": {
+                      "meta": {
+                        "networkName": "iqiyi"
+                      }
+                    }
+                  },
+                  "nurl": "https://some.event.url/params",
+                  "crid": "123456789",
+                  "adomain": [],
+                  "price": 2.0,
+                  "id": "1234",
+                  "adm": "bannerhtml",
+                  "impid": "imp-id",
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1234",
+            "impid": "imp-id",
+            "price": 2.0,
+            "adm": "bannerhtml",
+            "crid": "123456789",
+            "nurl": "https://some.event.url/params",
+            "mtype": 1,
+            "ext": {
+              "prebid": {
+                "meta": {
+                  "networkName": "iqiyi"
+                }
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
