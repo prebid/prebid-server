@@ -55,6 +55,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAkcelo,
 	BidderAlgorix,
 	BidderAlkimi,
+	BidderAllianceGravity,
 	BidderAMX,
 	BidderApacdex,
 	BidderAppnexus,
@@ -112,7 +113,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderDisplayio,
 	BidderEdge226,
 	BidderDmx,
-	BidderDXKulture,
 	BidderDriftPixel,
 	BidderEmtv,
 	BidderEmxDigital,
@@ -131,7 +131,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGamoshi,
 	BidderGlobalsun,
 	BidderGoldbach,
-	BidderGothamads,
 	BidderGrid,
 	BidderGumGum,
 	BidderHuaweiAds,
@@ -141,8 +140,8 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderInfyTV,
 	BidderInMobi,
 	BidderInsticator,
+	BidderIntenze,
 	BidderInteractiveoffers,
-	BidderIntertech,
 	BidderInvibes,
 	BidderIQX,
 	BidderIQZone,
@@ -221,7 +220,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSeedingAlliance,
 	BidderSeedtag,
 	BidderSaLunaMedia,
-	BidderScreencore,
 	BidderSharethrough,
 	BidderShowheroes,
 	BidderSilverMob,
@@ -255,6 +253,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTriplelift,
 	BidderTripleliftNative,
 	BidderTrustedstack,
+	BidderTrustX,
 	BidderUcfunnel,
 	BidderUndertone,
 	BidderUnicorn,
@@ -429,6 +428,7 @@ const (
 	BidderAkcelo            BidderName = "akcelo"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAlkimi            BidderName = "alkimi"
+	BidderAllianceGravity   BidderName = "alliance_gravity"
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
@@ -486,7 +486,6 @@ const (
 	BidderDisplayio         BidderName = "displayio"
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
-	BidderDXKulture         BidderName = "dxkulture"
 	BidderDriftPixel        BidderName = "driftpixel"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
@@ -505,7 +504,6 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGlobalsun         BidderName = "globalsun"
 	BidderGoldbach          BidderName = "goldbach"
-	BidderGothamads         BidderName = "gothamads"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
@@ -515,8 +513,8 @@ const (
 	BidderInfyTV            BidderName = "infytv"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInsticator        BidderName = "insticator"
+	BidderIntenze           BidderName = "intenze"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
-	BidderIntertech         BidderName = "intertech"
 	BidderInvibes           BidderName = "invibes"
 	BidderIQX               BidderName = "iqx"
 	BidderIQZone            BidderName = "iqzone"
@@ -595,7 +593,6 @@ const (
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSeedtag           BidderName = "seedtag"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
-	BidderScreencore        BidderName = "screencore"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderShowheroes        BidderName = "showheroes"
 	BidderSilverMob         BidderName = "silvermob"
@@ -629,6 +626,7 @@ const (
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"
 	BidderTrustedstack      BidderName = "trustedstack"
+	BidderTrustX            BidderName = "trustx"
 	BidderUcfunnel          BidderName = "ucfunnel"
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"

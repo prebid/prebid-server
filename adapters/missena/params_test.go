@@ -36,7 +36,7 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"apiKey": "PA-123456"}`,
 	`{"apiKey": "PA-123456", "placement": "sticky"}`,
-	`{"apiKey": "PA-123456", "test": "native"}`,
+	`{"apiKey": "PA-123456", "sample": "test-sample"}`,
 }
 
 var invalidParams = []string{
@@ -45,6 +45,6 @@ var invalidParams = []string{
 	`{"placement": 111}`,
 	`{"placement": "sticky"}`,
 	`{"apiKey": "PA-123456", "placement": 111}`,
-	`{"test": "native"}`,
-	`{"apiKey": "PA-123456", "test": 111}`,
+	`{"sample": "test-sample"}`,
+	`{"apiKey": "PA-123456", "sample": 111}`,
 }
