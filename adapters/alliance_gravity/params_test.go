@@ -1,4 +1,4 @@
-package intertech
+package alliance_gravity
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderIntertech, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderAllianceGravity, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,22 +27,22 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderIntertech, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderAllianceGravity, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
 }
 
 var validParams = []string{
-	`{"page_id": 123, "imp_id": 456}`,
-	`{"page_id": 1, "imp_id": 1}`,
-	`{"page_id": 999, "imp_id": 999}`,
+	`{"srid":"11223344"}`,
+	`{"srid":"1122334455"}`,
+	`{"srid":"0"}`,
+	`{"srid":"11223344","other_params":"hoge"}`,
 }
 
 var invalidParams = []string{
-	`{"page_id": "abc", "imp_id": 1}`,
-	`{"page_id": "1", "imp_id": abc}`,
-	`{"page_id": "123123"}`,
-	`{"imp_id": "123"}`,
 	`{}`,
+	`null`,
+	`12345`,
+	`{"id":123456}`,
 }

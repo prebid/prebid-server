@@ -88,9 +88,11 @@
           "request_id": "test-request-id",
           "timeout": 500,
           "params": {
+            "apiKey": "test-api-key",
             "formats": ["banner"],
             "placement": "sticky"
-          }
+          },
+          "version": "prebid-server@unknown"
         },
         "impIDs": ["test-imp-id"]
       },
