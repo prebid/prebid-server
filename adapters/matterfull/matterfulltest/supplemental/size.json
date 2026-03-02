@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "site": {
+      "id": "test",
+      "domain": "test.com"
+    },
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          
+        },
+        "ext": {
+          "bidder": {
+            "pid": "LUN2gcJFHRwysZVTm8p3"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+        "value": "Expected at least one banner.format entry or explicit w/h",
+        "comparison": "literal"
+    }]
+}

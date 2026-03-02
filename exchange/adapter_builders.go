@@ -150,6 +150,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/madsense"
 	"github.com/prebid/prebid-server/v3/adapters/madvertise"
 	"github.com/prebid/prebid-server/v3/adapters/marsmedia"
+	"github.com/prebid/prebid-server/v3/adapters/matterfull"
 	"github.com/prebid/prebid-server/v3/adapters/mediago"
 	"github.com/prebid/prebid-server/v3/adapters/medianet"
 	"github.com/prebid/prebid-server/v3/adapters/mediasquare"
@@ -418,6 +419,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMadSense:          madsense.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
+		openrtb_ext.BidderMatterfull:        matterfull.Builder,
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
 		openrtb_ext.BidderMediaGo:           mediago.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
