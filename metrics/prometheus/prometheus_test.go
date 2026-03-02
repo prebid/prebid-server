@@ -1953,6 +1953,14 @@ func TestRecordGvlListRequest(t *testing.T) {
 	assertCounterValue(t, "Record instance of fetched GVL list", "success", m.gvlListRequests, 1.00)
 }
 
+func TestRecordLiveGVLFetchError(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordLiveGVLFetchError()
+
+	assertCounterValue(t, "Record instance of live GVL fetch error", "error", m.liveGVLFetchErrors, 1.00)
+}
+
 func TestRecordAdsCertReqMetric(t *testing.T) {
 	testCases := []struct {
 		description                  string

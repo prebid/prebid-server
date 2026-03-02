@@ -55,6 +55,7 @@ type Metrics struct {
 	privacyTCF                   *prometheus.CounterVec
 	storedResponses              prometheus.Counter
 	gvlListRequests              prometheus.Counter
+	liveGVLFetchErrors           prometheus.Counter
 	storedResponsesFetchTimer    *prometheus.HistogramVec
 	storedResponsesErrors        *prometheus.CounterVec
 	adsCertRequests              *prometheus.CounterVec
@@ -378,6 +379,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.gvlListRequests = newCounterWithoutLabels(cfg, reg,
 		"gvl_requests",
 		"Count number of times GVL list is fetched")
+
+	metrics.liveGVLFetchErrors = newCounterWithoutLabels(cfg, reg,
+		"live_gvl_fetch_errors",
+		"Count of errors encountered while fetching the latest GVL vendor IDs")
 
 	metrics.adapterBids = newCounter(cfg, reg,
 		"adapter_bids",
@@ -737,6 +742,10 @@ func (m *Metrics) RecordStoredResponse(pubId string) {
 
 func (m *Metrics) RecordGvlListRequest() {
 	m.gvlListRequests.Inc()
+}
+
+func (m *Metrics) RecordLiveGVLFetchError() {
+	m.liveGVLFetchErrors.Inc()
 }
 
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {

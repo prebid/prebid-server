@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,6 +15,7 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 		description string
 		settings    serverSettings
 		expectedIDs map[uint16]struct{}
+		expectError bool
 	}{
 		{
 			description: "Successful fetch with multiple vendors",
@@ -70,6 +72,7 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 				},
 			},
 			expectedIDs: map[uint16]struct{}{},
+			expectError: true,
 		},
 	}
 
@@ -78,8 +81,13 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(mockServer(tt.settings)))
 			defer server.Close()
 
-			result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server))
+			m := &metrics.MetricsEngineMock{}
+			if tt.expectError {
+				m.On("RecordLiveGVLFetchError").Once()
+			}
+			result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server), m)
 			assert.Equal(t, tt.expectedIDs, result)
+			m.AssertExpectations(t)
 		})
 	}
 }
@@ -90,8 +98,11 @@ func TestFetchLatestGVLVendorIDsServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server))
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordLiveGVLFetchError").Once()
+	result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server), m)
 	assert.Empty(t, result)
+	m.AssertExpectations(t)
 }
 
 func TestFetchLatestGVLVendorIDsMalformedJSON(t *testing.T) {
@@ -101,8 +112,11 @@ func TestFetchLatestGVLVendorIDsMalformedJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server))
+	m := &metrics.MetricsEngineMock{}
+	m.On("RecordLiveGVLFetchError").Once()
+	result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server), m)
 	assert.Empty(t, result)
+	m.AssertExpectations(t)
 }
 
 func TestLiveGVLVendorIDsContains(t *testing.T) {

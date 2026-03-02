@@ -255,6 +255,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "analytics.agma.buffers.count", 100, cfg.Analytics.Agma.Buffers.EventCount)
 	cmpStrings(t, "analytics.agma.buffers.timeout", "15m", cfg.Analytics.Agma.Buffers.Timeout)
 	cmpInts(t, "analytics.agma.accounts", 0, len(cfg.Analytics.Agma.Accounts))
+	cmpInts(t, "gdpr.live_gvl_refresh_interval_seconds", 86400, cfg.GDPR.LiveGVLRefreshInterval)
 	expectedTCF2 := TCF2{
 		Enabled: true,
 		Purpose1: TCF2Purpose{
@@ -387,6 +388,7 @@ gdpr:
   default_value: "1"
   non_standard_publishers: ["pub1", "pub2"]
   eea_countries: ["eea1", "eea2"]
+  live_gvl_refresh_interval_seconds: 3600
   tcf2:
     purpose1:
       enforce_vendors: false
@@ -688,6 +690,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", 3, cfg.CacheClient.IdleConnTimeout)
 	cmpInts(t, "gdpr.host_vendor_id", 15, cfg.GDPR.HostVendorID)
 	cmpStrings(t, "gdpr.default_value", "1", cfg.GDPR.DefaultValue)
+	cmpInts(t, "gdpr.live_gvl_refresh_interval_seconds", 3600, cfg.GDPR.LiveGVLRefreshInterval)
 	cmpBools(t, "video.enable_deprecated_endpoint", true, cfg.Video.EnableDeprecatedEndpoint)
 	cmpStrings(t, "host_schain_node.asi", "pbshostcompany.com", cfg.HostSChainNode.ASI)
 	cmpStrings(t, "host_schain_node.sid", "00001", cfg.HostSChainNode.SID)

@@ -179,6 +179,10 @@ func (me *MetricsEngineMock) RecordGvlListRequest() {
 	me.Called()
 }
 
+func (me *MetricsEngineMock) RecordLiveGVLFetchError() {
+	me.Called()
+}
+
 func (me *MetricsEngineMock) RecordAdsCertReq(success bool) {
 	me.Called(success)
 }

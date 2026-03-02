@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v3/metrics"
 	"github.com/prebid/prebid-server/v3/util/task"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -50,9 +51,9 @@ func (l *LiveGVLVendorIDs) Update(newIDs map[uint16]struct{}) {
 // NewGVLVendorIDTickerTask creates a TickerTask that fetches the latest GVL vendor IDs and
 // updates the LiveGVLVendorIDs set. Calling Start on the returned task performs the initial
 // fetch immediately and then schedules periodic refreshes at the given interval.
-func NewGVLVendorIDTickerTask(interval time.Duration, client *http.Client, urlMaker func(uint16, uint16) string, live *LiveGVLVendorIDs) *task.TickerTask {
+func NewGVLVendorIDTickerTask(interval time.Duration, client *http.Client, urlMaker func(uint16, uint16) string, live *LiveGVLVendorIDs, me metrics.MetricsEngine) *task.TickerTask {
 	return task.NewTickerTaskFromFunc(interval, func() error {
-		newIDs := FetchLatestGVLVendorIDs(context.Background(), client, urlMaker)
+		newIDs := FetchLatestGVLVendorIDs(context.Background(), client, urlMaker, me)
 		live.Update(newIDs)
 		return nil
 	})
@@ -68,7 +69,7 @@ type gvlVendorListContract struct {
 // FetchLatestGVLVendorIDs fetches the most recent Global Vendor List and returns a set of all
 // vendor IDs present in it. The returned map has vendor IDs as keys and empty structs as values.
 // If the fetch or parse fails, an empty map is returned.
-func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker func(uint16, uint16) string) map[uint16]struct{} {
+func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker func(uint16, uint16) string, me metrics.MetricsEngine) map[uint16]struct{} {
 	vendorIDs := make(map[uint16]struct{})
 
 	// Fetch latest GVL for the latest spec version (listVersion 0 means latest)
@@ -77,12 +78,14 @@ func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		logger.Errorf("Failed to build GET %s request for GVL vendor ID extraction: %v", url, err)
+		me.RecordLiveGVLFetchError()
 		return vendorIDs
 	}
 
 	resp, err := ctxhttp.Do(ctx, client, req)
 	if err != nil {
 		logger.Errorf("Error calling GET %s for GVL vendor ID extraction: %v", url, err)
+		me.RecordLiveGVLFetchError()
 		return vendorIDs
 	}
 	defer resp.Body.Close()
@@ -90,17 +93,20 @@ func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Errorf("Error reading response body from GET %s for GVL vendor ID extraction: %v", url, err)
+		me.RecordLiveGVLFetchError()
 		return vendorIDs
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Errorf("GET %s returned %d for GVL vendor ID extraction", url, resp.StatusCode)
+		me.RecordLiveGVLFetchError()
 		return vendorIDs
 	}
 
 	var contract gvlVendorListContract
 	if err := json.Unmarshal(respBody, &contract); err != nil {
 		logger.Errorf("GET %s returned malformed JSON for GVL vendor ID extraction: %v", url, err)
+		me.RecordLiveGVLFetchError()
 		return vendorIDs
 	}
 

@@ -497,6 +497,7 @@ type MetricsEngine interface {
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
 	RecordGvlListRequest()
+	RecordLiveGVLFetchError()
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
 	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)
