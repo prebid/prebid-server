@@ -1048,11 +1048,18 @@ func TestUserSyncFromEnv(t *testing.T) {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER2_USERSYNC_IFRAME_URL")
 	}
 
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER2_USERSYNC_ENABLED"); ok {
+		defer os.Setenv("PBS_ADAPTERS_BIDDER2_USERSYNC_ENABLED", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_BIDDER2_USERSYNC_ENABLED")
+	}
+
 	// set new
 	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_USER_MACRO", "[UID]")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_SUPPORT_CORS", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER2_USERSYNC_IFRAME_URL", "http://somedifferent.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_BIDDER2_USERSYNC_ENABLED", "false")
 
 	cfg, _ := newDefaultConfig(t)
 
@@ -1062,6 +1069,7 @@ func TestUserSyncFromEnv(t *testing.T) {
 
 	assert.Equal(t, "http://somedifferent.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder2"].Syncer.IFrame.URL)
 	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
+	assert.Equal(t, ptrutil.ToPtr(false), cfg.BidderInfos["bidder2"].Syncer.Enabled)
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
