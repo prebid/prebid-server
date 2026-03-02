@@ -220,9 +220,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
 
-	// register the analytics runner for shutdown
-	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown)
-
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		logger.Fatalf("Failed to create the bidder params validator. %v", err)
@@ -241,6 +238,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	gvlVendorIDTask.Start()
 	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, liveGVLVendorIDs, vendorListFetcher, r.MetricsEngine)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
+
+	// register the analytics runner, modules and live GVL Vendor ID ticker task for shutdown
+	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown, gvlVendorIDTask.Stop)
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
