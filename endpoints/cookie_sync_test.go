@@ -114,7 +114,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 
 func TestCookieSyncHandle(t *testing.T) {
 	syncTypeExpected := []usersync.SyncType{usersync.SyncTypeIFrame, usersync.SyncTypeRedirect}
-	sync := usersync.Sync{URL: "aURL", Type: usersync.SyncTypeRedirect, SupportCORS: true}
+	sync := usersync.Sync{URL: "aURL", Type: usersync.SyncTypeRedirect}
 	syncer := MockSyncer{}
 	syncer.On("GetSync", syncTypeExpected, macros.UserSyncPrivacy{}).Return(sync, nil).Maybe()
 
@@ -144,7 +144,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			},
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
-				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect"}}` +
 				`]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
@@ -158,7 +158,7 @@ func TestCookieSyncHandle(t *testing.T) {
 						{
 							BidderCode:   "a",
 							NoCookie:     true,
-							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect"},
 						},
 					},
 				}
@@ -176,7 +176,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			},
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"no_cookie","bidder_status":[` +
-				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect"}}` +
 				`]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
@@ -190,7 +190,7 @@ func TestCookieSyncHandle(t *testing.T) {
 						{
 							BidderCode:   "a",
 							NoCookie:     true,
-							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect"},
 						},
 					},
 				}
@@ -277,7 +277,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			},
 			expectedStatusCode: 200,
 			expectedBody: `{"status":"ok","bidder_status":[` +
-				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect"}}` +
 				`],"debug":[{"bidder":"a","error":"Already in sync"}]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
@@ -291,7 +291,7 @@ func TestCookieSyncHandle(t *testing.T) {
 						{
 							BidderCode:   "a",
 							NoCookie:     true,
-							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect"},
 						},
 					},
 				}
@@ -313,7 +313,7 @@ func TestCookieSyncHandle(t *testing.T) {
 			expectedStatusCode:              200,
 			expectedCookieDeprecationHeader: true,
 			expectedBody: `{"status":"ok","bidder_status":[` +
-				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect","supportCORS":true}}` +
+				`{"bidder":"a","no_cookie":true,"usersync":{"url":"aURL","type":"redirect"}}` +
 				`]}` + "\n",
 			setMetricsExpectations: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordCookieSync", metrics.CookieSyncOK).Once()
@@ -327,7 +327,7 @@ func TestCookieSyncHandle(t *testing.T) {
 						{
 							BidderCode:   "a",
 							NoCookie:     true,
-							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect", SupportCORS: true},
+							UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "redirect"},
 						},
 					},
 				}
@@ -1793,12 +1793,12 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 	privacyMacros := macros.UserSyncPrivacy{USPrivacy: "anyConsent"}
 
 	// The & in the URL is necessary to test proper JSON encoding.
-	syncA := usersync.Sync{URL: "https://syncA.com/sync?a=1&b=2", Type: usersync.SyncTypeRedirect, SupportCORS: true}
+	syncA := usersync.Sync{URL: "https://syncA.com/sync?a=1&b=2", Type: usersync.SyncTypeRedirect}
 	syncerA := MockSyncer{}
 	syncerA.On("GetSync", syncTypeExpected, privacyMacros).Return(syncA, nil).Maybe()
 
 	// The & in the URL is necessary to test proper JSON encoding.
-	syncB := usersync.Sync{URL: "https://syncB.com/sync?a=1&b=2", Type: usersync.SyncTypeRedirect, SupportCORS: false}
+	syncB := usersync.Sync{URL: "https://syncB.com/sync?a=1&b=2", Type: usersync.SyncTypeRedirect}
 	syncerB := MockSyncer{}
 	syncerB.On("GetSync", syncTypeExpected, privacyMacros).Return(syncB, nil).Maybe()
 
@@ -1837,7 +1837,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenCookieHasSyncs: true,
 			givenSyncersChosen:  []usersync.SyncerChoice{{Bidder: "foo", Syncer: &syncerA}},
 			expectedJSON: `{"status":"ok","bidder_status":[` +
-				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect","supportCORS":true}}` +
+				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect"}}` +
 				`]}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
 				Status: 200,
@@ -1845,7 +1845,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 					{
 						BidderCode:   "foo",
 						NoCookie:     true,
-						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncA.com/sync?a=1&b=2", Type: "redirect", SupportCORS: true},
+						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncA.com/sync?a=1&b=2", Type: "redirect"},
 					},
 				},
 			},
@@ -1855,7 +1855,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 			givenCookieHasSyncs: true,
 			givenSyncersChosen:  []usersync.SyncerChoice{{Bidder: "foo", Syncer: &syncerA}, {Bidder: "bar", Syncer: &syncerB}},
 			expectedJSON: `{"status":"ok","bidder_status":[` +
-				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect","supportCORS":true}},` +
+				`{"bidder":"foo","no_cookie":true,"usersync":{"url":"https://syncA.com/sync?a=1&b=2","type":"redirect"}},` +
 				`{"bidder":"bar","no_cookie":true,"usersync":{"url":"https://syncB.com/sync?a=1&b=2","type":"redirect"}}` +
 				`]}` + "\n",
 			expectedAnalytics: analytics.CookieSyncObject{
@@ -1864,12 +1864,12 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 					{
 						BidderCode:   "foo",
 						NoCookie:     true,
-						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncA.com/sync?a=1&b=2", Type: "redirect", SupportCORS: true},
+						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncA.com/sync?a=1&b=2", Type: "redirect"},
 					},
 					{
 						BidderCode:   "bar",
 						NoCookie:     true,
-						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncB.com/sync?a=1&b=2", Type: "redirect", SupportCORS: false},
+						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncB.com/sync?a=1&b=2", Type: "redirect"},
 					},
 				},
 			},
@@ -1887,7 +1887,7 @@ func TestCookieSyncHandleResponse(t *testing.T) {
 					{
 						BidderCode:   "bar",
 						NoCookie:     true,
-						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncB.com/sync?a=1&b=2", Type: "redirect", SupportCORS: false},
+						UsersyncInfo: &analytics.UsersyncInfo{URL: "https://syncB.com/sync?a=1&b=2", Type: "redirect"},
 					},
 				},
 			},
@@ -1956,14 +1956,14 @@ func TestMapBidderStatusToAnalytics(t *testing.T) {
 				{
 					BidderCode:   "a",
 					NoCookie:     true,
-					UsersyncInfo: cookieSyncResponseSync{URL: "aURL", Type: "aType", SupportCORS: false},
+					UsersyncInfo: cookieSyncResponseSync{URL: "aURL", Type: "aType"},
 				},
 			},
 			expected: []*analytics.CookieSyncBidder{
 				{
 					BidderCode:   "a",
 					NoCookie:     true,
-					UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "aType", SupportCORS: false},
+					UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "aType"},
 				},
 			},
 		},
@@ -1973,24 +1973,24 @@ func TestMapBidderStatusToAnalytics(t *testing.T) {
 				{
 					BidderCode:   "a",
 					NoCookie:     true,
-					UsersyncInfo: cookieSyncResponseSync{URL: "aURL", Type: "aType", SupportCORS: false},
+					UsersyncInfo: cookieSyncResponseSync{URL: "aURL", Type: "aType"},
 				},
 				{
 					BidderCode:   "b",
 					NoCookie:     false,
-					UsersyncInfo: cookieSyncResponseSync{URL: "bURL", Type: "bType", SupportCORS: true},
+					UsersyncInfo: cookieSyncResponseSync{URL: "bURL", Type: "bType"},
 				},
 			},
 			expected: []*analytics.CookieSyncBidder{
 				{
 					BidderCode:   "a",
 					NoCookie:     true,
-					UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "aType", SupportCORS: false},
+					UsersyncInfo: &analytics.UsersyncInfo{URL: "aURL", Type: "aType"},
 				},
 				{
 					BidderCode:   "b",
 					NoCookie:     false,
-					UsersyncInfo: &analytics.UsersyncInfo{URL: "bURL", Type: "bType", SupportCORS: true},
+					UsersyncInfo: &analytics.UsersyncInfo{URL: "bURL", Type: "bType"},
 				},
 			},
 		},
@@ -2621,15 +2621,15 @@ func createAccountJSON(priorityGroups [][]string, defaultCoopSync *bool) json.Ra
 func TestCookieSyncPriorityGroupsIntegration(t *testing.T) {
 	// Setup test syncers
 	syncerA := MockSyncer{}
-	syncerA.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderA.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerA.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderA.com", Type: usersync.SyncTypeRedirect}, nil).Maybe()
 	syncerA.On("Key").Return("appnexus").Maybe()
 	syncerA.On("SupportsType", mock.Anything).Return(true).Maybe()
 	syncerB := MockSyncer{}
-	syncerB.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderB.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerB.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderB.com", Type: usersync.SyncTypeRedirect}, nil).Maybe()
 	syncerB.On("Key").Return("rubicon").Maybe()
 	syncerB.On("SupportsType", mock.Anything).Return(true).Maybe()
 	syncerC := MockSyncer{}
-	syncerC.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderC.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerC.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderC.com", Type: usersync.SyncTypeRedirect}, nil).Maybe()
 	syncerC.On("Key").Return("pubmatic").Maybe()
 	syncerC.On("SupportsType", mock.Anything).Return(true).Maybe()
 	// Need to choose real bidder names because the standard chooser is hardcoded to validate against them
@@ -2788,7 +2788,7 @@ func TestCookieSyncPriorityGroupsEdgeCases(t *testing.T) {
 	// Setup basic syncers
 	syncerA := MockSyncer{}
 	syncerA.On("Key").Return("bidderA")
-	syncerA.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderA.com", Type: usersync.SyncTypeRedirect, SupportCORS: false}, nil).Maybe()
+	syncerA.On("GetSync", mock.Anything, mock.Anything).Return(usersync.Sync{URL: "https://sync.bidderA.com", Type: usersync.SyncTypeRedirect}, nil).Maybe()
 	syncerA.On("SupportsType", mock.Anything).Return(true).Maybe()
 
 	syncersByBidder := map[string]usersync.Syncer{

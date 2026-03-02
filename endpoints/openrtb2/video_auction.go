@@ -122,6 +122,12 @@ func NewVideoEndpoint(
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
 
+	if !deps.cfg.Video.EnableDeprecatedEndpoint {
+		w.WriteHeader(http.StatusNotImplemented)
+		w.Write([]byte("The video endpoint is deprecated and will be removed in 5.0. You may re-enable it via the host configuration setting video.enable_deprecated_endpoint"))
+		return
+	}
+
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
 		Errors:    make([]error, 0),
