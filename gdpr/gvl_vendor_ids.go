@@ -90,15 +90,15 @@ func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker 
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Errorf("Error reading response body from GET %s for GVL vendor ID extraction: %v", url, err)
+	if resp.StatusCode != http.StatusOK {
+		logger.Errorf("GET %s returned %d for GVL vendor ID extraction", url, resp.StatusCode)
 		me.RecordLiveGVLFetchError()
 		return vendorIDs
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		logger.Errorf("GET %s returned %d for GVL vendor ID extraction", url, resp.StatusCode)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Errorf("Error reading response body from GET %s for GVL vendor ID extraction: %v", url, err)
 		me.RecordLiveGVLFetchError()
 		return vendorIDs
 	}
