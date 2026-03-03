@@ -1,5 +1,8 @@
 {
     "enforceCcpa": true,
+    "ortbversion": {
+        "appnexus":"2.6"
+    },
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
@@ -26,9 +29,7 @@
                 }
             ],
             "regs": {
-                "ext": {
-                    "us_privacy": "1-Y-"
-                }
+                "us_privacy": "1-Y-"
             },
             "user": {
                 "buyeruid": "some-buyer-id"
@@ -59,9 +60,7 @@
                         }
                     ],
                     "regs": {
-                        "ext": {
-                            "us_privacy": "1-Y-"
-                        }
+                        "us_privacy": "1-Y-"
                     },
                     "user": {}
                 }

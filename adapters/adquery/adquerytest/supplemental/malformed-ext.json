@@ -32,7 +32,7 @@
     "bidder": "adquery"
   },
   "expectedMakeRequestsErrors": [{
-    "value": "json: cannot unmarshal array into Go struct field ImpExtAdQuery.placementId of type string",
+    "value": "cannot unmarshal openrtb_ext.ImpExtAdQuery.PlacementID: expects \" or n, but found [",
     "comparison": "literal"
   }]
 }

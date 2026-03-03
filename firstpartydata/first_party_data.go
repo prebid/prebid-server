@@ -2,16 +2,22 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
+)
+
+var (
+	ErrBadRequest = errors.New("invalid request ext")
+	ErrBadFPD     = errors.New("invalid first party data ext")
 )
 
 const (
@@ -26,9 +32,10 @@ const (
 )
 
 type ResolvedFirstPartyData struct {
-	Site *openrtb2.Site
-	App  *openrtb2.App
-	User *openrtb2.User
+	Site   *openrtb2.Site
+	App    *openrtb2.App
+	User   *openrtb2.User
+	Device *openrtb2.Device
 }
 
 // ExtractGlobalFPD extracts request level FPD from the request and removes req.{site,app,user}.ext.data if exists
@@ -153,11 +160,73 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 		}
 		resolvedFpdConfig.Site = newSite
 
+		newDevice, err := resolveDevice(fpdConfig, bidRequest.Device)
+		if err != nil {
+			errL = append(errL, err)
+		}
+		resolvedFpdConfig.Device = newDevice
+
 		if len(errL) == 0 {
 			resolvedFpd[openrtb_ext.BidderName(bidderName)] = resolvedFpdConfig
 		}
 	}
 	return resolvedFpd, errL
+}
+
+// resolveDevice merges the device information from the FPD (First Party Data) configuration
+// with the device information provided in the bid request. It returns a new Device object
+// that contains the merged data.
+func resolveDevice(fpdConfig *openrtb_ext.ORTB2, bidRequestDevice *openrtb2.Device) (*openrtb2.Device, error) {
+	var fpdConfigDevice json.RawMessage
+
+	if fpdConfig != nil && fpdConfig.Device != nil {
+		fpdConfigDevice = fpdConfig.Device
+	}
+
+	if bidRequestDevice == nil && fpdConfigDevice == nil {
+		return nil, nil
+	}
+
+	var newDevice *openrtb2.Device
+	if bidRequestDevice != nil {
+		newDevice = ptrutil.Clone(bidRequestDevice)
+	} else {
+		newDevice = &openrtb2.Device{}
+	}
+
+	if fpdConfigDevice != nil {
+		if err := jsonutil.MergeClone(newDevice, fpdConfigDevice); err != nil {
+			return nil, formatMergeCloneError(err)
+		}
+	}
+
+	err := validateDevice(newDevice)
+	if err != nil {
+		return nil, err
+	}
+	return newDevice, nil
+}
+
+func validateDevice(device *openrtb2.Device) error {
+	if device == nil {
+		return nil
+	}
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if device.W < 0 {
+		return errors.New("request.device.w must be a positive number")
+	}
+	if device.H < 0 {
+		return errors.New("request.device.h must be a positive number")
+	}
+	if device.PPI < 0 {
+		return errors.New("request.device.ppi must be a positive number")
+	}
+	if device.Geo != nil && device.Geo.Accuracy < 0 {
+		return errors.New("request.device.geo.accuracy must be a positive number")
+	}
+	return nil
 }
 
 func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.User, error) {
@@ -185,7 +254,7 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 			var err error
 			newUser.Ext, err = jsonpatch.MergePatch(newUser.Ext, extData)
 			if err != nil {
-				return nil, err
+				return nil, formatMergePatchError(err)
 			}
 		} else {
 			newUser.Ext = extData
@@ -195,40 +264,12 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	if fpdConfigUser != nil {
-		if err := mergeUser(newUser, fpdConfigUser); err != nil {
-			return nil, err
+		if err := jsonutil.MergeClone(newUser, fpdConfigUser); err != nil {
+			return nil, formatMergeCloneError(err)
 		}
 	}
 
 	return newUser, nil
-}
-
-func mergeUser(v *openrtb2.User, overrideJSON json.RawMessage) error {
-	*v = *ortb.CloneUser(v)
-
-	// Track EXTs
-	// It's not necessary to track `ext` fields in array items because the array
-	// items will be replaced entirely with the override JSON, so no merge is required.
-	var ext, extGeo extMerger
-	ext.Track(&v.Ext)
-	if v.Geo != nil {
-		extGeo.Track(&v.Geo.Ext)
-	}
-
-	// Merge
-	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
-		return err
-	}
-
-	// Merge EXTs
-	if err := ext.Merge(); err != nil {
-		return err
-	}
-	if err := extGeo.Merge(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.Site, error) {
@@ -261,7 +302,7 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 			var err error
 			newSite.Ext, err = jsonpatch.MergePatch(newSite.Ext, extData)
 			if err != nil {
-				return nil, err
+				return nil, formatMergePatchError(err)
 			}
 		} else {
 			newSite.Ext = extData
@@ -278,70 +319,37 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
 	if fpdConfigSite != nil {
-		if err := mergeSite(newSite, fpdConfigSite, bidderName); err != nil {
-			return nil, err
+		if err := jsonutil.MergeClone(newSite, fpdConfigSite); err != nil {
+			return nil, formatMergeCloneError(err)
+		}
+
+		// Re-Validate Site
+		if newSite.ID == "" && newSite.Page == "" {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("incorrect First Party Data for bidder %s: Site object cannot set empty page if req.site.id is empty", bidderName),
+			}
 		}
 	}
 	return newSite, nil
 }
 
-func mergeSite(v *openrtb2.Site, overrideJSON json.RawMessage, bidderName string) error {
-	*v = *ortb.CloneSite(v)
-
-	// Track EXTs
-	// It's not necessary to track `ext` fields in array items because the array
-	// items will be replaced entirely with the override JSON, so no merge is required.
-	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
-	ext.Track(&v.Ext)
-	if v.Publisher != nil {
-		extPublisher.Track(&v.Publisher.Ext)
-	}
-	if v.Content != nil {
-		extContent.Track(&v.Content.Ext)
-	}
-	if v.Content != nil && v.Content.Producer != nil {
-		extContentProducer.Track(&v.Content.Producer.Ext)
-	}
-	if v.Content != nil && v.Content.Network != nil {
-		extContentNetwork.Track(&v.Content.Network.Ext)
-	}
-	if v.Content != nil && v.Content.Channel != nil {
-		extContentChannel.Track(&v.Content.Channel.Ext)
+func formatMergePatchError(err error) error {
+	if errors.Is(err, jsonpatch.ErrBadJSONDoc) {
+		return ErrBadRequest
 	}
 
-	// Merge
-	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
-		return err
+	if errors.Is(err, jsonpatch.ErrBadJSONPatch) {
+		return ErrBadFPD
 	}
 
-	// Merge EXTs
-	if err := ext.Merge(); err != nil {
-		return err
-	}
-	if err := extPublisher.Merge(); err != nil {
-		return err
-	}
-	if err := extContent.Merge(); err != nil {
-		return err
-	}
-	if err := extContentProducer.Merge(); err != nil {
-		return err
-	}
-	if err := extContentNetwork.Merge(); err != nil {
-		return err
-	}
-	if err := extContentChannel.Merge(); err != nil {
-		return err
-	}
+	return err
+}
 
-	// Re-Validate Site
-	if v.ID == "" && v.Page == "" {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("incorrect First Party Data for bidder %s: Site object cannot set empty page if req.site.id is empty", bidderName),
-		}
+func formatMergeCloneError(err error) error {
+	if strings.Contains(err.Error(), "invalid json on existing object") {
+		return ErrBadRequest
 	}
-
-	return nil
+	return ErrBadFPD
 }
 
 func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.App, error) {
@@ -375,7 +383,7 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 			var err error
 			newApp.Ext, err = jsonpatch.MergePatch(newApp.Ext, extData)
 			if err != nil {
-				return nil, err
+				return nil, formatMergePatchError(err)
 			}
 		} else {
 			newApp.Ext = extData
@@ -394,64 +402,12 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	}
 
 	if fpdConfigApp != nil {
-		if err := mergeApp(newApp, fpdConfigApp); err != nil {
-			return nil, err
+		if err := jsonutil.MergeClone(newApp, fpdConfigApp); err != nil {
+			return nil, formatMergeCloneError(err)
 		}
 	}
 
 	return newApp, nil
-}
-
-func mergeApp(v *openrtb2.App, overrideJSON json.RawMessage) error {
-	*v = *ortb.CloneApp(v)
-
-	// Track EXTs
-	// It's not necessary to track `ext` fields in array items because the array
-	// items will be replaced entirely with the override JSON, so no merge is required.
-	var ext, extPublisher, extContent, extContentProducer, extContentNetwork, extContentChannel extMerger
-	ext.Track(&v.Ext)
-	if v.Publisher != nil {
-		extPublisher.Track(&v.Publisher.Ext)
-	}
-	if v.Content != nil {
-		extContent.Track(&v.Content.Ext)
-	}
-	if v.Content != nil && v.Content.Producer != nil {
-		extContentProducer.Track(&v.Content.Producer.Ext)
-	}
-	if v.Content != nil && v.Content.Network != nil {
-		extContentNetwork.Track(&v.Content.Network.Ext)
-	}
-	if v.Content != nil && v.Content.Channel != nil {
-		extContentChannel.Track(&v.Content.Channel.Ext)
-	}
-
-	// Merge
-	if err := jsonutil.Unmarshal(overrideJSON, &v); err != nil {
-		return err
-	}
-
-	// Merge EXTs
-	if err := ext.Merge(); err != nil {
-		return err
-	}
-	if err := extPublisher.Merge(); err != nil {
-		return err
-	}
-	if err := extContent.Merge(); err != nil {
-		return err
-	}
-	if err := extContentProducer.Merge(); err != nil {
-		return err
-	}
-	if err := extContentNetwork.Merge(); err != nil {
-		return err
-	}
-	if err := extContentChannel.Merge(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func buildExtData(data []byte) []byte {
@@ -484,6 +440,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 					fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
 					fpdBidderData.App = bidderConfig.Config.ORTB2.App
 					fpdBidderData.User = bidderConfig.Config.ORTB2.User
+					fpdBidderData.Device = bidderConfig.Config.ORTB2.Device
 				}
 
 				fpd[bidderName] = fpdBidderData

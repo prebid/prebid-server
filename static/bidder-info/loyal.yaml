@@ -1,0 +1,16 @@
+endpoint: "https://us-east-1.loyal.app/pserver"
+geoscope:
+  - USA
+maintainer:
+  email: "hello@loyal.app"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

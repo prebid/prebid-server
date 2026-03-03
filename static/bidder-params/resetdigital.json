@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ResetDigital Adapter Params",
+  "description": "A schema which validates params accepted by the ResetDigital adapter",
+  "type": "object",
+  "properties": {
+    "placement_id": {
+      "type": "string",
+      "description": "Placement ID provided by ResetDigital",
+      "minLength": 1
+    }
+  },
+  "required": ["placement_id"],
+  "additionalProperties": false
+}

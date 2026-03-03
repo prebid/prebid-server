@@ -5,17 +5,24 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+	"unsafe"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/prebid/prebid-server/v2/errortypes"
+	"github.com/modern-go/reflect2"
+	"github.com/prebid/prebid-server/v3/errortypes"
 )
 
-var comma = byte(',')
-var colon = byte(':')
-var sqBracket = byte(']')
-var closingCurlyBracket = byte('}')
+const (
+	comma               byte = ','
+	colon               byte = ':'
+	sqBracket           byte = ']'
+	closingCurlyBracket byte = '}'
+)
 
-// Finds element in json byte array with any level of nesting
+// RawMessage to allow replacing json with jsonutil
+type RawMessage = json.RawMessage
+
+// FindElement finds element in json byte array with any level of nesting
 func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, error) {
 	elementName := elementNames[0]
 	buf := bytes.NewBuffer(extension)
@@ -98,7 +105,7 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 	return found, startIndex, endIndex, nil
 }
 
-// Drops element from json byte array
+// DropElement drops element from json byte array
 // - Doesn't support drop element from json list
 // - Keys in the path can skip levels
 // - First found element will be removed
@@ -210,4 +217,39 @@ func tryExtractErrorMessage(err error) string {
 // that the caller clearly understands the context, where the structure name is not needed.
 func isLikelyDetailedErrorMessage(msg string) bool {
 	return !strings.HasPrefix(msg, "request.")
+}
+
+// RawMessageExtension will call json.Compact() on every json.RawMessage field when getting marshalled.
+type RawMessageExtension struct {
+	jsoniter.DummyExtension
+}
+
+// CreateEncoder substitutes the default jsoniter encoder of the json.RawMessage type with ours, that
+// calls json.Compact() before writting to the stream
+func (e *RawMessageExtension) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
+	if typ == jsonRawMessageType {
+		return &rawMessageCodec{}
+	}
+	return nil
+}
+
+var jsonRawMessageType = reflect2.TypeOfPtr((*json.RawMessage)(nil)).Elem()
+
+// rawMessageCodec implements jsoniter.ValEncoder interface so we can override the default json.RawMessage Encode()
+// function with our implementation
+type rawMessageCodec struct{}
+
+func (codec *rawMessageCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	if ptr != nil {
+		jsonRawMsg := *(*[]byte)(ptr)
+
+		dst := bytes.NewBuffer(make([]byte, 0, len(jsonRawMsg)))
+		if err := json.Compact(dst, jsonRawMsg); err == nil {
+			stream.Write(dst.Bytes())
+		}
+	}
+}
+
+func (codec *rawMessageCodec) IsEmpty(ptr unsafe.Pointer) bool {
+	return ptr == nil || len(*((*json.RawMessage)(ptr))) == 0
 }

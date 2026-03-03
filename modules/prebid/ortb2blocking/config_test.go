@@ -3,7 +3,7 @@ package ortb2blocking
 import (
 	"testing"
 
-	"github.com/prebid/openrtb/v19/adcom1"
+	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

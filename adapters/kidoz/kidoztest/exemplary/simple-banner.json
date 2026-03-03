@@ -46,7 +46,8 @@
 							}
 						}
 					]
-				}
+				},
+				"impIDs":["test-impression-id-1"]
 			},
 			"mockResponse": {
 				"status": 200,
@@ -70,7 +71,7 @@
 	],
     "expectedBidResponses": [
       {
-        "currency": "EUR",
+        "currency": "USD",
         "bids": [
           {
             "bid": {

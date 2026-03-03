@@ -37,7 +37,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "http://rt.marphezis.com/pbs",
+          "uri": "http://rt.marphezis.com/pbs?publisherId=12345",
           "headers": {},
           "body": {
             "id": "test-request-id",
@@ -73,7 +73,8 @@
                 }
               }
             ]
-          }
+          },
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 204

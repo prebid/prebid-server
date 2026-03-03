@@ -10,15 +10,16 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
-const TAPPX_BIDDER_VERSION = "1.5"
+const TAPPX_BIDDER_VERSION = "1.6"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -34,6 +35,7 @@ type Bidder struct {
 
 type Ext struct {
 	Bidder `json:"bidder"`
+	GPID   string `json:"gpid,omitempty"`
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
@@ -57,13 +59,13 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing bidderExt object",
 		}}
 	}
 	var tappxExt openrtb_ext.ExtImpTappx
-	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing tappxExt parameters",
 		}}
@@ -86,8 +88,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}}
 	}
 
-	var test int
-	test = int(request.Test)
+	test := int(request.Test)
 
 	url, err := a.buildEndpointURL(&tappxExt, test)
 	if url == "" {
@@ -113,6 +114,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, []error{}
 }
 
@@ -131,8 +133,13 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		}
 	}
 
-	tappxHost := "tappx.com"
 	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
+	if err != nil {
+		return "", &errortypes.BadInput{
+			Message: "Unable to match params.Endpoint " + string(params.Endpoint) + "): " + err.Error(),
+		}
+	}
+	var tappxHost string
 	if isNewEndpoint {
 		tappxHost = params.Endpoint + ".pub.tappx.com/rtb/"
 	} else {
@@ -193,7 +200,7 @@ func (a *TappxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

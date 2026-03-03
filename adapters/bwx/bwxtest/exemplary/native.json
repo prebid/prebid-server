@@ -1,0 +1,165 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "secure": 1,
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "native": {
+          "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "env": "boldwinx-stage",
+            "pid": "3163e2c9e034770c0daaa98c7613b573"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": [
+        "IAB12"
+      ],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.boldwin.live/?pid=3163e2c9e034770c0daaa98c7613b573&host=boldwinx-stage&pbs=1",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "id",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "bidfloorcur": "USD",
+              "native": {
+                "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+                "ver": "1.1"
+              },
+              "ext": {
+                "bidder": {
+                  "env": "boldwinx-stage",
+                  "pid": "3163e2c9e034770c0daaa98c7613b573"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": [
+              "IAB12"
+            ],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        },
+        "impIDs":["id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "id",
+          "bidid": "id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "id",
+                  "impid": "id",
+                  "price": 0.1,
+                  "nurl": "http://test.com/nurl",
+                  "burl": "http://test.com/burl",
+                  "adm": "{}",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "cat": [
+                    "IAB1"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "mtype": 4,
+                  "ext": {
+                    "prebid": {
+                      "type": "native"
+                    }
+                  }
+                }
+              ],
+              "seat": "seat"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "id",
+            "impid": "id",
+            "price": 0.1,
+            "nurl": "http://test.com/nurl",
+            "burl": "http://test.com/burl",
+            "adm": "{}",
+            "adomain": [
+              "test.com"
+            ],
+            "cat": [
+              "IAB1"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "mtype": 4,
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

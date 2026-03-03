@@ -1,0 +1,83 @@
+{
+	"mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "ext": {
+                    "bidder": {
+                        "placementId": "test"
+                    }
+                }
+            }
+        ],
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+        }
+    },
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "https://example.com",
+			"body": {
+                "id": "test-request-id",
+                "imp": [
+                    {
+                        "id": "test-imp-id",
+                        "ext": {
+                            "bidder": {
+                                "placementId": "test",
+                                "type": "publisher"
+                            }
+                        }
+                    }
+                ],
+                "app": {
+                    "id": "1",
+                    "bundle": "com.wls.testwlsapplication"
+                },
+                "device": {
+                    "ip": "123.123.123.123",
+                    "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
+                }
+            },
+            "impIDs":["test-imp-id"]
+		},
+		"mockResponse": {
+			"status": 200,
+			"body": {
+                "id": "test-request-id",
+                "seatbid": [
+                    {
+                        "bid": [
+                            {
+                                "id": "test_bid_id",
+                                "impid": "test-imp-id",
+                                "price": 0.27543,
+                                "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://example.com&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                                "cid": "test_cid",
+                                "crid": "test_crid",
+                                "dealid": "test_dealid",
+                                "w": 300,
+                                "h": 250,
+                                "ext": {}
+                            }
+                        ],
+                        "seat": "copper6ssp"
+                    }
+                ],
+                "cur": "USD"
+            }
+        }
+    }],
+    "expectedMakeBidsErrors": [
+        {
+          "value": "could not define media type for impression: test-imp-id",
+          "comparison": "literal"
+        }
+    ]
+}

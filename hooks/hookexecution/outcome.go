@@ -3,7 +3,7 @@ package hookexecution
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v2/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
 )
 
 // Status indicates the result of hook execution.

@@ -88,7 +88,8 @@
             "dnt": 0,
             "language": "en"
           }
-        }
+        },
+        "impIDs":["test-imp-id1"]
       },
       "mockResponse": {
         "status": 200,

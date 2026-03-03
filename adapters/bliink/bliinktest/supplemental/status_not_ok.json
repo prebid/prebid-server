@@ -71,7 +71,8 @@
               "consent": "gdprConsentString"
             }
           }
-        }
+        },
+        "impIDs":["some-impression-id"]
       },
       "mockResponse": {
         "status": 500,

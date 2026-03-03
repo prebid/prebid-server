@@ -80,7 +80,8 @@
               "str": "10.0"
             }
           }
-        }
+        },
+        "impIDs":["baner-imp-id"]
       },
       "mockResponse": {
         "status": 200,

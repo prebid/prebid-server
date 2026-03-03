@@ -37,7 +37,8 @@
       {
         "expectedRequest": {
           "uri": "http://rtb.e-planning.net/pbs/1/12345/1/FILE/ROS?e=video_300x150_0%3A300x150%3B1&ncb=1&ur=FILE&vctx=1&vv=3",
-          "body": {}
+          "body": {},
+          "impIDs":["test-imp-instream","test-imp-outstream"]
         },
         "mockResponse": {
           "status": 200,

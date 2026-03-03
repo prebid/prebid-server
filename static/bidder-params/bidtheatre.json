@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Bidtheatre Adapter Params",
+  "description": "A schema which validates params accepted by the Bidtheatre adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "Publisher ID",
+      "format": "uuid"
+    }
+  },
+  "required": ["publisherId"]
+}

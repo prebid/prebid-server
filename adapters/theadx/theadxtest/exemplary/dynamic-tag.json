@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "ext": {
+        "bidder": {
+          "tagid": "123",
+          "pname": "placement"
+        }
+      },
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 250
+        }]
+      }
+    }, {
+      "id": "test-imp-id2",
+      "ext": {
+        "bidder": {
+          "tagid": "123",
+          "wid": 456,
+          "pname": "placement1"
+        }
+      },
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 300
+        }]
+      }
+    }],
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "some-page-url"
+    },
+    "device": {
+      "w": 1920,
+      "h": 800
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://ssp.theadx.com/request",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "tagid": "123",
+          "ext": {
+            "bidder": {
+              "tagid": "123",
+              "pname": "placement"
+            }
+          },
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 250
+            }]
+          }
+        }, {
+          "id": "test-imp-id2",
+          "tagid": "123",
+          "ext": {
+            "bidder": {
+              "tagid": "123",
+              "wid": 456,
+              "pname": "placement1"
+            }
+          },
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 300
+            }]
+          }
+        }],
+        "site": {
+          "publisher": {
+            "id": "1"
+          },
+          "page": "some-page-url"
+        },
+        "device": {
+          "w": 1920,
+          "h": 800
+        }
+      },
+      "impIDs":["test-imp-id", "test-imp-id2"]
+    },
+    "mockResponse": {
+      "status": 204
+    }
+  }],
+  "expectedMakeRequestsErrors": [],
+  "expectedBidResponses": []
+}

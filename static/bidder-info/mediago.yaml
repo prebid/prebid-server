@@ -1,0 +1,26 @@
+# Contact ext_mediago_cm@baidu.com to ask about enabling a connection to the MediaGo DSP.
+# We have the following regional endpoint domains: rtb-us, rtb-eu, rtb-jp
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: "https://REGION.mediago.io/api/bid?tn={{.AccountID}}"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - DEU
+  - JPN
+  - GBR
+  - KOR
+  - CAN
+  - FRA
+  - ITA
+maintainer:
+  email: ext_mediago_cm@baidu.com
+gvlVendorID: 1020
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+userSync:
+  redirect:
+    url:  https://trace.mediago.io/ju/cs/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID

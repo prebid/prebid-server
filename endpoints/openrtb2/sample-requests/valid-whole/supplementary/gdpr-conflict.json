@@ -37,10 +37,7 @@
     "regs": {
       "gpp": "DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1NYN",
       "gpp_sid": [6],
-      "gdpr": 1,
-      "ext": {
-        "us_privacy": "1YYY"
-      }
+      "gdpr": 1
     },
     "user": {
       "consent": "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Vidazoo Adapter Params",
+  "description": "A schema which validates params accepted by the Vidazoo adapter",
+  "type": "object",
+  "properties": {
+    "cId": {
+      "type": "string",
+      "description": "The connection id.",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "cId"
+  ]
+}

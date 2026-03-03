@@ -63,7 +63,8 @@
                         "gpid": "some_slot"
                     }
                 }]
-            }
+            },
+            "impIDs":["test-imp-id"]
         },
         "mockResponse": {
             "status": 200,

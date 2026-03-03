@@ -3,8 +3,14 @@ maintainer:
   email: prebid@blueseasx.com
 endpointCompression: gzip
 modifyingVastXmlAllowed: true
+gvlVendorID: 1294
 capabilities:
   app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+  site:
     mediaTypes:
       - banner
       - native

@@ -46,7 +46,8 @@
           "Componentid": [
             "prebid-go"
           ]
-        }
+        },
+        "impIDs":["imp-1"]
       },
       "mockResponse": {
         "status": 503,

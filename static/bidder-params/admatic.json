@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "AdMatic Adapter Params",
+    "description": "A schema which validates params accepted by the AdMatic adapter",
+    "type": "object",
+    "properties": {
+        "host": {
+            "type": "string",
+            "description": "Host Name"
+        },
+        "networkId": {
+            "type": "integer",
+            "description": "AdMatic Network Id"
+        }
+    },
+    "required": [
+        "host",
+        "networkId"
+    ]
+}

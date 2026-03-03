@@ -1,0 +1,19 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "The Trade Desk Adapter Params",
+	"description": "A schema which validates params accepted by the The Trade Desk adapter",
+	"type": "object",
+	"properties": {
+		"publisherId": {
+			"type": "string",
+			"minLength": 1,
+			"description": "An ID which identifies the publisher"
+		},
+		"supplySourceId": {
+			"type":"string",
+			"minLength": 1,
+			"description": "An ID provided by TheTradeDesk used to determine which endpoint to use"
+		}
+	},
+	"required": ["publisherId"]
+}

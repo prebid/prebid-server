@@ -113,7 +113,8 @@
               "consent": "gdprConsentString"
             }
           }
-        }
+        },
+        "impIDs":["test-banner-id","test-native-id","test-video-id"]
       },
       "mockResponse": {
         "status": 200,

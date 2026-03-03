@@ -24,7 +24,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go struct field ExtImpImds.seatId of type string",
+      "value": "cannot unmarshal openrtb_ext.ExtImpImds.SeatId: expects \" or n, but found 1",
       "comparison": "literal"
     }
   ]

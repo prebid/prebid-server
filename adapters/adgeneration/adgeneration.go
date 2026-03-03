@@ -1,7 +1,6 @@
 package adgeneration
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,11 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type AdgenerationAdapter struct {
@@ -77,6 +77,7 @@ func (adg *AdgenerationAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 			Uri:     bidRequestUri,
 			Body:    nil,
 			Headers: headers,
+			ImpIDs:  []string{request.Imp[index].ID},
 		}
 		bidRequestArray = append(bidRequestArray, bidRequest)
 	}
@@ -148,10 +149,10 @@ func (adg *AdgenerationAdapter) getRawQuery(id string, request *openrtb2.BidRequ
 func unmarshalExtImpAdgeneration(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdgeneration, error) {
 	var bidderExt adapters.ExtImpBidder
 	var adgExt openrtb_ext.ExtImpAdgeneration
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(bidderExt.Bidder, &adgExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adgExt); err != nil {
 		return nil, err
 	}
 	if adgExt.Id == "" {
@@ -202,7 +203,7 @@ func (adg *AdgenerationAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 		}}
 	}
 	var bidResp adgServerResponse
-	err := json.Unmarshal(response.Body, &bidResp)
+	err := jsonutil.Unmarshal(response.Body, &bidResp)
 	if err != nil {
 		return nil, []error{err}
 	}

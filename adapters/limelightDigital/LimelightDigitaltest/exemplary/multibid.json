@@ -54,7 +54,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-banner-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -96,7 +97,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-video-id"]
       },
       "mockResponse": {
         "status": 200,

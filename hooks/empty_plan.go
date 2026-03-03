@@ -1,8 +1,8 @@
 package hooks
 
 import (
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 )
 
 // EmptyPlanBuilder implements the ExecutionPlanBuilder interface
@@ -34,5 +34,9 @@ func (e EmptyPlanBuilder) PlanForAllProcessedBidResponsesStage(endpoint string, 
 }
 
 func (e EmptyPlanBuilder) PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse] {
+	return nil
+}
+
+func (e EmptyPlanBuilder) PlanForExitpointStage(endpoint string, account *config.Account) Plan[hookstage.Exitpoint] {
 	return nil
 }

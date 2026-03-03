@@ -183,6 +183,50 @@
                     }
                 ]
             }
+        },
+        "prebid": {
+          "seatnonbid": [
+            {
+              "nonbid": [
+                {
+                  "impid": "some-imp-id",
+                  "statuscode": 352,
+                  "ext": {
+                    "prebid": {
+                      "bid": {
+                        "price": 0.3,
+                        "w": 20,
+                        "h": 50,
+                        "origbidcpm": 0.3
+                      }
+                    }
+                  }
+                }
+              ],
+              "seat": "appnexus",
+              "ext": null
+            },
+            {
+              "nonbid": [
+                {
+                  "impid": "some-imp-id",
+                  "statuscode": 352,
+                  "ext": {
+                    "prebid": {
+                      "bid": {
+                        "price": 0.4,
+                        "w": 20,
+                        "h": 50,
+                        "origbidcpm": 0.4
+                      }
+                    }
+                  }
+                }
+              ],
+              "seat": "rubicon",
+              "ext": null
+            }
+          ]
         }
     }
 }

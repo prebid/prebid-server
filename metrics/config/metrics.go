@@ -3,10 +3,10 @@ package config
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
-	prometheusmetrics "github.com/prebid/prebid-server/v2/metrics/prometheus"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	prometheusmetrics "github.com/prebid/prebid-server/v3/metrics/prometheus"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	gometrics "github.com/rcrowley/go-metrics"
 	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
@@ -266,6 +266,13 @@ func (me *MultiMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels
 	}
 }
 
+// RecordAdapterBuyerUIDScrubbed across all engines
+func (me *MultiMetricsEngine) RecordAdapterBuyerUIDScrubbed(adapter openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterBuyerUIDScrubbed(adapter)
+	}
+}
+
 // RecordAdapterGDPRRequestBlocked across all engines
 func (me *MultiMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
 	for _, thisME := range *me {
@@ -283,6 +290,12 @@ func (me *MultiMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string
 func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
 	for _, thisME := range *me {
 		thisME.RecordStoredResponse(pubId)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordGvlListRequest() {
+	for _, thisME := range *me {
+		thisME.RecordGvlListRequest()
 	}
 }
 
@@ -361,6 +374,25 @@ func (me *MultiMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLa
 func (me *MultiMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
 	for _, thisME := range *me {
 		thisME.RecordModuleTimeout(labels)
+	}
+}
+
+// RecordAdapterThrottled across all engines
+func (me *MultiMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterThrottled(adapter)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnectionDialError(adapterName)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterConnectionDialTime(adapterName, dialStartTime)
 	}
 }
 
@@ -484,6 +516,10 @@ func (me *NilMetricsEngine) RecordTimeoutNotice(success bool) {
 func (me *NilMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 }
 
+// RecordAdapterBuyerUIDScrubbed as a noop
+func (me *NilMetricsEngine) RecordAdapterBuyerUIDScrubbed(adapter openrtb_ext.BidderName) {
+}
+
 // RecordAdapterGDPRRequestBlocked as a noop
 func (me *NilMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
 }
@@ -493,6 +529,9 @@ func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) 
 }
 
 func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
+}
+
+func (me *NilMetricsEngine) RecordGvlListRequest() {
 }
 
 func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {
@@ -534,4 +573,14 @@ func (me *NilMetricsEngine) RecordModuleExecutionError(labels metrics.ModuleLabe
 }
 
 func (me *NilMetricsEngine) RecordModuleTimeout(labels metrics.ModuleLabels) {
+}
+
+// RecordAdapterThrottled as a noop
+func (me *NilMetricsEngine) RecordAdapterThrottled(adapter openrtb_ext.BidderName) {
+}
+
+func (me *NilMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+}
+
+func (me *NilMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
 }

@@ -28,7 +28,7 @@
         }
       }
     ],
-    "tmax": 50,
+    "tmax": 500,
     "ext": {
       "prebid": {
         "trace": "verbose"

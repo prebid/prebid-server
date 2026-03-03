@@ -3,7 +3,7 @@ package bidadjustment
 import (
 	"math"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // Validate checks whether all provided bid adjustments are valid or not against the requirements defined in the issue

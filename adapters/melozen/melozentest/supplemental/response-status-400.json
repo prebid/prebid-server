@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "web-banner",
+    "tmax": 3000,
+    "imp": [
+      {
+        "id": "banner-imp-id",
+        "ext": {
+          "bidder": {
+            "pubId": "386276e072"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.fake.app",
+      "publisher": {
+        "id": "42",
+        "name": "whatever.pub"
+      }
+    },
+    "device": {
+      "w": 1200,
+      "h": 900
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com/rtb/v2/bid?publisher_id=386276e072",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "web-banner",
+          "tmax": 3000,
+          "imp": [
+            {
+              "id": "banner-imp-id",
+              "ext": {
+                "bidder": {
+                  "pubId": "386276e072"
+                }
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "device": {
+            "w": 1200,
+            "h": 900
+          },
+          "app": {
+            "bundle": "com.fake.app",
+            "publisher": {
+              "id": "42",
+              "name": "whatever.pub"
+            }
+          }
+        },
+        "impIDs": [
+          "banner-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+endpoint: "http://adapter.bidmatic.io/pbs/ortb"
+maintainer:
+  email: "advertising@bidmatic.io"
+gvlVendorID: 1134
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  # bidmatic supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - iframe

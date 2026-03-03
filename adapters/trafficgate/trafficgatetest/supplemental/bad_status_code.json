@@ -64,7 +64,8 @@
             "bundle": "com.wls.testwlsapplication"
           },
           "device": {}
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 400,

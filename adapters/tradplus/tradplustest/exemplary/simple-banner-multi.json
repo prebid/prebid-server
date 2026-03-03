@@ -1,0 +1,128 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "fake-account-id",
+            "zoneId": "a"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "fake-account-id2",
+            "zoneId": "b"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://aadx.tradplusad.com/fake-account-id/pserver",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "accountId": "fake-account-id",
+                  "zoneId": "a"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "accountId": "fake-account-id2",
+                  "zoneId": "b"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id", "test-imp-id2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "ttx",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 1.2,
+                  "adm": "some-ads",
+                  "crid": "crid_testid",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 1.2,
+            "adm": "some-ads",
+            "crid": "crid_testid",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "FWSSP Adapter Params",
+  "description": "A schema which validates params accepted by the FWSSP adapter",
+  "type": "object",
+  "properties": {
+    "custom_site_section_id": {
+      "type": "string",
+      "description": "custom Site Section tag (e.g. ss_12345) or numeric Site Section ID (e.g. 12345)"
+    },
+    "network_id": {
+      "type": "string",
+      "description": "Network ID (e.g. 12345)"
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "The value should contain a profile name. and NOT a numeric profile ID. This can either include the network ID prefix (e.g. 123456:profile_name_xyz123) or with the profile name alone (e.g. profile_name_xyz123)"
+    }
+  },
+  "required": ["custom_site_section_id", "network_id", "profile_id"]
+}

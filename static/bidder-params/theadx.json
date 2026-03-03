@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Theadx Adapter Params",
+  "description": "A schema which validates params accepted by the theadx adapter",
+  "type": "object",
+  "properties": {
+    "pid": {
+      "type": ["integer", "string"],
+      "pattern": "^\\d+$",
+      "description": "An ID which identifies the partner selling the impression"
+    },
+    "tagid": {
+      "type": ["integer", "string"],
+      "pattern": "^\\d+$",
+      "description": "An ID which identifies the placement selling the impression"
+    },
+    "wid": {
+      "type": ["integer", "string"],
+      "description": "An ID which identifies the Theadx inventory source id"
+    }
+   
+  },
+  "anyOf":[
+    {
+      "required": ["tagid"]
+    }
+    , {
+      "required": ["pid", "wid","tagid"]
+    }
+
+  ]
+}

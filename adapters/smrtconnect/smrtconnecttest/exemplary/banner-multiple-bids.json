@@ -1,0 +1,229 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "awesome-user"
+    },
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ogTAGID",
+        "banner": {
+          "w":320,
+          "h":50
+        },
+        "ext": {
+          "bidder": {
+            "supply_id": "1"
+          }
+        }
+      },
+      {
+        "id": "some-impression-id-2",
+        "tagid": "ogTAGID-2",
+        "banner": {
+          "w":300,
+          "h":250
+        },
+        "ext": {
+          "bidder": {
+            "supply_id": "1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.smrtconnect.com/openrtb2/auction?supply_id=1",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "tagid": "ogTAGID",
+              "banner": {
+                "w":320,
+                "h":50
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "1",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ],
+              "seat": "smrtconnect"
+            }
+          ],
+          "cur": "USD",
+          "ext": {
+            "responsetimemillis": {
+              "smrtconnect": 154
+            },
+            "tmaxrequest": 1000
+          }
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://test.smrtconnect.com/openrtb2/auction?supply_id=1",
+        "body": {
+          "id": "some-request-id",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "some-impression-id-2",
+              "tagid": "ogTAGID-2",
+              "banner": {
+                "w":300,
+                "h":250
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
+          "user": {
+            "buyeruid": "awesome-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs":["some-impression-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id-2",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "1",
+                  "price": 3.5,
+                  "adm": "awesome-markup-2",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ],
+              "seat": "smrtconnect"
+            }
+          ],
+          "cur": "USD",
+          "ext": {
+            "responsetimemillis": {
+              "smrtconnect": 154
+            },
+            "tmaxrequest": 1000
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids":[
+        {
+          "bid":  {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "1",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "bids":[
+        {
+          "bid":  {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "1",
+            "price": 3.5,
+            "adm": "awesome-markup-2",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v3/config"
 )
 
 type namedSyncerConfig struct {
@@ -76,21 +76,18 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 	if len(errs) > 0 {
 		return nil, errs
 	}
+
 	return syncers, nil
 }
 
 func shouldCreateSyncer(cfg config.BidderInfo) bool {
-	if cfg.Disabled {
-		return false
-	}
-
-	if cfg.Syncer == nil {
+	if !cfg.IsEnabled() {
 		return false
 	}
 
 	// a syncer may provide just a Supports field to provide hints to the host. we should only try to create a syncer
 	// if there is at least one non-Supports value populated.
-	return cfg.Syncer.Key != "" || cfg.Syncer.IFrame != nil || cfg.Syncer.Redirect != nil || cfg.Syncer.SupportCORS != nil
+	return cfg.Syncer.Defined()
 }
 
 func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerConfig, error) {
@@ -101,10 +98,13 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 	var bidderNames []string
 	var bidderNamesWithEndpoints []string
 	var syncerConfig namedSyncerConfig
+	var syncerConfigWithEndpoints []namedSyncerConfig
+
 	for _, bidder := range biddersSyncerConfig {
 		bidderNames = append(bidderNames, bidder.name)
 		if bidder.cfg.IFrame != nil || bidder.cfg.Redirect != nil {
 			bidderNamesWithEndpoints = append(bidderNamesWithEndpoints, bidder.name)
+			syncerConfigWithEndpoints = append(syncerConfigWithEndpoints, bidder)
 			syncerConfig = bidder
 		}
 	}
@@ -115,10 +115,16 @@ func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerCon
 		return namedSyncerConfig{}, fmt.Errorf("bidders %s share the same syncer key, but none define endpoints (iframe and/or redirect)", bidders)
 	}
 
-	if len(bidderNamesWithEndpoints) > 1 {
-		sort.Strings(bidderNamesWithEndpoints)
-		bidders := strings.Join(bidderNamesWithEndpoints, ", ")
-		return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints", bidders)
+	if len(syncerConfigWithEndpoints) > 1 {
+		// allowed if all configs are identical
+		firstConfig := syncerConfigWithEndpoints[0].cfg
+		for _, config := range syncerConfigWithEndpoints[1:] {
+			if !firstConfig.Equal(&config.cfg) {
+				sort.Strings(bidderNamesWithEndpoints)
+				bidders := strings.Join(bidderNamesWithEndpoints, ", ")
+				return namedSyncerConfig{}, fmt.Errorf("bidders %s define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints unless the configs are identical", bidders)
+			}
+		}
 	}
 
 	return syncerConfig, nil

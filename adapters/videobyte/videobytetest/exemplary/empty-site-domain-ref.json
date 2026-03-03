@@ -89,7 +89,8 @@
           "site": {
             "page": "http://example.com/page-1"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

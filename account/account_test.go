@@ -6,18 +6,26 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
+var (
+	validDSA   = `{\"dsarequired\":1,\"pubrender\":2,\"transparency\":[{\"domain\":\"test.com\"}]}`
+	invalidDSA = `{\"dsarequired\":\"invalid\",\"pubrender\":2,\"transparency\":[{\"domain\":\"test.com\"}]}`
+)
+
 var mockAccountData = map[string]json.RawMessage{
 	"valid_acct":                json.RawMessage(`{"disabled":false}`),
+	"valid_acct_dsa":            json.RawMessage(`{"disabled":false, "privacy": {"dsa": {"default": "` + validDSA + `"}}}`),
+	"invalid_acct_dsa":          json.RawMessage(`{"disabled":false, "privacy": {"dsa": {"default": "` + invalidDSA + `"}}}`),
 	"invalid_acct_ipv6_ipv4":    json.RawMessage(`{"disabled":false, "privacy": {"ipv6": {"anon_keep_bits": -32}, "ipv4": {"anon_keep_bits": -16}}}`),
 	"disabled_acct":             json.RawMessage(`{"disabled":true}`),
 	"malformed_acct":            json.RawMessage(`{"disabled":"invalid type"}`),
@@ -36,6 +44,16 @@ func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountDefaultsJS
 }
 
 func TestGetAccount(t *testing.T) {
+	validDSA := &openrtb_ext.ExtRegsDSA{
+		Required:  ptrutil.ToPtr[int8](1),
+		PubRender: ptrutil.ToPtr[int8](2),
+		Transparency: []openrtb_ext.ExtBidDSATransparency{
+			{
+				Domain: "test.com",
+			},
+		},
+	}
+
 	unknown := metrics.PublisherUnknown
 	testCases := []struct {
 		accountID string
@@ -44,7 +62,8 @@ func TestGetAccount(t *testing.T) {
 		// account_defaults.disabled
 		disabled bool
 		// checkDefaultIP indicates IPv6 and IPv6 should be set to default values
-		checkDefaultIP bool
+		wantDefaultIP bool
+		wantDSA       *openrtb_ext.ExtRegsDSA
 		// expected error, or nil if account should be found
 		err error
 	}{
@@ -66,7 +85,13 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "valid_acct", required: false, disabled: true, err: nil},
 		{accountID: "valid_acct", required: true, disabled: true, err: nil},
 
-		{accountID: "invalid_acct_ipv6_ipv4", required: true, disabled: false, err: nil, checkDefaultIP: true},
+		{accountID: "valid_acct_dsa", required: false, disabled: false, wantDSA: validDSA, err: nil},
+		{accountID: "valid_acct_dsa", required: true, disabled: false, wantDSA: validDSA, err: nil},
+		{accountID: "valid_acct_dsa", required: false, disabled: true, wantDSA: validDSA, err: nil},
+		{accountID: "valid_acct_dsa", required: true, disabled: true, wantDSA: validDSA, err: nil},
+
+		{accountID: "invalid_acct_ipv6_ipv4", required: true, disabled: false, err: nil, wantDefaultIP: true},
+		{accountID: "invalid_acct_dsa", required: false, disabled: false, err: &errortypes.MalformedAcct{}},
 
 		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
 		{accountID: "disabled_acct", required: false, disabled: false, err: &errortypes.AccountDisabled{}},
@@ -111,9 +136,12 @@ func TestGetAccount(t *testing.T) {
 				assert.Nil(t, account, "return account must be nil on error")
 				assert.IsType(t, test.err, errors[0], "error is of unexpected type")
 			}
-			if test.checkDefaultIP {
+			if test.wantDefaultIP {
 				assert.Equal(t, account.Privacy.IPv6Config.AnonKeepBits, iputil.IPv6DefaultMaskingBitSize, "ipv6 should be set to default value")
 				assert.Equal(t, account.Privacy.IPv4Config.AnonKeepBits, iputil.IPv4DefaultMaskingBitSize, "ipv4 should be set to default value")
+			}
+			if test.wantDSA != nil {
+				assert.Equal(t, test.wantDSA, account.Privacy.DSA.DefaultUnpacked)
 			}
 		})
 	}
@@ -122,7 +150,7 @@ func TestGetAccount(t *testing.T) {
 func TestSetDerivedConfig(t *testing.T) {
 	tests := []struct {
 		description              string
-		purpose1VendorExceptions []openrtb_ext.BidderName
+		purpose1VendorExceptions []string
 		feature1VendorExceptions []openrtb_ext.BidderName
 		basicEnforcementVendors  []string
 		enforceAlgo              string
@@ -134,11 +162,11 @@ func TestSetDerivedConfig(t *testing.T) {
 		},
 		{
 			description:              "One purpose 1 vendor exception",
-			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
+			purpose1VendorExceptions: []string{"appnexus"},
 		},
 		{
 			description:              "Multiple purpose 1 vendor exceptions",
-			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus", "rubicon"},
+			purpose1VendorExceptions: []string{"appnexus", "rubicon"},
 		},
 		{
 			description:              "Nil feature 1 vendor exceptions",
@@ -192,7 +220,7 @@ func TestSetDerivedConfig(t *testing.T) {
 
 		setDerivedConfig(&account)
 
-		purpose1ExceptionMapKeys := make([]openrtb_ext.BidderName, 0)
+		purpose1ExceptionMapKeys := make([]string, 0)
 		for k := range account.GDPR.Purpose1.VendorExceptionMap {
 			purpose1ExceptionMapKeys = append(purpose1ExceptionMapKeys, k)
 		}

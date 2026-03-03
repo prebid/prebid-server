@@ -1,0 +1,134 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "bidder": {
+            "token": "f9f2b1ef23fe2759c2cad0953029a94b"
+          }
+        }
+      },
+      {
+        "id":"test-imp-id2",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":2,\"required\":1,\"title\":{\"len\":90}},{\"id\":6,\"required\":1,\"img\":{\"type\":3,\"wmin\":128,\"hmin\":128,\"mimes\":[\"image/jpg\",\"image/jpeg\",\"image/png\"]}},{\"id\":7,\"required\":1,\"data\":{\"type\":2,\"len\":120}}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "token": "f9f2b1ef23fe2759c2cad0953029a94b"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "test-site-id",
+      "page": "https://www.example.com/"
+    },
+    "ext": {
+      "prebid": {
+        "bidderparams": {
+          "bidder": {
+            "token": "f9f2b1ef23fe2759c2cad0953029a94b"
+          }
+        }
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://REGION.mediago.io/api/bid?tn=f9f2b1ef23fe2759c2cad0953029a94b",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [{"w": 320, "h": 50}],
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {
+                  "token": "f9f2b1ef23fe2759c2cad0953029a94b"
+                }
+              }
+            },
+            {
+              "id":"test-imp-id2",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":2,\"required\":1,\"title\":{\"len\":90}},{\"id\":6,\"required\":1,\"img\":{\"type\":3,\"wmin\":128,\"hmin\":128,\"mimes\":[\"image/jpg\",\"image/jpeg\",\"image/png\"]}},{\"id\":7,\"required\":1,\"data\":{\"type\":2,\"len\":120}}]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "token": "f9f2b1ef23fe2759c2cad0953029a94b"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "test-site-id",
+            "page": "https://www.example.com/"
+          },
+          "ext": {
+            "prebid": {
+              "bidderparams": {
+                "bidder": {
+                  "token": "f9f2b1ef23fe2759c2cad0953029a94b"
+                }
+              }
+            }
+          }
+        },
+        "impIDs":["test-imp-id", "test-imp-id2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "mediago",
+              "bid": [{
+                "id": "test-imp-id",
+                "price": 0.5,
+                "adm": "some-ads",
+                "crid": "crid_testid",
+                "mtype": 2
+              }, {
+                "id": "test-imp-id2",
+                "price": 1.2,
+                "adm": "some ads",
+                "crid": "crid_testid",
+                "mtype": 5
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": []
+  }],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unsupported MType 2",
+      "comparison": "literal"
+    },
+    {
+      "value": "Unsupported MType 5",
+      "comparison": "literal"
+    }
+  ]
+}

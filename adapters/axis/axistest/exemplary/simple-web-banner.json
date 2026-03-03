@@ -72,7 +72,8 @@
                         "ip": "123.123.123.123",
                         "ua": "Ubuntu"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

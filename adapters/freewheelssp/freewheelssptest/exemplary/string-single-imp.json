@@ -46,7 +46,8 @@
           "Componentid": [
             "prebid-go"
           ]
-        }
+        },
+        "impIDs":["imp-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -77,7 +78,7 @@
 
   "expectedBidResponses": [
     {
-      "currency": "CUR",
+      "currency": "EUR",
       "bids": [
         {
           "bid":  {

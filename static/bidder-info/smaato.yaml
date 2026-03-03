@@ -1,5 +1,7 @@
 endpoint: "https://prebid.ad.smaato.net/oapi/prebid"
 endpointCompression: gzip
+geoscope:
+  - global
 maintainer:
   email: "prebid@smaato.com"
 gvlVendorID: 82
@@ -15,7 +17,12 @@ capabilities:
       - video
       - native
 userSync:
+  # This bidder does not sync when GDPR is in-scope. Please consider removing the usersync
+  # block when deploying to European datacenters
   redirect:
     url: "https://s.ad.smaato.net/c/?adExInit=p&redir={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
+    userMacro: "$UID"
+  iframe:
+    url: "https://s.ad.smaato.net/i/?adExInit=p&redir={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
     userMacro: "$UID"
 

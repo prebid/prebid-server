@@ -4,16 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
-	endpoint string
+	EndpointTemplate *template.Template
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -23,14 +26,25 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, []error{err}
 	}
 
+	impExt, err := getImpressionExt(&request.Imp[0])
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	url, err := a.buildEndpointURL(impExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     a.endpoint,
+		Uri:     url,
 		Body:    reqJson,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 
@@ -48,7 +62,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("JSON parsing error: %v", err),
 		}}
@@ -81,9 +95,15 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 // Builder builds a new instance of the AIDEM adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &adapter{
-		endpoint: config.Endpoint,
-	}, nil
+	urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+
+	bidder := &adapter{
+		EndpointTemplate: urlTemplate,
+	}
+	return bidder, nil
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -92,11 +112,29 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", fmt.Errorf("Unable to fetch mediaType in multi-format: %s", bid.ImpID)
 	}
+}
+
+func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAidem, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	var AIDEMExt openrtb_ext.ExtImpAidem
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &AIDEMExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	return &AIDEMExt, nil
+}
+
+// Builds enpoint url based on adapter-specific pub settings from imp.ext
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpAidem) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{PublisherID: params.PublisherId}
+	return macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 }

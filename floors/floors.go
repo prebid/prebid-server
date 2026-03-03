@@ -6,10 +6,10 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 type Price struct {
@@ -28,6 +28,8 @@ const (
 	enforceRateMin   int     = 0
 	enforceRateMax   int     = 100
 	floorPrecision   float64 = 0.01
+	dataRateMin      int     = 0
+	dataRateMax      int     = 100
 )
 
 // EnrichWithPriceFloors checks for floors enabled in account and request and selects floors data from dynamic fetched if present
@@ -136,10 +138,23 @@ func isPriceFloorsEnabledForRequest(bidRequestWrapper *openrtb_ext.RequestWrappe
 	return true
 }
 
+// useFetchedData will check if to use fetched data or request data
+func useFetchedData(rate *int) bool {
+	if rate == nil {
+		return true
+	}
+	randomNumber := rand.Intn(dataRateMax)
+	return randomNumber < *rate
+}
+
 // resolveFloors does selection of floors fields from request data and dynamic fetched data if dynamic fetch is enabled
 func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.RequestWrapper, conversions currency.Conversions, priceFloorFetcher FloorFetcher) (*openrtb_ext.PriceFloorRules, []error) {
-	var errList []error
-	var floorRules *openrtb_ext.PriceFloorRules
+	var (
+		errList     []error
+		floorRules  *openrtb_ext.PriceFloorRules
+		fetchResult *openrtb_ext.PriceFloorRules
+		fetchStatus string
+	)
 
 	reqFloor := extractFloorsFromRequest(bidRequestWrapper)
 	if reqFloor != nil && reqFloor.Location != nil && len(reqFloor.Location.URL) > 0 {
@@ -147,13 +162,11 @@ func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.Reques
 	}
 	account.PriceFloors.Fetcher.AccountID = account.ID
 
-	var fetchResult *openrtb_ext.PriceFloorRules
-	var fetchStatus string
 	if priceFloorFetcher != nil && account.PriceFloors.UseDynamicData {
 		fetchResult, fetchStatus = priceFloorFetcher.Fetch(account.PriceFloors)
 	}
 
-	if fetchResult != nil && fetchStatus == openrtb_ext.FetchSuccess {
+	if fetchResult != nil && fetchStatus == openrtb_ext.FetchSuccess && useFetchedData(fetchResult.Data.UseFetchDataRate) {
 		mergedFloor := mergeFloors(reqFloor, fetchResult, conversions)
 		floorRules, errList = createFloorsFrom(mergedFloor, account, fetchStatus, openrtb_ext.FetchLocation)
 	} else if reqFloor != nil {

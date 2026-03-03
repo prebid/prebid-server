@@ -5,8 +5,8 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -317,54 +317,54 @@ func TestPurposeEnforcingVendors(t *testing.T) {
 func TestPurposeVendorExceptions(t *testing.T) {
 	tests := []struct {
 		description                     string
-		givePurpose1HostExceptionMap    map[openrtb_ext.BidderName]struct{}
-		givePurpose1AccountExceptionMap map[openrtb_ext.BidderName]struct{}
-		givePurpose2HostExceptionMap    map[openrtb_ext.BidderName]struct{}
-		givePurpose2AccountExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose1HostExceptionMap    map[string]struct{}
+		givePurpose1AccountExceptionMap map[string]struct{}
+		givePurpose2HostExceptionMap    map[string]struct{}
+		givePurpose2AccountExceptionMap map[string]struct{}
 		givePurpose                     consentconstants.Purpose
-		wantExceptionMap                map[openrtb_ext.BidderName]struct{}
+		wantExceptionMap                map[string]struct{}
 	}{
 		{
 			description:                     "Purpose 1 exception list set at account level - use empty account list",
-			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			givePurpose1AccountExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1HostExceptionMap:    map[string]struct{}{},
+			givePurpose1AccountExceptionMap: map[string]struct{}{},
 			givePurpose:                     1,
-			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:                map[string]struct{}{},
 		},
 		{
 			description:                     "Purpose 1 exception list set at account level - use nonempty account list",
-			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			givePurpose1AccountExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			givePurpose1HostExceptionMap:    map[string]struct{}{},
+			givePurpose1AccountExceptionMap: map[string]struct{}{"appnexus": {}, "rubicon": {}},
 			givePurpose:                     1,
-			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			wantExceptionMap:                map[string]struct{}{"appnexus": {}, "rubicon": {}},
 		},
 		{
 			description:                     "Purpose 1 exception list not set at account level - use empty host list",
-			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
+			givePurpose1HostExceptionMap:    map[string]struct{}{},
 			givePurpose1AccountExceptionMap: nil,
 			givePurpose:                     1,
-			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:                map[string]struct{}{},
 		},
 		{
 			description:                     "Purpose 1 exception list not set at account level - use nonempty host list",
-			givePurpose1HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			givePurpose1HostExceptionMap:    map[string]struct{}{"appnexus": {}, "rubicon": {}},
 			givePurpose1AccountExceptionMap: nil,
 			givePurpose:                     1,
-			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			wantExceptionMap:                map[string]struct{}{"appnexus": {}, "rubicon": {}},
 		},
 		{
 			description:                     "Purpose 1 exception list not set at account level or host level",
 			givePurpose1HostExceptionMap:    nil,
 			givePurpose1AccountExceptionMap: nil,
 			givePurpose:                     1,
-			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:                map[string]struct{}{},
 		},
 		{
 			description:                     "Some other purpose exception list set at account level",
-			givePurpose2HostExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
-			givePurpose2AccountExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			givePurpose2HostExceptionMap:    map[string]struct{}{},
+			givePurpose2AccountExceptionMap: map[string]struct{}{"appnexus": {}, "rubicon": {}},
 			givePurpose:                     2,
-			wantExceptionMap:                map[openrtb_ext.BidderName]struct{}{"appnexus": {}, "rubicon": {}},
+			wantExceptionMap:                map[string]struct{}{"appnexus": {}, "rubicon": {}},
 		},
 	}
 

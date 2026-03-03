@@ -1,0 +1,58 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "nativo-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://foo.io/?src=prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "nativo-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {}
+              }
+            }
+          ]
+        },
+        "impIDs":["nativo-id"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

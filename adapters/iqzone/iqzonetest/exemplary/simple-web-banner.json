@@ -71,7 +71,8 @@
                         "ip": "123.123.123.123",
                         "ua": "Ubuntu"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,
@@ -90,6 +91,7 @@
                                     "dealid": "test_dealid",
                                     "w": 468,
                                     "h": 60,
+                                    "mtype": 1,
                                     "ext": {
                                         "prebid": {
                                             "type": "banner"
@@ -119,6 +121,7 @@
                         "dealid": "test_dealid",
                         "w": 468,
                         "h": 60,
+                        "mtype": 1,
                         "ext": {
                             "prebid": {
                                 "type": "banner"

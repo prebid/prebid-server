@@ -3,6 +3,8 @@ maintainer:
   email: csop@undertone.com
 endpointCompression: gzip
 gvlVendorID: 677
+openrtb:
+  version: 2.6
 modifyingVastXmlAllowed: true
 capabilities:
   app:

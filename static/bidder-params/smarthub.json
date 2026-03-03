@@ -1,13 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "SmartHub Adapter Params",
-  "description": "A schema which validates params accepted by the SmartHub adapter",
+  "title": "Attekmi (formerly SmartHub) Adapter Params",
+  "description": "A schema which validates params accepted by the Attekmi (formerly SmartHub) adapter",
   "type": "object",
   "properties": {
     "partnerName": {
       "type": "string",
-      "description": "SmartHub unique partner name",
-      "minLength": 1
+      "description": "Attekmi (formerly SmartHub) unique partner name"
     },
     "seat": {
       "type": "string",
@@ -21,7 +20,6 @@
     }
   },
   "required": [
-    "partnerName",
     "seat",
     "token"
   ]

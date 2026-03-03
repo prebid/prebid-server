@@ -1,4 +1,4 @@
-endpoint: "https://b.nativendo.de/cds/rtb/bid?ssp=pbs"
+endpoint: "https://b.nativendo.de/cds/rtb/bid?ssp={{.AccountID}}"
 maintainer:
   email: tech@seeding-alliance.de
 gvlVendorID: 371

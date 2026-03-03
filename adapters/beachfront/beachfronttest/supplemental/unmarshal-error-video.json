@@ -34,7 +34,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "ignoring imp id=looser, error while decoding extImpBeachfront, err: json: cannot unmarshal string into Go struct field ExtImpBeachfront.bidfloor of type float64",
+      "value": "ignoring imp id=looser, error while decoding extImpBeachfront, err: cannot unmarshal openrtb_ext.ExtImpBeachfront.BidFloor: invalid number",
       "comparison": "literal"
     }
   ]

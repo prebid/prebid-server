@@ -3,8 +3,8 @@ package ortb2blocking
 import (
 	"strings"
 
-	"github.com/prebid/openrtb/v19/adcom1"
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/adcom1"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 func mergeStrings(messages []string, newMessages ...string) []string {

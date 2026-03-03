@@ -7,9 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,6 +18,11 @@ import (
 const adapterDirectory = "../adapters"
 
 type testValidator struct{}
+
+func TestMain(m *testing.M) {
+	jsoniter.RegisterExtension(&jsonutil.RawMessageExtension{})
+	os.Exit(m.Run())
+}
 
 func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
 	return nil
@@ -38,9 +44,8 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	defaultAlias := map[string]string{"aliastest": "appnexus"}
-	yamlAlias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
-	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, defaultAlias, yamlAlias)
+	alias := map[openrtb_ext.BidderName]openrtb_ext.BidderName{openrtb_ext.BidderName("alias"): openrtb_ext.BidderName("parentAlias")}
+	handler := newJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -60,7 +65,6 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 		}
 	}
 
-	ensureHasKey(t, data, "aliastest")
 	ensureHasKey(t, data, "alias")
 }
 
@@ -205,73 +209,111 @@ func TestNoCache(t *testing.T) {
 	}
 }
 
-var testDefReqConfig = config.DefReqConfig{
-	Type: "file",
-	FileSystem: config.DefReqFiles{
-		FileName: "test_aliases.json",
-	},
-	AliasInfo: true,
+func TestBidderParamsCompactedOutput(t *testing.T) {
+	expectedFormattedResponse := `{"appnexus":{"$schema":"http://json-schema.org/draft-04/schema#","title":"Sample schema","description":"A sample schema to test the bidder/params endpoint","type":"object","properties":{"integer_param":{"type":"integer","minimum":1,"description":"A customer id"},"string_param_1":{"type":"string","minLength":1,"description":"Text with blanks in between"},"string_param_2":{"type":"string","minLength":1,"description":"Text_with_no_blanks_in_between"}},"required":["integer_param","string_param_2"]}}`
+
+	// Setup
+	inSchemaDirectory := "bidder_params_tests"
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(inSchemaDirectory)
+	assert.NoError(t, err, "Error initialing validator")
+
+	handler := newJsonDirectoryServer(inSchemaDirectory, paramsValidator, nil)
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest("GET", "/bidder/params", nil)
+	assert.NoError(t, err, "Error creating request")
+
+	// Run
+	handler(recorder, request, nil)
+
+	// Assertions
+	assert.Equal(t, expectedFormattedResponse, recorder.Body.String())
 }
 
-func TestLoadDefaultAliases(t *testing.T) {
-	defAliases, aliasJSON := readDefaultRequest(testDefReqConfig)
-	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
-	expectedAliases := map[string]string{
-		"test1": "appnexus",
-		"test2": "rubicon",
-		"test3": "openx",
-	}
-
-	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
-	assert.Equal(t, expectedAliases, defAliases)
-}
-
-func TestLoadDefaultAliasesNoInfo(t *testing.T) {
-	noInfoConfig := testDefReqConfig
-	noInfoConfig.AliasInfo = false
-	defAliases, aliasJSON := readDefaultRequest(noInfoConfig)
-	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
-	expectedAliases := map[string]string{}
-
-	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
-	assert.Equal(t, expectedAliases, defAliases)
-}
-
-func TestValidateDefaultAliases(t *testing.T) {
-	var testCases = []struct {
-		description   string
-		givenAliases  map[string]string
-		expectedError string
+func TestGetNormalizedGeoscopes(t *testing.T) {
+	testCases := []struct {
+		name              string
+		bidderInfos       config.BidderInfos
+		expectedGeoscopes map[string][]string
 	}{
 		{
-			description:   "None",
-			givenAliases:  map[string]string{},
-			expectedError: "",
+			name:              "nil-bidder-infos",
+			bidderInfos:       nil,
+			expectedGeoscopes: map[string][]string{},
 		},
 		{
-			description:   "Valid",
-			givenAliases:  map[string]string{"aAlias": "a"},
-			expectedError: "",
+			name:              "empty-bidder-infos",
+			bidderInfos:       config.BidderInfos{},
+			expectedGeoscopes: map[string][]string{},
 		},
 		{
-			description:   "Invalid",
-			givenAliases:  map[string]string{"all": "a"},
-			expectedError: "default request alias errors (1 error):\n  1: alias all is a reserved bidder name and cannot be used\n",
+			name: "bidder-with-no-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+				},
+			},
+			expectedGeoscopes: map[string][]string{},
 		},
 		{
-			description:   "Mixed",
-			givenAliases:  map[string]string{"aAlias": "a", "all": "a"},
-			expectedError: "default request alias errors (1 error):\n  1: alias all is a reserved bidder name and cannot be used\n",
+			name: "bidder-with-empty-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{},
+				},
+			},
+			expectedGeoscopes: map[string][]string{},
+		},
+		{
+			name: "bidder-with-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{"usa", "can"},
+				},
+			},
+			expectedGeoscopes: map[string][]string{
+				"bidder1": {"USA", "CAN"},
+			},
+		},
+		{
+			name: "multiple-bidders-with-geoscope",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{"usa", "can"},
+				},
+				"bidder2": {
+					Disabled: false,
+					Geoscope: []string{"eu", "asia"},
+				},
+				"bidder3": {
+					Disabled: false,
+				},
+			},
+			expectedGeoscopes: map[string][]string{
+				"bidder1": {"USA", "CAN"},
+				"bidder2": {"EU", "ASIA"},
+			},
+		},
+		{
+			name: "mixed-case-geoscope-values",
+			bidderInfos: config.BidderInfos{
+				"bidder1": {
+					Disabled: false,
+					Geoscope: []string{"UsA", "Can", "eu"},
+				},
+			},
+			expectedGeoscopes: map[string][]string{
+				"bidder1": {"USA", "CAN", "EU"},
+			},
 		},
 	}
 
-	for _, test := range testCases {
-		err := validateDefaultAliases(test.givenAliases)
-
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualGeoscopes := getNormalizedGeoscopes(tc.bidderInfos)
+			assert.Equal(t, tc.expectedGeoscopes, actualGeoscopes)
+		})
 	}
 }

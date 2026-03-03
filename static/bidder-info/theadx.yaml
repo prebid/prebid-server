@@ -1,0 +1,23 @@
+endpoint: "https://ssp.theadx.com/request?pbs=1"
+maintainer:
+  email: "ssp@theadx.com"
+gvlVendorID: 556
+debug:
+  allow: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+      - audio
+userSync:
+  redirect:
+    url: "https://ssp.theadx.com/cookie?redirect_url={{.RedirectURL}}&?pbs=1"
+    userMacro: "$UID"

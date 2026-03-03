@@ -1,0 +1,39 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id-unmarshal",
+        "app": {
+            "bundle": "test.app.bundle"
+        },
+        "device": {
+            "ifa": "test-ifa-123456",
+            "ip": "91.199.242.236",
+            "ua": "random user agent",
+            "os": "android"
+        },
+        "regs": {
+            "ext": {
+                "us_privacy": "1YYY"
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id-unmarshal",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": "ext"
+            }
+        ]
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "expect { or n, but found \"",
+            "comparison": "literal"
+        }
+    ]
+}

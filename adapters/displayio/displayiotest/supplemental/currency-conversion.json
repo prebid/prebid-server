@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "1101",
+            "inventoryId": "1101",
+            "publisherId": "101"
+          }
+        },
+        "bidfloor": 100,
+        "bidfloorcur": "RUB"
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "RUB": {
+              "USD": 0.01
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adapter.endpoint/?macro=101",
+        "body": {
+          "id": "testid",
+          "imp": [
+            {
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "id": "testimpid",
+              "bidfloorcur": "USD",
+              "bidfloor": 1,
+              "ext": {
+                "bidder": {
+                  "placementId": "1101",
+                  "inventoryId": "1101",
+                  "publisherId": "101"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "displayio": {
+              "placementId": "1101",
+              "inventoryId": "1101"
+            },
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "RUB": {
+                    "USD": 0.01
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs": [
+          "testimpid"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [],
+  "expectedBidResponses": []
+}

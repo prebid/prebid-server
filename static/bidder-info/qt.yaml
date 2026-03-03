@@ -1,0 +1,19 @@
+endpoint: "https://endpoint1.qt.io/pserver"
+maintainer:
+  email: "qtssp-support@qt.io"
+gvlVendorID: 1331
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://cs.qt.io/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

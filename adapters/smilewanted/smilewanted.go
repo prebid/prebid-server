@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -17,6 +18,27 @@ type adapter struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+
+	// Extract zoneId from the first impression if available
+	var zoneId string
+	if len(request.Imp) > 0 {
+		// Parse imp.ext
+		var bidderExt adapters.ExtImpBidder
+		if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err == nil {
+			// Parse bidderExt.Bidder to get zoneId
+			var smilewantedExt openrtb_ext.ExtImpSmilewanted
+			if err := jsonutil.Unmarshal(bidderExt.Bidder, &smilewantedExt); err == nil {
+				zoneId = smilewantedExt.ZoneId
+			}
+		}
+	}
+
+	// Build the endpoint URL with zoneId
+	endpoint := a.URI
+	if zoneId != "" {
+		endpoint = a.URI + zoneId
+	}
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
 
@@ -35,10 +57,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     a.URI,
+		Uri:     endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}}, []error{}
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+	}}, errs
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -60,14 +83,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Bad server response: %s.", err),
 		}}
 	}
 
 	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+	if err := jsonutil.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 

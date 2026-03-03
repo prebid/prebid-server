@@ -1,0 +1,2 @@
+endpoint: "https://b.finative.cloud/cds/rtb/bid?ssp={{.AccountID}}"
+aliasOf: "seedingAlliance"

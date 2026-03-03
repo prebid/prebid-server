@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "DriftPixel Adapter Params",
+    "description": "A schema which validates params accepted by the DriftPixel adapter",
+    "type": "object",
+    "properties": {
+      "env": {
+        "type": "string",
+        "description": "DriftPixel environment",
+        "minLength": 1
+      },
+      "pid": {
+        "type": "string",
+        "description": "Unique placement ID",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "pid"
+    ]
+  }

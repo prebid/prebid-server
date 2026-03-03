@@ -1,0 +1,312 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "banner-imp-1",
+        "banner": {},
+        "ext": {
+          "bidder": {
+            "unit": "111",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "video-imp-1",
+        "video": {"mimes": ["video/mp4"]},
+        "ext": {
+          "bidder": {
+            "unit": "333",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "native-imp-1",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "unit": "666",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "banner-native-imp-1",
+        "banner": {},
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "unit": "777",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "video-native-imp-1",
+        "video": {"mimes": ["video/mp4"]},
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "unit": "888",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "multi-type-imp",
+        "banner": {},
+        "video": {"mimes": ["video/mp4"]},
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "unit": "555",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "banner-imp-1",
+              "banner": {},
+              "tagid": "111"
+            },
+            {
+              "id": "native-imp-1",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+                "ver": "1.2"
+              },
+              "tagid": "666"
+            },
+            {
+              "id": "banner-native-imp-1",
+              "banner": {},
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+                "ver": "1.2"
+              },
+              "tagid": "777"
+            },
+            {
+              "id": "multi-type-imp",
+              "banner": {},
+              "video": {"mimes": ["video/mp4"]},
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+                "ver": "1.2"
+              },
+              "tagid": "555"
+            }
+          ],
+          "ext": {
+            "bc": "hb_pbs_1.0.0",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        },
+        "impIDs":["banner-imp-1","native-imp-1","banner-native-imp-1","multi-type-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "openx",
+              "bid": [
+                {
+                  "id": "banner-bid-1",
+                  "impid": "banner-imp-1",
+                  "price": 0.1
+                },
+                {
+                  "id": "native-bid-1",
+                  "impid": "native-imp-1",
+                  "price": 0.1
+                },
+                {
+                  "id": "banner-native-bid-1",
+                  "impid": "banner-native-imp-1",
+                  "price": 0
+                },
+                {
+                  "id": "multi-type-bid",
+                  "impid": "multi-type-imp",
+                  "price": 0
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "video-imp-1",
+              "video": {"mimes": ["video/mp4"]},
+              "tagid": "333"
+            }
+          ],
+          "ext": {
+            "bc": "hb_pbs_1.0.0",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        },
+        "impIDs":["video-imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "openx",
+              "bid": [
+                {
+                  "id": "video-bid-1",
+                  "impid": "video-imp-1",
+                  "price": 0.1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "video-native-imp-1",
+              "video": {"mimes": ["video/mp4"]},
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}",
+                "ver": "1.2"
+              },
+              "tagid": "888"
+            }
+          ],
+          "ext": {
+            "bc": "hb_pbs_1.0.0",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        },
+        "impIDs":["video-native-imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "openx",
+              "bid": [
+                {
+                  "id": "video-native-bid-1",
+                  "impid": "video-native-imp-1",
+                  "price": 0.0
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "banner-bid-1",
+            "impid": "banner-imp-1",
+            "price": 0.1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "native-bid-1",
+            "impid": "native-imp-1",
+            "price": 0.1
+          },
+          "type": "native"
+        },
+        {
+          "bid": {
+            "id": "banner-native-bid-1",
+            "impid": "banner-native-imp-1",
+            "price": 0
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "multi-type-bid",
+            "impid": "multi-type-imp",
+            "price": 0
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-1",
+            "impid": "video-imp-1",
+            "price": 0.1
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-native-bid-1",
+            "impid": "video-native-imp-1",
+            "price": 0.0
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

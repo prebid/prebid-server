@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-with-wrong-DSA-type",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adslotId": "12345",
+            "supplyId": "123456789",
+            "targeting": {
+              "key1": "value1",
+              "key2": "value2"
+            },
+            "extId": "abc"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ifa": "hello-ads",
+      "devicetype": 4,
+      "connectiontype": 6,
+      "geo": {
+        "lat": 51.499488,
+        "lon": -0.128953
+      },
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36",
+      "ip": "169.254.13.37",
+      "h": 1098,
+      "w": 814
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1,
+        "DSA": ""
+      }
+    },
+    "site": {
+      "id": "fake-site-id",
+      "publisher": {
+        "id": "1"
+      },
+      "page": "http://localhost:9090/gdpr.html"
+    },
+    "user": {
+      "buyeruid": "34a53e82-0dc3-4815-8b7e-b725ede0361c",
+      "ext": {
+        "consent": "BOlOrv1OlOr2EAAABADECg-AAAApp7v______9______9uz_Ov_v_f__33e8__9v_l_7_-___u_-3zd4u_1vf99yfm1-7etr3tp_87ues2_Xur__79__3z3_9phP78k89r7337Ew-v02"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "failed to parse Regs.Ext object from Yieldlab response: cannot unmarshal yieldlab.openRTBExtRegsWithDSA.DSA: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
+}

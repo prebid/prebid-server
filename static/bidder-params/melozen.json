@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "MeloZen Adapter Params",
+  "description": "A schema which validates params accepted by the MeloZen adapter",
+  "type": "object",
+  "properties": {
+    "pubId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The unique identifier for the publisher."
+    }
+  },
+  "required": ["pubId"]
+}

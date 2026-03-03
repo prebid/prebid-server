@@ -85,7 +85,8 @@
                         }
                     }
                 }]
-            }
+            },
+            "impIDs":["banner-1","video-1"]
         },
         "mockResponse": {
             "status": 200,

@@ -1,0 +1,133 @@
+{
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [{
+                "id": "my-imp-id",
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ]
+                },
+                "ext": {
+                    "prebid": {
+                        "bidder": {
+                            "appnexus": {
+                                "placementId": 1
+                            }
+                        }
+                    }
+                }
+            }],
+            "regs": {
+                "ext": {
+                    "dsa": {
+                        "dsarequired": 1,
+                        "pubrender": 0,
+                        "datatopub": 2,
+                        "transparency": [{
+                                "domain": "platform1domain.com",
+                                "dsaparams": [1]
+                            },
+                            {
+                                "domain": "SSP2domain.com",
+                                "dsaparams": [1, 2]
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "imp": [{
+                        "id": "my-imp-id",
+                        "video": {
+                            "mimes": [
+                                "video/mp4"
+                            ]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "placementId": 1
+                            }
+                        }
+                    }],
+                    "regs": {
+                        "ext": {
+                            "dsa": {
+                                "dsarequired": 1,
+                                "pubrender": 0,
+                                "datatopub": 2,
+                                "transparency": [{
+                                        "domain": "platform1domain.com",
+                                        "dsaparams": [1]
+                                    },
+                                    {
+                                        "domain": "SSP2domain.com",
+                                        "dsaparams": [1, 2]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "mockResponse": {
+                "pbsSeatBids": [{
+                    "pbsBids": [{
+                        "ortbBid": {
+                            "id": "apn-bid",
+                            "impid": "my-imp-id",
+                            "price": 0.3,
+                            "w": 200,
+                            "h": 250,
+                            "crid": "creative-1",
+                            "ext": {
+                                "someField": "someValue",
+                                "origbidcpm": 0.3
+                            }
+                        },
+                        "bidType": "video"
+                    }],
+                    "seat": "appnexus"
+                }]
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "some-request-id",
+            "seatbid": [{
+                "seat": "appnexus",
+                "bid": [{
+                    "id": "apn-bid",
+                    "impid": "my-imp-id",
+                    "price": 0.3,
+                    "w": 200,
+                    "h": 250,
+                    "crid": "creative-1",
+                    "ext": {
+                        "someField": "someValue",
+                        "origbidcpm": 0.3,
+                        "prebid": {
+                            "meta": {
+                            },
+                            "type": "video"
+                        }
+                    }
+                }]
+            }]
+        }
+    }
+}

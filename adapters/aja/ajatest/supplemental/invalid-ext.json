@@ -24,7 +24,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to unmarshal ext impID: test-imp-id err: json: cannot unmarshal number into Go value of type adapters.ExtImpBidder",
+      "value": "Failed to unmarshal ext impID: test-imp-id err: expect { or n, but found 1",
       "comparison": "literal"
     }
 

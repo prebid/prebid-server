@@ -117,7 +117,8 @@
             "page": "http://example.com/page-1",
             "ref": "http://referer.com/page-2"
           }
-        }
+        },
+        "impIDs":["test-imp-id-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -204,7 +205,8 @@
             "page": "http://example.com/page-1",
             "ref": "http://referer.com/page-2"
           }
-        }
+        },
+        "impIDs":["test-imp-id-2"]
       },
       "mockResponse": {
         "status": 200,

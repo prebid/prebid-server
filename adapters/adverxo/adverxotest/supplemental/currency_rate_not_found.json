@@ -1,0 +1,44 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "bidfloor": 1.00,
+        "bidfloorcur": "JPY",
+        "ext":{
+          "bidder": {
+            "adUnitId": 18,
+            "auth": "fb71a1ec1d4c0b7e3f0a21703fece91d8b65be44"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "MXN": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'JPY' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}

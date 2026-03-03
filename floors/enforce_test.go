@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/exchange/entities"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -765,7 +765,7 @@ func TestUpdateBidExtWithFloors(t *testing.T) {
 		{
 			name: "Valid prebid extension in imp.ext",
 			args: args{
-				reqImp: &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: []byte(`{"prebid":{"floors":{"floorrule":"test|123|xyz","floorrulevalue":5.5,"floorvalue":5.5}}}`)}},
+				reqImp: &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](300), H: ptrutil.ToPtr[int64](250)}, Ext: []byte(`{"prebid":{"floors":{"floorrule":"test|123|xyz","floorrulevalue":5.5,"floorvalue":5.5}}}`)}},
 				bid: &entities.PbsOrtbBid{
 					Bid: &openrtb2.Bid{
 						Price: 10.10,

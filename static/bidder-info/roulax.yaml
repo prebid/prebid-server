@@ -1,0 +1,14 @@
+endpoint: "http://dsp.rcoreads.com/api/{{.PublisherID}}?pid={{.AccountID}}"
+maintainer:
+  email: "bussiness@roulax.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

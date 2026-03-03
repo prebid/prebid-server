@@ -7,12 +7,13 @@ import (
 	"net/url"
 	"text/template"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type adapter struct {
@@ -80,6 +81,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     endPoint,
 		Body:    reqBody,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}, nil
 }
 
@@ -87,11 +89,11 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 func getImpAlgoriXExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAlgorix, error) {
 	var extImpAlgoriX openrtb_ext.ExtImpAlgorix
 	var extBidder adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &extBidder)
+	err := jsonutil.Unmarshal(imp.Ext, &extBidder)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(extBidder.Bidder, &extImpAlgoriX)
+	err = jsonutil.Unmarshal(extBidder.Bidder, &extImpAlgoriX)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +135,7 @@ func preProcess(request *openrtb2.BidRequest) {
 		}
 		if request.Imp[i].Video != nil {
 			var impExt adapters.ExtImpBidder
-			err := json.Unmarshal(request.Imp[i].Ext, &impExt)
+			err := jsonutil.Unmarshal(request.Imp[i].Ext, &impExt)
 			if err != nil {
 				continue
 			}
@@ -141,6 +143,9 @@ func preProcess(request *openrtb2.BidRequest) {
 				videoCopy := *request.Imp[i].Video
 				videoExt := algorixVideoExt{Rewarded: 1}
 				videoCopy.Ext, err = json.Marshal(&videoExt)
+				if err != nil {
+					continue
+				}
 				request.Imp[i].Video = &videoCopy
 			}
 		}
@@ -165,7 +170,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -191,7 +196,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	var bidExt algorixResponseBidExt
-	err := json.Unmarshal(bid.Ext, &bidExt)
+	err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 	if err == nil {
 		switch bidExt.MediaType {
 		case "banner":

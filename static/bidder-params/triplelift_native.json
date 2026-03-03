@@ -7,6 +7,7 @@
   "properties": {
     "inventoryCode": {
       "type": "string",
+      "minLength": 1,
       "description": "TripleLift inventory code for this ad unit (provided to you by your partner manager)"
     },
     "floor" :  {"description" : "the bid floor, in usd", "type": "number" }

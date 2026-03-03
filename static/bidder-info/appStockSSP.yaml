@@ -1,0 +1,25 @@
+disabled: true
+# We have the following regional endpoint domains:  'lb' - for US_EAST, 'ortb-eu' - for EU, 'ortb-apac' - for APAC
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+aliasOf: "teqblaze"
+endpoint: "https://#{REGION}#.al-ad.com/pserver"
+maintainer:
+  email: "sdksupport@app-stock.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://csync.al-ad.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://csync.al-ad.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"

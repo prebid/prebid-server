@@ -19,3 +19,6 @@ userSync:
   redirect:
     url: "https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl={{.RedirectURL}}"
     userMacro: "%%VGUID%%"
+openrtb:
+  version: 2.6
+  gpp-supported: true

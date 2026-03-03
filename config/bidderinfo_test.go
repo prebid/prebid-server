@@ -7,7 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,6 +47,7 @@ endpointCompression: GZIP
 openrtb:
   version: 2.6
   gpp-supported: true
+  multiformat-supported: false
 endpoint: https://endpoint.com
 disabled: false
 extra_info: extra-info
@@ -71,7 +73,6 @@ aliasOf: bidderA
 func TestLoadBidderInfoFromDisk(t *testing.T) {
 	// should appear in result in mixed case
 	bidder := "stroeerCore"
-	trueValue := true
 
 	adapterConfigs := make(map[string]Adapter)
 	adapterConfigs[strings.ToLower(bidder)] = Adapter{}
@@ -113,7 +114,6 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 					ExternalURL: "https://redirect.host",
 					UserMacro:   "#UID",
 				},
-				SupportCORS: &trueValue,
 			},
 		},
 	}
@@ -121,12 +121,15 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 }
 
 func TestProcessBidderInfo(t *testing.T) {
+	falseValue := false
+
 	testCases := []struct {
 		description         string
 		bidderInfos         map[string][]byte
 		expectedBidderInfos BidderInfos
 		expectError         string
 	}{
+
 		{
 			description: "Valid bidder info",
 			bidderInfos: map[string][]byte{
@@ -204,8 +207,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -255,8 +259,9 @@ func TestProcessBidderInfo(t *testing.T) {
 					},
 					ModifyingVastXmlAllowed: true,
 					OpenRTB: &OpenRTBInfo{
-						GPPSupported: true,
-						Version:      "2.6",
+						GPPSupported:         true,
+						Version:              "2.6",
+						MultiformatSupported: &falseValue,
 					},
 					PlatformID: "123",
 					Syncer: &Syncer{
@@ -284,6 +289,9 @@ func TestProcessBidderInfo(t *testing.T) {
 }
 
 func TestProcessAliasBidderInfo(t *testing.T) {
+
+	trueValue := true
+
 	parentWithSyncerKey := BidderInfo{
 		AppSecret: "app-secret",
 		Capabilities: &CapabilitiesInfo{
@@ -312,8 +320,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: true,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: true,
-			Version:      "2.6",
+			GPPSupported:         true,
+			Version:              "2.6",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "123",
 		Syncer: &Syncer{
@@ -359,8 +368,9 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		},
 		ModifyingVastXmlAllowed: false,
 		OpenRTB: &OpenRTBInfo{
-			GPPSupported: false,
-			Version:      "2.5",
+			GPPSupported:         false,
+			Version:              "2.5",
+			MultiformatSupported: &trueValue,
 		},
 		PlatformID: "456",
 		Syncer: &Syncer{
@@ -401,6 +411,15 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 		Key: "bidderA",
 	}
 
+	parentWithSyncerSupports := parentWithoutSyncerKey
+	parentWithSyncerSupports.Syncer = &Syncer{
+		Supports: []string{"iframe"},
+	}
+
+	aliasWithoutSyncer := parentWithoutSyncerKey
+	aliasWithoutSyncer.AliasOf = "bidderA"
+	aliasWithoutSyncer.Syncer = nil
+
 	testCases := []struct {
 		description         string
 		aliasInfos          map[string]aliasNillableFields
@@ -427,6 +446,26 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 			},
 			expectedErr:         nil,
 			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerKey, "bidderB": bidderB},
+		},
+		{
+			description: "inherit all parent info in alias bidder, except for syncer is parent only defines supports",
+			aliasInfos: map[string]aliasNillableFields{
+				"bidderB": {
+					Disabled:                nil,
+					ModifyingVastXmlAllowed: nil,
+					Experiment:              nil,
+					XAPI:                    nil,
+				},
+			},
+			bidderInfos: BidderInfos{
+				"bidderA": parentWithSyncerSupports,
+				"bidderB": BidderInfo{
+					AliasOf: "bidderA",
+					// all other fields should be inherited from parent bidder, except for syncer
+				},
+			},
+			expectedErr:         nil,
+			expectedBidderInfos: BidderInfos{"bidderA": parentWithSyncerSupports, "bidderB": aliasWithoutSyncer},
 		},
 		{
 			description: "inherit all parent info in alias bidder, use parent name as syncer alias key",
@@ -475,7 +514,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					AliasOf: "bidderA",
 				},
 			},
-			expectedErr: errors.New("bidder: bidderA not found for an alias: bidderB"),
+			expectedErr: errors.New("alias 'bidderB' references a nonexistent bidder 'bidderA'"),
 		},
 		{
 			description: "bidder info not found for an alias",
@@ -593,6 +632,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 					URL:       "http://bidderB.com/usersync",
 					UserMacro: "UID",
 				},
+				FormatOverride: SyncResponseFormatRedirect,
 			},
 		},
 		"bidderC": BidderInfo{
@@ -627,6 +667,9 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 					},
 				},
 			},
+			Syncer: &Syncer{
+				FormatOverride: SyncResponseFormatIFrame,
+			},
 		},
 	}
 	errs := bidderInfos.validate(make([]error, 0))
@@ -634,54 +677,53 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 }
 
 func TestValidateAliases(t *testing.T) {
-	testCase := struct {
-		description  string
-		bidderInfos  BidderInfos
-		expectErrors []error
+	testCases := []struct {
+		name        string
+		bidderName  string
+		bidderInfo  BidderInfo
+		bidderInfos BidderInfos
+		expectedErr error
 	}{
-		description: "invalid aliases",
-		bidderInfos: BidderInfos{
-			"bidderA": BidderInfo{
-				Endpoint: "http://bidderA.com/openrtb2",
-				Maintainer: &MaintainerInfo{
-					Email: "maintainer@bidderA.com",
-				},
-				Capabilities: &CapabilitiesInfo{
-					Site: &PlatformInfo{
-						MediaTypes: []openrtb_ext.BidType{
-							openrtb_ext.BidTypeVideo,
-						},
-					},
-				},
-				AliasOf: "bidderB",
-			},
-			"bidderB": BidderInfo{
-				Endpoint: "http://bidderA.com/openrtb2",
-				Maintainer: &MaintainerInfo{
-					Email: "maintainer@bidderA.com",
-				},
-				Capabilities: &CapabilitiesInfo{
-					Site: &PlatformInfo{
-						MediaTypes: []openrtb_ext.BidType{
-							openrtb_ext.BidTypeVideo,
-						},
-					},
-				},
-				AliasOf: "bidderC",
-			},
+		{
+			name:        "not-alias",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{},
+			bidderInfos: BidderInfos{},
+			expectedErr: nil,
 		},
-		expectErrors: []error{
-			errors.New("bidder: bidderB cannot be an alias of an alias: bidderA"),
-			errors.New("bidder: bidderC not found for an alias: bidderB"),
+		{
+			name:        "alias-not-found",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "nonexistent"},
+			bidderInfos: BidderInfos{},
+			expectedErr: errors.New("alias 'b' references a nonexistent bidder 'nonexistent'"),
+		},
+		{
+			name:        "alias-of-alias",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "a"},
+			bidderInfos: BidderInfos{"a": BidderInfo{AliasOf: "foo"}},
+			expectedErr: errors.New("alias 'b' cannot reference another alias 'a'"),
+		},
+		{
+			name:        "whitelabelonly",
+			bidderName:  "b",
+			bidderInfo:  BidderInfo{AliasOf: "a", WhiteLabelOnly: true},
+			bidderInfos: BidderInfos{"a": BidderInfo{}},
+			expectedErr: errors.New("bidder 'b' is an alias and cannot be set as white label only"),
 		},
 	}
 
-	var errs []error
-	for bidderName, bidderInfo := range testCase.bidderInfos {
-		errs = append(errs, validateAliases(bidderInfo, testCase.bidderInfos, bidderName))
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := validateAliases(test.bidderInfo, test.bidderInfos, test.bidderName)
+			if test.expectedErr == nil {
+				assert.NoError(t, result)
+			} else {
+				assert.EqualError(t, result, test.expectedErr.Error())
+			}
+		})
 	}
-
-	assert.ElementsMatch(t, errs, testCase.expectErrors)
 }
 
 func TestBidderInfoValidationNegative(t *testing.T) {
@@ -1318,6 +1360,37 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 				errors.New("parent bidder: bidderC not found for an alias: bidderB"),
 			},
 		},
+		{
+			"Invalid format override value",
+			BidderInfos{
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeBanner,
+								openrtb_ext.BidTypeNative,
+							},
+						},
+					},
+					Syncer: &Syncer{
+						FormatOverride: "x",
+					},
+				},
+			},
+			[]error{
+				errors.New("syncer could not be created, invalid format override value: x"),
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1327,11 +1400,6 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 }
 
 func TestSyncerOverride(t *testing.T) {
-	var (
-		trueValue  = true
-		falseValue = false
-	)
-
 	testCases := []struct {
 		description   string
 		givenOriginal *Syncer
@@ -1391,12 +1459,6 @@ func TestSyncerOverride(t *testing.T) {
 			givenOriginal: &Syncer{ExternalURL: "original"},
 			givenOverride: &Syncer{ExternalURL: "override"},
 			expected:      &Syncer{ExternalURL: "override"},
-		},
-		{
-			description:   "Override SupportCORS",
-			givenOriginal: &Syncer{SupportCORS: &trueValue},
-			givenOverride: &Syncer{SupportCORS: &falseValue},
-			expected:      &Syncer{SupportCORS: &falseValue},
 		},
 		{
 			description:   "Override Partial - Other Fields Untouched",
@@ -1484,6 +1546,533 @@ func TestSyncerEndpointOverride(t *testing.T) {
 	for _, test := range testCases {
 		result := test.givenOverride.Override(test.givenOriginal)
 		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
+func TestBidderInfoIsEnabled(t *testing.T) {
+	testCases := []struct {
+		name     string
+		bidder   BidderInfo
+		expected bool
+	}{
+		{
+			name:     "enabled",
+			bidder:   BidderInfo{Disabled: false},
+			expected: true,
+		},
+		{
+			name:     "enabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: false, WhiteLabelOnly: true},
+			expected: false,
+		},
+		{
+			name:     "disabled",
+			bidder:   BidderInfo{Disabled: true},
+			expected: false,
+		},
+		{
+			name:     "disabled-whitelabelonly",
+			bidder:   BidderInfo{Disabled: true, WhiteLabelOnly: true},
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.bidder.IsEnabled()
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestSyncerEqual(t *testing.T) {
+	testCases := []struct {
+		name     string
+		syncer1  *Syncer
+		syncer2  *Syncer
+		expected bool
+	}{
+		{
+			name:     "nil",
+			syncer1:  nil,
+			syncer2:  nil,
+			expected: true,
+		},
+		{
+			name:     "nil-syncer1",
+			syncer1:  nil,
+			syncer2:  &Syncer{Key: "anyKey"},
+			expected: false,
+		},
+		{
+			name:     "nil-syncer2",
+			syncer1:  &Syncer{Key: "anyKey"},
+			syncer2:  nil,
+			expected: false,
+		},
+		{
+			name: "different-key",
+			syncer1: &Syncer{
+				Key:         "key1",
+				ExternalURL: "https://example.com",
+			},
+			syncer2: &Syncer{
+				Key:         "key2",
+				ExternalURL: "https://example.com",
+			},
+			expected: false,
+		},
+		{
+			name: "different-external-url",
+			syncer1: &Syncer{
+				Key:         "key",
+				ExternalURL: "https://example1.com",
+			},
+			syncer2: &Syncer{
+				Key:         "key",
+				ExternalURL: "https://example2.com",
+			},
+			expected: false,
+		},
+		{
+			name: "same-supports-nil-vs-empty",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: nil,
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{},
+			},
+			expected: true,
+		},
+		{
+			name: "different-supports-ordered",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: []string{"iframe"},
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{"redirect"},
+			},
+			expected: false,
+		},
+		{
+			name: "different-supports-unordered",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: []string{"iframe", "redirect"},
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{"redirect", "iframe"},
+			},
+			expected: true,
+		},
+		{
+			name: "different-iframe-endpoints",
+			syncer1: &Syncer{
+				Key: "key",
+				IFrame: &SyncerEndpoint{
+					URL: "https://iframe1.com",
+				},
+			},
+			syncer2: &Syncer{
+				Key: "key",
+				IFrame: &SyncerEndpoint{
+					URL: "https://iframe2.com",
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "different-redirect-endpoints",
+			syncer1: &Syncer{
+				Key: "key",
+				Redirect: &SyncerEndpoint{
+					URL: "https://redirect1.com",
+				},
+			},
+			syncer2: &Syncer{
+				Key: "key",
+				Redirect: &SyncerEndpoint{
+					URL: "https://redirect2.com",
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "different-format-override",
+			syncer1: &Syncer{
+				Key:            "key",
+				FormatOverride: "i",
+			},
+			syncer2: &Syncer{
+				Key:            "key",
+				FormatOverride: "b",
+			},
+			expected: false,
+		},
+		{
+			name: "different-enabled",
+			syncer1: &Syncer{
+				Key:     "key",
+				Enabled: ptrutil.ToPtr(true),
+			},
+			syncer2: &Syncer{
+				Key:     "key",
+				Enabled: ptrutil.ToPtr(false),
+			},
+			expected: false,
+		},
+		{
+			name: "different-skip-when",
+			syncer1: &Syncer{
+				Key: "key",
+				SkipWhen: &SkipWhen{
+					GDPR: true,
+				},
+			},
+			syncer2: &Syncer{
+				Key: "key",
+				SkipWhen: &SkipWhen{
+					GDPR: false,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "same-complete",
+			syncer1: &Syncer{
+				Key:      "key",
+				Supports: []string{"iframe", "redirect"},
+				IFrame: &SyncerEndpoint{
+					URL:         "https://iframe.com",
+					RedirectURL: "https://redirect.com",
+					UserMacro:   "$UID",
+				},
+				Redirect: &SyncerEndpoint{
+					URL:       "https://redirect.com",
+					UserMacro: "$UID",
+				},
+				ExternalURL:    "https://external.com",
+				FormatOverride: "i",
+				Enabled:        ptrutil.ToPtr(true),
+				SkipWhen: &SkipWhen{
+					GDPR:   true,
+					GPPSID: []string{"1", "2"},
+				},
+			},
+			syncer2: &Syncer{
+				Key:      "key",
+				Supports: []string{"redirect", "iframe"},
+				IFrame: &SyncerEndpoint{
+					URL:         "https://iframe.com",
+					RedirectURL: "https://redirect.com",
+					UserMacro:   "$UID",
+				},
+				Redirect: &SyncerEndpoint{
+					URL:       "https://redirect.com",
+					UserMacro: "$UID",
+				},
+				ExternalURL:    "https://external.com",
+				FormatOverride: "i",
+				Enabled:        ptrutil.ToPtr(true),
+				SkipWhen: &SkipWhen{
+					GDPR:   true,
+					GPPSID: []string{"2", "1"},
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.syncer1.Equal(test.syncer2)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestSkipWhenEqual(t *testing.T) {
+	testCases := []struct {
+		name      string
+		skipWhen1 *SkipWhen
+		skipWhen2 *SkipWhen
+		expected  bool
+	}{
+		{
+			name:      "nil",
+			skipWhen1: nil,
+			skipWhen2: nil,
+			expected:  true,
+		},
+		{
+			name:      "nil-skipWhen1",
+			skipWhen1: nil,
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"1"}},
+			expected:  false,
+		},
+		{
+			name:      "nil-skipWhen2",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1"}},
+			skipWhen2: nil,
+			expected:  false,
+		},
+		{
+			name:      "empty",
+			skipWhen1: &SkipWhen{GDPR: false, GPPSID: []string{}},
+			skipWhen2: &SkipWhen{GDPR: false, GPPSID: []string{}},
+			expected:  true,
+		},
+		{
+			name:      "same",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			expected:  true,
+		},
+		{
+			name:      "different-gdpr",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: false, GPPSID: []string{"1", "2"}},
+			expected:  false,
+		},
+		{
+			name:      "different-gppsid",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"1", "3"}},
+			expected:  false,
+		},
+		{
+			name:      "same-gppsid-unordered",
+			skipWhen1: &SkipWhen{GDPR: true, GPPSID: []string{"1", "2"}},
+			skipWhen2: &SkipWhen{GDPR: true, GPPSID: []string{"2", "1"}},
+			expected:  true,
+		},
+		{
+			name:      "nil-vs-empty-slice",
+			skipWhen1: &SkipWhen{GDPR: false, GPPSID: nil},
+			skipWhen2: &SkipWhen{GDPR: false, GPPSID: []string{}},
+			expected:  true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.skipWhen1.Equal(test.skipWhen2)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestSyncerEndpointEqual(t *testing.T) {
+	testCases := []struct {
+		name      string
+		endpoint1 *SyncerEndpoint
+		endpoint2 *SyncerEndpoint
+		expected  bool
+	}{
+		{
+			name:      "nil",
+			endpoint1: nil,
+			endpoint2: nil,
+			expected:  true,
+		},
+		{
+			name:      "nil-endpoint1",
+			endpoint1: nil,
+			endpoint2: &SyncerEndpoint{URL: "https://example.com"},
+			expected:  false,
+		},
+		{
+			name:      "nil-endpoint2",
+			endpoint1: &SyncerEndpoint{URL: "https://example.com"},
+			endpoint2: nil,
+			expected:  false,
+		},
+		{
+			name: "empty",
+			endpoint1: &SyncerEndpoint{
+				URL:         "",
+				RedirectURL: "",
+				ExternalURL: "",
+				UserMacro:   "",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "",
+				RedirectURL: "",
+				ExternalURL: "",
+				UserMacro:   "",
+			},
+			expected: true,
+		},
+		{
+			name: "same",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: true,
+		},
+		{
+			name: "different-url",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync1.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync2.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-redirect-url",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host1.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host2.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-external-url",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host1.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host2.example.com",
+				UserMacro:   "$UID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-user-macro",
+			endpoint1: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$UID",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:         "https://sync.example.com/iframe",
+				RedirectURL: "https://host.example.com/setuid",
+				ExternalURL: "https://host.example.com",
+				UserMacro:   "$USER_ID",
+			},
+			expected: false,
+		},
+		{
+			name: "different-user-macro-case-sensitive",
+			endpoint1: &SyncerEndpoint{
+				URL:       "https://sync.example.com",
+				UserMacro: "$uid",
+			},
+			endpoint2: &SyncerEndpoint{
+				URL:       "https://sync.example.com",
+				UserMacro: "$UID",
+			},
+			expected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.endpoint1.Equal(test.endpoint2)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestSyncerDefined(t *testing.T) {
+	testCases := []struct {
+		name        string
+		givenSyncer *Syncer
+		expected    bool
+	}{
+		{
+			name:        "nil",
+			givenSyncer: nil,
+			expected:    false,
+		},
+		{
+			name:        "empty",
+			givenSyncer: &Syncer{},
+			expected:    false,
+		},
+		{
+			name:        "key-only",
+			givenSyncer: &Syncer{Key: "anyKey"},
+			expected:    true,
+		},
+		{
+			name:        "iframe-only",
+			givenSyncer: &Syncer{IFrame: &SyncerEndpoint{}},
+			expected:    true,
+		},
+		{
+			name:        "redirect-only",
+			givenSyncer: &Syncer{Redirect: &SyncerEndpoint{}},
+			expected:    true,
+		},
+		{
+			name:        "externalurl-only",
+			givenSyncer: &Syncer{ExternalURL: "anyURL"},
+			expected:    true,
+		},
+		{
+			name:        "formatoverride-only",
+			givenSyncer: &Syncer{FormatOverride: "anyFormat"},
+			expected:    true,
+		},
+		{
+			name:        "skipwhen-only",
+			givenSyncer: &Syncer{SkipWhen: &SkipWhen{}},
+			expected:    true,
+		},
+		{
+			name:        "supports-only",
+			givenSyncer: &Syncer{Supports: []string{"anySupports"}},
+			expected:    false,
+		},
+		{
+			name:        "supports-with-other",
+			givenSyncer: &Syncer{Key: "anyKey", Supports: []string{"anySupports"}},
+			expected:    true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.givenSyncer.Defined()
+			assert.Equal(t, test.expected, result)
+		})
 	}
 }
 
@@ -1751,7 +2340,7 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "bidderA"
 	bidderInf := BidderInfo{}
-
+	falseValue := false
 	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
 	require.NoError(t, err)
 
@@ -1798,8 +2387,9 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			},
 			EndpointCompression: "GZIP",
 			OpenRTB: &OpenRTBInfo{
-				GPPSupported: true,
-				Version:      "2.6",
+				GPPSupported:         true,
+				Version:              "2.6",
+				MultiformatSupported: &falseValue,
 			},
 			Disabled:         false,
 			ExtraAdapterInfo: "extra-info",
@@ -1824,4 +2414,98 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 		},
 	}
 	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")
+}
+
+func TestValidateGeoscope(t *testing.T) {
+	testCases := []struct {
+		name       string
+		geoscope   []string
+		bidderName string
+		expectErr  bool
+		errMsg     string
+	}{
+		{
+			name:       "nil",
+			geoscope:   nil,
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "empty",
+			geoscope:   []string{},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-iso-code",
+			geoscope:   []string{"USA"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-with-global-and-eea",
+			geoscope:   []string{"USA", "GLOBAL", "EEA"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "valid-with-exclusion",
+			geoscope:   []string{"!USA"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "mixed-case-valid",
+			geoscope:   []string{"UsA", "can", "GbR"},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+		{
+			name:       "invalid-length",
+			geoscope:   []string{"USAA"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: USAA for adapter: testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "invalid-exclusion-length",
+			geoscope:   []string{"!USAA"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: USAA for adapter: !testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "non-letter-characters",
+			geoscope:   []string{"US1"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: US1 for adapter: testBidder - must contain only uppercase letters A-Z",
+		},
+		{
+			name:       "too-short-code",
+			geoscope:   []string{"US"},
+			bidderName: "testBidder",
+			expectErr:  true,
+			errMsg:     "invalid geoscope entry at index 0: US for adapter: testBidder - must be a 3-letter ISO 3166-1 alpha-3 country code",
+		},
+		{
+			name:       "whitespace-and-trimming",
+			geoscope:   []string{" USA "},
+			bidderName: "testBidder",
+			expectErr:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateGeoscope(tc.geoscope, tc.bidderName)
+
+			if tc.expectErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

@@ -18,8 +18,8 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Missing bidder ext: unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "Missing bidder ext: expect { or n, but found",
+      "comparison": "startswith"
     } 
   ]
 

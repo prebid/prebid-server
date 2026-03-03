@@ -1,6 +1,7 @@
 endpoint: "http://pbs.lijit.com/rtb/bid?src=prebid_server"
 maintainer:
   email: "sovrnoss@sovrn.com"
+endpointCompression: gzip
 gvlVendorID: 13
 modifyingVastXmlAllowed: true
 capabilities:

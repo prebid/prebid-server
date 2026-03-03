@@ -1,0 +1,65 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "FeedAd Adapter Params",
+    "description": "A schema which validates params accepted by the FeedAd adapter",
+    "properties": {
+        "clientToken": {
+            "description": "Your FeedAd client token. Check your FeedAd admin panel.",
+            "minLength": 1,
+            "type": "string"
+        },
+        "decoration": {
+            "description": "A decoration to apply to the ad slot. See our documentation at https://docs.feedad.com/web/feed_ad/#decorations",
+            "type": "string"
+        },
+        "placementId": {
+            "description": "A FeedAd placement ID of your choice",
+            "minLength": 1,
+            "pattern": "^(([a-z0-9])+[-_]?)+$",
+            "type": "string"
+        },
+        "sdkOptions": {
+            "description": "Optional: Only required if you are using Prebid.JS in an app environment (aka hybrid app). See our documentation at https://docs.feedad.com/web/configuration/#hybrid-app-config-parameters",
+            "properties": {
+                "advertising_id": {
+                    "type": "string",
+                    "description": "Optional: The advertising id of the device or user (e.g. Apple IDFA, Google Advertising Client Id). We highly recommend setting this parameter to maximize your fill rate."
+                },
+                "app_name": {
+                    "type": "string",
+                    "description": "The name of your app. This name will identify your app within the FeedAd admin dashboard."
+                },
+                "bundle_id": {
+                    "type": "string",
+                    "description": "The unique package name or bundle id of your app."
+                },
+                "hybrid_app": {
+                    "type": "boolean",
+                    "description": "Boolean indicating that the SDK is loaded within a hybrid app."
+                },
+                "hybrid_platform": {
+                    "description": "String identifying the device platform.",
+                    "enum": [
+                        "",
+                        "android",
+                        "ios",
+                        "windows"
+                    ]
+                },
+                "limit_ad_tracking": {
+                    "type": "boolean",
+                    "description": "Whether the app's user has limited ad tracking enabled."
+                }
+            },
+            "type": [
+                "object",
+                "null"
+            ]
+        }
+    },
+    "required": [
+        "clientToken",
+        "placementId"
+    ],
+    "type": "object"
+}

@@ -1,9 +1,10 @@
 package openrtb_ext
 
 import (
-	"github.com/prebid/prebid-server/v2/util/maputil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
-	"github.com/prebid/prebid-server/v2/util/sliceutil"
+	"maps"
+	"slices"
+
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 // Defines strings for FetchStatus
@@ -84,10 +85,11 @@ type PriceFloorEndpoint struct {
 type PriceFloorData struct {
 	Currency            string                 `json:"currency,omitempty"`
 	SkipRate            int                    `json:"skiprate,omitempty"`
-	FloorsSchemaVersion string                 `json:"floorsschemaversion,omitempty"`
+	FloorsSchemaVersion int                    `json:"floorsschemaversion,omitempty"`
 	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
 	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
 	FloorProvider       string                 `json:"floorprovider,omitempty"`
+	UseFetchDataRate    *int                   `json:"usefetchdatarate,omitempty"`
 }
 
 type PriceFloorModelGroup struct {
@@ -181,10 +183,10 @@ func (data *PriceFloorData) DeepCopy() *PriceFloorData {
 		eachGroup.ModelWeight = ptrutil.Clone(data.ModelGroups[i].ModelWeight)
 		eachGroup.ModelVersion = data.ModelGroups[i].ModelVersion
 		eachGroup.SkipRate = data.ModelGroups[i].SkipRate
-		eachGroup.Values = maputil.Clone(data.ModelGroups[i].Values)
+		eachGroup.Values = maps.Clone(data.ModelGroups[i].Values)
 		eachGroup.Default = data.ModelGroups[i].Default
 		eachGroup.Schema = PriceFloorSchema{
-			Fields:    sliceutil.Clone(data.ModelGroups[i].Schema.Fields),
+			Fields:    slices.Clone(data.ModelGroups[i].Schema.Fields),
 			Delimiter: data.ModelGroups[i].Schema.Delimiter,
 		}
 		newModelGroups[i] = eachGroup

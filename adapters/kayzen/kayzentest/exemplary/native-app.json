@@ -84,7 +84,8 @@
               "buyeruid": "0000-000-000-0000"
             },
             "tmax": 1000
-          }
+          },
+          "impIDs":["some-impression-id"]
         },
         "mockResponse": {
           "status": 200,

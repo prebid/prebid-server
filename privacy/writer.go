@@ -1,6 +1,6 @@
 package privacy
 
-import "github.com/prebid/openrtb/v19/openrtb2"
+import "github.com/prebid/openrtb/v20/openrtb2"
 
 // PolicyWriter mutates an OpenRTB bid request with a policy's regulatory information.
 type PolicyWriter interface {

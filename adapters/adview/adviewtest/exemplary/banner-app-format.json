@@ -96,7 +96,8 @@
             "buyeruid": "awesome-user"
           },
           "tmax": 1000
-        }
+        },
+        "impIDs":["some-impression-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -115,7 +116,11 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50
+                  "h": 50,
+                  "mtype": 1,
+                  "ext": {
+                    "formattype": 0
+                  }
                 }
               ],
               "type": "banner",
@@ -148,7 +153,11 @@
             ],
             "crid": "20",
             "w": 320,
-            "h": 50
+            "h": 50,
+            "mtype": 1,
+            "ext": {
+              "formattype": 0
+            }
           },
           "type": "banner"
         }

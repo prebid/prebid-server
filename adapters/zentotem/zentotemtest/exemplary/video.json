@@ -1,0 +1,202 @@
+{
+  "mockBidRequest": {
+    "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
+    "at": 2,
+    "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
+    "cur": [
+      "RUB"
+    ],
+    "tmax": 250,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 360,
+          "linearity": 1,
+          "skip": 1,
+          "sequence": 1,
+          "boxingallowed": 1,
+          "placement": 1
+        },
+        "tagid": "27208-0",
+        "bidfloor": 0.35,
+        "secure": 1
+      }
+    ],
+    "app": {
+      "privacypolicy": 1,
+      "paid": 0,
+      "id": "1757830",
+      "name": "some-app-name",
+      "bundle": "some-app-bundle",
+      "storeurl": "some-store-url",
+      "cat": [
+
+        "IAB1-1"
+      ],
+      "publisher": {
+        "id": "gambling"
+      }
+    },
+    "device": {
+      "dnt": 0,
+      "devicetype": 4,
+      "h": 980,
+      "w": 350,
+      "connectiontype": 2,
+      "ua": "Mozilla/5.0 (Linux; Android 10; YAL-L21 Build/HUAWEIYAL-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.131 Mobile Safari/537.36",
+      "ip": "95.104.196.182",
+      "make": "Huawei",
+      "model": "YAL-L21",
+      "os": "Android",
+      "osv": "10.0",
+      "ifa": "6cecfc3c-de97-4861-ba6c-41a9dc94b391",
+      "geo": {
+        "country": "RUS"
+      }
+    },
+    "user": {
+      "id": "6cecfc3c-de97-4861-ba6c-41a9dc94b391"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/bid?sspuid=prebid",
+        "body": {
+          "id": "058e84c8-3684-4725-be57-6a211fb8abc3",
+          "at": 2,
+          "bcat": [ "IAB8-18", "IAB8-5", "IAB9-9" ],
+          "cur": [
+            "RUB"
+          ],
+          "tmax": 250,
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3
+                ],
+                "w": 640,
+                "h": 360,
+                "linearity": 1,
+                "skip": 1,
+                "sequence": 1,
+                "boxingallowed": 1,
+                "placement": 1
+              },
+              "tagid": "27208-0",
+              "bidfloor": 0.35,
+              "secure": 1
+            }
+          ],
+          "app": {
+            "privacypolicy": 1,
+            "paid": 0,
+            "id": "1757830",
+            "name": "some-app-name",
+            "bundle": "some-app-bundle",
+            "storeurl": "some-store-url",
+            "cat": [
+
+              "IAB1-1"
+            ],
+            "publisher": {
+              "id": "gambling"
+            }
+          },
+          "device": {
+            "dnt": 0,
+            "devicetype": 4,
+            "h": 980,
+            "w": 350,
+            "connectiontype": 2,
+            "ua": "Mozilla/5.0 (Linux; Android 10; YAL-L21 Build/HUAWEIYAL-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.131 Mobile Safari/537.36",
+            "ip": "95.104.196.182",
+            "make": "Huawei",
+            "model": "YAL-L21",
+            "os": "Android",
+            "osv": "10.0",
+            "ifa": "6cecfc3c-de97-4861-ba6c-41a9dc94b391",
+            "geo": {
+              "country": "RUS"
+            }
+          },
+          "user": {
+            "id": "6cecfc3c-de97-4861-ba6c-41a9dc94b391"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "43",
+                  "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
+                  "price": 150,
+                  "nurl": "some-test-nurl",
+                  "burl": "some-test-burl",
+                  "adm": "some-test-adm",
+                  "adid": "43",
+                  "adomain": [
+                    "app.apple.com"
+                  ],
+                  "crid": "43",
+                  "w": 1280,
+                  "h": 720,
+                  "mtype": 2
+                }
+              ],
+              "seat": "boldwin"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "43",
+            "impid": "8f3ac58c-1e03-4264-8619-f79ddb137110",
+            "price": 150,
+            "nurl": "some-test-nurl",
+            "burl": "some-test-burl",
+            "adm": "some-test-adm",
+            "adid": "43",
+            "adomain": [
+              "app.apple.com"
+            ],
+            "crid": "43",
+            "w": 1280,
+            "h": 720,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

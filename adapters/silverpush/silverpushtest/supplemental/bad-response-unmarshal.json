@@ -167,7 +167,8 @@
                     "bc": "sp_pb_ortb_1.0.0",
                     "publisherId": "publisher123"
                 }
-                  }
+                  },
+                  "impIDs":["1"]
                 },
           "mockResponse": {
             "status": 200,
@@ -177,7 +178,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-          "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+          "value": "expect { or n, but found \"",
           "comparison": "literal"
         }
       ]

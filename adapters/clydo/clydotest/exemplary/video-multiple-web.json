@@ -1,0 +1,261 @@
+{
+  "mockBidRequest": {
+    "id": "de825c88-282e-439a-bcf1-3108344f260c",
+    "imp": [{
+        "id": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "placement": 1,
+          "w": 320,
+          "h": 50
+        },
+        "bidfloor": 0.111,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "partnerId": "rh7cnxlpvbjqU5ff",
+            "region": "us"
+          }
+        }
+      },
+      {
+        "id": "1753f913-d9ac-4d2b-93d2-475ff35c6ada",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "placement": 1,
+          "w": 320,
+          "h": 50
+        },
+        "bidfloor": 0.111,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "partnerId": "rh7cnxlpvbjqU5ff",
+            "region": "us"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "site.com",
+      "publisher": {
+        "id": "1122334444"
+      }
+    },
+    "device": {
+      "lmt": 0,
+      "ua": "test-ua",
+      "ip": "111.222.333.444",
+      "h": 2082,
+      "w": 1080,
+      "ifa": "eb6685ef-b9d0-48b9-a1c2-db7894790f93"
+    },
+    "user": {
+      "id": "f102c5fe-3d9e-4d14-89f3-8d55248246c7"
+    },
+    "tmax": 1000,
+    "regs": {
+      "ext": {
+        "coppa": 0,
+        "gdpr": 0,
+        "us_privacy": "1YN-"
+      }
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "headers": {
+        "Content-Type": ["application/json; charset=utf-8"],
+        "User-Agent": ["test-ua"],
+        "Accept": ["application/json"],
+        "X-Forwarded-For": ["111.222.333.444"],
+        "X-Openrtb-Version": ["2.5"]
+      },
+      "uri": "http://us.clydo.io/rh7cnxlpvbjqU5ff",
+      "body": {
+        "id": "de825c88-282e-439a-bcf1-3108344f260c",
+        "imp": [{
+          "id": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ],
+            "placement": 1,
+            "w": 320,
+            "h": 50
+          },
+          "bidfloor": 0.111,
+          "bidfloorcur": "USD",
+          "ext": {
+            "bidder": {
+              "partnerId": "rh7cnxlpvbjqU5ff",
+              "region": "us"
+            }
+          }
+        }],
+        "site": {
+          "domain": "site.com",
+          "publisher": {
+            "id": "1122334444"
+          }
+        },
+        "device": {
+          "lmt": 0,
+          "ua": "test-ua",
+          "ip": "111.222.333.444",
+          "h": 2082,
+          "w": 1080,
+          "ifa": "eb6685ef-b9d0-48b9-a1c2-db7894790f93"
+        },
+        "user": {
+          "id": "f102c5fe-3d9e-4d14-89f3-8d55248246c7"
+        },
+        "tmax": 1000,
+        "regs": {
+          "ext": {
+            "coppa": 0,
+            "gdpr": 0,
+            "us_privacy": "1YN-"
+          }
+        }
+      },
+      "impIDs": ["224b15d9-c927-4cf7-aee3-9bea24c6f3e3", "1753f913-d9ac-4d2b-93d2-475ff35c6ada"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-response-id",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-id",
+            "impid": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+            "price": 1.5,
+            "adm": "test-adm",
+            "adomain": ["test.com"],
+            "crid": "test-crid",
+            "w": 320,
+            "h": 50
+          }],
+          "type": "video",
+          "seat": "clydo"
+        }],
+        "cur": "USD"
+      }
+    }
+  }, {
+    "expectedRequest": {
+      "headers": {
+        "Content-Type": ["application/json; charset=utf-8"],
+        "User-Agent": ["test-ua"],
+        "Accept": ["application/json"],
+        "X-Forwarded-For": ["111.222.333.444"],
+        "X-Openrtb-Version": ["2.5"]
+      },
+      "uri": "http://us.clydo.io/rh7cnxlpvbjqU5ff",
+      "body": {
+        "id": "de825c88-282e-439a-bcf1-3108344f260c",
+        "imp": [{
+          "id": "1753f913-d9ac-4d2b-93d2-475ff35c6ada",
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ],
+            "placement": 1,
+            "w": 320,
+            "h": 50
+          },
+          "bidfloor": 0.111,
+          "bidfloorcur": "USD",
+          "ext": {
+            "bidder": {
+              "partnerId": "rh7cnxlpvbjqU5ff",
+              "region": "us"
+            }
+          }
+        }],
+        "site": {
+          "domain": "site.com",
+          "publisher": {
+            "id": "1122334444"
+          }
+        },
+        "device": {
+          "lmt": 0,
+          "ua": "test-ua",
+          "ip": "111.222.333.444",
+          "h": 2082,
+          "w": 1080,
+          "ifa": "eb6685ef-b9d0-48b9-a1c2-db7894790f93"
+        },
+        "user": {
+          "id": "f102c5fe-3d9e-4d14-89f3-8d55248246c7"
+        },
+        "tmax": 1000,
+        "regs": {
+          "ext": {
+            "coppa": 0,
+            "gdpr": 0,
+            "us_privacy": "1YN-"
+          }
+        }
+      },
+      "impIDs": ["224b15d9-c927-4cf7-aee3-9bea24c6f3e3", "1753f913-d9ac-4d2b-93d2-475ff35c6ada"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-response-id",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-id",
+            "impid": "1753f913-d9ac-4d2b-93d2-475ff35c6ada",
+            "price": 1.5,
+            "adm": "test-adm",
+            "adomain": ["test.com"],
+            "crid": "test-crid",
+            "w": 320,
+            "h": 50
+          }],
+          "type": "video",
+          "seat": "clydo"
+        }],
+        "cur": "USD"
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+      "bids": [{
+        "bid": {
+          "id": "test-id",
+          "impid": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+          "price": 1.5,
+          "adm": "test-adm",
+          "adomain": ["test.com"],
+          "crid": "test-crid",
+          "w": 320,
+          "h": 50
+        },
+        "type": "video"
+      }]
+    },
+    {
+      "bids": [{
+        "bid": {
+          "id": "test-id",
+          "impid": "1753f913-d9ac-4d2b-93d2-475ff35c6ada",
+          "price": 1.5,
+          "adm": "test-adm",
+          "adomain": ["test.com"],
+          "crid": "test-crid",
+          "w": 320,
+          "h": 50
+        },
+        "type": "video"
+      }]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  001_banner:
+    platform: linux/amd64
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      args:
+        - TEST=false
+    image: pbs-sample
+    container_name: 001_banner
+    privileged: true
+    ports:
+      - "8000:8000"
+      - "6060:6060"
+    volumes:
+      - ../sample/001_banner/app.yaml:/usr/local/bin/pbs.yaml
+      - ../sample/001_banner/pbjs.html:/usr/local/bin/static/pbjs.html
+      - ../sample/001_banner/stored_request.json:/usr/local/bin/stored_requests/data/by_id/stored_imps/test-imp-id.json
+      - ../sample/001_banner/stored_response.json:/usr/local/bin/stored_responses/data/by_id/stored_responses/test-bid-id.json

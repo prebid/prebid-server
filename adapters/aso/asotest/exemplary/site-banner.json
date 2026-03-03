@@ -1,0 +1,130 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip":"127.0.0.1"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "bidfloor": 1,
+        "bidfloorcur": "USD",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": 123456
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://srv.aso1.net/pbs/bidder?zid=123456",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "prebid.org"
+          },
+          "device": {
+            "ip":"127.0.0.1"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "bidfloor": 1,
+              "bidfloorcur": "USD",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "zone": 123456
+                }
+              }
+            }
+          ]
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "seat",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adm": "html code",
+                  "crid": "123",
+                  "h": 50,
+                  "w": 300,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "html code",
+            "crid": "123",
+            "w": 300,
+            "h": 50,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

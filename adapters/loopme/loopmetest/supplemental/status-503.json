@@ -1,0 +1,76 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "user": {
+      "buyeruid": "be5e209ad46927520000000000000000"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "10000000"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://loopme.example.com",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "prebid.org"
+          },
+          "user": {
+            "buyeruid": "be5e209ad46927520000000000000000"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "10000000"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 503,
+        "body": ""
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

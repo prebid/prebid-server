@@ -32,7 +32,8 @@
     {
       "expectedRequest": {
         "uri": "http://rtb.e-planning.net/pbs/1/12345/1/FILE/ROS?e=testadun_itco_de%3A600x300&ip=123.123.123.123&ncb=1&uid=2154987&ur=FILE",
-        "body": {}
+        "body": {},
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,

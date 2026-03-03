@@ -1,0 +1,15 @@
+endpoint: https://dsp.readpeak.com/header/prebid
+geoscope:
+  - EEA
+maintainer:
+  email: devteam@readpeak.com
+gvlVendorID: 290
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native

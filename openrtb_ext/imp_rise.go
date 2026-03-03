@@ -4,4 +4,5 @@ package openrtb_ext
 type ImpExtRise struct {
 	PublisherID string `json:"publisher_id"`
 	Org         string `json:"org"`
+	PlacementID string `json:"placementId"`
 }

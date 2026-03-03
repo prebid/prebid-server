@@ -6,113 +6,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/config"
+	"github.com/prebid/prebid-server/v3/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPrepareBiddersResponseAll(t *testing.T) {
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
-	)
-
-	testCases := []struct {
-		name                string
-		givenBidders        config.BidderInfos
-		givenRequestAliases map[string]string
-		expected            string
-	}{
-		{
-			name:                "none",
-			givenBidders:        config.BidderInfos{},
-			givenRequestAliases: nil,
-			expected:            `[]`,
-		},
-		{
-			name:                "core-one-enabled",
-			givenBidders:        config.BidderInfos{"a": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a"]`,
-		},
-		{
-			name:                "core-one-disabled",
-			givenBidders:        config.BidderInfos{"a": disabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a"]`,
-		},
-		{
-			name:                "core-one-mixed",
-			givenBidders:        config.BidderInfos{"a": disabledCore, "b": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a","b"]`,
-		},
-		{
-			name:                "core-one-mixed-sorted",
-			givenBidders:        config.BidderInfos{"z": enabledCore, "a": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a","z"]`,
-		},
-		{
-			name:                "alias-one",
-			givenBidders:        config.BidderInfos{"a": enabledAlias},
-			givenRequestAliases: nil,
-			expected:            `["a"]`,
-		},
-		{
-			name:                "alias-mixed",
-			givenBidders:        config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			givenRequestAliases: nil,
-			expected:            `["a","b","c","d"]`,
-		},
-		{
-			name:                "alias-mixed-sorted",
-			givenBidders:        config.BidderInfos{"z": enabledAlias, "a": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a","z"]`,
-		},
-		{
-			name:                "defaultrequest-one",
-			givenBidders:        config.BidderInfos{"a": enabledCore},
-			givenRequestAliases: map[string]string{"b": "a"},
-			expected:            `["a","b"]`,
-		},
-		{
-			name:                "defaultrequest-mixed",
-			givenBidders:        config.BidderInfos{"a": enabledCore, "b": disabledCore},
-			givenRequestAliases: map[string]string{"x": "a", "y": "b"},
-			expected:            `["a","b","x","y"]`,
-		},
-		{
-			name:                "defaultrequest-mixed-sorted",
-			givenBidders:        config.BidderInfos{"z": enabledCore},
-			givenRequestAliases: map[string]string{"a": "z"},
-			expected:            `["a","z"]`,
-		},
-		{
-			name:                "mixed",
-			givenBidders:        config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			givenRequestAliases: map[string]string{"z": "a"},
-			expected:            `["a","b","c","d","z"]`,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseAll(test.givenBidders, test.givenRequestAliases)
-			assert.NoError(t, err)
-			assert.Equal(t, []byte(test.expected), result)
-		})
-	}
-}
-
-func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
-	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore            = config.BidderInfo{Disabled: false}
+		enabledAlias           = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledWhiteLabelOnly  = config.BidderInfo{Disabled: false, WhiteLabelOnly: true}
+		disabledCore           = config.BidderInfo{Disabled: true}
+		disabledAlias          = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledWhiteLabelOnly = config.BidderInfo{Disabled: true, WhiteLabelOnly: true}
 	)
 
 	testCases := []struct {
@@ -136,24 +41,140 @@ func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
 			expected:     `["a"]`,
 		},
 		{
-			name:         "core-one-mixed",
+			name:         "core-many-mixed",
 			givenBidders: config.BidderInfos{"a": disabledCore, "b": enabledCore},
 			expected:     `["a","b"]`,
 		},
 		{
-			name:         "core-one-mixed-sorted",
+			name:         "core-many-sorted",
 			givenBidders: config.BidderInfos{"z": enabledCore, "a": enabledCore},
 			expected:     `["a","z"]`,
 		},
 		{
-			name:         "alias-one",
+			name:         "alias-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledAlias},
+			expected:     `["a"]`,
+		},
+		{
+			name:         "alias-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledAlias},
+			expected:     `["a"]`,
+		},
+		{
+			name:         "alias-many-mixed",
+			givenBidders: config.BidderInfos{"a": enabledAlias, "b": disabledAlias},
+			expected:     `["a","b"]`,
+		},
+		{
+			name:         "alias-many-sorted",
+			givenBidders: config.BidderInfos{"z": enabledAlias, "a": enabledCore},
+			expected:     `["a","z"]`,
+		},
+		{
+			name:         "whitelabelonly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-many-mixed",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly, "b": disabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "mixed",
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledWhiteLabelOnly, "d": enabledCore, "e": enabledAlias, "f": enabledWhiteLabelOnly},
+			expected:     `["a","b","d","e"]`,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := prepareBiddersResponseAll(test.givenBidders)
+			assert.NoError(t, err)
+			assert.Equal(t, []byte(test.expected), result)
+		})
+	}
+}
+
+func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
+	var (
+		enabledCore            = config.BidderInfo{Disabled: false}
+		enabledAlias           = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledWhiteLabelOnly  = config.BidderInfo{Disabled: false, WhiteLabelOnly: true}
+		disabledCore           = config.BidderInfo{Disabled: true}
+		disabledAlias          = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledWhiteLabelOnly = config.BidderInfo{Disabled: true, WhiteLabelOnly: true}
+	)
+
+	testCases := []struct {
+		name         string
+		givenBidders config.BidderInfos
+		expected     string
+	}{
+		{
+			name:         "none",
+			givenBidders: config.BidderInfos{},
+			expected:     `[]`,
+		},
+		{
+			name:         "core-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledCore},
+			expected:     `["a"]`,
+		},
+		{
+			name:         "core-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledCore},
+			expected:     `["a"]`,
+		},
+		{
+			name:         "core-many-mixed",
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": enabledCore},
+			expected:     `["a","b"]`,
+		},
+		{
+			name:         "core-many-sorted",
+			givenBidders: config.BidderInfos{"z": enabledCore, "a": enabledCore},
+			expected:     `["a","z"]`,
+		},
+		{
+			name:         "alias-one-enabled",
 			givenBidders: config.BidderInfos{"a": enabledAlias},
 			expected:     `[]`,
 		},
 		{
-			name:         "alias-mixed",
-			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			expected:     `["a","c"]`,
+			name:         "alias-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledAlias},
+			expected:     `[]`,
+		},
+		{
+			name:         "alias-many",
+			givenBidders: config.BidderInfos{"a": enabledAlias, "b": enabledAlias},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-many",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly, "b": enabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "mixed",
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledWhiteLabelOnly, "d": enabledCore, "e": enabledAlias, "f": enabledWhiteLabelOnly},
+			expected:     `["a","d"]`,
 		},
 	}
 
@@ -168,107 +189,12 @@ func TestPrepareBiddersResponseAllBaseOnly(t *testing.T) {
 
 func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
-	)
-
-	testCases := []struct {
-		name                string
-		givenBidders        config.BidderInfos
-		givenRequestAliases map[string]string
-		expected            string
-	}{
-		{
-			name:                "none",
-			givenBidders:        config.BidderInfos{},
-			givenRequestAliases: nil,
-			expected:            `[]`,
-		},
-		{
-			name:                "core-one-enabled",
-			givenBidders:        config.BidderInfos{"a": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a"]`,
-		},
-		{
-			name:                "core-one-disabled",
-			givenBidders:        config.BidderInfos{"a": disabledCore},
-			givenRequestAliases: nil,
-			expected:            `[]`,
-		},
-		{
-			name:                "core-one-mixed",
-			givenBidders:        config.BidderInfos{"a": disabledCore, "b": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["b"]`,
-		},
-		{
-			name:                "core-one-mixed-sorted",
-			givenBidders:        config.BidderInfos{"z": enabledCore, "a": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a","z"]`,
-		},
-		{
-			name:                "alias-one",
-			givenBidders:        config.BidderInfos{"a": enabledAlias},
-			givenRequestAliases: nil,
-			expected:            `["a"]`,
-		},
-		{
-			name:                "alias-mixed",
-			givenBidders:        config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			givenRequestAliases: nil,
-			expected:            `["c","d"]`,
-		},
-		{
-			name:                "alias-mixed-sorted",
-			givenBidders:        config.BidderInfos{"z": enabledAlias, "a": enabledCore},
-			givenRequestAliases: nil,
-			expected:            `["a","z"]`,
-		},
-		{
-			name:                "defaultrequest-one",
-			givenBidders:        config.BidderInfos{"a": enabledCore},
-			givenRequestAliases: map[string]string{"b": "a"},
-			expected:            `["a","b"]`,
-		},
-		{
-			name:                "defaultrequest-mixed",
-			givenBidders:        config.BidderInfos{"a": enabledCore, "b": disabledCore},
-			givenRequestAliases: map[string]string{"x": "a", "y": "b"},
-			expected:            `["a","x"]`,
-		},
-		{
-			name:                "defaultrequest-mixed-sorted",
-			givenBidders:        config.BidderInfos{"z": enabledCore},
-			givenRequestAliases: map[string]string{"a": "z"},
-			expected:            `["a","z"]`,
-		},
-		{
-			name:                "mixed",
-			givenBidders:        config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			givenRequestAliases: map[string]string{"z": "a"},
-			expected:            `["c","d"]`,
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			result, err := prepareBiddersResponseEnabledOnly(test.givenBidders, test.givenRequestAliases)
-			assert.NoError(t, err)
-			assert.Equal(t, []byte(test.expected), result)
-		})
-	}
-}
-
-func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
-	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore            = config.BidderInfo{Disabled: false}
+		enabledAlias           = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledWhiteLabelOnly  = config.BidderInfo{Disabled: false, WhiteLabelOnly: true}
+		disabledCore           = config.BidderInfo{Disabled: true}
+		disabledAlias          = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledWhiteLabelOnly = config.BidderInfo{Disabled: true, WhiteLabelOnly: true}
 	)
 
 	testCases := []struct {
@@ -292,18 +218,119 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 			expected:     `[]`,
 		},
 		{
-			name:         "core-one-mixed",
+			name:         "core-many-mixed",
 			givenBidders: config.BidderInfos{"a": disabledCore, "b": enabledCore},
 			expected:     `["b"]`,
 		},
 		{
-			name:         "core-one-mixed-sorted",
+			name:         "core-many-sorted",
 			givenBidders: config.BidderInfos{"z": enabledCore, "a": enabledCore},
 			expected:     `["a","z"]`,
 		},
 		{
-			name:         "alias-one",
+			name:         "alias-one-enabled",
 			givenBidders: config.BidderInfos{"a": enabledAlias},
+			expected:     `["a"]`,
+		},
+		{
+			name:         "alias-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledAlias},
+			expected:     `[]`,
+		},
+		{
+			name:         "alias-many-mixed",
+			givenBidders: config.BidderInfos{"a": enabledAlias, "b": disabledAlias},
+			expected:     `["a"]`,
+		},
+		{
+			name:         "alias-many-sorted",
+			givenBidders: config.BidderInfos{"z": enabledAlias, "a": enabledCore},
+			expected:     `["a","z"]`,
+		},
+		{
+			name:         "whitelabelonly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-many-mixed",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly, "b": disabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "mixed",
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledWhiteLabelOnly, "d": enabledCore, "e": enabledAlias, "f": enabledWhiteLabelOnly},
+			expected:     `["d","e"]`,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := prepareBiddersResponseEnabledOnly(test.givenBidders)
+			assert.NoError(t, err)
+			assert.Equal(t, []byte(test.expected), result)
+		})
+	}
+}
+
+func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
+	var (
+		enabledCore            = config.BidderInfo{Disabled: false}
+		enabledAlias           = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledWhiteLabelOnly  = config.BidderInfo{Disabled: false, WhiteLabelOnly: true}
+		disabledCore           = config.BidderInfo{Disabled: true}
+		disabledAlias          = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledWhiteLabelOnly = config.BidderInfo{Disabled: true, WhiteLabelOnly: true}
+	)
+
+	testCases := []struct {
+		name         string
+		givenBidders config.BidderInfos
+		expected     string
+	}{
+		{
+			name:         "none",
+			givenBidders: config.BidderInfos{},
+			expected:     `[]`,
+		},
+		{
+			name:         "core-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledCore},
+			expected:     `["a"]`,
+		},
+		{
+			name:         "core-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledCore},
+			expected:     `[]`,
+		},
+		{
+			name:         "core-many",
+			givenBidders: config.BidderInfos{"a": enabledCore, "b": enabledCore},
+			expected:     `["a","b"]`,
+		},
+		{
+			name:         "core-many-mixed",
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": enabledCore},
+			expected:     `["b"]`,
+		},
+		{
+			name:         "core-many-sorted",
+			givenBidders: config.BidderInfos{"z": enabledCore, "a": enabledCore},
+			expected:     `["a","z"]`,
+		},
+		{
+			name:         "alias-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledAlias},
+			expected:     `[]`,
+		},
+		{
+			name:         "alias-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledAlias},
 			expected:     `[]`,
 		},
 		{
@@ -312,9 +339,24 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 			expected:     `[]`,
 		},
 		{
+			name:         "whitelabelonly-one-enabled",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-one-disabled",
+			givenBidders: config.BidderInfos{"a": disabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
+			name:         "whitelabelonly-many",
+			givenBidders: config.BidderInfos{"a": enabledWhiteLabelOnly, "b": enabledWhiteLabelOnly},
+			expected:     `[]`,
+		},
+		{
 			name:         "mixed",
-			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": enabledCore, "d": enabledAlias},
-			expected:     `["c"]`,
+			givenBidders: config.BidderInfos{"a": disabledCore, "b": disabledAlias, "c": disabledWhiteLabelOnly, "d": enabledCore, "e": enabledAlias, "f": enabledWhiteLabelOnly},
+			expected:     `["d"]`,
 		},
 	}
 
@@ -329,14 +371,15 @@ func TestPrepareBiddersResponseEnabledOnlyBaseOnly(t *testing.T) {
 
 func TestBiddersHandler(t *testing.T) {
 	var (
-		enabledCore   = config.BidderInfo{Disabled: false}
-		enabledAlias  = config.BidderInfo{Disabled: false, AliasOf: "something"}
-		disabledCore  = config.BidderInfo{Disabled: true}
-		disabledAlias = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		enabledCore            = config.BidderInfo{Disabled: false}
+		enabledAlias           = config.BidderInfo{Disabled: false, AliasOf: "something"}
+		enabledWhiteLabelOnly  = config.BidderInfo{Disabled: false, WhiteLabelOnly: true}
+		disabledCore           = config.BidderInfo{Disabled: true}
+		disabledAlias          = config.BidderInfo{Disabled: true, AliasOf: "something"}
+		disabledWhiteLabelOnly = config.BidderInfo{Disabled: true, WhiteLabelOnly: true}
 	)
 
-	bidders := config.BidderInfos{"a": enabledCore, "b": enabledAlias, "c": disabledCore, "d": disabledAlias}
-	aliases := map[string]string{"x": "a", "y": "c"}
+	bidders := config.BidderInfos{"a": enabledCore, "b": enabledAlias, "c": enabledWhiteLabelOnly, "d": disabledCore, "e": disabledAlias, "f": disabledWhiteLabelOnly}
 
 	testCases := []struct {
 		name            string
@@ -349,35 +392,35 @@ func TestBiddersHandler(t *testing.T) {
 			name:            "simple",
 			givenURL:        "/info/bidders",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d","x","y"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "enabledonly-false",
 			givenURL:        "/info/bidders?enabledonly=false",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d","x","y"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "enabledonly-false-caseinsensitive",
 			givenURL:        "/info/bidders?enabledonly=fAlSe",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d","x","y"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "enabledonly-true",
 			givenURL:        "/info/bidders?enabledonly=true",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","x"]`,
+			expectedBody:    `["a","b"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "enabledonly-true-caseinsensitive",
 			givenURL:        "/info/bidders?enabledonly=TrUe",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","x"]`,
+			expectedBody:    `["a","b"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
@@ -398,28 +441,28 @@ func TestBiddersHandler(t *testing.T) {
 			name:            "baseonly-false",
 			givenURL:        "/info/bidders?baseadaptersonly=false",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d","x","y"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "baseonly-false-caseinsensitive",
 			givenURL:        "/info/bidders?baseadaptersonly=fAlSe",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","c","d","x","y"]`,
+			expectedBody:    `["a","b","d","e"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "baseonly-true",
 			givenURL:        "/info/bidders?baseadaptersonly=true",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","c"]`,
+			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "baseonly-true-caseinsensitive",
 			givenURL:        "/info/bidders?baseadaptersonly=TrUe",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","c"]`,
+			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
@@ -440,14 +483,14 @@ func TestBiddersHandler(t *testing.T) {
 			name:            "enabledonly-true-baseonly-false",
 			givenURL:        "/info/bidders?enabledonly=true&baseadaptersonly=false",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","b","x"]`,
+			expectedBody:    `["a","b"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
 			name:            "enabledonly-false-baseonly-true",
 			givenURL:        "/info/bidders?enabledonly=false&baseadaptersonly=true",
 			expectedStatus:  http.StatusOK,
-			expectedBody:    `["a","c"]`,
+			expectedBody:    `["a","d"]`,
 			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
 		},
 		{
@@ -461,7 +504,7 @@ func TestBiddersHandler(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			handler := NewBiddersEndpoint(bidders, aliases)
+			handler := NewBiddersEndpoint(bidders)
 
 			request := httptest.NewRequest("GET", test.givenURL, nil)
 

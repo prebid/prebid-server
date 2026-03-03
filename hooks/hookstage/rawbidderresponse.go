@@ -3,7 +3,7 @@ package hookstage
 import (
 	"context"
 
-	"github.com/prebid/prebid-server/v2/adapters"
+	"github.com/prebid/prebid-server/v3/adapters"
 )
 
 // RawBidderResponse hooks are invoked for each bidder participating in auction.
@@ -21,10 +21,9 @@ type RawBidderResponse interface {
 	) (HookResult[RawBidderResponsePayload], error)
 }
 
-// RawBidderResponsePayload consists of a list of adapters.TypedBid
-// objects representing bids returned by a particular bidder.
-// Hooks are allowed to modify bids using mutations.
+// RawBidderResponsePayload consists of a bidder response returned by a particular bidder.
+// Hooks are allowed to modify bidder response using mutations.
 type RawBidderResponsePayload struct {
-	Bids   []*adapters.TypedBid
-	Bidder string
+	BidderResponse *adapters.BidderResponse
+	Bidder         string
 }

@@ -1,0 +1,282 @@
+{
+    "mockBidRequest": {
+        "id": "request-id",
+        "imp": [
+            {
+                "id": "div-video-id",
+                "video": {
+                    "context": "instream",
+                    "playerSize": [
+                        640,
+                        480
+                    ],
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "api": [
+                        1,
+                        2,
+                        7
+                    ],
+                    "protocols": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8
+                    ],
+                    "playbackmethod": [
+                        2
+                    ],
+                    "skip": 1,
+                    "w": 640,
+                    "h": 480
+                },
+                "ext": {
+                    "bidder": {
+                        "networkId": "networkId"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "domain": "dev.sparteo.com:4444",
+            "publisher": {
+                "domain": "dev.sparteo.com:4444",
+                "id": "sparteo"
+            },
+            "page": "https://dev.sparteo.com:4444/page/test/",
+            "ref": "https://dev.sparteo.com:4444/page/test/"
+        },
+        "device": {
+            "w": 1920,
+            "h": 1080,
+            "dnt": 0,
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+            "language": "fr",
+            "ext": {
+                "vpw": 1056,
+                "vph": 934
+            },
+            "sua": {
+                "source": 1,
+                "platform": {
+                    "brand": "macOS"
+                },
+                "browsers": [
+                    {
+                        "brand": "Chromium",
+                        "version": [
+                            "134"
+                        ]
+                    },
+                    {
+                        "brand": "Not:A-Brand",
+                        "version": [
+                            "24"
+                        ]
+                    },
+                    {
+                        "brand": "Google Chrome",
+                        "version": [
+                            "134"
+                        ]
+                    }
+                ],
+                "mobile": 0
+            }
+        },
+        "ext": {
+            "prebid": {
+                "server": {
+                    "datacenter": "",
+                    "externalurl": "",
+                    "gvlid": 1028
+                }
+            },
+            "tmaxmax": 5000
+        },
+        "tmax": 5000
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://bid-test.sparteo.com/s2s-auction",
+                "body": {
+                    "id": "request-id",
+                    "imp": [
+                        {
+                            "id": "div-video-id",
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "api": [
+                                    1,
+                                    2,
+                                    7
+                                ],
+                                "protocols": [
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5,
+                                    6,
+                                    7,
+                                    8
+                                ],
+                                "playbackmethod": [
+                                    2
+                                ],
+                                "skip": 1,
+                                "w": 640,
+                                "h": 480
+                            },
+                            "ext": {
+                                "sparteo": {
+                                    "params": {
+                                        "networkId": "networkId"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "dev.sparteo.com:4444",
+                        "page": "https://dev.sparteo.com:4444/page/test/",
+                        "ref": "https://dev.sparteo.com:4444/page/test/",
+                        "publisher": {
+                            "id": "sparteo",
+                            "domain": "dev.sparteo.com:4444",
+                            "ext": {
+                                "params": {
+                                    "networkId": "networkId"
+                                }
+                            }
+                        }
+                    },
+                    "device": {
+                        "dnt": 0,
+                        "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+                        "sua": {
+                            "browsers": [
+                                {
+                                    "brand": "Chromium",
+                                    "version": [
+                                        "134"
+                                    ]
+                                },
+                                {
+                                    "brand": "Not:A-Brand",
+                                    "version": [
+                                        "24"
+                                    ]
+                                },
+                                {
+                                    "brand": "Google Chrome",
+                                    "version": [
+                                        "134"
+                                    ]
+                                }
+                            ],
+                            "platform": {
+                                "brand": "macOS"
+                            },
+                            "mobile": 0,
+                            "source": 1
+                        },
+                        "h": 1080,
+                        "w": 1920,
+                        "language": "fr",
+                        "ext": {
+                            "vpw": 1056,
+                            "vph": 934
+                        }
+                    },
+                    "tmax": 5000,
+                    "ext": {
+                        "prebid": {
+                            "server": {
+                                "externalurl": "",
+                                "gvlid": 1028,
+                                "datacenter": ""
+                            }
+                        },
+                        "tmaxmax": 5000
+                    }
+                },
+                "impIDs": [
+                    "div-video-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "request-id",
+                    "seatbid": [
+                        {
+                            "seat": "sparteo",
+                            "bid": [
+                                {
+                                    "id": "137dd2bd-3015-407a-ab50-384aa2c706d7",
+                                    "impid": "div-video-id",
+                                    "price": 0.10797,
+                                    "nurl": "https://dev.sparteo.com:4444/event/sparteo/0a98964d-1cf9-4802-93e9-c59c18f497fa?d=kyGjrlVurDF3FlG8d7juZXMzNlGoZA06b75fJDG9dyF3LTd9LzPxLRHzMzFzMfwfdlifNfF9L7AlLzreYS96MTH9JTP7NRdtNRU4LS8lYTPwZTMlLRPyYTUfJDGjdEPfNfFvdzGzJWA8Y6Qob75fJDG8YSF3FirvJWe9rEHtY7xoZW49JzKuLSFsFmBiFgnfZCV7JmMwYXG9ZW1uY70tNgP9MRPfJDGwrSF3Fle9rEBzGTMBGTGCGTGCZCV7JmMwYXG9ZW1uY70tGTMBMRP9MDUyQmBeZ7UjLiZzZXG7ZXFtrC1td7VyrlVyJWGoZCQobldjLiZzZXG7ZXGUb8MjdmZjdiGoZCQoblrDYW4uZXFfJDGfdmFfNfFfJDGuhWPfNfGjYlY4ZTi6ZD8iMCMeJTQeLRKtNWL9YS8iLzK8LTPwMzL7ZRYfJDGwhWPfNfGjYlY4ZTi6ZD8iMCMeJTQeLRKtNWL9YS8iLzK8LTPwMzL7ZRYfJDGib6LfNfGtYWMOUyFsFlQfFgnfrW4qbl06bfFsFmVib75fNfG8bltub6ruFfwfrWQ9FgnfZCVzh6QvdDFsFlAfrDF3WyGzd6HtY70tYl1tbW0uZXj9hXojdj0eXzUwFfwfd6MwJWMvbWGvJXB8YlZ8rEVyZV0jbXB9kV18LDFsFlrsb7GebDFsFmBfdy8fhWPtdlA9ZV0OPV1xLRHwFfwfdlV7ZW48ZV0BXzKwLDFsFlGoZD8vdEQaT6B9hW8KXzP8Fj9sFmByZWQzFgo2Flrsb7GebKxjrlVPdlVPdlViFgnxJDGobXBLZXZjbAByZVByZWPfNgKsFlMyZWAadCVyX7jtdDF3LS58MzYsFlGobCxeYlxjX6Bjdj0obXHfNgKsFlVzrCjtYXQjZA0yZXZjbmVjFgnwJgF5NSwfrljvrXMskV0yZXZjbmVadlA9hW1fNgKsFmrobj0yYXQjFgnwJgHyMSwfbWAyZ7juX6ByZWPfNgHuLRH8JDGfhWQadEGoY7UfNgHuLX9sFlGohSF3FlQorf8fYW4uZXFfJDGwbELfNjsfLzHwkRF8LDGrJDGwbXPfNjsfYlAublVyFj9sFlVsdyF3WyFzLRB5LgUwFfwfLzHwkRKwLDFsFgLwLEcxLgUfJDFzLRB5LTUwFj9sFlVtrDF3WyGfYW4uZXFfXSwfYlQzFgobFlAikW08bCjqZSFsFlAwdC4jkEVzFfwfZ6GoZDFsFl0lrC8jZCjeFfwfb74jrCAmFfwfb6BjbmcfJDGyhXMjFfwfdmVfhWMvbfFsFmMtYXG9YWQzZXG7ZXFfJDGzbWjsZXrebmQjZDFsFmVudmVskSGrJDGtYfF3ZlAsd7UsFlZ9dyF3WyGPYXMzVCeyb6VmhKZvdl8erDGrJDGydyF3LD55MSwfYlifNfFxLzriZRGfZD9zLRK8JTPwM7KtYWF8LD9zNRQeYTGgMzH7ZRdfJDGfdDF3LD5xJDGlrDF3FjBed6MUhEGvrWrnQl0ybWA9Fm9=",
+                                    "adm": "<script></script>",
+                                    "adomain": [
+                                        "testpage-ad"
+                                    ],
+                                    "crid": "video_creative_test",
+                                    "w": 300,
+                                    "h": 250,
+                                    "ext": {
+                                        "ft": "passthrough",
+                                        "prebid": {
+                                            "type": "video"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "EUR"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "id": "request-id",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "137dd2bd-3015-407a-ab50-384aa2c706d7",
+                        "impid": "div-video-id",
+                        "mtype": 2,
+                        "price": 0.10797,
+                        "nurl": "https://dev.sparteo.com:4444/event/sparteo/0a98964d-1cf9-4802-93e9-c59c18f497fa?d=kyGjrlVurDF3FlG8d7juZXMzNlGoZA06b75fJDG9dyF3LTd9LzPxLRHzMzFzMfwfdlifNfF9L7AlLzreYS96MTH9JTP7NRdtNRU4LS8lYTPwZTMlLRPyYTUfJDGjdEPfNfFvdzGzJWA8Y6Qob75fJDG8YSF3FirvJWe9rEHtY7xoZW49JzKuLSFsFmBiFgnfZCV7JmMwYXG9ZW1uY70tNgP9MRPfJDGwrSF3Fle9rEBzGTMBGTGCGTGCZCV7JmMwYXG9ZW1uY70tGTMBMRP9MDUyQmBeZ7UjLiZzZXG7ZXFtrC1td7VyrlVyJWGoZCQobldjLiZzZXG7ZXGUb8MjdmZjdiGoZCQoblrDYW4uZXFfJDGfdmFfNfFfJDGuhWPfNfGjYlY4ZTi6ZD8iMCMeJTQeLRKtNWL9YS8iLzK8LTPwMzL7ZRYfJDGwhWPfNfGjYlY4ZTi6ZD8iMCMeJTQeLRKtNWL9YS8iLzK8LTPwMzL7ZRYfJDGib6LfNfGtYWMOUyFsFlQfFgnfrW4qbl06bfFsFmVib75fNfG8bltub6ruFfwfrWQ9FgnfZCVzh6QvdDFsFlAfrDF3WyGzd6HtY70tYl1tbW0uZXj9hXojdj0eXzUwFfwfd6MwJWMvbWGvJXB8YlZ8rEVyZV0jbXB9kV18LDFsFlrsb7GebDFsFmBfdy8fhWPtdlA9ZV0OPV1xLRHwFfwfdlV7ZW48ZV0BXzKwLDFsFlGoZD8vdEQaT6B9hW8KXzP8Fj9sFmByZWQzFgo2Flrsb7GebKxjrlVPdlVPdlViFgnxJDGobXBLZXZjbAByZVByZWPfNgKsFlMyZWAadCVyX7jtdDF3LS58MzYsFlGobCxeYlxjX6Bjdj0obXHfNgKsFlVzrCjtYXQjZA0yZXZjbmVjFgnwJgF5NSwfrljvrXMskV0yZXZjbmVadlA9hW1fNgKsFmrobj0yYXQjFgnwJgHyMSwfbWAyZ7juX6ByZWPfNgHuLRH8JDGfhWQadEGoY7UfNgHuLX9sFlGohSF3FlQorf8fYW4uZXFfJDGwbELfNjsfLzHwkRF8LDGrJDGwbXPfNjsfYlAublVyFj9sFlVsdyF3WyFzLRB5LgUwFfwfLzHwkRKwLDFsFgLwLEcxLgUfJDFzLRB5LTUwFj9sFlVtrDF3WyGfYW4uZXFfXSwfYlQzFgobFlAikW08bCjqZSFsFlAwdC4jkEVzFfwfZ6GoZDFsFl0lrC8jZCjeFfwfb74jrCAmFfwfb6BjbmcfJDGyhXMjFfwfdmVfhWMvbfFsFmMtYXG9YWQzZXG7ZXFfJDGzbWjsZXrebmQjZDFsFmVudmVskSGrJDGtYfF3ZlAsd7UsFlZ9dyF3WyGPYXMzVCeyb6VmhKZvdl8erDGrJDGydyF3LD55MSwfYlifNfFxLzriZRGfZD9zLRK8JTPwM7KtYWF8LD9zNRQeYTGgMzH7ZRdfJDGfdDF3LD5xJDGlrDF3FjBed6MUhEGvrWrnQl0ybWA9Fm9=",
+                        "adm": "<script></script>",
+                        "adomain": [
+                            "testpage-ad"
+                        ],
+                        "crid": "video_creative_test",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "ft": "passthrough",
+                            "prebid": {
+                                "type": "video"
+                            }
+                        }
+                    },
+                    "type": "video"
+                }
+            ],
+            "cur": "EUR"
+        }
+    ]
+}

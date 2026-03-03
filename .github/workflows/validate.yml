@@ -10,18 +10,18 @@ jobs:
   validate:
     strategy:
       matrix:
-        go-version: [1.19.x, 1.20.x]
-        os: [ubuntu-20.04]
+        go-version: [1.23.x, 1.24.x]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     
     steps:
     - name: Install Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
 
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         # Resolves to empty string for push events and falls back to HEAD.
         ref: ${{ github.event.pull_request.head.sha }}

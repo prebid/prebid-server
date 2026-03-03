@@ -208,7 +208,8 @@
             "nodes": null,
             "ver": ""
           }
-        }
+        },
+        "impIDs":["ADMVideoWithBannerImp1","ADMVideoWithBannerImp2","RegularBannerImp4","RegularBannerImp5"]
       },
       "mockResponse": {
         "status" : 200,
@@ -279,7 +280,8 @@
           "cur": [
             "USD"
           ]
-        }
+        },
+        "impIDs":["ADMVideoWithBannerImp1"]
       },
       "mockResponse": {
         "status" : 200,
@@ -339,7 +341,8 @@
           "cur": [
             "USD"
           ]
-        }
+        },
+        "impIDs":["ADMVideoWithBannerImp2"]
       },
       "mockResponse": {
         "status" : 200,
@@ -399,7 +402,8 @@
           "cur": [
             "USD"
           ]
-        }
+        },
+        "impIDs":["ADMVideoImp6"]
       },
       "mockResponse": {
         "status" : 200,
@@ -460,7 +464,8 @@
           "cur": [
             "USD"
           ]
-        }
+        },
+        "impIDs":["NURLVideoImp3"]
       },
       "mockResponse": {
         "status": 200,

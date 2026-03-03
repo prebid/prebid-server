@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "banner-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 12345
+          }
+        }
+      }
+    ],
+    "ext": {}
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error while unmarshaling bidder extension",
+      "comparison": "literal"
+    }
+  ]
+}

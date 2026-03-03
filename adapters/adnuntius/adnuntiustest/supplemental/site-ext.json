@@ -1,0 +1,118 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"user": {
+			"id": "1kjh3429kjh295jkl"
+		},
+		"site": {
+			"ext":{
+				"data" : {
+					"key": ["value"]
+				}
+			}
+		},
+		"imp": [
+			{
+				"id": "test-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 250
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"bidder": {
+						"auId": "123"
+					}
+				}
+			}
+		]
+	},
+	"httpCalls": [
+		{
+			"expectedRequest": {
+				"uri": "http://whatever.url?format=prebidServer&tzo=0",
+				"body": {
+					"adUnits": [
+						{
+							"auId": "123",
+							"targetId": "123-test-imp-id:banner",
+							"nativeRequest": {},
+							"dimensions": [[300,250],[300,600]]
+						}
+					],
+					"kv": {
+						"key": ["value"]
+					},
+					"metaData": {
+						"usi": "1kjh3429kjh295jkl"
+					},
+					"context": "unknown"
+				},
+				"impIDs":["test-imp-id"]
+			},
+			"mockResponse": {
+				"status": 200,
+				"body": {
+					"adUnits": [
+						{
+							"auId": "0000000000000123",
+							"targetId": "123-test-imp-id",
+							"matchedAdCount": 1,
+							"html": "<ADCODE>",
+							"responseId": "adn-rsp-900646517",
+							"ads": [
+								{
+									"destinationUrls": {
+										"url": "http://www.google.com"
+									},
+									"advertiserDomains": ["google.com"],
+									"bid": {
+										"amount": 20.0,
+										"currency": "NOK"
+									},
+									"adId": "adn-id-1559784094",
+									"creativeWidth": "980",
+									"creativeHeight": "240",
+									"creativeId": "jn9hpzvlsf8cpdmm",
+									"lineItemId": "q7y9qm5b0xt9htrv"
+								}
+							]
+						}
+					]
+				}
+			}
+		}
+	],
+	"expectedBidResponses": [
+		{
+			"bids": [
+				{
+					"bid": {
+						"id": "adn-id-1559784094",
+						"impid": "test-imp-id",
+						"price": 20000,
+						"adm": "<ADCODE>",
+						"adid": "adn-id-1559784094",
+						"adomain": [
+							"google.com"
+						],
+						"cid": "q7y9qm5b0xt9htrv",
+						"crid": "jn9hpzvlsf8cpdmm",
+						"mtype": 1,
+						"w": 980,
+						"h": 240
+					},
+					"type": "banner"
+				}
+			],
+			"currency": "NOK"
+		}
+	]
+}

@@ -1,0 +1,104 @@
+{
+  "mockBidRequest": {
+    "id": "test-audio-request-id",
+    "imp": [
+      {
+        "id": "test-audio-imp-id",
+        "audio": {
+          "mimes": ["audio/mpeg"],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-audio-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/audio",
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=test-audio-placement",
+        "body": {
+          "id": "test-audio-request-id",
+          "imp": [
+            {
+              "id": "test-audio-imp-id",
+              "audio": {
+                "mimes": ["audio/mpeg"],
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "tagid": "test-audio-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "test-audio-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com/audio",
+            "domain": "example.com"
+          },
+          "cur": ["USD"]
+        },
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Accept": ["application/json"],
+          "X-OpenRTB-Version": ["2.6"]
+        },
+        "impIDs": ["test-audio-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-audio-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-audio-bid-id",
+                  "impid": "test-audio-imp-id",
+                  "price": 4.2,
+                  "adm": "<VAST version=\"3.0\"><Ad id=\"a1\"></Ad></VAST>",
+                  "crid": "test-audio-creative-id",
+                  "adomain": ["example.com"],
+                  "mtype": 3
+                }
+              ],
+              "seat": "resetdigital"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-audio-bid-id",
+            "impid": "test-audio-imp-id",
+            "price": 4.2,
+            "adm": "<VAST version=\"3.0\"><Ad id=\"a1\"></Ad></VAST>",
+            "crid": "test-audio-creative-id",
+            "adomain": ["example.com"],
+            "mtype": 3
+          },
+          "type": "audio",
+          "seat": "resetdigital"
+        }
+      ]
+    }
+  ]
+}

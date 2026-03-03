@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Mediasquare Adapter Params",
+  "description": "A schema which validates params accepted by the Mediasquare adapter",
+  "type": "object",
+  "properties": {
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The owner provided for mediasquare."
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The code provided for mediasquare."
+    }
+  },
+  "required": ["owner", "code"]
+}

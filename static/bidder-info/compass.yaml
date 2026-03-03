@@ -16,5 +16,8 @@ capabilities:
     - native
 userSync:
   redirect:
-    url: "https://sa-cs.deliverimp.com/pserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    url: "https://sa-cs.deliverimp.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://sa-cs.deliverimp.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
     userMacro: "[UID]"

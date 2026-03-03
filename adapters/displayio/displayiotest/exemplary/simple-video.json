@@ -1,0 +1,124 @@
+{
+  "mockBidRequest": {
+    "app": {
+      "id": "1011"
+    },
+    "id": "requestId10111011101110111011",
+    "imp": [
+      {
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "id": "impId10111011101110111011",
+        "ext": {
+          "bidder": {
+            "placementId": "1011",
+            "publisherId": "101",
+            "inventoryId": "1011"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adapter.endpoint/?macro=101",
+        "body": {
+          "app": {
+            "id": "1011"
+          },
+          "id": "requestId10111011101110111011",
+          "imp": [
+            {
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "id": "impId10111011101110111011",
+              "ext": {
+                "bidder": {
+                  "placementId": "1011",
+                  "publisherId": "101",
+                  "inventoryId": "1011"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "displayio": {
+              "placementId": "1011",
+              "inventoryId": "1011"
+            }
+          }
+        },
+        "impIDs": [
+          "impId10111011101110111011"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "requestId10111011101110111011",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "12345",
+                  "impid": "impId10111011101110111011",
+                  "price": 2,
+                  "adm": "<?xml/>",
+                  "adid": "12235",
+                  "adomain": [
+                    "domain.test"
+                  ],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 2
+                }
+              ],
+              "seat": "displayio123",
+              "group": 1
+            }
+          ],
+          "bidid": "test123",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "12345",
+            "impid": "impId10111011101110111011",
+            "price": 2,
+            "adm": "<?xml/>",
+            "adid": "12235",
+            "adomain": [
+              "domain.test"
+            ],
+            "w": 300,
+            "h": 250,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

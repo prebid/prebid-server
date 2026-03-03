@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests"
 )
 
 // Save represents a bulk save

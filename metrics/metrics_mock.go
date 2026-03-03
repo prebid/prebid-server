@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -156,6 +156,11 @@ func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 	me.Called(privacy)
 }
 
+// RecordAdapterBuyerUIDScrubbed mock
+func (me *MetricsEngineMock) RecordAdapterBuyerUIDScrubbed(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
+
 // RecordAdapterGDPRRequestBlocked mock
 func (me *MetricsEngineMock) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
 	me.Called(adapterName)
@@ -168,6 +173,10 @@ func (me *MetricsEngineMock) RecordDebugRequest(debugEnabled bool, pubId string)
 
 func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
 	me.Called(pubId)
+}
+
+func (me *MetricsEngineMock) RecordGvlListRequest() {
+	me.Called()
 }
 
 func (me *MetricsEngineMock) RecordAdsCertReq(success bool) {
@@ -220,4 +229,16 @@ func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
 
 func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
+
+func (me *MetricsEngineMock) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+	me.Called()
+}
+
+func (me *MetricsEngineMock) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	me.Called(adapterName, dialStartTime)
 }

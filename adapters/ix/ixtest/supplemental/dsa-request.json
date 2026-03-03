@@ -1,0 +1,200 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "siteId": "569749"
+            }
+          }
+        }
+      ],
+      "regs": {
+        "ext": {
+          "dsa": {
+            "dsarequired": 3,
+            "pubrender": 0,
+            "datatopub": 2,
+            "transparency": [
+              {
+                "domain": "platform1domain.com",
+                "dsaparams": [
+                  1
+                ]
+              },
+              {
+                "domain": "SSP2domain.com",
+                "dsaparams": [
+                  1,
+                  2
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "site": {
+        "page": "https://www.example.com/"
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://host/endpoint",
+          "body": {
+            "id": "test-request-id",
+            "imp": [
+              {
+                "id": "test-imp-id",
+                "banner": {
+                  "format": [
+                    {
+                      "w": 300,
+                      "h": 250
+                    }
+                  ],
+                  "w": 300,
+                  "h": 250
+                },
+                "ext": {
+                  "bidder": {
+                    "siteId": "569749"
+                  }
+                }
+              }
+            ],
+            "site": {
+              "page": "https://www.example.com/",
+              "publisher": {
+                "id": "569749"
+              }
+            },
+            "regs": {
+              "ext": {
+                "dsa": {
+                  "dsarequired": 3,
+                  "pubrender": 0,
+                  "datatopub": 2,
+                  "transparency": [
+                    {
+                      "domain": "platform1domain.com",
+                      "dsaparams": [
+                        1
+                      ]
+                    },
+                    {
+                      "domain": "SSP2domain.com",
+                      "dsaparams": [
+                        1,
+                        2
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": {
+              "ixdiag": {
+                "pbsp": "go",
+                "pbsv": "unknown"
+              }
+            }
+          },
+          "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-request-id",
+            "seatbid": [
+              {
+                "seat": "958",
+                "bid": [
+                  {
+                    "id": "7706636740145184841",
+                    "impid": "test-imp-id",
+                    "price": 0.5,
+                    "adid": "29681110",
+                    "adm": "some-test-ad",
+                    "adomain": [
+                      "https://advertiser.example.com"
+                    ],
+                    "cid": "958",
+                    "crid": "29681110",
+                    "h": 250,
+                    "w": 300,
+                    "ext": {
+                      "ix": {},
+                      "dsa": {
+                        "behalf": "Advertiser",
+                        "paid": "Advertiser",
+                        "transparency": {
+                          "domain": "dsp1domain.com",
+                          "params": [
+                            1,
+                            2
+                          ]
+                        },
+                        "adrender": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "bidid": "5778926625248726496",
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "7706636740145184841",
+              "impid": "test-imp-id",
+              "price": 0.5,
+              "adm": "some-test-ad",
+              "adid": "29681110",
+              "adomain": [
+                "https://advertiser.example.com"
+              ],
+              "cid": "958",
+              "crid": "29681110",
+              "w": 300,
+              "h": 250,
+              "ext": {
+                "ix": {},
+                "dsa": {
+                  "behalf": "Advertiser",
+                  "paid": "Advertiser",
+                  "transparency": {
+                    "domain": "dsp1domain.com",
+                    "params": [
+                      1,
+                      2
+                    ]
+                  },
+                  "adrender": 1
+                }
+              }
+            },
+            "type": "banner"
+          }
+        ]
+      }
+    ]
+  }

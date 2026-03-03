@@ -1,8 +1,8 @@
 package privacy
 
 import (
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 type ActivityResult int
@@ -37,7 +37,9 @@ func (r ActivityRequest) IsBidRequest() bool {
 }
 
 type ActivityControl struct {
-	plans map[Activity]ActivityPlan
+	plans      map[Activity]ActivityPlan
+	IPv6Config config.IPv6
+	IPv4Config config.IPv4
 }
 
 func NewActivityControl(cfg *config.AccountPrivacy) ActivityControl {
@@ -57,6 +59,9 @@ func NewActivityControl(cfg *config.AccountPrivacy) ActivityControl {
 	plans[ActivityTransmitUniqueRequestIDs] = buildPlan(cfg.AllowActivities.TransmitUniqueRequestIds)
 	plans[ActivityTransmitTIDs] = buildPlan(cfg.AllowActivities.TransmitTids)
 	ac.plans = plans
+
+	ac.IPv4Config = cfg.IPv4Config
+	ac.IPv6Config = cfg.IPv6Config
 
 	return ac
 }

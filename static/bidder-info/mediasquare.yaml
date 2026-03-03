@@ -1,0 +1,21 @@
+endpoint: "https://pbs-front.mediasquare.fr/msq_prebid"
+endpointCompression: gzip
+gvlVendorID: 791
+modifyingVastXmlAllowed: true
+maintainer:
+  email: "tech@mediasquare.fr"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://pbs-front.mediasquare.fr/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID

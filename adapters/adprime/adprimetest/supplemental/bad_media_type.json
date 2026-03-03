@@ -48,7 +48,8 @@
                         "ip": "123.123.123.123",
                         "ua": "Ubuntu"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,
@@ -85,7 +86,7 @@
     "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [
         {
-            "value": "Failed to find impression \"test-imp-id\"",
+            "value": "Unable to fetch mediaType in multi-format: test-imp-id",
             "comparison": "literal"
         }
     ]

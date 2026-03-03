@@ -1,4 +1,4 @@
-endpoint: "https://ads-{{.AccountID}}.adhese.com/json"
+endpoint: "https://ads-{{.AccountID}}.adhese.com/openrtb2"
 maintainer:
   email: info@adhese.com
 gvlVendorID: 553

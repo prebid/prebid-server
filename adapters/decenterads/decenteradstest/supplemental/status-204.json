@@ -66,7 +66,8 @@
             "ip": "123.123.123.123",
             "ifa": "sdjfksdf-dfsds-dsdg-dsgg"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "expectedBidResponses": [],
       "mockResponse": {

@@ -2,13 +2,14 @@ package privacy
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
 	"net"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 )
 
 type IPConf struct {
@@ -160,8 +161,19 @@ func scrubGeoPrecision(geo *openrtb2.Geo) *openrtb2.Geo {
 	}
 
 	geoCopy := *geo
-	geoCopy.Lat = float64(int(geo.Lat*100.0+0.5)) / 100.0 // Round Latitude
-	geoCopy.Lon = float64(int(geo.Lon*100.0+0.5)) / 100.0 // Round Longitude
+
+	if geoCopy.Lat != nil {
+		lat := *geo.Lat
+		lat = float64(int(lat*100.0+0.5)) / 100.0
+		geoCopy.Lat = &lat
+	}
+
+	if geoCopy.Lon != nil {
+		lon := *geo.Lon
+		lon = float64(int(lon*100.0+0.5)) / 100.0
+		geoCopy.Lon = &lon
+	}
+
 	return &geoCopy
 }
 

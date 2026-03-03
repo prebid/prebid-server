@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "aa"
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing bidderExt - expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,6 +36,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "setuid_requests.gdpr_blocked_host_cookie", m.SetUidStatusMeter[SetUidGDPRHostCookieBlocked])
 	ensureContains(t, registry, "setuid_requests.syncer_unknown", m.SetUidStatusMeter[SetUidSyncerUnknown])
 	ensureContains(t, registry, "stored_responses", m.StoredResponsesMeter)
+	ensureContains(t, registry, "gvl_requests", m.GvlListRequestsMeter)
 
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
@@ -56,6 +57,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[ReqTypeVideo][RequestStatusBadInput])
 	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[ReqTypeVideo][RequestStatusErr])
 	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[ReqTypeVideo][RequestStatusNetworkErr])
+	ensureContains(t, registry, "requests.size.auction", m.RequestSizeByEndpoint[EndpointAuction])
+	ensureContains(t, registry, "requests.size.video", m.RequestSizeByEndpoint[EndpointVideo])
 
 	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
 	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
@@ -73,7 +76,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "syncer.foo.request.ok", m.SyncerRequestsMeter["foo"][SyncerCookieSyncOK])
 	ensureContains(t, registry, "syncer.foo.request.privacy_blocked", m.SyncerRequestsMeter["foo"][SyncerCookieSyncPrivacyBlocked])
 	ensureContains(t, registry, "syncer.foo.request.already_synced", m.SyncerRequestsMeter["foo"][SyncerCookieSyncAlreadySynced])
-	ensureContains(t, registry, "syncer.foo.request.type_not_supported", m.SyncerRequestsMeter["foo"][SyncerCookieSyncTypeNotSupported])
+	ensureContains(t, registry, "syncer.foo.request.rejected_by_filter", m.SyncerRequestsMeter["foo"][SyncerCookieSyncRejectedByFilter])
 	ensureContains(t, registry, "syncer.foo.set.ok", m.SyncerSetsMeter["foo"][SyncerSetUidOK])
 	ensureContains(t, registry, "syncer.foo.set.cleared", m.SyncerSetsMeter["foo"][SyncerSetUidCleared])
 
@@ -138,6 +141,8 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".connections_created", adapterMetrics.ConnCreated)
 	ensureContains(t, registry, name+".connections_reused", adapterMetrics.ConnReused)
 	ensureContains(t, registry, name+".connection_wait_time", adapterMetrics.ConnWaitTime)
+	ensureContains(t, registry, name+".connection_dial_err", adapterMetrics.ConnDialErrors)
+	ensureContains(t, registry, name+".connection_dial_time", adapterMetrics.ConnDialTime)
 
 	ensureContains(t, registry, name+".response.validation.size.err", adapterMetrics.BidValidationCreativeSizeErrorMeter)
 	ensureContains(t, registry, name+".response.validation.size.warn", adapterMetrics.BidValidationCreativeSizeWarnMeter)
@@ -790,43 +795,87 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV2].Count(), int64(1), "TCF V2")
 }
 
-func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
+func TestRecordAdapterBuyerUIDScrubbed(t *testing.T) {
 	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
 	adapter := "AnyName"
 	lowerCaseAdapterName := "anyname"
 
 	tests := []struct {
-		description     string
+		name            string
 		metricsDisabled bool
 		adapterName     openrtb_ext.BidderName
 		expectedCount   int64
 	}{
 		{
-			description:     "",
+			name:            "enabled_bidder_found",
 			metricsDisabled: false,
 			adapterName:     openrtb_ext.BidderName(adapter),
 			expectedCount:   1,
 		},
 		{
-			description:     "",
+			name:            "enabled_bidder_not_found",
 			metricsDisabled: false,
 			adapterName:     fakeBidder,
 			expectedCount:   0,
 		},
 		{
-			description:     "",
+			name:            "disabled",
 			metricsDisabled: true,
 			adapterName:     openrtb_ext.BidderName(adapter),
 			expectedCount:   0,
 		},
 	}
 	for _, tt := range tests {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled}, nil, nil)
+		t.Run(tt.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterBuyerUIDScrubbed: tt.metricsDisabled}, nil, nil)
 
-		m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
+			m.RecordAdapterBuyerUIDScrubbed(tt.adapterName)
 
-		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].GDPRRequestBlocked.Count(), tt.description)
+			assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].BuyerUIDScrubbed.Count())
+		})
+	}
+}
+
+func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+	adapter := "AnyName"
+	lowerCaseAdapterName := "anyname"
+
+	tests := []struct {
+		name            string
+		metricsDisabled bool
+		adapterName     openrtb_ext.BidderName
+		expectedCount   int64
+	}{
+		{
+			name:            "enabled_bidder_found",
+			metricsDisabled: false,
+			adapterName:     openrtb_ext.BidderName(adapter),
+			expectedCount:   1,
+		},
+		{
+			name:            "enabled_bidder_not_found",
+			metricsDisabled: false,
+			adapterName:     fakeBidder,
+			expectedCount:   0,
+		},
+		{
+			name:            "disabled",
+			metricsDisabled: true,
+			adapterName:     openrtb_ext.BidderName(adapter),
+			expectedCount:   0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName(adapter)}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled}, nil, nil)
+
+			m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
+
+			assert.Equal(t, tt.expectedCount, m.AdapterMetrics[lowerCaseAdapterName].GDPRRequestBlocked.Count())
+		})
 	}
 }
 
@@ -864,7 +913,7 @@ func TestRecordSyncerRequest(t *testing.T) {
 	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncOK].Count(), int64(1))
 	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncPrivacyBlocked].Count(), int64(0))
 	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncAlreadySynced].Count(), int64(0))
-	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncTypeNotSupported].Count(), int64(0))
+	assert.Equal(t, m.SyncerRequestsMeter["foo"][SyncerCookieSyncRejectedByFilter].Count(), int64(0))
 }
 
 func TestRecordSetUid(t *testing.T) {
@@ -1020,8 +1069,8 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	module := "foobar"
 	stage1 := "entrypoint"
-	stage2 := "raw_auction"
-	stage3 := "processed_auction"
+	stage2 := "raw_auction_request"
+	stage3 := "processed_auction_request"
 
 	testCases := []struct {
 		description                string

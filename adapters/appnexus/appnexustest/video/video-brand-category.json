@@ -29,6 +29,7 @@
             }
         ],
         "ext": {
+          "appnexus": {},
             "prebid": {
                 "targeting": {
                     "includebrandcategory": {
@@ -89,7 +90,8 @@
                             }
                         }
                     ]
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

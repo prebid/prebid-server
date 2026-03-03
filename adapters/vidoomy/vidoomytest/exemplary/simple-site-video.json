@@ -68,7 +68,8 @@
               "id": "123"
             }
           }
-        }
+        },
+        "impIDs":["test-imp-video-id"]
       },
       "mockResponse": {
         "status": 200,

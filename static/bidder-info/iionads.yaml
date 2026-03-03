@@ -1,2 +1,3 @@
 endpoint: "http://ads-pbs.iionads.com/openrtb/{{.PublisherID}}?host={{.Host}}"
 aliasOf: "limelightDigital"
+gvlVendorID: 1358

@@ -18,7 +18,8 @@
                             "h": 250
                         }
                     ]
-                }
+                },
+                "tagid": "ad-test1"
             }
         ],
         "site": {
@@ -41,48 +42,53 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=5.8&inver=4",
+                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
                 "body": {
-                    "id": "test-request",
-                    "imp": [
-                        {
-                            "id": "005",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
+                    "bidRequest": {
+                        "id": "test-request",
+                        "imp": [
+                            {
+                                "id": "slot",
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 250
+                                        }
+                                    ]
+                                },
+                                "tagid": "ad-test1",
+                                "secure": 1,
+                                "ext": {
+                                    "bidder": {
+                                        "siteId": "237503",
+                                        "id": "005"
                                     }
-                                ]
-                            },
-                            "tagid": "slot",
-                            "secure": 1,
-                            "ext": {
-                                "data": {
-                                    "pbslot": "slot",
-                                    "pbsize": "300x250"
                                 }
                             }
-                        }
-                    ],
-                    "site": {
-                        "id": "237503",
-                        "domain": "test.page",
-                        "page": "https://test.page/",
-                        "ref": "https://test.referer/"
-                    },
-                    "user": {
-                        "ext": {
-                            "consent": "test_consent"
+                        ],
+                        "site": {
+                            "domain": "test.page",
+                            "page": "https://test.page/",
+                            "ref": "https://test.referer/"
                         },
-                        "buyeruid": "test_user"
-                    },
-                    "regs": {
-                        "ext": {
-                            "gdpr": 1
+                        "user": {
+                            "ext": {
+                                "consent": "test_consent"
+                            },
+                            "buyeruid": "test_user"
+                        },
+                        "regs": {
+                            "ext": {
+                                "gdpr": 1
+                            }
                         }
+                    },
+                    "requestInfo": {
+                        "PbsEntryPoint": ""
                     }
-                }
+                },
+                "impIDs":["slot"]
             },
             "mockResponse": {
                 "status": 200,
@@ -92,7 +98,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+            "value": "expect { or n, but found \"",
             "comparison": "literal"
         }
     ]

@@ -73,7 +73,8 @@
           "user": {
             "buyeruid": "test_reader_id"
           }
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -93,7 +94,8 @@
                 }
               ]
             }
-          ]
+          ],
+          "cur": "USD"
         }
       }
     }

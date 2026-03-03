@@ -41,7 +41,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -72,14 +73,15 @@
               ],
               "seat": "TEST_SEAT_ID"
             }
-          ]
+          ],
+          "cur": "EUR"
         }
       }
     }
   ],
   "expectedBidResponses": [
     {
-      "currency": "EUR",
+      "currency": "USD",
       "bids": [
         {
           "bid": {

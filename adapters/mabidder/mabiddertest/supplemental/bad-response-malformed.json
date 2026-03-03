@@ -56,7 +56,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200
@@ -65,8 +66,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }

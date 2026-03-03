@@ -1,8 +1,8 @@
 package ortb
 
 import (
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const (
@@ -12,7 +12,7 @@ const (
 	DefaultSecure                     = int8(1)
 )
 
-func SetDefaults(r *openrtb_ext.RequestWrapper) error {
+func SetDefaults(r *openrtb_ext.RequestWrapper, defaultTmax int) error {
 	requestExt, err := r.GetRequestExt()
 	if err != nil {
 		return err
@@ -36,6 +36,10 @@ func SetDefaults(r *openrtb_ext.RequestWrapper) error {
 		}
 	}
 
+	if r.TMax == 0 {
+		r.TMax = int64(defaultTmax)
+	}
+
 	return nil
 }
 
@@ -55,22 +59,24 @@ func setDefaultsTargeting(targeting *openrtb_ext.ExtRequestTargeting) bool {
 	// Default price granularity can be overwritten for video, banner or native bid type
 	// only in case targeting.MediaTypePriceGranularity.Video|Banner|Native != nil.
 
-	if targeting.MediaTypePriceGranularity.Video != nil {
-		if newVideoPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {
-			modified = true
-			targeting.MediaTypePriceGranularity.Video = newVideoPG
+	if targeting.MediaTypePriceGranularity != nil {
+		if targeting.MediaTypePriceGranularity.Video != nil {
+			if newVideoPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Video); updated {
+				modified = true
+				targeting.MediaTypePriceGranularity.Video = newVideoPG
+			}
 		}
-	}
-	if targeting.MediaTypePriceGranularity.Banner != nil {
-		if newBannerPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Banner); updated {
-			modified = true
-			targeting.MediaTypePriceGranularity.Banner = newBannerPG
+		if targeting.MediaTypePriceGranularity.Banner != nil {
+			if newBannerPG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Banner); updated {
+				modified = true
+				targeting.MediaTypePriceGranularity.Banner = newBannerPG
+			}
 		}
-	}
-	if targeting.MediaTypePriceGranularity.Native != nil {
-		if newNativePG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Native); updated {
-			modified = true
-			targeting.MediaTypePriceGranularity.Native = newNativePG
+		if targeting.MediaTypePriceGranularity.Native != nil {
+			if newNativePG, updated := setDefaultsPriceGranularity(targeting.MediaTypePriceGranularity.Native); updated {
+				modified = true
+				targeting.MediaTypePriceGranularity.Native = newNativePG
+			}
 		}
 	}
 

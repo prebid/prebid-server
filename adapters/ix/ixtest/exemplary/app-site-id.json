@@ -65,7 +65,9 @@
                     },
                     "ext": {
                         "ixdiag": {
-                          "pbjsv": "7.0.0"
+                            "pbjsv": "7.0.0",
+                            "pbsp": "go",
+                            "pbsv": "unknown"
                         },
                         "prebid": {
                           "channel": {
@@ -74,7 +76,8 @@
                           }
                         }
                     }
-                }
+                },
+                "impIDs":["test-imp-id-1"]
             },
             "mockResponse": {
                 "status": 200,

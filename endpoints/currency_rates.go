@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // currencyRatesInfo holds currency rates information.
@@ -62,7 +62,7 @@ func NewCurrencyRatesEndpoint(rateConverter rateConverter, fetchingInterval time
 	return func(w http.ResponseWriter, _ *http.Request) {
 		jsonOutput, err := jsonutil.Marshal(currencyRateInfo)
 		if err != nil {
-			glog.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)
+			logger.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

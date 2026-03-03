@@ -1,0 +1,20 @@
+endpoint: "https://amp.smrtconnect.com/openrtb2/auction?supply_id={{.SupplyId}}"
+# This bidder does not operate globally. Please consider setting "disabled: true" in European datacenters.
+geoscope:
+  - "!EEA"
+endpointCompression: gzip
+maintainer:
+  email: "prebid@smrtconnect.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+      - audio

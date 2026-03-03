@@ -88,7 +88,8 @@
                         "ip": "123.123.123.123",
                         "ua": "iPad"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,

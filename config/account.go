@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/prebid/go-gdpr/consentconstants"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 )
 
 // ChannelType enumerates the values of integrations Prebid Server can configure for an account
@@ -21,6 +21,15 @@ const (
 	ChannelVideo ChannelType = "video"
 	ChannelWeb   ChannelType = "web"
 	ChannelDOOH  ChannelType = "dooh"
+)
+
+type BidRoundingMode string
+
+const (
+	RoundingModeDown      BidRoundingMode = "down"
+	RoundingModeTrue      BidRoundingMode = "true"
+	RoundingModeTimeSplit BidRoundingMode = "timesplit"
+	RoundingModeUp        BidRoundingMode = "up"
 )
 
 // Account represents a publisher account configuration
@@ -41,14 +50,18 @@ type Account struct {
 	Validations             Validations                                 `mapstructure:"validations" json:"validations"`
 	DefaultBidLimit         int                                         `mapstructure:"default_bid_limit" json:"default_bid_limit"`
 	BidAdjustments          *openrtb_ext.ExtRequestPrebidBidAdjustments `mapstructure:"bidadjustments" json:"bidadjustments"`
+	BidRounding             BidRoundingMode                             `mapstructure:"bid_rounding" json:"bid_rounding,omitempty"`
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
+	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
+	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
 type CookieSync struct {
-	DefaultLimit    *int  `mapstructure:"default_limit" json:"default_limit"`
-	MaxLimit        *int  `mapstructure:"max_limit" json:"max_limit"`
-	DefaultCoopSync *bool `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+	DefaultLimit    *int       `mapstructure:"default_limit" json:"default_limit"`
+	MaxLimit        *int       `mapstructure:"max_limit" json:"max_limit"`
+	DefaultCoopSync *bool      `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+	PriorityGroups  [][]string `mapstructure:"priority_groups" json:"priority_groups"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration
@@ -159,6 +172,7 @@ type AccountGDPR struct {
 	PurposeConfigs      map[consentconstants.Purpose]*AccountGDPRPurpose
 	PurposeOneTreatment AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
 	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
+	EEACountries        []string                       `mapstructure:"eea_countries" json:"eea_countries"`
 }
 
 // EnabledForChannelType indicates whether GDPR is turned on at the account level for the specified channel type
@@ -227,7 +241,7 @@ func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 }
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose.
-func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}, exists bool) {
+func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[string]struct{}, exists bool) {
 	c, exists := a.PurposeConfigs[purpose]
 
 	if exists && c.VendorExceptionMap != nil {
@@ -262,8 +276,8 @@ type AccountGDPRPurpose struct {
 	EnforcePurpose *bool `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
 	EnforceVendors *bool `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
-	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
-	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+	VendorExceptions   []string `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
+	VendorExceptionMap map[string]struct{}
 }
 
 // AccountGDPRSpecialFeature represents account-specific GDPR special feature configuration
@@ -335,8 +349,27 @@ func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 
 type AccountPrivacy struct {
 	AllowActivities *AllowActivities `mapstructure:"allowactivities" json:"allowactivities"`
+	DSA             *AccountDSA      `mapstructure:"dsa" json:"dsa"`
 	IPv6Config      IPv6             `mapstructure:"ipv6" json:"ipv6"`
 	IPv4Config      IPv4             `mapstructure:"ipv4" json:"ipv4"`
+	PrivacySandbox  PrivacySandbox   `mapstructure:"privacysandbox" json:"privacysandbox"`
+}
+
+type PrivacySandbox struct {
+	TopicsDomain      string            `mapstructure:"topicsdomain"`
+	CookieDeprecation CookieDeprecation `mapstructure:"cookiedeprecation"`
+}
+
+type CookieDeprecation struct {
+	Enabled bool `mapstructure:"enabled"`
+	TTLSec  int  `mapstructure:"ttl_sec"`
+}
+
+// AccountDSA represents DSA configuration
+type AccountDSA struct {
+	Default         string `mapstructure:"default" json:"default"`
+	DefaultUnpacked *openrtb_ext.ExtRegsDSA
+	GDPROnly        bool `mapstructure:"gdpr_only" json:"gdpr_only"`
 }
 
 type IPv6 struct {

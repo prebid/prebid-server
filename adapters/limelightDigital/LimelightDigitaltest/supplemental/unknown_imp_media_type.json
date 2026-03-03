@@ -24,7 +24,8 @@
               "id": "test-banner-id"
             }
           ]
-        }
+        },
+        "impIDs":["test-banner-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -47,7 +48,8 @@
                 }
               ]
             }
-          ]
+          ],
+          "cur": "USD"
         }
       }
     }

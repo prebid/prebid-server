@@ -1,4 +1,5 @@
 endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"
+endpointCompression: gzip
 maintainer:
   email: "header-bidding@pubmatic.com"
 gvlVendorID: 76
@@ -22,4 +23,5 @@ userSync:
     url: "https://image8.pubmatic.com/AdServer/ImgSync?p=159706&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&pu={{.RedirectURL}}"
     userMacro: "#PMUID"
 openrtb:
+  version: 2.6
   gpp-supported: true

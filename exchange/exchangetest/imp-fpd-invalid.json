@@ -1,0 +1,55 @@
+{
+    "requestType": "openrtb2-web",
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "imp": [
+                {
+                    "id": "imp-id-1",
+                    "banner": {
+                        "format": [
+                            {
+                                "w": 300,
+                                "h": 600
+                            }
+                        ]
+                    },
+                    "ext": {
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                },
+                                "audienceNetwork": {
+                                    "placementId": "some-placement"
+                                }
+                            },
+                            "imp": {
+                                "appnexus": {
+                                    "id": "imp-id-1-appnexus"
+                                },
+                                "audienceNetwork": {
+                                    "banner": {
+                                        "format": [
+                                            {
+                                                "w": -1,
+                                                "h": -1
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "outgoingRequests": {},
+    "response": {
+        "error": "merging bidder imp first party data for imp imp-id-1 results in an invalid imp: [request.imp[0].banner.format[0].w must be a positive number]"
+    }
+}

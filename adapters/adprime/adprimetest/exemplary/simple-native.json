@@ -56,7 +56,8 @@
                         "ip": "123.123.123.123",
                         "ua": "iPad"
                     }
-                }
+                },
+                "impIDs":["test-imp-id"]
             },
             "mockResponse": {
                 "status": 200,
@@ -75,6 +76,7 @@
                                     "dealid": "test_dealid",
                                     "w": 300,
                                     "h": 250,
+                                    "mtype": 4,
                                     "ext": {
                                         "prebid": {
                                             "type": "native"
@@ -104,6 +106,7 @@
                         "dealid": "test_dealid",
                         "w": 300,
                         "h": 250,
+                        "mtype": 4,
                         "ext": {
                             "prebid": {
                                 "type": "native"

@@ -1,0 +1,16 @@
+endpoint: "https://prebid.display.io/?publisher={{.PublisherID}}"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: contact@display.io
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

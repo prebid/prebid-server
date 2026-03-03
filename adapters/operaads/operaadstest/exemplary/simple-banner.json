@@ -99,7 +99,8 @@
           "source": {
             "tid": "283746293874293"
           }
-        }
+        },
+        "impIDs":["test-imp-id:opa:banner"]
       },
       "mockResponse": {
         "status": 200,

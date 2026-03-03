@@ -12,8 +12,9 @@ capabilities:
     mediaTypes:
       - native
 userSync:
-  # Triplelift supports user syncing but requires configuration by the host as the RedirectURL domain must be allowlisted. 
-  # Contact this bidder directly at the email address above to ask about enabling user sync.
+  # Triplelift supports user syncing but requires configuration by the host as the RedirectURL domain must be allowlisted.
+  # If you are a publisher hosting your own Prebid Server, contact this bidder directly at the email address above to ask about enabling user sync.
+  # If you are a Prebid Server Host, please have your publisher contact the bidder.
   # 
   iframe:
     url: "https://eb2.3lift.com/sync?gdpr={{.GDPR}}&cmp_cs={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
@@ -22,4 +23,5 @@ userSync:
     url: "https://eb2.3lift.com/getuid?gdpr={{.GDPR}}&cmp_cs={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
     userMacro: "$UID"
 openrtb:
+  version: 2.6
   gpp-supported: true

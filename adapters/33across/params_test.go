@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/33across.json
@@ -40,15 +40,19 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"productId": "inview", "zoneId": "zone1"}`,
+	`{"productId": "siab", "zoneId": "fakezoneid2"}`,
+	`{"productId": "inview", "zoneId": "zone1", "siteId": "foo.ba"}`,
 	`{"productId": "inview", "siteId": "fakesiteid1"}`,
-	`{"productId": "siab", "siteId": "fakesiteid2"}`,
-	`{"productId": "inview", "siteId": "foo.ba", "zoneId": "zone1"}`,
 }
 
 var invalidParams = []string{
 	`{"productId": "inview"}`,
+	`{"zoneId": "fakezoneid2"}`,
 	`{"siteId": "fakesiteid2"}`,
+	`{"productId": 123, "zoneId": "fakesiteid2"}`,
 	`{"productId": 123, "siteId": "fakesiteid2"}`,
+	`{"productId": "siab", "zoneId": 123}`,
 	`{"productId": "siab", "siteId": 123}`,
-	`{"productId": "siab", "siteId": "fakesiteid2", "zoneId": 123}`,
+	`{"productId": "siab", "zoneId": 123, "siteId": "fakesiteid2"}`,
 }

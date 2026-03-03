@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/metrics"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -78,7 +78,7 @@ func TestAny(t *testing.T) {
 		reqTimeFloat, _ := strconv.ParseFloat(test.reqTimeInQueue, 64)
 		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders, metrics.ReqTypeVideo, test.requestStatusMetrics, reqTimeFloat)
 		assert.Equal(t, test.expectedRespCode, result.Code, test.expectedRespCodeMessage)
-		assert.Equal(t, test.expectedRespBody, string(result.Body.Bytes()), test.expectedRespBodyMessage)
+		assert.Equal(t, test.expectedRespBody, result.Body.String(), test.expectedRespBodyMessage)
 	}
 }
 
@@ -101,7 +101,7 @@ func ExecuteAspectRequest(t *testing.T, timeInQueue string, reqTimeout string, s
 		req.Header.Set(reqTimeoutHeaderName, reqTimeout)
 	}
 
-	customHeaders := config.RequestTimeoutHeaders{reqTimeInQueueHeaderName, reqTimeoutHeaderName}
+	customHeaders := config.RequestTimeoutHeaders{RequestTimeInQueue: reqTimeInQueueHeaderName, RequestTimeoutInQueue: reqTimeoutHeaderName}
 
 	metrics := &metrics.MetricsEngineMock{}
 

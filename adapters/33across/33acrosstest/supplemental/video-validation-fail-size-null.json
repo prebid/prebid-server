@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "protocols": [2],
+          "playbackmethod": [2],
+          "mimes": ["foo", "bar"]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "fake-site-id",
+            "productId": "siab"
+          }
+        }
+      }
+    ],
+    "site": {}
+  },
+  
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "One or more invalid or missing video field(s) w, h, protocols, mimes, playbackmethod",
+      "comparison": "literal"
+    }
+  ]
+}

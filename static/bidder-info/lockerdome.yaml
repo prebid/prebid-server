@@ -1,4 +1,7 @@
 endpoint: "https://lockerdome.com/ladbid/prebidserver/openrtb2"
+# This bidder does not operate globally. Please consider setting "disabled: true" outside of the following regions:
+geoscope:
+  - USA
 maintainer:
   email: "bidding@lockerdome.com"
 capabilities:

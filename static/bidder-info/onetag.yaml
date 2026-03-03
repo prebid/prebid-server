@@ -19,4 +19,7 @@ userSync:
   iframe:
     url: "https://onetag-sys.com/usync/?redir={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"
     userMacro: "${USER_TOKEN}"
+  redirect:
+    url: "https://onetag-sys.com/usync/?tag=img&redir={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}"
+    userMacro: "${USER_TOKEN}"
 endpointCompression: "GZIP"

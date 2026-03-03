@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/iputil"
 	"github.com/stretchr/testify/assert"
 )
 

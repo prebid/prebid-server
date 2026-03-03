@@ -40,7 +40,8 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-banner-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -48,5 +49,5 @@
       }
     }
   ],
-  "expectedBidResponses": [{"currency":"USD","bids":[]}]
+  "expectedBidResponses": [{"currency":"","bids":[]}]
 }

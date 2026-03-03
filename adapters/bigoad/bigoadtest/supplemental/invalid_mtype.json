@@ -1,0 +1,164 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "app": {
+            "id": "123456789",
+            "bundle": "com.prebid",
+            "domain": "prebid.com",
+            "ver": "3.3.2",
+            "publisher": {
+                "id": "123456789"
+            },
+            "cat": [
+                "IAB22-1"
+            ]
+        },
+        "device": {
+            "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab",
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "geo": {
+                "lon": 16.0,
+                "country": "KWT",
+                "city": "deli"
+            }
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "tagid": "tagid",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "sspid": "sspid"
+                    }
+                }
+            }
+        ],
+        "tmax": 1000
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "X-Openrtb-Version": [
+                        "2.5"
+                    ]
+                },
+                "body": {
+                    "id": "test-request-id",
+                    "app": {
+                        "id": "123456789",
+                        "bundle": "com.prebid",
+                        "domain": "prebid.com",
+                        "ver": "3.3.2",
+                        "publisher": {
+                            "id": "123456789"
+                        },
+                        "cat": [
+                            "IAB22-1"
+                        ]
+                    },
+                    "device": {
+                        "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab",
+                        "ua": "test-user-agent",
+                        "ip": "123.123.123.123",
+                        "language": "en",
+                        "geo": {
+                            "lon": 16.0,
+                            "country": "KWT",
+                            "city": "deli"
+                        }
+                    },
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "tagid": "tagid",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "sspid": "sspid"
+                            }
+                        }
+                    ],
+                    "tmax": 1000
+                },
+                "impIDs": [
+                    "test-imp-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "bigoad",
+                            "type": "banner",
+                            "bid": [
+                                {
+                                    "id": "test-imp-id",
+                                    "impid": "test-imp-id",
+                                    "mtype": 5,
+                                    "adid": "11110126",
+                                    "price": 0.42632559,
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "www.lazada.com"
+                                    ],
+                                    "crid": "test-crid",
+                                    "cat": [
+                                        "IAB22",
+                                        "IAB8-5"
+                                    ],
+                                    "attr": [
+                                        4
+                                    ],
+                                    "h": 250,
+                                    "w": 300,
+                                    "ext": {
+                                        "dsp": "bigo"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": []
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "unrecognized bid type in response from bigoad",
+            "comparison": "regex"
+        }
+    ]
+}

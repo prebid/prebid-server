@@ -91,7 +91,8 @@
             "169.254.13.37"
           ]
         },
-        "uri": "https://ad.yieldlab.net/testing/12345,67890?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&sizes=12345%3A728x90%2C67890%3A300x250&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads"
+        "uri": "https://ad.yieldlab.net/testing/12345,67890?content=json&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&lat=51.499488&lon=-0.128953&pvid=true&sizes=12345%3A728x90%2C67890%3A300x250&t=key1%3Dvalue1%26key2%3Dvalue2&ts=testing&yl_rtb_connectiontype=6&yl_rtb_devicetype=4&yl_rtb_ifa=hello-ads",
+        "impIDs":["test-imp-id","test-imp-id2"]
       },
       "mockResponse": {
         "status": 200,
@@ -131,7 +132,8 @@
             "impid": "test-imp-id",
             "price": 2.01,
             "w": 728,
-            "h": 90
+            "h": 90,
+            "adomain": ["yieldlab"]
           },
           "type": "banner"
         },
@@ -144,7 +146,8 @@
             "impid": "test-imp-id2",
             "price": 1.31,
             "w": 300,
-            "h": 250
+            "h": 250,
+            "adomain": ["yieldlab"]
           },
           "type": "banner"
         }

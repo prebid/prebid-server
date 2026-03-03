@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/stored_requests/caches/nil_cache"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/stored_requests/caches/nil_cache"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

@@ -85,13 +85,14 @@
               }
             }
           ]
-        }
+        },
+        "impIDs":["test-imp-id"]
       },
       "mockResponse": {
         "status": 200,
         "body": {
           "id": "test-request-id",
-          "currency": "USD",
+          "cur": "USD",
           "seatbid": [
             {
               "bid": [

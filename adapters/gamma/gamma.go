@@ -7,12 +7,13 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/openrtb/v19/openrtb3"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb3"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 type GammaAdapter struct {
@@ -62,7 +63,7 @@ func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Im
 	var errors []error
 
 	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &bidderExt)
+	err := jsonutil.Unmarshal(imp.Ext, &bidderExt)
 	if err != nil {
 		err = &errortypes.BadInput{
 			Message: "ext.bidder not provided",
@@ -71,7 +72,7 @@ func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Im
 		return nil, errors
 	}
 	var gammaExt openrtb_ext.ExtImpGamma
-	err = json.Unmarshal(bidderExt.Bidder, &gammaExt)
+	err = jsonutil.Unmarshal(bidderExt.Bidder, &gammaExt)
 	if err != nil {
 		err = &errortypes.BadInput{
 			Message: "ext.bidder.publisher not provided",
@@ -138,6 +139,7 @@ func (a *GammaAdapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Im
 		Method:  "GET",
 		Uri:     thisURI,
 		Headers: headers,
+		ImpIDs:  []string{imp.ID},
 	}, errors
 }
 func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -149,7 +151,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		errs = append(errs, err)
 		return nil, errs
 	}
-	var invalidImpIndex = make([]int, 0, 0)
+	var invalidImpIndex []int
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
@@ -181,7 +183,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	} else if len(request.Imp) == len(invalidImpIndex) {
 		//only true if every Imp was not a Banner or a Video
 		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("No valid impression in the bid request"),
+			Message: "No valid impression in the bid request",
 		}
 		errs = append(errs, err)
 		return nil, errs
@@ -204,8 +206,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 }
 
 func convertBid(gBid gammaBid, mediaType openrtb_ext.BidType) *openrtb2.Bid {
-	var bid openrtb2.Bid
-	bid = gBid.Bid
+	bid := gBid.Bid
 
 	if mediaType == openrtb_ext.BidTypeVideo {
 		//Return inline VAST XML Document (Section 6.4.2)
@@ -243,7 +244,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	var gammaResp gammaBidResponse
-	if err := json.Unmarshal(response.Body, &gammaResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &gammaResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
 		}}
@@ -267,7 +268,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 				})
 			} else {
 				err := &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Missing Ad Markup. Run with request.debug = 1 for more info"),
+					Message: "Missing Ad Markup. Run with request.debug = 1 for more info",
 				}
 				errs = append(errs, err)
 			}

@@ -102,7 +102,8 @@
           "buyeruid": "awesome-user"
         },
         "tmax": 1000
-      }
+      },
+      "impIDs":["some-impression-id"]
     },
     "mockResponse": {
       "status": 200,
@@ -111,7 +112,7 @@
   }],
   "expectedMakeBidsErrors": [
     {
-      "value": "Error unmarshaling server Response: json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "value": "Error unmarshaling server Response: expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

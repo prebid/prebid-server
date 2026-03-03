@@ -148,8 +148,10 @@
                     },
                     "ext": {
                         "ixdiag": {
-                          "multipleSiteIds": "569749, 569750, 569751",
-                          "pbjsv": "7.0.0"
+                            "multipleSiteIds": "569749, 569750, 569751",
+                            "pbjsv": "7.0.0",
+                            "pbsp": "go",
+                            "pbsv": "unknown"
                         },
                         "prebid": {
                           "channel": {
@@ -158,7 +160,8 @@
                           }
                         }
                     }
-                }
+                },
+                "impIDs":["test-imp-id-1","test-imp-id-2","test-imp-id-3"]
             },
             "mockResponse": {
                 "status": 200,

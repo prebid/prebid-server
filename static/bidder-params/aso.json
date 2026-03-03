@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adserver.Online Adapter Params",
+  "description": "A schema which validates params accepted by the aso adapter",
+  "type": "object",
+  "properties": {
+    "zone": {
+      "type": "integer",
+      "description": "An ID which identifies the zone selling the impression"
+    }
+  },
+  "required": ["zone"]
+}

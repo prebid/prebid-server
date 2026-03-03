@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "zMaticoo Adapter Params",
+  "description": "A schema which validates params accepted by the zMaticoo adapter",
+  "type": "object",
+  "properties": {
+    "pubId": {
+      "type": "string",
+      "description": "Publisher ID",
+      "minLength": 1
+    },
+    "zoneId": {
+      "type": "string",
+      "description": "Zone Id",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "pubId",
+    "zoneId"
+  ]
+}

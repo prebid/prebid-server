@@ -1,0 +1,185 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "adSlot": "AdTag_Div1@300x250",
+                        "publisherId": "  999  ",
+                        "pmzoneid": "drama,sport",
+                        "dctr": "abBucket=4|adType=page|entity=|paidByCategory=|sku=|userLevel=free|platform=android|majorVersion=3.54|version=3.54.0|mobileApplication=true|showId=20166|show=Kisah Untuk Geri|genre=Drama|contentUrl=https://www.iflix.com/title/show/20166|rating=TV-MA|contentLanguage=id",
+                        "keywords": [
+                            {
+                                "key": "pmZoneID",
+                                "value": [
+                                    "Zone1",
+                                    "Zone2"
+                                ]
+                            },
+                            {
+                                "key": "preference",
+                                "value": [
+                                    "sports",
+                                    "movies"
+                                ]
+                            }
+                        ],
+                        "wrapper": {
+                            "version": 1,
+                            "profile": 5123
+                        }
+                    }
+                }
+            }
+        ],
+        "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+        },
+        "app": {
+            "id": "appID",
+            "publisher": {
+                "id": "1234"
+            },
+            "ext": {
+                "prebid": {
+                    "source": "prebid-mobile",
+                    "version": "1.0.0"
+                },
+                "source": "prebid-android",
+                "version": "2.0.0"
+            }
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "tagid": "AdTag_Div1",
+                            "displaymanager": "prebid-mobile",
+                            "displaymanagerver": "1.0.0",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ],
+                                "h": 250,
+                                "w": 300
+                            },
+                            "ext": {
+                                "key_val": "abBucket=4|adType=page|entity=|paidByCategory=|sku=|userLevel=free|platform=android|majorVersion=3.54|version=3.54.0|mobileApplication=true|showId=20166|show=Kisah Untuk Geri|genre=Drama|contentUrl=https://www.iflix.com/title/show/20166|rating=TV-MA|contentLanguage=id",
+                                "pmZoneId": "drama,sport",
+                                "preference": "sports,movies"
+                            }
+                        }
+                    ],
+                    "device": {
+                        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+                    },
+                    "app": {
+                        "id": "appID",
+                        "publisher": {
+                            "id": "999"
+                        },
+                        "ext": {
+                            "prebid": {
+                                "source": "prebid-mobile",
+                                "version": "1.0.0"
+                            },
+                            "source": "prebid-android",
+                            "version": "2.0.0"
+                        }
+                    },
+                    "ext": {
+                        "wrapper": {
+                            "profile": 5123,
+                            "version": 1
+                        }
+                    }
+                },
+                "impIDs": [
+                    "test-imp-id"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "958",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "test-imp-id",
+                                    "price": 0.5,
+                                    "adid": "29681110",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "pubmatic.com"
+                                    ],
+                                    "crid": "29681110",
+                                    "h": 250,
+                                    "w": 300,
+                                    "dealid": "test deal",
+                                    "mtype": 1,
+                                    "ext": {
+                                        "dspid": 6,
+                                        "deal_channel": 1
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "7706636740145184841",
+                        "impid": "test-imp-id",
+                        "price": 0.5,
+                        "adid": "29681110",
+                        "adm": "some-test-ad",
+                        "adomain": [
+                            "pubmatic.com"
+                        ],
+                        "crid": "29681110",
+                        "w": 300,
+                        "h": 250,
+                        "dealid": "test deal",
+                        "mtype": 1,
+                        "ext": {
+                            "dspid": 6,
+                            "deal_channel": 1
+                        }
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

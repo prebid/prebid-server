@@ -1,0 +1,100 @@
+{
+    "mockBidRequest": {
+      "id": "web-native",
+      "imp": [
+        {
+          "id": "native-imp-id",
+          "ext": {
+            "bidder": {
+                "pubId": "386276e072"
+            }
+          },
+          "native": {
+            "ver": "1.2",
+            "request": "placeholder request"
+          }
+        }
+      ]
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://example.com/rtb/v2/bid?publisher_id=386276e072",
+          "headers": {
+            "Content-Type": ["application/json;charset=utf-8"],
+            "Accept": ["application/json"]
+          },
+          "body": {
+            "id": "web-native",
+            "imp": [
+              {
+                "id": "native-imp-id",
+                "ext": {
+                  "bidder": {
+                    "pubId": "386276e072"
+                  }
+                },
+                "native": {
+                  "ver": "1.2",
+                  "request": "placeholder request"
+                }
+              }
+            ]
+          },
+          "impIDs":["native-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "web-native",
+            "cur": "USD",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "web-native",
+                    "impid": "native-imp-id",
+                    "crid": "some-creative-id",
+                    "adm": "<div>Ad</div>",
+                    "price": 20,
+                    "w": 300,
+                    "h": 250,
+                    "ext": {
+                      "prebid": {
+                        "type": "native"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "web-native",
+              "impid": "native-imp-id",
+              "crid": "some-creative-id",
+              "adm": "<div>Ad</div>",
+              "price": 20,
+              "w": 300,
+              "h": 250,
+              "ext": {
+                "prebid": {
+                  "type": "native"
+                }
+              }
+            },
+            "type": "native"
+          }
+        ]
+      }
+    ]
+  }
+  

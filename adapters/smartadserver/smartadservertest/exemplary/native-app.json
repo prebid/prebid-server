@@ -135,6 +135,7 @@
             "content": {
               "url": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
               "userrating": "4.2",
+              "livestream": 0,
               "language": "en"
             },
             "storeurl": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
@@ -200,7 +201,8 @@
               "id": "73"
             }
           }
-        }
+        },
+        "impIDs":["1"]
       },
       "mockResponse": {
         "status": 200,
@@ -223,6 +225,7 @@
                   "h": 0,
                   "exp": 0,
                   "qagmediarating": 0,
+                  "mtype": 4,
                   "ext": {
                     "event_notification_token": {
                       "payload": "4323.905895002584918328.1655998688532"
@@ -253,6 +256,7 @@
               "tripadvisor.com"
             ],
             "crid": "11116594",
+            "mtype": 4,
             "ext": {
               "event_notification_token": {
                 "payload": "4323.905895002584918328.1655998688532"

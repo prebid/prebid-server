@@ -15,3 +15,6 @@ userSync:
   redirect:
     url: "https://ads.servenobid.com/getsync?tek=pbs&ver=1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
+  iframe:
+    url: "https://public.servenobid.com/sync.html?tek=pbs&ver=1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: $UID

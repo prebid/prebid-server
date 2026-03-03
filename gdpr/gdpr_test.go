@@ -6,8 +6,9 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -43,14 +44,14 @@ func TestNewPermissions(t *testing.T) {
 			HostVendorID: tt.hostVendorID,
 		}
 		vendorIDs := map[openrtb_ext.BidderName]uint16{}
-		vendorListFetcher := func(ctx context.Context, specVersion, listVersion uint16) (vendorlist.VendorList, error) {
+		vendorListFetcher := func(ctx context.Context, specVersion, listVersion uint16, metricsEngine metrics.MetricsEngine) (vendorlist.VendorList, error) {
 			return nil, nil
 		}
 
 		fakePurposeEnforcerBuilder := fakePurposeEnforcerBuilder{
 			purposeEnforcer: nil,
 		}.Builder
-		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{})
+		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{}, &metrics.MetricsEngineMock{})
 
 		assert.IsType(t, tt.wantType, perms, tt.description)
 	}
@@ -60,6 +61,6 @@ type fakePurposeEnforcerBuilder struct {
 	purposeEnforcer PurposeEnforcer
 }
 
-func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, openrtb_ext.BidderName) PurposeEnforcer {
+func (fpeb fakePurposeEnforcerBuilder) Builder(consentconstants.Purpose, string) PurposeEnforcer {
 	return fpeb.purposeEnforcer
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

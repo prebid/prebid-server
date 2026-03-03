@@ -245,29 +245,3 @@ func TestHasElement(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
-
-func TestCloneMap(t *testing.T) {
-	// Test we handle nils properly
-	t.Run("NilMap", func(t *testing.T) {
-		var testMap, copyMap map[string]string = nil, nil // copyMap is a manual copy of testMap
-		clone := Clone(testMap)
-		testMap = map[string]string{"foo": "bar"}
-		assert.Equal(t, copyMap, clone)
-	})
-	// Test a simple string map
-	t.Run("StringMap", func(t *testing.T) {
-		var testMap, copyMap map[string]string = map[string]string{"foo": "bar", "first": "one"}, map[string]string{"foo": "bar", "first": "one"}
-		clone := Clone(testMap)
-		testMap["foo"] = "baz"
-		testMap["bozo"] = "the clown"
-		assert.Equal(t, copyMap, clone)
-	})
-	// Test a simple map[string]int
-	t.Run("StringInt", func(t *testing.T) {
-		var testMap, copyMap map[string]int = map[string]int{"foo": 1, "first": 2}, map[string]int{"foo": 1, "first": 2}
-		clone := Clone(testMap)
-		testMap["foo"] = 7
-		testMap["bozo"] = 13
-		assert.Equal(t, copyMap, clone)
-	})
-}

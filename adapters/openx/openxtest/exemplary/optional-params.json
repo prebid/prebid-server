@@ -12,7 +12,7 @@
             "unit": "539439964",
             "delDomain": "se-demo-d.openx.net",
             "platform": "PLATFORM",
-            "customFloor": 0.1,
+            "customFloor": "0.4",
             "customParams": {"foo": "bar"}
           }
         }
@@ -25,7 +25,7 @@
         },
         "ext": {
           "bidder": {
-            "unit": "539439964",
+            "unit": 539439964,
             "delDomain": "se-demo-d.openx.net",
             "platform": "PLATFORM",
             "customFloor": 0.1
@@ -48,7 +48,7 @@
                 "format": [{"w": 728, "h": 90}]
               },
               "tagid": "539439964",
-              "bidfloor": 0.1,
+              "bidfloor": 0.4,
               "ext": {
                 "customParams": {"foo": "bar"}
               }
@@ -67,7 +67,8 @@
             "delDomain": "se-demo-d.openx.net",
             "platform": "PLATFORM"
           }
-        }
+        },
+        "impIDs":["test-imp-id","test-imp-id"]
       },
       "mockResponse": {
         "status": 204

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/stored_requests/caches/cachestest"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/stored_requests/caches/cachestest"
 )
 
 func TestLRURobustness(t *testing.T) {

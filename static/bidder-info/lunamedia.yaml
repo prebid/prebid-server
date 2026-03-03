@@ -1,4 +1,6 @@
 endpoint: "http://rtb.lunamedia.live/?pid={{.PublisherID}}"
+geoscope:
+  - USA
 maintainer:
   email: "cs@lunamedia.io"
 capabilities:

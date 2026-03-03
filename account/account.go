@@ -6,20 +6,20 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/iputil"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v3/util/iputil"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
 func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string, me metrics.MetricsEngine) (account *config.Account, errs []error) {
 	if cfg.AccountRequired && accountID == metrics.PublisherUnknown {
 		return nil, []error{&errortypes.AcctRequired{
-			Message: fmt.Sprintf("Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host."),
+			Message: "Prebid-server has been configured to discard requests without a valid Account ID. Please reach out to the prebid server host.",
 		}}
 	}
 
@@ -32,7 +32,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		}
 		if cfg.AccountRequired && cfg.AccountDefaults.Disabled {
 			errs = append(errs, &errortypes.AcctRequired{
-				Message: fmt.Sprintf("Prebid-server could not verify the Account ID. Please reach out to the prebid server host."),
+				Message: "Prebid-server could not verify the Account ID. Please reach out to the prebid server host.",
 			})
 			return nil, errs
 		}
@@ -47,6 +47,11 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		if err := jsonutil.UnmarshalValid(accountJSON, account); err != nil {
 			return nil, []error{&errortypes.MalformedAcct{
 				Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+			}}
+		}
+		if err := config.UnpackDSADefault(account.Privacy.DSA); err != nil {
+			return nil, []error{&errortypes.MalformedAcct{
+				Message: fmt.Sprintf("The prebid-server account config DSA for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 			}}
 		}
 
@@ -111,7 +116,7 @@ func setDerivedConfig(account *config.Account) {
 		if pc.VendorExceptions == nil {
 			continue
 		}
-		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		pc.VendorExceptionMap = make(map[string]struct{})
 		for _, v := range pc.VendorExceptions {
 			pc.VendorExceptionMap[v] = struct{}{}
 		}

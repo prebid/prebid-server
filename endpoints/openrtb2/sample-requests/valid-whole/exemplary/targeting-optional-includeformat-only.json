@@ -1,0 +1,89 @@
+{
+    "description": "Targeting flags are all undefined besides includeformat, request is still valid, defaults should come in for other flags so targeting data should be present in bid",
+    "config": {
+      "mockBidders": [
+        {
+          "bidderName": "appnexus",
+          "currency": "USD",
+          "price": 1.00
+        }
+      ]
+    },
+    "mockBidRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "prebid.org"
+      },
+      "imp": [
+        {
+          "id": "some-impression-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              },
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 12883451
+            }
+          }
+        }
+      ],
+      "tmax": 500,
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "includeformat": true
+          }
+        }
+      }
+    },
+    "expectedBidResponse": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "some-impression-id",
+              "price": 1.00,
+              "ext": {
+                "origbidcpm": 1,
+                "origbidcur": "USD",
+                "prebid": {
+                  "meta": {
+                    "adaptercode": "appnexus"
+                  },
+                  "targeting": {
+                    "hb_bidder": "appnexus",
+                    "hb_bidder_appnexus": "appnexus",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_host_appnex": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_cache_path_appnex": "/pbcache/endpoint",
+                    "hb_format": "banner",
+                    "hb_format_appnexus": "banner",
+                    "hb_pb": "1.00",
+                    "hb_pb_appnexus": "1.00"
+                  },
+                  "type": "banner"
+                }
+              }
+            }
+          ],
+          "seat": "appnexus"
+        }
+      ],
+      "bidid": "test bid id",
+      "cur": "USD",
+      "nbr": 0
+    },
+    "expectedReturnCode": 200
+  }

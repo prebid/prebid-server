@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
 // adapter is a Rise implementation of the adapters.Bidder interface.
@@ -47,6 +48,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, _ *adapters.
 		Uri:     a.endpointURL + "?publisher_id=" + org,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
 	}), nil
 }
 
@@ -61,7 +63,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
@@ -92,12 +94,12 @@ func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
 	var err error
 	for _, imp := range openRTBRequest.Imp {
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return "", fmt.Errorf("unmarshal bidderExt: %w", err)
 		}
 
 		var impExt openrtb_ext.ImpExtRise
-		if err = json.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+		if err = jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 			return "", fmt.Errorf("unmarshal ImpExtRise: %w", err)
 		}
 
@@ -118,6 +120,8 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", fmt.Errorf("unsupported MType %d", bid.MType)
 	}

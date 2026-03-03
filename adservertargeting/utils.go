@@ -1,12 +1,12 @@
 package adservertargeting
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/pkg/errors"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
 
 func splitAndGet(path string, data []byte, delimiter string) (string, error) {
@@ -40,12 +40,12 @@ func typedLookup(data []byte, path string, keys ...string) ([]byte, error) {
 	if err != nil && err != jsonparser.KeyPathNotFoundError {
 		return nil, err
 	} else if err != nil && err == jsonparser.KeyPathNotFoundError {
-		return nil, errors.Errorf("value not found for path: %s", path)
+		return nil, fmt.Errorf("value not found for path: %s", path)
 	}
 	if verifyType(dataType) {
 		return value, nil
 	}
-	return nil, errors.Errorf("incorrect value type for path: %s, value can only be string or number", path)
+	return nil, fmt.Errorf("incorrect value type for path: %s, value can only be string or number", path)
 }
 
 func verifyType(dataType jsonparser.ValueType) bool {

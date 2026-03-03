@@ -3,7 +3,7 @@ package openrtb_ext
 import (
 	"fmt"
 
-	"github.com/prebid/openrtb/v19/openrtb2"
+	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
 func ConvertUpTo26(r *RequestWrapper) error {
@@ -168,7 +168,7 @@ func moveRewardedFromPrebidExtTo26(i *ImpWrapper) {
 	// read and clear prebid ext
 	impExt, _ := i.GetImpExt()
 	rwddPrebidExt := (*int8)(nil)
-	if p := impExt.GetPrebid(); p != nil {
+	if p := impExt.GetPrebid(); p != nil && p.IsRewardedInventory != nil {
 		rwddPrebidExt = p.IsRewardedInventory
 		p.IsRewardedInventory = nil
 		impExt.SetPrebid(p)

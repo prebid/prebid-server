@@ -75,7 +75,7 @@
       },
       "expectedMakeRequestsErrors": [
         {
-          "value": "json: cannot unmarshal number into Go value of type adapters.ExtImpBidder",
+          "value": "expect { or n, but found 9",
           "comparison": "literal"
         }
       ]

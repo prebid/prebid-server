@@ -206,7 +206,8 @@
                 }
               }
             }
-          }
+          },
+          "impIDs":["div-gpt-ad-1460505748561-0"]
         },
         "mockResponse": {
           "status": 200,
@@ -217,7 +218,7 @@
     "expectedBidResponses": [],
     "expectedMakeBidsErrors": [
         {
-            "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+            "value": "expect { or n, but found \"",
             "comparison": "literal"
         }
     ]

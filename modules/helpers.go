@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v3/hooks"
+	"github.com/prebid/prebid-server/v3/hooks/hookstage"
 )
 
 var moduleReplacer = strings.NewReplacer(".", "_", "-", "_")
@@ -54,6 +54,12 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 		if _, ok := hook.(hookstage.AuctionResponse); ok {
 			added = true
 			stageName := hooks.StageAuctionResponse.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
+		}
+
+		if _, ok := hook.(hookstage.Exitpoint); ok {
+			added = true
+			stageName := hooks.StageExitpoint.String()
 			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 

@@ -1,0 +1,343 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "10000000"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 1024,
+          "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "10000000"
+          }
+        }
+      },
+      {
+        "id": "imp-3",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "10000000"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://loopme.example.com",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "10000000"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "loopme",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "w": 1024,
+                  "h": 576,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://loopme.example.com",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "imp-2",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 1024,
+                "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "10000000"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "loopme",
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "w": 1024,
+                  "h": 576,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://loopme.example.com",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "imp-3",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "10000000"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-3"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "loopme",
+              "bid": [
+                {
+                  "id": "bid-3",
+                  "impid": "imp-3",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "test-crid",
+                  "w": 728,
+                  "h": 90,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid",
+            "w": 1024,
+            "h": 576,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-2",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid",
+            "w": 1024,
+            "h": 576,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-3",
+            "impid": "imp-3",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "test-crid",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
+
+
+

@@ -7,10 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
-	"github.com/prebid/openrtb/v19/openrtb2"
-	"github.com/prebid/prebid-server/v2/currency"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/currency"
+	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 const (
@@ -73,7 +74,7 @@ func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, imp *openrtb_ext.Im
 		floorCur = getFloorCurrency(floorExt)
 		if floorMin > 0.0 && floorMinCur != "" {
 			if floorExt.FloorMinCur != "" && impFloorCur != "" && floorExt.FloorMinCur != impFloorCur {
-				glog.Warning("FloorMinCur are different in floorExt and ImpExt")
+				logger.Warnf("FloorMinCur are different in floorExt and ImpExt")
 			}
 			if floorCur != "" && floorMinCur != floorCur {
 				rate, err = conversions.GetRate(floorMinCur, floorCur)
@@ -291,8 +292,8 @@ func getSizeValue(imp *openrtb2.Imp) string {
 	if imp.Banner != nil {
 		width, height = getBannerSize(imp)
 	} else if imp.Video != nil {
-		width = imp.Video.W
-		height = imp.Video.H
+		width = ptrutil.ValueOrDefault(imp.Video.W)
+		height = ptrutil.ValueOrDefault(imp.Video.H)
 	}
 
 	if width != 0 && height != 0 {
@@ -420,7 +421,7 @@ func getAdUnitCode(imp *openrtb_ext.ImpWrapper) string {
 		}
 
 		prebidExt := impExt.GetPrebid()
-		if prebidExt != nil && prebidExt.StoredRequest.ID != "" {
+		if prebidExt != nil && prebidExt.StoredRequest != nil && prebidExt.StoredRequest.ID != "" {
 			return prebidExt.StoredRequest.ID
 		}
 	}

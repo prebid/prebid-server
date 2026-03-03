@@ -34,7 +34,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "Invalid or non existing key and tagId, atleast one should be present",
+            "value": "Invalid or non existing key and tagId, at least one should be present",
             "comparison": "literal"
         }
     ]

@@ -1,6 +1,6 @@
 endpoint: "http://rtb.iqzone.com?pid={{.SourceId}}&host={{.Host}}&pbs=1"
 maintainer:
-  email: "it@iqzone.com"
+  email: "adops@iqzone.com"
 capabilities:
   app:
     mediaTypes:

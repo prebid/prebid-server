@@ -53,7 +53,8 @@
                 "domain": "www.publisher.com",
                 "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
             }
-          }
+          },
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 200,

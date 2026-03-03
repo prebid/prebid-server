@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Loopme Adapter Params",
+  "description": "A schema which validates params accepted by the Loopme adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "An id which identifies Loopme partner",
+      "minLength": 1
+    },
+    "bundleId": {
+      "type": "string",
+      "description": "An id which identifies app/site in Loopme",
+      "minLength": 1
+    },
+    "placementId": {
+      "type": "string",
+      "description": "A placement id in Loopme",
+      "minLength": 1
+    }
+  },
+  "required": ["publisherId"]
+}

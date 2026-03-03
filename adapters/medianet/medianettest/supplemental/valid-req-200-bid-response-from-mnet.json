@@ -36,9 +36,7 @@
       "USD"
     ],
     "regs": {
-      "ext": {
-        "gdpr": 0
-      }
+      "gdpr": 0
     }
   },
   "httpCalls": [{
@@ -81,11 +79,10 @@
           "USD"
         ],
         "regs": {
-          "ext": {
-            "gdpr": 0
-          }
+          "gdpr": 0
         }
-      }
+      },
+      "impIDs":["test-imp-id"]
     },
     "mockResponse": {
       "status": 200,
@@ -104,7 +101,8 @@
                 "cid": "987",
                 "crid": "12345678",
                 "h": 250,
-                "w": 300
+                "w": 300,
+                "mtype": 1
               }
             ]
           }
@@ -126,7 +124,8 @@
         "cid": "987",
         "crid": "12345678",
         "h": 250,
-        "w": 300
+        "w": 300,
+        "mtype": 1
       },
       "type": "banner"
     }]

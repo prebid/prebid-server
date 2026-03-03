@@ -63,10 +63,16 @@
                   ],
                   "w": 1024,
                   "h": 576
+                },
+                "ext": {
+                  "bidder": {
+                    "pubId": "386276e072"
+                  }
                 }
               }
             ]
-          }
+          },
+          "impIDs":["test-imp-id"]
         },
         "mockResponse": {
           "status": 500,

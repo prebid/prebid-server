@@ -12,8 +12,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "unexpected end of JSON input; ImpID=test-imp-id-1",
-      "comparison": "literal"
+      "value": "expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }

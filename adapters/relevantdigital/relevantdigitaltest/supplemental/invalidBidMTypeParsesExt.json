@@ -1,0 +1,158 @@
+{
+    "mockBidRequest": {
+        "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+        "imp": [
+            {
+                "id": "div-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 320,
+                            "h": 320
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "accountId": "620523ae7f4bbe1691bbb815",
+                        "pbsHost": "fakeHost",
+                        "placementId": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                    }
+                }
+            },
+            {
+                "id": "div-2",
+                "video": {
+                    "mimes": null
+                },
+                "ext": {
+                    "bidder": {
+                        "accountId": "620523ae7f4bbe1691bbb815",
+                        "pbsHost": "fakeHost",
+                        "placementId": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb818"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakeHost.relevant-digital.com/openrtb2/auction",
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "imp": [
+                        {
+                            "id": "div-1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 320,
+                                        "h": 320
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "prebid": {
+                                    "storedrequest": {
+                                        "id": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": "div-2",
+                            "video": {
+                                "mimes": null
+                            },
+                            "ext": {
+                                "prebid": {
+                                    "storedrequest": {
+                                        "id": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb818"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "ext": {
+                        "prebid": {
+                            "debug": false,
+                            "storedrequest": {
+                                "id": "620523ae7f4bbe1691bbb815"
+                            }
+                        },
+                        "relevant": {
+                            "adapterType": "server",
+                            "count": 1
+                        }
+                    },
+                    "tmax": 750
+                },
+                "impIDs":["div-1","div-2"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "seatbid": [
+                        {
+                            "seat": "relevantdigital",
+                            "bid": [
+                                {
+                                    "impid": "div-1",
+                                    "mtype": 0,
+                                    "ext" : {
+                                        "prebid" : {
+                                            "type": "banner"
+                                        }
+                                    }
+                                },
+                                {
+                                    "impid": "div-2",
+                                    "mtype": 0,
+                                    "ext": {
+                                        "prebid": {
+                                            "type": "video"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+   "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [
+            {
+                "bid": {
+                    "id": "",
+                    "impid": "div-1",
+                    "price": 0,
+                    "ext": {
+                        "prebid": {
+                            "type": "banner"
+                        }
+                    }
+                },
+                "type": "banner"
+            },
+            {
+                "bid": {
+                    "id": "",
+                    "impid": "div-2",
+                    "price": 0,
+                    "ext": {
+                        "prebid": {
+                            "type": "video"
+                        }
+                    }
+                },
+                "type": "video"
+            }
+        ]
+    }]
+}
