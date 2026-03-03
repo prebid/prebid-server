@@ -55,7 +55,7 @@ type Metrics struct {
 	privacyTCF                   *prometheus.CounterVec
 	storedResponses              prometheus.Counter
 	gvlListRequests              prometheus.Counter
-	liveGVLFetchErrors           prometheus.Counter
+	liveGVLFetch                 *prometheus.CounterVec
 	storedResponsesFetchTimer    *prometheus.HistogramVec
 	storedResponsesErrors        *prometheus.CounterVec
 	adsCertRequests              *prometheus.CounterVec
@@ -380,9 +380,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"gvl_requests",
 		"Count number of times GVL list is fetched")
 
-	metrics.liveGVLFetchErrors = newCounterWithoutLabels(cfg, reg,
-		"live_gvl_fetch_errors",
-		"Count of errors encountered while fetching the latest GVL vendor IDs")
+	metrics.liveGVLFetch = newCounter(cfg, reg,
+		"live_gvl_fetch",
+		"Count of live GVL vendor ID fetches labeled by success or failure.",
+		[]string{successLabel})
 
 	metrics.adapterBids = newCounter(cfg, reg,
 		"adapter_bids",
@@ -744,8 +745,16 @@ func (m *Metrics) RecordGvlListRequest() {
 	m.gvlListRequests.Inc()
 }
 
-func (m *Metrics) RecordLiveGVLFetchError() {
-	m.liveGVLFetchErrors.Inc()
+func (m *Metrics) RecordLiveGVLFetch(success bool) {
+	if success {
+		m.liveGVLFetch.With(prometheus.Labels{
+			successLabel: requestSuccessful,
+		}).Inc()
+	} else {
+		m.liveGVLFetch.With(prometheus.Labels{
+			successLabel: requestFailed,
+		}).Inc()
+	}
 }
 
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {

@@ -37,7 +37,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "setuid_requests.syncer_unknown", m.SetUidStatusMeter[SetUidSyncerUnknown])
 	ensureContains(t, registry, "stored_responses", m.StoredResponsesMeter)
 	ensureContains(t, registry, "gvl_requests", m.GvlListRequestsMeter)
-	ensureContains(t, registry, "live_gvl_fetch_errors", m.LiveGVLFetchErrorMeter)
+	ensureContains(t, registry, "live_gvl_fetch.ok", m.LiveGVLFetchSuccess)
+	ensureContains(t, registry, "live_gvl_fetch.failed", m.LiveGVLFetchFailure)
 
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)

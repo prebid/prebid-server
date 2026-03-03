@@ -78,35 +78,35 @@ func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		logger.Errorf("Failed to build GET %s request for GVL vendor ID extraction: %v", url, err)
-		me.RecordLiveGVLFetchError()
+		me.RecordLiveGVLFetch(false)
 		return vendorIDs
 	}
 
 	resp, err := ctxhttp.Do(ctx, client, req)
 	if err != nil {
 		logger.Errorf("Error calling GET %s for GVL vendor ID extraction: %v", url, err)
-		me.RecordLiveGVLFetchError()
+		me.RecordLiveGVLFetch(false)
 		return vendorIDs
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Errorf("GET %s returned %d for GVL vendor ID extraction", url, resp.StatusCode)
-		me.RecordLiveGVLFetchError()
+		me.RecordLiveGVLFetch(false)
 		return vendorIDs
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Errorf("Error reading response body from GET %s for GVL vendor ID extraction: %v", url, err)
-		me.RecordLiveGVLFetchError()
+		me.RecordLiveGVLFetch(false)
 		return vendorIDs
 	}
 
 	var contract gvlVendorListContract
 	if err := json.Unmarshal(respBody, &contract); err != nil {
 		logger.Errorf("GET %s returned malformed JSON for GVL vendor ID extraction: %v", url, err)
-		me.RecordLiveGVLFetchError()
+		me.RecordLiveGVLFetch(false)
 		return vendorIDs
 	}
 
@@ -114,5 +114,6 @@ func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker 
 		vendorIDs[v.ID] = struct{}{}
 	}
 
+	me.RecordLiveGVLFetch(true)
 	return vendorIDs
 }

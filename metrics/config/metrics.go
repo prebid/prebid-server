@@ -299,9 +299,9 @@ func (me *MultiMetricsEngine) RecordGvlListRequest() {
 	}
 }
 
-func (me *MultiMetricsEngine) RecordLiveGVLFetchError() {
+func (me *MultiMetricsEngine) RecordLiveGVLFetch(success bool) {
 	for _, thisME := range *me {
-		thisME.RecordLiveGVLFetchError()
+		thisME.RecordLiveGVLFetch(success)
 	}
 }
 
@@ -540,7 +540,7 @@ func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
 func (me *NilMetricsEngine) RecordGvlListRequest() {
 }
 
-func (me *NilMetricsEngine) RecordLiveGVLFetchError() {
+func (me *NilMetricsEngine) RecordLiveGVLFetch(success bool) {
 }
 
 func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {

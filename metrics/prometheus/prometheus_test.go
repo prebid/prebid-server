@@ -1953,12 +1953,24 @@ func TestRecordGvlListRequest(t *testing.T) {
 	assertCounterValue(t, "Record instance of fetched GVL list", "success", m.gvlListRequests, 1.00)
 }
 
-func TestRecordLiveGVLFetchError(t *testing.T) {
+func TestRecordLiveGVLFetch(t *testing.T) {
 	m := createMetricsForTesting()
 
-	m.RecordLiveGVLFetchError()
+	m.RecordLiveGVLFetch(true)
+	m.RecordLiveGVLFetch(true)
+	m.RecordLiveGVLFetch(false)
 
-	assertCounterValue(t, "Record instance of live GVL fetch error", "error", m.liveGVLFetchErrors, 1.00)
+	assertCounterVecValue(t, "", "live_gvl_fetch:ok", m.liveGVLFetch,
+		float64(2),
+		prometheus.Labels{
+			successLabel: requestSuccessful,
+		})
+
+	assertCounterVecValue(t, "", "live_gvl_fetch:fail", m.liveGVLFetch,
+		float64(1),
+		prometheus.Labels{
+			successLabel: requestFailed,
+		})
 }
 
 func TestRecordAdsCertReqMetric(t *testing.T) {

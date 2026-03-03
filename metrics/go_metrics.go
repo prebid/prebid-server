@@ -36,7 +36,8 @@ type Metrics struct {
 	BidderServerResponseTimer      metrics.Timer
 	StoredResponsesMeter           metrics.Meter
 	GvlListRequestsMeter           metrics.Meter
-	LiveGVLFetchErrorMeter         metrics.Meter
+	LiveGVLFetchSuccess            metrics.Meter
+	LiveGVLFetchFailure            metrics.Meter
 
 	// Metrics for OpenRTB requests specifically
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
@@ -189,7 +190,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetr
 		SyncerSetsMeter:                make(map[string]map[SyncerSetUidStatus]metrics.Meter),
 		StoredResponsesMeter:           blankMeter,
 		GvlListRequestsMeter:           blankMeter,
-		LiveGVLFetchErrorMeter:         blankMeter,
+		LiveGVLFetchSuccess:            blankMeter,
+		LiveGVLFetchFailure:            blankMeter,
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -316,7 +318,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
 	newMetrics.GvlListRequestsMeter = metrics.GetOrRegisterMeter("gvl_requests", registry)
-	newMetrics.LiveGVLFetchErrorMeter = metrics.GetOrRegisterMeter("live_gvl_fetch_errors", registry)
+	newMetrics.LiveGVLFetchSuccess = metrics.GetOrRegisterMeter("live_gvl_fetch.ok", registry)
+	newMetrics.LiveGVLFetchFailure = metrics.GetOrRegisterMeter("live_gvl_fetch.failed", registry)
 	newMetrics.OverheadTimer = makeOverheadTimerMetrics(registry)
 	newMetrics.BidderServerResponseTimer = metrics.GetOrRegisterTimer("bidder_server_response_time_seconds", registry)
 
@@ -661,8 +664,12 @@ func (me *Metrics) RecordGvlListRequest() {
 	me.GvlListRequestsMeter.Mark(1)
 }
 
-func (me *Metrics) RecordLiveGVLFetchError() {
-	me.LiveGVLFetchErrorMeter.Mark(1)
+func (me *Metrics) RecordLiveGVLFetch(success bool) {
+	if success {
+		me.LiveGVLFetchSuccess.Mark(1)
+	} else {
+		me.LiveGVLFetchFailure.Mark(1)
+	}
 }
 
 func (me *Metrics) RecordImps(labels ImpLabels) {

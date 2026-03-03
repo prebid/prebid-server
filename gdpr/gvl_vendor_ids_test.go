@@ -83,7 +83,9 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 
 			m := &metrics.MetricsEngineMock{}
 			if tt.expectError {
-				m.On("RecordLiveGVLFetchError").Once()
+				m.On("RecordLiveGVLFetch", false).Once()
+			} else {
+				m.On("RecordLiveGVLFetch", true).Once()
 			}
 			result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server), m)
 			assert.Equal(t, tt.expectedIDs, result)
@@ -99,7 +101,7 @@ func TestFetchLatestGVLVendorIDsServerError(t *testing.T) {
 	defer server.Close()
 
 	m := &metrics.MetricsEngineMock{}
-	m.On("RecordLiveGVLFetchError").Once()
+	m.On("RecordLiveGVLFetch", false).Once()
 	result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server), m)
 	assert.Empty(t, result)
 	m.AssertExpectations(t)
@@ -113,7 +115,7 @@ func TestFetchLatestGVLVendorIDsMalformedJSON(t *testing.T) {
 	defer server.Close()
 
 	m := &metrics.MetricsEngineMock{}
-	m.On("RecordLiveGVLFetchError").Once()
+	m.On("RecordLiveGVLFetch", false).Once()
 	result := FetchLatestGVLVendorIDs(context.Background(), server.Client(), testURLMaker(server), m)
 	assert.Empty(t, result)
 	m.AssertExpectations(t)
