@@ -12,13 +12,13 @@ import (
 
 func TestFetchLatestGVLVendorIDs(t *testing.T) {
 	tests := []struct {
-		description string
+		name        string
 		settings    serverSettings
 		expectedIDs map[uint16]struct{}
 		expectError bool
 	}{
 		{
-			description: "Successful fetch with multiple vendors",
+			name: "fetch-with-multiple-vendors",
 			settings: serverSettings{
 				vendorListLatestVersion: 1,
 				vendorLists: map[int]map[int]string{
@@ -42,7 +42,7 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 			},
 		},
 		{
-			description: "Successful fetch with no vendors",
+			name: "fetch-with-no-vendors",
 			settings: serverSettings{
 				vendorListLatestVersion: 1,
 				vendorLists: map[int]map[int]string{
@@ -58,7 +58,7 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 			expectedIDs: map[uint16]struct{}{},
 		},
 		{
-			description: "Spec version 3 not available returns empty map",
+			name: "error-spec-v3-not-available",
 			settings: serverSettings{
 				vendorListLatestVersion: 1,
 				vendorLists: map[int]map[int]string{
@@ -77,7 +77,7 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(mockServer(tt.settings)))
 			defer server.Close()
 
@@ -121,33 +121,33 @@ func TestFetchLatestGVLVendorIDsMalformedJSON(t *testing.T) {
 
 func TestLiveGVLVendorIDsContains(t *testing.T) {
 	tests := []struct {
-		description string
-		ids         map[uint16]struct{}
-		checkID     uint16
-		expected    bool
+		name     string
+		ids      map[uint16]struct{}
+		checkID  uint16
+		expected bool
 	}{
 		{
-			description: "Empty set returns true for any ID (safe fallback)",
-			ids:         map[uint16]struct{}{},
-			checkID:     42,
-			expected:    true,
+			name:     "empty-set-returns-true-for-any-id",
+			ids:      map[uint16]struct{}{},
+			checkID:  42,
+			expected: true,
 		},
 		{
-			description: "ID present in set",
-			ids:         map[uint16]struct{}{10: {}, 20: {}},
-			checkID:     10,
-			expected:    true,
+			name:     "id-present-in-set",
+			ids:      map[uint16]struct{}{10: {}, 20: {}},
+			checkID:  10,
+			expected: true,
 		},
 		{
-			description: "ID not present in set",
-			ids:         map[uint16]struct{}{10: {}, 20: {}},
-			checkID:     30,
-			expected:    false,
+			name:     "id-not-present-in-set",
+			ids:      map[uint16]struct{}{10: {}, 20: {}},
+			checkID:  30,
+			expected: false,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			live := NewLiveGVLVendorIDs()
 			live.Update(tt.ids)
 			assert.Equal(t, tt.expected, live.Contains(tt.checkID))
