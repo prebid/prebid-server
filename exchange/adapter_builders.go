@@ -39,6 +39,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/akcelo"
 	"github.com/prebid/prebid-server/v3/adapters/algorix"
 	"github.com/prebid/prebid-server/v3/adapters/alkimi"
+	alliance_gravity "github.com/prebid/prebid-server/v3/adapters/alliance_gravity"
 	"github.com/prebid/prebid-server/v3/adapters/amx"
 	"github.com/prebid/prebid-server/v3/adapters/apacdex"
 	"github.com/prebid/prebid-server/v3/adapters/appnexus"
@@ -52,6 +53,7 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/beachfront"
 	"github.com/prebid/prebid-server/v3/adapters/beintoo"
 	"github.com/prebid/prebid-server/v3/adapters/bematterfull"
+	"github.com/prebid/prebid-server/v3/adapters/beop"
 	"github.com/prebid/prebid-server/v3/adapters/between"
 	"github.com/prebid/prebid-server/v3/adapters/beyondmedia"
 	"github.com/prebid/prebid-server/v3/adapters/bidmachine"
@@ -124,7 +126,6 @@ import (
 	"github.com/prebid/prebid-server/v3/adapters/insticator"
 	"github.com/prebid/prebid-server/v3/adapters/intenze"
 	"github.com/prebid/prebid-server/v3/adapters/interactiveoffers"
-	"github.com/prebid/prebid-server/v3/adapters/intertech"
 	"github.com/prebid/prebid-server/v3/adapters/invibes"
 	"github.com/prebid/prebid-server/v3/adapters/iqx"
 	"github.com/prebid/prebid-server/v3/adapters/iqzone"
@@ -305,6 +306,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAkcelo:            akcelo.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAlkimi:            alkimi.Builder,
+		openrtb_ext.BidderAllianceGravity:   alliance_gravity.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
@@ -318,6 +320,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBeachfront:        beachfront.Builder,
 		openrtb_ext.BidderBeintoo:           beintoo.Builder,
 		openrtb_ext.BidderBematterfull:      bematterfull.Builder,
+		openrtb_ext.BidderBeop:              beop.Builder,
 		openrtb_ext.BidderBetween:           between.Builder,
 		openrtb_ext.BidderBeyondMedia:       beyondmedia.Builder,
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
@@ -391,7 +394,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInsticator:        insticator.Builder,
 		openrtb_ext.BidderIntenze:           intenze.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
-		openrtb_ext.BidderIntertech:         intertech.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
 		openrtb_ext.BidderIQX:               iqx.Builder,
 		openrtb_ext.BidderIQZone:            iqzone.Builder,

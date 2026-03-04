@@ -82,9 +82,8 @@ type CookieSyncBidder struct {
 }
 
 type UsersyncInfo struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	SupportCORS bool   `json:"supportCORS,omitempty"`
+	URL  string `json:"url,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 // NotificationEvent object of a transaction at /event

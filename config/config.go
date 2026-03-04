@@ -50,6 +50,7 @@ type Configuration struct {
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	VTrack            VTrack          `mapstructure:"vtrack"`
 	Event             Event           `mapstructure:"event"`
+	Video             Video           `mapstructure:"video"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
@@ -550,6 +551,10 @@ type Event struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
 }
 
+type Video struct {
+	EnableDeprecatedEndpoint bool `mapstructure:"enable_deprecated_endpoint"`
+}
+
 type HostCookie struct {
 	Domain             string `mapstructure:"domain"`
 	Family             string `mapstructure:"family"`
@@ -1039,7 +1044,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
-	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
 	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)
@@ -1123,12 +1128,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("event.timeout_ms", 1000)
 
+	v.SetDefault("video.enable_deprecated_endpoint", false)
+
 	v.SetDefault("user_sync.priority_groups", [][]string{})
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.http.endpoint", "")
-	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 	v.SetDefault("accounts.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("accounts.in_memory_cache.size_bytes", 0)
