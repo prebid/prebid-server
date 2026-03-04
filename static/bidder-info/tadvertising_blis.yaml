@@ -1,7 +1,7 @@
 endpoint: "https://prebid-blis.tads.xplosion.de/bid"
 endpointCompression: gzip
 geoscope:
-  - global
+  - GLOBAL
 maintainer:
   email:  dev@emetriq.com
 gvlVendorID: 213
