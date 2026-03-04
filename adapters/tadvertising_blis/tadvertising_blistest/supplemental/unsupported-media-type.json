@@ -83,5 +83,11 @@
             "bids": [
             ]
         }
-    ]
+    ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Failed to parse media type of impression ID \"testimp\"",
+      "comparison": "literal"
+    }
+  ]
 }
