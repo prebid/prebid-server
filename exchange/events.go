@@ -3,14 +3,14 @@ package exchange
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v3/exchange/entities"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/endpoints/events"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/endpoints/events"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 // eventTracking has configuration fields needed for adding event tracking to an auction response

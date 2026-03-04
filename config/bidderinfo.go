@@ -8,11 +8,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"github.com/prebid/prebid-server/v3/util/sliceutil"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/util/sliceutil"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"

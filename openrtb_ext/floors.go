@@ -4,7 +4,7 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 )
 
 // Defines strings for FetchStatus

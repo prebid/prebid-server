@@ -9,8 +9,8 @@ import (
 	"text/template"
 
 	validator "github.com/asaskevich/govalidator"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/macros"
 )
 
 var (
