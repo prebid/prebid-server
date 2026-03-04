@@ -144,19 +144,22 @@
               "ad": "advert",
               "crid": "wasd",
               "mtype": "banner",
-              "dsa": {
-                "behalf": "Advertiser A",
-                "paid": "Advertiser B",
-                "transparency": [
-                  {
-                    "domain": "example-domain.com",
-                    "dsaparams": [
-                      1,
-                      2
-                    ]
-                  }
-                ],
-                "adrender": 1
+              "ext": {
+                "other": "thing",
+                "dsa": {
+                  "behalf": "Advertiser A",
+                  "paid": "Advertiser B",
+                  "transparency": [
+                    {
+                      "domain": "example-domain.com",
+                      "dsaparams": [
+                        1,
+                        2
+                      ]
+                    }
+                  ],
+                  "adrender": 1
+                }
               }
             }
           ]
@@ -179,6 +182,7 @@
             "crid": "wasd",
             "mtype": 1,
             "ext": {
+              "other": "thing",
               "dsa": {
                 "behalf": "Advertiser A",
                 "paid": "Advertiser B",

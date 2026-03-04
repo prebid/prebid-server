@@ -37,13 +37,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	if request.Imp[0].TagID == "" {
-		if ext.Bidder.PlacementID != "" {
-			request.Imp[0].TagID = ext.Bidder.PlacementID
-		} else {
-			return nil, []error{
-				errors.New("invalid because it comes with neither request.imp[0].tagId nor req.imp[0].ext.Bidder.placementId"),
-			}
+	if ext.Bidder.PlacementID != "" {
+		request.Imp[0].TagID = ext.Bidder.PlacementID
+	} else if request.Imp[0].TagID == "" {
+		return nil, []error{
+			errors.New("invalid because it comes with neither request.imp[0].tagId nor req.imp[0].ext.Bidder.placementId"),
 		}
 	}
 
