@@ -1321,6 +1321,94 @@ func TestDefaultPermissions(t *testing.T) {
 	}
 }
 
+func TestIsValidVendorID(t *testing.T) {
+	vendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABCAAIAAAAAAAAAAACEAAAAA"
+	vendor2AndPurpose2Consent := "CPGWbY_PGWbY_GYAAAENABCAAEAAAAAAAAAAACEAAAAA"
+	vendorListData := MarshalVendorList(vendorList{
+		VendorListVersion: 2,
+		Vendors: map[string]*vendor{
+			"2": {
+				ID:       2,
+				Purposes: []int{1, 2},
+			},
+		},
+	})
+
+	tcf2AggConfig := allPurposesEnabledTCF2Config()
+
+	tests := []struct {
+		name                string
+		validGVLVendorIDs   *LiveGVLVendorIDs
+		consent             string
+		expectedAllowSync   bool
+		expectedAllowBidReq bool
+		expectedPassID      bool
+	}{
+		{
+			name:                "nil-live-gvl-vendor-ids",
+			validGVLVendorIDs:   nil,
+			consent:             vendor2AndPurpose1Consent,
+			expectedAllowSync:   true,
+			expectedAllowBidReq: false,
+			expectedPassID:      false,
+		},
+		{
+			name: "vendor-id-in-live-gvl",
+			validGVLVendorIDs: func() *LiveGVLVendorIDs {
+				l := NewLiveGVLVendorIDs()
+				l.Update(map[uint16]struct{}{2: {}})
+				return l
+			}(),
+			consent:             vendor2AndPurpose2Consent,
+			expectedAllowSync:   false,
+			expectedAllowBidReq: true,
+			expectedPassID:      true,
+		},
+		{
+			name: "vendor-id-not-in-live-gvl",
+			validGVLVendorIDs: func() *LiveGVLVendorIDs {
+				l := NewLiveGVLVendorIDs()
+				l.Update(map[uint16]struct{}{99: {}})
+				return l
+			}(),
+			consent:             vendor2AndPurpose2Consent,
+			expectedAllowSync:   false,
+			expectedAllowBidReq: false,
+			expectedPassID:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			perms := permissionsImpl{
+				cfg:          &tcf2AggConfig,
+				hostVendorID: 2,
+				vendorIDs: map[openrtb_ext.BidderName]uint16{
+					openrtb_ext.BidderAppnexus: 2,
+				},
+				fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
+					2: {
+						1: parseVendorListDataV2(t, vendorListData),
+					},
+				}),
+				purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+				nonStandardPublishers:  map[string]struct{}{},
+				gdprSignal:             SignalYes,
+				consent:                tt.consent,
+				validGVLVendorIDs:      tt.validGVLVendorIDs,
+			}
+
+			allowSync, err := perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderAppnexus)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedAllowSync, allowSync, "BidderSyncAllowed")
+
+			auctionPerms := perms.AuctionActivitiesAllowed(context.Background(), openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus)
+			assert.Equal(t, tt.expectedAllowBidReq, auctionPerms.AllowBidRequest, "AllowBidRequest")
+			assert.Equal(t, tt.expectedPassID, auctionPerms.PassID, "PassID")
+		})
+	}
+}
+
 func TestVendorListSelection(t *testing.T) {
 	policyVersion3WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABDAAIAAAAAAAAAAACEAAAAA"
 	policyVersion4WithVendor2AndPurpose1Consent := "CPGWbY_PGWbY_GYAAAENABEAAIAAAAAAAAAAACEAAAAA"
