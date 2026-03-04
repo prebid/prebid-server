@@ -55,6 +55,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAkcelo,
 	BidderAlgorix,
 	BidderAlkimi,
+	BidderAllianceGravity,
 	BidderAMX,
 	BidderApacdex,
 	BidderAppnexus,
@@ -68,6 +69,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBeachfront,
 	BidderBeintoo,
 	BidderBematterfull,
+	BidderBeop,
 	BidderBetween,
 	BidderBeyondMedia,
 	BidderBidmachine,
@@ -141,7 +143,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderInsticator,
 	BidderIntenze,
 	BidderInteractiveoffers,
-	BidderIntertech,
 	BidderInvibes,
 	BidderIQX,
 	BidderIQZone,
@@ -429,6 +430,7 @@ const (
 	BidderAkcelo            BidderName = "akcelo"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAlkimi            BidderName = "alkimi"
+	BidderAllianceGravity   BidderName = "alliance_gravity"
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
@@ -442,6 +444,7 @@ const (
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
 	BidderBematterfull      BidderName = "bematterfull"
+	BidderBeop              BidderName = "beop"
 	BidderBetween           BidderName = "between"
 	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
@@ -515,7 +518,6 @@ const (
 	BidderInsticator        BidderName = "insticator"
 	BidderIntenze           BidderName = "intenze"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
-	BidderIntertech         BidderName = "intertech"
 	BidderInvibes           BidderName = "invibes"
 	BidderIQX               BidderName = "iqx"
 	BidderIQZone            BidderName = "iqzone"
