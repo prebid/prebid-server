@@ -67,7 +67,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	requestData := &adapters.RequestData{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Uri:     a.endpoint,
 		Headers: headers,
 		Body:    requestJSON,
