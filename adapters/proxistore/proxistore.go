@@ -24,37 +24,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors []error
-
-	// Validate that all impressions have required bidder params
-	for _, imp := range request.Imp {
-		var extBidder adapters.ExtImpBidder
-		if err := jsonutil.Unmarshal(imp.Ext, &extBidder); err != nil {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Error parsing imp[%s].ext: %s", imp.ID, err.Error()),
-			})
-			continue
-		}
-
-		var bidderExt openrtb_ext.ExtImpProxistore
-		if err := jsonutil.Unmarshal(extBidder.Bidder, &bidderExt); err != nil {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Error parsing imp[%s].ext.bidder: %s", imp.ID, err.Error()),
-			})
-			continue
-		}
-
-		if bidderExt.Website == "" || bidderExt.Language == "" {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("imp[%s]: website and language are required bidder params", imp.ID),
-			})
-		}
-	}
-
-	if len(errors) > 0 {
-		return nil, errors
-	}
-
 	requestJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
