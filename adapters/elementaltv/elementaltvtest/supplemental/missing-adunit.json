@@ -24,7 +24,7 @@
   ],
   "expectedMakeRequestsErrors":[
     {
-      "value":"$.imp.ext.adoppler.adunit required",
+      "value":"$.imp.ext.bidder.adunit required",
       "comparison":"literal"
     }
   ]
