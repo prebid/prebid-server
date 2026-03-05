@@ -1,11 +1,11 @@
 package hooks
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/prebid/prebid-server/v3/config"
 	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/logger"
 )
 
 type Stage string
@@ -206,13 +206,76 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 		Hooks:   make([]HookWrapper[T], 0, len(cfg.HookSequence)),
 	}
 
+	// Hook lookup and assembly. Hooks not found in repository are silently skipped
+	// as they are reported at startup via ValidateExecutionPlan().
 	for _, hookCfg := range cfg.HookSequence {
 		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
 			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
-		} else {
-			logger.Warnf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 
 	return group
+}
+
+// ValidateExecutionPlan checks if execution plan references any modules
+// not present in the repository (disabled/missing) and returns a list of validation errors.
+// This validation runs once at startup to help identify configuration issues.
+func ValidateExecutionPlan(cfg config.Hooks, repo HookRepository) []error {
+	var errs []error
+
+	validatePlan := func(plan config.HookExecutionPlan, planName string) {
+		for endpoint, epCfg := range plan.Endpoints {
+			for stageName, stageCfg := range epCfg.Stages {
+				for groupIdx, group := range stageCfg.Groups {
+					for _, hookCfg := range group.HookSequence {
+						if !hookExistsInRepo(repo, hookCfg.ModuleCode) {
+							errs = append(errs, fmt.Errorf(
+								"hook configuration: %s execution plan references module '%s' "+
+									"at endpoint '%s', stage '%s', group %d, but module is not "+
+									"enabled or does not exist. This hook will be skipped during request processing",
+								planName, hookCfg.ModuleCode, endpoint, stageName, groupIdx,
+							))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	validatePlan(cfg.HostExecutionPlan, "host")
+	validatePlan(cfg.DefaultAccountExecutionPlan, "default-account")
+
+	return errs
+}
+
+// hookExistsInRepo checks if a module with the given ID exists in the repository
+// by attempting to retrieve it using any of the stage-specific getter methods.
+func hookExistsInRepo(repo HookRepository, moduleCode string) bool {
+	// Try to get hook from repository using all available stage getters
+	// A module may implement one or more hook interfaces
+	if _, ok := repo.GetEntrypointHook(moduleCode); ok {
+		return true
+	}
+	if _, ok := repo.GetRawAuctionHook(moduleCode); ok {
+		return true
+	}
+	if _, ok := repo.GetProcessedAuctionHook(moduleCode); ok {
+		return true
+	}
+	if _, ok := repo.GetBidderRequestHook(moduleCode); ok {
+		return true
+	}
+	if _, ok := repo.GetRawBidderResponseHook(moduleCode); ok {
+		return true
+	}
+	if _, ok := repo.GetAllProcessedBidResponsesHook(moduleCode); ok {
+		return true
+	}
+	if _, ok := repo.GetAuctionResponseHook(moduleCode); ok {
+		return true
+	}
+	if _, ok := repo.GetExitpointHook(moduleCode); ok {
+		return true
+	}
+	return false
 }
