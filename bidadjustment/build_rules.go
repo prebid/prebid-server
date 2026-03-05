@@ -1,6 +1,8 @@
 package bidadjustment
 
 import (
+	"strings"
+
 	"github.com/prebid/prebid-server/v3/errortypes"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 )
@@ -31,7 +33,8 @@ func BuildRules(bidAdjustments *openrtb_ext.ExtRequestPrebidBidAdjustments) map[
 func buildRulesForMediaType(mediaType string, rulesByBidder map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID, rules map[string][]openrtb_ext.Adjustment) {
 	for bidderName := range rulesByBidder {
 		for dealID, adjustments := range rulesByBidder[bidderName] {
-			rule := mediaType + Delimiter + string(bidderName) + Delimiter + dealID
+			// lowercase the rule to make it case insensitive
+			rule := strings.ToLower(mediaType + Delimiter + string(bidderName) + Delimiter + dealID)
 			rules[rule] = adjustments
 		}
 	}
