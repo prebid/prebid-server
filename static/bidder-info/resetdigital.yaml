@@ -21,4 +21,3 @@ usersync:
   redirect:
     url: "https://sync.resetdigital.co/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
-  supportCORS: true

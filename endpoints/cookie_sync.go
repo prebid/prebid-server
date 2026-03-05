@@ -466,9 +466,8 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 			BidderCode: syncerChoice.Bidder,
 			NoCookie:   true,
 			UsersyncInfo: cookieSyncResponseSync{
-				URL:         sync.URL,
-				Type:        string(sync.Type),
-				SupportCORS: sync.SupportCORS,
+				URL:  sync.URL,
+				Type: string(sync.Type),
 			},
 		})
 	}
@@ -536,9 +535,8 @@ func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.Co
 			BidderCode: b.BidderCode,
 			NoCookie:   b.NoCookie,
 			UsersyncInfo: &analytics.UsersyncInfo{
-				URL:         b.UsersyncInfo.URL,
-				Type:        b.UsersyncInfo.Type,
-				SupportCORS: b.UsersyncInfo.SupportCORS,
+				URL:  b.UsersyncInfo.URL,
+				Type: b.UsersyncInfo.Type,
 			},
 		}
 	}
@@ -604,9 +602,8 @@ type cookieSyncResponseBidder struct {
 }
 
 type cookieSyncResponseSync struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	SupportCORS bool   `json:"supportCORS,omitempty"`
+	URL  string `json:"url,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 type cookieSyncResponseDebug struct {

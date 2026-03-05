@@ -147,13 +147,22 @@ func updateBType(
 		return imp.Banner != nil && len(imp.Banner.BType) > 0
 	}
 
-	attributes.bType, messages, err = findImpressionOverrides(payload, actionOverrides, btype, checkAttrExistence)
+	overrides, messages, err := findImpressionOverrides(payload, actionOverrides, btype, checkAttrExistence)
 	result.Warnings = mergeStrings(result.Warnings, messages...)
 	if err != nil {
 		return fmt.Errorf("failed to get override for imp.*.banner.btype: %s", err)
-	} else if len(attributes.bType) > 0 {
-		mutation := bTypeMutation(attributes.bType)
-		changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "btype")
+	}
+
+	// Filter to only apply to impressions with Banner objects
+	if len(overrides) > 0 {
+		filteredOverrides := filterByMediaType(payload, overrides, func(imp openrtb2.Imp) bool {
+			return imp.Banner != nil
+		})
+		if len(filteredOverrides) > 0 {
+			mutation := createBTypeMutation(filteredOverrides)
+			changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "btype")
+		}
+		attributes.bType = overrides
 	}
 
 	return nil
@@ -167,21 +176,91 @@ func updateBAttr(
 	changeSet *hookstage.ChangeSet[hookstage.BidderRequestPayload],
 ) (err error) {
 	var messages []string
-	battr := cfg.Attributes.Battr.BlockedBannerAttr
-	actionOverrides := cfg.Attributes.Battr.ActionOverrides.BlockedBannerAttr
-	checkAttrExistence := func(imp openrtb2.Imp) bool {
+
+	bannerBattr := cfg.Attributes.Battr.BlockedBannerAttr
+	bannerActionOverrides := cfg.Attributes.Battr.ActionOverrides.BlockedBannerAttr
+	bannerCheckAttrExistence := func(imp openrtb2.Imp) bool {
 		return imp.Banner != nil && len(imp.Banner.BAttr) > 0
 	}
 
-	attributes.bAttr, messages, err = findImpressionOverrides(payload, actionOverrides, battr, checkAttrExistence)
-	result.Warnings = mergeStrings(result.Warnings, messages...)
+	bannerOverrides, bannerMessages, err := findImpressionOverrides(payload, bannerActionOverrides, bannerBattr, bannerCheckAttrExistence)
+	messages = append(messages, bannerMessages...)
 	if err != nil {
 		return fmt.Errorf("failed to get override for imp.*.banner.battr: %s", err)
-	} else if len(attributes.bAttr) > 0 {
-		mutation := bAttrMutation(attributes.bAttr)
-		changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "battr")
 	}
 
+	// Apply banner battr only to impressions that have Banner objects
+	if len(bannerOverrides) > 0 {
+		filteredBannerOverrides := filterByMediaType(payload, bannerOverrides, func(imp openrtb2.Imp) bool {
+			return imp.Banner != nil
+		})
+		if len(filteredBannerOverrides) > 0 {
+			mutation := createBAttrMutation(filteredBannerOverrides, "banner")
+			changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "battr")
+		}
+	}
+
+	// Video battr
+	videoBattr := cfg.Attributes.Battr.BlockedVideoAttr
+	videoActionOverrides := cfg.Attributes.Battr.ActionOverrides.BlockedVideoAttr
+	videoCheckAttrExistence := func(imp openrtb2.Imp) bool {
+		return imp.Video != nil && len(imp.Video.BAttr) > 0
+	}
+
+	videoOverrides, videoMessages, err := findImpressionOverrides(payload, videoActionOverrides, videoBattr, videoCheckAttrExistence)
+	messages = append(messages, videoMessages...)
+	if err != nil {
+		return fmt.Errorf("failed to get override for imp.*.video.battr: %s", err)
+	}
+
+	// Apply video battr only to impressions that have Video objects
+	if len(videoOverrides) > 0 {
+		filteredVideoOverrides := filterByMediaType(payload, videoOverrides, func(imp openrtb2.Imp) bool {
+			return imp.Video != nil
+		})
+		if len(filteredVideoOverrides) > 0 {
+			mutation := createBAttrMutation(filteredVideoOverrides, "video")
+			changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "video", "battr")
+		}
+	}
+
+	// Audio battr
+	audioBattr := cfg.Attributes.Battr.BlockedAudioAttr
+	audioActionOverrides := cfg.Attributes.Battr.ActionOverrides.BlockedAudioAttr
+	audioCheckAttrExistence := func(imp openrtb2.Imp) bool {
+		return imp.Audio != nil && len(imp.Audio.BAttr) > 0
+	}
+
+	audioOverrides, audioMessages, err := findImpressionOverrides(payload, audioActionOverrides, audioBattr, audioCheckAttrExistence)
+	messages = append(messages, audioMessages...)
+	if err != nil {
+		return fmt.Errorf("failed to get override for imp.*.audio.battr: %s", err)
+	}
+
+	// Apply audio battr only to impressions that have Audio objects
+	if len(audioOverrides) > 0 {
+		filteredAudioOverrides := filterByMediaType(payload, audioOverrides, func(imp openrtb2.Imp) bool {
+			return imp.Audio != nil
+		})
+		if len(filteredAudioOverrides) > 0 {
+			mutation := createBAttrMutation(filteredAudioOverrides, "audio")
+			changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "audio", "battr")
+		}
+	}
+
+	// Store all attributes and merge messages
+	attributes.bAttr = make(map[string][]int)
+	for k, v := range bannerOverrides {
+		attributes.bAttr[k] = v
+	}
+	for k, v := range videoOverrides {
+		attributes.bAttr[k] = v
+	}
+	for k, v := range audioOverrides {
+		attributes.bAttr[k] = v
+	}
+
+	result.Warnings = mergeStrings(result.Warnings, messages...)
 	return nil
 }
 
@@ -197,26 +276,6 @@ func updateCatTax(
 
 	attributes.catTax = cfg.Attributes.Bcat.CategoryTaxonomy
 	changeSet.BidderRequest().CatTax().Update(attributes.catTax)
-}
-
-func bTypeMutation(bTypeByImp map[string][]int) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
-	return mutationForImp(bTypeByImp, func(imp openrtb2.Imp, btype []int) openrtb2.Imp {
-		imp.Banner.BType = make([]openrtb2.BannerAdType, len(btype))
-		for i := range btype {
-			imp.Banner.BType[i] = openrtb2.BannerAdType(btype[i])
-		}
-		return imp
-	})
-}
-
-func bAttrMutation(bAttrByImp map[string][]int) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
-	return mutationForImp(bAttrByImp, func(imp openrtb2.Imp, battr []int) openrtb2.Imp {
-		imp.Banner.BAttr = make([]adcom1.CreativeAttribute, len(battr))
-		for i := range battr {
-			imp.Banner.BAttr[i] = adcom1.CreativeAttribute(battr[i])
-		}
-		return imp
-	})
 }
 
 type impUpdateFunc func(imp openrtb2.Imp, values []int) openrtb2.Imp
@@ -421,4 +480,65 @@ func validateCondition(conditions Conditions) error {
 		return errors.New("bidders and media_types absent from conditions, at least one of the fields must be present")
 	}
 	return nil
+}
+
+// filterByMediaType filters overrides to only include impressions with a specific media type
+func filterByMediaType(
+	payload hookstage.BidderRequestPayload,
+	overrides map[string][]int,
+	mediaTypeExists func(imp openrtb2.Imp) bool,
+) map[string][]int {
+	filtered := make(map[string][]int)
+
+	for _, imp := range payload.Request.Imp {
+		if values, exists := overrides[imp.ID]; exists && mediaTypeExists(imp) {
+			filtered[imp.ID] = values
+		}
+	}
+
+	return filtered
+}
+
+// createBAttrMutation creates a mutation function for a specific media type
+func createBAttrMutation(bAttrByImp map[string][]int, mediaType string) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
+	return func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
+		for i, imp := range payload.Request.Imp {
+			if values, ok := bAttrByImp[imp.ID]; ok && len(values) > 0 {
+				switch mediaType {
+				case "banner":
+					imp.Banner.BAttr = make([]adcom1.CreativeAttribute, len(values))
+					for j, attr := range values {
+						imp.Banner.BAttr[j] = adcom1.CreativeAttribute(attr)
+					}
+				case "video":
+					imp.Video.BAttr = make([]adcom1.CreativeAttribute, len(values))
+					for j, attr := range values {
+						imp.Video.BAttr[j] = adcom1.CreativeAttribute(attr)
+					}
+				case "audio":
+					imp.Audio.BAttr = make([]adcom1.CreativeAttribute, len(values))
+					for j, attr := range values {
+						imp.Audio.BAttr[j] = adcom1.CreativeAttribute(attr)
+					}
+				}
+				payload.Request.Imp[i] = imp
+			}
+		}
+		return payload, nil
+	}
+}
+
+func createBTypeMutation(bTypeByImp map[string][]int) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
+	return func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
+		for i, imp := range payload.Request.Imp {
+			if values, ok := bTypeByImp[imp.ID]; ok && len(values) > 0 {
+				imp.Banner.BType = make([]openrtb2.BannerAdType, len(values))
+				for j, btype := range values {
+					imp.Banner.BType[j] = openrtb2.BannerAdType(btype)
+				}
+				payload.Request.Imp[i] = imp
+			}
+		}
+		return payload, nil
+	}
 }

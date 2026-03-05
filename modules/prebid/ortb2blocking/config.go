@@ -84,13 +84,21 @@ type BtypeActionOverride struct {
 type Battr struct {
 	ActionOverrides           BattrActionOverride `json:"action_overrides"`
 	AllowedBannerAttrForDeals []int               `json:"allowed_banner_attr_for_deals"`
+	AllowedVideoAttrForDeals  []int               `json:"allowed_video_attr_for_deals"`
+	AllowedAudioAttrForDeals  []int               `json:"allowed_audio_attr_for_deals"`
 	BlockedBannerAttr         []int               `json:"blocked_banner_attr"`
+	BlockedVideoAttr          []int               `json:"blocked_video_attr"`
+	BlockedAudioAttr          []int               `json:"blocked_audio_attr"`
 	EnforceBlocks             bool                `json:"enforce_blocks"`
 }
 
 type BattrActionOverride struct {
 	AllowedBannerAttrForDeals []ActionOverride `json:"allowed_banner_attr_for_deals"`
+	AllowedVideoAttrForDeals  []ActionOverride `json:"allowed_video_attr_for_deals"`
+	AllowedAudioAttrForDeals  []ActionOverride `json:"allowed_audio_attr_for_deals"`
 	BlockedBannerAttr         []ActionOverride `json:"blocked_banner_attr"`
+	BlockedVideoAttr          []ActionOverride `json:"blocked_video_attr"`
+	BlockedAudioAttr          []ActionOverride `json:"blocked_audio_attr"`
 	EnforceBlocks             []ActionOverride `json:"enforce_blocks"`
 }
 
