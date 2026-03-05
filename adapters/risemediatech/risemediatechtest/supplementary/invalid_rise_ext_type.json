@@ -1,0 +1,17 @@
+{
+    "mockBidRequest": {
+      "id": "test-invalid-rise-ext-not-object",
+      "imp": [
+        {
+          "id": "1",
+          "banner": { "w": 300, "h": 250 },
+          "ext": {
+            "bidder": "not-an-object"
+          }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": [
+      { "value": "impID 1:", "comparison": "contains" }
+    ]
+  }
