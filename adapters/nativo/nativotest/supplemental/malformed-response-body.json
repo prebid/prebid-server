@@ -45,17 +45,17 @@
             }
           ]
         },
-        "impIDs":["nativo-id"]
+        "impIDs": ["nativo-id"]
       },
       "mockResponse": {
-        "status": 400,
-        "body": {}
+        "status": 200,
+        "body": "invalid-body"
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "value": "Bad Server Response",
       "comparison": "literal"
     }
   ]
