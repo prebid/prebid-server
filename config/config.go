@@ -75,6 +75,8 @@ type Configuration struct {
 	BlockedAppsLookup map[string]bool
 	// Is publisher/account ID required to be submitted in the OpenRTB2 request
 	AccountRequired bool `mapstructure:"account_required"`
+	// ORTBErrorResponse determines if OpenRTB-compliant error responses should be used
+	ORTBErrorResponse bool `mapstructure:"ortb_error_response"`
 	// AccountDefaults defines default settings for valid accounts that are partially defined
 	// and provides a way to set global settings that can be overridden at account level.
 	AccountDefaults Account `mapstructure:"account_defaults"`

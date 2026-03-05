@@ -1,6 +1,5 @@
 {
     "description": "The imp.ext.skadn field is valid for Apple's SKAdNetwork and should be exempt from bidder name validation.",
-
     "mockBidRequest": {
         "id": "some-request-id",
         "site": {
@@ -42,8 +41,7 @@
             "seat": "appnexus"
         }],
         "bidid": "test bid id",
-        "cur":"USD",
-        "nbr": 0
+        "cur":"USD"
     },
     "expectedReturnCode": 200
 }

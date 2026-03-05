@@ -1,0 +1,21 @@
+{
+    "description": "Bid request is is missing imp array and ortb_error_response is configured in yaml",
+    "config": {
+        "ortb_error_response": true
+    },
+    "mockBidRequest": {
+        "id": "req-id"
+    },
+    "expectedReturnCode": 400,
+    "expectedBidResponse": {
+        "id": "req-id",
+        "nbr": 2,
+        "ext": {
+            "prebid": {
+                "errors": [
+                    "request.imp must contain at least one element."
+                ]
+            }
+        }
+    }
+}
