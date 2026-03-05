@@ -1,0 +1,59 @@
+{
+  "mockBidRequest": {
+    "id": "req-id-123",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {"bidder": {"pid": "pub-abc-12345678901234"}}
+      },
+      {
+        "id": "imp-2",
+        "banner": {"w": 320, "h": 50},
+        "ext": {"bidder": {"pid": "pub-def-12345678901234"}}
+      },
+      {
+        "id": "imp-3",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {"bidder": {"pid": "pub-abc-12345678901234"}}
+      }
+    ],
+    "site": {"page": "http://example.com"}
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.matterfull.co/?uqhash=pub-abc-12345678901234",
+        "body": {
+          "id": "req-id-123",
+          "imp": [
+            {"id": "imp-1", "banner": {"w": 300, "h": 250}},
+            {"id": "imp-3", "banner": {"w": 728, "h": 90}}
+          ],
+          "site": {"page": "http://example.com"}
+        },
+        "impIDs": ["imp-1", "imp-3"]
+      },
+      "mockResponse": {"status": 204}
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.matterfull.co/?uqhash=pub-def-12345678901234",
+        "body": {
+          "id": "req-id-123",
+          "imp": [
+            {"id": "imp-2", "banner": {"w": 320, "h": 50}}
+          ],
+          "site": {"page": "http://example.com"}
+        },
+        "impIDs": ["imp-2"]
+      },
+      "mockResponse": {"status": 204}
+    }
+  ],
+  "expectedBidResponses": []
+}
