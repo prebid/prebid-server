@@ -1,0 +1,7 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "RevX Adapter Params",
+  "description": "A schema which validates params accepted by the RevX adapter",
+  "type": "object",
+  "properties": {}
+}
