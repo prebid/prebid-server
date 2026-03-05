@@ -1,0 +1,20 @@
+endpoint: "https://pb.optimizerx.com/pb"
+endpointCompression: gzip
+geoscope:
+  - USA
+  - CAN
+maintainer:
+  email: adsupport@optimizerx.com
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner      
+  dooh:
+    mediaTypes:
+      - banner
