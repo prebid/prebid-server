@@ -1,13 +1,17 @@
+// Use the OS "logrotate" daemon with copytruncate option
+
 package filesystem
 
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os"
+	"sync"
+	"time"
 
-	cglog "github.com/chasex/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/logger"
 	"github.com/prebid/prebid-server/v3/util/jsonutil"
 )
 
@@ -22,100 +26,102 @@ const (
 	NOTIFICATION_EVENT RequestType = "/event"
 )
 
-type Logger interface {
-	Debug(v ...interface{})
-	Flush()
-}
-
 // Module that can perform transactional logging
-type FileLogger struct {
-	Logger Logger
+type fileLogger struct {
+	logger *log.Logger
+	file   *os.File
+	pool   sync.Pool
 }
 
-// Writes AuctionObject to file
-func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
-	var b bytes.Buffer
-	b.WriteString(jsonifyAuctionObject(ao))
-	f.Logger.Debug(b.String())
-	f.Logger.Flush()
+func (f *fileLogger) print(b *bytes.Buffer) {
+	timestamp := time.Now().Format(time.DateTime)
+	f.logger.Printf("[%s] %s", timestamp, b.String())
 }
 
-// Writes VideoObject to file
-func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
-	//Code to parse the object and log in a way required
-	var b bytes.Buffer
-	b.WriteString(jsonifyVideoObject(vo))
-	f.Logger.Debug(b.String())
-	f.Logger.Flush()
+func (f *fileLogger) release(b *bytes.Buffer) {
+	f.pool.Put(b)
 }
 
-// Logs SetUIDObject to file
-func (f *FileLogger) LogSetUIDObject(so *analytics.SetUIDObject) {
-	//Code to parse the object and log in a way required
-	var b bytes.Buffer
-	b.WriteString(jsonifySetUIDObject(so))
-	f.Logger.Debug(b.String())
-	f.Logger.Flush()
+func (f *fileLogger) getBuffer() *bytes.Buffer {
+	buf := f.pool.Get().(*bytes.Buffer)
+	buf.Reset()
+
+	return buf
 }
 
-// Logs CookieSyncObject to file
-func (f *FileLogger) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
-	//Code to parse the object and log in a way required
-	var b bytes.Buffer
-	b.WriteString(jsonifyCookieSync(cso))
-	f.Logger.Debug(b.String())
-	f.Logger.Flush()
+func (f *fileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
+	b := f.getBuffer()
+	defer f.release(b)
+	jsonifyAuctionObject(b, ao)
+	f.print(b)
 }
 
-// Logs AmpObject to file
-func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
+func (f *fileLogger) LogVideoObject(vo *analytics.VideoObject) {
+	b := f.getBuffer()
+	defer f.release(b)
+	jsonifyVideoObject(b, vo)
+	f.print(b)
+}
+
+func (f *fileLogger) LogSetUIDObject(so *analytics.SetUIDObject) {
+	b := f.getBuffer()
+	defer f.release(b)
+	jsonifySetUIDObject(b, so)
+	f.print(b)
+}
+
+func (f *fileLogger) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
+	b := f.getBuffer()
+	defer f.release(b)
+	jsonifyCookieSync(b, cso)
+	f.print(b)
+}
+
+func (f *fileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	if ao == nil {
 		return
 	}
-	//Code to parse the object and log in a way required
-	var b bytes.Buffer
-	b.WriteString(jsonifyAmpObject(ao))
-	f.Logger.Debug(b.String())
-	f.Logger.Flush()
+
+	b := f.getBuffer()
+	defer f.release(b)
+	jsonifyAmpObject(b, ao)
+	f.print(b)
 }
 
-// Logs NotificationEvent to file
-func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+func (f *fileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent) {
 	if ne == nil {
 		return
 	}
-	//Code to parse the object and log in a way required
-	var b bytes.Buffer
-	b.WriteString(jsonifyNotificationEventObject(ne))
-	f.Logger.Debug(b.String())
-	f.Logger.Flush()
+
+	b := f.getBuffer()
+	defer f.release(b)
+	jsonifyNotificationEventObject(b, ne)
+	f.print(b)
 }
 
-// Shutdown the logger
-func (f *FileLogger) Shutdown() {
-	// clear all pending buffered data in case there is any
-	logger.Infof("[FileLogger] Shutdown, trying to flush buffer")
-	f.Logger.Flush()
+func (f *fileLogger) Shutdown() {
+	_, _ = f.file.Write([]byte("[fileLogger] Shutdown"))
+	_ = f.file.Close()
 }
 
-// Method to initialize the analytic module
 func NewFileLogger(filename string) (analytics.Module, error) {
-	options := cglog.LogOptions{
-		File:  filename,
-		Flag:  cglog.LstdFlags,
-		Level: cglog.Ldebug,
-		Mode:  cglog.R_Day,
+	f, err := os.Create(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error creating file logger: %w", err)
 	}
-	if logger, err := cglog.New(options); err == nil {
-		return &FileLogger{
-			logger,
-		}, nil
-	} else {
-		return nil, err
-	}
+
+	return &fileLogger{
+		file:   f,
+		logger: log.New(f, "", 0),
+		pool: sync.Pool{
+			New: func() interface{} {
+				return new(bytes.Buffer)
+			},
+		},
+	}, err
 }
 
-func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
+func jsonifyAuctionObject(buffer *bytes.Buffer, ao *analytics.AuctionObject) {
 	var logEntry *logAuction
 	if ao != nil {
 		var request *openrtb2.BidRequest
@@ -133,7 +139,7 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 		}
 	}
 
-	b, err := jsonutil.Marshal(&struct {
+	b, err := jsonutil.Marshal(struct {
 		Type RequestType `json:"type"`
 		*logAuction
 	}{
@@ -142,13 +148,13 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 	})
 
 	if err == nil {
-		return string(b)
+		_, _ = buffer.Write(b)
 	} else {
-		return fmt.Sprintf("Transactional Logs Error: Auction object badly formed %v", err)
+		_, _ = fmt.Fprintf(buffer, "Transactional Logs Error: Auction object badly formed %v", err)
 	}
 }
 
-func jsonifyVideoObject(vo *analytics.VideoObject) string {
+func jsonifyVideoObject(buffer *bytes.Buffer, vo *analytics.VideoObject) {
 	var logEntry *logVideo
 	if vo != nil {
 		var request *openrtb2.BidRequest
@@ -175,13 +181,13 @@ func jsonifyVideoObject(vo *analytics.VideoObject) string {
 	})
 
 	if err == nil {
-		return string(b)
+		_, _ = buffer.Write(b)
 	} else {
-		return fmt.Sprintf("Transactional Logs Error: Video object badly formed %v", err)
+		_, _ = fmt.Fprintf(buffer, "Transactional Logs Error: Video object badly formed %v", err)
 	}
 }
 
-func jsonifyCookieSync(cso *analytics.CookieSyncObject) string {
+func jsonifyCookieSync(buffer *bytes.Buffer, cso *analytics.CookieSyncObject) {
 	var logEntry *logUserSync
 	if cso != nil {
 		logEntry = &logUserSync{
@@ -200,13 +206,13 @@ func jsonifyCookieSync(cso *analytics.CookieSyncObject) string {
 	})
 
 	if err == nil {
-		return string(b)
+		_, _ = buffer.Write(b)
 	} else {
-		return fmt.Sprintf("Transactional Logs Error: Cookie sync object badly formed %v", err)
+		_, _ = fmt.Fprintf(buffer, "Transactional Logs Error: Cookie sync object badly formed %v", err)
 	}
 }
 
-func jsonifySetUIDObject(so *analytics.SetUIDObject) string {
+func jsonifySetUIDObject(buffer *bytes.Buffer, so *analytics.SetUIDObject) {
 	var logEntry *logSetUID
 	if so != nil {
 		logEntry = &logSetUID{
@@ -227,13 +233,13 @@ func jsonifySetUIDObject(so *analytics.SetUIDObject) string {
 	})
 
 	if err == nil {
-		return string(b)
+		_, _ = buffer.Write(b)
 	} else {
-		return fmt.Sprintf("Transactional Logs Error: Set UID object badly formed %v", err)
+		_, _ = fmt.Fprintf(buffer, "Transactional Logs Error: Set UID object badly formed %v", err)
 	}
 }
 
-func jsonifyAmpObject(ao *analytics.AmpObject) string {
+func jsonifyAmpObject(buffer *bytes.Buffer, ao *analytics.AmpObject) {
 	var logEntry *logAMP
 	if ao != nil {
 		var request *openrtb2.BidRequest
@@ -261,13 +267,13 @@ func jsonifyAmpObject(ao *analytics.AmpObject) string {
 	})
 
 	if err == nil {
-		return string(b)
+		_, _ = buffer.Write(b)
 	} else {
-		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
+		_, _ = fmt.Fprintf(buffer, "Transactional Logs Error: AMP object badly formed %v", err)
 	}
 }
 
-func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
+func jsonifyNotificationEventObject(buffer *bytes.Buffer, ne *analytics.NotificationEvent) {
 	var logEntry *logNotificationEvent
 	if ne != nil {
 		logEntry = &logNotificationEvent{
@@ -285,8 +291,8 @@ func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
 	})
 
 	if err == nil {
-		return string(b)
+		_, _ = buffer.Write(b)
 	} else {
-		return fmt.Sprintf("Transactional Logs Error: NotificationEvent object badly formed %v", err)
+		_, _ = fmt.Fprintf(buffer, "Transactional Logs Error: NotificationEvent object badly formed %v", err)
 	}
 }

@@ -1,6 +1,6 @@
 package rulesengine
 
-import "github.com/golang/glog"
+import "github.com/prebid/prebid-server/v3/logger"
 
 type RulesEngineObserver interface {
 	logError(msg string)
@@ -9,14 +9,14 @@ type RulesEngineObserver interface {
 
 type treeManagerLogger struct{}
 
-func (logger *treeManagerLogger) logError(msg string) {
+func (l *treeManagerLogger) logError(msg string) {
 	// TODO: log metric
-	glog.Errorf(msg)
+	logger.Errorf(msg)
 	return
 }
 
-func (logger *treeManagerLogger) logInfo(msg string) {
+func (l *treeManagerLogger) logInfo(msg string) {
 	// TODO: log metric
-	glog.Infoln(msg)
+	logger.Infof(msg)
 	return
 }
