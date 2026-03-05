@@ -253,7 +253,7 @@ func TestProcessBidderInfo(t *testing.T) {
 						},
 					},
 					ExtraAdapterInfo: "extra-info",
-					GVLVendorID:      42,
+					GVLVendorID:      0,
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
@@ -390,6 +390,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 	}
 	bidderB := parentWithSyncerKey
 	bidderB.AliasOf = "bidderA"
+	bidderB.GVLVendorID = 0
 	bidderB.Syncer = &Syncer{
 		Key: bidderB.Syncer.Key,
 	}
