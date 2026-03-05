@@ -1,0 +1,236 @@
+package elementaltv
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"text/template"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v3/macros"
+	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/jsonutil"
+)
+
+var bidHeaders http.Header = map[string][]string{
+	"Accept":            {"application/json"},
+	"Content-Type":      {"application/json;charset=utf-8"},
+	"X-OpenRTB-Version": {"2.6"},
+}
+
+type adsVideoExt struct {
+	Duration int `json:"duration"`
+}
+
+type adsImpExt struct {
+	Video *adsVideoExt `json:"video"`
+}
+
+type adapter struct {
+	endpoint *template.Template
+}
+
+// Builder builds a new instance of the ElementalTV adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %w", err)
+	}
+
+	bidder := &adapter{
+		endpoint: template,
+	}
+	return bidder, nil
+}
+
+func (ads *adapter) MakeRequests(
+	req *openrtb2.BidRequest,
+	info *adapters.ExtraRequestInfo,
+) (
+	[]*adapters.RequestData,
+	[]error,
+) {
+	if len(req.Imp) == 0 {
+		return nil, nil
+	}
+
+	var datas []*adapters.RequestData
+	var errs []error
+	for _, imp := range req.Imp {
+		ext, err := unmarshalExt(imp.Ext)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{Message: err.Error()})
+			continue
+		}
+
+		var r openrtb2.BidRequest = *req
+		r.ID = req.ID + "-" + ext.AdUnit
+		r.Imp = []openrtb2.Imp{imp}
+
+		body, err := jsonutil.Marshal(r)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		uri, err := ads.bidUri(ext)
+		if err != nil {
+			e := fmt.Sprintf("Unable to build bid URI: %s",
+				err.Error())
+			errs = append(errs, &errortypes.BadInput{Message: e})
+			continue
+		}
+		data := &adapters.RequestData{
+			Method:  "POST",
+			Uri:     uri,
+			Body:    body,
+			Headers: bidHeaders,
+			ImpIDs:  openrtb_ext.GetImpIDs(r.Imp),
+		}
+		datas = append(datas, data)
+	}
+
+	return datas, errs
+}
+
+func (ads *adapter) MakeBids(
+	intReq *openrtb2.BidRequest,
+	extReq *adapters.RequestData,
+	resp *adapters.ResponseData,
+) (
+	*adapters.BidderResponse,
+	[]error,
+) {
+	if resp.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{Message: "bad request"}}
+	}
+	if resp.StatusCode != http.StatusOK {
+		err := &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unexpected status: %d", resp.StatusCode),
+		}
+		return nil, []error{err}
+	}
+
+	var bidResp openrtb2.BidResponse
+	err := jsonutil.Unmarshal(resp.Body, &bidResp)
+	if err != nil {
+		err := &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("invalid body: %s", err.Error()),
+		}
+		return nil, []error{err}
+	}
+
+	impTypes := make(map[string]openrtb_ext.BidType)
+	for _, imp := range intReq.Imp {
+		if _, ok := impTypes[imp.ID]; ok {
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("duplicate $.imp.id %s", imp.ID),
+			}}
+		}
+		if imp.Banner != nil {
+			impTypes[imp.ID] = openrtb_ext.BidTypeBanner
+		} else if imp.Video != nil {
+			impTypes[imp.ID] = openrtb_ext.BidTypeVideo
+		} else if imp.Audio != nil {
+			impTypes[imp.ID] = openrtb_ext.BidTypeAudio
+		} else if imp.Native != nil {
+			impTypes[imp.ID] = openrtb_ext.BidTypeNative
+		} else {
+			return nil, []error{&errortypes.BadInput{
+				Message: "one of $.imp.banner, $.imp.video, $.imp.audio and $.imp.native field required",
+			}}
+		}
+	}
+
+	var bids []*adapters.TypedBid
+	for _, seatBid := range bidResp.SeatBid {
+		for _, bid := range seatBid.Bid {
+			tp, ok := impTypes[bid.ImpID]
+			if !ok {
+				err := &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("unknown impid: %s", bid.ImpID),
+				}
+				return nil, []error{err}
+			}
+
+			var bidVideo *openrtb_ext.ExtBidPrebidVideo
+			if tp == openrtb_ext.BidTypeVideo {
+				adsExt, err := unmarshalAdsExt(bid.Ext)
+				if err != nil {
+					return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
+				}
+				if adsExt == nil || adsExt.Video == nil {
+					return nil, []error{&errortypes.BadServerResponse{
+						Message: "$.seatbid.bid.ext.ads.video required",
+					}}
+				}
+				bidVideo = &openrtb_ext.ExtBidPrebidVideo{
+					Duration:        adsExt.Video.Duration,
+					PrimaryCategory: head(bid.Cat),
+				}
+			}
+			bids = append(bids, &adapters.TypedBid{
+				Bid:      &bid,
+				BidType:  tp,
+				BidVideo: bidVideo,
+			})
+		}
+	}
+
+	adsResp := adapters.NewBidderResponseWithBidsCapacity(len(bids))
+	adsResp.Bids = bids
+
+	return adsResp, nil
+}
+
+func (ads *adapter) bidUri(ext *openrtb_ext.ExtImpElementalTV) (string, error) {
+	params := macros.EndpointTemplateParams{}
+	params.AdUnit = url.PathEscape(ext.AdUnit)
+	return macros.ResolveMacros(ads.endpoint, params)
+}
+
+func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpElementalTV, error) {
+	var bext adapters.ExtImpBidder
+	err := jsonutil.Unmarshal(ext, &bext)
+	if err != nil {
+		return nil, err
+	}
+
+	var adsExt openrtb_ext.ExtImpElementalTV
+	err = jsonutil.Unmarshal(bext.Bidder, &adsExt)
+	if err != nil {
+		return nil, err
+	}
+
+	if adsExt.AdUnit == "" {
+		return nil, &errortypes.BadInput{
+			Message: "$.imp.ext.bidder.adunit required",
+		}
+	}
+
+	return &adsExt, nil
+}
+
+func unmarshalAdsExt(ext json.RawMessage) (*adsImpExt, error) {
+	var e struct {
+		Ads *adsImpExt `json:"ads"`
+	}
+	err := jsonutil.Unmarshal(ext, &e)
+
+	return e.Ads, err
+}
+
+func head(s []string) string {
+	if len(s) == 0 {
+		return ""
+	}
+
+	return s[0]
+}

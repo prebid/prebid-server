@@ -132,6 +132,7 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"dxkulture":       `Bidder "dxkulture" is no longer available in Prebid Server. Please update your configuration.`,
 		"mobupps":         `Bidder "mobupps" is no longer available in Prebid Server. Please update your configuration.`,
 		"vimayx":          `Bidder "vimayx" is no longer available in Prebid Server. Please update your configuration.`,
+		"adoppler":        `Bidder "adoppler" is no longer available in Prebid Server. If you're looking to use the Adoppler adapter, please rename it to "elementaltv" in your configuration.`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
