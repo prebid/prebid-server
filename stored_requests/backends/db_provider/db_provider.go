@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 type DbProvider interface {
