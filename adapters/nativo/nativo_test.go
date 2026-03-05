@@ -3,6 +3,7 @@ package nativo
 import (
 	"encoding/json"
 	"testing"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
