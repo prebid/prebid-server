@@ -26,7 +26,7 @@ type impCtx struct {
 	rtbStackExt *openrtb_ext.ExtImpRTBStack
 }
 
-// extImpRTBStack is used for imp->ext when sending to rtb-stack backend
+// extImpRTBStack is used for imp->ext when sending to rtb-stack backend.
 type extImpRTBStack struct {
 	TagId        string                 `json:"tagid"`
 	CustomParams map[string]interface{} `json:"customParams,omitempty"`
