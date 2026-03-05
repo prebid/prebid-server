@@ -17,7 +17,6 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/admatic"
 	"github.com/prebid/prebid-server/v4/adapters/admixer"
 	"github.com/prebid/prebid-server/v4/adapters/adnuntius"
-	"github.com/prebid/prebid-server/v4/adapters/adoppler"
 	"github.com/prebid/prebid-server/v4/adapters/adot"
 	"github.com/prebid/prebid-server/v4/adapters/adpone"
 	"github.com/prebid/prebid-server/v4/adapters/adprime"
@@ -100,6 +99,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/driftpixel"
 	evolution "github.com/prebid/prebid-server/v4/adapters/e_volution"
 	"github.com/prebid/prebid-server/v4/adapters/edge226"
+	"github.com/prebid/prebid-server/v4/adapters/elementaltv"
 	"github.com/prebid/prebid-server/v4/adapters/emtv"
 	"github.com/prebid/prebid-server/v4/adapters/eplanning"
 	"github.com/prebid/prebid-server/v4/adapters/epom"
@@ -284,7 +284,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdmatic:           admatic.Builder,
 		openrtb_ext.BidderAdmixer:           admixer.Builder,
 		openrtb_ext.BidderAdnuntius:         adnuntius.Builder,
-		openrtb_ext.BidderAdoppler:          adoppler.Builder,
 		openrtb_ext.BidderAdot:              adot.Builder,
 		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdprime:           adprime.Builder,
@@ -366,6 +365,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEdge226:           edge226.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderDriftPixel:        driftpixel.Builder,
+		openrtb_ext.BidderElementalTV:       elementaltv.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,

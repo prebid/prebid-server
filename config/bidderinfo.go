@@ -800,6 +800,10 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 		copy.ExternalURL = s.ExternalURL
 	}
 
+	if s.Enabled != nil {
+		copy.Enabled = s.Enabled
+	}
+
 	return &copy
 }
 

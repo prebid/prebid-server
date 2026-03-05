@@ -44,7 +44,7 @@
    "httpCalls":[
       {
          "expectedRequest":{
-            "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit1",
+            "uri":"https://pbs.elementaltv.io/processHeaderBid/unit1",
             "body":{
                "id":"req1-unit1",
                "imp":[
@@ -86,7 +86,7 @@
       },
       {
          "expectedRequest":{
-            "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit2",
+            "uri":"https://pbs.elementaltv.io/processHeaderBid/unit2",
             "body":{
                "id":"req1-unit2",
                "imp":[
@@ -141,7 +141,7 @@
       },
       {
          "expectedRequest":{
-            "uri":"http://app.trustedmarketplace.com/processHeaderBid/unit3",
+            "uri":"https://pbs.elementaltv.io/processHeaderBid/unit3",
             "body":{
                "id":"req1-unit3",
                "imp":[

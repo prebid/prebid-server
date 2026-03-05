@@ -51,7 +51,7 @@ func TestNewPermissions(t *testing.T) {
 		fakePurposeEnforcerBuilder := fakePurposeEnforcerBuilder{
 			purposeEnforcer: nil,
 		}.Builder
-		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{}, &metrics.MetricsEngineMock{})
+		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, nil, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{}, &metrics.MetricsEngineMock{})
 
 		assert.IsType(t, tt.wantType, perms, tt.description)
 	}

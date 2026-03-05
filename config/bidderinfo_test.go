@@ -1466,6 +1466,30 @@ func TestSyncerOverride(t *testing.T) {
 			givenOverride: &Syncer{ExternalURL: "overrideExternalURL"},
 			expected:      &Syncer{Key: "originalKey", ExternalURL: "overrideExternalURL"},
 		},
+		{
+			description:   "Override Enabled - True To False",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(false)},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(false)},
+		},
+		{
+			description:   "Override Enabled - False To True",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(false)},
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(true)},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+		},
+		{
+			description:   "Override Enabled - Nil Preserves Original",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+			givenOverride: &Syncer{},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+		},
+		{
+			description:   "Override Enabled - Set On Nil Original",
+			givenOriginal: nil,
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(false)},
+			expected:      &Syncer{Enabled: ptrutil.ToPtr(false)},
+		},
 	}
 
 	for _, test := range testCases {
