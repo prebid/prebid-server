@@ -18,3 +18,12 @@ func TestJsonSamples(t *testing.T) {
 
 	adapterstest.RunJSONBidderTest(t, "rtbstacktest", bidder)
 }
+
+func TestBuilderInvalidTemplate(t *testing.T) {
+	_, err := Builder(openrtb_ext.BidderRTBStack, config.Adapter{
+		Endpoint: "https://{{.Region}-bad-template"}, config.Server{})
+
+	if err == nil {
+		t.Fatal("Builder should return an error for an invalid endpoint template")
+	}
+}
