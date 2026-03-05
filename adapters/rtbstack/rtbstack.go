@@ -1,9 +1,9 @@
 package rtbstack
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"text/template"
 
@@ -54,8 +54,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var errs []error
 	var validImps []*impCtx
 
-	for _, imp := range request.Imp {
-		ext, err := preprocessImp(&imp)
+	for i := range request.Imp {
+		imp, ext, err := preprocessImp(request.Imp[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -71,9 +71,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, errs
 	}
 
-	request.Imp = nil
+	processedImps := make([]openrtb2.Imp, 0, len(validImps))
 	for _, v := range validImps {
-		request.Imp = append(request.Imp, v.imp)
+		processedImps = append(processedImps, v.imp)
 	}
 
 	endpoint, err := a.buildEndpointURL(validImps[0].rtbStackExt)
@@ -81,16 +81,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, []error{err}
 	}
 
-	var newRequest openrtb2.BidRequest
-	newRequest = *request
+	newRequest := *request
+	newRequest.Imp = processedImps
 
 	if request.Site != nil && request.Site.Domain == "" {
 		newSite := *request.Site
-		newSite.Domain = request.Site.Page
+		pageURL, parseErr := url.Parse(request.Site.Page)
+		if parseErr == nil && pageURL.Hostname() != "" {
+			newSite.Domain = pageURL.Hostname()
+		} else {
+			newSite.Domain = request.Site.Page
+		}
 		newRequest.Site = &newSite
 	}
 
-	reqJSON, err := json.Marshal(newRequest)
+	reqJSON, err := jsonutil.Marshal(newRequest)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing reqJSON object",
@@ -101,21 +106,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Uri:     endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}}, []error{}
+		ImpIDs:  openrtb_ext.GetImpIDs(newRequest.Imp),
+	}}, nil
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d", response.StatusCode)}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -127,90 +132,118 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, nil
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
+
+	var bidErrs []error
 	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
-			bid := sb.Bid[i]
+		for i := range sb.Bid {
+			bidType, err := getMediaTypeForBid(sb.Bid[i])
+			if err != nil {
+				bidErrs = append(bidErrs, err)
+				continue
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				Bid:     &sb.Bid[i],
+				BidType: bidType,
 			})
-
 		}
 	}
-	return bidResponse, []error{}
+	return bidResponse, bidErrs
 }
 
+var validRegions = map[string]bool{"us": true, "eu": true, "sg": true}
+
 func (a *adapter) buildEndpointURL(ext *openrtb_ext.ExtImpRTBStack) (string, error) {
-	// Normalize host to avoid accidental protocol prefixes and domains accidentally included
-	host := ext.Host
-	host = strings.TrimPrefix(host, "http://")
-	host = strings.TrimPrefix(host, "https://")
-
-	endpointParams := macros.EndpointTemplateParams{Host: host}
-	baseURL, err := macros.ResolveMacros(a.endpoint, endpointParams)
+	routeURL, err := url.Parse(ext.Route)
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve endpoint: %v", err)
+		return "", &errortypes.BadInput{Message: fmt.Sprintf("invalid route URL: %v", err)}
 	}
 
-	if ext.Query == "" {
-		return baseURL, nil
+	region, err := extractRegion(routeURL.Hostname())
+	if err != nil {
+		return "", err
 	}
 
-	if strings.HasPrefix(ext.Query, "/") {
-		return baseURL + ext.Query, nil
+	queryParams := routeURL.Query()
+	client := queryParams.Get("client")
+	endpoint := queryParams.Get("endpoint")
+	ssp := queryParams.Get("ssp")
+
+	if client == "" || endpoint == "" || ssp == "" {
+		return "", &errortypes.BadInput{Message: "route URL must contain client, endpoint, and ssp query parameters"}
 	}
 
-	return baseURL + "/" + ext.Query, nil
+	params := macros.EndpointTemplateParams{
+		Region:    region,
+		SspID:     ssp,
+		ZoneID:    endpoint,
+		PartnerId: client,
+	}
+
+	return macros.ResolveMacros(a.endpoint, params)
+}
+
+func extractRegion(hostname string) (string, error) {
+	parts := strings.Split(hostname, ".")
+	for _, part := range parts {
+		if strings.HasSuffix(part, "-adx-admixer") {
+			region := strings.ToLower(strings.TrimSuffix(part, "-adx-admixer"))
+			if validRegions[region] {
+				return region, nil
+			}
+		}
+	}
+	return "", &errortypes.BadInput{Message: "unable to extract valid region from route URL hostname"}
 }
 
 func preprocessImp(
-	imp *openrtb2.Imp,
-) (*openrtb_ext.ExtImpRTBStack, error) {
+	imp openrtb2.Imp,
+) (openrtb2.Imp, *openrtb_ext.ExtImpRTBStack, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{Message: err.Error()}
+		return imp, nil, &errortypes.BadInput{Message: err.Error()}
 	}
 
 	var impExt openrtb_ext.ExtImpRTBStack
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return imp, nil, &errortypes.BadInput{
 			Message: "Wrong RTBStack bidder ext",
 		}
 	}
 
 	imp.TagID = impExt.TagId
 
-	// create new imp->ext without odd params
 	newExt := extImpRTBStack{
 		TagId:        impExt.TagId,
 		CustomParams: impExt.CustomParams,
 	}
 
-	// simplify content from imp->ext->bidder to imp->ext
-	newImpExtForRTBStack, err := json.Marshal(newExt)
+	newImpExtForRTBStack, err := jsonutil.Marshal(newExt)
 	if err != nil {
-		return nil, &errortypes.BadInput{Message: err.Error()}
+		return imp, nil, &errortypes.BadInput{Message: err.Error()}
 	}
 	imp.Ext = newImpExtForRTBStack
 
-	return &impExt, nil
+	return imp, &impExt, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
-			} else if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio
-			}
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported MType %d for bid %s", bid.MType, bid.ImpID),
 		}
 	}
-	return openrtb_ext.BidTypeBanner
 }
