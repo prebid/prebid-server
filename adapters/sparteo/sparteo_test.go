@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -522,7 +522,7 @@ func TestMakeRequests_SitePageLiteralNull_TreatedAsMissingDomain(t *testing.T) {
 	in := &openrtb2.BidRequest{
 		ID: "req-page-null",
 		Site: &openrtb2.Site{
-      Domain: "",
+			Domain: "",
 			Page:   "null",
 		},
 		Imp: []openrtb2.Imp{
@@ -539,8 +539,7 @@ func TestMakeRequests_SitePageLiteralNull_TreatedAsMissingDomain(t *testing.T) {
 		reqs[0].Uri,
 	)
 
-	var badInput *
-  .BadInput
+	var badInput *errortypes.BadInput
 	require.True(t, errors.As(errs[0], &badInput))
 	assert.Contains(t, badInput.Error(), "Domain not found")
 }
