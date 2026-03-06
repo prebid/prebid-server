@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, map[openrtb_ext.BidderName]struct{}, []error) {
@@ -132,6 +132,7 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"dxkulture":       `Bidder "dxkulture" is no longer available in Prebid Server. Please update your configuration.`,
 		"mobupps":         `Bidder "mobupps" is no longer available in Prebid Server. Please update your configuration.`,
 		"vimayx":          `Bidder "vimayx" is no longer available in Prebid Server. Please update your configuration.`,
+		"adoppler":        `Bidder "adoppler" is no longer available in Prebid Server. If you're looking to use the Adoppler adapter, please rename it to "elementaltv" in your configuration.`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)

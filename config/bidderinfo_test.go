@@ -7,8 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -253,7 +253,7 @@ func TestProcessBidderInfo(t *testing.T) {
 						},
 					},
 					ExtraAdapterInfo: "extra-info",
-					GVLVendorID:      42,
+					GVLVendorID:      0,
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
@@ -390,6 +390,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 	}
 	bidderB := parentWithSyncerKey
 	bidderB.AliasOf = "bidderA"
+	bidderB.GVLVendorID = 0
 	bidderB.Syncer = &Syncer{
 		Key: bidderB.Syncer.Key,
 	}
@@ -1465,6 +1466,30 @@ func TestSyncerOverride(t *testing.T) {
 			givenOriginal: &Syncer{Key: "originalKey", ExternalURL: "originalExternalURL"},
 			givenOverride: &Syncer{ExternalURL: "overrideExternalURL"},
 			expected:      &Syncer{Key: "originalKey", ExternalURL: "overrideExternalURL"},
+		},
+		{
+			description:   "Override Enabled - True To False",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(false)},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(false)},
+		},
+		{
+			description:   "Override Enabled - False To True",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(false)},
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(true)},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+		},
+		{
+			description:   "Override Enabled - Nil Preserves Original",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+			givenOverride: &Syncer{},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+		},
+		{
+			description:   "Override Enabled - Set On Nil Original",
+			givenOriginal: nil,
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(false)},
+			expected:      &Syncer{Enabled: ptrutil.ToPtr(false)},
 		},
 	}
 
