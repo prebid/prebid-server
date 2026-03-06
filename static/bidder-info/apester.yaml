@@ -1,0 +1,9 @@
+aliasOf: "vidazoo"
+endpoint: "https://bidder.apester.com/openrtb/"
+maintainer:
+  email: "roni.katz@apester.com"
+userSync:
+  iframe:
+    url: https://sync.apester.com/api/user/html/699dad2322a7fa644e1d8bf7?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    userMacro: ${userId}
+gvlVendorID: 354
