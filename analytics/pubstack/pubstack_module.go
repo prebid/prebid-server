@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack/eventchannel"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack/helpers"
-	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/analytics/pubstack/eventchannel"
+	"github.com/prebid/prebid-server/v4/analytics/pubstack/helpers"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 type Configuration struct {

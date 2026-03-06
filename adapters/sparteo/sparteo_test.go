@@ -522,7 +522,7 @@ func TestMakeRequests_SitePageLiteralNull_TreatedAsMissingDomain(t *testing.T) {
 	in := &openrtb2.BidRequest{
 		ID: "req-page-null",
 		Site: &openrtb2.Site{
-			Domain: "",
+      Domain: "",
 			Page:   "null",
 		},
 		Imp: []openrtb2.Imp{
@@ -539,7 +539,8 @@ func TestMakeRequests_SitePageLiteralNull_TreatedAsMissingDomain(t *testing.T) {
 		reqs[0].Uri,
 	)
 
-	var badInput *errortypes.BadInput
+	var badInput *
+  .BadInput
 	require.True(t, errors.As(errs[0], &badInput))
 	assert.Contains(t, badInput.Error(), "Domain not found")
 }
