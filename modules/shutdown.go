@@ -1,7 +1,7 @@
 package modules
 
 import (
-	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 // Shutdowner is an interface that defines a method for shutting down modules.
