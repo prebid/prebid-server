@@ -15,10 +15,10 @@ import (
 func handleRawBidderResponseHook(
 	cfg config,
 	payload hookstage.RawBidderResponsePayload,
-	moduleCtx hookstage.ModuleContext,
+	moduleCtx *hookstage.ModuleContext,
 ) (result hookstage.HookResult[hookstage.RawBidderResponsePayload], err error) {
 	bidder := payload.Bidder
-	blockAttrsVal, ok := moduleCtx[bidder]
+	blockAttrsVal, ok := moduleCtx.Get(bidder)
 	if !ok {
 		// if there are no blocking attributes for this bidder just pass empty blockingAttributes for further processing
 		// other values from config must still be checked
