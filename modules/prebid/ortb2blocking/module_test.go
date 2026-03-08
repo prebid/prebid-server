@@ -8,12 +8,12 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -307,8 +307,9 @@ func TestHandleBidderRequestHook(t *testing.T) {
 						Video:  &openrtb2.Video{},
 					},
 					{
-						ID:    "ImpID2",
-						Audio: &openrtb2.Audio{},
+						ID:     "ImpID2",
+						Audio:  &openrtb2.Audio{},
+						Banner: &openrtb2.Banner{},
 					},
 				},
 			},
@@ -394,7 +395,6 @@ func TestHandleBidderRequestHook(t *testing.T) {
 					mctx := hookstage.NewModuleContext()
 					mctx.Set(bidder, blockingAttributes{
 						bAdv:  []string{bAdvA, bAdvB, bAdvC},
-						bType: map[string][]int{},
 						bAttr: map[string][]int{},
 					})
 					return mctx
@@ -446,7 +446,6 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				ModuleContext: func() *hookstage.ModuleContext {
 					mctx := hookstage.NewModuleContext()
 					mctx.Set(bidder, blockingAttributes{
-						bType: map[string][]int{},
 						bAttr: map[string][]int{},
 					})
 					return mctx
@@ -471,7 +470,6 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				ModuleContext: func() *hookstage.ModuleContext {
 					mctx := hookstage.NewModuleContext()
 					mctx.Set(bidder, blockingAttributes{
-						bType: map[string][]int{},
 						bAttr: map[string][]int{},
 					})
 					return mctx

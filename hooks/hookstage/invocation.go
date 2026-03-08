@@ -5,7 +5,7 @@ import (
 	"maps"
 	"sync"
 
-	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
 )
 
 // HookResult represents the result of execution the concrete hook instance.

@@ -33,7 +33,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
-	BidderAdoppler,
 	BidderAdot,
 	BidderAdpone,
 	BidderAdprime,
@@ -55,6 +54,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAkcelo,
 	BidderAlgorix,
 	BidderAlkimi,
+	BidderAllianceGravity,
 	BidderAMX,
 	BidderApacdex,
 	BidderAppnexus,
@@ -68,6 +68,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBeachfront,
 	BidderBeintoo,
 	BidderBematterfull,
+	BidderBeop,
 	BidderBetween,
 	BidderBeyondMedia,
 	BidderBidmachine,
@@ -113,6 +114,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEdge226,
 	BidderDmx,
 	BidderDriftPixel,
+	BidderElementalTV,
 	BidderEmtv,
 	BidderEmxDigital,
 	BidderEPlanning,
@@ -141,7 +143,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderInsticator,
 	BidderIntenze,
 	BidderInteractiveoffers,
-	BidderIntertech,
 	BidderInvibes,
 	BidderIQX,
 	BidderIQZone,
@@ -406,7 +407,6 @@ const (
 	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
-	BidderAdoppler          BidderName = "adoppler"
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
@@ -428,6 +428,7 @@ const (
 	BidderAkcelo            BidderName = "akcelo"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAlkimi            BidderName = "alkimi"
+	BidderAllianceGravity   BidderName = "alliance_gravity"
 	BidderAMX               BidderName = "amx"
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
@@ -441,6 +442,7 @@ const (
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
 	BidderBematterfull      BidderName = "bematterfull"
+	BidderBeop              BidderName = "beop"
 	BidderBetween           BidderName = "between"
 	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
@@ -486,6 +488,7 @@ const (
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
 	BidderDriftPixel        BidderName = "driftpixel"
+	BidderElementalTV       BidderName = "elementaltv"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
@@ -514,7 +517,6 @@ const (
 	BidderInsticator        BidderName = "insticator"
 	BidderIntenze           BidderName = "intenze"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
-	BidderIntertech         BidderName = "intertech"
 	BidderInvibes           BidderName = "invibes"
 	BidderIQX               BidderName = "iqx"
 	BidderIQZone            BidderName = "iqzone"

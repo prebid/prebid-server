@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
 	gometrics "github.com/rcrowley/go-metrics"
 )
 
