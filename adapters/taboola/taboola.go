@@ -239,7 +239,7 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 	}
 
 	if taboolaExt.PageType != "" {
-		requestExt, requestExtErr := makeRequestExt(taboolaExt.PageType)
+		requestExt, requestExtErr := makeRequestExt(taboolaExt.PageType, modifiedRequest.Ext)
 		if requestExtErr == nil {
 			modifiedRequest.Ext = requestExt
 		} else {
@@ -253,17 +253,23 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 	return taboolaRequests, errs
 }
 
-func makeRequestExt(pageType string) (json.RawMessage, error) {
-	requestExt := &RequestExt{
-		PageType: pageType,
+func makeRequestExt(pageType string, existingExt json.RawMessage) (json.RawMessage, error) {
+	var extMap map[string]interface{}
+	if len(existingExt) > 0 {
+		if err := jsonutil.Unmarshal(existingExt, &extMap); err != nil {
+			extMap = make(map[string]interface{})
+		}
+	} else {
+		extMap = make(map[string]interface{})
 	}
 
-	requestExtJson, err := json.Marshal(requestExt)
+	extMap["pageType"] = pageType
+
+	requestExtJson, err := json.Marshal(extMap)
 	if err != nil {
-		return nil, fmt.Errorf("could not marshal %s, err: %s", requestExt, err)
+		return nil, fmt.Errorf("could not marshal request ext, err: %s", err)
 	}
 	return requestExtJson, nil
-
 }
 
 func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
