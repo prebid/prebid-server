@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
 	"github.com/tidwall/gjson"
 )
 
