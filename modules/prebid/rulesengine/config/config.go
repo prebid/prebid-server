@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -16,9 +16,15 @@ const RulesEngineSchemaFile = "rules-engine-schema.json"
 const RulesEngineSchemaFilePath = "modules/prebid/rulesengine/config/" + RulesEngineSchemaFile
 
 type PbRulesEngine struct {
-	Enabled   bool      `json:"enabled,omitempty"`
-	Timestamp string    `json:"timestamp,omitempty"`
-	RuleSets  []RuleSet `json:"rulesets,omitempty"`
+	Enabled                       bool           `json:"enabled,omitempty"`
+	GenerateRulesFromBidderConfig bool           `json:"generate_rules_from_bidderconfig,omitempty"`
+	SetDefinitions                SetDefinitions `json:"set_definitions,omitempty"`
+	Timestamp                     string         `json:"timestamp,omitempty"`
+	RuleSets                      []RuleSet      `json:"rulesets,omitempty"`
+}
+
+type SetDefinitions struct {
+	CountryGroups map[string][]string `json:"country_groups,omitempty"`
 }
 
 type RuleSet struct {

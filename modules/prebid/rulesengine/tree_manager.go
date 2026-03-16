@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -18,6 +18,7 @@ type buildInstruction struct {
 type treeManager struct {
 	done            chan struct{}
 	requests        chan buildInstruction
+	geoscopes       map[string][]string
 	schemaValidator *gojsonschema.Schema
 	monitor         RulesEngineObserver
 }
@@ -48,7 +49,7 @@ func (tm *treeManager) Run(c cacher) error {
 				break
 			}
 
-			newCacheObj, err := NewCacheEntry(parsedCfg, req.config)
+			newCacheObj, err := NewCacheEntry(parsedCfg, req.config, tm.geoscopes)
 			if err != nil {
 				tm.monitor.logError(fmt.Sprintf("Rules engine error creating cache entry for account %s: %v", req.accountID, err))
 				break

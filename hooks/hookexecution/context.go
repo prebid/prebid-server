@@ -3,10 +3,10 @@ package hookexecution
 import (
 	"sync"
 
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/privacy"
 )
 
 // executionContext holds information passed to module's hook during hook execution.
@@ -30,7 +30,7 @@ func (ctx executionContext) getModuleContext(moduleName string) hookstage.Module
 	if ctx.account != nil {
 		cfg, err := ctx.account.Hooks.Modules.ModuleConfig(moduleName)
 		if err != nil {
-			glog.Warningf("Failed to get account config for %s module: %s", moduleName, err)
+			logger.Warnf("Failed to get account config for %s module: %s", moduleName, err)
 		}
 
 		moduleInvocationCtx.AccountID = ctx.accountID

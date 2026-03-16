@@ -12,33 +12,32 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/util/uuidutil"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	accountService "github.com/prebid/prebid-server/v3/account"
-	"github.com/prebid/prebid-server/v3/amp"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/stored_requests"
-	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v3/stored_responses"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/iputil"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/version"
+	accountService "github.com/prebid/prebid-server/v4/account"
+	"github.com/prebid/prebid-server/v4/amp"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v4/stored_responses"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/iputil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -126,8 +125,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Errors:    make([]error, 0),
 		StartTime: start,
 	}
-
-	// Set this as an AMP request in Metrics.
 
 	labels := metrics.Labels{
 		Source:        metrics.DemandWeb,
@@ -250,12 +247,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	tcf2Config := gdpr.NewTCF2Config(deps.cfg.GDPR.TCF2, account.GDPR)
-
 	activityControl = privacy.NewActivityControl(&account.Privacy)
 
 	hookExecutor.SetActivityControl(activityControl)
 	hookExecutor.SetAccount(account)
+
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(reqWrapper, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
 
 	secGPC := r.Header.Get("Sec-GPC")
 
@@ -276,6 +274,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		TCF2Config:                 tcf2Config,
 		Activities:                 activityControl,
 		TmaxAdjustments:            deps.tmaxAdjustments,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -294,7 +294,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err != nil && !isRejectErr {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		glog.Errorf("/openrtb2/amp Critical error: %v", err)
+		logger.Errorf("/openrtb2/amp Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -305,7 +305,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if err := reqWrapper.RebuildRequest(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		glog.Errorf("/openrtb2/amp Critical error: %v", err)
+		logger.Errorf("/openrtb2/amp Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -369,7 +369,7 @@ func sendAmpResponse(
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
-						glog.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
+						logger.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
 						ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
 						ao.Status = http.StatusInternalServerError
 						return labels, ao
@@ -481,7 +481,7 @@ func getExtBidResponse(
 			if extResponse.Debug != nil {
 				extBidResponse.Debug = extResponse.Debug
 			} else {
-				glog.Errorf("Test set on request but debug not present in response.")
+				logger.Errorf("Test set on request but debug not present in response.")
 				ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
 			}
 		}
@@ -491,7 +491,7 @@ func getExtBidResponse(
 		modules, warns, err := hookexecution.GetModulesJSON(stageOutcomes, reqWrapper.BidRequest, account)
 		if err != nil {
 			err := fmt.Errorf("Failed to get modules outcome: %s", err)
-			glog.Errorf(err.Error())
+			logger.Errorf("%v", err.Error())
 			ao.Errors = append(ao.Errors, err)
 		} else if modules != nil {
 			extBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{Modules: modules}

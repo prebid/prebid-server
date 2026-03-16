@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -23,6 +23,8 @@ import (
 const MAX_IMPRESSIONS_PUBMATIC = 30
 
 const ae = "ae"
+
+const BidderPubMatic = "pubmatic"
 
 type PubmaticAdapter struct {
 	URI        string
@@ -37,8 +39,9 @@ type pubmaticBidExt struct {
 }
 
 type pubmaticWrapperExt struct {
-	ProfileID int `json:"profile,omitempty"`
-	VersionID int `json:"version,omitempty"`
+	ProfileID  int    `json:"profile,omitempty"`
+	VersionID  int    `json:"version,omitempty"`
+	BidderCode string `json:"biddercode,omitempty"`
 }
 
 type pubmaticBidExtVideo struct {
@@ -384,6 +387,19 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 			return pmReqExt, err
 		}
 		pmReqExt.Wrapper = wrpExt
+	}
+
+	if pmReqExt.Wrapper == nil {
+		pmReqExt.Wrapper = &pubmaticWrapperExt{}
+	}
+
+	// Always set bidder code to default
+	pmReqExt.Wrapper.BidderCode = BidderPubMatic
+
+	// Override bidder code if alias exists
+	for alias := range reqExt.Prebid.Aliases {
+		pmReqExt.Wrapper.BidderCode = alias
+		break
 	}
 
 	if acatBytes, ok := reqExtBidderParams["acat"]; ok {

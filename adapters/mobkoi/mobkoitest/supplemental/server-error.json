@@ -28,8 +28,7 @@
         },
         "ext": {
           "bidder": {
-            "placementId": "placementId",
-            "adServerBaseUrl": "http://dev.mobkoi.com"
+            "placementId": "placementId"
           }
         }
       }
@@ -65,8 +64,7 @@
               },
               "ext": {
                 "bidder": {
-                  "placementId": "placementId",
-                  "adServerBaseUrl": "http://dev.mobkoi.com"
+                  "placementId": "placementId"
                 }
               }
             }

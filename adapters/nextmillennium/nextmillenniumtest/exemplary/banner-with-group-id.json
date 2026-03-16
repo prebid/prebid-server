@@ -45,7 +45,7 @@
           "id": "testid",
           "ext": {
             "nextMillennium": {
-              "nm_version": "v1.0.0"
+              "nm_version": "v1.0.1"
             },
             "prebid": {
               "storedrequest": {

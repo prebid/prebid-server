@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type RequestExt struct {
@@ -191,6 +191,27 @@ func generateAdUnit(imp openrtb2.Imp, adnuntiusExt openrtb_ext.ImpExtAdnunitus, 
 	if adnuntiusExt.MaxDeals > 0 {
 		adUnit.MaxDeals = adnuntiusExt.MaxDeals
 	}
+
+	if adnuntiusExt.Targeting.Category != nil {
+		adUnit.Category = adnuntiusExt.Targeting.Category
+	}
+
+	if adnuntiusExt.Targeting.Segments != nil {
+		adUnit.Segments = adnuntiusExt.Targeting.Segments
+	}
+
+	if adnuntiusExt.Targeting.Keywords != nil {
+		adUnit.Keywords = adnuntiusExt.Targeting.Keywords
+	}
+
+	if adnuntiusExt.Targeting.KeyValues != nil {
+		adUnit.KeyValues = adnuntiusExt.Targeting.KeyValues
+	}
+
+	if adnuntiusExt.Targeting.AdUnitMatchingLabel != nil {
+		adUnit.AdUnitMatchingLabel = adnuntiusExt.Targeting.AdUnitMatchingLabel
+	}
+
 	return adUnit
 }
 

@@ -23,24 +23,25 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v3/stored_responses"
-	"github.com/prebid/prebid-server/v3/util/iputil"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v4/stored_responses"
+	"github.com/prebid/prebid-server/v4/util/iputil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -6396,6 +6397,222 @@ func TestValidateUser(t *testing.T) {
 			if test.req.User != nil {
 				assert.ElementsMatch(t, test.expectedEids, test.req.User.EIDs)
 			}
+		})
+	}
+}
+
+func TestProcessGDPR(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		req                  *openrtb_ext.RequestWrapper
+		accountGDPR          config.AccountGDPR
+		requestType          metrics.RequestType
+		cfg                  *config.Configuration
+		expectedGDPREnforced bool
+		expectedGDPRSignal   gdpr.Signal
+		expectedErrorCount   int
+	}{
+		{
+			name: "gdpr-not-enforced-no-signal",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeAMP,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-enforced-with-signal-yes",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+					User: &openrtb2.User{
+						Consent: "consent-string",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-enforced-with-eea-country",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "FRA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-not-enforced-with-non-eea-country",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "USA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-with-gpp-string",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+						GPP:  "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-with-account-eea-countries",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Device: &openrtb2.Device{
+						Geo: &openrtb2.Geo{
+							Country: "ITA",
+						},
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{
+				EEACountries: []string{"ITA", "ESP"},
+			},
+			requestType: metrics.ReqTypeORTB2Web,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "1",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: true,
+					},
+				},
+			},
+			expectedGDPREnforced: true,
+			expectedGDPRSignal:   gdpr.SignalAmbiguous,
+			expectedErrorCount:   0,
+		},
+		{
+			name: "gdpr-disabled-tcf2",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Regs: &openrtb2.Regs{
+						GDPR: ptrutil.ToPtr[int8](1),
+					},
+				},
+			},
+			accountGDPR: config.AccountGDPR{},
+			requestType: metrics.ReqTypeAMP,
+			cfg: &config.Configuration{
+				GDPR: config.GDPR{
+					Enabled:      true,
+					DefaultValue: "0",
+					EEACountries: []string{"FRA", "DEU"},
+					TCF2: config.TCF2{
+						Enabled: false,
+					},
+				},
+			},
+			expectedGDPREnforced: false,
+			expectedGDPRSignal:   gdpr.SignalYes,
+			expectedErrorCount:   0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			deps := &endpointDeps{
+				cfg: tc.cfg,
+			}
+
+			tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(
+				tc.req,
+				tc.accountGDPR,
+				tc.requestType,
+			)
+
+			assert.Equal(t, tc.expectedGDPREnforced, gdprEnforced)
+			assert.Equal(t, tc.expectedGDPRSignal, gdprSignal)
+			assert.Len(t, gdprErrs, tc.expectedErrorCount)
+			assert.NotNil(t, tcf2Config)
 		})
 	}
 }

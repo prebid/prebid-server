@@ -14,31 +14,31 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/privacy"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	accountService "github.com/prebid/prebid-server/v3/account"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/prebid_cache_client"
-	"github.com/prebid/prebid-server/v3/stored_requests"
-	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/iputil"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"github.com/prebid/prebid-server/v3/util/uuidutil"
-	"github.com/prebid/prebid-server/v3/version"
+	accountService "github.com/prebid/prebid-server/v4/account"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/iputil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/util/uuidutil"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 var defaultRequestTimeout int64 = 5000
@@ -121,6 +121,12 @@ func NewVideoEndpoint(
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
+
+	if !deps.cfg.Video.EnableDeprecatedEndpoint {
+		w.WriteHeader(http.StatusNotImplemented)
+		w.Write([]byte("The video endpoint is deprecated and will be removed in 5.0. You may re-enable it via the host configuration setting video.enable_deprecated_endpoint"))
+		return
+	}
 
 	vo := analytics.VideoObject{
 		Status:    http.StatusOK,
@@ -304,6 +310,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	tcf2Config, gdprSignal, gdprEnforced, gdprErrs := deps.processGDPR(bidReqWrapper, account.GDPR, labels.RType)
+	errL = append(errL, gdprErrs...)
+
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	if errs := deps.setFieldsImplicitly(r, bidReqWrapper, account); len(errs) > 0 {
 		errL = append(errL, errs...)
@@ -332,8 +341,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
 		HookExecutor:               hookexecution.EmptyHookExecutor{},
+		TCF2Config:                 tcf2Config,
 		TmaxAdjustments:            deps.tmaxAdjustments,
 		Activities:                 activityControl,
+		GDPRSignal:                 gdprSignal,
+		GDPREnforced:               gdprEnforced,
 	}
 
 	auctionResponse, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
@@ -365,7 +377,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if bidReq.Test == 1 {
 		err = setSeatNonBidRaw(bidReqWrapper, auctionResponse)
 		if err != nil {
-			glog.Errorf("Error setting seat non-bid: %v", err)
+			logger.Errorf("Error setting seat non-bid: %v", err)
 		}
 		bidResp.Ext = response.Ext
 	}
@@ -435,7 +447,7 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	w.WriteHeader(status)
 	vo.Status = status
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
-	glog.Errorf("/openrtb2/video Critical error: %v", errors)
+	logger.Errorf("/openrtb2/video Critical error: %v", errors)
 	vo.Errors = append(vo.Errors, errL...)
 }
 
