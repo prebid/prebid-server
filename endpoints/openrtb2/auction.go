@@ -380,7 +380,7 @@ func sendAuctionResponse(
 		}
 
 		if err := addABTestTargetingKeywords(response, hookExecutor); err != nil {
-			glog.Errorf("Failed to add A/B test targeting keywords: %v", err)
+			logger.Errorf("Failed to add A/B test targeting keywords: %v", err)
 			ao.Errors = append(ao.Errors, err)
 		}
 	}
