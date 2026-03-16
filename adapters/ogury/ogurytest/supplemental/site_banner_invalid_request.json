@@ -22,7 +22,7 @@
   "httpCalls": [],
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [{
-    "value": "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
+    "value": "Invalid request. assetKey/adUnitId or request.site/app.publisher.id required",
     "comparison": "literal"
   }]
 }
