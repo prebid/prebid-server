@@ -7,8 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,7 +73,6 @@ aliasOf: bidderA
 func TestLoadBidderInfoFromDisk(t *testing.T) {
 	// should appear in result in mixed case
 	bidder := "stroeerCore"
-	trueValue := true
 
 	adapterConfigs := make(map[string]Adapter)
 	adapterConfigs[strings.ToLower(bidder)] = Adapter{}
@@ -115,7 +114,6 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 					ExternalURL: "https://redirect.host",
 					UserMacro:   "#UID",
 				},
-				SupportCORS: &trueValue,
 			},
 		},
 	}
@@ -255,7 +253,7 @@ func TestProcessBidderInfo(t *testing.T) {
 						},
 					},
 					ExtraAdapterInfo: "extra-info",
-					GVLVendorID:      42,
+					GVLVendorID:      0,
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
@@ -392,6 +390,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 	}
 	bidderB := parentWithSyncerKey
 	bidderB.AliasOf = "bidderA"
+	bidderB.GVLVendorID = 0
 	bidderB.Syncer = &Syncer{
 		Key: bidderB.Syncer.Key,
 	}
@@ -516,7 +515,7 @@ func TestProcessAliasBidderInfo(t *testing.T) {
 					AliasOf: "bidderA",
 				},
 			},
-			expectedErr: errors.New("bidder: bidderA not found for an alias: bidderB"),
+			expectedErr: errors.New("alias 'bidderB' references a nonexistent bidder 'bidderA'"),
 		},
 		{
 			description: "bidder info not found for an alias",
@@ -698,21 +697,21 @@ func TestValidateAliases(t *testing.T) {
 			bidderName:  "b",
 			bidderInfo:  BidderInfo{AliasOf: "nonexistent"},
 			bidderInfos: BidderInfos{},
-			expectedErr: errors.New("bidder: nonexistent not found for an alias: b"), // does this make sense? should it be reversed?
+			expectedErr: errors.New("alias 'b' references a nonexistent bidder 'nonexistent'"),
 		},
 		{
 			name:        "alias-of-alias",
 			bidderName:  "b",
 			bidderInfo:  BidderInfo{AliasOf: "a"},
 			bidderInfos: BidderInfos{"a": BidderInfo{AliasOf: "foo"}},
-			expectedErr: errors.New("bidder: a cannot be an alias of an alias: b"), // does this make sense? should it be reversed?
+			expectedErr: errors.New("alias 'b' cannot reference another alias 'a'"),
 		},
 		{
 			name:        "whitelabelonly",
 			bidderName:  "b",
 			bidderInfo:  BidderInfo{AliasOf: "a", WhiteLabelOnly: true},
 			bidderInfos: BidderInfos{"a": BidderInfo{}},
-			expectedErr: errors.New("bidder: b is an alias and cannot be set as white label only"),
+			expectedErr: errors.New("bidder 'b' is an alias and cannot be set as white label only"),
 		},
 	}
 
@@ -1402,11 +1401,6 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 }
 
 func TestSyncerOverride(t *testing.T) {
-	var (
-		trueValue  = true
-		falseValue = false
-	)
-
 	testCases := []struct {
 		description   string
 		givenOriginal *Syncer
@@ -1468,16 +1462,34 @@ func TestSyncerOverride(t *testing.T) {
 			expected:      &Syncer{ExternalURL: "override"},
 		},
 		{
-			description:   "Override SupportCORS",
-			givenOriginal: &Syncer{SupportCORS: &trueValue},
-			givenOverride: &Syncer{SupportCORS: &falseValue},
-			expected:      &Syncer{SupportCORS: &falseValue},
-		},
-		{
 			description:   "Override Partial - Other Fields Untouched",
 			givenOriginal: &Syncer{Key: "originalKey", ExternalURL: "originalExternalURL"},
 			givenOverride: &Syncer{ExternalURL: "overrideExternalURL"},
 			expected:      &Syncer{Key: "originalKey", ExternalURL: "overrideExternalURL"},
+		},
+		{
+			description:   "Override Enabled - True To False",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(false)},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(false)},
+		},
+		{
+			description:   "Override Enabled - False To True",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(false)},
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(true)},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+		},
+		{
+			description:   "Override Enabled - Nil Preserves Original",
+			givenOriginal: &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+			givenOverride: &Syncer{},
+			expected:      &Syncer{Key: "originalKey", Enabled: ptrutil.ToPtr(true)},
+		},
+		{
+			description:   "Override Enabled - Set On Nil Original",
+			givenOriginal: nil,
+			givenOverride: &Syncer{Enabled: ptrutil.ToPtr(false)},
+			expected:      &Syncer{Enabled: ptrutil.ToPtr(false)},
 		},
 	}
 
@@ -1716,18 +1728,6 @@ func TestSyncerEqual(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "different-support-cors",
-			syncer1: &Syncer{
-				Key:         "key",
-				SupportCORS: ptrutil.ToPtr(true),
-			},
-			syncer2: &Syncer{
-				Key:         "key",
-				SupportCORS: ptrutil.ToPtr(false),
-			},
-			expected: false,
-		},
-		{
 			name: "different-format-override",
 			syncer1: &Syncer{
 				Key:            "key",
@@ -1782,7 +1782,6 @@ func TestSyncerEqual(t *testing.T) {
 					UserMacro: "$UID",
 				},
 				ExternalURL:    "https://external.com",
-				SupportCORS:    ptrutil.ToPtr(true),
 				FormatOverride: "i",
 				Enabled:        ptrutil.ToPtr(true),
 				SkipWhen: &SkipWhen{
@@ -1803,7 +1802,6 @@ func TestSyncerEqual(t *testing.T) {
 					UserMacro: "$UID",
 				},
 				ExternalURL:    "https://external.com",
-				SupportCORS:    ptrutil.ToPtr(true),
 				FormatOverride: "i",
 				Enabled:        ptrutil.ToPtr(true),
 				SkipWhen: &SkipWhen{
@@ -2071,11 +2069,6 @@ func TestSyncerDefined(t *testing.T) {
 		{
 			name:        "externalurl-only",
 			givenSyncer: &Syncer{ExternalURL: "anyURL"},
-			expected:    true,
-		},
-		{
-			name:        "supportscors-only",
-			givenSyncer: &Syncer{SupportCORS: ptrutil.ToPtr(false)},
 			expected:    true,
 		},
 		{
