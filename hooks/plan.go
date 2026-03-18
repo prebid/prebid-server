@@ -6,7 +6,6 @@ import (
 
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
-	"github.com/prebid/prebid-server/v4/logger"
 )
 
 type Stage string
