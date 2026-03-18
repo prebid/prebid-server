@@ -9,6 +9,11 @@ modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
   site:
     mediaTypes:
       - banner
