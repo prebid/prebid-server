@@ -25,4 +25,3 @@ type VastAd struct {
 	// RawVAST contains the original VAST XML if preserved.
 	RawVAST []byte
 }
-

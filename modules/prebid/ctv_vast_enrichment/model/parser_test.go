@@ -130,10 +130,10 @@ const (
 <VAST version="3.0">
 </VAST>`
 
-	invalidXML       = `<VAST version="3.0"><Ad><InLine><AdTitle>Broken`
-	notVAST          = `<html><body>Not VAST</body></html>`
-	emptyString      = ``
-	justWhitespace   = `   `
+	invalidXML     = `<VAST version="3.0"><Ad><InLine><AdTitle>Broken`
+	notVAST        = `<html><body>Not VAST</body></html>`
+	emptyString    = ``
+	justWhitespace = `   `
 )
 
 func TestParseVastAdm_ValidVAST30(t *testing.T) {
@@ -360,9 +360,9 @@ func TestParseVastFromBytes(t *testing.T) {
 
 func TestExtractFirstAd(t *testing.T) {
 	tests := []struct {
-		name     string
-		vast     *Vast
-		expectID string
+		name      string
+		vast      *Vast
+		expectID  string
 		expectNil bool
 	}{
 		{
@@ -376,13 +376,13 @@ func TestExtractFirstAd(t *testing.T) {
 			expectNil: true,
 		},
 		{
-			name: "single ad",
-			vast: &Vast{Ads: []Ad{{ID: "first"}}},
+			name:     "single ad",
+			vast:     &Vast{Ads: []Ad{{ID: "first"}}},
 			expectID: "first",
 		},
 		{
-			name: "multiple ads",
-			vast: &Vast{Ads: []Ad{{ID: "first"}, {ID: "second"}}},
+			name:     "multiple ads",
+			vast:     &Vast{Ads: []Ad{{ID: "first"}, {ID: "second"}}},
 			expectID: "first",
 		},
 	}
@@ -502,7 +502,7 @@ func TestParseVastAdm_PreservesInnerXML(t *testing.T) {
 	// InnerXML fields should contain the unknown elements
 	require.Len(t, vast.Ads, 1)
 	require.NotNil(t, vast.Ads[0].InLine)
-	
+
 	// The InnerXML on InLine should contain CustomElement
 	assert.Contains(t, vast.Ads[0].InLine.InnerXML, "CustomElement")
 }
