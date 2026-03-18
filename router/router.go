@@ -12,36 +12,36 @@ import (
 	"time"
 
 	openrtb2model "github.com/prebid/openrtb/v20/openrtb2"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/endpoints"
-	"github.com/prebid/prebid-server/v3/endpoints/events"
-	infoEndpoints "github.com/prebid/prebid-server/v3/endpoints/info"
-	"github.com/prebid/prebid-server/v3/endpoints/openrtb2"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/experiment/adscert"
-	"github.com/prebid/prebid-server/v3/floors"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/modules"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/pbs"
-	pbc "github.com/prebid/prebid-server/v3/prebid_cache_client"
-	"github.com/prebid/prebid-server/v3/router/aspects"
-	"github.com/prebid/prebid-server/v3/server/ssl"
-	storedRequestsConf "github.com/prebid/prebid-server/v3/stored_requests/config"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/uuidutil"
-	"github.com/prebid/prebid-server/v3/version"
+	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/endpoints"
+	"github.com/prebid/prebid-server/v4/endpoints/events"
+	infoEndpoints "github.com/prebid/prebid-server/v4/endpoints/info"
+	"github.com/prebid/prebid-server/v4/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/experiment/adscert"
+	"github.com/prebid/prebid-server/v4/floors"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConf "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/modules"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/pbs"
+	pbc "github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/router/aspects"
+	"github.com/prebid/prebid-server/v4/server/ssl"
+	storedRequestsConf "github.com/prebid/prebid-server/v4/stored_requests/config"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/uuidutil"
+	"github.com/prebid/prebid-server/v4/version"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
@@ -128,15 +128,14 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Router: httprouter.New(),
 	}
 
-	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
-	// local file system
-	certPool, certPoolCreateErr := ssl.CreateCertPool(cfg.CertsUseSystem)
+	certPool, certPoolCreateErr := ssl.CreateCertPool()
 	if certPoolCreateErr != nil {
 		logger.Infof("Could not load root certificates: %s \n", certPoolCreateErr.Error())
 	}
 
+	// load optional PEM certificate files
 	var readCertErr error
-	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
+	certPool, readCertErr = ssl.AppendPEMFileToCertPool(certPool, cfg.PemCertsFile)
 	if readCertErr != nil {
 		logger.Infof("Could not read certificates file: %s \n", readCertErr.Error())
 	}
@@ -230,9 +229,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
 
-	// register the analytics runner for shutdown
-	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown)
-
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		logger.Fatalf("Failed to create the bidder params validator. %v", err)
@@ -245,8 +241,15 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, r.MetricsEngine, gdpr.VendorListURLMaker)
-	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher, r.MetricsEngine)
+	liveGVLVendorIDs := gdpr.NewLiveGVLVendorIDs()
+	refreshInterval := time.Duration(cfg.GDPR.LiveGVLRefreshInterval) * time.Second
+	gvlVendorIDTask := gdpr.NewGVLVendorIDTickerTask(refreshInterval, generalHttpClient, gdpr.VendorListURLMaker, liveGVLVendorIDs, r.MetricsEngine)
+	gvlVendorIDTask.Start()
+	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, liveGVLVendorIDs, vendorListFetcher, r.MetricsEngine)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
+
+	// register the analytics runner, modules and live GVL Vendor ID ticker task for shutdown
+	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown, gvlVendorIDTask.Stop)
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
