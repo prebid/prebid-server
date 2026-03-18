@@ -1127,10 +1127,11 @@ func TestValidateExecutionPlan(t *testing.T) {
 
 			errs := ValidateExecutionPlan(cfg, repo)
 
-			assert.Len(t, errs, len(tt.expectedErrorMsgs), "unexpected number of validation errors")
-			for i, expectedMsg := range tt.expectedErrorMsgs {
-				assert.EqualError(t, errs[i], expectedMsg)
+			errMsgs := make([]string, len(errs))
+			for i, e := range errs {
+				errMsgs[i] = e.Error()
 			}
+			assert.ElementsMatch(t, tt.expectedErrorMsgs, errMsgs)
 		})
 	}
 }

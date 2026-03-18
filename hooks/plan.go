@@ -250,6 +250,9 @@ func ValidateExecutionPlan(cfg config.Hooks, repo HookRepository) []error {
 
 // hookExistsInRepo checks if a module with the given ID exists in the repository
 // by attempting to retrieve it using any of the stage-specific getter methods.
+//
+// NOTE: This function must be kept in sync with HookRepository. If a new stage
+// getter is added to the interface, add a corresponding check here.
 func hookExistsInRepo(repo HookRepository, moduleCode string) bool {
 	// Try to get hook from repository using all available stage getters
 	// A module may implement one or more hook interfaces
