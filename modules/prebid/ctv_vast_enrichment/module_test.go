@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
-	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/model"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

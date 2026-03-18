@@ -17,4 +17,3 @@ endpoint: "https://bid.sparteo.com/s2s-auction"
 userSync:
   iframe:
     url: "https://sync.sparteo.com/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect_url={{.RedirectURL}}"
-    supportCors: true

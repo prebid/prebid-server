@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
-	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/model"
+	vast "github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment"
+	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
 )
 
 // VastEnricher implements the Enricher interface.

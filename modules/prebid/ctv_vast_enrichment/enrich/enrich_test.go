@@ -3,8 +3,8 @@ package enrich
 import (
 	"testing"
 
-	vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
-	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/model"
+	vast "github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment"
+	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

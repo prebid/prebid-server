@@ -4,7 +4,7 @@ package ctv_vast_enrichment
 
 import (
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/model"
+	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
 )
 
 // ReceiverType identifies the downstream ad receiver/player.

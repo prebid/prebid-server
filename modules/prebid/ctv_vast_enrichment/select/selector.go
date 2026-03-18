@@ -2,7 +2,7 @@
 package bidselect
 
 import (
-	vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
+	vast "github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment"
 )
 
 // Selector implements the vast.BidSelector interface.
