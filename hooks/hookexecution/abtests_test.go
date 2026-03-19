@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRaceABTests(t *testing.T) {
@@ -102,5 +103,84 @@ func TestABTestsCheckAndSetLoggedNoDuplicates(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("expected exactly 1 analytics entry for module %q, got %d", module, count)
+	}
+}
+
+func TestPlanAccountDisabledClearsLogMap(t *testing.T) {
+	const module = "vendor.module"
+
+	hostEnabled := true
+	accountEnabled := false
+
+	cfg := &config.Configuration{
+		Hooks: config.Hooks{
+			HostExecutionPlan: config.HookExecutionPlan{
+				ABTests: []config.ABTest{
+					{
+						ModuleCode: module,
+						Enabled:    &hostEnabled,
+					},
+				},
+			},
+			DefaultAccountExecutionPlan: config.HookExecutionPlan{
+				ABTests: []config.ABTest{
+					{
+						ModuleCode: module,
+						Enabled:    &accountEnabled,
+					},
+				},
+			},
+		},
+	}
+
+	ab := NewABTests(cfg)
+	outcome := &StageOutcome{}
+	ab.WriteOutcome(outcome)
+
+	// Account plan disabled the module: logMap must be cleared.
+	// WriteOutcome must not emit any analytics entry for the module.
+	for _, g := range outcome.Groups {
+		for _, ir := range g.InvocationResults {
+			if ir.HookID.ModuleCode == module {
+				t.Errorf("expected no analytics entry for disabled module %q, but got one", module)
+			}
+		}
+	}
+}
+
+func TestSetAccountID(t *testing.T) {
+	tests := []struct {
+		description string
+		body        []byte
+		expected    string
+	}{
+		{
+			description: "site.publisher.id is used when present",
+			body:        []byte(`{"site":{"publisher":{"id":"site-pub-id"}}}`),
+			expected:    "site-pub-id",
+		},
+		{
+			description: "app.publisher.id is used as fallback when site.publisher.id is absent",
+			body:        []byte(`{"app":{"publisher":{"id":"app-pub-id"}}}`),
+			expected:    "app-pub-id",
+		},
+		{
+			description: "site.publisher.id takes precedence over app.publisher.id",
+			body:        []byte(`{"site":{"publisher":{"id":"site-pub-id"}},"app":{"publisher":{"id":"app-pub-id"}}}`),
+			expected:    "site-pub-id",
+		},
+		{
+			description: "empty result when neither site nor app publisher id present",
+			body:        []byte(`{"imp":[{"id":"imp-1"}]}`),
+			expected:    "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			ab := NewABTests(&config.Configuration{})
+			ab.SetAccountID(tc.body)
+			assert.Equal(t, tc.expected, ab.accountID)
+		})
 	}
 }

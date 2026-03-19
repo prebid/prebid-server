@@ -42,7 +42,11 @@ func (t *ABTests) SetAccount(account *config.Account) {
 }
 
 func (t *ABTests) SetAccountID(body []byte) {
-	t.accountID = gjson.GetBytes(body, "site.publisher.id").String()
+	if id := gjson.GetBytes(body, "site.publisher.id").String(); id != "" {
+		t.accountID = id
+		return
+	}
+	t.accountID = gjson.GetBytes(body, "app.publisher.id").String()
 }
 
 func (t *ABTests) init() {
@@ -157,6 +161,11 @@ func (t *ABTests) planHost() {
 	}
 }
 
+// Account-level AB test entries are already scoped to the specific account
+// by the configuration hierarchy, thus no account filtering is needed.
+// The "accounts" field is only meaningful in the host-level plan (planHost),
+// where it scopes a global entry to a subset of accounts.
+// This matches the PBS-Java reference implementation.
 func (t *ABTests) planAccount() {
 	cfg := t.config.Hooks.DefaultAccountExecutionPlan.ABTests
 	if t.account != nil {
@@ -173,6 +182,8 @@ func (t *ABTests) planAccount() {
 		if abtest.Enabled == nil || !*abtest.Enabled {
 			delete(t.runMap, abtest.ModuleCode)
 			delete(t.targetingMap, abtest.ModuleCode)
+			delete(t.logMap, abtest.ModuleCode)
+			delete(t.loggedMap, abtest.ModuleCode)
 			continue
 		}
 
@@ -231,9 +242,9 @@ func (t *ABTests) GetTargetingKeywords() map[string]string {
 	result := make(map[string]string)
 	for module, keyword := range t.targetingMap {
 		if keyword != "" {
-			value := "0"
+			value := string(hookanalytics.ResultStatusSkip)
 			if t.runMap[module] {
-				value = "1"
+				value = string(hookanalytics.ResultStatusRun)
 			}
 			result[keyword] = value
 		}

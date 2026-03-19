@@ -270,6 +270,10 @@ func (e mockModuleABHook) HandleAuctionResponseHook(_ context.Context, miCtx hoo
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
+func (e mockModuleABHook) HandleExitpointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	return hookstage.HookResult[hookstage.ExitpointPayload]{ModuleContext: miCtx.ModuleContext}, nil
+}
+
 type mockFailureHook struct{}
 
 func (h mockFailureHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {

@@ -5170,6 +5170,23 @@ func (e TestWithModuleABPlanBuilder) PlanForAuctionResponseStage(_ string, _ *co
 	}
 }
 
+func (e TestWithModuleABPlanBuilder) PlanForExitpointStage(_ string, _ *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return hooks.Plan[hookstage.Exitpoint]{
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleABHook{}},
+			},
+		},
+		hooks.Group[hookstage.Exitpoint]{
+			Timeout: 10 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleABHook{}},
+			},
+		},
+	}
+}
+
 type TestWithModuleABPlanAccountBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -5360,7 +5377,7 @@ func TestGetABTestTargetingKeywords(t *testing.T) {
 				},
 			},
 			expectedKeywords: map[string]string{
-				"hb_ab_module1": "1",
+				"hb_ab_module1": "run",
 			},
 		},
 		{
@@ -5381,7 +5398,7 @@ func TestGetABTestTargetingKeywords(t *testing.T) {
 				},
 			},
 			expectedKeywords: map[string]string{
-				"hb_ab_module1": "0",
+				"hb_ab_module1": "skip",
 			},
 		},
 	}
@@ -5395,4 +5412,180 @@ func TestGetABTestTargetingKeywords(t *testing.T) {
 			assert.Equal(t, test.expectedKeywords, keywords)
 		})
 	}
+}
+
+func abSkipOnlyOutcome(e entity, stage string) StageOutcome {
+	return StageOutcome{
+		Entity: e,
+		Stage:  stage,
+		Groups: []GroupOutcome{
+			{
+				InvocationResults: []HookOutcome{
+					{
+						AnalyticsTags: hookanalytics.Analytics{
+							Activities: []hookanalytics.Activity{
+								{
+									Name:   "core-module-abtests",
+									Status: hookanalytics.ActivityStatusSuccess,
+									Results: []hookanalytics.Result{
+										{
+											Status: hookanalytics.ResultStatusSkip,
+											Values: map[string]interface{}{"module": "module-1"},
+											AppliedTo: hookanalytics.AppliedTo{
+												BidIds: []string(nil),
+												ImpIds: []string(nil),
+											},
+										},
+									},
+								},
+							},
+						},
+						HookID: HookID{ModuleCode: "module-1"},
+						Status: StatusSuccess,
+					},
+				},
+			},
+		},
+	}
+}
+
+func abAllSkippedCfg() *config.Configuration {
+	return &config.Configuration{
+		Hooks: config.Hooks{
+			Enabled: true,
+			HostExecutionPlan: config.HookExecutionPlan{
+				ABTests: []config.ABTest{
+					{
+						ModuleCode:      "module-1",
+						Enabled:         ptr(true),
+						PercentActive:   ptr(uint16(0)),
+						LogAnalyticsTag: ptr(true),
+					},
+					{
+						ModuleCode:      "module-2",
+						Enabled:         ptr(true),
+						PercentActive:   ptr(uint16(0)),
+						LogAnalyticsTag: ptr(false),
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestEmptyPlanWritesCorrectOutcomeDetailsABTests(t *testing.T) {
+	cfg := abAllSkippedCfg()
+	bidder := "the-bidder"
+
+	reader := bytes.NewReader(nil)
+	req, _ := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
+
+	t.Run("EntrypointStage", func(t *testing.T) {
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		_, _ = exec.ExecuteEntrypointStage(req, nil)
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entityHttpRequest, hooks.StageEntrypoint.String()), outcomes[0])
+	})
+
+	t.Run("RawAuctionStage", func(t *testing.T) {
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		_, _ = exec.ExecuteRawAuctionStage(nil)
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entityHttpRequest, hooks.StageRawAuctionRequest.String()), outcomes[0])
+	})
+
+	t.Run("ProcessedAuctionStage", func(t *testing.T) {
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		_ = exec.ExecuteProcessedAuctionStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}})
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entityAuctionRequest, hooks.StageProcessedAuctionRequest.String()), outcomes[0])
+	})
+
+	t.Run("BidderRequestStage", func(t *testing.T) {
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		_ = exec.ExecuteBidderRequestStage(&openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}, bidder)
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entity(bidder), hooks.StageBidderRequest.String()), outcomes[0])
+	})
+
+	t.Run("RawBidderResponseStage", func(t *testing.T) {
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		_ = exec.ExecuteRawBidderResponseStage(&adapters.BidderResponse{}, bidder)
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entity(bidder), hooks.StageRawBidderResponse.String()), outcomes[0])
+	})
+
+	t.Run("AllProcessedBidResponsesStage", func(t *testing.T) {
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		exec.ExecuteAllProcessedBidResponsesStage(map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid{})
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entityAllProcessedBidResponses, hooks.StageAllProcessedBidResponses.String()), outcomes[0])
+	})
+
+	t.Run("AuctionResponseStage", func(t *testing.T) {
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		exec.ExecuteAuctionResponseStage(&openrtb2.BidResponse{})
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entityAuctionResponse, hooks.StageAuctionResponse.String()), outcomes[0])
+	})
+}
+
+func TestExecuteExitpointStageABTests(t *testing.T) {
+	bidResponse := &openrtb2.BidResponse{ID: "test-id"}
+	w := httptest.NewRecorder()
+
+	t.Run("ABTests filter all modules - empty plan - correct Stage and Entity", func(t *testing.T) {
+		cfg := abAllSkippedCfg()
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		result := exec.ExecuteExitpointStage(bidResponse, w)
+		assert.Equal(t, bidResponse, result, "response must be unchanged when plan is empty after AB filtering")
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1, "expected one stage outcome from AB analytics")
+		assertEqualStageOutcomes(t, abSkipOnlyOutcome(entityExitpoint, hooks.StageExitpoint.String()), outcomes[0])
+	})
+
+	t.Run("ABTests applied with percentages on exitpoint stage", func(t *testing.T) {
+		cfg := &config.Configuration{
+			Hooks: config.Hooks{
+				Enabled: true,
+				HostExecutionPlan: config.HookExecutionPlan{
+					ABTests: []config.ABTest{
+						{
+							ModuleCode:      "module-1",
+							Enabled:         ptr(true),
+							PercentActive:   ptr(uint16(100)),
+							LogAnalyticsTag: ptr(true),
+						},
+						{
+							ModuleCode:      "module-2",
+							Enabled:         ptr(true),
+							PercentActive:   ptr(uint16(0)),
+							LogAnalyticsTag: ptr(true),
+						},
+					},
+				},
+			},
+		}
+		exec := NewHookExecutor(TestWithModuleABPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{}, NewABTests(cfg))
+		exec.SetAccount(&config.Account{ID: "account-id"})
+		_ = exec.ExecuteExitpointStage(bidResponse, w)
+		outcomes := exec.GetOutcomes()
+		assert.Len(t, outcomes, 1)
+		assert.Equal(t, entityExitpoint, outcomes[0].Entity)
+		assert.Equal(t, hooks.StageExitpoint.String(), outcomes[0].Stage)
+	})
 }

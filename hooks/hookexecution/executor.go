@@ -180,8 +180,8 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.Request
 	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
 		outcome := StageOutcome{
-			Entity: entityHttpRequest,
-			Stage:  hooks.StageEntrypoint.String(),
+			Entity: entityAuctionRequest,
+			Stage:  hooks.StageProcessedAuctionRequest.String(),
 		}
 		e.abTests.WriteOutcome(&outcome)
 		if len(outcome.Groups) > 0 {
@@ -229,8 +229,8 @@ func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb_ext.RequestWrapper
 	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
 		outcome := StageOutcome{
-			Entity: entityHttpRequest,
-			Stage:  hooks.StageEntrypoint.String(),
+			Entity: entity(bidder),
+			Stage:  hooks.StageBidderRequest.String(),
 		}
 		e.abTests.WriteOutcome(&outcome)
 		if len(outcome.Groups) > 0 {
@@ -268,8 +268,8 @@ func (e *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderRe
 	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
 		outcome := StageOutcome{
-			Entity: entityHttpRequest,
-			Stage:  hooks.StageEntrypoint.String(),
+			Entity: entity(bidder),
+			Stage:  hooks.StageRawBidderResponse.String(),
 		}
 		e.abTests.WriteOutcome(&outcome)
 		if len(outcome.Groups) > 0 {
@@ -309,8 +309,8 @@ func (e *hookExecutor) ExecuteAllProcessedBidResponsesStage(adapterBids map[open
 	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
 		outcome := StageOutcome{
-			Entity: entityHttpRequest,
-			Stage:  hooks.StageEntrypoint.String(),
+			Entity: entityAllProcessedBidResponses,
+			Stage:  hooks.StageAllProcessedBidResponses.String(),
 		}
 		e.abTests.WriteOutcome(&outcome)
 		if len(outcome.Groups) > 0 {
@@ -345,8 +345,8 @@ func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidRespons
 	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
 		outcome := StageOutcome{
-			Entity: entityHttpRequest,
-			Stage:  hooks.StageEntrypoint.String(),
+			Entity: entityAuctionResponse,
+			Stage:  hooks.StageAuctionResponse.String(),
 		}
 		e.abTests.WriteOutcome(&outcome)
 		if len(outcome.Groups) > 0 {
@@ -378,8 +378,17 @@ func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidRespons
 }
 
 func (e *hookExecutor) ExecuteExitpointStage(response any, w http.ResponseWriter) any {
-	plan := e.planBuilder.PlanForExitpointStage(e.endpoint, e.account)
+	stagePlan := e.planBuilder.PlanForExitpointStage(e.endpoint, e.account)
+	plan := applyABTestPlan(e.abTests, stagePlan)
 	if len(plan) == 0 {
+		outcome := StageOutcome{
+			Entity: entityExitpoint,
+			Stage:  hooks.StageExitpoint.String(),
+		}
+		e.abTests.WriteOutcome(&outcome)
+		if len(outcome.Groups) > 0 {
+			e.pushStageOutcome(outcome)
+		}
 		return response
 	}
 
@@ -401,6 +410,7 @@ func (e *hookExecutor) ExecuteExitpointStage(response any, w http.ResponseWriter
 	outcome.Stage = stageName
 
 	e.saveModuleContexts(context)
+	e.abTests.WriteOutcome(&outcome)
 	e.pushStageOutcome(outcome)
 
 	return payload.Response
