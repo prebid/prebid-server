@@ -20,8 +20,8 @@ type (
 		logMap       map[string]bool
 		loggedMap    map[string]bool
 		targetingMap map[string]string
-		planLoaded   bool
-		mu           sync.Mutex
+		initOnce     sync.Once
+		mu           sync.RWMutex
 	}
 )
 
@@ -45,13 +45,17 @@ func (t *ABTests) SetAccountID(body []byte) {
 	t.accountID = gjson.GetBytes(body, "site.publisher.id").String()
 }
 
-func (t *ABTests) Run(module string) bool {
-	if !t.planLoaded {
+func (t *ABTests) init() {
+	t.initOnce.Do(func() {
 		t.planHost()
 		t.planAccount()
-		t.planLoaded = true
-	}
+	})
+}
 
+func (t *ABTests) Run(module string) bool {
+	t.init()
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 	val, ok := t.runMap[module]
 	if !ok {
 		return true
@@ -60,18 +64,24 @@ func (t *ABTests) Run(module string) bool {
 }
 
 func (t *ABTests) WriteOutcome(outcome *StageOutcome) {
-	for module, logged := range t.logMap {
+	t.init()
+	t.mu.RLock()
+	logMap := t.logMap
+	runMap := t.runMap
+	t.mu.RUnlock()
+
+	for module, logged := range logMap {
 		if !logged {
 			continue
 		}
 
-		if t.getLogged(module) {
+		if t.checkAndSetLogged(module) {
 			continue
 		}
 
 		var a hookanalytics.Activity
 		resultStatus := hookanalytics.ResultStatusSkip
-		if t.runMap[module] {
+		if runMap[module] {
 			resultStatus = hookanalytics.ResultStatusRun
 		}
 		a.Name = "core-module-abtests"
@@ -83,17 +93,18 @@ func (t *ABTests) WriteOutcome(outcome *StageOutcome) {
 			},
 		})
 
+		placed := false
 		for groupKey, group := range outcome.Groups {
 			for invocationResultKey, invocationResult := range group.InvocationResults {
 				if invocationResult.HookID.ModuleCode == module {
 					outcome.Groups[groupKey].InvocationResults[invocationResultKey].AnalyticsTags.Activities =
 						append(outcome.Groups[groupKey].InvocationResults[invocationResultKey].AnalyticsTags.Activities, a)
-					t.setLogged(module, true)
+					placed = true
 				}
 			}
 		}
 
-		if t.runMap[module] || t.getLogged(module) {
+		if runMap[module] || placed {
 			continue
 		}
 
@@ -104,7 +115,6 @@ func (t *ABTests) WriteOutcome(outcome *StageOutcome) {
 		invocationResult.HookID.ModuleCode = module
 		group.InvocationResults = append(group.InvocationResults, invocationResult)
 		outcome.Groups = append(outcome.Groups, group)
-		t.setLogged(module, true)
 	}
 }
 
@@ -127,7 +137,7 @@ func (t *ABTests) planHost() {
 		t.logMap[module] = lat
 
 		if lat {
-			t.setLogged(module, false)
+			t.loggedMap[module] = false
 		}
 
 		if abtest.AdServerTargeting != "" {
@@ -173,7 +183,7 @@ func (t *ABTests) planAccount() {
 		t.logMap[module] = lat
 
 		if lat {
-			t.setLogged(module, false)
+			t.loggedMap[module] = false
 		}
 
 		if abtest.AdServerTargeting != "" {
@@ -201,27 +211,23 @@ func (t *ABTests) containsAccount(accounts []string) bool {
 	return slices.Contains(accounts, accountID)
 }
 
-func (t *ABTests) getLogged(module string) bool {
+// checkAndSetLogged atomically checks whether the module outcome has already been
+// logged and, if not, marks it as logged. Returns true if already logged (skip),
+// false if not yet logged (caller should proceed to build analytics entry).
+func (t *ABTests) checkAndSetLogged(module string) bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
-	return t.loggedMap[module]
-}
-
-func (t *ABTests) setLogged(module string, val bool) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	t.loggedMap[module] = val
+	if t.loggedMap[module] {
+		return true
+	}
+	t.loggedMap[module] = true
+	return false
 }
 
 func (t *ABTests) GetTargetingKeywords() map[string]string {
-	if !t.planLoaded {
-		t.planHost()
-		t.planAccount()
-		t.planLoaded = true
-	}
-
+	t.init()
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 	result := make(map[string]string)
 	for module, keyword := range t.targetingMap {
 		if keyword != "" {
