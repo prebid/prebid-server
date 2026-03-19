@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 
 	"github.com/prebid/openrtb/v20/adcom1"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 )
 
 func Builder(_ json.RawMessage, _ moduledeps.ModuleDeps) (interface{}, error) {

@@ -3,7 +3,7 @@ package adnuntius
 import (
 	"encoding/json"
 
-	"github.com/prebid/prebid-server/v3/util/timeutil"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 type QueryString map[string]string
