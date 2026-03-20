@@ -5,26 +5,28 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/logger"
 	"github.com/tidwall/gjson"
 )
 
-type (
-	ABTests struct {
-		config       *config.Configuration
-		account      *config.Account
-		accountID    string
-		runMap       map[string]bool
-		logMap       map[string]bool
-		loggedMap    map[string]bool
-		targetingMap map[string]string
-		initOnce     sync.Once
-		mu           sync.RWMutex
-	}
-)
+// ABTests manages A/B testing state for hook module execution.
+// It determines which modules are active for a given request based on
+// host-level and account-level execution plan configuration.
+type ABTests struct {
+	config       *config.Configuration
+	account      *config.Account
+	accountID    string
+	runMap       map[string]bool
+	logMap       map[string]bool
+	loggedMap    map[string]bool
+	targetingMap map[string]string
+	initOnce     sync.Once
+	mu           sync.RWMutex
+}
 
+// NewABTests creates an ABTests instance using the provided server configuration.
 func NewABTests(cfg *config.Configuration) *ABTests {
 	abTester := ABTests{
 		config:       cfg,
@@ -37,10 +39,13 @@ func NewABTests(cfg *config.Configuration) *ABTests {
 	return &abTester
 }
 
+// SetAccount sets the account configuration used to resolve account-level A/B test plans.
 func (t *ABTests) SetAccount(account *config.Account) {
 	t.account = account
 }
 
+// SetAccountID extracts the publisher account ID from the raw request body
+// and stores it for use in host-level A/B test account filtering.
 func (t *ABTests) SetAccountID(body []byte) {
 	if id := gjson.GetBytes(body, "site.publisher.id").String(); id != "" {
 		t.accountID = id
@@ -56,6 +61,8 @@ func (t *ABTests) init() {
 	})
 }
 
+// Run returns true if the given module should be executed for this request.
+// Returns true when the module is not under A/B test control.
 func (t *ABTests) Run(module string) bool {
 	t.init()
 	t.mu.RLock()
@@ -67,6 +74,9 @@ func (t *ABTests) Run(module string) bool {
 	return val
 }
 
+// WriteOutcome appends A/B test analytics entries to the given StageOutcome.
+// For modules that were skipped by A/B testing, a synthetic HookOutcome is added
+// so that analytics consumers can observe the skip decision.
 func (t *ABTests) WriteOutcome(outcome *StageOutcome) {
 	t.init()
 	t.mu.RLock()
@@ -116,6 +126,7 @@ func (t *ABTests) WriteOutcome(outcome *StageOutcome) {
 		var invocationResult HookOutcome
 		invocationResult.AnalyticsTags.Activities = append(invocationResult.AnalyticsTags.Activities, a)
 		invocationResult.Status = StatusSuccess
+		invocationResult.Action = ActionNone
 		invocationResult.HookID.ModuleCode = module
 		group.InvocationResults = append(group.InvocationResults, invocationResult)
 		outcome.Groups = append(outcome.Groups, group)
@@ -126,7 +137,7 @@ func (t *ABTests) planHost() {
 	for _, abtest := range t.config.Hooks.HostExecutionPlan.ABTests {
 		module := abtest.ModuleCode
 		if module == "" {
-			glog.Warning("hooks.execution_plan.[]abtests.module_code is required")
+			logger.Warnf("hooks.execution_plan.[]abtests.module_code is required")
 			continue
 		}
 
@@ -175,7 +186,7 @@ func (t *ABTests) planAccount() {
 	for _, abtest := range cfg {
 		module := abtest.ModuleCode
 		if module == "" {
-			glog.Warning("hooks.execution_plan.[]abtests.module_code is required")
+			logger.Warnf("hooks.execution_plan.[]abtests.module_code is required")
 			continue
 		}
 
@@ -235,6 +246,8 @@ func (t *ABTests) checkAndSetLogged(module string) bool {
 	return false
 }
 
+// GetTargetingKeywords returns a map of ad server targeting keyword to run/skip status
+// for all modules that have AdServerTargeting configured.
 func (t *ABTests) GetTargetingKeywords() map[string]string {
 	t.init()
 	t.mu.RLock()

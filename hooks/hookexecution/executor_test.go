@@ -64,18 +64,17 @@ func TestExecuteEntrypointStage(t *testing.T) {
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
 
 	testCases := []struct {
-		description               string
-		givenBody                 string
-		givenUrl                  string
-		givenPlanBuilder          hooks.ExecutionPlanBuilder
-		givenHostConfiguration    *config.Configuration
-		givenAccountConfiguration *config.Account
-		expectedBody              string
-		expectedHeader            http.Header
-		expectedQuery             url.Values
-		expectedReject            *RejectError
-		expectedModuleContexts    *moduleContexts
-		expectedStageOutcomes     []StageOutcome
+		description            string
+		givenBody              string
+		givenUrl               string
+		givenPlanBuilder       hooks.ExecutionPlanBuilder
+		givenHostConfiguration *config.Configuration
+		expectedBody           string
+		expectedHeader         http.Header
+		expectedQuery          url.Values
+		expectedReject         *RejectError
+		expectedModuleContexts *moduleContexts
+		expectedStageOutcomes  []StageOutcome
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -460,7 +459,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -582,7 +581,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -712,7 +711,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -1150,7 +1149,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -1270,7 +1269,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -1403,7 +1402,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -1457,15 +1456,14 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 	reqUpdated := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}}
 
 	testCases := []struct {
-		description               string
-		givenPlanBuilder          hooks.ExecutionPlanBuilder
-		givenRequest              openrtb_ext.RequestWrapper
-		givenHostConfiguration    *config.Configuration
-		givenAccountConfiguration *config.Account
-		expectedRequest           openrtb2.BidRequest
-		expectedErr               error
-		expectedModuleContexts    *moduleContexts
-		expectedStageOutcomes     []StageOutcome
+		description            string
+		givenPlanBuilder       hooks.ExecutionPlanBuilder
+		givenRequest           openrtb_ext.RequestWrapper
+		givenHostConfiguration *config.Configuration
+		expectedRequest        openrtb2.BidRequest
+		expectedErr            error
+		expectedModuleContexts *moduleContexts
+		expectedStageOutcomes  []StageOutcome
 	}{
 		{
 			description:            "Request not changed if hook execution plan empty",
@@ -1750,7 +1748,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -1869,7 +1867,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -1927,16 +1925,15 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description               string
-		givenBidderRequest        *openrtb2.BidRequest
-		givenPlanBuilder          hooks.ExecutionPlanBuilder
-		givenHostConfiguration    *config.Configuration
-		givenAccountConfiguration *config.Account
-		expectedBidderRequest     *openrtb2.BidRequest
-		expectedReject            *RejectError
-		expectedModuleContexts    *moduleContexts
-		expectedStageOutcomes     []StageOutcome
-		privacyConfig             *config.AccountPrivacy
+		description            string
+		givenBidderRequest     *openrtb2.BidRequest
+		givenPlanBuilder       hooks.ExecutionPlanBuilder
+		givenHostConfiguration *config.Configuration
+		expectedBidderRequest  *openrtb2.BidRequest
+		expectedReject         *RejectError
+		expectedModuleContexts *moduleContexts
+		expectedStageOutcomes  []StageOutcome
+		privacyConfig          *config.AccountPrivacy
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -2263,7 +2260,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -2382,7 +2379,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -2432,15 +2429,14 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 	vEntity := entity("the-bidder")
 
 	testCases := []struct {
-		description               string
-		givenPlanBuilder          hooks.ExecutionPlanBuilder
-		givenBidderResponse       adapters.BidderResponse
-		givenHostConfiguration    *config.Configuration
-		givenAccountConfiguration *config.Account
-		expectedBidderResponse    adapters.BidderResponse
-		expectedReject            *RejectError
-		expectedModuleContexts    *moduleContexts
-		expectedStageOutcomes     []StageOutcome
+		description            string
+		givenPlanBuilder       hooks.ExecutionPlanBuilder
+		givenBidderResponse    adapters.BidderResponse
+		givenHostConfiguration *config.Configuration
+		expectedBidderResponse adapters.BidderResponse
+		expectedReject         *RejectError
+		expectedModuleContexts *moduleContexts
+		expectedStageOutcomes  []StageOutcome
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -2723,7 +2719,7 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -2842,7 +2838,7 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -2896,15 +2892,14 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description               string
-		givenBiddersResponse      map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-		givenPlanBuilder          hooks.ExecutionPlanBuilder
-		givenHostConfiguration    *config.Configuration
-		givenAccountConfiguration *config.Account
-		expectedBiddersResponse   map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
-		expectedReject            *RejectError
-		expectedModuleContexts    *moduleContexts
-		expectedStageOutcomes     []StageOutcome
+		description             string
+		givenBiddersResponse    map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		givenPlanBuilder        hooks.ExecutionPlanBuilder
+		givenHostConfiguration  *config.Configuration
+		expectedBiddersResponse map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
+		expectedReject          *RejectError
+		expectedModuleContexts  *moduleContexts
+		expectedStageOutcomes   []StageOutcome
 	}{
 		{
 			description: "Payload not changed if hook execution plan empty",
@@ -3243,7 +3238,7 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -3364,7 +3359,7 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -3412,15 +3407,14 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 	expResp := &openrtb2.BidResponse{CustomData: "new-custom-data"}
 
 	testCases := []struct {
-		description               string
-		givenPlanBuilder          hooks.ExecutionPlanBuilder
-		givenResponse             *openrtb2.BidResponse
-		givenHostConfiguration    *config.Configuration
-		givenAccountConfiguration *config.Account
-		expectedResponse          *openrtb2.BidResponse
-		expectedReject            *RejectError
-		expectedModuleContexts    *moduleContexts
-		expectedStageOutcomes     []StageOutcome
+		description            string
+		givenPlanBuilder       hooks.ExecutionPlanBuilder
+		givenResponse          *openrtb2.BidResponse
+		givenHostConfiguration *config.Configuration
+		expectedResponse       *openrtb2.BidResponse
+		expectedReject         *RejectError
+		expectedModuleContexts *moduleContexts
+		expectedStageOutcomes  []StageOutcome
 	}{
 		{
 			description:            "Payload not changed if hook execution plan empty",
@@ -3733,7 +3727,7 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -3852,7 +3846,7 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 										HookImplCode: "",
 									},
 									Status:        StatusSuccess,
-									Action:        "",
+									Action:        ActionNone,
 									Message:       "",
 									DebugMessages: nil,
 									Errors:        nil,
@@ -5442,6 +5436,7 @@ func abSkipOnlyOutcome(e entity, stage string) StageOutcome {
 						},
 						HookID: HookID{ModuleCode: "module-1"},
 						Status: StatusSuccess,
+						Action: ActionNone,
 					},
 				},
 			},

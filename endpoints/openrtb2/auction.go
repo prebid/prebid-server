@@ -424,6 +424,10 @@ func addABTestTargetingKeywords(response *openrtb2.BidResponse, hookExecutor hoo
 		respExt.Prebid.Targeting = make(map[string]string)
 	}
 
+	// No collision guard is needed here: A/B test targeting keywords are always written at response level.
+	// Collision with bid-level targeting is not possible here.
+	// The AMP path uses a guard because it merges bid-level hb_* keys and A/B test
+	// keywords into the same flat map, where collisions are possible.
 	for keyword, value := range targetingKeywords {
 		respExt.Prebid.Targeting[keyword] = value
 	}
