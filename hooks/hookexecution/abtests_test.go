@@ -170,7 +170,12 @@ func TestSetAccountID(t *testing.T) {
 			expected:    "site-pub-id",
 		},
 		{
-			description: "empty result when neither site nor app publisher id present",
+			description: "dooh.publisher.id is used as fallback when site and app publisher id are absent",
+			body:        []byte(`{"dooh":{"publisher":{"id":"dooh-pub-id"}}}`),
+			expected:    "dooh-pub-id",
+		},
+		{
+			description: "empty result when neither site nor app nor dooh publisher id present",
 			body:        []byte(`{"imp":[{"id":"imp-1"}]}`),
 			expected:    "",
 		},

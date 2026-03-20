@@ -47,11 +47,12 @@ func (t *ABTests) SetAccount(account *config.Account) {
 // SetAccountID extracts the publisher account ID from the raw request body
 // and stores it for use in host-level A/B test account filtering.
 func (t *ABTests) SetAccountID(body []byte) {
-	if id := gjson.GetBytes(body, "site.publisher.id").String(); id != "" {
-		t.accountID = id
-		return
+	for _, path := range []string{"site.publisher.id", "app.publisher.id", "dooh.publisher.id"} {
+		if id := gjson.GetBytes(body, path).String(); id != "" {
+			t.accountID = id
+			return
+		}
 	}
-	t.accountID = gjson.GetBytes(body, "app.publisher.id").String()
 }
 
 func (t *ABTests) init() {
