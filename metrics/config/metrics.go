@@ -3,10 +3,10 @@ package config
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
-	prometheusmetrics "github.com/prebid/prebid-server/v3/metrics/prometheus"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
+	prometheusmetrics "github.com/prebid/prebid-server/v4/metrics/prometheus"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	gometrics "github.com/rcrowley/go-metrics"
 	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
@@ -299,6 +299,12 @@ func (me *MultiMetricsEngine) RecordGvlListRequest() {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordLiveGVLFetch(success bool) {
+	for _, thisME := range *me {
+		thisME.RecordLiveGVLFetch(success)
+	}
+}
+
 func (me *MultiMetricsEngine) RecordAdsCertReq(success bool) {
 	for _, thisME := range *me {
 		thisME.RecordAdsCertReq(success)
@@ -532,6 +538,9 @@ func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
 }
 
 func (me *NilMetricsEngine) RecordGvlListRequest() {
+}
+
+func (me *NilMetricsEngine) RecordLiveGVLFetch(success bool) {
 }
 
 func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {
