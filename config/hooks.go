@@ -62,6 +62,9 @@ func (cfg *Hooks) validate(errs []error) []error {
 
 func (plan *HookExecutionPlan) validateABTests(planPath string, errs []error) []error {
 	for i, test := range plan.ABTests {
+		if test.ModuleCode == "" {
+			errs = append(errs, fmt.Errorf("%s.abtests[%d].module_code is required", planPath, i))
+		}
 		if test.PercentActive != nil && *test.PercentActive > 100 {
 			errs = append(errs, fmt.Errorf("%s.abtests[%d].percent_active must be in the range [0, 100], got %d", planPath, i, *test.PercentActive))
 		}

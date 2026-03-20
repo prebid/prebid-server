@@ -7,7 +7,6 @@ import (
 
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/v4/logger"
 	"github.com/tidwall/gjson"
 )
 
@@ -160,7 +159,9 @@ func (t *ABTests) applyPlan(tests []config.ABTest, deleteOnDisable bool) {
 	for _, abtest := range tests {
 		module := abtest.ModuleCode
 		if module == "" {
-			logger.Warnf("hooks.execution_plan.[]abtests.module_code is required")
+			// Static configs are validated at startup (config.validateABTests).
+			// Reaching here means a dynamic account-level plan has an empty module_code — skip silently
+			// to avoid per-request warnings.
 			continue
 		}
 
