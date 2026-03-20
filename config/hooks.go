@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 type Hooks struct {
 	Enabled bool    `mapstructure:"enabled"`
 	Modules Modules `mapstructure:"modules"`
@@ -50,4 +52,19 @@ type ABTest struct {
 	// AdServerTargeting specifies the targeting keyword name to be added to the bid response
 	// The keyword will have value "1" if module was run, "0" if it was skipped
 	AdServerTargeting string `mapstructure:"adserver_targeting" json:"adserver_targeting"`
+}
+
+func (cfg *Hooks) validate(errs []error) []error {
+	errs = cfg.HostExecutionPlan.validateABTests("hooks.host_execution_plan", errs)
+	errs = cfg.DefaultAccountExecutionPlan.validateABTests("hooks.default_account_execution_plan", errs)
+	return errs
+}
+
+func (plan *HookExecutionPlan) validateABTests(planPath string, errs []error) []error {
+	for i, test := range plan.ABTests {
+		if test.PercentActive != nil && *test.PercentActive > 100 {
+			errs = append(errs, fmt.Errorf("%s.abtests[%d].percent_active must be in the range [0, 100], got %d", planPath, i, *test.PercentActive))
+		}
+	}
+	return errs
 }

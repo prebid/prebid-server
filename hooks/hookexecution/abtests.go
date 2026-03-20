@@ -134,42 +134,7 @@ func (t *ABTests) WriteOutcome(outcome *StageOutcome) {
 }
 
 func (t *ABTests) planHost() {
-	for _, abtest := range t.config.Hooks.HostExecutionPlan.ABTests {
-		module := abtest.ModuleCode
-		if module == "" {
-			logger.Warnf("hooks.execution_plan.[]abtests.module_code is required")
-			continue
-		}
-
-		if abtest.Enabled == nil || !*abtest.Enabled {
-			continue
-		}
-
-		lat := true
-		if abtest.LogAnalyticsTag != nil {
-			lat = *abtest.LogAnalyticsTag
-		}
-		t.logMap[module] = lat
-
-		if lat {
-			t.loggedMap[module] = false
-		}
-
-		if abtest.AdServerTargeting != "" {
-			t.targetingMap[module] = abtest.AdServerTargeting
-		}
-
-		if !t.containsAccount(abtest.Accounts) {
-			t.runMap[abtest.ModuleCode] = false
-			continue
-		}
-
-		pa := uint16(100)
-		if abtest.PercentActive != nil && *abtest.PercentActive < uint16(100) {
-			pa = *abtest.PercentActive
-		}
-		t.runMap[module] = uint16(rand.Intn(100)) < pa
-	}
+	t.applyPlan(t.config.Hooks.HostExecutionPlan.ABTests, false)
 }
 
 // Account-level AB test entries are already scoped to the specific account
@@ -182,8 +147,16 @@ func (t *ABTests) planAccount() {
 	if t.account != nil {
 		cfg = t.account.Hooks.ExecutionPlan.ABTests
 	}
+	t.applyPlan(cfg, true)
+}
 
-	for _, abtest := range cfg {
+// applyPlan processes a slice of ABTest entries into the run/log/targeting maps.
+// When deleteOnDisable is false (host plan semantics): disabled entries are skipped,
+// and account filtering via containsAccount is applied before setting runMap.
+// When deleteOnDisable is true (account plan semantics): disabled entries are removed
+// from all maps, and no account filtering is applied.
+func (t *ABTests) applyPlan(tests []config.ABTest, deleteOnDisable bool) {
+	for _, abtest := range tests {
 		module := abtest.ModuleCode
 		if module == "" {
 			logger.Warnf("hooks.execution_plan.[]abtests.module_code is required")
@@ -191,10 +164,12 @@ func (t *ABTests) planAccount() {
 		}
 
 		if abtest.Enabled == nil || !*abtest.Enabled {
-			delete(t.runMap, abtest.ModuleCode)
-			delete(t.targetingMap, abtest.ModuleCode)
-			delete(t.logMap, abtest.ModuleCode)
-			delete(t.loggedMap, abtest.ModuleCode)
+			if deleteOnDisable {
+				delete(t.runMap, module)
+				delete(t.targetingMap, module)
+				delete(t.logMap, module)
+				delete(t.loggedMap, module)
+			}
 			continue
 		}
 
@@ -210,6 +185,11 @@ func (t *ABTests) planAccount() {
 
 		if abtest.AdServerTargeting != "" {
 			t.targetingMap[module] = abtest.AdServerTargeting
+		}
+
+		if !deleteOnDisable && !t.containsAccount(abtest.Accounts) {
+			t.runMap[module] = false
+			continue
 		}
 
 		pa := uint16(100)

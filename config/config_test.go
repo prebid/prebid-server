@@ -1456,6 +1456,91 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	assert.Contains(t, errs, errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"))
 }
 
+func TestValidateHooksABTestPercentActive(t *testing.T) {
+	ptrUint16 := func(v uint16) *uint16 { return &v }
+
+	tests := []struct {
+		description string
+		hooks       Hooks
+		wantErrs    []string
+	}{
+		{
+			description: "valid: nil PercentActive",
+			hooks: Hooks{
+				HostExecutionPlan: HookExecutionPlan{
+					ABTests: []ABTest{{PercentActive: nil}},
+				},
+			},
+		},
+		{
+			description: "valid: PercentActive = 0",
+			hooks: Hooks{
+				HostExecutionPlan: HookExecutionPlan{
+					ABTests: []ABTest{{PercentActive: ptrUint16(0)}},
+				},
+			},
+		},
+		{
+			description: "valid: PercentActive = 100",
+			hooks: Hooks{
+				HostExecutionPlan: HookExecutionPlan{
+					ABTests: []ABTest{{PercentActive: ptrUint16(100)}},
+				},
+			},
+		},
+		{
+			description: "invalid: PercentActive = 101 in HostExecutionPlan",
+			hooks: Hooks{
+				HostExecutionPlan: HookExecutionPlan{
+					ABTests: []ABTest{{PercentActive: ptrUint16(101)}},
+				},
+			},
+			wantErrs: []string{"hooks.host_execution_plan.abtests[0].percent_active must be in the range [0, 100], got 101"},
+		},
+		{
+			description: "invalid: PercentActive = 200 in DefaultAccountExecutionPlan",
+			hooks: Hooks{
+				DefaultAccountExecutionPlan: HookExecutionPlan{
+					ABTests: []ABTest{{PercentActive: ptrUint16(200)}},
+				},
+			},
+			wantErrs: []string{"hooks.default_account_execution_plan.abtests[0].percent_active must be in the range [0, 100], got 200"},
+		},
+		{
+			description: "invalid: multiple entries across both plans",
+			hooks: Hooks{
+				HostExecutionPlan: HookExecutionPlan{
+					ABTests: []ABTest{
+						{PercentActive: ptrUint16(50)},
+						{PercentActive: ptrUint16(150)},
+					},
+				},
+				DefaultAccountExecutionPlan: HookExecutionPlan{
+					ABTests: []ABTest{{PercentActive: ptrUint16(65535)}},
+				},
+			},
+			wantErrs: []string{
+				"hooks.host_execution_plan.abtests[1].percent_active must be in the range [0, 100], got 150",
+				"hooks.default_account_execution_plan.abtests[0].percent_active must be in the range [0, 100], got 65535",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			errs := tc.hooks.validate(nil)
+			if len(tc.wantErrs) == 0 {
+				assert.Empty(t, errs)
+			} else {
+				assert.Len(t, errs, len(tc.wantErrs))
+				for _, msg := range tc.wantErrs {
+					assert.Contains(t, errs, errors.New(msg))
+				}
+			}
+		})
+	}
+}
+
 func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
 	v := viper.New()
 	SetupViper(v, "", bidderInfos)
