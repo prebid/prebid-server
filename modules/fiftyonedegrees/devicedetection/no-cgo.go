@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 )
 
 const errMsg = "fiftyonedegrees should not be enabled unless CGO is enabled"
