@@ -10,15 +10,15 @@ import (
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/firstpartydata"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/firstpartydata"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -2456,6 +2456,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 		gdprAllowedBidders     []openrtb_ext.BidderName
 		expectedBidders        []openrtb_ext.BidderName
 		expectedBlockedBidders []openrtb_ext.BidderName
+		expectedErrors         []error
 	}{
 		{
 			description:            "gdpr enforced, one request allowed and one request blocked",
@@ -2463,6 +2464,10 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 			expectedBlockedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderRubicon},
+			expectedErrors: []error{&errortypes.Warning{
+				Message:     `bidder "rubicon" blocked by privacy settings`,
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			}},
 		},
 		{
 			description:            "gdpr enforced, two requests allowed and no requests blocked",
@@ -2531,7 +2536,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			bidders = append(bidders, req.BidderName)
 		}
 
-		assert.Empty(t, errs, test.description)
+		assert.Equal(t, test.expectedErrors, errs, test.description)
 		assert.ElementsMatch(t, bidders, test.expectedBidders, test.description)
 
 		for _, blockedBidder := range test.expectedBlockedBidders {
@@ -5129,6 +5134,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 		expectedDevice    openrtb2.Device
 		expectedSource    openrtb2.Source
 		expectedImpExt    json.RawMessage
+		expectedErrors    []error
 	}{
 		{
 			name:              "fetch_bids_request_with_one_bidder_allowed",
@@ -5148,6 +5154,10 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
 			expectedSource:    expectedSourceDefault,
+			expectedErrors: []error{&errortypes.Warning{
+				Message:     `bidder "appnexus" blocked by privacy settings`,
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			}},
 		},
 		{
 			name:              "transmit_ufpd_allowed",
@@ -5292,7 +5302,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			}
 
 			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, map[string]float64{})
-			assert.Empty(t, errs)
+			assert.Equal(t, test.expectedErrors, errs)
 			assert.Len(t, bidderRequests, test.expectedReqNumber)
 
 			if test.expectedReqNumber == 1 {
