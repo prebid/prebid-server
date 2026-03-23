@@ -51,6 +51,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			request.Site.Publisher = &openrtb2.Publisher{}
 			request.Site.Publisher.ID = impExtBidder.PublisherId
 		}
+	} else if request.App != nil {
+		appCopy := *request.App
+		request.App = &appCopy
+
+		if request.App.Publisher != nil {
+			appPublisherCopy := *request.App.Publisher
+			request.App.Publisher = &appPublisherCopy
+			request.App.Publisher.ID = impExtBidder.PublisherId
+		} else {
+			request.App.Publisher = &openrtb2.Publisher{}
+			request.App.Publisher.ID = impExtBidder.PublisherId
+		}
 	} else {
 		request.Site = &openrtb2.Site{}
 		request.Site.Publisher = &openrtb2.Publisher{}
