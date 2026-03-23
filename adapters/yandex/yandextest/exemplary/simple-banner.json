@@ -17,7 +17,7 @@
     ],
     "site": {
       "domain": "www.example.com",
-      "page": "http://www.example.com"
+      "page": "http://www.example.com/path?query=value"
     },
     "cur": [
       "USD"
@@ -32,7 +32,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bs-metadsp.yandex.ru/prebid/134001?imp-id=1&ssp-cur=USD&ssp-id=10500&target-ref=www.example.com",
+        "uri": "https://bs-metadsp.yandex.ru/prebid/134001?imp-id=1&ssp-cur=USD&ssp-id=10500&target-ref=http%3A%2F%2Fwww.example.com%2Fpath%3Fquery%3Dvalue",
         "headers": {
           "User-Agent": [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
@@ -50,7 +50,7 @@
             "application/json;charset=utf-8"
           ],
           "Referer": [
-            "http://www.example.com"
+            "http://www.example.com/path?query=value"
           ],
           "Accept": [
             "application/json"
@@ -79,7 +79,7 @@
           ],
           "site": {
             "domain": "www.example.com",
-            "page": "http://www.example.com"
+            "page": "http://www.example.com/path?query=value"
           },
           "cur": [
             "USD"

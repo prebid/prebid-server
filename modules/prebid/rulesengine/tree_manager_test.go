@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -248,7 +248,7 @@ func getDisabledJsonConfig() *json.RawMessage {
 	rv := json.RawMessage(`
   {
     "enabled": false,
-    "generateRulesFromBidderConfig": true,
+    "generate_rules_from_bidderconfig": true,
     "timestamp": "20250131 00:00:00",
     "rulesets": [
       {
@@ -340,7 +340,7 @@ func getJsonConfigUnknownFunction() *json.RawMessage {
 	rv := json.RawMessage(`
   {
     "enabled": true,
-    "generateRulesFromBidderConfig": true,
+    "generate_rules_from_bidderconfig": true,
     "timestamp": "20250131 00:00:00",
     "rulesets": [
       {

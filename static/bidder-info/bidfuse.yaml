@@ -1,0 +1,11 @@
+aliasOf: "teqblaze"
+endpoint: "https://bn.bidfuse.com/pserver"
+maintainer:
+  email: "support@bidfuse.com"
+userSync:
+  redirect:
+    url: "https://syncbf.bidfuse.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://syncbf.bidfuse.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"

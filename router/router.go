@@ -12,38 +12,38 @@ import (
 	"time"
 
 	openrtb2model "github.com/prebid/openrtb/v20/openrtb2"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/endpoints"
-	"github.com/prebid/prebid-server/v3/endpoints/events"
-	infoEndpoints "github.com/prebid/prebid-server/v3/endpoints/info"
-	"github.com/prebid/prebid-server/v3/endpoints/openrtb2"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/experiment/adscert"
-	"github.com/prebid/prebid-server/v3/floors"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/modules"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/pbs"
-	pbc "github.com/prebid/prebid-server/v3/prebid_cache_client"
-	"github.com/prebid/prebid-server/v3/router/aspects"
-	"github.com/prebid/prebid-server/v3/server/ssl"
-	storedRequestsConf "github.com/prebid/prebid-server/v3/stored_requests/config"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/uuidutil"
-	"github.com/prebid/prebid-server/v3/version"
+	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/endpoints"
+	"github.com/prebid/prebid-server/v4/endpoints/events"
+	infoEndpoints "github.com/prebid/prebid-server/v4/endpoints/info"
+	"github.com/prebid/prebid-server/v4/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/experiment/adscert"
+	"github.com/prebid/prebid-server/v4/floors"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConf "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/modules"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/pbs"
+	pbc "github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/router/aspects"
+	"github.com/prebid/prebid-server/v4/server/ssl"
+	storedRequestsConf "github.com/prebid/prebid-server/v4/stored_requests/config"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/uuidutil"
+	"github.com/prebid/prebid-server/v4/version"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
@@ -67,7 +67,7 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := os.ReadDir(schemaDirectory)
 	if err != nil {
-		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
+		logger.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
 	}
 
 	bidderMap := openrtb_ext.BuildBidderMap()
@@ -77,7 +77,7 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		bidder := strings.TrimSuffix(file.Name(), ".json")
 		bidderName, isValid := bidderMap[bidder]
 		if !isValid {
-			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
+			logger.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
 		data[bidder] = json.RawMessage(validator.Schema(bidderName))
 	}
@@ -89,7 +89,7 @@ func newJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 
 	response, err := jsonutil.Marshal(data)
 	if err != nil {
-		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
+		logger.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
@@ -128,17 +128,16 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		Router: httprouter.New(),
 	}
 
-	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
-	// local file system
-	certPool, certPoolCreateErr := ssl.CreateCertPool(cfg.CertsUseSystem)
+	certPool, certPoolCreateErr := ssl.CreateCertPool()
 	if certPoolCreateErr != nil {
-		glog.Infof("Could not load root certificates: %s \n", certPoolCreateErr.Error())
+		logger.Infof("Could not load root certificates: %s \n", certPoolCreateErr.Error())
 	}
 
+	// load optional PEM certificate files
 	var readCertErr error
-	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
+	certPool, readCertErr = ssl.AppendPEMFileToCertPool(certPool, cfg.PemCertsFile)
 	if readCertErr != nil {
-		glog.Infof("Could not read certificates file: %s \n", readCertErr.Error())
+		logger.Infof("Could not read certificates file: %s \n", readCertErr.Error())
 	}
 
 	generalHttpClient := &http.Client{
@@ -208,10 +207,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		syncerKeys = append(syncerKeys, k)
 	}
 
-	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor}
+	normalizedGeoscopes := getNormalizedGeoscopes(cfg.BidderInfos)
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes}
 	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
-		glog.Fatalf("Failed to init hook modules: %v", err)
+		logger.Fatalf("Failed to init hook modules: %v", err)
 	}
 
 	// Metrics engine
@@ -220,12 +220,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
 
-	// register the analytics runner for shutdown
-	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown)
-
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
-		glog.Fatalf("Failed to create the bidder params validator. %v", err)
+		logger.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
 	activeBidders := exchange.GetActiveBidders(cfg.BidderInfos)
@@ -235,8 +232,15 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	gvlVendorIDs := cfg.BidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, r.MetricsEngine, gdpr.VendorListURLMaker)
-	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher, r.MetricsEngine)
+	liveGVLVendorIDs := gdpr.NewLiveGVLVendorIDs()
+	refreshInterval := time.Duration(cfg.GDPR.LiveGVLRefreshInterval) * time.Second
+	gvlVendorIDTask := gdpr.NewGVLVendorIDTickerTask(refreshInterval, generalHttpClient, gdpr.VendorListURLMaker, liveGVLVendorIDs, r.MetricsEngine)
+	gvlVendorIDTask.Start()
+	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, liveGVLVendorIDs, vendorListFetcher, r.MetricsEngine)
 	tcf2CfgBuilder := gdpr.NewTCF2Config
+
+	// register the analytics runner, modules and live GVL Vendor ID ticker task for shutdown
+	r.shutdowns = append(r.shutdowns, shutdown, analyticsRunner.Shutdown, shutdownModules.Shutdown, gvlVendorIDTask.Stop)
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
@@ -247,7 +251,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 	adsCertSigner, err := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
 	if err != nil {
-		glog.Fatalf("Failed to create ads cert signer: %v", err)
+		logger.Fatalf("Failed to create ads cert signer: %v", err)
 	}
 
 	requestValidator := ortb.NewRequestValidator(activeBidders, disabledBidders, paramsValidator)
@@ -260,17 +264,17 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
-		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
+		logger.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
 	}
 
 	ampEndpoint, err := openrtb2.NewAmpEndpoint(uuidGenerator, theExchange, requestValidator, ampFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, storedRespFetcher, planBuilder, tmaxAdjustments)
 	if err != nil {
-		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
+		logger.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
 	videoEndpoint, err := openrtb2.NewVideoEndpoint(uuidGenerator, theExchange, requestValidator, fetcher, videoFetcher, accounts, cfg, r.MetricsEngine, analyticsRunner, disabledBidders, defReqJSON, activeBidders, cacheClient, tmaxAdjustments)
 	if err != nil {
-		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
+		logger.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
 
 	requestTimeoutHeaders := config.RequestTimeoutHeaders{}
@@ -323,11 +327,11 @@ func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, strin
 
 // Shutdown closes any dependencies of the router that may need closing
 func (r *Router) Shutdown() {
-	glog.Info("[PBS Router] shutting down")
+	logger.Infof("[PBS Router] shutting down")
 	for _, shutdown := range r.shutdowns {
 		shutdown()
 	}
-	glog.Info("[PBS Router] shut down")
+	logger.Infof("[PBS Router] shut down")
 }
 
 func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {
@@ -341,11 +345,11 @@ func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {
 			switch endpointLower {
 			case "iframe":
 				if info.Syncer.IFrame == nil {
-					glog.Warningf("bidder %s supports iframe user sync, but doesn't have a default and must be configured by the host", name)
+					logger.Warnf("bidder %s supports iframe user sync, but doesn't have a default and must be configured by the host", name)
 				}
 			case "redirect":
 				if info.Syncer.Redirect == nil {
-					glog.Warningf("bidder %s supports redirect user sync, but doesn't have a default and must be configured by the host", name)
+					logger.Warnf("bidder %s supports redirect user sync, but doesn't have a default and must be configured by the host", name)
 				}
 			default:
 				return fmt.Errorf("failed to load bidder info for %s, user sync supported endpoint '%s' is unrecognized", name, endpoint)
@@ -396,15 +400,30 @@ func readDefaultRequestFromFile(defReqConfig config.DefReqConfig) []byte {
 
 	defaultRequestJSON, err := os.ReadFile(defReqConfig.FileSystem.FileName)
 	if err != nil {
-		glog.Fatalf("error reading default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
+		logger.Fatalf("error reading default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
 		return []byte{}
 	}
 
 	// validate json is valid
 	if err := jsonutil.UnmarshalValid(defaultRequestJSON, &openrtb2model.BidRequest{}); err != nil {
-		glog.Fatalf("error parsing default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
+		logger.Fatalf("error parsing default request from file %s: %v", defReqConfig.FileSystem.FileName, err)
 		return []byte{}
 	}
 
 	return defaultRequestJSON
+}
+
+func getNormalizedGeoscopes(bidderInfos config.BidderInfos) map[string][]string {
+	geoscopes := make(map[string][]string, len(bidderInfos))
+
+	for name, info := range bidderInfos {
+		if len(info.Geoscope) > 0 {
+			uppercasedGeoscopes := make([]string, len(info.Geoscope))
+			for i, scope := range info.Geoscope {
+				uppercasedGeoscopes[i] = strings.ToUpper(scope)
+			}
+			geoscopes[name] = uppercasedGeoscopes
+		}
+	}
+	return geoscopes
 }

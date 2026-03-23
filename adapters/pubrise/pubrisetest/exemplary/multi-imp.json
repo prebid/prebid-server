@@ -11,7 +11,7 @@
         },
         "imp": [
             {
-                "id": "test-imp-id",
+                "id": "test-imp-1",
                 "tagid": "test",
                 "banner": {
                     "format": [
@@ -32,7 +32,7 @@
                 }
             },
             {
-                "id": "test-imp-id",
+                "id": "test-imp-2",
                 "tagid": "test",
                 "banner": {
                     "format": [
@@ -62,7 +62,7 @@
                     "id": "test-request-id",
                     "imp": [
                         {
-                            "id": "test-imp-id",
+                            "id": "test-imp-1",
                             "tagid": "test",
                             "banner": {
                                 "format": [
@@ -93,7 +93,7 @@
                         "ua": "iPad"
                     }
                 },
-                "impIDs":["test-imp-id"]
+                "impIDs":["test-imp-1"]
             },
             "mockResponse": {
                 "status": 200,
@@ -104,7 +104,7 @@
                             "bid": [
                                 {
                                     "id": "test_bid_id",
-                                    "impid": "test-imp-id",
+                                    "impid": "test-imp-1",
                                     "price": 0.27543,
                                     "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://backend.pubrise.ai/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                                     "cid": "test_cid",
@@ -134,7 +134,7 @@
                     "id": "test-request-id",
                     "imp": [
                         {
-                            "id": "test-imp-id",
+                            "id": "test-imp-2",
                             "tagid": "test",
                             "banner": {
                                 "format": [
@@ -165,7 +165,7 @@
                         "ua": "iPad"
                     }
                 },
-                "impIDs":["test-imp-id"]
+                "impIDs":["test-imp-2"]
             },
             "mockResponse": {
                 "status": 200,
@@ -176,7 +176,7 @@
                             "bid": [
                                 {
                                     "id": "test_bid_id",
-                                    "impid": "test-imp-id",
+                                    "impid": "test-imp-2",
                                     "price": 0.27543,
                                     "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://backend.pubrise.ai/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                                     "cid": "test_cid",
@@ -206,7 +206,7 @@
                 {
                     "bid": {
                         "id": "test_bid_id",
-                        "impid": "test-imp-id",
+                        "impid": "test-imp-1",
                         "price": 0.27543,
                         "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://backend.pubrise.ai/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                         "cid": "test_cid",
@@ -230,7 +230,7 @@
                 {
                     "bid": {
                         "id": "test_bid_id",
-                        "impid": "test-imp-id",
+                        "impid": "test-imp-2",
                         "price": 0.27543,
                         "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://backend.pubrise.ai/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                         "cid": "test_cid",

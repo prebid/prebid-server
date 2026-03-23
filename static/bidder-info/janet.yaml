@@ -2,6 +2,7 @@ aliasOf: adtelligent
 endpoint: "http://ghb.bidder.jmgads.com/pbs/ortb"
 maintainer:
   email: "info@thejmg.com"
+gvlVendorID: 410
 userSync:
   # JANet supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.

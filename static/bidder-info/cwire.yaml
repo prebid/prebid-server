@@ -11,3 +11,10 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  iframe:
+    url: https://prebid.cwi.re/v1/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&rd={{.RedirectURL}}
+    userMacro: $UID
+  redirect:
+    url: https://prebid.cwi.re/v1/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&rd={{.RedirectURL}}
+    userMacro: $UID

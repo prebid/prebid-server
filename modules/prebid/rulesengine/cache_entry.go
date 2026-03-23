@@ -7,10 +7,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/rules"
 )
 
 type hash = string
@@ -35,7 +35,7 @@ type cacheModelGroup[T1 any, T2 any] struct {
 // NewCacheEntry creates a new cache object for the given configuration
 // It builds the tree structures for the rule sets for the processed auction request stage
 // and stores them in the cache object
-func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEntry, error) {
+func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage, geoscopes map[string][]string) (cacheEntry, error) {
 	if cfg == nil {
 		return cacheEntry{}, errors.New("no rules engine configuration provided")
 	}
@@ -49,6 +49,14 @@ func NewCacheEntry(cfg *config.PbRulesEngine, cfgRaw *json.RawMessage) (cacheEnt
 		enabled:      cfg.Enabled,
 		timestamp:    time.Now(),
 		hashedConfig: idHash,
+	}
+
+	if cfg.GenerateRulesFromBidderConfig {
+		bidderConfigRuleSet, err := buildBidderConfigRuleSet(geoscopes, cfg.SetDefinitions.CountryGroups)
+		if err != nil {
+			return cacheEntry{}, err
+		}
+		newCacheObj.ruleSetsForProcessedAuctionRequestStage = bidderConfigRuleSet
 	}
 
 	for _, ruleSet := range cfg.RuleSets {

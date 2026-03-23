@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/version"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 func compressToGZIP(requestBody []byte) ([]byte, error) {
@@ -51,7 +51,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 		if endpoint.Gzip {
 			requestBody, err = compressToGZIP(payload)
 			if err != nil {
-				glog.Errorf("[agmaAnalytics] Compressing request failed %v", err)
+				logger.Errorf("[agmaAnalytics] Compressing request failed %v", err)
 				return err
 			}
 		} else {
@@ -60,7 +60,7 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.Url, bytes.NewBuffer(requestBody))
 		if err != nil {
-			glog.Errorf("[agmaAnalytics] Creating request failed %v", err)
+			logger.Errorf("[agmaAnalytics] Creating request failed %v", err)
 			return err
 		}
 
@@ -72,18 +72,18 @@ func createHttpSender(httpClient *http.Client, endpoint config.AgmaAnalyticsHttp
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			glog.Errorf("[agmaAnalytics] Sending request failed %v", err)
+			logger.Errorf("[agmaAnalytics] Sending request failed %v", err)
 			return err
 		}
 		defer func() {
 			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-				glog.Errorf("[agmaAnalytics] Draining response body failed: %v", err)
+				logger.Errorf("[agmaAnalytics] Draining response body failed: %v", err)
 			}
 			resp.Body.Close()
 		}()
 
 		if resp.StatusCode != http.StatusOK {
-			glog.Errorf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
+			logger.Errorf("[agmaAnalytics] Wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 			return fmt.Errorf("wrong code received %d instead of %d", resp.StatusCode, http.StatusOK)
 		}
 		return nil
