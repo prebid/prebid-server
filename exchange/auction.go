@@ -12,11 +12,11 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/exchange/entities"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/prebid_cache_client"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 const (
@@ -185,12 +185,12 @@ func (a *auction) validateAndUpdateMultiBid(adapterBids map[openrtb_ext.BidderNa
 	}
 }
 
-func (a *auction) setRoundedPrices(targetingData targetData) {
+func (a *auction) setRoundedPrices(targetingData targetData, account config.Account) {
 	roundedPrices := make(map[*entities.PbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.allBidsByBidder {
 		for _, topBidsPerBidder := range topBidsPerImp {
 			for _, topBid := range topBidsPerBidder {
-				roundedPrices[topBid] = GetPriceBucket(*topBid.Bid, targetingData)
+				roundedPrices[topBid] = GetPriceBucket(*topBid.Bid, targetingData, account)
 			}
 		}
 	}

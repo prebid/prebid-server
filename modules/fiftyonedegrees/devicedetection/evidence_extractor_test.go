@@ -1,3 +1,5 @@
+//go:build cgo
+
 package devicedetection
 
 import (
@@ -5,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/51Degrees/device-detection-go/v4/dd"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 )
 

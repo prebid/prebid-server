@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type adapter struct {
@@ -39,20 +39,22 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 
 	testMode := false
 
-	if !slices.Contains(request.Cur, supportedCurrency) {
-		request.Cur = append(request.Cur, supportedCurrency)
+	sanitizedRequest := sanitizeRequest(*request)
+
+	if !slices.Contains(sanitizedRequest.Cur, supportedCurrency) {
+		sanitizedRequest.Cur = append(sanitizedRequest.Cur, supportedCurrency)
 	}
 
-	for i := range request.Imp {
-		if err := convertImpCurrency(&request.Imp[i], reqInfo); err != nil {
+	for i := range sanitizedRequest.Imp {
+		if err := convertImpCurrency(&sanitizedRequest.Imp[i], reqInfo); err != nil {
 			errors = append(errors, err)
 			return nil, errors
 		}
 
 		// Check the first Imp for test mode, which decides the endpoint.
-		if i == 0 && request.Imp[i].Ext != nil {
+		if i == 0 && sanitizedRequest.Imp[i].Ext != nil {
 			var bidderExt adapters.ExtImpBidder
-			if err := jsonutil.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
+			if err := jsonutil.Unmarshal(sanitizedRequest.Imp[i].Ext, &bidderExt); err != nil {
 				errors = append(errors, &errortypes.BadInput{
 					Message: "Error parsing bidderExt object",
 				})
@@ -71,7 +73,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		}
 	}
 
-	requestJSON, err := jsonutil.Marshal(request)
+	requestJSON, err := jsonutil.Marshal(sanitizedRequest)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -91,7 +93,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		Method:  "POST",
 		Uri:     endpoint,
 		Body:    requestJSON,
-		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+		ImpIDs:  openrtb_ext.GetImpIDs(sanitizedRequest.Imp),
 		Headers: headers,
 	})
 
@@ -156,4 +158,20 @@ func convertImpCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) e
 	}
 
 	return nil
+}
+
+func sanitizeRequest(request openrtb2.BidRequest) *openrtb2.BidRequest {
+	if request.Device != nil {
+		request.Device = sanitizeDevice(*request.Device)
+	}
+	request.User = nil
+
+	return &request
+}
+
+func sanitizeDevice(device openrtb2.Device) *openrtb2.Device {
+	device.IP = ""
+	device.IPv6 = ""
+
+	return &device
 }

@@ -7,11 +7,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type TtxAdapter struct {
@@ -256,13 +256,7 @@ func validateVideoParams(video *openrtb2.Video, prod string) (*openrtb2.Video, e
 		}
 	}
 
-	if videoCopy.Placement == 0 {
-		videoCopy.Placement = 2
-	}
-
 	if prod == "instream" {
-		videoCopy.Placement = 1
-
 		if videoCopy.StartDelay == nil {
 			videoCopy.StartDelay = adcom1.StartDelay.Ptr(0)
 		}

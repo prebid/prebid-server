@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": "testzone"
+          }
+        }
+      },
+      {
+        "id": "test-imp-2",
+        "video": {
+          "w": 640,
+          "h": 480,
+          "mimes": null
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": "testzone"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/go/testzone",
+        "body": {
+          "id": "test-request-id",
+          "at": 1,
+          "imp": [
+            {
+              "id": "test-imp-1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": "testzone"
+                }
+              }
+            },
+            {
+              "id": "test-imp-2",
+              "video": {
+                "w": 640,
+                "h": 480,
+                "mimes": null
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": "testzone"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-1", "test-imp-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "unknown-imp-id",
+                  "price": 1.0,
+                  "adm": "<html></html>",
+                  "crid": "creative-1"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "unknown-imp-id",
+            "price": 1.0,
+            "adm": "<html></html>",
+            "crid": "creative-1"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

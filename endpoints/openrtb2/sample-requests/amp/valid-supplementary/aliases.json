@@ -55,6 +55,8 @@
       "hb_cache_id_unknown": "0",
       "hb_cache_path": "/pbcache/endpoint",
       "hb_cache_path_unknow": "/pbcache/endpoint",
+      "hb_env": "amp",
+      "hb_env_unknown": "amp",
       "hb_pb": "2.00",
       "hb_pb_unknown": "2.00"
     },

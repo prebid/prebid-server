@@ -1,0 +1,65 @@
+{
+  "mockBidRequest": {
+    "id": "fwssp-test",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "custom_site_section_id": "ss_12345",
+            "network_id": "123456",
+            "profile_id": "123456:prof_12345"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://testfreewheel.com",
+        "body":{
+          "id": "fwssp-test",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [{
+            "id": "imp-1",
+            "video": {
+              "mimes": ["video/mp4"],
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "custom_site_section_id": "ss_12345",
+              "network_id": "123456",
+              "profile_id": "123456:prof_12345"
+            }
+          }]
+        },
+        "headers": {
+          "Componentid": [
+            "prebid-go"
+          ]
+        },
+        "impIDs":["imp-1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body" : {}
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}
+

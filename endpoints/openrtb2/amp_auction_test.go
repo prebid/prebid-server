@@ -19,22 +19,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/prebid/prebid-server/v3/amp"
-	"github.com/prebid/prebid-server/v3/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/amp"
+	"github.com/prebid/prebid-server/v4/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
@@ -146,7 +147,7 @@ func TestGoodAmpRequests(t *testing.T) {
 						t.Fatalf("Unexpected bidder %s has an expected mock bidder request. Test file: %s", bidder, filename)
 					}
 					aa := a.(*exchange.BidderAdapter)
-					ma := aa.Bidder.(*mockAdapter)
+					ma := aa.Bidder.(*adapters.InfoAwareBidder).Bidder.(*mockAdapter)
 					assert.JSONEq(t, string(req), string(ma.requestData[0]), "Not the expected mock bidder request for bidder %s. Test file: %s", bidder, filename)
 				}
 			}
@@ -2147,18 +2148,18 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		},
 		{
 			// raw_auction stage not executed for AMP endpoint, so we expect full response
-			description: "Assert correct AmpResponse when request rejected at raw_auction stage",
+			description: "Assert correct AmpResponse when request rejected at raw_auction_request stage",
 			file:        "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
 			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
-			description: "Assert correct AmpResponse when request rejected at processed_auction stage",
+			description: "Assert correct AmpResponse when request rejected at processed_auction_request stage",
 			file:        "sample-requests/hooks/amp_processed_auction_request_reject.json",
 			planBuilder: mockPlanBuilder{processedAuctionPlan: makePlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr, nil})},
 		},
 		{
 			// bidder_request stage rejects only bidder, so we expect bidder rejection warning added
-			description: "Assert correct AmpResponse when request rejected at bidder-request stage",
+			description: "Assert correct AmpResponse when request rejected at bidder_request stage",
 			file:        "sample-requests/hooks/amp_bidder_reject.json",
 			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr, nil})},
 		},
@@ -2197,6 +2198,11 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			description: "assert response returned by exitpoint stage",
+			file:        "sample-requests/hooks/amp_exitpoint.json",
+			planBuilder: mockPlanBuilder{exitpointPlan: makePlan[hookstage.Exitpoint](mockUpdateResponseHook{})},
 		},
 	}
 

@@ -65,6 +65,15 @@
               "id": "test-imp-id"
             }
           ],
+          "site": {
+            "publisher": {
+              "ext": {
+                "prebid": {
+                  "publisherId": "12345"
+                }
+              }
+            }
+          },
           "ext": {
             "prebid": {
               "currency": {
