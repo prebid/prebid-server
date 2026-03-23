@@ -21,7 +21,7 @@ import (
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
-  "github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/bidadjustment"
 	"github.com/prebid/prebid-server/v4/hooks"
 	"github.com/prebid/prebid-server/v4/logger"
