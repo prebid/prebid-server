@@ -19,25 +19,25 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/bidadjustment"
-	"github.com/prebid/prebid-server/v3/config/util"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/exchange/entities"
-	"github.com/prebid/prebid-server/v3/experiment/adscert"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/version"
+	"github.com/prebid/prebid-server/v4/bidadjustment"
+	"github.com/prebid/prebid-server/v4/config/util"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
+	"github.com/prebid/prebid-server/v4/experiment/adscert"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	loggerI "github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/version"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -570,7 +570,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 // Bidder interface.
 func (bidder *BidderAdapter) doRequest(ctx context.Context, req *adapters.RequestData, bidderRequestStartTime time.Time, tmaxAdjustments *TmaxAdjustmentsPreprocessed) *httpCallInfo {
 	if bidder.shouldRequest() {
-		return bidder.doRequestImpl(ctx, req, glog.Warningf, bidderRequestStartTime, tmaxAdjustments)
+		return bidder.doRequestImpl(ctx, req, loggerI.Warnf, bidderRequestStartTime, tmaxAdjustments)
 	}
 	return &httpCallInfo{
 		request: req,
@@ -683,7 +683,7 @@ func (bidder *BidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 			if err == nil {
 				defer func() {
 					if _, err := io.Copy(io.Discard, httpResp.Body); err != nil {
-						glog.Errorf("TimeoutNotification: Draining response body failed %v", err)
+						loggerI.Errorf("TimeoutNotification: Draining response body failed %v", err)
 					}
 					httpResp.Body.Close()
 				}()
