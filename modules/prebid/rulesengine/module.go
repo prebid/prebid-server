@@ -8,9 +8,9 @@ import (
 
 	"github.com/buger/jsonparser"
 
-	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
+	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 )
 
 // Builder configures the rules engine module initiating an in-memory cache and kicking

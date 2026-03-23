@@ -8,11 +8,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type adapter struct {
@@ -87,15 +87,10 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapter
 	}
 
 	if len(impsWithOguryParams) == 0 {
-		if request.Site != nil && (request.Site.Publisher == nil || request.Site.Publisher.ID == "") {
+		if !hasPublisherId(request) {
 			// we can serve ads with publisherId+adunitcode combination
 			return nil, []error{&errortypes.BadInput{
-				Message: "Invalid request. assetKey/adUnitId or request.site.publisher.id required",
-			}}
-		} else if request.App != nil {
-			// for app request there is no adunitcode equivalent so we can't serve ads with just the publisher id
-			return nil, []error{&errortypes.BadInput{
-				Message: "Invalid request. assetKey/adUnitId required",
+				Message: "Invalid request. assetKey/adUnitId or request.site/app.publisher.id required",
 			}}
 		}
 	} else if len(impsWithOguryParams) > 0 {
@@ -147,6 +142,18 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 			Message: fmt.Sprintf("Unsupported MType \"%d\", for impression \"%s\"", bid.MType, bid.ImpID),
 		}
 	}
+}
+
+func hasPublisherId(request *openrtb2.BidRequest) bool {
+	return hasSitePublisherId(request) || hasAppPublisherId(request)
+}
+
+func hasSitePublisherId(request *openrtb2.BidRequest) bool {
+	return request.Site != nil && request.Site.Publisher != nil && request.Site.Publisher.ID != ""
+}
+
+func hasAppPublisherId(request *openrtb2.BidRequest) bool {
+	return request.App != nil && request.App.Publisher != nil && request.App.Publisher.ID != ""
 }
 
 func (a adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
