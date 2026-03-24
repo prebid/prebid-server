@@ -1,8 +1,6 @@
-module github.com/prebid/prebid-server/v3
+module github.com/prebid/prebid-server/v4
 
 go 1.23.0
-
-retract v3.0.0 // Forgot to update major version in import path and module name
 
 require (
 	github.com/51Degrees/device-detection-go/v4 v4.4.35

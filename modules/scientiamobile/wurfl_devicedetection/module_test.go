@@ -8,7 +8,7 @@ import (
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -335,7 +335,7 @@ To build a Docker image with WURFL support:
    And build with the WURFL tag:
 
    ```dockerfile
-   RUN go build -tags wurfl -mod=vendor -ldflags "-X github.com/prebid/prebid-server/v3/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/v3/version.Rev=`git rev-parse HEAD`" .
+   RUN go build -tags wurfl -mod=vendor -ldflags "-X github.com/prebid/prebid-server/v4/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/v4/version.Rev=`git rev-parse HEAD`" .
    ```
 
 3. **Install runtime dependencies**: In the runtime stage, add the WURFL runtime dependencies:
