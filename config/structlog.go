@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	logInternal "github.com/prebid/prebid-server/v3/logger"
+	logInternal "github.com/prebid/prebid-server/v4/logger"
 )
 
 type logMsg func(string, ...interface{})
