@@ -39,7 +39,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}}
 	}
 
-	if request.Site != nil {
+	if request.Site != nil && request.App == nil {
 		siteCopy := *request.Site
 		request.Site = &siteCopy
 

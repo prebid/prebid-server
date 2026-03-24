@@ -21,6 +21,8 @@
         "secure": 1
       }
     ],
+    "app": {
+    },
     "device": {
       "ua": "test-user-agent",
       "geo": {
@@ -100,11 +102,6 @@
               }
             }
           ],
-          "app": {
-            "publisher": {
-              "id": "123"
-            }
-          },
           "device": {
             "devicetype": 2,
             "ua": "test-user-agent",
@@ -150,6 +147,11 @@
           },
           "regs": {
             "gdpr": 0
+          },
+          "app": {
+            "publisher": {
+              "id": "123"
+            }
           }
         }
       },
