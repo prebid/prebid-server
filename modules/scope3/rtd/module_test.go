@@ -259,7 +259,8 @@ func TestScope3APIIntegrationNoSegments(t *testing.T) {
 	// Test entrypoint hook
 	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, getTestEntrypointPayload(t))
 	require.NoError(t, err)
-	assert.NotNil(t, entrypointResult.ModuleContext[asyncRequestKey])
+	asyncRequest, _ := entrypointResult.ModuleContext.Get(asyncRequestKey)
+	assert.NotNil(t, asyncRequest)
 
 	payload := hookstage.ProcessedAuctionRequestPayload{
 		Request: &openrtb_ext.RequestWrapper{
@@ -689,7 +690,8 @@ func TestScope3APIIntegrationWithExistingPrebidTargeting(t *testing.T) {
 	// Test entrypoint hook
 	entrypointResult, err := module.HandleEntrypointHook(ctx, hookstage.ModuleInvocationContext{}, getTestEntrypointPayload(t))
 	require.NoError(t, err)
-	assert.NotNil(t, entrypointResult.ModuleContext[asyncRequestKey])
+	asyncRequest, _ := entrypointResult.ModuleContext.Get(asyncRequestKey)
+	assert.NotNil(t, asyncRequest)
 
 	// Create test request payload
 	width := int64(300)

@@ -52,11 +52,14 @@ func NewModuleContext() *ModuleContext {
 
 // Get retrieves a value from the module context with read lock
 func (mc *ModuleContext) Get(key string) (any, bool) {
-	if mc == nil || mc.data == nil {
+	if mc == nil {
 		return nil, false
 	}
 	mc.RLock()
 	defer mc.RUnlock()
+	if mc.data == nil {
+		return nil, false
+	}
 	val, ok := mc.data[key]
 	return val, ok
 }
@@ -76,17 +79,20 @@ func (mc *ModuleContext) Set(key string, value any) {
 
 // GetAll returns a copy of all data in the context
 func (mc *ModuleContext) GetAll() map[string]any {
-	if mc == nil || mc.data == nil {
+	if mc == nil {
 		return nil
 	}
 	mc.RLock()
 	defer mc.RUnlock()
+	if mc.data == nil {
+		return nil
+	}
 	result := make(map[string]any, len(mc.data))
 	maps.Copy(result, mc.data)
 	return result
 }
 
-// SetAll replaces all data in the context
+// SetAll merges the provided data into the module context
 func (mc *ModuleContext) SetAll(data map[string]any) {
 	if mc == nil {
 		return
