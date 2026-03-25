@@ -8,11 +8,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"github.com/prebid/prebid-server/v3/util/sliceutil"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/util/sliceutil"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -127,9 +127,6 @@ type Syncer struct {
 	// ExternalURL is available as a macro to the RedirectURL template.
 	ExternalURL string `yaml:"externalUrl" mapstructure:"external_url"`
 
-	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
-	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
-
 	// FormatOverride allows a bidder to override their callback type "b" for iframe, "i" for redirect
 	FormatOverride string `yaml:"formatOverride" mapstructure:"format_override"`
 
@@ -154,7 +151,6 @@ func (s *Syncer) Equal(other *Syncer) bool {
 		s.IFrame.Equal(other.IFrame) &&
 		s.Redirect.Equal(other.Redirect) &&
 		s.ExternalURL == other.ExternalURL &&
-		ptrutil.Equal(s.SupportCORS, other.SupportCORS) &&
 		s.FormatOverride == other.FormatOverride &&
 		ptrutil.Equal(s.Enabled, other.Enabled) &&
 		s.SkipWhen.Equal(other.SkipWhen)
@@ -264,7 +260,6 @@ func (s *Syncer) Defined() bool {
 		s.IFrame != nil ||
 		s.Redirect != nil ||
 		s.ExternalURL != "" ||
-		s.SupportCORS != nil ||
 		s.FormatOverride != "" ||
 		s.SkipWhen != nil
 }
@@ -373,6 +368,9 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		}
 
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
+		// Note: The aliasBidderInfo.GVLVendorID is intentionally never set to the parent's
+		// GVLVendorID. Each alias must declare its own GVL Vendor ID, as inheriting from the
+		// parent is not safe for legal reasons.
 		if aliasBidderInfo.AppSecret == "" {
 			aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
 		}
@@ -390,9 +388,6 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		}
 		if aliasBidderInfo.ExtraAdapterInfo == "" {
 			aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
-		}
-		if aliasBidderInfo.GVLVendorID == 0 {
-			aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
 		}
 		if aliasBidderInfo.Maintainer == nil {
 			aliasBidderInfo.Maintainer = parentBidderInfo.Maintainer
@@ -464,17 +459,17 @@ func validateAliases(aliasBidderInfo BidderInfo, infos BidderInfos, bidderName s
 	}
 
 	if aliasBidderInfo.WhiteLabelOnly {
-		return fmt.Errorf("bidder: %s is an alias and cannot be set as white label only", bidderName)
+		return fmt.Errorf("bidder '%s' is an alias and cannot be set as white label only", bidderName)
 	}
 
 	parentBidder, parentBidderFound := infos[aliasBidderInfo.AliasOf]
 
 	if !parentBidderFound {
-		return fmt.Errorf("bidder: %s not found for an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+		return fmt.Errorf("alias '%s' references a nonexistent bidder '%s'", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	if len(parentBidder.AliasOf) > 0 {
-		return fmt.Errorf("bidder: %s cannot be an alias of an alias: %s", aliasBidderInfo.AliasOf, bidderName)
+		return fmt.Errorf("alias '%s' cannot reference another alias '%s'", bidderName, aliasBidderInfo.AliasOf)
 	}
 
 	return nil
@@ -805,8 +800,8 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 		copy.ExternalURL = s.ExternalURL
 	}
 
-	if s.SupportCORS != nil {
-		copy.SupportCORS = s.SupportCORS
+	if s.Enabled != nil {
+		copy.Enabled = s.Enabled
 	}
 
 	return &copy
