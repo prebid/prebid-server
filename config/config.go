@@ -11,10 +11,10 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/spf13/viper"
 )
 
@@ -50,6 +50,7 @@ type Configuration struct {
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
 	VTrack            VTrack          `mapstructure:"vtrack"`
 	Event             Event           `mapstructure:"event"`
+	Video             Video           `mapstructure:"video"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
@@ -272,6 +273,7 @@ type GDPR struct {
 	NonStandardPublisherMap map[string]struct{}
 	TCF2                    TCF2 `mapstructure:"tcf2"`
 	AMPException            bool `mapstructure:"amp_exception"` // Deprecated: Use account-level GDPR settings (gdpr.integration_enabled.amp) instead
+	LiveGVLRefreshInterval  int  `mapstructure:"live_gvl_refresh_interval_seconds"`
 	// EEACountries (EEA = European Economic Area) are a list of countries where we should assume GDPR applies.
 	// If the gdpr flag is unset in a request, but geo.country is set, we will assume GDPR applies if and only
 	// if the country matches one on this list. If both the GDPR flag and country are not set, we default
@@ -548,6 +550,10 @@ type VTrack struct {
 
 type Event struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
+}
+
+type Video struct {
+	EnableDeprecatedEndpoint bool `mapstructure:"enable_deprecated_endpoint"`
 }
 
 type HostCookie struct {
@@ -1039,7 +1045,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
-	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("stored_requests.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
 	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)
@@ -1123,12 +1129,14 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("event.timeout_ms", 1000)
 
+	v.SetDefault("video.enable_deprecated_endpoint", false)
+
 	v.SetDefault("user_sync.priority_groups", [][]string{})
 
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.http.endpoint", "")
-	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", false)
+	v.SetDefault("accounts.http.use_rfc3986_compliant_request_builder", true)
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 	v.SetDefault("accounts.in_memory_cache.ttl_seconds", 0)
 	v.SetDefault("accounts.in_memory_cache.size_bytes", 0)
@@ -1169,6 +1177,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("gdpr.live_gvl_refresh_interval_seconds", 86400) // 1 day
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enforce_vendors", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enforce_vendors", true)
@@ -1372,6 +1381,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.BindEnv(adapterCfgPrefix + ".openrtb.version")
 	v.BindEnv(adapterCfgPrefix + ".openrtb.gpp-supported")
 
+	v.BindEnv(adapterCfgPrefix + ".usersync.enabled")
 	v.BindEnv(adapterCfgPrefix + ".usersync.key")
 	v.BindEnv(adapterCfgPrefix + ".usersync.default")
 	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.url")
