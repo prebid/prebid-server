@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"github.com/prebid/prebid-server/v3/adapters/proxistore"
 	"github.com/prebid/prebid-server/v4/adapters"
 	ttx "github.com/prebid/prebid-server/v4/adapters/33across"
 	"github.com/prebid/prebid-server/v4/adapters/aax"
@@ -185,6 +184,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/pangle"
 	"github.com/prebid/prebid-server/v4/adapters/pgamssp"
 	"github.com/prebid/prebid-server/v4/adapters/playdigo"
+	"github.com/prebid/prebid-server/v4/adapters/proxistore"
 	"github.com/prebid/prebid-server/v4/adapters/pubmatic"
 	"github.com/prebid/prebid-server/v4/adapters/pubnative"
 	"github.com/prebid/prebid-server/v4/adapters/pubrise"
