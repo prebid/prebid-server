@@ -1,4 +1,6 @@
 endpoint: "https://prebid.deepintent.com/prebid"
+geoscope:
+  - USA
 maintainer:
   email: "prebiddev@deepintent.com"
 gvlVendorID: 541
