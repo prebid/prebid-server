@@ -1,0 +1,8 @@
+aliasOf: "xeworks"
+endpoint: "http://rtb.league-m.media/?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+maintainer:
+  email: "prebid@league-m.com"
+userSync:
+  redirect:
+    url: "https://sync.league-m.media/psync?t=s&e=0&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
+    userMacro: "$UID"
