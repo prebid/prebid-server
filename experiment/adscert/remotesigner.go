@@ -34,7 +34,7 @@ func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, er
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	conn, err := grpc.NewClient(remoteSignerConfig.Url, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to dial remote signer: %v", err)
+		return nil, fmt.Errorf("failed to create remote signer client: %v", err)
 	}
 
 	clientOpts := &signatory.AuthenticatedConnectionsSignatoryClientOptions{
