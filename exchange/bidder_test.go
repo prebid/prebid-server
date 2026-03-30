@@ -3140,7 +3140,7 @@ func TestSeatNonBid(t *testing.T) {
 						StatusCode: int(ErrorTimeout),
 					}},
 				},
-				errors:   []error{&errortypes.Timeout{Message: (&url.Error{Op: "Get", URL: "", Err: context.DeadlineExceeded}).Error()}},
+				errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
 				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "pubmatic", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
 			},
 		}, {
