@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {
 	if expect != actual {
-		t.Errorf("%s", fmt.Sprintf(message, expect, actual))
+		t.Errorf(message, expect, actual)
 	}
 }
 

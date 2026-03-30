@@ -62,12 +62,11 @@ func TestCreateSchemaValidator(t *testing.T) {
 		desc         string
 		inSchemaFile string
 		outErrMsg    string
-		outSentinel  error
 	}{
 		{
 			desc:         "wrong json schema file name",
 			inSchemaFile: "non-existent-file",
-			outSentinel:  os.ErrNotExist,
+			outErrMsg:    "no such file or directory",
 		},
 		{
 			desc:         "malformed json schema file name",
@@ -82,9 +81,7 @@ func TestCreateSchemaValidator(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			_, err := CreateSchemaValidator(tc.inSchemaFile)
-			if tc.outSentinel != nil {
-				assert.ErrorIs(t, err, tc.outSentinel)
-			} else if len(tc.outErrMsg) > 0 {
+			if len(tc.outErrMsg) > 0 {
 				assert.Contains(t, err.Error(), tc.outErrMsg)
 			} else {
 				assert.NoError(t, err)

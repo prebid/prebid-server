@@ -31,7 +31,7 @@ func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetec
 
 			deviceInfo, err := deviceDetector.getDeviceInfo(evidence, ua)
 			if err != nil {
-				return rawPayload, hookexecution.NewFailure("error getting device info: %s", err)
+				return rawPayload, hookexecution.NewFailure("error getting device info %s", err)
 			}
 
 			result, err := hydrateFields(deviceInfo, rawPayload)
