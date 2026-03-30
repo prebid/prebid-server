@@ -29,13 +29,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var impExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &impExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %v", 0, err),
+			Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Information: %v", 0, err),
 		}}
 	}
 	var impExtBidder openrtb_ext.ImpExtTadvertising
 	if err := jsonutil.Unmarshal(impExt.Bidder, &impExtBidder); err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Infomation: %v", 0, err),
+			Message: fmt.Sprintf("Invalid imp.ext.bidder for impression index %d. Error Information: %v", 0, err),
 		}}
 	}
 
