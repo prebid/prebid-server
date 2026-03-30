@@ -32,7 +32,7 @@ func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, er
 	// Establish the gRPC connection that the client will use to connect to the
 	// signatory server.  Secure connections are not implemented at this time.
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	conn, err := grpc.Dial(remoteSignerConfig.Url, opts...)
+	conn, err := grpc.NewClient(remoteSignerConfig.Url, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial remote signer: %v", err)
 	}

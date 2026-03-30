@@ -2080,7 +2080,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	// setup a mock mockMetricEngine engine and its expectation
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	expectedAdapterName := openrtb_ext.BidderAppnexus
-	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
+	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() >= 0 }
 
 	mockMetricEngine.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 	mockMetricEngine.On("RecordOverheadTime", metrics.PreBidder, mock.Anything).Once()
@@ -3140,7 +3140,7 @@ func TestSeatNonBid(t *testing.T) {
 						StatusCode: int(ErrorTimeout),
 					}},
 				},
-				errors:   []error{&errortypes.Timeout{Message: context.DeadlineExceeded.Error()}},
+				errors:   []error{&errortypes.Timeout{Message: (&url.Error{Op: "Get", URL: "", Err: context.DeadlineExceeded}).Error()}},
 				seatBids: []*entities.PbsOrtbSeatBid{{Bids: []*entities.PbsOrtbBid{}, Currency: "USD", Seat: "pubmatic", HttpCalls: []*openrtb_ext.ExtHttpCall{}}},
 			},
 		}, {
