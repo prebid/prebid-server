@@ -1,8 +1,6 @@
 module github.com/prebid/prebid-server/v4
 
-go 1.26.0
-
-toolchain go1.26.0
+go 1.24
 
 require (
 	github.com/51Degrees/device-detection-go/v4 v4.4.35
