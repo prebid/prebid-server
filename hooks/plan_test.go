@@ -1093,8 +1093,32 @@ func TestValidateExecutionPlan(t *testing.T) {
 				}
 			}`,
 			expectedErrorMsgs: []string{
-				"hook configuration: host execution plan references module 'disabled_module' at endpoint '/openrtb2/auction', stage 'entrypoint', group 1, but module is not enabled or does not exist. This hook will be skipped during request processing",
-				"hook configuration: default-account execution plan references module 'disabled_module' at endpoint '/openrtb2/amp', stage 'entrypoint', group 0, but module is not enabled or does not exist. This hook will be skipped during request processing",
+				"hook configuration: host execution plan references module 'disabled_module' at endpoint '/openrtb2/auction', stage 'entrypoint', group 1, but module is not registered for this stage (module may be disabled, missing, or not implement the stage hook). This hook will be skipped during request processing",
+				"hook configuration: default-account execution plan references module 'disabled_module' at endpoint '/openrtb2/amp', stage 'entrypoint', group 0, but module is not registered for this stage (module may be disabled, missing, or not implement the stage hook). This hook will be skipped during request processing",
+			},
+		},
+		{
+			name: "Module registered for different stage",
+			hooks: map[string]interface{}{
+				// raw_auction_module only implements raw_auction_request, not entrypoint
+				"raw_auction_module": fakeRawAuctionHook{},
+			},
+			hostPlanJSON: `{
+				"endpoints": {
+					"/openrtb2/auction": {
+						"stages": {
+							"entrypoint": {
+								"groups": [
+									{"timeout": 5, "hook_sequence": [{"module_code": "raw_auction_module", "hook_impl_code": "foo"}]}
+								]
+							}
+						}
+					}
+				}
+			}`,
+			defaultPlanJSON: `{}`,
+			expectedErrorMsgs: []string{
+				"hook configuration: host execution plan references module 'raw_auction_module' at endpoint '/openrtb2/auction', stage 'entrypoint', group 0, but module is not registered for this stage (module may be disabled, missing, or not implement the stage hook). This hook will be skipped during request processing",
 			},
 		},
 		{
@@ -1136,26 +1160,78 @@ func TestValidateExecutionPlan(t *testing.T) {
 	}
 }
 
-func TestHookExistsInRepo(t *testing.T) {
+func TestHasHookForStage(t *testing.T) {
 	testCases := map[string]struct {
 		givenHooks     map[string]interface{}
 		moduleCode     string
-		expectedExists bool
+		stageName      string
+		expectedResult bool
 	}{
-		"Module exists in repository": {
-			givenHooks:     map[string]interface{}{"test_module": fakeEntrypointHook{}},
-			moduleCode:     "test_module",
-			expectedExists: true,
+		"Entrypoint hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeEntrypointHook{}},
+			moduleCode:     "mod",
+			stageName:      StageEntrypoint.String(),
+			expectedResult: true,
 		},
-		"Module does not exist in repository": {
-			givenHooks:     map[string]interface{}{"test_module": fakeEntrypointHook{}},
-			moduleCode:     "missing_module",
-			expectedExists: false,
+		"RawAuctionRequest hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeRawAuctionHook{}},
+			moduleCode:     "mod",
+			stageName:      StageRawAuctionRequest.String(),
+			expectedResult: true,
 		},
-		"Empty repository": {
+		"ProcessedAuctionRequest hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeProcessedAuctionHook{}},
+			moduleCode:     "mod",
+			stageName:      StageProcessedAuctionRequest.String(),
+			expectedResult: true,
+		},
+		"BidderRequest hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeBidderRequestHook{}},
+			moduleCode:     "mod",
+			stageName:      StageBidderRequest.String(),
+			expectedResult: true,
+		},
+		"RawBidderResponse hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeRawBidderResponseHook{}},
+			moduleCode:     "mod",
+			stageName:      StageRawBidderResponse.String(),
+			expectedResult: true,
+		},
+		"AllProcessedBidResponses hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeAllProcessedBidResponsesHook{}},
+			moduleCode:     "mod",
+			stageName:      StageAllProcessedBidResponses.String(),
+			expectedResult: true,
+		},
+		"AuctionResponse hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeAuctionResponseHook{}},
+			moduleCode:     "mod",
+			stageName:      StageAuctionResponse.String(),
+			expectedResult: true,
+		},
+		"Exitpoint hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeExitpointHook{}},
+			moduleCode:     "mod",
+			stageName:      StageExitpoint.String(),
+			expectedResult: true,
+		},
+		"Module not in repository": {
 			givenHooks:     map[string]interface{}{},
-			moduleCode:     "any_module",
-			expectedExists: false,
+			moduleCode:     "missing_module",
+			stageName:      StageEntrypoint.String(),
+			expectedResult: false,
+		},
+		"Module registered for different stage": {
+			givenHooks:     map[string]interface{}{"mod": fakeRawAuctionHook{}},
+			moduleCode:     "mod",
+			stageName:      StageEntrypoint.String(),
+			expectedResult: false,
+		},
+		"Unknown stage name": {
+			givenHooks:     map[string]interface{}{"mod": fakeEntrypointHook{}},
+			moduleCode:     "mod",
+			stageName:      "unknown_stage",
+			expectedResult: false,
 		},
 	}
 
@@ -1164,8 +1240,7 @@ func TestHookExistsInRepo(t *testing.T) {
 			repo, err := NewHookRepository(test.givenHooks)
 			assert.NoError(t, err, "Failed to create hook repository")
 
-			exists := hookExistsInRepo(repo, test.moduleCode)
-			assert.Equal(t, test.expectedExists, exists)
+			assert.Equal(t, test.expectedResult, hasHookForStage(repo, test.moduleCode, test.stageName))
 		})
 	}
 }

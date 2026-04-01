@@ -218,7 +218,8 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 }
 
 // ValidateExecutionPlan checks if execution plan references any modules
-// not present in the repository (disabled/missing) and returns a list of validation errors.
+// not registered for the referenced stage (disabled, missing, or implementing
+// a different stage's hook) and returns a list of validation errors.
 // This validation runs once at startup to help identify configuration issues.
 func ValidateExecutionPlan(cfg config.Hooks, repo HookRepository) []error {
 	var errs []error
@@ -228,11 +229,12 @@ func ValidateExecutionPlan(cfg config.Hooks, repo HookRepository) []error {
 			for stageName, stageCfg := range epCfg.Stages {
 				for groupIdx, group := range stageCfg.Groups {
 					for _, hookCfg := range group.HookSequence {
-						if !hookExistsInRepo(repo, hookCfg.ModuleCode) {
+						if !hasHookForStage(repo, hookCfg.ModuleCode, stageName) {
 							errs = append(errs, fmt.Errorf(
 								"hook configuration: %s execution plan references module '%s' "+
 									"at endpoint '%s', stage '%s', group %d, but module is not "+
-									"enabled or does not exist. This hook will be skipped during request processing",
+									"registered for this stage (module may be disabled, missing, or not implement the stage hook). "+
+									"This hook will be skipped during request processing",
 								planName, hookCfg.ModuleCode, endpoint, stageName, groupIdx,
 							))
 						}
@@ -248,37 +250,38 @@ func ValidateExecutionPlan(cfg config.Hooks, repo HookRepository) []error {
 	return errs
 }
 
-// hookExistsInRepo checks if a module with the given ID exists in the repository
-// by attempting to retrieve it using any of the stage-specific getter methods.
+// hasHookForStage checks if a module implements a hook for the specific stage.
+// Returns false for unknown stage names — an unknown stage in the plan is a misconfiguration.
 //
-// NOTE: This function must be kept in sync with HookRepository. If a new stage
-// getter is added to the interface, add a corresponding check here.
-func hookExistsInRepo(repo HookRepository, moduleCode string) bool {
-	// Try to get hook from repository using all available stage getters
-	// A module may implement one or more hook interfaces
-	if _, ok := repo.GetEntrypointHook(moduleCode); ok {
-		return true
+// NOTE: This function must be kept in sync with HookRepository and the Stage constants.
+// If a new stage is added to HookRepository, add a corresponding case here.
+func hasHookForStage(repo HookRepository, moduleCode, stageName string) bool {
+	switch stageName {
+	case StageEntrypoint.String():
+		_, ok := repo.GetEntrypointHook(moduleCode)
+		return ok
+	case StageRawAuctionRequest.String():
+		_, ok := repo.GetRawAuctionHook(moduleCode)
+		return ok
+	case StageProcessedAuctionRequest.String():
+		_, ok := repo.GetProcessedAuctionHook(moduleCode)
+		return ok
+	case StageBidderRequest.String():
+		_, ok := repo.GetBidderRequestHook(moduleCode)
+		return ok
+	case StageRawBidderResponse.String():
+		_, ok := repo.GetRawBidderResponseHook(moduleCode)
+		return ok
+	case StageAllProcessedBidResponses.String():
+		_, ok := repo.GetAllProcessedBidResponsesHook(moduleCode)
+		return ok
+	case StageAuctionResponse.String():
+		_, ok := repo.GetAuctionResponseHook(moduleCode)
+		return ok
+	case StageExitpoint.String():
+		_, ok := repo.GetExitpointHook(moduleCode)
+		return ok
+	default:
+		return false
 	}
-	if _, ok := repo.GetRawAuctionHook(moduleCode); ok {
-		return true
-	}
-	if _, ok := repo.GetProcessedAuctionHook(moduleCode); ok {
-		return true
-	}
-	if _, ok := repo.GetBidderRequestHook(moduleCode); ok {
-		return true
-	}
-	if _, ok := repo.GetRawBidderResponseHook(moduleCode); ok {
-		return true
-	}
-	if _, ok := repo.GetAllProcessedBidResponsesHook(moduleCode); ok {
-		return true
-	}
-	if _, ok := repo.GetAuctionResponseHook(moduleCode); ok {
-		return true
-	}
-	if _, ok := repo.GetExitpointHook(moduleCode); ok {
-		return true
-	}
-	return false
 }
