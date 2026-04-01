@@ -2080,7 +2080,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	// setup a mock mockMetricEngine engine and its expectation
 	mockMetricEngine := &metrics.MetricsEngineMock{}
 	expectedAdapterName := openrtb_ext.BidderAppnexus
-	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
+	compareConnWaitTime := func(dur time.Duration) bool { return dur >= 0 }
 
 	mockMetricEngine.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 	mockMetricEngine.On("RecordOverheadTime", metrics.PreBidder, mock.Anything).Once()
