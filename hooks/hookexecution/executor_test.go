@@ -391,7 +391,7 @@ func TestMetricsAreGatheredDuringHookExecution(t *testing.T) {
 		Module: moduleReplacer.Replace(moduleName),
 		Stage:  "entrypoint",
 	}
-	rTime := func(dur time.Duration) bool { return dur >= 0 }
+	rTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
 	plan := builder.PlanForEntrypointStage("")
 	hooksCalledDuringStage := 0
 	for _, group := range plan {
