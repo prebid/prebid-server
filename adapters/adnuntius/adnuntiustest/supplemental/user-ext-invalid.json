@@ -29,7 +29,7 @@
 	},
 	"expectedMakeRequestsErrors": [
 		{
-			"value": "failed to parse URL: [failed to parse GDPR information: failed to parse ExtUser in Adnuntius GDPR check: expect { or n, but found \"]",
+			"value": "failed to parse Ext User: expect { or n, but found \"",
 			"comparison": "literal"
 		}
 	]
