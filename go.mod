@@ -2,6 +2,8 @@ module github.com/prebid/prebid-server/v4
 
 go 1.25
 
+toolchain go1.25.0
+
 require (
 	github.com/51Degrees/device-detection-go/v4 v4.4.35
 	github.com/DATA-DOG/go-sqlmock v1.5.0
