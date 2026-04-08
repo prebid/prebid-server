@@ -2,7 +2,7 @@ endpoint: "https://pbs.prebrid.tv/openrtb2/auction"
 geoscope:
   - global
 maintainer:
-  email: "predrag.milosevic@target-video.com"
+  email: "contact@target-video.com"
 gvlVendorID: 786
 capabilities:
   app:
