@@ -10,16 +10,26 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 const (
 	BidderCurrency string = "USD"
 )
+
+// publisherExtPrebid defines the structure for publisher.ext.prebid used by RTBHouse adapter
+type publisherExtPrebid struct {
+	PublisherId string `json:"publisherId,omitempty"`
+}
+
+// publisherExt defines the structure for publisher.ext used by RTBHouse adapter
+type publisherExt struct {
+	Prebid *publisherExtPrebid `json:"prebid,omitempty"`
+}
 
 // RTBHouseAdapter implements the Bidder interface.
 type RTBHouseAdapter struct {
@@ -45,14 +55,31 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 	reqCopy := *openRTBRequest
 	reqCopy.Imp = []openrtb2.Imp{}
+
+	var publisherId string
+
 	for _, imp := range openRTBRequest.Imp {
+		var impExtMap map[string]interface{}
+		err := jsonutil.Unmarshal(imp.Ext, &impExtMap)
+		if err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: "Bidder extension not provided or can't be unmarshalled",
+			}}
+		}
+
+		rtbhouseExt, err := getImpressionExt(imp.Ext)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		// Extract publisherId from the first impression that has one
+		if publisherId == "" && rtbhouseExt.PublisherId != "" {
+			publisherId = rtbhouseExt.PublisherId
+		}
+
 		var bidFloorCur = imp.BidFloorCur
 		var bidFloor = imp.BidFloor
 		if bidFloorCur == "" && bidFloor == 0 {
-			rtbhouseExt, err := getImpressionExt(imp)
-			if err != nil {
-				return nil, []error{err}
-			}
 			if rtbhouseExt.BidFloor > 0 {
 				bidFloor = rtbhouseExt.BidFloor
 				bidFloorCur = BidderCurrency
@@ -81,9 +108,33 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			imp.BidFloor = bidFloor
 		}
 
+		if imp.TagID == "" {
+			imp.TagID = getTagIDFromImpExt(impExtMap, imp.ID)
+		}
+
+		// remove PAAPI signals
+		clearAuctionEnvironment(impExtMap)
+		newImpExt, err := jsonutil.Marshal(impExtMap)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		imp.Ext = newImpExt
+
+		// Remove PMP from impression
+		imp.PMP = nil
+
 		// Set the CUR of bid to BIDDER_CURRENCY after converting all floors
 		reqCopy.Cur = []string{BidderCurrency}
 		reqCopy.Imp = append(reqCopy.Imp, imp)
+	}
+
+	// Set publisher ID in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId if we found one
+	if publisherId != "" {
+		if err := setPublisherID(&reqCopy, publisherId); err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
 	}
 
 	openRTBRequestJSON, err := json.Marshal(reqCopy)
@@ -106,9 +157,93 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	return requestsToBidder, errs
 }
 
-func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpRTBHouse, error) {
+// setPublisherID sets the publisherId in site.publisher.ext.prebid.publisherId or app.publisher.ext.prebid.publisherId
+func setPublisherID(request *openrtb2.BidRequest, publisherId string) error {
+	var publisher *openrtb2.Publisher
+	if request.Site != nil {
+		// Create a copy of the site to avoid modifying the original request
+		siteCopy := *request.Site
+		request.Site = &siteCopy
+		publisher = request.Site.Publisher
+	} else if request.App != nil {
+		// Create a copy of the app to avoid modifying the original request
+		appCopy := *request.App
+		request.App = &appCopy
+		publisher = request.App.Publisher
+	} else {
+		// If neither site nor app exists, create a site object
+		request.Site = &openrtb2.Site{}
+	}
+
+	if publisher != nil {
+		// Create a copy of the publisher to avoid modifying the original request
+		publisherCopy := *publisher
+		publisher = &publisherCopy
+	} else {
+		publisher = &openrtb2.Publisher{}
+	}
+
+	// Set publisherId in publisher.ext.prebid.publisherId using local struct
+	var pubExt publisherExt
+	if publisher.Ext != nil {
+		if err := jsonutil.Unmarshal(publisher.Ext, &pubExt); err != nil {
+			return err
+		}
+	}
+	if pubExt.Prebid == nil {
+		pubExt.Prebid = &publisherExtPrebid{}
+	}
+	pubExt.Prebid.PublisherId = publisherId
+
+	publisherExtJSON, err := jsonutil.Marshal(pubExt)
+	if err != nil {
+		return err
+	}
+	publisher.Ext = publisherExtJSON
+
+	// Assign the updated publisher back to the appropriate object
+	if request.Site != nil {
+		request.Site.Publisher = publisher
+	} else if request.App != nil {
+		request.App.Publisher = publisher
+	}
+
+	return nil
+}
+
+func clearAuctionEnvironment(impExtMap map[string]interface{}) {
+	keysToDelete := []string{"ae", "igs", "paapi"}
+	for _, key := range keysToDelete {
+		delete(impExtMap, key)
+	}
+}
+
+func getTagIDFromImpExt(impExtMap map[string]interface{}, impID string) string {
+	if gpid, ok := impExtMap["gpid"].(string); ok && gpid != "" {
+		return gpid
+	}
+
+	dataMap, hasData := impExtMap["data"].(map[string]interface{})
+	if hasData {
+		// imp.ext.data.adserver.adslot
+		if adserver, ok := dataMap["adserver"].(map[string]interface{}); ok {
+			if adslot, ok := adserver["adslot"].(string); ok && adslot != "" {
+				return adslot
+			}
+		}
+
+		if pbAdSlot, ok := dataMap["pbadslot"].(string); ok && pbAdSlot != "" {
+			return pbAdSlot
+		}
+	}
+
+	// imp.ID as fallback
+	return impID
+}
+
+func getImpressionExt(impExt json.RawMessage) (*openrtb_ext.ExtImpRTBHouse, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(impExt, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not provided or can't be unmarshalled",
 		}
@@ -120,7 +255,6 @@ func getImpressionExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpRTBHouse, error) {
 			Message: "Error while unmarshaling bidder extension",
 		}
 	}
-
 	return &rtbhouseExt, nil
 }
 

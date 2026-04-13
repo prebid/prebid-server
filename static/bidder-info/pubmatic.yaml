@@ -1,4 +1,5 @@
 endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"
+endpointCompression: gzip
 maintainer:
   email: "header-bidding@pubmatic.com"
 gvlVendorID: 76

@@ -1,0 +1,15 @@
+endpoint: "https://ads.viralize.tv/openrtb2/auction/"
+maintainer:
+  email: tech@showheroes.com
+gvlVendorID: 111
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

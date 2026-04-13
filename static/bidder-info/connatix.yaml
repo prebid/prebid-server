@@ -1,4 +1,5 @@
 endpoint: "https://capi.connatix.com/rtb/ortb"
+endpointCompression: gzip
 maintainer:
   email: "pubsolutions@connatix.com"
 gvlVendorID: 143
@@ -13,8 +14,8 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: "https://capi.connatix.com/us/pixel?pId=53&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback={{.RedirectURL}}"
+    url: "https://capi.connatix.com/us/pixel?pId=53&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&callback={{.RedirectURL}}"
     userMacro: "[UID]"
   redirect:
-    url: "https://capi.connatix.com/us/pixel?pId=52&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback={{.RedirectURL}}"
+    url: "https://capi.connatix.com/us/pixel?pId=52&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&callback={{.RedirectURL}}"
     userMacro: "[UID]"

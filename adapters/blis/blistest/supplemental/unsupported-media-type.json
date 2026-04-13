@@ -1,0 +1,84 @@
+{
+    "mockBidRequest": {
+        "id": "test-req",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [{
+            "id": "test-imp",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 600
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "spid": "999"
+                }
+            }
+        }]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.endpoint/999",
+                "body": {
+                    "id": "test-req",
+                    "site": {
+                        "page": "prebid.org"
+                    },
+                    "imp": [{
+                        "id": "test-imp",
+                        "banner": {
+                            "format": [{
+                                "w": 300,
+                                "h": 600
+                            }]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "spid": "999"
+                            }
+                        }
+                    }]
+                },
+                "impIDs":["test-imp"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-req",
+                    "seatbid": [
+                        {
+                            "seat": "None",
+                            "bid": [
+                                {
+                                    "id": "1",
+                                    "impid": "testimp",
+                                    "price": 1.2,
+                                    "crid": "9999999",
+                                    "w": 320,
+                                    "h": 50,
+                                    "adomain": [
+                                        "example.com"
+                                    ],
+                                    "cid": "999999",
+                                    "adm": "<a href=\"https://clickexample.com/\" target=\"_blank\"><img src=\"https://adserverexample.com/example.gif\" width=\"320\" height=\"50\" alt=\"\" /></a>",
+                                    "burl": "https://trackingexample.com/pixel?wp=${AUCTION_PRICE}",
+                                    "mtype": 6
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+            ]
+        }
+    ]
+}

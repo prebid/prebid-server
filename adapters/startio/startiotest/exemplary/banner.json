@@ -1,0 +1,177 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id-8cd85aed-25a6-4db0",
+    "imp": [
+      {
+        "id": "imp-id-1-27b9e54b56de702",
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "startio": {}
+            }
+          }
+        },
+        "banner": {
+          "w": 320,
+          "h": 480,
+          "pos": 7,
+          "mimes": [
+            "image/jpg",
+            "image/gif",
+            "text/html"
+          ],
+          "format": [
+            {
+              "w": 320,
+              "h": 480
+            }
+          ],
+          "api": [
+            5,
+            7
+          ],
+          "vcm": 1,
+          "id": "1"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisherid001"
+      },
+      "id": "4204204209"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?identifier=test",
+        "body": {
+          "id": "auction-req-id-8cd85aed-25a6-4db0",
+          "imp": [
+            {
+              "id": "imp-id-1-27b9e54b56de702",
+              "ext": {
+                "prebid": {
+                  "bidder": {
+                    "startio": {}
+                  }
+                }
+              },
+              "banner": {
+                "w": 320,
+                "h": 480,
+                "pos": 7,
+                "mimes": [
+                  "image/jpg",
+                  "image/gif",
+                  "text/html"
+                ],
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 480
+                  }
+                ],
+                "api": [
+                  5,
+                  7
+                ],
+                "vcm": 1,
+                "id": "1"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisherid001"
+            },
+            "id": "4204204209"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id-1-27b9e54b56de702"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "bid-resp-id-675ad335fcb3286441b5",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+                  "impid": "imp-id-1-27b9e54b56de702",
+                  "price": 0.04,
+                  "adm": "<a href='https://advertiser.com/click' target='_blank'><img src='https://advertiser.com/banner.jpg' width='320' height='50' alt='Ad'></a>",
+                  "adomain": [
+                    "start.io"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ],
+              "seat": "seat-1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "id": "bid-resp-id-675ad335fcb3286441b5",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+            "impid": "imp-id-1-27b9e54b56de702",
+            "price": 0.04,
+            "adm": "<a href='https://advertiser.com/click' target='_blank'><img src='https://advertiser.com/banner.jpg' width='320' height='50' alt='Ad'></a>",
+            "adomain": [
+              "start.io"
+            ],
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

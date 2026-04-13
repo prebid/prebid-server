@@ -1,0 +1,308 @@
+{
+  "mockBidRequest": {
+    "id": "3621b7f6603b81ea08",
+    "imp": [
+      {
+        "id": "362240e73c1361aba",
+        "tagid": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095",
+        "video": {
+          "minduration": 1,
+          "maxduration": 15,
+          "api": [2, 7],
+          "mimes": ["video/mp4", "application/javascript"],
+          "placement": 1,
+          "protocols": [1, 2, 3, 4, 5, 6, 7, 8],
+          "w": 400,
+          "h": 225,
+          "playbackmethod": [6],
+          "plcmt": 2,
+          "pos": 1,
+          "startdelay": 0,
+          "linearity": 1,
+          "skip": 0,
+          "playbackend": 3
+        },
+        "bidfloor": 3.3507,
+        "bidfloorcur": "USD",
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "publisherId": "123456",
+            "supplySourceId": "pub_abc"
+          },
+          "data": {
+            "adserver": {
+              "name": "gam",
+              "adslot": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095"
+            },
+            "jwTargeting": {
+              "playerID": "s2WHEhYP",
+              "mediaID": "jJjdbKQW"
+            },
+            "pbadslot": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095"
+          },
+          "siteId": "1170765",
+          "gpid": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095"
+        }
+      }
+    ],
+    "site": {
+      "page": "ttd.com",
+      "id": "site-id"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Mobile/15E148 Safari/604.1",
+      "dnt": 0,
+      "language": "en",
+      "connectiontype": 0,
+      "w": 375,
+      "h": 812,
+      "ext": {
+        "vpw": 375,
+        "vph": 740
+      },
+      "js": 1
+    },
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "criteo.com",
+            "uids": [
+              {
+                "id": "198lR19LYzIxODFxc1d5WGxCelQ5ZDh1NWhqNUI2NGU2UDdOYnpJdHpNSk0lMkZ3aDhJeEdmWEVhSSUyQkRUYzlJcSUyQjElMkJzWTkyeGNaRHBzd0xxNVN0WGR1UXd3blRFYzBLRG9mMlclMkJhbDY0VWhNNDdORlIyUnVPVGN5a2NqdlZwZlR4NzdYcGo",
+                "atype": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "at": 1,
+    "cur": ["USD"],
+    "source": {
+      "ext": {
+        "schain": {
+          "ver": "1.0",
+          "complete": 1,
+          "nodes": [
+            {
+              "asi": "example.com",
+              "sid": "599de1450b08e2314df63095",
+              "hp": 1
+            }
+          ]
+        }
+      }
+    },
+    "ext": {
+      "ttdprebid": {
+        "ver": "TTD-PREBID-2024.07.27",
+        "pbjs": "9.32.0",
+        "keywords": []
+      }
+    },
+    "bcat": [
+      "IAB8-5",
+      "IAB8-18"
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://direct.adsrvr.org/bid/bidder/pub_abc",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "3621b7f6603b81ea08",
+          "at": 1,
+          "cur": ["USD"],
+          "bcat": [
+            "IAB8-5",
+            "IAB8-18"
+          ],
+          "site": {
+            "id": "site-id",
+            "page": "ttd.com",
+            "publisher": {
+              "id": "123456"
+            }
+          },
+          "source": {
+            "ext": {
+              "schain": {
+                "ver": "1.0",
+                "complete": 1,
+                "nodes": [
+                  {
+                    "asi": "example.com",
+                    "sid": "599de1450b08e2314df63095",
+                    "hp": 1
+                  }
+                ]
+              }
+            }
+          },
+          "user": {
+            "ext": {
+              "eids": [
+                {
+                  "source": "criteo.com",
+                  "uids": [
+                    {
+                      "id": "198lR19LYzIxODFxc1d5WGxCelQ5ZDh1NWhqNUI2NGU2UDdOYnpJdHpNSk0lMkZ3aDhJeEdmWEVhSSUyQkRUYzlJcSUyQjElMkJzWTkyeGNaRHBzd0xxNVN0WGR1UXd3blRFYzBLRG9mMlclMkJhbDY0VWhNNDdORlIyUnVPVGN5a2NqdlZwZlR4NzdYcGo",
+                      "atype": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "ext": {
+            "ttdprebid": {
+              "ver": "TTD-PREBID-2024.07.27",
+              "pbjs": "9.32.0",
+              "keywords": []
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Mobile/15E148 Safari/604.1",
+            "dnt": 0,
+            "language": "en",
+            "connectiontype": 0,
+            "w": 375,
+            "h": 812,
+            "ext": {
+              "vpw": 375,
+              "vph": 740
+            },
+            "js": 1
+          },
+          "imp": [
+            {
+              "id": "362240e73c1361aba",
+              "tagid": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095",
+              "video": {
+                "minduration": 1,
+                "maxduration": 15,
+                "api": [2, 7],
+                "mimes": ["video/mp4", "application/javascript"],
+                "placement": 1,
+                "protocols": [1, 2, 3, 4, 5, 6, 7, 8],
+                "w": 400,
+                "h": 225,
+                "playbackmethod": [6],
+                "plcmt": 2,
+                "pos": 1,
+                "startdelay": 0,
+                "linearity": 1,
+                "skip": 0,
+                "playbackend": 3
+              },
+              "bidfloor": 3.3507,
+              "bidfloorcur": "USD",
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "publisherId": "123456",
+                  "supplySourceId": "pub_abc"
+                },
+                "data": {
+                  "adserver": {
+                    "name": "gam",
+                    "adslot": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095"
+                  },
+                  "jwTargeting": {
+                    "playerID": "s2WHEhYP",
+                    "mediaID": "jJjdbKQW"
+                  },
+                  "pbadslot": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095"
+                },
+                "siteId": "1170765",
+                "gpid": "/18190176,23070927648/AdThrive_Video_Coll_SOff_Smartphone/599de1450b08e2314df63095"
+              }
+            }
+          ]
+        },
+        "impIDs":["362240e73c1361aba"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "4555b7da05efd4d4",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "ttd-bid-1",
+                  "impid": "ttd-bid-1-impid",
+                  "price": 0.1,
+                  "adm": "some-test-ad-vast",
+                  "cid": "ttd_cid",
+                          "crid": "creative-123",
+                  "adomain": [
+                    "ttd-bid.com"
+                  ],
+                  "w": 480,
+                  "h": 360,
+                  "cat": [
+                    "IAB22"
+                  ],
+                  "mtype": 2,
+                  "ext": {
+                    "advid": "u143h4c",
+                    "duration": 15,
+                    "viewabilityvendors": [],
+                    "mediatype": 2
+                  }
+                }
+              ],
+              "seat": "1550"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "ttd-bid-1",
+            "impid": "ttd-bid-1-impid",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "some-test-ad-vast",
+            "w": 480,
+            "h": 360,
+            "adomain": [
+              "ttd-bid.com"
+            ],
+            "cat": [
+              "IAB22"
+            ],
+            "cid": "ttd_cid",
+            "mtype": 2,
+            "ext": {
+              "advid": "u143h4c",
+              "duration": 15,
+              "viewabilityvendors": [],
+              "mediatype": 2
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
+

@@ -6,7 +6,8 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 const noBidder openrtb_ext.BidderName = ""
@@ -19,8 +20,10 @@ type permissionsImpl struct {
 	fetchVendorList        VendorListFetcher
 	gdprDefaultValue       string
 	hostVendorID           int
+	metrics                metrics.MetricsEngine
 	nonStandardPublishers  map[string]struct{}
 	purposeEnforcerBuilder PurposeEnforcerBuilder
+	validGVLVendorIDs      *LiveGVLVendorIDs
 	vendorIDs              map[openrtb_ext.BidderName]uint16
 	// request-specific
 	aliasGVLIDs map[string]uint16
@@ -46,7 +49,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	}
 
 	id, ok := p.vendorIDs[bidder]
-	if ok {
+	if ok && p.isValidVendorID(id) {
 		vendorExceptions := p.cfg.PurposeVendorExceptions(consentconstants.Purpose(1))
 		_, vendorException := vendorExceptions[string(bidder)]
 		return p.allowSync(ctx, id, bidder, vendorException)
@@ -105,15 +108,32 @@ func (p *permissionsImpl) defaultPermissions() AuctionPermissions {
 }
 
 // resolveVendorID gets the vendor ID for the specified bidder from either the alias GVL IDs
-// provided in the request or from the bidder configs loaded at startup
+// provided in the request or from the bidder configs loaded at startup. If the resolved ID
+// is not present in the latest Global Vendor List, it returns 0 and false.
 func (p *permissionsImpl) resolveVendorID(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
 	if id, ok = p.aliasGVLIDs[string(bidder)]; ok {
+		if !p.isValidVendorID(id) {
+			return 0, false
+		}
 		return id, ok
 	}
 
 	id, ok = p.vendorIDs[bidderCoreName]
+	if ok && !p.isValidVendorID(id) {
+		return 0, false
+	}
 
 	return id, ok
+}
+
+// isValidVendorID checks whether the given vendor ID exists in the latest Global Vendor List.
+// If the valid set is nil (e.g. the GVL fetch failed), all IDs are considered valid
+// as a safe fallback.
+func (p *permissionsImpl) isValidVendorID(id uint16) bool {
+	if p.validGVLVendorIDs == nil {
+		return true
+	}
+	return p.validGVLVendorIDs.Contains(id)
 }
 
 // allowSync computes cookie sync activity legal basis for a given bidder using the enforcement
@@ -199,7 +219,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 
 // getVendor retrieves the GVL vendor information for a particular bidder
 func (p *permissionsImpl) getVendor(ctx context.Context, vendorID uint16, pc parsedConsent) (api.Vendor, error) {
-	vendorList, err := p.fetchVendorList(ctx, pc.specVersion, pc.listVersion)
+	vendorList, err := p.fetchVendorList(ctx, pc.specVersion, pc.listVersion, p.metrics)
 	if err != nil {
 		return nil, err
 	}

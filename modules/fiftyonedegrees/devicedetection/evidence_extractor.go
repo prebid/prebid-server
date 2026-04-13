@@ -1,3 +1,5 @@
+//go:build cgo
+
 package devicedetection
 
 import (
@@ -7,7 +9,7 @@ import (
 
 	"github.com/51Degrees/device-detection-go/v4/dd"
 	"github.com/51Degrees/device-detection-go/v4/onpremise"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 )
 
 type defaultEvidenceExtractor struct {

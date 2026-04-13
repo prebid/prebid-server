@@ -33,7 +33,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://ssp.api.tappx.com/rtb/v2/ZZ123456PS?tappxkey=pub-12345-android-9876&type_cnn=prebid&v=1.5",
+        "uri": "http://ssp.api.tappx.com/rtb/v2/ZZ123456PS?tappxkey=pub-12345-android-9876&type_cnn=prebid&v=1.6",
         "body": {
           "id": "0000000000001",
           "test": 1,

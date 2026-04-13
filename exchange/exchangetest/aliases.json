@@ -97,7 +97,14 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "prebid": {
+                            "aliases": {
+                                "districtm": "appnexus"
+                            }
+                        }
+                    }
                 }
             },
             "mockResponse": {

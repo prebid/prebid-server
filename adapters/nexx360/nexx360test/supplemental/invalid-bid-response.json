@@ -1,0 +1,77 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 728,
+          "h": 90
+        },
+        "ext": {
+          "bidder": {
+            "tagId": "testnexx"
+          }
+        }
+      }
+    ],
+    "site": {},
+    "ext": {
+      "nexx360": "Prebid-Server",
+      "test": 1
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://fast.nexx360.io/prebid-server?tag_id=testnexx",
+        "body": {
+          "ext": {
+            "nexx360": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 728,
+                "h": 90
+              },
+              "ext": {
+                "nexx360": {
+                  "tagId": "testnexx"
+                }
+              }
+            }
+          ],
+          "site": {}
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": {},
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "cannot unmarshal openrtb2.BidResponse.SeatBid: decode slice: expect [ or n, but found {",
+      "comparison": "literal"
+    }
+  ]
+}

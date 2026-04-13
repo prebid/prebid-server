@@ -1,0 +1,153 @@
+{
+    "mockBidRequest": {
+        "id": "123456789",
+        "imp": [
+            {
+                "ext": {
+                    "bidder": {
+                        "spid": "999"
+                    }
+                },
+                "id": "testimp",
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "minduration": 5,
+                    "maxduration": 30,
+                    "protocols": [2, 3, 5, 6],
+                    "w": 640,
+                    "h": 480
+                },
+                "bidfloor": 0.98,
+                "bidfloorcur": "USD"
+            }
+        ],
+        "cur": [
+            "USD"
+        ],
+        "site": {
+            "publisher": {
+                "domain": "example.com"
+            },
+            "page": "http://lh.example.com/prebid_server_kitchen_sink.html?pbjs_debug=true",
+            "cat": [
+                "site-cat"
+            ]
+        },
+        "device": {
+            "w": 1434,
+            "h": 686,
+            "geo": {
+                "country": "USA"
+            },
+            "ip": "8.8.8.8"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.endpoint/999",
+                "headers": {
+                    "X-Supply-Partner-Id": [
+                        "999"
+                    ]
+                },
+                "impIDs": [
+                    "testimp"
+                ],
+                "body": {
+                    "id": "123456789",
+                    "imp": [
+                        {
+                            "id": "testimp",
+                            "video": {
+                                "mimes": ["video/mp4"],
+                                "minduration": 5,
+                                "maxduration": 30,
+                                "protocols": [2, 3, 5, 6],
+                                "w": 640,
+                                "h": 480
+                            },
+                            "bidfloor": 0.98,
+                            "bidfloorcur": "USD",
+                            "ext": {
+                                "bidder": {
+                                    "spid": "999"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "cat": [
+                            "site-cat"
+                        ],
+                        "page": "http://lh.example.com/prebid_server_kitchen_sink.html?pbjs_debug=true",
+                        "publisher": {
+                            "domain": "example.com"
+                        }
+                    },
+                    "device": {
+                        "geo": {
+                            "country": "USA"
+                        },
+                        "ip": "8.8.8.8",
+                        "h": 686,
+                        "w": 1434
+                    },
+                    "cur": [
+                        "USD"
+                    ]
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "123456789",
+                    "seatbid": [
+                        {
+                            "seat": "None",
+                            "bid": [
+                                {
+                                    "id": "1",
+                                    "impid": "testimp",
+                                    "price": 1.5,
+                                    "crid": "9999999",
+                                    "w": 640,
+                                    "h": 480,
+                                    "adomain": ["example.com"],
+                                    "cid": "999999",
+                                    "adm": "<VAST version=\"2.0\"><Ad id=\"9999999\"><Wrapper><AdSystem>blistracker</AdSystem><VASTAdTagURI><![CDATA[https://example.com/video.mp4]]></VASTAdTagURI><Impression><![CDATA[https://trackingexample.com/pixel]]></Impression><Creatives/></Wrapper></Ad></VAST>",
+                                    "cat": ["IAB3-1"],
+                                    "burl": "https://trackingexample.com/pixel?wp=${AUCTION_PRICE}",
+                                    "mtype": 2
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "1",
+                        "impid": "testimp",
+                        "price": 1.5,
+                        "crid": "9999999",
+                        "w": 640,
+                        "h": 480,
+                        "adomain": ["example.com"],
+                        "cid": "999999",
+                        "adm": "<VAST version=\"2.0\"><Ad id=\"9999999\"><Wrapper><AdSystem>blistracker</AdSystem><VASTAdTagURI><![CDATA[https://example.com/video.mp4]]></VASTAdTagURI><Impression><![CDATA[https://trackingexample.com/pixel]]></Impression><Creatives/></Wrapper></Ad></VAST>",
+                        "cat": ["IAB3-1"],
+                        "burl": "https://trackingexample.com/pixel?wp=1.5",
+                        "mtype": 2
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}

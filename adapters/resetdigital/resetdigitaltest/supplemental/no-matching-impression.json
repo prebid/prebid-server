@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=test-placement",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "test-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "test-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "wrong-imp-id",
+                  "price": 1.5,
+                  "adm": "<div>test ad</div>",
+                  "crid": "test-creative-id",
+                  "w": 300,
+                  "h": 250
+                }
+              ],
+              "seat": "resetdigital"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "no matching impression found for ImpID: wrong-imp-id",
+      "comparison": "literal"
+    }
+  ]
+}

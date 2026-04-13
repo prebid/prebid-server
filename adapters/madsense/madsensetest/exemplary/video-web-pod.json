@@ -1,0 +1,212 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 1920,
+          "h": 1080
+        },
+        "ext": {
+          "bidder": {
+            "company_id": "9876543"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 1920,
+          "h": 1080
+        },
+        "ext": {
+          "bidder": {
+            "company_id": "9876543"
+          }
+        }
+      }
+
+    ],
+    "site": {
+      "domain": "domain.com",
+      "page": "http://domain.com/page"
+    },
+    "device": {
+      "ip": "1.2.3.4",
+      "ua": "user-agent"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "uri": "https://test.localhost.com?company_id=9876543",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Origin": [
+            "domain.com"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ],
+          "User-Agent": [
+            "user-agent"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 1920,
+                "h": 1080
+              },
+              "ext": {
+                "bidder": {
+                  "company_id": "9876543"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id-2",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 1920,
+                "h": 1080
+              },
+              "ext": {
+                "bidder": {
+                  "company_id": "9876543"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ip": "1.2.3.4",
+            "ua": "user-agent"
+          },
+          "site": {
+            "domain": "domain.com",
+            "page": "http://domain.com/page"
+          }
+        },
+        "impIDs":["test-imp-id","test-imp-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 10,
+                  "adm": "some-test-ad",
+                  "crid": "54321",
+                  "w": 1920,
+                  "h": 1080,
+                  "mtype": 2,
+                  "dur": 15,
+                  "cat": [
+                    "IAB1-5",
+                    "IAB1-6"
+                  ]
+                },
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e801",
+                  "impid": "test-imp-id-2",
+                  "price": 10,
+                  "adm": "some-test-ad-2",
+                  "crid": "54321",
+                  "w": 1920,
+                  "h": 1080,
+                  "mtype": 2,
+                  "dur": 30,
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                }
+              ],
+              "seat": "madsense"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 10,
+            "adm": "some-test-ad",
+            "crid": "54321",
+            "w": 1920,
+            "h": 1080,
+            "mtype": 2,
+            "dur": 15,
+            "cat": [
+              "IAB1-5",
+              "IAB1-6"
+            ]
+          },
+          "type": "video",
+          "video": {
+            "duration": 15,
+            "primary_category": "IAB1-5"
+          }
+        },
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e801",
+            "impid": "test-imp-id-2",
+            "price": 10,
+            "adm": "some-test-ad-2",
+            "crid": "54321",
+            "w": 1920,
+            "h": 1080,
+            "mtype": 2,
+            "dur": 30,
+            "cat": [
+              "IAB1-1"
+            ]
+          },
+          "type": "video",
+          "video": {
+            "duration": 30,
+            "primary_category": "IAB1-1"
+          }
+        }
+      ]
+    }
+  ]
+}
+

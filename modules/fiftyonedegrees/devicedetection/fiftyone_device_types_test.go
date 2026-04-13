@@ -1,3 +1,5 @@
+//go:build cgo
+
 package devicedetection
 
 import (
@@ -54,7 +56,7 @@ func TestFiftyOneDtToRTB(t *testing.T) {
 		},
 		{
 			fiftyOneDt: "SmartPhone",
-			rtbDt:      adcom1.DeviceMobile,
+			rtbDt:      adcom1.DevicePhone,
 		},
 		{
 			fiftyOneDt: "SmartSpeaker",

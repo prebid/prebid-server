@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -72,6 +72,8 @@ func TestMapDetails(t *testing.T) {
 
 		bidderBInfo   = config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 		bidderBDetail = bidderDetail{Status: "ACTIVE", UsesHTTPS: ptrutil.ToPtr(false), Maintainer: &maintainer{Email: "bidderB"}}
+
+		bidderCInfo = config.BidderInfo{WhiteLabelOnly: true, Endpoint: "https://secureEndpoint.com", Maintainer: &config.MaintainerInfo{Email: "bidderC"}}
 	)
 
 	var testCases = []struct {
@@ -90,8 +92,13 @@ func TestMapDetails(t *testing.T) {
 			expectedDetails: map[string]bidderDetail{"a": bidderADetail},
 		},
 		{
+			name:            "one-whitelabelonly",
+			givenBidders:    config.BidderInfos{"c": bidderCInfo},
+			expectedDetails: map[string]bidderDetail{},
+		},
+		{
 			name:            "many",
-			givenBidders:    config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo},
+			givenBidders:    config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo, "c": bidderCInfo},
 			expectedDetails: map[string]bidderDetail{"a": bidderADetail, "b": bidderBDetail},
 		},
 	}

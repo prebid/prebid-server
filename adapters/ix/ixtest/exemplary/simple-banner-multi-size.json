@@ -68,6 +68,12 @@
                         "publisher": {
                             "id": "569749"
                         }
+                    },
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
                     }
                 },
                 "impIDs":["test-imp-id"]
