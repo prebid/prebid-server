@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,6 +37,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "setuid_requests.syncer_unknown", m.SetUidStatusMeter[SetUidSyncerUnknown])
 	ensureContains(t, registry, "stored_responses", m.StoredResponsesMeter)
 	ensureContains(t, registry, "gvl_requests", m.GvlListRequestsMeter)
+	ensureContains(t, registry, "live_gvl_fetch.ok", m.LiveGVLFetchSuccess)
+	ensureContains(t, registry, "live_gvl_fetch.failed", m.LiveGVLFetchFailure)
 
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
