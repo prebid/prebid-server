@@ -2,12 +2,19 @@
 	"mockBidRequest": {
 		"id": "test-request-id",
 		"user": {
+			"id": "1kjh3429kjh295jkl",
 			"ext":{
 				"eids" : [
 					{
-						"source": "idProvider",
+						"source": "adserver.org",
 						"uids": [
-							{ "id": "userId", "atype": 1, "ext": { "stype": "ppuid" } }
+							{ "id": "111111111111", "atype": 1, "ext": { "rtiPartner": "TDID" } }
+						]
+					},
+					{
+						"source": "pubcid.org",
+						"uids": [
+							{ "id": "22222222-2222-2222-2222-222222222222", "atype": 1 }
 						]
 					}
 				]
@@ -39,7 +46,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=prebidServer&tzo=0",
+				"uri": "http://whatever.url?eids=%5B%7B%22source%22%3A%22adserver.org%22%2C%22uids%22%3A%5B%7B%22id%22%3A%22111111111111%22%2C%22atype%22%3A1%2C%22ext%22%3A%7B+%22rtiPartner%22%3A+%22TDID%22+%7D%7D%5D%7D%2C%7B%22source%22%3A%22pubcid.org%22%2C%22uids%22%3A%5B%7B%22id%22%3A%2222222222-2222-2222-2222-222222222222%22%2C%22atype%22%3A1%7D%5D%7D%5D&format=prebidServer&tzo=0",
 				"body": {
 					"adUnits": [
 						{
@@ -48,9 +55,9 @@
 							"nativeRequest": {},
 							"dimensions": [[300,250],[300,600]]
 						}
-					],
+		  		],
 					"metaData": {
-						"usi": "userId"
+						"usi": "1kjh3429kjh295jkl"
 					},
 					"context": "unknown"
 				},
@@ -115,3 +122,4 @@
 		}
 	]
 }
+
