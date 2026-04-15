@@ -58,6 +58,7 @@
                   "impid": "imp1",
                   "price": 1.23,
                   "adm": "<vast></vast>",
+                  "mtype": 2,
                   "ext": {
                     "prebid": {
                       "type": "video"
@@ -80,6 +81,7 @@
             "impid": "imp1",
             "price": 1.23,
             "adm": "<vast></vast>",
+            "mtype": 2,
             "ext": {
               "prebid": {
                 "type": "video"
