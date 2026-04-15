@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/prebid/openrtb/v20/openrtb2"

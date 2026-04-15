@@ -8,11 +8,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"github.com/prebid/prebid-server/v3/util/sliceutil"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/util/sliceutil"
 
 	validator "github.com/asaskevich/govalidator"
 	"gopkg.in/yaml.v3"
@@ -368,6 +368,9 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		}
 
 		parentBidderInfo := bidderInfos[aliasBidderInfo.AliasOf]
+		// Note: The aliasBidderInfo.GVLVendorID is intentionally never set to the parent's
+		// GVLVendorID. Each alias must declare its own GVL Vendor ID, as inheriting from the
+		// parent is not safe for legal reasons.
 		if aliasBidderInfo.AppSecret == "" {
 			aliasBidderInfo.AppSecret = parentBidderInfo.AppSecret
 		}
@@ -385,9 +388,6 @@ func processBidderAliases(aliasNillableFieldsByBidder map[string]aliasNillableFi
 		}
 		if aliasBidderInfo.ExtraAdapterInfo == "" {
 			aliasBidderInfo.ExtraAdapterInfo = parentBidderInfo.ExtraAdapterInfo
-		}
-		if aliasBidderInfo.GVLVendorID == 0 {
-			aliasBidderInfo.GVLVendorID = parentBidderInfo.GVLVendorID
 		}
 		if aliasBidderInfo.Maintainer == nil {
 			aliasBidderInfo.Maintainer = parentBidderInfo.Maintainer
@@ -798,6 +798,10 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 
 	if s.ExternalURL != "" {
 		copy.ExternalURL = s.ExternalURL
+	}
+
+	if s.Enabled != nil {
+		copy.Enabled = s.Enabled
 	}
 
 	return &copy

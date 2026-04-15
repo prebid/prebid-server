@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/metrics"
 )
 
 const (
