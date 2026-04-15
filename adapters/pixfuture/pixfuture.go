@@ -135,7 +135,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
-	// First try standard MType field (OpenRTB 2.6)
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -143,33 +142,9 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	}
-
-	// Fallback to custom extension
-	var ext struct {
-		Prebid struct {
-			Type string `json:"type"`
-		} `json:"prebid"`
-	}
-
-	if len(bid.Ext) > 0 {
-		if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
-			return "", &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Failed to parse bid ext for impression %s: %v", bid.ImpID, err),
-			}
-		}
-	}
-
-	switch ext.Prebid.Type {
-	case "banner":
-		return openrtb_ext.BidTypeBanner, nil
-	case "video":
-		return openrtb_ext.BidTypeVideo, nil
-	case "native":
-		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unknown bid type for impression %s", bid.ImpID),
+			Message: fmt.Sprintf("Failed to parse bid mediatype for impression %s from MType", bid.ImpID),
 		}
 	}
 }
