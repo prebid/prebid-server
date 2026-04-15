@@ -74,6 +74,7 @@
                   "impid": "imp1",
                   "price": 1.23,
                   "adm": "<div>Banner Ad</div>",
+                  "mtype": 1,
                   "ext": {
                     "prebid": {
                       "type": "banner"
@@ -96,6 +97,7 @@
             "impid": "imp1",
             "price": 1.23,
             "adm": "<div>Banner Ad</div>",
+            "mtype": 1,
             "ext": {
               "prebid": {
                 "type": "banner"
