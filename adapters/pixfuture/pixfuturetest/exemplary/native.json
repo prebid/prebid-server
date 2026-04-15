@@ -56,6 +56,7 @@
                   "impid": "imp1",
                   "price": 1.23,
                   "adm": "{\"ver\":\"1.2\",\"native\":{\"assets\":[]}}",
+                  "mtype": 4,
                   "ext": {
                     "prebid": {
                       "type": "native"
@@ -78,6 +79,7 @@
             "impid": "imp1",
             "price": 1.23,
             "adm": "{\"ver\":\"1.2\",\"native\":{\"assets\":[]}}",
+            "mtype": 4,
             "ext": {
               "prebid": {
                 "type": "native"
