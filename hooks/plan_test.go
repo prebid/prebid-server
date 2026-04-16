@@ -986,3 +986,261 @@ func (f fakeExitpointHook) HandleExitpointHook(
 ) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
 	return hookstage.HookResult[hookstage.ExitpointPayload]{}, nil
 }
+
+func TestExecutionPlanDoesNotIncludeDisabledModules(t *testing.T) {
+	const enabledModule = "enabled_module"
+	const disabledModule = "disabled_module"
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "` + enabledModule + `", "hook_impl_code": "foo"}, {"module_code": "` + disabledModule + `", "hook_impl_code": "bar"}, {"module_code": "` + enabledModule + `", "hook_impl_code": "baz"}]}`
+	const planData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+
+	hooks := map[string]interface{}{
+		enabledModule: fakeEntrypointHook{},
+		// disabledModule is missing from the hook repository
+	}
+
+	planBuilder, err := getPlanBuilder(hooks, []byte(planData), []byte(`{}`))
+	assert.NoError(t, err, "Failed to init hook execution plan builder")
+
+	plan := planBuilder.PlanForEntrypointStage("/openrtb2/auction")
+
+	// Plan should contain only hooks from enabled_module, silently skipping disabled_module
+	expectedPlan := Plan[hookstage.Entrypoint]{
+		Group[hookstage.Entrypoint]{
+			Timeout: 5 * time.Millisecond,
+			Hooks: []HookWrapper[hookstage.Entrypoint]{
+				{Module: enabledModule, Code: "foo", Hook: fakeEntrypointHook{}},
+				{Module: enabledModule, Code: "baz", Hook: fakeEntrypointHook{}},
+			},
+		},
+	}
+
+	assert.Equal(t, expectedPlan, plan, "Disabled module hook should not be included in the plan")
+}
+
+func TestValidateExecutionPlan(t *testing.T) {
+	tests := []struct {
+		name              string
+		hooks             map[string]interface{}
+		hostPlanJSON      string
+		defaultPlanJSON   string
+		expectedErrorMsgs []string
+	}{
+		{
+			name: "All modules are enabled",
+			hooks: map[string]interface{}{
+				"module1": fakeEntrypointHook{},
+				"module2": fakeEntrypointHook{},
+			},
+			hostPlanJSON: `{
+				"endpoints": {
+					"/openrtb2/auction": {
+						"stages": {
+							"entrypoint": {
+								"groups": [
+									{"timeout": 5, "hook_sequence": [{"module_code": "module1", "hook_impl_code": "foo"}]}
+								]
+							}
+						}
+					}
+				}
+			}`,
+			defaultPlanJSON: `{
+				"endpoints": {
+					"/openrtb2/amp": {
+						"stages": {
+							"entrypoint": {
+								"groups": [
+									{"timeout": 10, "hook_sequence": [{"module_code": "module2", "hook_impl_code": "bar"}]}
+								]
+							}
+						}
+					}
+				}
+			}`,
+			expectedErrorMsgs: nil,
+		},
+		{
+			name: "One module is disabled",
+			hooks: map[string]interface{}{
+				"enabled_module": fakeEntrypointHook{},
+				// "disabled_module" is intentionally missing
+			},
+			hostPlanJSON: `{
+				"endpoints": {
+					"/openrtb2/auction": {
+						"stages": {
+							"entrypoint": {
+								"groups": [
+									{"timeout": 5, "hook_sequence": [{"module_code": "enabled_module", "hook_impl_code": "foo"}]},
+									{"timeout": 10, "hook_sequence": [{"module_code": "disabled_module", "hook_impl_code": "bar"}]}
+								]
+							}
+						}
+					}
+				}
+			}`,
+			defaultPlanJSON: `{
+				"endpoints": {
+					"/openrtb2/amp": {
+						"stages": {
+							"entrypoint": {
+								"groups": [
+									{"timeout": 10, "hook_sequence": [{"module_code": "disabled_module", "hook_impl_code": "bar"}]}
+								]
+							}
+						}
+					}
+				}
+			}`,
+			expectedErrorMsgs: []string{
+				"hook configuration: host execution plan references module 'disabled_module' at endpoint '/openrtb2/auction', stage 'entrypoint', group 1, but module is not registered for this stage (module may be disabled, missing, or not implement the stage hook). This hook will be skipped during request processing",
+				"hook configuration: default-account execution plan references module 'disabled_module' at endpoint '/openrtb2/amp', stage 'entrypoint', group 0, but module is not registered for this stage (module may be disabled, missing, or not implement the stage hook). This hook will be skipped during request processing",
+			},
+		},
+		{
+			name: "Module registered for different stage",
+			hooks: map[string]interface{}{
+				// raw_auction_module only implements raw_auction_request, not entrypoint
+				"raw_auction_module": fakeRawAuctionHook{},
+			},
+			hostPlanJSON: `{
+				"endpoints": {
+					"/openrtb2/auction": {
+						"stages": {
+							"entrypoint": {
+								"groups": [
+									{"timeout": 5, "hook_sequence": [{"module_code": "raw_auction_module", "hook_impl_code": "foo"}]}
+								]
+							}
+						}
+					}
+				}
+			}`,
+			defaultPlanJSON: `{}`,
+			expectedErrorMsgs: []string{
+				"hook configuration: host execution plan references module 'raw_auction_module' at endpoint '/openrtb2/auction', stage 'entrypoint', group 0, but module is not registered for this stage (module may be disabled, missing, or not implement the stage hook). This hook will be skipped during request processing",
+			},
+		},
+		{
+			name: "Plans are empty",
+			hooks: map[string]interface{}{
+				"module1": fakeEntrypointHook{},
+			},
+			hostPlanJSON:      `{}`,
+			defaultPlanJSON:   `{}`,
+			expectedErrorMsgs: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo, err := NewHookRepository(tt.hooks)
+			assert.NoError(t, err, "Failed to create hook repository")
+
+			var hostPlan, defaultPlan config.HookExecutionPlan
+			err = jsonutil.UnmarshalValid([]byte(tt.hostPlanJSON), &hostPlan)
+			assert.NoError(t, err)
+			err = jsonutil.UnmarshalValid([]byte(tt.defaultPlanJSON), &defaultPlan)
+			assert.NoError(t, err)
+
+			cfg := config.Hooks{
+				Enabled:                     true,
+				HostExecutionPlan:           hostPlan,
+				DefaultAccountExecutionPlan: defaultPlan,
+			}
+
+			errs := ValidateExecutionPlan(cfg, repo)
+
+			errMsgs := make([]string, len(errs))
+			for i, e := range errs {
+				errMsgs[i] = e.Error()
+			}
+			assert.ElementsMatch(t, tt.expectedErrorMsgs, errMsgs)
+		})
+	}
+}
+
+func TestHasHookForStage(t *testing.T) {
+	testCases := map[string]struct {
+		givenHooks     map[string]interface{}
+		moduleCode     string
+		stageName      string
+		expectedResult bool
+	}{
+		"Entrypoint hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeEntrypointHook{}},
+			moduleCode:     "mod",
+			stageName:      StageEntrypoint.String(),
+			expectedResult: true,
+		},
+		"RawAuctionRequest hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeRawAuctionHook{}},
+			moduleCode:     "mod",
+			stageName:      StageRawAuctionRequest.String(),
+			expectedResult: true,
+		},
+		"ProcessedAuctionRequest hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeProcessedAuctionHook{}},
+			moduleCode:     "mod",
+			stageName:      StageProcessedAuctionRequest.String(),
+			expectedResult: true,
+		},
+		"BidderRequest hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeBidderRequestHook{}},
+			moduleCode:     "mod",
+			stageName:      StageBidderRequest.String(),
+			expectedResult: true,
+		},
+		"RawBidderResponse hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeRawBidderResponseHook{}},
+			moduleCode:     "mod",
+			stageName:      StageRawBidderResponse.String(),
+			expectedResult: true,
+		},
+		"AllProcessedBidResponses hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeAllProcessedBidResponsesHook{}},
+			moduleCode:     "mod",
+			stageName:      StageAllProcessedBidResponses.String(),
+			expectedResult: true,
+		},
+		"AuctionResponse hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeAuctionResponseHook{}},
+			moduleCode:     "mod",
+			stageName:      StageAuctionResponse.String(),
+			expectedResult: true,
+		},
+		"Exitpoint hook found": {
+			givenHooks:     map[string]interface{}{"mod": fakeExitpointHook{}},
+			moduleCode:     "mod",
+			stageName:      StageExitpoint.String(),
+			expectedResult: true,
+		},
+		"Module not in repository": {
+			givenHooks:     map[string]interface{}{},
+			moduleCode:     "missing_module",
+			stageName:      StageEntrypoint.String(),
+			expectedResult: false,
+		},
+		"Module registered for different stage": {
+			givenHooks:     map[string]interface{}{"mod": fakeRawAuctionHook{}},
+			moduleCode:     "mod",
+			stageName:      StageEntrypoint.String(),
+			expectedResult: false,
+		},
+		"Unknown stage name": {
+			givenHooks:     map[string]interface{}{"mod": fakeEntrypointHook{}},
+			moduleCode:     "mod",
+			stageName:      "unknown_stage",
+			expectedResult: false,
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			repo, err := NewHookRepository(test.givenHooks)
+			assert.NoError(t, err, "Failed to create hook repository")
+
+			assert.Equal(t, test.expectedResult, hasHookForStage(repo, test.moduleCode, test.stageName))
+		})
+	}
+}
