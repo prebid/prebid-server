@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 type Hooks struct {
 	Enabled bool    `mapstructure:"enabled"`
 	Modules Modules `mapstructure:"modules"`
@@ -14,6 +16,7 @@ type Hooks struct {
 type Modules map[string]map[string]interface{}
 
 type HookExecutionPlan struct {
+	ABTests   []ABTest `mapstructure:"abtests" json:"abtests"`
 	Endpoints map[string]struct {
 		Stages map[string]struct {
 			Groups []HookExecutionGroup `mapstructure:"groups" json:"groups"`
@@ -31,4 +34,40 @@ type HookExecutionGroup struct {
 		// HookImplCode is an arbitrary value, used to identify hook when sending metrics, debug information, etc.
 		HookImplCode string `mapstructure:"hook_impl_code" json:"hook_impl_code"`
 	} `mapstructure:"hook_sequence" json:"hook_sequence"`
+}
+
+type ABTest struct {
+	// ModuleCode is a composite value in the format: {vendor_name}.{module_name}
+	ModuleCode string `mapstructure:"module_code" json:"module_code"`
+	Enabled    *bool  `mapstructure:"enabled" json:"enabled"`
+	// Accounts is a slice of accounts that will trigger module execution
+	// An empty slice will trigger module execution for all accounts
+	Accounts []string `mapstructure:"accounts" json:"accounts"`
+	// PercentActive enables specifying the percentage of requests that will trigger module execution
+	// The default value (nil) will trigger module execution on every request, the same as if the value "100" is set
+	PercentActive *uint16 `mapstructure:"percent_active" json:"percent_active"`
+	// LogAnalyticsTag specifies whether module execution result will get noted in the analytics log
+	// The default value (nil) will enable writing results to the analytics log, the same as if the value "true" is set
+	LogAnalyticsTag *bool `mapstructure:"log_analytics_tag" json:"log_analytics_tag"`
+	// AdServerTargeting specifies the targeting keyword name to be added to the bid response
+	// The keyword will have value "1" if module was run, "0" if it was skipped
+	AdServerTargeting string `mapstructure:"adserver_targeting" json:"adserver_targeting"`
+}
+
+func (cfg *Hooks) validate(errs []error) []error {
+	errs = cfg.HostExecutionPlan.validateABTests("hooks.host_execution_plan", errs)
+	errs = cfg.DefaultAccountExecutionPlan.validateABTests("hooks.default_account_execution_plan", errs)
+	return errs
+}
+
+func (plan *HookExecutionPlan) validateABTests(planPath string, errs []error) []error {
+	for i, test := range plan.ABTests {
+		if test.ModuleCode == "" {
+			errs = append(errs, fmt.Errorf("%s.abtests[%d].module_code is required", planPath, i))
+		}
+		if test.PercentActive != nil && *test.PercentActive > 100 {
+			errs = append(errs, fmt.Errorf("%s.abtests[%d].percent_active must be in the range [0, 100], got %d", planPath, i, *test.PercentActive))
+		}
+	}
+	return errs
 }
