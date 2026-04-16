@@ -1,6 +1,7 @@
 package targetVideo
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -14,10 +15,6 @@ import (
 
 type adapter struct {
 	endpoint string
-}
-
-type impExtPrebid struct {
-	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -52,11 +49,9 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 			return nil, &errortypes.BadInput{Message: "Invalid ext.bidder"}
 		}
 		var extImpTargetVideo openrtb_ext.ExtImpTargetVideo
-		if err := jsonutil.Unmarshal(extBidder.Bidder, &extImpTargetVideo); err != nil {
-			return nil, &errortypes.BadInput{Message: "Placement ID missing"}
-		}
-		var prebid *openrtb_ext.ExtImpPrebid
-		if extBidder.Prebid == nil {
+		jsonutil.Unmarshal(extBidder.Bidder, &extImpTargetVideo)
+		prebid := extBidder.Prebid
+		if prebid == nil {
 			prebid = &openrtb_ext.ExtImpPrebid{}
 		}
 		if prebid.StoredRequest == nil {
@@ -64,11 +59,19 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 		}
 		prebid.StoredRequest.ID = fmt.Sprintf("%d", extImpTargetVideo.PlacementId)
 
-		ext := impExtPrebid{
-			Prebid: prebid,
+		var extMap map[string]json.RawMessage
+		if err := jsonutil.Unmarshal(imp.Ext, &extMap); err != nil {
+			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error parsing imp.ext, err: %s", err)}
 		}
+		delete(extMap, "bidder")
 
-		extRaw, err := jsonutil.Marshal(ext)
+		prebidRaw, err := jsonutil.Marshal(prebid)
+		if err != nil {
+			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error building imp.ext.prebid, err: %s", err)}
+		}
+		extMap["prebid"] = prebidRaw
+
+		extRaw, err := jsonutil.Marshal(extMap)
 		if err != nil {
 			return nil, &errortypes.BadInput{Message: fmt.Sprintf("error building imp.ext, err: %s", err)}
 		}
@@ -109,7 +112,6 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	}
 
 	br := adapters.NewBidderResponse()
-	var errs []error
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
@@ -118,7 +120,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 			br.Currency = bidResp.Cur
 		}
 	}
-	return br, errs
+	return br, nil
 }
 
 func prepareBidResponse(body []byte) (openrtb2.BidResponse, error) {
