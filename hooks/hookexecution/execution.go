@@ -68,42 +68,70 @@ func executeGroup[H any, P any](
 	metricEngine metrics.MetricsEngine,
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
+	var rejectedOnce sync.Once
 	rejected := make(chan struct{})
-	resp := make(chan hookResponse[P], len(group.Hooks))
 
-	for _, hook := range group.Hooks {
-		mCtx := executionCtx.getModuleContext(hook.Module)
-		mCtx.HookImplCode = hook.Code
-		newPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
-		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
-			defer wg.Done()
-			executeHook(moduleCtx, hw, newPayload, hookHandler, group.Timeout, resp, rejected)
-		}(hook, mCtx)
-	}
-
-	go func() {
-		wg.Wait()
-		close(resp)
+	// Ensure rejection channel is always closed to prevent goroutine leaks
+	defer func() {
+		rejectedOnce.Do(func() { close(rejected) })
 	}()
 
-	hookResponses := collectHookResponses(resp, rejected)
+	// Pre-allocate response slice to maintain config order
+	// Each hook writes to its designated index, ensuring deterministic mutation sequence
+	hookResponses := make([]hookResponse[P], len(group.Hooks))
+
+	for i, hook := range group.Hooks {
+		mCtx := executionCtx.getModuleContext(hook.Module)
+		mCtx.HookImplCode = hook.Code
+		hookPayload := handleModuleActivities(hook.Code, executionCtx.activityControl, payload, executionCtx.account)
+
+		wg.Add(1)
+		// Pass index, hook, and payload to avoid closure variable capture issues
+		go func(index int, hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext, payload P) {
+			defer wg.Done()
+
+			// Execute hook and write result to its designated index
+			wasRejected := executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, &hookResponses[index], rejected)
+
+			// If this hook rejected, signal all other hooks to stop
+			if wasRejected {
+				rejectedOnce.Do(func() { close(rejected) })
+			}
+		}(i, hook, mCtx, hookPayload)
+	}
+
+	// Wait for all hooks to complete
+	wg.Wait()
 
 	return handleHookResponses(executionCtx, hookResponses, payload, metricEngine)
 }
 
+// executeHook executes a single hook and writes the response to the provided pointer.
+// Returns true if the hook rejected the request, false otherwise.
+//
+// The function ensures proper resource cleanup by:
+//   - Using a cancellable context that stops the hook handler on timeout or early exit
+//   - Relying on context.Done() for timeout detection (no separate timer needed)
+//   - Always initializing the response pointer, even when canceled
+//
+// When another hook signals rejection via the rejected channel, this hook stops
+// execution and records a cancellation response.
 func executeHook[H any, P any](
 	moduleCtx hookstage.ModuleInvocationContext,
 	hw hooks.HookWrapper[H],
 	payload P,
 	hookHandler hookHandler[H, P],
 	timeout time.Duration,
-	resp chan<- hookResponse[P],
+	resp *hookResponse[P],
 	rejected <-chan struct{},
-) {
+) bool {
 	hookRespCh := make(chan hookResponse[P], 1)
 	startTime := time.Now()
 	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
+
+	// Create context at parent level to enable proper cancellation of child goroutine
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel() // Ensures child goroutine receives cancellation on any exit path
 
 	go func() {
 		defer func() {
@@ -113,12 +141,16 @@ func executeHook[H any, P any](
 			}
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
 		result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
-		hookRespCh <- hookResponse[P]{
+
+		// Attempt to send result, but respect context cancellation
+		select {
+		case hookRespCh <- hookResponse[P]{
 			Result: result,
 			Err:    err,
+		}:
+		case <-ctx.Done():
+			// Context canceled, don't send result
 		}
 	}()
 
@@ -126,30 +158,29 @@ func executeHook[H any, P any](
 	case res := <-hookRespCh:
 		res.HookID = hookId
 		res.ExecutionTime = time.Since(startTime)
-		resp <- res
-	case <-time.After(timeout):
-		resp <- hookResponse[P]{
+		*resp = res
+		return res.Result.Reject
+
+	case <-ctx.Done():
+		// Hook timed out (context deadline exceeded)
+		*resp = hookResponse[P]{
 			Err:           TimeoutError{},
 			ExecutionTime: time.Since(startTime),
 			HookID:        hookId,
 			Result:        hookstage.HookResult[P]{},
 		}
+		return false
+
 	case <-rejected:
-		return
-	}
-}
-
-func collectHookResponses[P any](resp <-chan hookResponse[P], rejected chan<- struct{}) []hookResponse[P] {
-	hookResponses := make([]hookResponse[P], 0)
-	for r := range resp {
-		hookResponses = append(hookResponses, r)
-		if r.Result.Reject {
-			close(rejected)
-			break
+		// Another hook rejected; record cancellation response
+		// This ensures the response is properly initialized rather than left as zero-value
+		*resp = hookResponse[P]{
+			HookID:        hookId,
+			ExecutionTime: time.Since(startTime),
+			Result:        hookstage.HookResult[P]{},
 		}
+		return false
 	}
-
-	return hookResponses
 }
 
 func handleHookResponses[P any](
@@ -163,6 +194,12 @@ func handleHookResponses[P any](
 	groupModuleCtx := make(groupModuleContext, len(hookResponses))
 
 	for _, r := range hookResponses {
+		// Skip responses from hooks that were canceled due to another hook's rejection
+		// These have empty HookID.ModuleCode and shouldn't be processed
+		if r.HookID.ModuleCode == "" {
+			continue
+		}
+
 		groupModuleCtx[r.HookID.ModuleCode] = r.Result.ModuleContext
 		if r.ExecutionTime > groupOutcome.ExecutionTimeMillis {
 			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
