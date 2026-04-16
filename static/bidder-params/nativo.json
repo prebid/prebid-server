@@ -3,5 +3,10 @@
     "title": "Nativo Adapter Params",
     "description": "A schema which validates params accepted by the Nativo adapter",
     "type": "object",
-    "properties": {}
+    "properties": {
+        "placementId": {
+            "type": ["integer", "string"],
+            "description": "Placement ID"
+        }
+    }
 }
