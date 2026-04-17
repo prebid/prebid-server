@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adsmartx Adapter Params",
+  "description": "A schema which validates params accepted by the Adsmartx adapter",
+  "type": "object",
+  "properties": {
+    "bidfloor": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Bid Floor Price"
+    },
+    "testMode": {
+      "type": "integer",
+      "enum": [0, 1],
+      "description": "Test Mode parameter to indicate test request"
+    },
+    "sspId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "SSP ID for the publisher, used for user sync and request routing"
+    },
+    "siteId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "SSP Site ID for the publisher's site, used for user sync and request routing"
+    }
+  },
+  "additionalProperties": false
+}

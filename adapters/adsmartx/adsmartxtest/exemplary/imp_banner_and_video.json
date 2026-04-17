@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "mixed-media-request",
+    "imp": [
+      {
+        "id": "banner-imp",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": { "bidfloor": 0.5 } }
+      },
+      {
+        "id": "video-imp",
+        "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+        "ext": { "bidder": { "bidfloor": 2.0 } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.adsmartx.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "mixed-media-request",
+          "imp": [
+            {
+              "id": "banner-imp",
+              "banner": { "w": 300, "h": 250 },
+              "bidfloor": 0.5,
+              "ext": { "bidder": { "bidfloor": 0.5 } }
+            },
+            {
+              "id": "video-imp",
+              "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+              "bidfloor": 2.0,
+              "ext": { "bidder": { "bidfloor": 2.0 } }
+            }
+          ]
+        },
+        "impIDs": ["banner-imp", "video-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "mixed-media-request",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "banner-imp",
+                  "price": 1.0,
+                  "adm": "<div>banner</div>",
+                  "crid": "cr1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                },
+                {
+                  "id": "b2",
+                  "impid": "video-imp",
+                  "price": 5.0,
+                  "adm": "<VAST></VAST>",
+                  "crid": "cr2",
+                  "w": 640,
+                  "h": 480,
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "banner-imp",
+            "price": 1.0,
+            "adm": "<div>banner</div>",
+            "crid": "cr1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "b2",
+            "impid": "video-imp",
+            "price": 5.0,
+            "adm": "<VAST></VAST>",
+            "crid": "cr2",
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

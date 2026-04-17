@@ -1,0 +1,21 @@
+{
+  "mockBidRequest": {
+    "id": "no-banner-video",
+    "imp": [
+      {
+        "id": "1",
+        "ext": { "bidder": { "bidfloor": 0.5 } }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "impID 1: no banner or video object specified",
+      "comparison": "literal"
+    },
+    {
+      "value": "no valid impressions",
+      "comparison": "literal"
+    }
+  ]
+}
