@@ -1,0 +1,34 @@
+endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid-server"
+
+# Leave disabled: false → adapter enabled
+compression: gzip
+disabled: false
+
+maintainer:
+  email: "support@scalibur.io"
+supported-media-types:
+  - banner
+  - video
+
+gvlVendorID: 1471
+
+openrtb:
+  version: 2.6
+  gpp-supported: true
+
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video
+
+userSync:
+  iframe:
+    url: "https://srv.scalibur.io/adserver/sync?type=iframe&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[PBS_UID]"
+  supports:
+    - iframe
