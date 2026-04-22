@@ -1108,6 +1108,72 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedError:        errCookieSyncAccountBlocked.Error(),
 			givenAccountRequired: true,
 		},
+		{
+			description: "IFrame Disabled For Specific Bidders Via Account Config",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"account":"IFrameDisabledAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+				},
+			},
+			expectedPrivacy: macros.UserSyncPrivacy{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: nil,
+				},
+				Limit: 20,
+				Privacy: usersyncPrivacy{
+					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewSpecificBidderFilter([]string{"a"}, usersync.BidderFilterModeExclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
+		{
+			description: "IFrame Disabled For All Bidders Via Account Config Wildcard",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"account":"IFrameDisabledAllAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+				},
+			},
+			expectedPrivacy: macros.UserSyncPrivacy{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: nil,
+				},
+				Limit: 20,
+				Privacy: usersyncPrivacy{
+					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1139,6 +1205,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
 				"TestAccount":                   testAccountData,
 				"DisabledAccount":               json.RawMessage(`{"disabled":true}`),
+				"IFrameDisabledAccount":         json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true, "disabled_iframe_bidders": ["a"]}}`),
+				"IFrameDisabledAllAccount":      json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true, "disabled_iframe_bidders": ["*"]}}`),
 				"ValidAccountInvalidActivities": json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 			}},
 		}
@@ -1619,6 +1687,68 @@ func TestParseTypeFilter(t *testing.T) {
 			assert.EqualError(t, err, test.expectedError, test.description+":err")
 			assert.Empty(t, result, test.description+":result")
 		}
+	}
+}
+
+func TestApplyDisabledIFrameBidders(t *testing.T) {
+	allowAll := usersync.SyncTypeFilter{
+		IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+		Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+	}
+
+	testCases := []struct {
+		description     string
+		givenFilter     usersync.SyncTypeFilter
+		givenBidders    []string
+		expectedFilter  usersync.SyncTypeFilter
+	}{
+		{
+			description:  "Nil list - no change",
+			givenFilter:  allowAll,
+			givenBidders: nil,
+			expectedFilter: allowAll,
+		},
+		{
+			description:  "Empty list - no change",
+			givenFilter:  allowAll,
+			givenBidders: []string{},
+			expectedFilter: allowAll,
+		},
+		{
+			description:  "Wildcard - excludes all iframe",
+			givenFilter:  allowAll,
+			givenBidders: []string{"*"},
+			expectedFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+		},
+		{
+			description:  "Specific bidders - excludes only those",
+			givenFilter:  allowAll,
+			givenBidders: []string{"bidderA", "bidderB"},
+			expectedFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewSpecificBidderFilter([]string{"bidderA", "bidderB"}, usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+		},
+		{
+			description: "Overrides existing request filter",
+			givenFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewSpecificBidderFilter([]string{"x"}, usersync.BidderFilterModeExclude),
+			},
+			givenBidders: []string{"*"},
+			expectedFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewSpecificBidderFilter([]string{"x"}, usersync.BidderFilterModeExclude),
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		result := applyDisabledIFrameBidders(test.givenFilter, test.givenBidders)
+		assert.Equal(t, test.expectedFilter, result, test.description)
 	}
 }
 

@@ -167,6 +167,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		return usersync.Request{}, macros.UserSyncPrivacy{}, account, err
 	}
 
+	syncTypeFilter = applyDisabledIFrameBidders(syncTypeFilter, account.CookieSync.DisabledIFrameBidders)
+
 	gdprRequestInfo := gdpr.RequestInfo{
 		Consent:    privacyMacros.GDPRConsent,
 		GDPRSignal: gdprSignal,
@@ -339,6 +341,20 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 		return accountCookieSyncConfig.PriorityGroups
 	}
 	return c.config.UserSync.PriorityGroups
+}
+
+func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledBidders []string) usersync.SyncTypeFilter {
+	if len(disabledBidders) == 0 {
+		return syncTypeFilter
+	}
+
+	if disabledBidders[0] == "*" {
+		syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
+	} else {
+		syncTypeFilter.IFrame = usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude)
+	}
+
+	return syncTypeFilter
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
