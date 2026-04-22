@@ -1697,21 +1697,21 @@ func TestApplyDisabledIFrameBidders(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description     string
-		givenFilter     usersync.SyncTypeFilter
-		givenBidders    []string
-		expectedFilter  usersync.SyncTypeFilter
+		description    string
+		givenFilter    usersync.SyncTypeFilter
+		givenBidders   []string
+		expectedFilter usersync.SyncTypeFilter
 	}{
 		{
-			description:  "Nil list - no change",
-			givenFilter:  allowAll,
-			givenBidders: nil,
+			description:    "Nil list - no change",
+			givenFilter:    allowAll,
+			givenBidders:   nil,
 			expectedFilter: allowAll,
 		},
 		{
-			description:  "Empty list - no change",
-			givenFilter:  allowAll,
-			givenBidders: []string{},
+			description:    "Empty list - no change",
+			givenFilter:    allowAll,
+			givenBidders:   []string{},
 			expectedFilter: allowAll,
 		},
 		{
