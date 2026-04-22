@@ -130,7 +130,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapte
 	var bidResp openrtb2.BidResponse
 
 	if err := jsonutil.Unmarshal(responseData.Body, &bidResp); err != nil {
-		msg := fmt.Sprintf("Bad server response: %d", err)
+		msg := fmt.Sprintf("Bad server response: %v", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 
