@@ -1,0 +1,155 @@
+{
+  "mockBidRequest": {
+    "id": "currency-request-id",
+    "cur": [
+      "EUR"
+    ],
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "bidfloor": 1,
+        "bidfloorcur": "GBP",
+        "ext": {
+          "bidder": {
+            "tagId": "cHJlYmlkLm9yZw"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "publisher": {
+        "id": "unused_publisher_id"
+      }
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 2
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.2",
+        "body": {
+          "id": "currency-request-id",
+          "cur": [
+            "USD"
+          ],
+          "imp": [
+            {
+              "id": "1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "bidfloor": 2,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "tagId": "cHJlYmlkLm9yZw"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "publisher": {
+              "id": "cHJlYmlkLm9yZw"
+            }
+          },
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "GBP": {
+                    "USD": 2
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs": [
+          "1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "currency-response-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "TEST",
+                  "impid": "1",
+                  "price": 10,
+                  "adid": "1",
+                  "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+                  "adomain": [
+                    "amxrtb.com"
+                  ],
+                  "cid": "1",
+                  "crid": "1",
+                  "h": 250,
+                  "w": 300
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "TEST",
+            "impid": "1",
+            "price": 10,
+            "adid": "1",
+            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+            "adomain": [
+              "amxrtb.com"
+            ],
+            "cid": "1",
+            "crid": "1",
+            "h": 250,
+            "w": 300
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
