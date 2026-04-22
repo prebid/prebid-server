@@ -97,6 +97,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/displayio"
 	"github.com/prebid/prebid-server/v4/adapters/dmx"
 	"github.com/prebid/prebid-server/v4/adapters/driftpixel"
+	"github.com/prebid/prebid-server/v4/adapters/dxtech"
 	evolution "github.com/prebid/prebid-server/v4/adapters/e_volution"
 	"github.com/prebid/prebid-server/v4/adapters/edge226"
 	"github.com/prebid/prebid-server/v4/adapters/elementaltv"
@@ -364,6 +365,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDisplayio:         displayio.Builder,
 		openrtb_ext.BidderEdge226:           edge226.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
+		openrtb_ext.BidderDXTech:            dxtech.Builder,
 		openrtb_ext.BidderDriftPixel:        driftpixel.Builder,
 		openrtb_ext.BidderElementalTV:       elementaltv.Builder,
 		openrtb_ext.BidderEmtv:              emtv.Builder,
