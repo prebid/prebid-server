@@ -348,13 +348,30 @@ func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabled
 		return syncTypeFilter
 	}
 
-	if disabledBidders[0] == "*" {
-		syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
-	} else {
-		syncTypeFilter.IFrame = usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude)
+	for _, bidder := range disabledBidders {
+		if bidder == "*" {
+			syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
+			return syncTypeFilter
+		}
+	}
+
+	syncTypeFilter.IFrame = compositeFilter{
+		primary:   syncTypeFilter.IFrame,
+		secondary: usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude),
 	}
 
 	return syncTypeFilter
+}
+
+// compositeFilter implements usersync.BidderFilter by requiring both filters to allow a bidder.
+// This ensures account-level restrictions can only further restrict, never broaden, the request filter.
+type compositeFilter struct {
+	primary   usersync.BidderFilter
+	secondary usersync.BidderFilter
+}
+
+func (f compositeFilter) Allowed(bidder string) bool {
+	return f.primary.Allowed(bidder) && f.secondary.Allowed(bidder)
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {

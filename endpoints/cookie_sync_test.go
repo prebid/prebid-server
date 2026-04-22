@@ -1109,39 +1109,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenAccountRequired: true,
 		},
 		{
-			description: "IFrame Disabled For Specific Bidders Via Account Config",
-			givenBody: strings.NewReader(`{` +
-				`"bidders":["a", "b"],` +
-				`"account":"IFrameDisabledAccount"` +
-				`}`),
-			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
-			givenCCPAEnabled: true,
-			givenConfig: config.UserSync{
-				PriorityGroups: [][]string{{"a", "b", "c"}},
-				Cooperative: config.UserSyncCooperative{
-					EnabledByDefault: false,
-				},
-			},
-			expectedPrivacy: macros.UserSyncPrivacy{},
-			expectedRequest: usersync.Request{
-				Bidders: []string{"a", "b"},
-				Cooperative: usersync.Cooperative{
-					Enabled:        true,
-					PriorityGroups: nil,
-				},
-				Limit: 20,
-				Privacy: usersyncPrivacy{
-					gdprPermissions: &fakePermissions{},
-					activityRequest: emptyActivityPoliciesRequest,
-					gdprSignal:      -1,
-				},
-				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewSpecificBidderFilter([]string{"a"}, usersync.BidderFilterModeExclude),
-					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-				},
-			},
-		},
-		{
 			description: "IFrame Disabled For All Bidders Via Account Config Wildcard",
 			givenBody: strings.NewReader(`{` +
 				`"bidders":["a", "b"],` +
@@ -1697,58 +1664,119 @@ func TestApplyDisabledIFrameBidders(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description    string
-		givenFilter    usersync.SyncTypeFilter
-		givenBidders   []string
-		expectedFilter usersync.SyncTypeFilter
+		description       string
+		givenFilter       usersync.SyncTypeFilter
+		givenBidders      []string
+		expectedIFrame    map[string]bool
+		expectedRedirect  map[string]bool
+		expectedExactSync *usersync.SyncTypeFilter
 	}{
 		{
-			description:    "Nil list - no change",
-			givenFilter:    allowAll,
-			givenBidders:   nil,
-			expectedFilter: allowAll,
+			description:  "Nil list - no change",
+			givenFilter:  allowAll,
+			givenBidders: nil,
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
 		},
 		{
-			description:    "Empty list - no change",
-			givenFilter:    allowAll,
-			givenBidders:   []string{},
-			expectedFilter: allowAll,
+			description:  "Empty list - no change",
+			givenFilter:  allowAll,
+			givenBidders: []string{},
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
 		},
 		{
 			description:  "Wildcard - excludes all iframe",
 			givenFilter:  allowAll,
 			givenBidders: []string{"*"},
-			expectedFilter: usersync.SyncTypeFilter{
+			expectedExactSync: &usersync.SyncTypeFilter{
 				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
 				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 			},
 		},
 		{
-			description:  "Specific bidders - excludes only those",
+			description:  "Wildcard not first element - still excludes all iframe",
 			givenFilter:  allowAll,
-			givenBidders: []string{"bidderA", "bidderB"},
-			expectedFilter: usersync.SyncTypeFilter{
-				IFrame:   usersync.NewSpecificBidderFilter([]string{"bidderA", "bidderB"}, usersync.BidderFilterModeExclude),
+			givenBidders: []string{"a", "*"},
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
 				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 			},
 		},
 		{
-			description: "Overrides existing request filter",
+			description:  "Specific bidders - excludes only those, allows others",
+			givenFilter:  allowAll,
+			givenBidders: []string{"bidderA", "bidderB"},
+			expectedIFrame: map[string]bool{
+				"biddera": false,
+				"bidderb": false,
+				"bidderc": true,
+			},
+			expectedRedirect: map[string]bool{
+				"biddera": true,
+			},
+		},
+		{
+			description: "Wildcard overrides existing request filter",
 			givenFilter: usersync.SyncTypeFilter{
 				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				Redirect: usersync.NewSpecificBidderFilter([]string{"x"}, usersync.BidderFilterModeExclude),
 			},
 			givenBidders: []string{"*"},
-			expectedFilter: usersync.SyncTypeFilter{
+			expectedExactSync: &usersync.SyncTypeFilter{
 				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
 				Redirect: usersync.NewSpecificBidderFilter([]string{"x"}, usersync.BidderFilterModeExclude),
+			},
+		},
+		{
+			description: "Account restricts further - request already excludes all iframe",
+			givenFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+			givenBidders: []string{"bidderA"},
+			expectedIFrame: map[string]bool{
+				"biddera": false,
+				"bidderb": false,
+			},
+		},
+		{
+			description: "Account restricts further - request includes specific bidders only",
+			givenFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewSpecificBidderFilter([]string{"bidderA", "bidderB"}, usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+			givenBidders: []string{"bidderA"},
+			expectedIFrame: map[string]bool{
+				"biddera": false,
+				"bidderb": true,
+				"bidderc": false,
 			},
 		},
 	}
 
 	for _, test := range testCases {
 		result := applyDisabledIFrameBidders(test.givenFilter, test.givenBidders)
-		assert.Equal(t, test.expectedFilter, result, test.description)
+
+		if test.expectedExactSync != nil {
+			assert.Equal(t, *test.expectedExactSync, result, test.description)
+		}
+
+		if test.expectedIFrame != nil {
+			for bidder, expected := range test.expectedIFrame {
+				assert.Equal(t, expected, result.IFrame.Allowed(bidder), "%s: IFrame.Allowed(%s)", test.description, bidder)
+			}
+		}
+
+		if test.expectedRedirect != nil {
+			for bidder, expected := range test.expectedRedirect {
+				assert.Equal(t, expected, result.Redirect.Allowed(bidder), "%s: Redirect.Allowed(%s)", test.description, bidder)
+			}
+		}
 	}
 }
 
