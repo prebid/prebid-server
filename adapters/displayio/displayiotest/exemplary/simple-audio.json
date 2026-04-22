@@ -6,11 +6,12 @@
     "id": "requestId10111011101110111011",
     "imp": [
       {
-        "banner": {
-          "h": 250,
-          "w": 300
+        "audio": {
+          "mimes": [
+            "audio/mpeg"
+          ]
         },
-        "bidfloor": 0.225,
+        "bidfloor": 0.5,
         "bidfloorcur": "USD",
         "id": "impId10111011101110111011",
         "ext": {
@@ -28,17 +29,18 @@
       "expectedRequest": {
         "uri": "https://adapter.endpoint/?macro=101",
         "body": {
-          "id": "requestId10111011101110111011",
           "app": {
             "id": "1011"
           },
+          "id": "requestId10111011101110111011",
           "imp": [
             {
-              "banner": {
-                "h": 250,
-                "w": 300
+              "audio": {
+                "mimes": [
+                  "audio/mpeg"
+                ]
               },
-              "bidfloor": 0.225,
+              "bidfloor": 0.5,
               "bidfloorcur": "USD",
               "id": "impId10111011101110111011",
               "ext": {
@@ -64,27 +66,27 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "requestId10111011101110111011",
           "seatbid": [
             {
-              "seat": "958",
               "bid": [
                 {
                   "id": "12345",
                   "impid": "impId10111011101110111011",
-                  "price": 0.01,
-                  "adm": "<html/>",
+                  "price": 2,
+                  "adm": "<?xml/>",
+                  "adid": "12235",
                   "adomain": [
                     "domain.test"
                   ],
-                  "w": 300,
-                  "h": 250,
-                  "mtype": 5
+                  "mtype": 3
                 }
-              ]
+              ],
+              "seat": "displayio123",
+              "group": 1
             }
           ],
-          "bidid": "5778926625248726496",
+          "bidid": "test123",
           "cur": "USD"
         }
       }
@@ -93,13 +95,22 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": []
-    }
-  ],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "unsupported MType .*",
-      "comparison": "regex"
+      "bids": [
+        {
+          "bid": {
+            "id": "12345",
+            "impid": "impId10111011101110111011",
+            "price": 2,
+            "adm": "<?xml/>",
+            "adid": "12235",
+            "adomain": [
+              "domain.test"
+            ],
+            "mtype": 3
+          },
+          "type": "audio"
+        }
+      ]
     }
   ]
 }
