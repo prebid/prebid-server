@@ -183,7 +183,9 @@ func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("unexpected media type for bid: %s", bid.ImpID)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported MType %d", bid.MType),
+		}
 	}
 }
 
