@@ -343,21 +343,36 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 	return c.config.UserSync.PriorityGroups
 }
 
-func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledBidders []string) usersync.SyncTypeFilter {
-	if len(disabledBidders) == 0 {
+func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledBidders interface{}) usersync.SyncTypeFilter {
+	if disabledBidders == nil {
 		return syncTypeFilter
 	}
 
-	for _, bidder := range disabledBidders {
-		if bidder == "*" {
+	switch v := disabledBidders.(type) {
+	case string:
+		if v == "*" {
 			syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
-			return syncTypeFilter
 		}
-	}
-
-	syncTypeFilter.IFrame = compositeFilter{
-		primary:   syncTypeFilter.IFrame,
-		secondary: usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude),
+	case []string:
+		if len(v) > 0 {
+			syncTypeFilter.IFrame = compositeFilter{
+				primary:   syncTypeFilter.IFrame,
+				secondary: usersync.NewSpecificBidderFilter(v, usersync.BidderFilterModeExclude),
+			}
+		}
+	case []interface{}:
+		bidders := make([]string, 0, len(v))
+		for _, b := range v {
+			if s, ok := b.(string); ok {
+				bidders = append(bidders, s)
+			}
+		}
+		if len(bidders) > 0 {
+			syncTypeFilter.IFrame = compositeFilter{
+				primary:   syncTypeFilter.IFrame,
+				secondary: usersync.NewSpecificBidderFilter(bidders, usersync.BidderFilterModeExclude),
+			}
+		}
 	}
 
 	return syncTypeFilter
