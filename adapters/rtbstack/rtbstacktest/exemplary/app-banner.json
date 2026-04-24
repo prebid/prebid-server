@@ -1,0 +1,162 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid.app"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    },
+    "imp": [
+      {
+        "id": "imp-app-basic",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "app-basic",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-app-large",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "app-large",
+            "customParams": {}
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-adx-admixer.rtb-stack.com/pbs?ssp=145&endpoint=309&client=c4527281-5aa5-4c8e-bc53-a80bb3f99470",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid.app"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "imp-app-basic",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
+              "tagid": "app-basic",
+              "ext": {
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            },
+            {
+              "id": "imp-app-large",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "app-large",
+              "ext": {}
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-app-basic",
+          "imp-app-large"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-app-basic-1",
+                  "impid": "imp-app-basic",
+                  "price": 0.95,
+                  "adm": "<div>App Banner 320x50</div>",
+                  "crid": "crid-app-basic-1",
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-app-large-1",
+                  "impid": "imp-app-large",
+                  "price": 1.5,
+                  "adm": "<div>App Banner 728x90</div>",
+                  "crid": "crid-app-large-1",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-app-basic-1",
+            "impid": "imp-app-basic",
+            "price": 0.95,
+            "adm": "<div>App Banner 320x50</div>",
+            "crid": "crid-app-basic-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-app-large-1",
+            "impid": "imp-app-large",
+            "price": 1.5,
+            "adm": "<div>App Banner 728x90</div>",
+            "crid": "crid-app-large-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
