@@ -28,7 +28,6 @@ type impCtx struct {
 
 // extImpRTBStack is used for imp->ext when sending to rtb-stack backend.
 type extImpRTBStack struct {
-	TagId        string                 `json:"tagid"`
 	CustomParams map[string]interface{} `json:"customParams,omitempty"`
 }
 
@@ -52,7 +51,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	var errs []error
-	var validImps []*impCtx
+	impsByRoute := make(map[string][]*impCtx)
+	var routeOrder []string
 
 	for i := range request.Imp {
 		imp, ext, err := preprocessImp(request.Imp[i])
@@ -61,57 +61,78 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		validImps = append(validImps, &impCtx{
+		ctx := &impCtx{
 			imp:         imp,
 			rtbStackExt: ext,
-		})
+		}
+		if _, ok := impsByRoute[ext.Route]; !ok {
+			routeOrder = append(routeOrder, ext.Route)
+		}
+		impsByRoute[ext.Route] = append(impsByRoute[ext.Route], ctx)
 	}
 
-	if len(validImps) == 0 {
+	if len(routeOrder) == 0 {
 		return nil, errs
 	}
 
-	processedImps := make([]openrtb2.Imp, 0, len(validImps))
-	for _, v := range validImps {
-		processedImps = append(processedImps, v.imp)
-	}
-
-	endpoint, err := a.buildEndpointURL(validImps[0].rtbStackExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	newRequest := *request
-	newRequest.Imp = processedImps
-
+	var newSite *openrtb2.Site
 	if request.Site != nil && request.Site.Domain == "" {
-		newSite := *request.Site
+		siteCopy := *request.Site
 		pageURL, parseErr := url.Parse(request.Site.Page)
 		if parseErr == nil && pageURL.Hostname() != "" {
-			newSite.Domain = pageURL.Hostname()
+			siteCopy.Domain = pageURL.Hostname()
 		} else {
-			newSite.Domain = request.Site.Page
+			siteCopy.Domain = request.Site.Page
 		}
-		newRequest.Site = &newSite
+		newSite = &siteCopy
 	}
 
-	reqJSON, err := jsonutil.Marshal(newRequest)
-	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Error parsing reqJSON object",
-		}}
+	requests := make([]*adapters.RequestData, 0, len(routeOrder))
+	for _, route := range routeOrder {
+		group := impsByRoute[route]
+
+		endpoint, err := a.buildEndpointURL(group[0].rtbStackExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		processedImps := make([]openrtb2.Imp, 0, len(group))
+		for _, v := range group {
+			processedImps = append(processedImps, v.imp)
+		}
+
+		newRequest := *request
+		newRequest.Imp = processedImps
+		if newSite != nil {
+			newRequest.Site = newSite
+		}
+
+		reqJSON, err := jsonutil.Marshal(newRequest)
+		if err != nil {
+			errs = append(errs, &errortypes.FailedToRequestBids{
+				Message: "Error parsing reqJSON object",
+			})
+			continue
+		}
+
+		headers := http.Header{}
+		headers.Add("Content-Type", "application/json;charset=utf-8")
+		headers.Add("Accept", "application/json")
+		requests = append(requests, &adapters.RequestData{
+			Method:  http.MethodPost,
+			Uri:     endpoint,
+			Body:    reqJSON,
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(newRequest.Imp),
+		})
 	}
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Uri:     endpoint,
-		Body:    reqJSON,
-		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(newRequest.Imp),
-	}}, nil
+	if len(requests) == 0 {
+		return nil, errs
+	}
+
+	return requests, errs
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -128,7 +149,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{err}
 	}
 
-	if len(bidResp.SeatBid) == 0 || len(bidResp.SeatBid[0].Bid) == 0 {
+	if len(bidResp.SeatBid) == 0 {
 		return nil, nil
 	}
 
@@ -218,7 +239,6 @@ func preprocessImp(
 	imp.TagID = impExt.TagId
 
 	newExt := extImpRTBStack{
-		TagId:        impExt.TagId,
 		CustomParams: impExt.CustomParams,
 	}
 

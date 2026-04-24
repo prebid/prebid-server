@@ -9,7 +9,12 @@
       {
         "id": "imp-eu-banner",
         "banner": {
-          "format": [{ "w": 300, "h": 250 }]
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -23,7 +28,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -37,16 +41,26 @@
           "imp": [
             {
               "id": "imp-eu-banner",
-              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
               "tagid": "eu-banner",
               "ext": {
-                "tagid": "eu-banner",
-                "customParams": { "geo": "europe" }
+                "customParams": {
+                  "geo": "europe"
+                }
               }
             }
           ]
         },
-        "impIDs": ["imp-eu-banner"]
+        "impIDs": [
+          "imp-eu-banner"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -59,7 +73,7 @@
                 {
                   "id": "bid-eu-1",
                   "impid": "imp-eu-banner",
-                  "price": 1.10,
+                  "price": 1.1,
                   "adm": "<div>EU Banner 300x250</div>",
                   "crid": "crid-eu-1",
                   "mtype": 1
@@ -72,7 +86,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "EUR",
@@ -81,7 +94,7 @@
           "bid": {
             "id": "bid-eu-1",
             "impid": "imp-eu-banner",
-            "price": 1.10,
+            "price": 1.1,
             "adm": "<div>EU Banner 300x250</div>",
             "crid": "crid-eu-1",
             "mtype": 1

@@ -11,7 +11,12 @@
       {
         "id": "imp-app-basic",
         "banner": {
-          "format": [{ "w": 320, "h": 50 }]
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -26,7 +31,12 @@
       {
         "id": "imp-app-large",
         "banner": {
-          "format": [{ "w": 728, "h": 90 }]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -38,34 +48,55 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
         "uri": "https://us-adx-admixer.rtb-stack.com/pbs?ssp=145&endpoint=309&client=c4527281-5aa5-4c8e-bc53-a80bb3f99470",
         "body": {
           "id": "test-request-id",
-          "app": { "bundle": "com.prebid.app" },
-          "device": { "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3" },
+          "app": {
+            "bundle": "com.prebid.app"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
           "imp": [
             {
               "id": "imp-app-basic",
-              "banner": { "format": [{ "w": 320, "h": 50 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
               "tagid": "app-basic",
               "ext": {
-                "tagid": "app-basic",
-                "customParams": { "foo": "bar" }
+                "customParams": {
+                  "foo": "bar"
+                }
               }
             },
             {
               "id": "imp-app-large",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
               "tagid": "app-large",
-              "ext": { "tagid": "app-large" }
+              "ext": {}
             }
           ]
         },
-        "impIDs": ["imp-app-basic", "imp-app-large"]
+        "impIDs": [
+          "imp-app-basic",
+          "imp-app-large"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -86,7 +117,7 @@
                 {
                   "id": "bid-app-large-1",
                   "impid": "imp-app-large",
-                  "price": 1.50,
+                  "price": 1.5,
                   "adm": "<div>App Banner 728x90</div>",
                   "crid": "crid-app-large-1",
                   "mtype": 1
@@ -99,7 +130,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -119,7 +149,7 @@
           "bid": {
             "id": "bid-app-large-1",
             "impid": "imp-app-large",
-            "price": 1.50,
+            "price": 1.5,
             "adm": "<div>App Banner 728x90</div>",
             "crid": "crid-app-large-1",
             "mtype": 1

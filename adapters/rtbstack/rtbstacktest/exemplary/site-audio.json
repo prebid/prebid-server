@@ -9,7 +9,10 @@
       {
         "id": "imp-audio-small",
         "audio": {
-          "mimes": ["audio/mpeg", "audio/mp4"],
+          "mimes": [
+            "audio/mpeg",
+            "audio/mp4"
+          ],
           "minduration": 5,
           "maxduration": 30
         },
@@ -26,7 +29,10 @@
       {
         "id": "imp-audio-large",
         "audio": {
-          "mimes": ["audio/mpeg", "audio/mp4"],
+          "mimes": [
+            "audio/mpeg",
+            "audio/mp4"
+          ],
           "minduration": 15,
           "maxduration": 60
         },
@@ -40,7 +46,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -55,29 +60,39 @@
             {
               "id": "imp-audio-small",
               "audio": {
-                "mimes": ["audio/mpeg", "audio/mp4"],
+                "mimes": [
+                  "audio/mpeg",
+                  "audio/mp4"
+                ],
                 "minduration": 5,
                 "maxduration": 30
               },
               "tagid": "site-audio-small",
               "ext": {
-                "tagid": "site-audio-small",
-                "customParams": { "foo": "bar" }
+                "customParams": {
+                  "foo": "bar"
+                }
               }
             },
             {
               "id": "imp-audio-large",
               "audio": {
-                "mimes": ["audio/mpeg", "audio/mp4"],
+                "mimes": [
+                  "audio/mpeg",
+                  "audio/mp4"
+                ],
                 "minduration": 15,
                 "maxduration": 60
               },
               "tagid": "site-audio-large",
-              "ext": { "tagid": "site-audio-large" }
+              "ext": {}
             }
           ]
         },
-        "impIDs": ["imp-audio-small", "imp-audio-large"]
+        "impIDs": [
+          "imp-audio-small",
+          "imp-audio-large"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -111,7 +126,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",

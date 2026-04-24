@@ -9,7 +9,12 @@
       {
         "id": "imp-basic",
         "banner": {
-          "format": [{ "w": 728, "h": 90 }]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -24,7 +29,12 @@
       {
         "id": "imp-empty-custom",
         "banner": {
-          "format": [{ "w": 300, "h": 250 }]
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -37,7 +47,12 @@
       {
         "id": "imp-nested-custom",
         "banner": {
-          "format": [{ "w": 970, "h": 250 }]
+          "format": [
+            {
+              "w": 970,
+              "h": 250
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -48,14 +63,16 @@
                 "position": "top",
                 "sticky": true
               },
-              "sizes": ["970x250", "728x90"]
+              "sizes": [
+                "970x250",
+                "728x90"
+              ]
             }
           }
         }
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -69,39 +86,65 @@
           "imp": [
             {
               "id": "imp-basic",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
               "tagid": "basic",
               "ext": {
-                "tagid": "basic",
-                "customParams": { "foo": "bar" }
+                "customParams": {
+                  "foo": "bar"
+                }
               }
             },
             {
               "id": "imp-empty-custom",
-              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
               "tagid": "empty-custom",
-              "ext": {
-                "tagid": "empty-custom"
-              }
+              "ext": {}
             },
             {
               "id": "imp-nested-custom",
-              "banner": { "format": [{ "w": 970, "h": 250 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 970,
+                    "h": 250
+                  }
+                ]
+              },
               "tagid": "nested",
               "ext": {
-                "tagid": "nested",
                 "customParams": {
                   "placement": {
                     "position": "top",
                     "sticky": true
                   },
-                  "sizes": ["970x250", "728x90"]
+                  "sizes": [
+                    "970x250",
+                    "728x90"
+                  ]
                 }
               }
             }
           ]
         },
-        "impIDs": ["imp-basic", "imp-empty-custom", "imp-nested-custom"]
+        "impIDs": [
+          "imp-basic",
+          "imp-empty-custom",
+          "imp-nested-custom"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -130,7 +173,7 @@
                 {
                   "id": "bid-nested-1",
                   "impid": "imp-nested-custom",
-                  "price": 2.50,
+                  "price": 2.5,
                   "adm": "<div>Banner 970x250</div>",
                   "crid": "crid-nested-1",
                   "mtype": 1
@@ -143,7 +186,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -174,7 +216,7 @@
           "bid": {
             "id": "bid-nested-1",
             "impid": "imp-nested-custom",
-            "price": 2.50,
+            "price": 2.5,
             "adm": "<div>Banner 970x250</div>",
             "crid": "crid-nested-1",
             "mtype": 1

@@ -9,7 +9,12 @@
       {
         "id": "imp-valid",
         "banner": {
-          "format": [{ "w": 728, "h": 90 }]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -24,13 +29,17 @@
       {
         "id": "imp-invalid",
         "banner": {
-          "format": [{ "w": 300, "h": 250 }]
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
         },
         "ext": "invalid-json"
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -44,10 +53,16 @@
           "imp": [
             {
               "id": "imp-valid",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
               "tagid": "valid-tag",
               "ext": {
-                "tagid": "valid-tag",
                 "customParams": {
                   "foo": "bar"
                 }
@@ -55,15 +70,20 @@
             }
           ]
         },
-        "impIDs": ["imp-valid"]
+        "impIDs": [
+          "imp-valid"
+        ]
       },
       "mockResponse": {
         "status": 204
       }
     }
   ],
-
-  "expectedMakeRequestsErrors": [],
-
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ],
   "expectedBidResponses": []
 }

@@ -11,10 +11,16 @@
         "video": {
           "w": 640,
           "h": 360,
-          "mimes": ["video/mp4", "video/webm"],
+          "mimes": [
+            "video/mp4",
+            "video/webm"
+          ],
           "minduration": 5,
           "maxduration": 30,
-          "protocols": [2, 5]
+          "protocols": [
+            2,
+            5
+          ]
         },
         "ext": {
           "bidder": {
@@ -31,10 +37,17 @@
         "video": {
           "w": 1280,
           "h": 720,
-          "mimes": ["video/mp4", "video/webm"],
+          "mimes": [
+            "video/mp4",
+            "video/webm"
+          ],
           "minduration": 10,
           "maxduration": 60,
-          "protocols": [2, 5, 6]
+          "protocols": [
+            2,
+            5,
+            6
+          ]
         },
         "ext": {
           "bidder": {
@@ -46,7 +59,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -63,15 +75,22 @@
               "video": {
                 "w": 640,
                 "h": 360,
-                "mimes": ["video/mp4", "video/webm"],
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
                 "minduration": 5,
                 "maxduration": 30,
-                "protocols": [2, 5]
+                "protocols": [
+                  2,
+                  5
+                ]
               },
               "tagid": "video-small",
               "ext": {
-                "tagid": "video-small",
-                "customParams": { "foo": "bar" }
+                "customParams": {
+                  "foo": "bar"
+                }
               }
             },
             {
@@ -79,17 +98,27 @@
               "video": {
                 "w": 1280,
                 "h": 720,
-                "mimes": ["video/mp4", "video/webm"],
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
                 "minduration": 10,
                 "maxduration": 60,
-                "protocols": [2, 5, 6]
+                "protocols": [
+                  2,
+                  5,
+                  6
+                ]
               },
               "tagid": "video-large",
-              "ext": { "tagid": "video-large" }
+              "ext": {}
             }
           ]
         },
-        "impIDs": ["imp-video-small", "imp-video-large"]
+        "impIDs": [
+          "imp-video-small",
+          "imp-video-large"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -102,7 +131,7 @@
                 {
                   "id": "bid-video-small-1",
                   "impid": "imp-video-small",
-                  "price": 3.00,
+                  "price": 3.0,
                   "adm": "<VAST version='3.0'>Small Video Ad</VAST>",
                   "crid": "crid-video-small-1",
                   "mtype": 2
@@ -110,7 +139,7 @@
                 {
                   "id": "bid-video-large-1",
                   "impid": "imp-video-large",
-                  "price": 5.50,
+                  "price": 5.5,
                   "adm": "<VAST version='3.0'>Large Video Ad</VAST>",
                   "crid": "crid-video-large-1",
                   "mtype": 2
@@ -123,7 +152,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",

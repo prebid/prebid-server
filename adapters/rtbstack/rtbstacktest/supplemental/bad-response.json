@@ -24,7 +24,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -44,7 +43,6 @@
               },
               "tagid": "test-banner",
               "ext": {
-                "tagid": "test-banner",
                 "customParams": {
                   "foo": "bar"
                 }
@@ -52,7 +50,9 @@
             }
           ]
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -60,7 +60,6 @@
       }
     }
   ],
-
   "expectedMakeBidsErrors": [
     {
       "value": "expect { or n, but found \"",

@@ -13,10 +13,16 @@
         "video": {
           "w": 640,
           "h": 360,
-          "mimes": ["video/mp4", "video/webm"],
+          "mimes": [
+            "video/mp4",
+            "video/webm"
+          ],
           "minduration": 5,
           "maxduration": 30,
-          "protocols": [2, 5]
+          "protocols": [
+            2,
+            5
+          ]
         },
         "ext": {
           "bidder": {
@@ -33,10 +39,17 @@
         "video": {
           "w": 1280,
           "h": 720,
-          "mimes": ["video/mp4", "video/webm"],
+          "mimes": [
+            "video/mp4",
+            "video/webm"
+          ],
           "minduration": 10,
           "maxduration": 60,
-          "protocols": [2, 5, 6]
+          "protocols": [
+            2,
+            5,
+            6
+          ]
         },
         "ext": {
           "bidder": {
@@ -48,7 +61,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -67,15 +79,22 @@
               "video": {
                 "w": 640,
                 "h": 360,
-                "mimes": ["video/mp4", "video/webm"],
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
                 "minduration": 5,
                 "maxduration": 30,
-                "protocols": [2, 5]
+                "protocols": [
+                  2,
+                  5
+                ]
               },
               "tagid": "app-video-small",
               "ext": {
-                "tagid": "app-video-small",
-                "customParams": { "foo": "bar" }
+                "customParams": {
+                  "foo": "bar"
+                }
               }
             },
             {
@@ -83,17 +102,27 @@
               "video": {
                 "w": 1280,
                 "h": 720,
-                "mimes": ["video/mp4", "video/webm"],
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
                 "minduration": 10,
                 "maxduration": 60,
-                "protocols": [2, 5, 6]
+                "protocols": [
+                  2,
+                  5,
+                  6
+                ]
               },
               "tagid": "app-video-large",
-              "ext": { "tagid": "app-video-large" }
+              "ext": {}
             }
           ]
         },
-        "impIDs": ["imp-app-video-small", "imp-app-video-large"]
+        "impIDs": [
+          "imp-app-video-small",
+          "imp-app-video-large"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -127,7 +156,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",

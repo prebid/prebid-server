@@ -8,7 +8,12 @@
       {
         "id": "imp-basic",
         "banner": {
-          "format": [{ "w": 728, "h": 90 }]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -22,7 +27,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -36,11 +40,19 @@
           "imp": [
             {
               "id": "imp-basic",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
               "tagid": "basic",
               "ext": {
-                "tagid": "basic",
-                "customParams": { "foo": "bar" }
+                "customParams": {
+                  "foo": "bar"
+                }
               }
             }
           ]
@@ -54,6 +66,5 @@
       }
     }
   ],
-
   "expectedBidResponses": []
 }

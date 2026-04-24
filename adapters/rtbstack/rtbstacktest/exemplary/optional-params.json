@@ -9,7 +9,12 @@
       {
         "id": "imp-basic",
         "banner": {
-          "format": [{ "w": 728, "h": 90 }]
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -21,11 +26,15 @@
           }
         }
       },
-
       {
         "id": "imp-empty-custom",
         "banner": {
-          "format": [{ "w": 300, "h": 250 }]
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -35,11 +44,15 @@
           }
         }
       },
-
       {
         "id": "imp-numeric-bool",
         "banner": {
-          "format": [{ "w": 320, "h": 50 }]
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -53,11 +66,15 @@
           }
         }
       },
-
       {
         "id": "imp-nested-custom",
         "banner": {
-          "format": [{ "w": 970, "h": 250 }]
+          "format": [
+            {
+              "w": 970,
+              "h": 250
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -68,16 +85,23 @@
                 "position": "top",
                 "sticky": true
               },
-              "sizes": ["970x250", "728x90"]
+              "sizes": [
+                "970x250",
+                "728x90"
+              ]
             }
           }
         }
       },
-
       {
         "id": "imp-no-custom",
         "banner": {
-          "format": [{ "w": 468, "h": 60 }]
+          "format": [
+            {
+              "w": 468,
+              "h": 60
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -88,7 +112,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -102,29 +125,46 @@
           "imp": [
             {
               "id": "imp-basic",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
               "tagid": "basic",
               "ext": {
-                "tagid": "basic",
-                "customParams": { "foo": "bar" }
+                "customParams": {
+                  "foo": "bar"
+                }
               }
             },
-
             {
               "id": "imp-empty-custom",
-              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
               "tagid": "empty-custom",
-              "ext": {
-                "tagid": "empty-custom"
-              }
+              "ext": {}
             },
-
             {
               "id": "imp-numeric-bool",
-              "banner": { "format": [{ "w": 320, "h": 50 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
               "tagid": "numeric-bool",
               "ext": {
-                "tagid": "numeric-bool",
                 "customParams": {
                   "floor": 0.45,
                   "enabled": true,
@@ -132,30 +172,42 @@
                 }
               }
             },
-
             {
               "id": "imp-nested-custom",
-              "banner": { "format": [{ "w": 970, "h": 250 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 970,
+                    "h": 250
+                  }
+                ]
+              },
               "tagid": "nested",
               "ext": {
-                "tagid": "nested",
                 "customParams": {
                   "placement": {
                     "position": "top",
                     "sticky": true
                   },
-                  "sizes": ["970x250", "728x90"]
+                  "sizes": [
+                    "970x250",
+                    "728x90"
+                  ]
                 }
               }
             },
-
             {
               "id": "imp-no-custom",
-              "banner": { "format": [{ "w": 468, "h": 60 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 468,
+                    "h": 60
+                  }
+                ]
+              },
               "tagid": "no-custom",
-              "ext": {
-                "tagid": "no-custom"
-              }
+              "ext": {}
             }
           ]
         },
@@ -172,6 +224,5 @@
       }
     }
   ],
-
   "expectedBidResponses": []
 }

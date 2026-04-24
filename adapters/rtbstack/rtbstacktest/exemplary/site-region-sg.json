@@ -11,8 +11,13 @@
         "video": {
           "w": 640,
           "h": 360,
-          "mimes": ["video/mp4"],
-          "protocols": [2, 5]
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ]
         },
         "ext": {
           "bidder": {
@@ -26,7 +31,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -43,18 +47,26 @@
               "video": {
                 "w": 640,
                 "h": 360,
-                "mimes": ["video/mp4"],
-                "protocols": [2, 5]
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ]
               },
               "tagid": "sg-video",
               "ext": {
-                "tagid": "sg-video",
-                "customParams": { "geo": "asia" }
+                "customParams": {
+                  "geo": "asia"
+                }
               }
             }
           ]
         },
-        "impIDs": ["imp-sg-video"]
+        "impIDs": [
+          "imp-sg-video"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -67,7 +79,7 @@
                 {
                   "id": "bid-sg-1",
                   "impid": "imp-sg-video",
-                  "price": 4.50,
+                  "price": 4.5,
                   "adm": "<VAST version='3.0'>SG Video Ad</VAST>",
                   "crid": "crid-sg-1",
                   "mtype": 2
@@ -80,7 +92,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -89,7 +100,7 @@
           "bid": {
             "id": "bid-sg-1",
             "impid": "imp-sg-video",
-            "price": 4.50,
+            "price": 4.5,
             "adm": "<VAST version='3.0'>SG Video Ad</VAST>",
             "crid": "crid-sg-1",
             "mtype": 2
