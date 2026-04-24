@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -344,46 +345,27 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 }
 
 // applyDisabledIFrameBidders enforces account-level iframe cookie sync restrictions.
-// The disabledBidders field supports two formats, matching the filterSettings convention:
-//   - "*" (string): disables iframe syncs for all bidders
-//   - ["bidderA", "bidderB"] (array): disables iframe syncs for specific bidders only
+// The disabledBidders slice supports:
+//   - nil or empty: no restriction applied
+//   - ["*"]: disables iframe syncs for all bidders
+//   - ["bidderA", "bidderB"]: disables iframe syncs for specific bidders only
 //
 // When specific bidders are disabled, a compositeFilter ANDs the request-level filter with the
 // account-level filter, ensuring the account config can only further restrict — never broaden —
 // what the request's filterSettings allows. Redirect syncs are never affected.
-func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledBidders interface{}) usersync.SyncTypeFilter {
-	if disabledBidders == nil {
+func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledBidders []string) usersync.SyncTypeFilter {
+	if len(disabledBidders) == 0 {
 		return syncTypeFilter
 	}
 
-	switch v := disabledBidders.(type) {
-	case string:
-		// "*" disables all iframe syncs, matching how filterSettings uses "*" for all bidders.
-		if v == "*" {
-			syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
-		}
-	case []string:
-		// Typed string slice: used when config is set programmatically or via mapstructure.
-		if len(v) > 0 {
-			syncTypeFilter.IFrame = compositeFilter{
-				requestFilter: syncTypeFilter.IFrame,
-				accountFilter: usersync.NewSpecificBidderFilter(v, usersync.BidderFilterModeExclude),
-			}
-		}
-	case []interface{}:
-		// Untyped slice: used when JSON unmarshal deserializes an array into interface{}.
-		bidders := make([]string, 0, len(v))
-		for _, b := range v {
-			if s, ok := b.(string); ok {
-				bidders = append(bidders, s)
-			}
-		}
-		if len(bidders) > 0 {
-			syncTypeFilter.IFrame = compositeFilter{
-				requestFilter: syncTypeFilter.IFrame,
-				accountFilter: usersync.NewSpecificBidderFilter(bidders, usersync.BidderFilterModeExclude),
-			}
-		}
+	if slices.Contains(disabledBidders, "*") {
+		syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
+		return syncTypeFilter
+	}
+
+	syncTypeFilter.IFrame = compositeFilter{
+		requestFilter: syncTypeFilter.IFrame,
+		accountFilter: usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude),
 	}
 
 	return syncTypeFilter

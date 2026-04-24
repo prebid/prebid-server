@@ -1173,7 +1173,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				"TestAccount":                   testAccountData,
 				"DisabledAccount":               json.RawMessage(`{"disabled":true}`),
 				"IFrameDisabledAccount":         json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true, "disabled_iframe_bidders": ["a"]}}`),
-				"IFrameDisabledAllAccount":      json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true, "disabled_iframe_bidders": "*"}}`),
+				"IFrameDisabledAllAccount":      json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true, "disabled_iframe_bidders": ["*"]}}`),
 				"ValidAccountInvalidActivities": json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 			}},
 		}
@@ -1666,13 +1666,13 @@ func TestApplyDisabledIFrameBidders(t *testing.T) {
 	testCases := []struct {
 		description       string
 		givenFilter       usersync.SyncTypeFilter
-		givenBidders      interface{}
+		givenBidders      []string
 		expectedIFrame    map[string]bool
 		expectedRedirect  map[string]bool
 		expectedExactSync *usersync.SyncTypeFilter
 	}{
 		{
-			description:  "Nil - no change",
+			description:  "Nil list - no change",
 			givenFilter:  allowAll,
 			givenBidders: nil,
 			expectedExactSync: &usersync.SyncTypeFilter{
@@ -1690,20 +1690,20 @@ func TestApplyDisabledIFrameBidders(t *testing.T) {
 			},
 		},
 		{
-			description:  "Wildcard string - excludes all iframe",
+			description:  "Wildcard - excludes all iframe",
 			givenFilter:  allowAll,
-			givenBidders: "*",
+			givenBidders: []string{"*"},
 			expectedExactSync: &usersync.SyncTypeFilter{
 				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
 				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 			},
 		},
 		{
-			description:  "Non-wildcard string - no change",
+			description:  "Wildcard with other bidders - still excludes all iframe",
 			givenFilter:  allowAll,
-			givenBidders: "bidderA",
+			givenBidders: []string{"a", "*"},
 			expectedExactSync: &usersync.SyncTypeFilter{
-				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
 				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 			},
 		},
@@ -1726,7 +1726,7 @@ func TestApplyDisabledIFrameBidders(t *testing.T) {
 				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				Redirect: usersync.NewSpecificBidderFilter([]string{"x"}, usersync.BidderFilterModeExclude),
 			},
-			givenBidders: "*",
+			givenBidders: []string{"*"},
 			expectedExactSync: &usersync.SyncTypeFilter{
 				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
 				Redirect: usersync.NewSpecificBidderFilter([]string{"x"}, usersync.BidderFilterModeExclude),
@@ -1755,16 +1755,6 @@ func TestApplyDisabledIFrameBidders(t *testing.T) {
 				"biddera": false,
 				"bidderb": true,
 				"bidderc": false,
-			},
-		},
-		{
-			description:  "JSON array ([]interface{}) - excludes specific bidders",
-			givenFilter:  allowAll,
-			givenBidders: []interface{}{"bidderA", "bidderB"},
-			expectedIFrame: map[string]bool{
-				"biddera": false,
-				"bidderb": false,
-				"bidderc": true,
 			},
 		},
 	}
