@@ -345,10 +345,17 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 }
 
 // applyDisabledIFrameBidders enforces account-level iframe cookie sync restrictions.
-// The disabledBidders slice supports:
-//   - nil or empty: no restriction applied
-//   - ["*"]: disables iframe syncs for all bidders
-//   - ["bidderA", "bidderB"]: disables iframe syncs for specific bidders only
+// The disabledBidders field supports two formats, matching the filterSettings convention:
+// - "*" (string): disables iframe syncs for all bidders
+// - ["bidderA", "bidderB"] (array): disables iframe syncs for specific bidders only
+//
+// When specific bidders are disabled, a compositeFilter ANDs the request-level filter with the
+// account-level filter, ensuring the account config can only further restrict — never broaden —
+// what the request's filterSettings allows. Redirect syncs are never affected.
+// applyDisabledIFrameBidders enforces account-level iframe cookie sync restrictions.
+// The disabledBidders list supports:
+// - ["*"]: disables iframe syncs for all bidders
+// - ["bidderA", "bidderB"]: disables iframe syncs for specific bidders only
 //
 // When specific bidders are disabled, a compositeFilter ANDs the request-level filter with the
 // account-level filter, ensuring the account config can only further restrict — never broaden —
@@ -360,12 +367,11 @@ func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabled
 
 	if slices.Contains(disabledBidders, "*") {
 		syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
-		return syncTypeFilter
-	}
-
-	syncTypeFilter.IFrame = compositeFilter{
-		requestFilter: syncTypeFilter.IFrame,
-		accountFilter: usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude),
+	} else {
+		syncTypeFilter.IFrame = compositeFilter{
+			requestFilter: syncTypeFilter.IFrame,
+			accountFilter: usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude),
+		}
 	}
 
 	return syncTypeFilter
