@@ -2031,3 +2031,48 @@ func TestUnpackDSADefault(t *testing.T) {
 		})
 	}
 }
+
+func TestDisabledIFrameBiddersEnvVar(t *testing.T) {
+	tests := []struct {
+		name     string
+		envVal   string
+		expected []string
+	}{
+		{
+			name:     "single-value",
+			envVal:   "openweb",
+			expected: []string{"openweb"},
+		},
+		{
+			name:     "comma-separated",
+			envVal:   "openweb,360playvid",
+			expected: []string{"openweb", "360playvid"},
+		},
+		{
+			name:     "wildcard",
+			envVal:   "*",
+			expected: []string{"*"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key := "PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS"
+			if old, ok := os.LookupEnv(key); ok {
+				defer os.Setenv(key, old)
+			} else {
+				defer os.Unsetenv(key)
+			}
+			os.Setenv(key, tt.envVal)
+
+			v := viper.New()
+			SetupViper(v, "", bidderInfos)
+			v.Set("gdpr.default_value", "0")
+			cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tt.expected, cfg.AccountDefaults.CookieSync.DisabledIFrameBidders,
+				"DisabledIFrameBidders should be parsed from env var %q", tt.envVal)
+		})
+	}
+}

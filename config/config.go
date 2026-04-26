@@ -1244,6 +1244,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.BindEnv("account_defaults.privacy.dsa.default")
 	v.BindEnv("account_defaults.privacy.dsa.gdpr_only")
+	v.BindEnv("account_defaults.cookie_sync.disabled_iframe_bidders")
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 
