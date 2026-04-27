@@ -97,7 +97,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 
-	// Pre-calculate total number of bids
+	// Pre-calculate total number of bids //
 	expectedBids := 0
 	for i := range bidResp.SeatBid {
 		expectedBids += len(bidResp.SeatBid[i].Bid)
