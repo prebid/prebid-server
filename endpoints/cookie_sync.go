@@ -348,15 +348,6 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 // The disabledBidders field supports two formats, matching the filterSettings convention:
 // - "*" (string): disables iframe syncs for all bidders
 // - ["bidderA", "bidderB"] (array): disables iframe syncs for specific bidders only
-//
-// When specific bidders are disabled, a compositeFilter ANDs the request-level filter with the
-// account-level filter, ensuring the account config can only further restrict — never broaden —
-// what the request's filterSettings allows. Redirect syncs are never affected.
-// applyDisabledIFrameBidders enforces account-level iframe cookie sync restrictions.
-// The disabledBidders list supports:
-// - ["*"]: disables iframe syncs for all bidders
-// - ["bidderA", "bidderB"]: disables iframe syncs for specific bidders only
-//
 // When specific bidders are disabled, a compositeFilter ANDs the request-level filter with the
 // account-level filter, ensuring the account config can only further restrict — never broaden —
 // what the request's filterSettings allows. Redirect syncs are never affected.
