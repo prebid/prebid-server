@@ -47,7 +47,7 @@ jobs:
         id: run_coverage
         if: steps.get_directories.outputs.result != ''
         env:
-          GOTOOLCHAIN: local
+          GOTOOLCHAIN: go1.26.1+auto
         run: |
           directories=$(echo '${{ steps.get_directories.outputs.result }}' | jq -r '.[]')
           go mod download
