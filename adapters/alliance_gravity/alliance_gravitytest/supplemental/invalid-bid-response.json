@@ -10,7 +10,7 @@
         },
         "ext": {
           "bidder": {
-            "srid": "1234"
+            "placementId": "1234"
           }
         }
       }

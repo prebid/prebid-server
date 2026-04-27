@@ -4,12 +4,12 @@
   "description": "A schema which validates params accepted by the Alliance Gravity adapter",
   "type": "object",
   "properties": {
-    "srid": {
+    "placementId": {
       "type": "string",
-      "description": "Stored request ID",
+      "description": "The placement ID",
       "minLength": 1
     }
   },
 
-  "required": ["srid"]
+  "required": ["placementId"]
 }

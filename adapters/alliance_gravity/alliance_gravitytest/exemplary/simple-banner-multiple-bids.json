@@ -23,7 +23,7 @@
         },
         "ext": {
           "bidder": {
-            "srid": "abc"
+            "placementId": "abc"
           }
         }
       },
@@ -39,7 +39,7 @@
         },
         "ext": {
           "bidder": {
-            "srid": "def"
+            "placementId": "def"
           }
         }
       }

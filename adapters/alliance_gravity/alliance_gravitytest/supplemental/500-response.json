@@ -38,7 +38,7 @@
         },
         "ext": {
           "bidder": {
-            "srid": "abcdefgh"
+            "placementId": "abcdefgh"
           }
         }
       }
