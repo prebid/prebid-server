@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -166,6 +167,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	if err != nil {
 		return usersync.Request{}, macros.UserSyncPrivacy{}, account, err
 	}
+
+	syncTypeFilter = applyDisabledIFrameBidders(syncTypeFilter, account.CookieSync.DisabledIFrameBidders)
 
 	gdprRequestInfo := gdpr.RequestInfo{
 		Consent:    privacyMacros.GDPRConsent,
@@ -339,6 +342,30 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 		return accountCookieSyncConfig.PriorityGroups
 	}
 	return c.config.UserSync.PriorityGroups
+}
+
+// applyDisabledIFrameBidders enforces account-level iframe cookie sync restrictions.
+// The disabledBidders field supports two formats, matching the filterSettings convention:
+// - "*" (string): disables iframe syncs for all bidders
+// - ["bidderA", "bidderB"] (array): disables iframe syncs for specific bidders only
+// When specific bidders are disabled, a CompositeFilter ANDs the request-level filter with the
+// account-level filter, ensuring the account config can only further restrict — never broaden —
+// what the request's filterSettings allows. Redirect syncs are never affected.
+func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledIFrameBidders []string) usersync.SyncTypeFilter {
+	if len(disabledIFrameBidders) == 0 {
+		return syncTypeFilter
+	}
+
+	if slices.Contains(disabledIFrameBidders, "*") {
+		syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
+	} else {
+		syncTypeFilter.IFrame = usersync.CompositeFilter{
+			RequestFilter: syncTypeFilter.IFrame,
+			AccountFilter: usersync.NewSpecificBidderFilter(disabledIFrameBidders, usersync.BidderFilterModeExclude),
+		}
+	}
+
+	return syncTypeFilter
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {

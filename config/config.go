@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/errortypes"
@@ -752,7 +753,10 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 // New uses viper to get our server configurations.
 func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
-	if err := v.Unmarshal(&c, viper.DecodeHook(AccountModulesHookFunc())); err != nil {
+	if err := v.Unmarshal(&c, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
+		mapstructure.StringToSliceHookFunc(","),
+		AccountModulesHookFunc(),
+	))); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 
@@ -1239,6 +1243,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.BindEnv("account_defaults.privacy.dsa.default")
 	v.BindEnv("account_defaults.privacy.dsa.gdpr_only")
+	v.BindEnv("account_defaults.cookie_sync.disabled_iframe_bidders")
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 

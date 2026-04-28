@@ -637,6 +637,21 @@ func cmpNils(t *testing.T, key string, a interface{}) {
 	assert.Nilf(t, a, "%s: %t != nil", key, a)
 }
 
+func TestDisabledIFrameBiddersFromEnv(t *testing.T) {
+	os.Setenv("PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS", "bidder1,bidder2")
+	defer os.Unsetenv("PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS")
+
+	v := viper.New()
+	SetupViper(v, "", bidderInfos)
+	v.Set("gdpr.default_value", "0")
+	v.SetConfigType("yaml")
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
+	assert.NoError(t, err)
+
+	bidders := cfg.AccountDefaults.CookieSync.DisabledIFrameBidders
+	assert.Equal(t, []string{"bidder1", "bidder2"}, bidders)
+}
+
 func TestFullConfig(t *testing.T) {
 	int8One := int8(1)
 
