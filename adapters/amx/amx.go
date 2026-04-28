@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -15,7 +16,8 @@ import (
 )
 
 const nbrHeaderName = "x-nbr"
-const adapterVersion = "pbs1.2"
+const adapterVersion = "pbs1.3"
+const bidderCurrency = "USD"
 
 // AMXAdapter is the AMX bid adapter
 type AMXAdapter struct {
@@ -57,12 +59,36 @@ func ensurePublisherWithID(pub *openrtb2.Publisher, publisherID string) openrtb2
 	return pubCopy
 }
 
+func resolveBidFloor(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if reqInfo == nil || imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, bidderCurrency) {
+		return nil
+	}
+
+	convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, bidderCurrency)
+	if err != nil {
+		return err
+	}
+
+	imp.BidFloor = convertedValue
+	imp.BidFloorCur = bidderCurrency
+	return nil
+}
+
 // MakeRequests creates AMX adapter requests
 func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	reqCopy := *request
 
 	var publisherID string
+	hasBidFloor := false
 	for idx, imp := range reqCopy.Imp {
+		if err := resolveBidFloor(&imp, req); err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		if imp.BidFloor > 0 {
+			hasBidFloor = true
+		}
+
 		var params amxExt
 		if err := jsonutil.Unmarshal(imp.Ext, &params); err == nil {
 			if params.Bidder.TagID != "" {
@@ -72,9 +98,14 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 			// if it has an adUnitId, set as the tagid
 			if params.Bidder.AdUnitID != "" {
 				imp.TagID = params.Bidder.AdUnitID
-				reqCopy.Imp[idx] = imp
 			}
 		}
+
+		reqCopy.Imp[idx] = imp
+	}
+
+	if hasBidFloor && len(reqCopy.Cur) > 0 {
+		reqCopy.Cur = []string{bidderCurrency}
 	}
 
 	if publisherID != "" {
@@ -147,6 +178,9 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
