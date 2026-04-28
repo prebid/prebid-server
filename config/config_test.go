@@ -638,7 +638,7 @@ func cmpNils(t *testing.T, key string, a interface{}) {
 }
 
 func TestDisabledIFrameBiddersFromEnv(t *testing.T) {
-	os.Setenv("PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS", "openweb,360playvid")
+	os.Setenv("PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS", "bidder1,bidder2")
 	defer os.Unsetenv("PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS")
 
 	v := viper.New()
@@ -649,8 +649,7 @@ func TestDisabledIFrameBiddersFromEnv(t *testing.T) {
 	assert.NoError(t, err)
 
 	bidders := cfg.AccountDefaults.CookieSync.DisabledIFrameBidders
-	t.Logf("DisabledIFrameBidders = %v (len=%d)", bidders, len(bidders))
-	assert.Equal(t, []string{"openweb", "360playvid"}, bidders)
+	assert.Equal(t, []string{"bidder1", "bidder2"}, bidders)
 }
 
 func TestFullConfig(t *testing.T) {

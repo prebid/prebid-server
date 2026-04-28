@@ -348,35 +348,24 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 // The disabledBidders field supports two formats, matching the filterSettings convention:
 // - "*" (string): disables iframe syncs for all bidders
 // - ["bidderA", "bidderB"] (array): disables iframe syncs for specific bidders only
-// When specific bidders are disabled, a compositeFilter ANDs the request-level filter with the
+// When specific bidders are disabled, a CompositeFilter ANDs the request-level filter with the
 // account-level filter, ensuring the account config can only further restrict — never broaden —
 // what the request's filterSettings allows. Redirect syncs are never affected.
-func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledBidders []string) usersync.SyncTypeFilter {
-	if len(disabledBidders) == 0 {
+func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledIFrameBidders []string) usersync.SyncTypeFilter {
+	if len(disabledIFrameBidders) == 0 {
 		return syncTypeFilter
 	}
 
-	if slices.Contains(disabledBidders, "*") {
+	if slices.Contains(disabledIFrameBidders, "*") {
 		syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
 	} else {
-		syncTypeFilter.IFrame = compositeFilter{
-			requestFilter: syncTypeFilter.IFrame,
-			accountFilter: usersync.NewSpecificBidderFilter(disabledBidders, usersync.BidderFilterModeExclude),
+		syncTypeFilter.IFrame = usersync.CompositeFilter{
+			RequestFilter: syncTypeFilter.IFrame,
+			AccountFilter: usersync.NewSpecificBidderFilter(disabledIFrameBidders, usersync.BidderFilterModeExclude),
 		}
 	}
 
 	return syncTypeFilter
-}
-
-// compositeFilter implements usersync.BidderFilter by requiring both filters to allow a bidder.
-// This ensures account-level restrictions can only further restrict, never broaden, the request filter.
-type compositeFilter struct {
-	requestFilter usersync.BidderFilter
-	accountFilter usersync.BidderFilter
-}
-
-func (f compositeFilter) Allowed(bidder string) bool {
-	return f.requestFilter.Allowed(bidder) && f.accountFilter.Allowed(bidder)
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
