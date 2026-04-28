@@ -16,7 +16,7 @@ import (
 )
 
 const nbrHeaderName = "x-nbr"
-const adapterVersion = "pbs1.2"
+const adapterVersion = "pbs1.3"
 const bidderCurrency = "USD"
 
 // AMXAdapter is the AMX bid adapter
