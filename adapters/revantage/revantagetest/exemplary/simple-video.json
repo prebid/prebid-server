@@ -63,7 +63,8 @@
           },
           "tmax": 1500,
           "cur": ["USD"]
-        }
+        },
+        "impIDs": ["video-imp-1"]
       },
       "mockResponse": {
         "status": 200,

@@ -38,7 +38,8 @@
           "site": {"domain": "example.com"},
           "tmax": 1000,
           "cur": ["USD"]
-        }
+        },
+        "impIDs": ["imp-1", "imp-2"]
       },
       "mockResponse": {
         "status": 200,

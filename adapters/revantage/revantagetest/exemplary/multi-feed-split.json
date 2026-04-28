@@ -33,7 +33,8 @@
           "site": {"domain": "example.com"},
           "tmax": 1000,
           "cur": ["USD"]
-        }
+        },
+        "impIDs": ["imp-a"]
       },
       "mockResponse": {
         "status": 200,
@@ -66,7 +67,8 @@
           "site": {"domain": "example.com"},
           "tmax": 1000,
           "cur": ["USD"]
-        }
+        },
+        "impIDs": ["imp-b"]
       },
       "mockResponse": {
         "status": 200,
