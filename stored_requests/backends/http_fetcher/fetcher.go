@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/stored_requests"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"golang.org/x/net/context/ctxhttp"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
@@ -119,7 +119,7 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 	if len(accountIDs) == 0 {
 		return nil, nil
 	}
-	u := fetcher.EndpointURL
+	u := *fetcher.EndpointURL
 	q := u.Query()
 	if !fetcher.UseRfcCompliantBuilder {
 		q.Set("account-ids", `["`+strings.Join(accountIDs, `","`)+`"]`)

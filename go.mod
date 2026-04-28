@@ -1,14 +1,13 @@
-module github.com/prebid/prebid-server/v3
+module github.com/prebid/prebid-server/v4
 
 go 1.23.0
-
-retract v3.0.0 // Forgot to update major version in import path and module name
 
 require (
 	github.com/51Degrees/device-detection-go/v4 v4.4.35
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/IABTechLab/adscert v0.34.0
 	github.com/NYTimes/gziphandler v1.1.1
+	github.com/WURFL/golang-wurfl v1.30.3
 	github.com/alitto/pond v1.8.3
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/benbjohnson/clock v1.3.0
@@ -35,7 +34,7 @@ require (
 	github.com/rs/cors v1.11.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.17.1
 	github.com/tidwall/sjson v1.2.5
 	github.com/vrischmann/go-metrics-influxdb v0.1.1
