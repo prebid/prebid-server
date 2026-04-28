@@ -1,0 +1,94 @@
+{
+  "mockBidRequest": {
+    "id": "multi-imp-request",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"feedId": "feed-shared"}}
+      },
+      {
+        "id": "imp-2",
+        "banner": {"w": 728, "h": 90, "format": [{"w": 728, "h": 90}]},
+        "ext": {"bidder": {"feedId": "feed-shared"}}
+      }
+    ],
+    "site": {"domain": "example.com"},
+    "tmax": 1000,
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.revantage.io/bid?feed=feed-shared",
+        "body": {
+          "id": "multi-imp-request",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+              "ext": {"feedId": "feed-shared", "bidder": {}}
+            },
+            {
+              "id": "imp-2",
+              "banner": {"w": 728, "h": 90, "format": [{"w": 728, "h": 90}]},
+              "ext": {"feedId": "feed-shared", "bidder": {}}
+            }
+          ],
+          "site": {"domain": "example.com"},
+          "tmax": 1000,
+          "cur": ["USD"]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multi-imp-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "dsp-a",
+              "bid": [
+                {
+                  "id": "b1", "impid": "imp-1", "price": 1.10,
+                  "adm": "<div>A</div>", "crid": "c1", "w": 300, "h": 250,
+                  "adomain": ["a.com"], "mtype": 1
+                },
+                {
+                  "id": "b2", "impid": "imp-2", "price": 0.80,
+                  "adm": "<div>B</div>", "crid": "c2", "w": 728, "h": 90,
+                  "adomain": ["b.com"], "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1", "impid": "imp-1", "price": 1.10,
+            "adm": "<div>A</div>", "crid": "c1", "w": 300, "h": 250,
+            "adomain": ["a.com"], "mtype": 1
+          },
+          "type": "banner",
+          "seat": "dsp-a"
+        },
+        {
+          "bid": {
+            "id": "b2", "impid": "imp-2", "price": 0.80,
+            "adm": "<div>B</div>", "crid": "c2", "w": 728, "h": 90,
+            "adomain": ["b.com"], "mtype": 1
+          },
+          "type": "banner",
+          "seat": "dsp-a"
+        }
+      ]
+    }
+  ]
+}
