@@ -199,11 +199,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return response, errs
 }
 
-// resolveMediaType picks banner or video based on (in priority order):
-//  1. bid.mtype (oRTB 2.6)
-//  2. bid.ext.mediaType
-//  3. VAST shape detection on bid.adm
-//  4. The single configured media type on the originating imp
+// resolveMediaType determines the bid's media type. Resolution order:
+//  1. bid.mtype (oRTB 2.6) — REQUIRED on bids for multi-format impressions.
+//  2. bid.ext.mediaType — legacy signal, accepted as a fallback.
+//  3. The single, unambiguous media type on the originating imp (only when the
+//     imp declares exactly one of banner/video).
+//
+// Bids on multi-format imps that arrive without bid.mtype or bid.ext.mediaType
+// are rejected with a BadServerResponse error. Per Prebid Server guidance, the
+// adapter server MUST set MType on every bid; we do not guess.
 func resolveMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
@@ -226,10 +230,6 @@ func resolveMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidTy
 		}
 	}
 
-	if isVastMarkup(bid.AdM) {
-		return openrtb_ext.BidTypeVideo, nil
-	}
-
 	for _, imp := range imps {
 		if imp.ID != bid.ImpID {
 			continue
@@ -241,24 +241,11 @@ func resolveMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidTy
 			return openrtb_ext.BidTypeVideo, nil
 		case hasBanner && !hasVideo:
 			return openrtb_ext.BidTypeBanner, nil
-		case hasBanner && hasVideo:
-			// Multi-format with no explicit signal — default to banner. The Revantage
-			// endpoint should set mtype or ext.mediaType in this case; this is a fallback.
-			return openrtb_ext.BidTypeBanner, nil
 		}
 		break
 	}
 
 	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("could not determine media type for bid %s on imp %s", bid.ID, bid.ImpID),
+		Message: fmt.Sprintf("could not determine media type for bid %s on imp %s: response missing bid.mtype and bid.ext.mediaType", bid.ID, bid.ImpID),
 	}
-}
-
-func isVastMarkup(adm string) bool {
-	trimmed := strings.TrimSpace(adm)
-	if trimmed == "" {
-		return false
-	}
-	upper := strings.ToUpper(trimmed)
-	return strings.HasPrefix(upper, "<VAST") || strings.HasPrefix(upper, "<?XML")
 }
