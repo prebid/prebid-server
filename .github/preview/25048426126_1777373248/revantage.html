@@ -1,0 +1,367 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>revantage: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/revantage/revantage.go (66.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package revantage
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the Revantage adapter for the given bidder with the given config.
+func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{endpoint: cfg.Endpoint}, nil
+}</span>
+
+// rewrittenImpExt is the shape the Revantage endpoint expects on imp.ext.
+// It mirrors the public Prebid.js client adapter (revantageBidAdapter.js) so the
+// upstream endpoint can be a single code path for both client- and server-side
+// integrations.
+type rewrittenImpExt struct {
+        FeedID string             `json:"feedId"`
+        Bidder rewrittenImpBidder `json:"bidder"`
+}
+
+type rewrittenImpBidder struct {
+        PlacementID string `json:"placementId,omitempty"`
+        PublisherID string `json:"publisherId,omitempty"`
+}
+
+// MakeRequests converts an OpenRTB bid request into one or more HTTP calls to the Revantage endpoint.
+//
+// Impressions are grouped by feedId. Each group becomes a separate HTTP call so that a single
+// auction can serve multiple feeds without conflict — the endpoint's `?feed=` query param must
+// match the feedId used in every imp it carries.
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if request == nil || len(request.Imp) == 0 </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{Message: "no impressions in bid request"}}
+        }</span>
+
+        // Preserve insertion order of feed groups for deterministic test output.
+        <span class="cov8" title="1">type group struct {
+                imps []openrtb2.Imp
+        }
+        groups := make(map[string]*group)
+        feedOrder := make([]string, 0)
+        var errs []error
+
+        for i := range request.Imp </span><span class="cov8" title="1">{
+                imp := request.Imp[i]
+                feedID, err := rewriteImpExt(&amp;imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">g, ok := groups[feedID]
+                if !ok </span><span class="cov8" title="1">{
+                        g = &amp;group{}
+                        groups[feedID] = g
+                        feedOrder = append(feedOrder, feedID)
+                }</span>
+                <span class="cov8" title="1">g.imps = append(g.imps, imp)</span>
+        }
+
+        <span class="cov8" title="1">if len(groups) == 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">requests := make([]*adapters.RequestData, 0, len(groups))
+        for _, feedID := range feedOrder </span><span class="cov8" title="1">{
+                imps := groups[feedID].imps
+
+                // Shallow copy the request and replace imps with this feed's slice.
+                reqCopy := *request
+                reqCopy.Imp = imps
+
+                body, err := json.Marshal(reqCopy)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, fmt.Errorf("failed to marshal request for feed %s: %w", feedID, err))
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">headers := http.Header{}
+                headers.Add("Content-Type", "application/json;charset=utf-8")
+                headers.Add("Accept", "application/json")
+
+                requests = append(requests, &amp;adapters.RequestData{
+                        Method:  http.MethodPost,
+                        Uri:     a.endpoint + "?feed=" + url.QueryEscape(feedID),
+                        Body:    body,
+                        Headers: headers,
+                        ImpIDs:  collectImpIDs(imps),
+                })</span>
+        }
+
+        <span class="cov8" title="1">return requests, errs</span>
+}
+
+// rewriteImpExt validates the bidder params on a single imp and rewrites imp.ext into the
+// shape the Revantage endpoint expects. Returns the resolved feedId.
+func rewriteImpExt(imp *openrtb2.Imp) (string, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := json.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp %s: invalid imp.ext: %s", imp.ID, err.Error()),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var revantageExt openrtb_ext.ImpExtRevantage
+        if err := json.Unmarshal(bidderExt.Bidder, &amp;revantageExt); err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp %s: invalid imp.ext.bidder: %s", imp.ID, err.Error()),
+                }
+        }</span>
+
+        <span class="cov8" title="1">feedID := strings.TrimSpace(revantageExt.FeedID)
+        if feedID == "" </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp %s: missing required param feedId", imp.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">rewritten := rewrittenImpExt{
+                FeedID: feedID,
+                Bidder: rewrittenImpBidder{
+                        PlacementID: revantageExt.PlacementID,
+                        PublisherID: revantageExt.PublisherID,
+                },
+        }
+        extBytes, err := json.Marshal(rewritten)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("imp %s: failed to marshal rewritten ext: %w", imp.ID, err)
+        }</span>
+        <span class="cov8" title="1">imp.Ext = extBytes
+
+        return feedID, nil</span>
+}
+
+func collectImpIDs(imps []openrtb2.Imp) []string <span class="cov8" title="1">{
+        ids := make([]string, len(imps))
+        for i, imp := range imps </span><span class="cov8" title="1">{
+                ids[i] = imp.ID
+        }</span>
+        <span class="cov8" title="1">return ids</span>
+}
+
+// MakeBids parses the upstream Revantage response into typed Prebid bids.
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := json.Unmarshal(responseData.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: "invalid bid response: " + err.Error(),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">if len(bidResp.SeatBid) == 0 </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">response := adapters.NewBidderResponse()
+        if bidResp.Cur != "" </span><span class="cov8" title="1">{
+                response.Currency = bidResp.Cur
+        }</span> else<span class="cov0" title="0"> {
+                response.Currency = "USD"
+        }</span>
+
+        <span class="cov8" title="1">var errs []error
+        for _, seat := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range seat.Bid </span><span class="cov8" title="1">{
+                        bid := &amp;seat.Bid[i]
+                        mt, err := resolveMediaType(bid, request.Imp)
+                        if err != nil </span><span class="cov0" title="0">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">response.Bids = append(response.Bids, &amp;adapters.TypedBid{
+                                Bid:     bid,
+                                BidType: mt,
+                                Seat:    openrtb_ext.BidderName(seat.Seat),
+                        })</span>
+                }
+        }
+        <span class="cov8" title="1">return response, errs</span>
+}
+
+// resolveMediaType picks banner or video based on (in priority order):
+//  1. bid.mtype (oRTB 2.6)
+//  2. bid.ext.mediaType
+//  3. VAST shape detection on bid.adm
+//  4. The single configured media type on the originating imp
+func resolveMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        }
+
+        <span class="cov0" title="0">if len(bid.Ext) &gt; 0 </span><span class="cov0" title="0">{
+                var ext struct {
+                        MediaType string `json:"mediaType"`
+                }
+                if err := json.Unmarshal(bid.Ext, &amp;ext); err == nil </span><span class="cov0" title="0">{
+                        switch strings.ToLower(ext.MediaType) </span>{
+                        case "banner":<span class="cov0" title="0">
+                                return openrtb_ext.BidTypeBanner, nil</span>
+                        case "video":<span class="cov0" title="0">
+                                return openrtb_ext.BidTypeVideo, nil</span>
+                        }
+                }
+        }
+
+        <span class="cov0" title="0">if isVastMarkup(bid.AdM) </span><span class="cov0" title="0">{
+                return openrtb_ext.BidTypeVideo, nil
+        }</span>
+
+        <span class="cov0" title="0">for _, imp := range imps </span><span class="cov0" title="0">{
+                if imp.ID != bid.ImpID </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov0" title="0">hasBanner := imp.Banner != nil
+                hasVideo := imp.Video != nil
+                switch </span>{
+                case hasVideo &amp;&amp; !hasBanner:<span class="cov0" title="0">
+                        return openrtb_ext.BidTypeVideo, nil</span>
+                case hasBanner &amp;&amp; !hasVideo:<span class="cov0" title="0">
+                        return openrtb_ext.BidTypeBanner, nil</span>
+                case hasBanner &amp;&amp; hasVideo:<span class="cov0" title="0">
+                        // Multi-format with no explicit signal — default to banner. The Revantage
+                        // endpoint should set mtype or ext.mediaType in this case; this is a fallback.
+                        return openrtb_ext.BidTypeBanner, nil</span>
+                }
+                <span class="cov0" title="0">break</span>
+        }
+
+        <span class="cov0" title="0">return "", &amp;errortypes.BadServerResponse{
+                Message: fmt.Sprintf("could not determine media type for bid %s on imp %s", bid.ID, bid.ImpID),
+        }</span>
+}
+
+func isVastMarkup(adm string) bool <span class="cov0" title="0">{
+        trimmed := strings.TrimSpace(adm)
+        if trimmed == "" </span><span class="cov0" title="0">{
+                return false
+        }</span>
+        <span class="cov0" title="0">upper := strings.ToUpper(trimmed)
+        return strings.HasPrefix(upper, "&lt;VAST") || strings.HasPrefix(upper, "&lt;?XML")</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
