@@ -194,6 +194,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/rediads"
 	"github.com/prebid/prebid-server/v4/adapters/relevantdigital"
 	"github.com/prebid/prebid-server/v4/adapters/resetdigital"
+	"github.com/prebid/prebid-server/v4/adapters/revantage"
 	"github.com/prebid/prebid-server/v4/adapters/revcontent"
 	"github.com/prebid/prebid-server/v4/adapters/richaudience"
 	"github.com/prebid/prebid-server/v4/adapters/rise"
@@ -464,6 +465,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRediads:           rediads.Builder,
 		openrtb_ext.BidderRelevantDigital:   relevantdigital.Builder,
 		openrtb_ext.BidderResetDigital:      resetdigital.Builder,
+		openrtb_ext.BidderRevantage:         revantage.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRise:              rise.Builder,
