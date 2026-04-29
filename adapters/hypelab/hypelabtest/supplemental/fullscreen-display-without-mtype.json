@@ -1,0 +1,119 @@
+{
+  "mockBidRequest": {
+    "id": "test-display-request-id",
+    "imp": [
+      {
+        "id": "display-imp-id",
+        "instl": 1,
+        "banner": {
+          "format": [{ "w": 1080, "h": 1920 }]
+        },
+        "ext": {
+          "bidder": {
+            "property_slug": "test-property",
+            "placement_slug": "interstitial-display-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example/display"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://api.hypelab.com/v1/rtb_requests",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "X-Openrtb-Version": ["2.6"]
+        },
+        "body": {
+          "id": "test-display-request-id",
+          "imp": [
+            {
+              "id": "display-imp-id",
+              "tagid": "interstitial-display-placement",
+              "displaymanager": "HypeLab Prebid Server",
+              "displaymanagerver": "unknown",
+              "instl": 1,
+              "banner": {
+                "format": [{ "w": 1080, "h": 1920 }]
+              },
+              "ext": {
+                "bidder": {
+                  "property_slug": "test-property",
+                  "placement_slug": "interstitial-display-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example/display"
+          },
+          "ext": {
+            "source": "prebid-server",
+            "provider_version": "prebid-server@unknown"
+          }
+        },
+        "impIDs": ["display-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-display-request-id",
+          "seatbid": [
+            {
+              "seat": "hypelab",
+              "bid": [
+                {
+                  "id": "display-bid-id",
+                  "impid": "display-imp-id",
+                  "price": 1.10,
+                  "adomain": ["advertiser.example"],
+                  "w": 1080,
+                  "h": 1920,
+                  "ext": {
+                    "hypelab": {
+                      "creative_type": "display",
+                      "native_render": true,
+                      "image_url": "https://cdn.example/display.png"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "seat": "hypelab",
+          "type": "banner",
+          "bid": {
+            "id": "display-bid-id",
+            "impid": "display-imp-id",
+            "price": 1.10,
+            "adomain": ["advertiser.example"],
+            "w": 1080,
+            "h": 1920,
+            "ext": {
+              "hypelab": {
+                "creative_type": "display",
+                "native_render": true,
+                "image_url": "https://cdn.example/display.png"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
