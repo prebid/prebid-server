@@ -115,13 +115,6 @@ func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfull, error) {
 		}
 	}
 
-	// Runtime validation: pid (PublisherID) must not be empty
-	if matterfullExt.PublisherID == "" {
-		return openrtb_ext.ExtImpMatterfull{}, &errortypes.BadInput{
-			Message: "matterfull bidder requires non-empty publisher_id",
-		}
-	}
-
 	return matterfullExt, nil
 }
 
@@ -200,29 +193,87 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	bidResponse := adapters.NewBidderResponse()
+	var errs []error
 	for _, seatBid := range bidResp.SeatBid {
 		for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
+			bidType, err := getMediaTypeForBid(bid, internalRequest.Imp)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     bid,
-				BidType: getMediaTypeForImpID(bid.ImpID, internalRequest.Imp),
+				BidType: bidType,
 			})
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
-// getMediaTypeForImpID figures out which media type this bid is for
-func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for imp := range iterutil.SlicePointerValues(imps) {
-		if imp.ID == impID {
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			}
-			return openrtb_ext.BidTypeBanner
+func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case 0:
+		return getMediaTypeForImpID(bid.ImpID, imps)
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported mtype %d for impression with ID: %s", bid.MType, bid.ImpID),
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+}
+
+func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	for imp := range iterutil.SlicePointerValues(imps) {
+		if imp.ID == impID {
+			bidType, found, multiFormat := getMediaTypeForImp(imp)
+			if multiFormat {
+				return "", &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Bid must have non-zero mtype for multi-format impression with ID: %s", impID),
+				}
+			}
+			if found {
+				return bidType, nil
+			}
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Could not determine media type for impression with ID: %s", impID),
+			}
+		}
+	}
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to find impression for ID: %s", impID),
+	}
+}
+
+func getMediaTypeForImp(imp *openrtb2.Imp) (openrtb_ext.BidType, bool, bool) {
+	var bidType openrtb_ext.BidType
+	formatCount := 0
+
+	if imp.Banner != nil {
+		bidType = openrtb_ext.BidTypeBanner
+		formatCount++
+	}
+	if imp.Video != nil {
+		bidType = openrtb_ext.BidTypeVideo
+		formatCount++
+	}
+	if imp.Audio != nil {
+		bidType = openrtb_ext.BidTypeAudio
+		formatCount++
+	}
+	if imp.Native != nil {
+		bidType = openrtb_ext.BidTypeNative
+		formatCount++
+	}
+
+	return bidType, formatCount == 1, formatCount > 1
 }
 
 // Builder builds a new instance of the Matterfull adapter for the given bidder with the given config.

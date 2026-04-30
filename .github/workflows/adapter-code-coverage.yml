@@ -88,16 +88,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add $directory/*
           git commit -m 'Add coverage files'
-          for attempt in 1 2 3; do
-            git pull --rebase origin coverage-preview
-            if git push origin HEAD:coverage-preview; then
-              break
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "Failed to push coverage preview after ${attempt} attempts"
-              exit 1
-            fi
-          done
+          git push origin coverage-preview
           echo "remote_coverage_preview_dir=${directory}" >> $GITHUB_OUTPUT
 
       - name: Checkout Master Branch

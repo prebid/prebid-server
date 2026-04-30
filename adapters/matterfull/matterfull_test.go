@@ -44,10 +44,6 @@ func TestMakeRequestsAllImpsInvalid(t *testing.T) {
 			ID: "1", Banner: &openrtb2.Banner{W: ptr(300), H: ptr(250)},
 			Ext: []byte(`{"bidder": 123}`),
 		}},
-		{"empty publisher id", openrtb2.Imp{
-			ID: "1", Banner: &openrtb2.Banner{W: ptr(300), H: ptr(250)},
-			Ext: []byte(`{"bidder": {"pid": ""}}`),
-		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -170,15 +166,75 @@ func TestCompatImpressionWithoutBanner(t *testing.T) {
 	assert.Nil(t, imp.Ext)
 }
 
-func TestGetMediaTypeForImpID(t *testing.T) {
+func TestGetMediaTypeForBid(t *testing.T) {
 	imps := []openrtb2.Imp{
 		{ID: "banner-imp", Banner: &openrtb2.Banner{}},
 		{ID: "video-imp", Video: &openrtb2.Video{}},
+		{ID: "multi-imp", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}},
 	}
 
-	assert.Equal(t, openrtb_ext.BidTypeBanner, getMediaTypeForImpID("banner-imp", imps))
-	assert.Equal(t, openrtb_ext.BidTypeVideo, getMediaTypeForImpID("video-imp", imps))
-	assert.Equal(t, openrtb_ext.BidTypeBanner, getMediaTypeForImpID("missing", imps))
+	tests := []struct {
+		name        string
+		bid         openrtb2.Bid
+		expected    openrtb_ext.BidType
+		expectedErr string
+	}{
+		{
+			name:     "explicit banner mtype",
+			bid:      openrtb2.Bid{ImpID: "multi-imp", MType: openrtb2.MarkupBanner},
+			expected: openrtb_ext.BidTypeBanner,
+		},
+		{
+			name:     "explicit video mtype",
+			bid:      openrtb2.Bid{ImpID: "multi-imp", MType: openrtb2.MarkupVideo},
+			expected: openrtb_ext.BidTypeVideo,
+		},
+		{
+			name:     "explicit native mtype",
+			bid:      openrtb2.Bid{ImpID: "multi-imp", MType: openrtb2.MarkupNative},
+			expected: openrtb_ext.BidTypeNative,
+		},
+		{
+			name:     "explicit audio mtype",
+			bid:      openrtb2.Bid{ImpID: "multi-imp", MType: openrtb2.MarkupAudio},
+			expected: openrtb_ext.BidTypeAudio,
+		},
+		{
+			name:     "single format fallback",
+			bid:      openrtb2.Bid{ImpID: "banner-imp"},
+			expected: openrtb_ext.BidTypeBanner,
+		},
+		{
+			name:        "multi format requires mtype",
+			bid:         openrtb2.Bid{ImpID: "multi-imp"},
+			expectedErr: "Bid must have non-zero mtype for multi-format impression with ID: multi-imp",
+		},
+		{
+			name:        "unsupported mtype",
+			bid:         openrtb2.Bid{ImpID: "banner-imp", MType: 5},
+			expectedErr: "Unsupported mtype 5 for impression with ID: banner-imp",
+		},
+		{
+			name:        "missing impression",
+			bid:         openrtb2.Bid{ImpID: "missing"},
+			expectedErr: "Failed to find impression for ID: missing",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bidType, err := getMediaTypeForBid(&tt.bid, imps)
+
+			if tt.expectedErr == "" {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, bidType)
+				return
+			}
+			require.Error(t, err)
+			assert.EqualError(t, err, tt.expectedErr)
+			assert.Empty(t, bidType)
+		})
+	}
 }
 
 func ptr(i int64) *int64 { return &i }
