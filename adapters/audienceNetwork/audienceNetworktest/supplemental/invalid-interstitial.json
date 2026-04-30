@@ -34,7 +34,7 @@
         "tmax": 500
     },
     "expectedMakeRequestsErrors": [{
-        "value": "imp #test-imp-id: interstitial imps are only supported for banner",
+        "value": "imp #test-imp-id: interstitial imps are only supported for banner and rewarded video",
         "comparison": "literal"
     }]
 }
