@@ -171,8 +171,7 @@
               }
             }
           },
-          "type": "banner",
-          "seat": "insticator"
+          "type": "banner"
         }
       ]
     }
