@@ -186,6 +186,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.BidderInfos.validate(errs)
 	errs = cfg.AccountDefaults.Privacy.IPv6Config.Validate(errs)
 	errs = cfg.AccountDefaults.Privacy.IPv4Config.Validate(errs)
+	errs = cfg.Hooks.validate(errs)
 
 	return errs
 }
