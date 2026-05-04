@@ -2603,27 +2603,23 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 }
 
 func TestCookieSyncFindPriorityGroupsOnly(t *testing.T) {
-	testCases := []struct {
-		description            string
+	testCases := map[string]struct {
 		givenAccountCookieSync config.CookieSync
 		expected               bool
 	}{
-		{
-			description: "Returns true when PriorityGroupsOnly is true",
+		"true": {
 			givenAccountCookieSync: config.CookieSync{
 				PriorityGroupsOnly: ptrutil.ToPtr(true),
 			},
 			expected: true,
 		},
-		{
-			description: "Returns false when PriorityGroupsOnly is false",
+		"false": {
 			givenAccountCookieSync: config.CookieSync{
 				PriorityGroupsOnly: ptrutil.ToPtr(false),
 			},
 			expected: false,
 		},
-		{
-			description: "Returns false when PriorityGroupsOnly is nil",
+		"nil": {
 			givenAccountCookieSync: config.CookieSync{
 				PriorityGroupsOnly: nil,
 			},
@@ -2631,8 +2627,8 @@ func TestCookieSyncFindPriorityGroupsOnly(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
 			endpoint := &cookieSyncEndpoint{}
 			result := endpoint.findPriorityGroupsOnly(tc.givenAccountCookieSync)
 			assert.Equal(t, tc.expected, result)
