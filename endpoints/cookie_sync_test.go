@@ -2602,6 +2602,44 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 	}
 }
 
+func TestCookieSyncFindPriorityGroupsOnly(t *testing.T) {
+	testCases := []struct {
+		description            string
+		givenAccountCookieSync config.CookieSync
+		expected               bool
+	}{
+		{
+			description: "Returns true when PriorityGroupsOnly is true",
+			givenAccountCookieSync: config.CookieSync{
+				PriorityGroupsOnly: ptrutil.ToPtr(true),
+			},
+			expected: true,
+		},
+		{
+			description: "Returns false when PriorityGroupsOnly is false",
+			givenAccountCookieSync: config.CookieSync{
+				PriorityGroupsOnly: ptrutil.ToPtr(false),
+			},
+			expected: false,
+		},
+		{
+			description: "Returns false when PriorityGroupsOnly is nil",
+			givenAccountCookieSync: config.CookieSync{
+				PriorityGroupsOnly: nil,
+			},
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			endpoint := &cookieSyncEndpoint{}
+			result := endpoint.findPriorityGroupsOnly(tc.givenAccountCookieSync)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
 // createAccountJSON creates a JSON representation of account config for testing
 func createAccountJSON(priorityGroups [][]string, defaultCoopSync *bool) json.RawMessage {
 	account := map[string]interface{}{
