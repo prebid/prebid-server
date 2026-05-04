@@ -6,11 +6,26 @@
     "properties": {
         "adUnitId": {
             "type": "string",
-            "description": "Ad Unit ID",
+            "description": "Ad Unit ID for the placement",
             "minLength": 1
+        },
+        "publisherId": {
+            "type": "string",
+            "description": "Publisher group ID for RON integration",
+            "minLength": 1
+        },
+        "integrationType": {
+            "type": "string",
+            "description": "Integration type. Use 'ronId' when integrating via publisherToken",
+            "enum": ["ronId"]
         }
     },
-    "required": [
-        "adUnitId"
+    "oneOf": [
+        {
+            "required": ["adUnitId"]
+        },
+        {
+            "required": ["publisherId", "integrationType"]
+        }
     ]
 }
