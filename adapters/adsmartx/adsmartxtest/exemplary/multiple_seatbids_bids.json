@@ -1,0 +1,102 @@
+{
+  "mockBidRequest": {
+    "id": "multi-seat-request",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": {} }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.adsmartx.com/ads/rtb/prebid/server",
+        "body": {
+          "id": "multi-seat-request",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "w": 300, "h": 250 },
+              "ext": { "bidder": {} }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multi-seat-request",
+          "seatbid": [
+            {
+              "seat": "seat-a",
+              "bid": [
+                {
+                  "id": "bid-a1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<div>Ad A</div>",
+                  "crid": "cr-a1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            },
+            {
+              "seat": "seat-b",
+              "bid": [
+                {
+                  "id": "bid-b1",
+                  "impid": "imp-1",
+                  "price": 2.0,
+                  "adm": "<div>Ad B</div>",
+                  "crid": "cr-b1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-a1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<div>Ad A</div>",
+            "crid": "cr-a1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-b1",
+            "impid": "imp-1",
+            "price": 2.0,
+            "adm": "<div>Ad B</div>",
+            "crid": "cr-b1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
