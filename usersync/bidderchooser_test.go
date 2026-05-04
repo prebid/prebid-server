@@ -82,73 +82,64 @@ func TestBidderChooserCooperative(t *testing.T) {
 	shuffler := reverseShuffler{}
 	available := []string{"a1", "a2"}
 
-	testCases := []struct {
-		description    string
+	testCases := map[string]struct {
 		givenRequested []string
 		givenCoop      Cooperative
 		expected       []string
 	}{
-		{
-			description:    "Nil",
+		"nil": {
 			givenRequested: nil,
 			givenCoop:      Cooperative{Enabled: true},
 			expected:       []string{"a2", "a1"},
 		},
-		{
-			description:    "Empty",
+		"empty": {
 			givenRequested: []string{},
 			givenCoop:      Cooperative{Enabled: true, PriorityGroups: [][]string{}},
 			expected:       []string{"a2", "a1"},
 		},
-		{
-			description:    "Requested",
+		"requested": {
 			givenRequested: []string{"r1", "r2"},
 			givenCoop:      Cooperative{Enabled: true},
 			expected:       []string{"r2", "r1", "a2", "a1"},
 		},
-		{
-			description:    "Priority Groups - One",
+		"priority_groups_one": {
 			givenRequested: nil,
 			givenCoop:      Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}}},
 			expected:       []string{"pr1B", "pr1A", "a2", "a1"},
 		},
-		{
-			description:    "Priority Groups - Many",
+		"priority_groups_many": {
 			givenRequested: nil,
 			givenCoop:      Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},
 			expected:       []string{"pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
 		},
-		{
-			description:    "Requested + Priority Groups",
+		"requested_and_priority_groups": {
 			givenRequested: []string{"r1", "r2"},
 			givenCoop:      Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},
 			expected:       []string{"r2", "r1", "pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
 		},
-		{
-			description:    "PriorityGroupsOnly - No Remaining Bidders",
+		"priority_groups_only_no_remaining": {
 			givenRequested: []string{"r1", "r2"},
 			givenCoop:      Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}}, PriorityGroupsOnly: true},
 			expected:       []string{"r2", "r1", "pr1B", "pr1A"},
 		},
-		{
-			description:    "PriorityGroupsOnly - No Requested",
+		"priority_groups_only_no_requested": {
 			givenRequested: nil,
 			givenCoop:      Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}, PriorityGroupsOnly: true},
 			expected:       []string{"pr1B", "pr1A", "pr2B", "pr2A"},
 		},
-		{
-			description:    "PriorityGroupsOnly - Empty Priority Groups",
+		"priority_groups_only_empty_groups": {
 			givenRequested: []string{"r1", "r2"},
 			givenCoop:      Cooperative{Enabled: true, PriorityGroups: [][]string{}, PriorityGroupsOnly: true},
 			expected:       []string{"r2", "r1"},
 		},
 	}
 
-	for _, test := range testCases {
-		chooser := standardBidderChooser{shuffler: shuffler}
-		result := chooser.chooseCooperative(test.givenRequested, available, test.givenCoop)
-
-		assert.Equal(t, test.expected, result, test.description)
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			chooser := standardBidderChooser{shuffler: shuffler}
+			result := chooser.chooseCooperative(test.givenRequested, available, test.givenCoop)
+			assert.Equal(t, test.expected, result)
+		})
 	}
 }
 
