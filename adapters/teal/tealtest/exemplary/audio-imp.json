@@ -1,0 +1,81 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-audio",
+    "imp": [
+      {
+        "id": "test-imp-audio",
+        "audio": {
+          "mimes": ["audio/mpeg"]
+        },
+        "ext": {
+          "bidder": {
+            "account": "test-account",
+            "placement": "test-placement-audio"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "publisher": {"id": "demo-publisher"}
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-audio",
+          "imp": [
+            {
+              "id": "test-imp-audio",
+              "audio": {"mimes": ["audio/mpeg"]},
+              "ext": {
+                "bidder": {"account": "test-account", "placement": "test-placement-audio"},
+                "prebid": {"storedrequest": {"id": "test-placement-audio"}}
+              }
+            }
+          ],
+          "site": {"id": "demo-site", "publisher": {"id": "test-account"}},
+          "ext": {"bids": {"pbs": 1}}
+        },
+        "impIDs": ["test-imp-audio"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-audio",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-audio-1",
+                  "impid": "test-imp-audio",
+                  "price": 1.5,
+                  "adm": "<VAST/>"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-audio-1",
+            "impid": "test-imp-audio",
+            "price": 1.5,
+            "adm": "<VAST/>"
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}
