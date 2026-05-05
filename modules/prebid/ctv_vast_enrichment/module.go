@@ -64,8 +64,8 @@ func (m Module) HandleRawBidderResponseHook(
 	// Merge configurations: host < account
 	mergedCfg := MergeCTVVastConfig(&m.hostConfig, accountCfg, nil)
 
-	// Check if module is enabled
-	if mergedCfg.Enabled != nil && !*mergedCfg.Enabled {
+	// Check if module is enabled; nil is treated as disabled (explicit opt-in required)
+	if !mergedCfg.IsEnabled() {
 		return result, nil
 	}
 
@@ -77,13 +77,15 @@ func (m Module) HandleRawBidderResponseHook(
 	// Convert config to ReceiverConfig
 	receiverCfg := configToReceiverConfig(mergedCfg)
 
-	// Build modified bids list
-	modifiedBids := make([]*adapters.TypedBid, 0, len(payload.BidderResponse.Bids))
-	changesMade := false
+	// modifiedBids is allocated lazily — only when the first enrichment actually happens.
+	// Until then we track the index so we can back-fill originals if needed.
+	var modifiedBids []*adapters.TypedBid
 
-	for _, typedBid := range payload.BidderResponse.Bids {
+	for i, typedBid := range payload.BidderResponse.Bids {
 		if typedBid == nil || typedBid.Bid == nil {
-			modifiedBids = append(modifiedBids, typedBid)
+			if modifiedBids != nil {
+				modifiedBids = append(modifiedBids, typedBid)
+			}
 			continue
 		}
 
@@ -91,7 +93,9 @@ func (m Module) HandleRawBidderResponseHook(
 
 		// Skip non-video bids (no AdM or not VAST)
 		if bid.AdM == "" {
-			modifiedBids = append(modifiedBids, typedBid)
+			if modifiedBids != nil {
+				modifiedBids = append(modifiedBids, typedBid)
+			}
 			continue
 		}
 
@@ -99,7 +103,9 @@ func (m Module) HandleRawBidderResponseHook(
 		vastDoc, err := model.ParseVastAdm(bid.AdM)
 		if err != nil {
 			// Not valid VAST, skip enrichment
-			modifiedBids = append(modifiedBids, typedBid)
+			if modifiedBids != nil {
+				modifiedBids = append(modifiedBids, typedBid)
+			}
 			continue
 		}
 
@@ -120,8 +126,16 @@ func (m Module) HandleRawBidderResponseHook(
 		xmlBytes, err := enrichedVast.Marshal()
 		if err != nil {
 			// Keep original bid on format error
-			modifiedBids = append(modifiedBids, typedBid)
+			if modifiedBids != nil {
+				modifiedBids = append(modifiedBids, typedBid)
+			}
 			continue
+		}
+
+		// First enrichment: lazily allocate and back-fill all preceding original bids
+		if modifiedBids == nil {
+			modifiedBids = make([]*adapters.TypedBid, i, len(payload.BidderResponse.Bids))
+			copy(modifiedBids, payload.BidderResponse.Bids[:i])
 		}
 
 		// Create new bid with enriched VAST
@@ -138,11 +152,10 @@ func (m Module) HandleRawBidderResponseHook(
 			Seat:         typedBid.Seat,
 		}
 		modifiedBids = append(modifiedBids, enrichedTypedBid)
-		changesMade = true
 	}
 
 	// If we made changes, set mutation via ChangeSet
-	if changesMade {
+	if modifiedBids != nil {
 		changeSet := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
 		changeSet.RawBidderResponse().Bids().UpdateBids(modifiedBids)
 		result.ChangeSet = changeSet

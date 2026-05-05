@@ -142,7 +142,7 @@ func (s *PriceSelector) Select(req *openrtb2.BidRequest, resp *openrtb2.BidRespo
 		}
 
 		selectedBids[i] = vast.SelectedBid{
-			Bid:      bid,
+			Bid:      &bid,
 			Seat:     bws.seat,
 			Sequence: sequence,
 			Meta: vast.CanonicalMeta{

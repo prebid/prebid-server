@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
@@ -85,8 +86,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Build VAST from bid response
 	result, err := BuildVastFromBidResponse(ctx, bidRequest, bidResponse, h.Config, h.Selector, h.Enricher, h.Formatter)
 	if err != nil {
-		// Log error but still try to return valid VAST
-		// result.VastXML should contain no-ad VAST
+		glog.Errorf("ctv_vast_enrichment: BuildVastFromBidResponse error: %v", err)
 	}
 
 	// Set response headers

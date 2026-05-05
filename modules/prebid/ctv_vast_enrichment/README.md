@@ -131,6 +131,8 @@ Aby moduł został wywołany podczas aukcji, wymagana jest konfiguracja `host_ex
 
 Konfiguracja na poziomie konta nadpisuje ustawienia na poziomie hosta.
 
+> **Enabled jest opt-in:** Moduł przetwarza bidy tylko gdy `enabled` jest jawnie ustawione na `true`. Brak wartości (`null`/nieobecne) jest traktowany jako `false` — moduł nie zostanie uruchomiony.
+
 ## Komponenty
 
 ### `module.go` - Moduł PBS
@@ -142,7 +144,9 @@ Główny punkt wejścia zgodny z konwencjami modułów PBS:
 - **`HandleRawBidderResponseHook()`** - Implementacja hooka:
   - Parsuje konfigurację na poziomie konta
   - Merguje konfiguracje hosta i konta
-  - Wzbogaca VAST w każdym bidzie video
+  - Pomija przetwarzanie gdy `enabled` nie jest jawnie `true` (opt-in)
+  - Wzbogaca VAST w każdym bidzie video; slice zmodyfikowanych bidów alokowany jest leniwie (tylko gdy enrichment faktycznie następuje)
+  - Loguje błędy przez `glog` gdy budowanie VAST się nie powiedzie
 
 ### `pipeline.go` - Samodzielny Pipeline
 
@@ -170,8 +174,8 @@ Obsługa żądań HTTP dla reklam CTV VAST (opcjonalny endpoint):
 | Typ | Opis |
 |-----|------|
 | `ReceiverType` | Typ odbiorcy (GAM_SSU, GENERIC) |
-| `SelectionStrategy` | Strategia selekcji bidów (SINGLE, TOP_N, MAX_REVENUE) |
-| `CollisionPolicy` | Polityka kolizji (reject, warn, ignore) |
+| `SelectionStrategy` | Strategia selekcji bidów (SINGLE, TOP_N, max_revenue, min_duration, balanced); nieznane wartości cofają się do domyślnej |
+| `CollisionPolicy` | Polityka kolizji (reject, warn, ignore, VAST_WINS); nieznane wartości cofają się do domyślnej |
 
 **Interfejsy:**
 
@@ -192,7 +196,7 @@ type Formatter interface {
 **Struktury Danych:**
 
 - `CanonicalMeta` - Znormalizowane metadane bida (BidID, Price, Currency, Adomain, itp.)
-- `SelectedBid` - Wybrany bid z metadanymi i numerem sekwencji
+- `SelectedBid` - Wybrany bid z metadanymi i numerem sekwencji; pole `Bid` jest wskaźnikiem `*openrtb2.Bid` (zgodnie z resztą PBS)
 - `EnrichedAd` - Wzbogacona reklama gotowa do formatowania
 - `VastResult` - Wynik przetwarzania (XML, ostrzeżenia, błędy)
 - `ReceiverConfig` - Konfiguracja odbiorcy VAST

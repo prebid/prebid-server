@@ -107,6 +107,8 @@ The module uses PBS-style layered configuration:
 
 Account-level configuration overrides host-level settings.
 
+> **Enabled is opt-in:** The module processes bids only when `enabled` is explicitly set to `true`. A `null`/missing value is treated as `false` — the module will not run.
+
 ## Components
 
 ### \`module.go\` - PBS Module
@@ -118,7 +120,9 @@ Main entry point following PBS module conventions:
 - **\`HandleRawBidderResponseHook()\`** - Hook implementation that:
   - Parses account-level config
   - Merges host and account configs
-  - Enriches VAST in each video bid
+  - Skips processing when `enabled` is not explicitly `true` (opt-in)
+  - Enriches VAST in each video bid; allocates the modified bids slice lazily (only when enrichment actually occurs)
+  - Logs errors via `glog` when VAST building fails
 
 ### \`pipeline.go\` - Standalone Pipeline
 
@@ -146,8 +150,8 @@ HTTP request handling for CTV VAST ads (optional endpoint):
 | Type | Description |
 |------|-------------|
 | \`ReceiverType\` | Receiver type (GAM_SSU, GENERIC) |
-| \`SelectionStrategy\` | Bid selection strategy (SINGLE, TOP_N, MAX_REVENUE) |
-| \`CollisionPolicy\` | Collision policy (reject, warn, ignore) |
+| \`SelectionStrategy\` | Bid selection strategy (SINGLE, TOP_N, max_revenue, min_duration, balanced); unknown values fall back to default |
+| \`CollisionPolicy\` | Collision policy (reject, warn, ignore, VAST_WINS) |
 
 **Interfaces:**
 
@@ -168,7 +172,7 @@ type Formatter interface {
 **Data Structures:**
 
 - \`CanonicalMeta\` - Normalized bid metadata (BidID, Price, Currency, Adomain, etc.)
-- \`SelectedBid\` - Selected bid with metadata and sequence number
+- \`SelectedBid\` - Selected bid with metadata and sequence number; `Bid` field is `*openrtb2.Bid` (pointer, consistent with the rest of PBS)
 - \`EnrichedAd\` - Enriched ad ready for formatting
 - \`VastResult\` - Processing result (XML, warnings, errors)
 - \`ReceiverConfig\` - VAST receiver configuration

@@ -36,7 +36,7 @@ func (m *mockSelector) Select(req *openrtb2.BidRequest, resp *openrtb2.BidRespon
 					adomain = bid.ADomain[0]
 				}
 				selected = append(selected, SelectedBid{
-					Bid:      bid,
+					Bid:      &bid,
 					Seat:     sb.Seat,
 					Sequence: seq,
 					Meta: CanonicalMeta{

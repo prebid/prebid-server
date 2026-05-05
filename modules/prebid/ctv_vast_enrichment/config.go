@@ -266,15 +266,15 @@ func (cfg CTVVastConfig) ReceiverConfig() ReceiverConfig {
 		rc.MaxAdsInPod = DefaultMaxAdsInPod
 	}
 
-	// Apply selection strategy with default
-	if cfg.SelectionStrategy != "" {
+	// Apply selection strategy with default; fall back to default for unknown values
+	if cfg.SelectionStrategy != "" && isValidSelectionStrategy(cfg.SelectionStrategy) {
 		rc.SelectionStrategy = SelectionStrategy(cfg.SelectionStrategy)
 	} else {
 		rc.SelectionStrategy = SelectionStrategy(DefaultSelectionStrategy)
 	}
 
-	// Apply collision policy with default
-	if cfg.CollisionPolicy != "" {
+	// Apply collision policy with default; fall back to default for unknown values
+	if cfg.CollisionPolicy != "" && isValidCollisionPolicy(cfg.CollisionPolicy) {
 		rc.CollisionPolicy = CollisionPolicy(cfg.CollisionPolicy)
 	} else {
 		rc.CollisionPolicy = CollisionPolicy(DefaultCollisionPolicy)
@@ -358,12 +358,20 @@ func (cfg CTVVastConfig) IsEnabled() bool {
 	return cfg.Enabled != nil && *cfg.Enabled
 }
 
-// boolPtr is a helper function to create a pointer to a bool value.
-func boolPtr(b bool) *bool {
-	return &b
+// isValidCollisionPolicy reports whether s is a known CollisionPolicy value.
+func isValidCollisionPolicy(s string) bool {
+	switch CollisionPolicy(s) {
+	case CollisionReject, CollisionWarn, CollisionIgnore, CollisionVastWins:
+		return true
+	}
+	return false
 }
 
-// float64Ptr is a helper function to create a pointer to a float64 value.
-func float64Ptr(f float64) *float64 {
-	return &f
+// isValidSelectionStrategy reports whether s is a known SelectionStrategy value.
+func isValidSelectionStrategy(s string) bool {
+	switch SelectionStrategy(s) {
+	case SelectionSingle, SelectionTopN, SelectionMaxRevenue, SelectionMinDuration, SelectionBalanced:
+		return true
+	}
+	return false
 }

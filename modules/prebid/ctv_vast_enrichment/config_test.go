@@ -3,6 +3,7 @@ package ctv_vast_enrichment
 import (
 	"testing"
 
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -164,6 +165,24 @@ func TestReceiverConfig_Defaults(t *testing.T) {
 	assert.False(t, rc.Debug)
 }
 
+func TestReceiverConfig_InvalidSelectionStrategyFallsBackToDefault(t *testing.T) {
+	cfg := CTVVastConfig{
+		SelectionStrategy: "unknown_strategy",
+	}
+	rc := cfg.ReceiverConfig()
+
+	assert.Equal(t, SelectionStrategy(DefaultSelectionStrategy), rc.SelectionStrategy)
+}
+
+func TestReceiverConfig_InvalidCollisionPolicyFallsBackToDefault(t *testing.T) {
+	cfg := CTVVastConfig{
+		CollisionPolicy: "unknown_policy",
+	}
+	rc := cfg.ReceiverConfig()
+
+	assert.Equal(t, CollisionPolicy(DefaultCollisionPolicy), rc.CollisionPolicy)
+}
+
 func TestReceiverConfig_WithValues(t *testing.T) {
 	debug := true
 	cfg := CTVVastConfig{
@@ -252,12 +271,12 @@ func TestIsEnabled(t *testing.T) {
 		},
 		{
 			name:     "true returns true",
-			enabled:  boolPtr(true),
+			enabled:  ptrutil.ToPtr(true),
 			expected: true,
 		},
 		{
 			name:     "false returns false",
-			enabled:  boolPtr(false),
+			enabled:  ptrutil.ToPtr(false),
 			expected: false,
 		},
 	}
@@ -281,12 +300,12 @@ func TestMergeCTVVastConfig_FullLayerPrecedence(t *testing.T) {
 		MaxAdsInPod:        5,
 		SelectionStrategy:  "max_revenue",
 		CollisionPolicy:    "reject",
-		Enabled:            boolPtr(true),
-		Debug:              boolPtr(false),
+		Enabled:            ptrutil.ToPtr(true),
+		Debug:              ptrutil.ToPtr(false),
 		Placement: &PlacementRulesConfig{
 			Pricing: &PricingRulesConfig{
-				FloorCPM:   float64Ptr(1.0),
-				CeilingCPM: float64Ptr(100.0),
+				FloorCPM:   ptrutil.ToPtr(1.0),
+				CeilingCPM: ptrutil.ToPtr(100.0),
 				Currency:   "GBP",
 			},
 			Advertiser: &AdvertiserRulesConfig{
@@ -301,7 +320,7 @@ func TestMergeCTVVastConfig_FullLayerPrecedence(t *testing.T) {
 		CollisionPolicy: "warn",
 		Placement: &PlacementRulesConfig{
 			Pricing: &PricingRulesConfig{
-				FloorCPM: float64Ptr(2.0),
+				FloorCPM: ptrutil.ToPtr(2.0),
 				Currency: "EUR",
 			},
 			Categories: &CategoryRulesConfig{
@@ -313,10 +332,10 @@ func TestMergeCTVVastConfig_FullLayerPrecedence(t *testing.T) {
 	profile := &CTVVastConfig{
 		VastVersionDefault: "4.2",
 		MaxAdsInPod:        3,
-		Debug:              boolPtr(true),
+		Debug:              ptrutil.ToPtr(true),
 		Placement: &PlacementRulesConfig{
 			Pricing: &PricingRulesConfig{
-				FloorCPM: float64Ptr(3.0),
+				FloorCPM: ptrutil.ToPtr(3.0),
 			},
 		},
 	}
@@ -369,20 +388,4 @@ func TestMergeCTVVastConfig_ZeroIntDoesNotOverride(t *testing.T) {
 	result := MergeCTVVastConfig(host, account, nil)
 
 	assert.Equal(t, 5, result.MaxAdsInPod) // zero didn't override
-}
-
-func TestBoolPtr(t *testing.T) {
-	truePtr := boolPtr(true)
-	falsePtr := boolPtr(false)
-
-	assert.NotNil(t, truePtr)
-	assert.True(t, *truePtr)
-	assert.NotNil(t, falsePtr)
-	assert.False(t, *falsePtr)
-}
-
-func TestFloat64Ptr(t *testing.T) {
-	ptr := float64Ptr(1.5)
-	assert.NotNil(t, ptr)
-	assert.Equal(t, 1.5, *ptr)
 }

@@ -43,6 +43,8 @@ const (
 	CollisionWarn CollisionPolicy = "warn"
 	// CollisionIgnore ignores competitive separation rules.
 	CollisionIgnore CollisionPolicy = "ignore"
+	// CollisionVastWins allows ads and VAST takes precedence.
+	CollisionVastWins CollisionPolicy = "VAST_WINS"
 )
 
 // VastResult holds the complete result of VAST processing.
@@ -62,7 +64,7 @@ type VastResult struct {
 // SelectedBid represents a bid that was selected for inclusion in the VAST response.
 type SelectedBid struct {
 	// Bid is the OpenRTB bid object.
-	Bid openrtb2.Bid
+	Bid *openrtb2.Bid
 	// Seat is the seat ID of the bidder.
 	Seat string
 	// Sequence is the position of this bid in the ad pod (1-indexed).
