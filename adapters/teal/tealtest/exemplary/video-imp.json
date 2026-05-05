@@ -1,0 +1,121 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-video",
+    "imp": [
+      {
+        "id": "test-imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3, 5, 6]
+        },
+        "ext": {
+          "bidder": {
+            "account": "test-account",
+            "placement": "test-placement-video"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "domain": "example.com",
+      "page": "https://example.com/demo",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-video",
+          "imp": [
+            {
+              "id": "test-imp-video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [2, 3, 5, 6],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "account": "test-account",
+                  "placement": "test-placement-video"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "test-placement-video"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "demo-site",
+            "domain": "example.com",
+            "page": "https://example.com/demo",
+            "publisher": {
+              "id": "test-account"
+            }
+          },
+          "ext": {
+            "bids": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": ["test-imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-video",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "video-bid-1",
+                  "impid": "test-imp-video",
+                  "price": 4.50,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "w": 640,
+                  "h": 480,
+                  "crid": "video-creative-22"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-1",
+            "impid": "test-imp-video",
+            "price": 4.50,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "w": 640,
+            "h": 480,
+            "crid": "video-creative-22"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

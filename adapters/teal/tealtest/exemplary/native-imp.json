@@ -1,0 +1,81 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-native",
+    "imp": [
+      {
+        "id": "test-imp-native",
+        "native": {
+          "request": "{\"ver\":\"1.1\"}"
+        },
+        "ext": {
+          "bidder": {
+            "account": "test-account",
+            "placement": "test-placement-native"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "publisher": {"id": "demo-publisher"}
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-native",
+          "imp": [
+            {
+              "id": "test-imp-native",
+              "native": {"request": "{\"ver\":\"1.1\"}"},
+              "ext": {
+                "bidder": {"account": "test-account", "placement": "test-placement-native"},
+                "prebid": {"storedrequest": {"id": "test-placement-native"}}
+              }
+            }
+          ],
+          "site": {"id": "demo-site", "publisher": {"id": "test-account"}},
+          "ext": {"bids": {"pbs": 1}}
+        },
+        "impIDs": ["test-imp-native"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-native",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-native-1",
+                  "impid": "test-imp-native",
+                  "price": 1.0,
+                  "adm": "{\"native\":{\"assets\":[]}}"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-native-1",
+            "impid": "test-imp-native",
+            "price": 1.0,
+            "adm": "{\"native\":{\"assets\":[]}}"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
