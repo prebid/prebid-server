@@ -127,8 +127,12 @@
                   "impid": "test-imp-id",
                   "price": 0.5,
                   "adm": "some-test-vast-ad",
-                  "adomain": ["insticator.com"],
-                  "cat": ["IAB1-1"],
+                  "adomain": [
+                    "insticator.com"
+                  ],
+                  "cat": [
+                    "IAB1-1"
+                  ],
                   "dur": 30,
                   "mtype": 2,
                   "crid": "crid_10",
@@ -158,8 +162,12 @@
             "impid": "test-imp-id",
             "price": 0.5,
             "adm": "some-test-vast-ad",
-            "adomain": ["insticator.com"],
-            "cat": ["IAB1-1"],
+            "adomain": [
+              "insticator.com"
+            ],
+            "cat": [
+              "IAB1-1"
+            ],
             "dur": 30,
             "crid": "crid_10",
             "w": 728,
@@ -172,7 +180,9 @@
             }
           },
           "BidMeta": {
-            "advertiserDomains": ["insticator.com"],
+            "advertiserDomains": [
+              "insticator.com"
+            ],
             "mediaType": "video",
             "primaryCatId": "IAB1-1"
           },
@@ -180,8 +190,7 @@
             "duration": 30,
             "primary_category": "IAB1-1"
           },
-          "type": "video",
-          "seat": "insticator"
+          "type": "video"
         }
       ]
     }
