@@ -1,6 +1,7 @@
 maintainer:
   email: "contact@contxtful.com"
 disabled: false
+gvlVendorID: 1569
 endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid"
 
 capabilities:
