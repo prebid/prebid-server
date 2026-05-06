@@ -1,0 +1,7 @@
+aliasOf: "xeworks"
+endpoint: "http://rtb.league-m.media/?pid={{.SourceId}}&host={{.Host}}&pbs=1"
+maintainer:
+  email: "prebid@league-m.com"
+userSync:
+  supports:
+    - redirect
