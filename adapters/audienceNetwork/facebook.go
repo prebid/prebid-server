@@ -150,8 +150,23 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		return err
 	}
 
+	// Preserve rewarded signal before clearing ext. For ORTB 2.5 adapters,
+	// PBS moves imp.rwdd to imp.ext.prebid.is_rewarded_inventory via ConvertDownTo25.
+	// Since we clear imp.Ext below, the signal would be lost. Extract it now and
+	// restore it on the struct field so it serializes as imp.rwdd for Meta.
+	isRewarded := imp.Rwdd == 1
+	if !isRewarded && imp.Ext != nil {
+		if val, err := jsonparser.GetInt(imp.Ext, "prebid", "is_rewarded_inventory"); err == nil && val == 1 {
+			isRewarded = true
+		}
+	}
+
 	imp.TagID = pubId + "_" + plmtId
 	imp.Ext = nil
+
+	if isRewarded {
+		imp.Rwdd = 1
+	}
 
 	if out.App != nil {
 		app := *out.App
@@ -170,8 +185,10 @@ func modifyImp(out *openrtb2.Imp) error {
 	impType := resolveImpType(out)
 
 	if out.Instl == 1 && impType != openrtb_ext.BidTypeBanner {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner", out.ID),
+		if impType != openrtb_ext.BidTypeVideo || out.Rwdd != 1 {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and rewarded video", out.ID),
+			}
 		}
 	}
 
@@ -298,6 +315,17 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 		// fields to zero post-serialization for the time being
 		videoMap["w"] = json.RawMessage("0")
 		videoMap["h"] = json.RawMessage("0")
+
+		// For rewarded video impressions, set Meta's preferred signal.
+		// Meta requires video.ext.videotype to classify the video format.
+		if imp.Rwdd == 1 {
+			extMap, ok := videoMap["ext"].(map[string]interface{})
+			if !ok {
+				extMap = make(map[string]interface{})
+			}
+			extMap["videotype"] = "rewarded"
+			videoMap["ext"] = extMap
+		}
 
 	case openrtb_ext.BidTypeNative:
 		nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
