@@ -45,17 +45,46 @@
             }
           ]
         },
-        "impIDs":["nativo-id"]
+        "impIDs": ["nativo-id"]
       },
       "mockResponse": {
-        "status": 400,
-        "body": {}
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-id",
+                  "impid": "nativo-id-2",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "w": 300,
+                  "h": 50,
+                  "ext": {
+                    "prebid": {
+                      "type": "unknown"
+                    }
+                  }
+                }
+              ],
+              "seat": "nativo"
+            }
+          ],
+          "cur": "USD"
+        }
       }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "value": "invalid BidType: unknown",
       "comparison": "literal"
     }
   ]

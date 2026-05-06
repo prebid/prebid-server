@@ -4,17 +4,14 @@
     "imp": [
       {
         "id": "nativo-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 50
-            }
-          ]
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480
         },
         "ext": {
           "bidder": {
-            "placementId": "12345678"
+            "placementId": 12345678
           }
         }
       }
@@ -29,23 +26,20 @@
           "imp": [
             {
               "id": "nativo-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 50
-                  }
-                ]
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480
               },
               "ext": {
                 "bidder": {
-                  "placementId": "12345678"
+                  "placementId": 12345678
                 }
               }
             }
           ]
         },
-        "impIDs":["nativo-id"]
+        "impIDs": ["nativo-id"]
       },
       "mockResponse": {
         "status": 200,
@@ -57,9 +51,15 @@
                 {
                   "id": "bid-id",
                   "impid": "nativo-id-2",
-                  "price": 3.5,
-                  "w": 300,
-                  "h": 50
+                  "price": 5.0,
+                  "adm": "awesome-video-markup",
+                  "w": 640,
+                  "h": 480,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
                 }
               ],
               "seat": "nativo"
@@ -73,13 +73,24 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": []
-    }
-  ],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Failed to parse impression \"nativo-id-2\" mediatype",
-      "comparison": "literal"
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-id",
+            "impid": "nativo-id-2",
+            "price": 5.0,
+            "adm": "awesome-video-markup",
+            "w": 640,
+            "h": 480,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }
