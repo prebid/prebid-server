@@ -117,12 +117,22 @@ func setMissingFields(deviceObj map[string]any, fiftyOneDd *deviceInfo) map[stri
 			return val
 		},
 		"model": func() any {
+			if fiftyOneDd.HardwareNamePrefix != "" && fiftyOneDd.HardwareNamePrefix != ddUnknown {
+				return fiftyOneDd.HardwareNamePrefix
+			}
+			// Fallback: HardwareModel → HardwareName
 			newVal := fiftyOneDd.HardwareModel
 			if newVal == ddUnknown {
 				newVal = fiftyOneDd.HardwareName
 			}
 			if newVal != ddUnknown {
 				return newVal
+			}
+			return nil
+		},
+		"hwv": func() any {
+			if fiftyOneDd.HardwareNameVersion != "" && fiftyOneDd.HardwareNameVersion != ddUnknown {
+				return fiftyOneDd.HardwareNameVersion
 			}
 			return nil
 		},
