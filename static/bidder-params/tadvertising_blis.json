@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "T-Advertising-Blis Adapter Params",
+  "description": "A schema which validates params accepted by the T-Advertising-Blis adapter",
+  "type": "object",
+
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "Unique ID of the publisher/supply partner provided by T-Advertising"
+    }
+  },
+
+  "required": ["publisherId"]
+}
