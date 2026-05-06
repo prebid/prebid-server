@@ -183,8 +183,9 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
-			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.findPriorityGroups(account.CookieSync),
+			Enabled:            (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
+			PriorityGroups:     c.findPriorityGroups(account.CookieSync),
+			PriorityGroupsOnly: c.findPriorityGroupsOnly(account.CookieSync),
 		},
 		Debug: request.Debug,
 		Limit: limit,
@@ -339,6 +340,13 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 		return accountCookieSyncConfig.PriorityGroups
 	}
 	return c.config.UserSync.PriorityGroups
+}
+
+func (c *cookieSyncEndpoint) findPriorityGroupsOnly(accountCookieSyncConfig config.CookieSync) bool {
+	if accountCookieSyncConfig.PriorityGroupsOnly != nil {
+		return *accountCookieSyncConfig.PriorityGroupsOnly
+	}
+	return false
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
