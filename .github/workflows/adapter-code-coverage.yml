@@ -15,7 +15,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.0
+          go-version: 1.26.1
 
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -46,6 +46,8 @@ jobs:
       - name: Run Coverage Tests
         id: run_coverage
         if: steps.get_directories.outputs.result != ''
+        env:
+          GOTOOLCHAIN: go1.26.1+auto
         run: |
           directories=$(echo '${{ steps.get_directories.outputs.result }}' | jq -r '.[]')
           go mod download

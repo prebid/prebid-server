@@ -10,7 +10,7 @@ jobs:
   validate:
     strategy:
       matrix:
-        go-version: [1.23.x, 1.24.x]
+        go-version: [1.25.x, 1.26.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     
@@ -31,3 +31,4 @@ jobs:
         ./validate.sh --nofmt --cov --race 10
       env:
         GO111MODULE: "on"
+        GOTOOLCHAIN: go1.26.1+auto
