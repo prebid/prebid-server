@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/acuityads"
 	"github.com/prebid/prebid-server/v4/adapters/adagio"
 	"github.com/prebid/prebid-server/v4/adapters/adelement"
+	"github.com/prebid/prebid-server/v4/adapters/adelerate"
 	"github.com/prebid/prebid-server/v4/adapters/adf"
 	"github.com/prebid/prebid-server/v4/adapters/adgeneration"
 	"github.com/prebid/prebid-server/v4/adapters/adhese"
@@ -275,6 +276,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAcuityAds:         acuityads.Builder,
 		openrtb_ext.BidderAdagio:            adagio.Builder,
 		openrtb_ext.BidderAdelement:         adelement.Builder,
+		openrtb_ext.BidderAdelerate:         adelerate.Builder,
 		openrtb_ext.BidderAdf:               adf.Builder,
 		openrtb_ext.BidderAdgeneration:      adgeneration.Builder,
 		openrtb_ext.BidderAdhese:            adhese.Builder,
