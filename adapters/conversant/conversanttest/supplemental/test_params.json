@@ -108,7 +108,6 @@
             "secure": 1,
             "tagid": "mytag",
             "displaymanager": "prebid-s2s",
-            "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
               "maxduration": 60,
@@ -127,7 +126,6 @@
             "secure": 1,
             "tagid": "mytag",
             "displaymanager": "prebid-s2s",
-            "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
               "maxduration": 60,
@@ -155,7 +153,6 @@
             "secure": 1,
             "tagid": "mytag",
             "displaymanager": "prebid-s2s",
-            "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
               "maxduration": 60,
@@ -183,7 +180,6 @@
             "secure": 1,
             "tagid": "mytag",
             "displaymanager": "prebid-s2s",
-            "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
               "maxduration": 60,
