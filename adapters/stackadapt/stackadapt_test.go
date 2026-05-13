@@ -235,28 +235,6 @@ func TestSetImpsAndGetEndpointParams(t *testing.T) {
 		assert.Zero(t, req.Imp[0].BidFloor)
 	})
 
-	t.Run("missing_publisher_id", func(t *testing.T) {
-		req := &openrtb2.BidRequest{
-			Imp: []openrtb2.Imp{{
-				Ext: json.RawMessage(`{"bidder":{"supplyId":"ssp-1"}}`),
-			}},
-		}
-		_, _, err := setImpsAndGetEndpointParams(req)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "publisherId is required")
-	})
-
-	t.Run("missing_supply_id", func(t *testing.T) {
-		req := &openrtb2.BidRequest{
-			Imp: []openrtb2.Imp{{
-				Ext: json.RawMessage(`{"bidder":{"publisherId":"pub-1"}}`),
-			}},
-		}
-		_, _, err := setImpsAndGetEndpointParams(req)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "supplyId is required")
-	})
-
 	t.Run("invalid_ext_json", func(t *testing.T) {
 		req := &openrtb2.BidRequest{
 			Imp: []openrtb2.Imp{{
@@ -279,7 +257,7 @@ func TestSetImpsAndGetEndpointParams(t *testing.T) {
 		assert.Contains(t, err.Error(), "unable to unmarshal bidder ext")
 	})
 
-	t.Run("multi_imp_uses_first_publisher_id_and_supply_id", func(t *testing.T) {
+	t.Run("multi_imp_uses_last_publisher_id_and_supply_id", func(t *testing.T) {
 		req := &openrtb2.BidRequest{
 			Imp: []openrtb2.Imp{
 				{Ext: json.RawMessage(`{"bidder":{"publisherId":"first","supplyId":"ssp-first"}}`)},
@@ -288,8 +266,8 @@ func TestSetImpsAndGetEndpointParams(t *testing.T) {
 		}
 		pubID, supplyID, err := setImpsAndGetEndpointParams(req)
 		assert.NoError(t, err)
-		assert.Equal(t, "first", pubID)
-		assert.Equal(t, "ssp-first", supplyID)
+		assert.Equal(t, "second", pubID)
+		assert.Equal(t, "ssp-second", supplyID)
 	})
 
 	t.Run("zero_bidfloor_not_set", func(t *testing.T) {
@@ -347,25 +325,15 @@ func TestMakeRequests(t *testing.T) {
 		assert.Equal(t, "http://localhost/br?publisher_id=pub-1&supply_id=ssp-1", data[0].Uri)
 	})
 
-	t.Run("missing_publisher_id_returns_error", func(t *testing.T) {
+	t.Run("invalid_bidder_ext_returns_error", func(t *testing.T) {
 		req := &openrtb2.BidRequest{
-			Imp:  []openrtb2.Imp{{Ext: json.RawMessage(`{"bidder":{"supplyId":"ssp-1"}}`)}},
+			Imp:  []openrtb2.Imp{{Ext: json.RawMessage(`{"bidder":"not-an-object"}`)}},
 			Site: &openrtb2.Site{},
 		}
 		data, errs := a.MakeRequests(req, nil)
 		assert.Nil(t, data)
 		assert.Len(t, errs, 1)
-	})
-
-	t.Run("missing_supply_id_returns_error", func(t *testing.T) {
-		req := &openrtb2.BidRequest{
-			Imp:  []openrtb2.Imp{{Ext: json.RawMessage(`{"bidder":{"publisherId":"pub-1"}}`)}},
-			Site: &openrtb2.Site{},
-		}
-		data, errs := a.MakeRequests(req, nil)
-		assert.Nil(t, data)
-		assert.Len(t, errs, 1)
-		assert.Contains(t, errs[0].Error(), "supplyId is required")
+		assert.Contains(t, errs[0].Error(), "unable to unmarshal bidder ext")
 	})
 }
 

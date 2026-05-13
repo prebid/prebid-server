@@ -88,23 +88,11 @@ func setImpsAndGetEndpointParams(request *openrtb2.BidRequest) (string, string, 
 			return "", "", &errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: unable to unmarshal bidder ext: %s", i, err.Error())}
 		}
 
-		if saExt.PublisherId == "" {
-			return "", "", &errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: publisherId is required", i)}
-		}
+		publisherID = saExt.PublisherId
+		supplyID = saExt.SupplyId
 
-		if saExt.SupplyId == "" {
-			return "", "", &errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: supplyId is required", i)}
-		}
-
-		if publisherID == "" {
-			publisherID = saExt.PublisherId
-		}
-		if supplyID == "" {
-			supplyID = saExt.SupplyId
-		}
-
-		if saExt.PlacementId != "" {
-			request.Imp[i].TagID = saExt.PlacementId
+		if saExt.PlacementId != nil {
+			request.Imp[i].TagID = *saExt.PlacementId
 		}
 
 		if saExt.BidFloor > 0 {
