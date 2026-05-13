@@ -21,10 +21,17 @@ type adapter struct {
 type resetDigitalRequest struct {
 	Site resetDigitalSite  `json:"site"`
 	Imps []resetDigitalImp `json:"imps"`
+	User *resetDigitalUser `json:"user,omitempty"`
 }
 type resetDigitalSite struct {
 	Domain   string `json:"domain"`
 	Referrer string `json:"referrer"`
+}
+type resetDigitalUser struct {
+	Ext resetDigitalUserExt `json:"ext"`
+}
+type resetDigitalUserExt struct {
+	EIDs []openrtb2.EID `json:"eids,omitempty"`
 }
 type resetDigitalImp struct {
 	ZoneID     resetDigitalImpZone    `json:"zone_id"`
@@ -63,6 +70,8 @@ type resetDigitalBid struct {
 	Seat  string  `json:"seat"`
 	HTML  string  `json:"html"`
 }
+
+const liveRampEIDSource = "liveramp.com"
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -154,6 +163,14 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 		reqData.Site.Referrer = requestData.Site.Page
 	}
 
+	if eids := getLiveRampEIDs(requestData.User); len(eids) > 0 {
+		reqData.User = &resetDigitalUser{
+			Ext: resetDigitalUserExt{
+				EIDs: eids,
+			},
+		}
+	}
+
 	rdImp := resetDigitalImp{
 		BidID: requestData.ID,
 		ImpID: imp.ID,
@@ -204,6 +221,34 @@ func processDataFromRequest(requestData *openrtb2.BidRequest, imp openrtb2.Imp, 
 	reqData.Imps = append(reqData.Imps, rdImp)
 
 	return reqData, nil
+}
+
+func getLiveRampEIDs(user *openrtb2.User) []openrtb2.EID {
+	if user == nil {
+		return nil
+	}
+
+	eids := make([]openrtb2.EID, 0, len(user.EIDs))
+	eids = appendLiveRampEIDs(eids, user.EIDs)
+
+	if len(user.Ext) > 0 {
+		var userExt openrtb_ext.ExtUser
+		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
+			eids = appendLiveRampEIDs(eids, userExt.Eids)
+		}
+	}
+
+	return eids
+}
+
+func appendLiveRampEIDs(dst []openrtb2.EID, src []openrtb2.EID) []openrtb2.EID {
+	for _, eid := range src {
+		if eid.Source == liveRampEIDSource {
+			dst = append(dst, eid)
+		}
+	}
+
+	return dst
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {

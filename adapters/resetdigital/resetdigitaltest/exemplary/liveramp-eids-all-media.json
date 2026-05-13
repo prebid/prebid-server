@@ -1,0 +1,376 @@
+{
+  "mockBidRequest": {
+    "id": "liveramp-eids",
+    "imp": [
+      {
+        "id": "banner-imp",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "banner-placement"
+          }
+        }
+      },
+      {
+        "id": "video-imp",
+        "video": {
+          "w": 640,
+          "h": 360,
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "video-placement"
+          }
+        }
+      },
+      {
+        "id": "audio-imp",
+        "audio": {
+          "mimes": [
+            "audio/mp4",
+            "audio/mp3"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "audio-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "https://test.com",
+      "page": "https://test.com/identity"
+    },
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "liveramp.com",
+            "uids": [
+              {
+                "id": "XiR-liveRamp-envelope",
+                "atype": 1,
+                "ext": {
+                  "rtiPartner": "idl",
+                  "stype": "ppuid"
+                }
+              }
+            ]
+          },
+          {
+            "source": "sharedid.org",
+            "uids": [
+              {
+                "id": "shared-id"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "ip": "127.0.0.1",
+      "language": "EN"
+    },
+    "cur": [
+      "USD"
+    ],
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "body": {
+          "imps": [
+            {
+              "bid_id": "liveramp-eids",
+              "ext": {
+                "gpid": ""
+              },
+              "imp_id": "banner-imp",
+              "media_types": {
+                "banner": {
+                  "sizes": [
+                    [
+                      300,
+                      250
+                    ]
+                  ]
+                },
+                "audio": {},
+                "video": {}
+              },
+              "zone_id": {
+                "placementId": "banner-placement"
+              }
+            }
+          ],
+          "site": {
+            "domain": "https://test.com",
+            "referrer": "https://test.com/identity"
+          },
+          "user": {
+            "ext": {
+              "eids": [
+                {
+                  "source": "liveramp.com",
+                  "uids": [
+                    {
+                      "id": "XiR-liveRamp-envelope",
+                      "atype": 1,
+                      "ext": {
+                        "rtiPartner": "idl",
+                        "stype": "ppuid"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "impIDs": [
+          "banner-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bids": [
+            {
+              "bid_id": "banner-bid",
+              "imp_id": "banner-imp",
+              "cpm": 1.10,
+              "cid": "banner-campaign",
+              "crid": "banner-creative",
+              "adid": "banner-ad",
+              "w": "300",
+              "h": "250",
+              "seat": "resetdigital",
+              "html": "banner markup"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "body": {
+          "imps": [
+            {
+              "bid_id": "liveramp-eids",
+              "ext": {
+                "gpid": ""
+              },
+              "imp_id": "video-imp",
+              "media_types": {
+                "banner": {},
+                "video": {
+                  "sizes": [
+                    [
+                      640,
+                      360
+                    ]
+                  ],
+                  "mimes": [
+                    "video/mp4"
+                  ]
+                },
+                "audio": {}
+              },
+              "zone_id": {
+                "placementId": "video-placement"
+              }
+            }
+          ],
+          "site": {
+            "domain": "https://test.com",
+            "referrer": "https://test.com/identity"
+          },
+          "user": {
+            "ext": {
+              "eids": [
+                {
+                  "source": "liveramp.com",
+                  "uids": [
+                    {
+                      "id": "XiR-liveRamp-envelope",
+                      "atype": 1,
+                      "ext": {
+                        "rtiPartner": "idl",
+                        "stype": "ppuid"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "impIDs": [
+          "video-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bids": [
+            {
+              "bid_id": "video-bid",
+              "imp_id": "video-imp",
+              "cpm": 2.20,
+              "cid": "video-campaign",
+              "crid": "video-creative",
+              "adid": "video-ad",
+              "w": "640",
+              "h": "360",
+              "seat": "resetdigital",
+              "html": "video markup"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "body": {
+          "imps": [
+            {
+              "bid_id": "liveramp-eids",
+              "ext": {
+                "gpid": ""
+              },
+              "imp_id": "audio-imp",
+              "media_types": {
+                "banner": {},
+                "video": {},
+                "audio": {
+                  "mimes": [
+                    "audio/mp4",
+                    "audio/mp3"
+                  ]
+                }
+              },
+              "zone_id": {
+                "placementId": "audio-placement"
+              }
+            }
+          ],
+          "site": {
+            "domain": "https://test.com",
+            "referrer": "https://test.com/identity"
+          },
+          "user": {
+            "ext": {
+              "eids": [
+                {
+                  "source": "liveramp.com",
+                  "uids": [
+                    {
+                      "id": "XiR-liveRamp-envelope",
+                      "atype": 1,
+                      "ext": {
+                        "rtiPartner": "idl",
+                        "stype": "ppuid"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "impIDs": [
+          "audio-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bids": [
+            {
+              "bid_id": "audio-bid",
+              "imp_id": "audio-imp",
+              "cpm": 3.30,
+              "cid": "audio-campaign",
+              "crid": "audio-creative",
+              "adid": "audio-ad",
+              "w": "0",
+              "h": "0",
+              "seat": "resetdigital",
+              "html": "audio markup"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "banner markup",
+            "cid": "banner-campaign",
+            "crid": "banner-creative",
+            "id": "banner-bid",
+            "impid": "banner-imp",
+            "price": 1.10,
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner",
+          "seat": "resetdigital"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "video markup",
+            "cid": "video-campaign",
+            "crid": "video-creative",
+            "id": "video-bid",
+            "impid": "video-imp",
+            "price": 2.20,
+            "w": 640,
+            "h": 360
+          },
+          "type": "video",
+          "seat": "resetdigital"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "audio markup",
+            "cid": "audio-campaign",
+            "crid": "audio-creative",
+            "id": "audio-bid",
+            "impid": "audio-imp",
+            "price": 3.30
+          },
+          "type": "audio",
+          "seat": "resetdigital"
+        }
+      ]
+    }
+  ]
+}
