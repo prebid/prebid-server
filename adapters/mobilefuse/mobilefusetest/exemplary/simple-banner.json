@@ -14,8 +14,7 @@
                 },
                 "ext": {
                     "bidder": {
-                        "placement_id": 123456,
-                        "pub_id": 1234
+                        "placement_id": 123456
                     }
                 }
             }
@@ -25,7 +24,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://mfx.mobilefuse.com/openrtb?pub_id=1234",
+                "uri": "http://mfx.mobilefuse.com/openrtb",
                 "body": {
                     "id": "test-request-id",
                     "imp": [

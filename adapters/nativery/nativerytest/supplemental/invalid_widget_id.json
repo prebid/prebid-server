@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "err-nativeryext-widgetid-number",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "widgetId": "1" } }
+      }
+    ],
+    "site": { "page": "http://example.com", "ref": "http://example.com" },
+    "device": { "ua": "ua", "h": 100, "w": 200 },
+    "ext": {
+      "nativery": {
+        "isAmp": false,
+        "widgetId": 123
+      }
+    }
+  },
+  "expectedRequestCount": 0,
+  "expectedMakeRequestsErrors": [
+    {
+      "comparison": "regex",
+      "value": ".*cannot unmarshal nativery.*WidgetId.*"
+    }
+  ],
+  "expectedMakeBidsErrors": [],
+  "expectedBidResponses": []
+}

@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 )
 
 func TestSetDefaults(t *testing.T) {
@@ -22,6 +22,7 @@ func TestSetDefaults(t *testing.T) {
 		name            string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
+		tMax            int
 		expectedErr     string
 	}{
 		{
@@ -45,6 +46,18 @@ func TestSetDefaults(t *testing.T) {
 			givenRequest:    openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}, {Secure: nil}}},
 			expectedRequest: openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}, {Secure: &secure1}}},
 		},
+		{
+			name:            "tmax_not_set_should_be_set_to_default", // tests integration with setDefaultsImp
+			givenRequest:    openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}}, TMax: 0},
+			expectedRequest: openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}}, TMax: 100},
+			tMax:            100,
+		},
+		{
+			name:            "tmax_set_should_remain_the_same", // tests integration with setDefaultsImp
+			givenRequest:    openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}}, TMax: 200},
+			expectedRequest: openrtb2.BidRequest{Imp: []openrtb2.Imp{{Secure: &secure0}}, TMax: 200},
+			tMax:            100,
+		},
 	}
 
 	for _, test := range testCases {
@@ -52,7 +65,7 @@ func TestSetDefaults(t *testing.T) {
 			wrapper := &openrtb_ext.RequestWrapper{BidRequest: &test.givenRequest}
 
 			// run
-			err := SetDefaults(wrapper)
+			err := SetDefaults(wrapper, test.tMax)
 
 			// assert error
 			if len(test.expectedErr) > 0 {

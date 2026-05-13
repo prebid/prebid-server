@@ -8,11 +8,12 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 type ConversantAdapter struct {
@@ -84,7 +85,10 @@ func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 
 func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant, reqInfo *adapters.ExtraRequestInfo) []error {
 	imp.DisplayManager = "prebid-s2s"
-	imp.DisplayManagerVer = "2.0.0"
+
+	if version.Ver != "" {
+		imp.DisplayManagerVer = version.Ver
+	}
 
 	if imp.BidFloor <= 0 && cnvrExt.BidFloor > 0 {
 		imp.BidFloor = cnvrExt.BidFloor
@@ -189,19 +193,20 @@ func (c *ConversantAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 }
 
 func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	bidType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Video != nil {
-				bidType = openrtb_ext.BidTypeVideo
-			}
-			if imp.Audio != nil {
-				bidType = openrtb_ext.BidTypeAudio
+			switch {
+			case imp.Native != nil:
+				return openrtb_ext.BidTypeNative
+			case imp.Audio != nil:
+				return openrtb_ext.BidTypeAudio
+			case imp.Video != nil:
+				return openrtb_ext.BidTypeVideo
 			}
 			break
 		}
 	}
-	return bidType
+	return openrtb_ext.BidTypeBanner
 }
 
 // Builder builds a new instance of the Conversant adapter for the given bidder with the given config.

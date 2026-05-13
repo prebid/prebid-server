@@ -3,11 +3,12 @@ package exchange
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, map[openrtb_ext.BidderName]struct{}, []error) {
@@ -110,7 +111,6 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]string {
 	removed := map[string]string{
 		"lifestreet":      `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-		"adagio":          `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 		"somoaudience":    `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
 		"yssp":            `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahooAds" in your configuration.`,
 		"andbeyondmedia":  `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
@@ -126,6 +126,13 @@ func GetDisabledBidderWarningMessages(infos config.BidderInfos) map[string]strin
 		"nanointeractive": `Bidder "nanointeractive" is no longer available in Prebid Server. Please update your configuration.`,
 		"bizzclick":       `Bidder "bizzclick" is no longer available in Prebid Server. Please update your configuration. "bizzclick" has been renamed to "blasto".`,
 		"liftoff":         `Bidder "liftoff" is no longer available in Prebid Server. If you're looking to use the Vungle Exchange adapter, please rename it to "vungle" in your configuration.`,
+		"gothamads":       `Bidder "gothamads" is no longer available in Prebid Server. Please rename it to "intenze" in your configuration.`,
+		"intertech":       `Bidder "intertech" is no longer available in Prebid Server. Please update your configuration.`,
+		"adocean":         `Bidder "adocean" is no longer available in Prebid Server. Please update your configuration.`,
+		"dxkulture":       `Bidder "dxkulture" is no longer available in Prebid Server. Please update your configuration.`,
+		"mobupps":         `Bidder "mobupps" is no longer available in Prebid Server. Please update your configuration.`,
+		"vimayx":          `Bidder "vimayx" is no longer available in Prebid Server. Please update your configuration.`,
+		"adoppler":        `Bidder "adoppler" is no longer available in Prebid Server. If you're looking to use the Adoppler adapter, please rename it to "elementaltv" in your configuration.`,
 	}
 
 	return mergeRemovedAndDisabledBidderWarningMessages(removed, infos)
@@ -135,11 +142,18 @@ func mergeRemovedAndDisabledBidderWarningMessages(removed map[string]string, inf
 	disabledBidders := removed
 
 	for name, info := range infos {
-		if info.Disabled {
+		if info.WhiteLabelOnly {
+			msg := fmt.Sprintf(`Bidder "%s" can only be aliased and cannot be used directly.`, name)
+			disabledBidders[name] = msg
+		} else if info.Disabled {
 			msg := fmt.Sprintf(`Bidder "%s" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`, name)
 			disabledBidders[name] = msg
 		}
 	}
 
 	return disabledBidders
+}
+
+func IsBidderDisabledDueToWhiteLabelOnly(disabledMessage string) bool {
+	return strings.HasSuffix(disabledMessage, "can only be aliased and cannot be used directly.")
 }

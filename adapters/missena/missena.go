@@ -7,13 +7,13 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/version"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 type adapter struct {
@@ -21,25 +21,19 @@ type adapter struct {
 }
 
 type MissenaAdRequest struct {
-	Adunit           string                `json:"adunit,omitempty"`
-	BuyerUID         string                `json:"buyeruid,omitempty"`
-	COPPA            int8                  `json:"coppa,omitempty"`
-	Currency         string                `json:"currency,omitempty"`
-	EIDs             []openrtb2.EID        `json:"userEids,omitempty"`
-	Floor            float64               `json:"floor,omitempty"`
-	FloorCurrency    string                `json:"floor_currency,omitempty"`
-	GDPR             bool                  `json:"consent_required,omitempty"`
-	GDPRConsent      string                `json:"consent_string,omitempty"`
-	IdempotencyKey   string                `json:"ik,omitempty"`
-	Referer          string                `json:"referer,omitempty"`
-	RefererCanonical string                `json:"referer_canonical,omitempty"`
-	RequestID        string                `json:"request_id,omitempty"`
-	SChain           *openrtb2.SupplyChain `json:"schain,omitempty"`
-	Timeout          int64                 `json:"timeout,omitempty"`
-	URL              string                `json:"url,omitempty"`
-	UserParams       UserParams            `json:"params"`
-	USPrivacy        string                `json:"us_privacy,omitempty"`
-	Version          string                `json:"version,omitempty"`
+	Adunit         string               `json:"adunit,omitempty"`
+	BuyerUID       string               `json:"buyeruid,omitempty"`
+	Currency       string               `json:"currency,omitempty"`
+	Debug          bool                 `json:"debug,omitempty"`
+	EIDs           []openrtb2.EID       `json:"userEids,omitempty"`
+	Floor          float64              `json:"floor,omitempty"`
+	FloorCurrency  string               `json:"floor_currency,omitempty"`
+	IdempotencyKey string               `json:"ik,omitempty"`
+	RequestID      string               `json:"request_id,omitempty"`
+	Timeout        int64                `json:"timeout,omitempty"`
+	UserParams     UserParams           `json:"params"`
+	ORTB2          *openrtb2.BidRequest `json:"ortb2"`
+	Version        string               `json:"version,omitempty"`
 }
 
 type BidServerResponse struct {
@@ -50,19 +44,19 @@ type BidServerResponse struct {
 }
 
 type UserParams struct {
+	APIKey    string         `json:"apiKey,omitempty"`
 	Formats   []string       `json:"formats,omitempty"`
 	Placement string         `json:"placement,omitempty" default:"sticky"`
-	TestMode  string         `json:"test,omitempty"`
+	Sample    string         `json:"sample,omitempty"`
 	Settings  map[string]any `json:"settings,omitempty"`
 }
 
-type MissenaAdapter struct {
-	EndpointTemplate *template.Template
-}
+const (
+	currencyUSD = "USD"
+	currencyEUR = "EUR"
+)
 
-var defaultCur = "USD"
-
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the Missena adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
@@ -74,18 +68,25 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
+func getVersionString() string {
+	if version.Ver == "" {
+		return version.VerUnknown
+	}
+	return version.Ver
+}
+
 func getCurrency(currencies []string) (string, error) {
 	eurAvailable := false
 	for _, cur := range currencies {
-		if cur == defaultCur {
-			return defaultCur, nil
+		if cur == currencyUSD {
+			return currencyUSD, nil
 		}
-		if cur == "EUR" {
+		if cur == currencyEUR {
 			eurAvailable = true
 		}
 	}
 	if eurAvailable {
-		return "EUR", nil
+		return currencyEUR, nil
 	}
 	return "", fmt.Errorf("no currency supported %v", currencies)
 }
@@ -104,7 +105,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 	}
 	cur, err := getCurrency(request.Cur)
 	if err != nil {
-		cur = defaultCur
+		cur = currencyUSD
 	}
 
 	var floor float64
@@ -113,7 +114,7 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		floor = imp.BidFloor
 		floorCur, err = getCurrency(request.Cur)
 		if err != nil {
-			floorCur = defaultCur
+			floorCur = currencyUSD
 			floor, err = requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, floorCur)
 			if err != nil {
 				return nil, err
@@ -121,53 +122,35 @@ func (a *adapter) makeRequest(imp openrtb2.Imp, request *openrtb2.BidRequest, re
 		}
 	}
 
-	var schain *openrtb2.SupplyChain
-	if request.Source != nil {
-		schain = request.Source.SChain
-	}
-
-	var buyerUID string
+	// Extract EIDs from user.ext. Unmarshal errors are intentionally ignored
+	// to allow requests to proceed without EIDs, as they are optional.
 	var eids []openrtb2.EID
-	var coppa int8
-	var referer, refererCanonical string
-
-	if request.User != nil {
-		buyerUID = request.User.BuyerUID
-		eids = request.User.EIDs
-	}
-
-	if request.Regs != nil {
-		coppa = request.Regs.COPPA
-	}
-
-	if request.Site != nil {
-		referer = request.Site.Page
-		refererCanonical = request.Site.Domain
+	if request.User != nil && request.User.Ext != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := jsonutil.Unmarshal(request.User.Ext, &extUser); err == nil {
+			eids = extUser.Eids
+		}
 	}
 
 	missenaRequest := MissenaAdRequest{
-		Adunit:           imp.ID,
-		BuyerUID:         buyerUID,
-		COPPA:            coppa,
-		Currency:         cur,
-		EIDs:             eids,
-		Floor:            floor,
-		FloorCurrency:    floorCur,
-		GDPR:             gdprApplies,
-		GDPRConsent:      consentString,
-		IdempotencyKey:   request.ID,
-		Referer:          referer,
-		RefererCanonical: refererCanonical,
-		RequestID:        request.ID,
-		SChain:           schain,
-		Timeout:          request.TMax,
+		Adunit:         imp.ID,
+		Currency:       cur,
+		Debug:          request.Test == 1,
+		Floor:          floor,
+		FloorCurrency:  floorCur,
+		IdempotencyKey: request.ID,
+		ORTB2:          request,
+		RequestID:      request.ID,
+		Timeout:        request.TMax,
 		UserParams: UserParams{
+			APIKey:    params.APIKey,
 			Formats:   params.Formats,
 			Placement: params.Placement,
-			TestMode:  params.TestMode,
+			Sample:    params.Sample,
 			Settings:  params.Settings,
 		},
-		Version: version.Ver,
+		EIDs:    eids,
+		Version: fmt.Sprintf("prebid-server@%s", getVersionString()),
 	}
 
 	body, err := jsonutil.Marshal(missenaRequest)

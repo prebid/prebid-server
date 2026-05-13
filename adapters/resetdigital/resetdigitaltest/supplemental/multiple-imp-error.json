@@ -1,0 +1,49 @@
+{
+  "mockBidRequest": {
+    "id": "test-multi-request-id",
+    "imp": [
+      {
+        "id": "test-imp-banner-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-banner-placement"
+          }
+        }
+      },
+      {
+        "id": "test-imp-video-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 3, 5, 6],
+          "w": 640,
+          "h": 480,
+          "linearity": 1,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-video-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/multi",
+      "domain": "example.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ResetDigital adapter supports only one impression per request",
+      "comparison": "literal"
+    }
+  ]
+}

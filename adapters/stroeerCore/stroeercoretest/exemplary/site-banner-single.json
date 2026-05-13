@@ -107,7 +107,8 @@
               "height": 60,
               "ad": "advert",
               "crid": "wasd",
-              "mtype": "banner"
+              "mtype": "banner",
+              "adomain": ["test.com"]
             }
           ]
         }
@@ -126,7 +127,8 @@
           "w": 468,
           "h": 60,
           "crid": "wasd",
-          "mtype": 1
+          "mtype": 1,
+          "adomain": ["test.com"]
         },
         "type": "banner"
       }]

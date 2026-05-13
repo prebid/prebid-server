@@ -1,8 +1,10 @@
+//go:build cgo
+
 package devicedetection
 
 import (
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 )
 
 // handleAuctionEntryPointRequestHook is a hookstage.HookFunc that is used to handle the auction entrypoint request hook.

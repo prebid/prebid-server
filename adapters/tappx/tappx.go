@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-const TAPPX_BIDDER_VERSION = "1.5"
+const TAPPX_BIDDER_VERSION = "1.6"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -35,6 +35,7 @@ type Bidder struct {
 
 type Ext struct {
 	Bidder `json:"bidder"`
+	GPID   string `json:"gpid,omitempty"`
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.

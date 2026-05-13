@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "RediAds Adapter Params",
+  "description": "A schema which validates params accepted by the Rediads adapter",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "type": "string"
+    },
+    "slot": {
+      "type": "string"
+    },
+    "endpoint": {
+      "type": "string"
+    }
+  },
+  "required": ["account_id"]
+}

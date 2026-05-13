@@ -12,26 +12,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	accountService "github.com/prebid/prebid-server/v3/account"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/privacy/ccpa"
-	gppPrivacy "github.com/prebid/prebid-server/v3/privacy/gpp"
-	"github.com/prebid/prebid-server/v3/stored_requests"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	stringutil "github.com/prebid/prebid-server/v3/util/stringutil"
-	"github.com/prebid/prebid-server/v3/util/timeutil"
+	accountService "github.com/prebid/prebid-server/v4/account"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/privacy/ccpa"
+	gppPrivacy "github.com/prebid/prebid-server/v4/privacy/gpp"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	stringutil "github.com/prebid/prebid-server/v4/util/stringutil"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 const receiveCookieDeprecation = "receive-cookie-deprecation"
@@ -184,7 +184,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
 			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.config.UserSync.PriorityGroups,
+			PriorityGroups: c.findPriorityGroups(account.CookieSync),
 		},
 		Debug: request.Debug,
 		Limit: limit,
@@ -333,6 +333,14 @@ func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cooki
 	return request
 }
 
+func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.CookieSync) [][]string {
+	// Account-level config takes precedence over global config, which will be deprecated in the future
+	if accountCookieSyncConfig.DefaultCoopSync != nil {
+		return accountCookieSyncConfig.PriorityGroups
+	}
+	return c.config.UserSync.PriorityGroups
+}
+
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
 	syncTypeFilter := usersync.SyncTypeFilter{
 		IFrame:   cookieSyncBidderFilterAllowAll,
@@ -450,7 +458,7 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 		syncTypes := tf.ForBidder(syncerChoice.Bidder)
 		sync, err := syncerChoice.Syncer.GetSync(syncTypes, m)
 		if err != nil {
-			glog.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
+			logger.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
 			continue
 		}
 
@@ -458,9 +466,8 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 			BidderCode: syncerChoice.Bidder,
 			NoCookie:   true,
 			UsersyncInfo: cookieSyncResponseSync{
-				URL:         sync.URL,
-				Type:        string(sync.Type),
-				SupportCORS: sync.SupportCORS,
+				URL:  sync.URL,
+				Type: string(sync.Type),
 			},
 		})
 	}
@@ -528,9 +535,8 @@ func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.Co
 			BidderCode: b.BidderCode,
 			NoCookie:   b.NoCookie,
 			UsersyncInfo: &analytics.UsersyncInfo{
-				URL:         b.UsersyncInfo.URL,
-				Type:        b.UsersyncInfo.Type,
-				SupportCORS: b.UsersyncInfo.SupportCORS,
+				URL:  b.UsersyncInfo.URL,
+				Type: b.UsersyncInfo.Type,
 			},
 		}
 	}
@@ -596,9 +602,8 @@ type cookieSyncResponseBidder struct {
 }
 
 type cookieSyncResponseSync struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	SupportCORS bool   `json:"supportCORS,omitempty"`
+	URL  string `json:"url,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 type cookieSyncResponseDebug struct {

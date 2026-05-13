@@ -140,7 +140,8 @@
               "height": 60,
               "ad": "advert",
               "crid": "qwert",
-              "mtype": "banner"
+              "mtype": "banner",
+              "adomain": ["test.com"]
             },
             {
               "id": "3929239282-02",
@@ -150,7 +151,8 @@
               "height": 250,
               "ad": "another advert",
               "crid": "wasd",
-              "mtype": "banner"
+              "mtype": "banner",
+              "adomain": ["example.com"]
             }
           ]
         }
@@ -170,7 +172,8 @@
             "w": 468,
             "h": 60,
             "crid": "qwert",
-            "mtype": 1
+            "mtype": 1,
+            "adomain": ["test.com"]
           },
           "type": "banner"
         },
@@ -183,7 +186,9 @@
             "w": 770,
             "h": 250,
             "crid": "wasd",
-            "mtype": 1
+            "mtype": 1,
+            "adomain": ["example.com"]
+
           },
           "type": "banner"
         }

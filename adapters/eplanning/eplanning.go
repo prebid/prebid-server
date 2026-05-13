@@ -12,11 +12,11 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 
 	"strconv"
 )
@@ -66,6 +66,7 @@ type hbResponseAd struct {
 	Price        string `json:"pr"`
 	AdM          string `json:"adm"`
 	CrID         string `json:"crid"`
+	Adomain      string `json:"adom,omitempty"`
 	Width        uint64 `json:"w,omitempty"`
 	Height       uint64 `json:"h,omitempty"`
 }
@@ -506,6 +507,10 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb2.BidRequest, 
 					CrID:  ad.CrID,
 					W:     int64(ad.Width),
 					H:     int64(ad.Height),
+				}
+
+				if ad.Adomain != "" {
+					bid.ADomain = []string{ad.Adomain}
 				}
 
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
