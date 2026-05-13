@@ -296,12 +296,6 @@ func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, erro
 		}
 	}
 
-	if scaliburExt.PlacementID == "" {
-		return nil, &errortypes.BadInput{
-			Message: "placementId is required",
-		}
-	}
-
 	return &scaliburExt, nil
 }
 

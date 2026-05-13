@@ -6,9 +6,6 @@ disabled: false
 
 maintainer:
   email: "support@scalibur.io"
-supported-media-types:
-  - banner
-  - video
 
 gvlVendorID: 1471
 

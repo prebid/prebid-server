@@ -88,9 +88,8 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 func TestMakeRequests_InvalidExt(t *testing.T) {
 	bidder := newTestAdapter()
 
-	// Missing placementId
 	badExt, _ := json.Marshal(adapters.ExtImpBidder{
-		Bidder: json.RawMessage(`{"bidfloor": 1.5}`),
+		Bidder: json.RawMessage(`{invalid`),
 	})
 
 	req := &openrtb2.BidRequest{
@@ -110,7 +109,7 @@ func TestMakeRequests_InvalidExt(t *testing.T) {
 
 	require.Len(t, requests, 0)
 	require.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Error(), "placementId is required")
+	assert.Contains(t, errs[0].Error(), "Failed to parse imp.ext")
 }
 
 func TestMakeRequests_VideoDefaultsApplied(t *testing.T) {
@@ -337,15 +336,9 @@ func TestGetBidMediaType_Error(t *testing.T) {
 }
 
 func TestParseScaliburExt_ErrorCases(t *testing.T) {
-	// Case 1: Invalid JSON for imp.ext
 	_, err := parseScaliburExt(json.RawMessage(`{invalid`))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Failed to parse imp.ext")
-
-	// Case 2: Missing placementId
-	_, err = parseScaliburExt(json.RawMessage(`{"bidder": {"bidfloor": 1.0}}`))
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "placementId is required")
 }
 
 func ptrInt64(x int64) *int64 { return &x }
