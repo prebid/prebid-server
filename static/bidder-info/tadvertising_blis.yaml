@@ -1,0 +1,21 @@
+endpoint: "https://prebid-blis.tads.xplosion.de/bid"
+endpointCompression: gzip
+geoscope:
+  - GLOBAL
+maintainer:
+  email:  dev@emetriq.com
+gvlVendorID: 213
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

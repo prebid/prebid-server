@@ -1,0 +1,16 @@
+aliasOf: "teqblaze"
+endpoint: "https://tag-ssp.adsmovil.com/pserver"
+maintainer:
+  email: "prebid@adsmovil.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
