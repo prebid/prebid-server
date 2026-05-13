@@ -39,7 +39,6 @@ func (c standardBidderChooser) chooseCooperative(requested, available []string, 
 		bidders = c.shuffledAppend(bidders, group)
 	}
 
-	// available — only if NOT priority_groups_only
 	if !cooperative.PriorityGroupsOnly {
 		bidders = c.shuffledAppend(bidders, available)
 	}

@@ -30,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/usersync"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	stringutil "github.com/prebid/prebid-server/v4/util/stringutil"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
@@ -185,7 +186,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		Cooperative: usersync.Cooperative{
 			Enabled:            (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
 			PriorityGroups:     c.findPriorityGroups(account.CookieSync),
-			PriorityGroupsOnly: c.findPriorityGroupsOnly(account.CookieSync),
+			PriorityGroupsOnly: ptrutil.ValueOrDefault(account.CookieSync.PriorityGroupsOnly),
 		},
 		Debug: request.Debug,
 		Limit: limit,
@@ -340,13 +341,6 @@ func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.C
 		return accountCookieSyncConfig.PriorityGroups
 	}
 	return c.config.UserSync.PriorityGroups
-}
-
-func (c *cookieSyncEndpoint) findPriorityGroupsOnly(accountCookieSyncConfig config.CookieSync) bool {
-	if accountCookieSyncConfig.PriorityGroupsOnly != nil {
-		return *accountCookieSyncConfig.PriorityGroupsOnly
-	}
-	return false
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
