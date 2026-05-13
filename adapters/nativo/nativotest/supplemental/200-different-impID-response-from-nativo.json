@@ -13,7 +13,9 @@
           ]
         },
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "placementId": "12345678"
+          }
         }
       }
     ]
@@ -36,7 +38,9 @@
                 ]
               },
               "ext": {
-                "bidder": {}
+                "bidder": {
+                  "placementId": "12345678"
+                }
               }
             }
           ]
@@ -74,7 +78,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unrecognized impression type in response from nativo: nativo-id-2",
+      "value": "Failed to parse impression \"nativo-id-2\" mediatype",
       "comparison": "literal"
     }
   ]
