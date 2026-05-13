@@ -64,20 +64,20 @@ jobs:
           done
           echo "coverage_dir=${temp_dir}" >> $GITHUB_OUTPUT
 
-      - name: Save PR Metadata
+      - name: Prepare Artifacts
         if: steps.get_directories.outputs.result != ''
         run: |
-          mkdir -p ./pr-metadata
-          echo '${{ steps.get_directories.outputs.result }}' > ./pr-metadata/directories.json
-          echo '${{ github.event.pull_request.number }}' > ./pr-metadata/pr_number
-          echo '${{ github.event.pull_request.head.sha }}' > ./pr-metadata/head_sha
+          mkdir -p ./coverage-artifacts/pr-metadata
+          cp ${{ steps.run_coverage.outputs.coverage_dir }}/*.html ./coverage-artifacts/ 2>/dev/null || true
+          cp ${{ steps.run_coverage.outputs.coverage_dir }}/*.txt ./coverage-artifacts/ 2>/dev/null || true
+          echo '${{ steps.get_directories.outputs.result }}' > ./coverage-artifacts/pr-metadata/directories.json
+          echo '${{ github.event.pull_request.number }}' > ./coverage-artifacts/pr-metadata/pr_number
+          echo '${{ github.event.pull_request.head.sha }}' > ./coverage-artifacts/pr-metadata/head_sha
 
       - name: Upload Coverage Artifacts
         if: steps.run_coverage.outputs.coverage_dir != ''
         uses: actions/upload-artifact@v4
         with:
           name: coverage-results
-          path: |
-            ${{ steps.run_coverage.outputs.coverage_dir }}
-            ./pr-metadata
+          path: ./coverage-artifacts
           retention-days: 1
