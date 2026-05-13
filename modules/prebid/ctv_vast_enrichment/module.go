@@ -10,8 +10,8 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
-	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // Builder creates a new CTV VAST enrichment module instance.

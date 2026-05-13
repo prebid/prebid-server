@@ -51,11 +51,11 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	ctv "github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment"
 	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/enrich"
 	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/format"
 	bidselect "github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/select"
-	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -324,7 +324,7 @@ func TestE2E_A7_VastWinsPreservesExistingPricing(t *testing.T) {
 			Bids: []*adapters.TypedBid{
 				videoTypedBid(&openrtb2.Bid{
 					ID:    "b1",
-					Price: 9.99, // bidder price
+					Price: 9.99,            // bidder price
 					AdM:   vastWithPricing, // already has GBP 3.00
 				}),
 			},
