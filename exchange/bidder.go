@@ -617,7 +617,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	if err != nil {
 		bidder.logHealthCheck(false)
 		if errors.Is(err, context.DeadlineExceeded) {
-			err = &errortypes.Timeout{Message: context.DeadlineExceeded.Error()}
+			err = &errortypes.Timeout{Message: err.Error()}
 			var corebidder adapters.Bidder = bidder.Bidder
 			// The bidder adapter normally stores an info-aware bidder (a bidder wrapper)
 			// rather than the actual bidder. So we need to unpack that first.
