@@ -1,0 +1,170 @@
+{
+  "mockBidRequest": {
+    "id": "liveramp-banner-request-id",
+    "imp": [
+      {
+        "id": "liveramp-banner-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "liveramp-banner-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/liveramp-banner",
+      "domain": "example.com"
+    },
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "liveramp.com",
+            "uids": [
+              {
+                "id": "XiR-liveRamp-banner-envelope",
+                "atype": 1,
+                "ext": {
+                  "rtiPartner": "idl",
+                  "stype": "ppuid"
+                }
+              }
+            ]
+          },
+          {
+            "source": "sharedid.org",
+            "uids": [
+              {
+                "id": "shared-id"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=liveramp-banner-placement",
+        "body": {
+          "id": "liveramp-banner-request-id",
+          "imp": [
+            {
+              "id": "liveramp-banner-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "liveramp-banner-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "liveramp-banner-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com/liveramp-banner",
+            "domain": "example.com"
+          },
+          "user": {
+            "eids": [
+              {
+                "source": "liveramp.com",
+                "uids": [
+                  {
+                    "id": "XiR-liveRamp-banner-envelope",
+                    "atype": 1,
+                    "ext": {
+                      "rtiPartner": "idl",
+                      "stype": "ppuid"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-OpenRTB-Version": [
+            "2.6"
+          ]
+        },
+        "impIDs": [
+          "liveramp-banner-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "liveramp-banner-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "liveramp-banner-bid-id",
+                  "impid": "liveramp-banner-imp-id",
+                  "price": 3.14,
+                  "adm": "<div>test ad</div>",
+                  "crid": "liveramp-banner-creative-id",
+                  "w": 300,
+                  "h": 250,
+                  "adomain": [
+                    "example.com"
+                  ]
+                }
+              ],
+              "seat": "resetdigital"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "liveramp-banner-bid-id",
+            "impid": "liveramp-banner-imp-id",
+            "price": 3.14,
+            "adm": "<div>test ad</div>",
+            "crid": "liveramp-banner-creative-id",
+            "w": 300,
+            "h": 250,
+            "adomain": [
+              "example.com"
+            ]
+          },
+          "type": "banner",
+          "seat": "resetdigital"
+        }
+      ]
+    }
+  ]
+}

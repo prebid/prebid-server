@@ -14,75 +14,18 @@ import (
 	"golang.org/x/text/currency"
 )
 
-type adapter struct {
-	endpoint    *template.Template
-	endpointUri string
-}
+const (
+	contentTypeJSON   = "application/json"
+	openRTBVersion    = "2.6"
+	currencyUSD       = "USD"
+	bidderSeat        = "resetdigital"
+	liveRampEIDSource = "liveramp.com"
+)
 
-type resetDigitalRequest struct {
-	Site resetDigitalSite  `json:"site"`
-	Imps []resetDigitalImp `json:"imps"`
-	User *resetDigitalUser `json:"user,omitempty"`
-}
-type resetDigitalSite struct {
-	Domain   string `json:"domain"`
-	Referrer string `json:"referrer"`
-}
-type resetDigitalUser struct {
-	Ext resetDigitalUserExt `json:"ext"`
-}
-type resetDigitalUserExt struct {
-	EIDs []openrtb2.EID `json:"eids,omitempty"`
-}
-type resetDigitalImp struct {
-	ZoneID     resetDigitalImpZone    `json:"zone_id"`
-	BidID      string                 `json:"bid_id"`
-	ImpID      string                 `json:"imp_id"`
-	Ext        resetDigitalImpExt     `json:"ext"`
-	MediaTypes resetDigitalMediaTypes `json:"media_types"`
-}
-type resetDigitalImpZone struct {
-	PlacementID string `json:"placementId"`
-}
-type resetDigitalImpExt struct {
-	Gpid string `json:"gpid"`
-}
-type resetDigitalMediaTypes struct {
-	Banner resetDigitalMediaType `json:"banner,omitempty"`
-	Video  resetDigitalMediaType `json:"video,omitempty"`
-	Audio  resetDigitalMediaType `json:"audio,omitempty"`
-}
-type resetDigitalMediaType struct {
-	Sizes [][]int64 `json:"sizes,omitempty"`
-	Mimes []string  `json:"mimes,omitempty"`
-}
-type resetDigitalBidResponse struct {
-	Bids []resetDigitalBid `json:"bids"`
-}
-type resetDigitalBid struct {
-	BidID string  `json:"bid_id"`
-	ImpID string  `json:"imp_id"`
-	CPM   float64 `json:"cpm"`
-	CID   string  `json:"cid,omitempty"`
-	CrID  string  `json:"crid,omitempty"`
-	AdID  string  `json:"adid"`
-	W     string  `json:"w,omitempty"`
-	H     string  `json:"h,omitempty"`
-	Seat  string  `json:"seat"`
-	HTML  string  `json:"html"`
-}
-
-const liveRampEIDSource = "liveramp.com"
-
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-	bidder := &adapter{
-		endpoint: template,
-	}
-	return bidder, nil
+var baseHeaders = http.Header{
+	"Content-Type":      []string{contentTypeJSON},
+	"Accept":            []string{contentTypeJSON},
+	"X-OpenRTB-Version": []string{openRTBVersion},
 }
 
 type adapter struct {
@@ -111,17 +54,44 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}}
 	}
 
-	if eids := getLiveRampEIDs(requestData.User); len(eids) > 0 {
-		reqData.User = &resetDigitalUser{
-			Ext: resetDigitalUserExt{
-				EIDs: eids,
-			},
-		}
+	var resetDigitalExt openrtb_ext.ImpExtResetDigital
+	if err := json.Unmarshal(bidderExt.Bidder, &resetDigitalExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error parsing resetDigitalExt from bidderExt.bidder: %v", err),
+		}}
 	}
 
-	rdImp := resetDigitalImp{
-		BidID: requestData.ID,
-		ImpID: imp.ID,
+	reqCopy := openrtb2.BidRequest{
+		ID:     request.ID,
+		Source: request.Source,
+		TMax:   request.TMax,
+		Test:   request.Test,
+		Imp:    []openrtb2.Imp{imp},
+		Device: request.Device,
+		Site:   request.Site,
+		App:    request.App,
+		User:   userWithLiveRampEIDs(request.User),
+		Regs:   request.Regs,
+		Ext:    request.Ext,
+		AT:     request.AT,
+		BAdv:   request.BAdv,
+		BCat:   request.BCat,
+		BSeat:  request.BSeat,
+		WLang:  request.WLang,
+		WSeat:  request.WSeat,
+	}
+
+	if imp.TagID == "" {
+		reqCopy.Imp[0].TagID = resetDigitalExt.PlacementID
+	}
+
+	reqCopy.Cur = validateAndFilterCurrencies(request.Cur)
+
+	reqBody, err := json.Marshal(&reqCopy)
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error marshalling OpenRTB request: %v", err),
+		}}
 	}
 
 	uri := fmt.Sprintf("%s?pid=%s", a.endpoint, resetDigitalExt.PlacementID)
@@ -139,6 +109,50 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	}
 
 	return reqs, nil
+}
+
+func userWithLiveRampEIDs(user *openrtb2.User) *openrtb2.User {
+	if user == nil {
+		return nil
+	}
+
+	userCopy := *user
+	eids := make([]openrtb2.EID, 0, len(user.EIDs))
+	eids = appendLiveRampEIDs(eids, user.EIDs)
+	userCopy.Ext = removeExtEIDs(user.Ext, &eids)
+	userCopy.EIDs = eids
+
+	return &userCopy
+}
+
+func removeExtEIDs(userExt json.RawMessage, eids *[]openrtb2.EID) json.RawMessage {
+	if len(userExt) == 0 {
+		return nil
+	}
+
+	var ext map[string]json.RawMessage
+	if err := json.Unmarshal(userExt, &ext); err != nil {
+		return nil
+	}
+
+	if rawEIDs, ok := ext["eids"]; ok {
+		var extEIDs []openrtb2.EID
+		if err := json.Unmarshal(rawEIDs, &extEIDs); err == nil {
+			*eids = appendLiveRampEIDs(*eids, extEIDs)
+		}
+		delete(ext, "eids")
+	}
+
+	if len(ext) == 0 {
+		return nil
+	}
+
+	cleanExt, err := json.Marshal(ext)
+	if err != nil {
+		return nil
+	}
+
+	return cleanExt
 }
 
 func getLiveRampEIDs(user *openrtb2.User) []openrtb2.EID {
@@ -169,8 +183,8 @@ func appendLiveRampEIDs(dst []openrtb2.EID, src []openrtb2.EID) []openrtb2.EID {
 	return dst
 }
 
-func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if adapters.IsResponseStatusCodeNoContent(responseData) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 

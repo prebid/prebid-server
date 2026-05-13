@@ -1,0 +1,184 @@
+{
+  "mockBidRequest": {
+    "id": "liveramp-video-request-id",
+    "imp": [
+      {
+        "id": "liveramp-video-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 640,
+          "h": 480,
+          "linearity": 1,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "liveramp-video-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com/liveramp-video",
+      "domain": "example.com"
+    },
+    "user": {
+      "eids": [
+        {
+          "source": "sharedid.org",
+          "uids": [
+            {
+              "id": "shared-id"
+            }
+          ]
+        },
+        {
+          "source": "liveramp.com",
+          "uids": [
+            {
+              "id": "XiR-liveRamp-video-envelope",
+              "atype": 1,
+              "ext": {
+                "rtiPartner": "idl",
+                "stype": "ppuid"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=liveramp-video-placement",
+        "body": {
+          "id": "liveramp-video-request-id",
+          "imp": [
+            {
+              "id": "liveramp-video-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 640,
+                "h": 480,
+                "linearity": 1,
+                "maxduration": 30
+              },
+              "tagid": "liveramp-video-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "liveramp-video-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com/liveramp-video",
+            "domain": "example.com"
+          },
+          "user": {
+            "eids": [
+              {
+                "source": "liveramp.com",
+                "uids": [
+                  {
+                    "id": "XiR-liveRamp-video-envelope",
+                    "atype": 1,
+                    "ext": {
+                      "rtiPartner": "idl",
+                      "stype": "ppuid"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-OpenRTB-Version": [
+            "2.6"
+          ]
+        },
+        "impIDs": [
+          "liveramp-video-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "liveramp-video-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "liveramp-video-bid-id",
+                  "impid": "liveramp-video-imp-id",
+                  "price": 5.01,
+                  "adm": "<VAST version=\"3.0\"><Ad id=\"123\"></Ad></VAST>",
+                  "crid": "liveramp-video-creative-id",
+                  "w": 640,
+                  "h": 480,
+                  "adomain": [
+                    "example.com"
+                  ],
+                  "mtype": 2
+                }
+              ],
+              "seat": "resetdigital"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "liveramp-video-bid-id",
+            "impid": "liveramp-video-imp-id",
+            "price": 5.01,
+            "adm": "<VAST version=\"3.0\"><Ad id=\"123\"></Ad></VAST>",
+            "crid": "liveramp-video-creative-id",
+            "w": 640,
+            "h": 480,
+            "adomain": [
+              "example.com"
+            ],
+            "mtype": 2
+          },
+          "type": "video",
+          "seat": "resetdigital"
+        }
+      ]
+    }
+  ]
+}
