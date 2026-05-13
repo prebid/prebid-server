@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
 )
 
@@ -26,6 +27,7 @@ func Builder(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, erro
 
 	return Module{
 		hostConfig: hostCfg,
+		enricher:   EnricherFactory(),
 	}, nil
 }
 
@@ -34,6 +36,18 @@ func Builder(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, erro
 // such as pricing, categories, and advertiser information.
 type Module struct {
 	hostConfig CTVVastConfig
+	// enricher is the VAST enricher used by the hook. It is set in Builder via
+	// the EnricherFactory variable to avoid an import cycle with the enrich subpackage.
+	enricher Enricher
+}
+
+// EnricherFactory is a package-level variable that provides the default Enricher
+// implementation. It is overridden by the enrich subpackage via init() to avoid
+// an import cycle (parent → enrich → parent).
+// NOTE: Architectural TODO — move shared types (CanonicalMeta, ReceiverConfig) to a
+// types subpackage so parent and enrich can both import it without a cycle.
+var EnricherFactory func() Enricher = func() Enricher {
+	return &hookEnricher{}
 }
 
 // HandleRawBidderResponseHook processes bidder responses to enrich VAST XML.
@@ -74,8 +88,15 @@ func (m Module) HandleRawBidderResponseHook(
 		return result, nil
 	}
 
-	// Convert config to ReceiverConfig
-	receiverCfg := configToReceiverConfig(mergedCfg)
+	// Convert config to ReceiverConfig (canonical method in config.go)
+	receiverCfg := mergedCfg.ReceiverConfig()
+
+	// Use injected enricher (set via EnricherFactory in Builder).
+	// Fall back to hookEnricher for tests that construct Module{} directly.
+	enricher := m.enricher
+	if enricher == nil {
+		enricher = &hookEnricher{}
+	}
 
 	// modifiedBids is allocated lazily — only when the first enrichment actually happens.
 	// Until then we track the index so we can back-fill originals if needed.
@@ -91,8 +112,8 @@ func (m Module) HandleRawBidderResponseHook(
 
 		bid := typedBid.Bid
 
-		// Skip non-video bids (no AdM or not VAST)
-		if bid.AdM == "" {
+		// Skip non-video bids — explicit type check prevents banner/native from being parsed as VAST
+		if typedBid.BidType != openrtb_ext.BidTypeVideo || bid.AdM == "" {
 			if modifiedBids != nil {
 				modifiedBids = append(modifiedBids, typedBid)
 			}
@@ -109,21 +130,46 @@ func (m Module) HandleRawBidderResponseHook(
 			continue
 		}
 
+		// Resolve the actual DSP currency — BidderResponse.Currency is the authoritative source
+		bidCurrency := payload.BidderResponse.Currency
+		if bidCurrency == "" {
+			bidCurrency = receiverCfg.DefaultCurrency
+		}
+		if bidCurrency == "" {
+			bidCurrency = "USD"
+		}
+
 		// Build bid context for enrichment
 		bidContext := CanonicalMeta{
 			BidID:    bid.ID,
 			Price:    bid.Price,
-			Currency: receiverCfg.DefaultCurrency,
-			Adomain:  strings.Join(bid.ADomain, ","),
+			Currency: bidCurrency,
+			Adomain:  primaryDomain(bid.ADomain),
 			Cats:     bid.Cat,
 			Seat:     payload.Bidder,
 		}
 
-		// Enrich the VAST document inline
-		enrichedVast := enrichVastDocument(vastDoc, bidContext, receiverCfg)
+		// Extract the first Ad element and delegate enrichment to the injected Enricher.
+		// The enricher (set via EnricherFactory) handles Duration, Categories,
+		// AdvertiserPlacement, PricingPlacement, and debug extensions — BUG 3 fix.
+		ad := model.ExtractFirstAd(vastDoc)
+		if ad == nil {
+			if modifiedBids != nil {
+				modifiedBids = append(modifiedBids, typedBid)
+			}
+			continue
+		}
+
+		if _, enrichErr := enricher.Enrich(ad, bidContext, receiverCfg); enrichErr != nil {
+			// Enrichment failed — keep original bid
+			if modifiedBids != nil {
+				modifiedBids = append(modifiedBids, typedBid)
+			}
+			continue
+		}
 
 		// Format back to XML
-		xmlBytes, err := enrichedVast.Marshal()
+		xmlBytes, err := vastDoc.Marshal()
 		if err != nil {
 			// Keep original bid on format error
 			if modifiedBids != nil {
@@ -143,11 +189,12 @@ func (m Module) HandleRawBidderResponseHook(
 		*enrichedBid = *bid
 		enrichedBid.AdM = string(xmlBytes)
 
-		// Create new TypedBid with enriched bid
+		// Create new TypedBid with enriched bid — preserve BidMeta for analytics/targeting
 		enrichedTypedBid := &adapters.TypedBid{
 			Bid:          enrichedBid,
 			BidType:      typedBid.BidType,
 			BidVideo:     typedBid.BidVideo,
+			BidMeta:      typedBid.BidMeta,
 			DealPriority: typedBid.DealPriority,
 			Seat:         typedBid.Seat,
 		}
@@ -164,99 +211,46 @@ func (m Module) HandleRawBidderResponseHook(
 	return result, nil
 }
 
-// configToReceiverConfig converts CTVVastConfig to ReceiverConfig
-func configToReceiverConfig(cfg CTVVastConfig) ReceiverConfig {
-	rc := DefaultConfig()
-
-	if cfg.Receiver != "" {
-		switch cfg.Receiver {
-		case "GAM_SSU":
-			rc.Receiver = ReceiverGAMSSU
-		case "GENERIC":
-			rc.Receiver = ReceiverGeneric
-		}
+// primaryDomain returns the first domain from a slice, or empty string if none.
+// VAST <Advertiser> is a single human-readable string — joining multiple domains is non-standard.
+func primaryDomain(domains []string) string {
+	if len(domains) == 0 {
+		return ""
 	}
-
-	if cfg.DefaultCurrency != "" {
-		rc.DefaultCurrency = cfg.DefaultCurrency
-	}
-
-	if cfg.VastVersionDefault != "" {
-		rc.VastVersionDefault = cfg.VastVersionDefault
-	}
-
-	if cfg.MaxAdsInPod > 0 {
-		rc.MaxAdsInPod = cfg.MaxAdsInPod
-	}
-
-	if cfg.SelectionStrategy != "" {
-		switch cfg.SelectionStrategy {
-		case "max_revenue", "MAX_REVENUE":
-			rc.SelectionStrategy = SelectionMaxRevenue
-		case "top_n", "TOP_N":
-			rc.SelectionStrategy = SelectionTopN
-		case "single", "SINGLE":
-			rc.SelectionStrategy = SelectionSingle
-		}
-	}
-
-	if cfg.CollisionPolicy != "" {
-		switch cfg.CollisionPolicy {
-		case "reject", "REJECT":
-			rc.CollisionPolicy = CollisionReject
-		case "warn", "WARN":
-			rc.CollisionPolicy = CollisionWarn
-		case "ignore", "IGNORE":
-			rc.CollisionPolicy = CollisionIgnore
-		}
-	}
-
-	if cfg.AllowSkeletonVast != nil {
-		rc.AllowSkeletonVast = *cfg.AllowSkeletonVast
-	}
-
-	if cfg.Placement != nil {
-		if cfg.Placement.PricingPlacement != "" {
-			rc.Placement.PricingPlacement = cfg.Placement.PricingPlacement
-		}
-	}
-
-	return rc
+	return domains[0]
 }
 
-// enrichVastDocument enriches a VAST document with bid metadata.
-// It adds pricing and advertiser information to the VAST.
-func enrichVastDocument(vast *model.Vast, meta CanonicalMeta, cfg ReceiverConfig) *model.Vast {
-	if vast == nil {
-		return vast
+// hookEnricher is a minimal fallback enricher used when EnricherFactory is not overridden.
+// In production the enrich subpackage registers its VastEnricher via init().
+// This fallback handles only Pricing and Advertiser to remain backward-compatible.
+type hookEnricher struct{}
+
+func (h *hookEnricher) Enrich(ad *model.Ad, meta CanonicalMeta, cfg ReceiverConfig) ([]string, error) {
+	if ad == nil || ad.InLine == nil {
+		return nil, nil
 	}
+	inline := ad.InLine
 
-	// Process each ad
-	for i := range vast.Ads {
-		ad := &vast.Ads[i]
-		if ad.InLine == nil {
-			continue
+	// Pricing
+	if inline.Pricing == nil && meta.Price > 0 {
+		currency := meta.Currency
+		if currency == "" {
+			currency = cfg.DefaultCurrency
 		}
-		inline := ad.InLine
-
-		// Add pricing if not present
-		if inline.Pricing == nil && meta.Price > 0 {
-			currency := cfg.DefaultCurrency
-			if currency == "" {
-				currency = "USD"
-			}
-			inline.Pricing = &model.Pricing{
-				Value:    fmt.Sprintf("%.6f", meta.Price),
-				Model:    "CPM",
-				Currency: currency,
-			}
+		if currency == "" {
+			currency = "USD"
 		}
-
-		// Add advertiser if not present
-		if inline.Advertiser == "" && meta.Adomain != "" {
-			inline.Advertiser = meta.Adomain
+		inline.Pricing = &model.Pricing{
+			Value:    fmt.Sprintf("%.6f", meta.Price),
+			Model:    "CPM",
+			Currency: currency,
 		}
 	}
 
-	return vast
+	// Advertiser
+	if strings.TrimSpace(inline.Advertiser) == "" && meta.Adomain != "" {
+		inline.Advertiser = meta.Adomain
+	}
+
+	return nil, nil
 }

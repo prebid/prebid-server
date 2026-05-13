@@ -3,9 +3,6 @@ package ctv_vast_enrichment
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -134,7 +131,7 @@ func TestBuildVastFromBidResponse_NoAds(t *testing.T) {
 
 	assert.True(t, result.NoAd)
 	assert.NotEmpty(t, result.VastXML)
-	assert.Contains(t, string(result.VastXML), `<VAST version="4.0">`)
+	assert.Contains(t, string(result.VastXML), `<VAST version="3.0">`)
 	assert.Empty(t, result.Selected)
 }
 
@@ -204,7 +201,7 @@ func TestBuildVastFromBidResponse_SingleBid(t *testing.T) {
 	assert.Len(t, result.Selected, 1)
 
 	xmlStr := string(result.VastXML)
-	assert.Contains(t, xmlStr, `<VAST version="4.0">`)
+	assert.Contains(t, xmlStr, `<VAST version="3.0">`)
 	assert.Contains(t, xmlStr, `<Ad id="bid-1"`)
 	assert.Contains(t, xmlStr, "<AdTitle>Test Ad</AdTitle>")
 }
@@ -393,179 +390,6 @@ func TestBuildVastFromBidResponse_EnrichmentAddsMetadata(t *testing.T) {
 	// Check debug extension
 	assert.Contains(t, xmlStr, `type="openrtb"`)
 	assert.Contains(t, xmlStr, "<BidID>bid-enriched</BidID>")
-}
-
-// HTTP Handler Tests
-
-func TestHandler_MethodNotAllowed(t *testing.T) {
-	selector, enricher, formatter := newTestComponents()
-	handler := NewHandler().
-		WithSelector(selector).
-		WithEnricher(enricher).
-		WithFormatter(formatter)
-
-	req := httptest.NewRequest(http.MethodPost, "/vast", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
-}
-
-func TestHandler_NotConfigured(t *testing.T) {
-	handler := NewHandler() // No selector/enricher/formatter
-
-	req := httptest.NewRequest(http.MethodGet, "/vast", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	body, _ := io.ReadAll(rec.Body)
-	assert.Contains(t, string(body), "not properly configured")
-}
-
-func TestHandler_NoAuction_ReturnsNoAdVast(t *testing.T) {
-	selector, enricher, formatter := newTestComponents()
-	handler := NewHandler().
-		WithSelector(selector).
-		WithEnricher(enricher).
-		WithFormatter(formatter)
-	// No AuctionFunc set, should return no-ad VAST
-
-	req := httptest.NewRequest(http.MethodGet, "/vast?pod_id=test-pod", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "application/xml; charset=utf-8", rec.Header().Get("Content-Type"))
-
-	body, _ := io.ReadAll(rec.Body)
-	assert.Contains(t, string(body), `<VAST version="4.0">`)
-}
-
-func TestHandler_WithMockAuction_ReturnsVast(t *testing.T) {
-	vastXML := `<?xml version="1.0" encoding="UTF-8"?>
-<VAST version="4.0">
-  <Ad id="mock-ad">
-    <InLine>
-      <AdSystem>MockServer</AdSystem>
-      <AdTitle>Mock Ad</AdTitle>
-      <Creatives>
-        <Creative>
-          <Linear>
-            <Duration>00:00:15</Duration>
-          </Linear>
-        </Creative>
-      </Creatives>
-    </InLine>
-  </Ad>
-</VAST>`
-
-	mockAuction := func(ctx context.Context, req *openrtb2.BidRequest) (*openrtb2.BidResponse, error) {
-		return &openrtb2.BidResponse{
-			ID: "mock-resp",
-			SeatBid: []openrtb2.SeatBid{
-				{
-					Seat: "mock-bidder",
-					Bid: []openrtb2.Bid{
-						{
-							ID:    "mock-bid-1",
-							ImpID: "imp-1",
-							Price: 3.50,
-							AdM:   vastXML,
-						},
-					},
-				},
-			},
-		}, nil
-	}
-
-	selector, enricher, formatter := newTestComponents()
-	handler := NewHandler().
-		WithSelector(selector).
-		WithEnricher(enricher).
-		WithFormatter(formatter).
-		WithAuctionFunc(mockAuction)
-
-	req := httptest.NewRequest(http.MethodGet, "/vast?pod_id=test-pod", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "application/xml; charset=utf-8", rec.Header().Get("Content-Type"))
-
-	body, _ := io.ReadAll(rec.Body)
-	xmlStr := string(body)
-	assert.Contains(t, xmlStr, `<VAST version="4.0">`)
-	assert.Contains(t, xmlStr, `<Ad id="mock-bid-1"`)
-	assert.Contains(t, xmlStr, "<AdTitle>Mock Ad</AdTitle>")
-}
-
-func TestHandler_WithConfig(t *testing.T) {
-	cfg := ReceiverConfig{
-		Receiver:           ReceiverGAMSSU,
-		VastVersionDefault: "3.0",
-		DefaultCurrency:    "EUR",
-	}
-
-	selector, enricher, formatter := newTestComponents()
-	handler := NewHandler().
-		WithConfig(cfg).
-		WithSelector(selector).
-		WithEnricher(enricher).
-		WithFormatter(formatter)
-
-	req := httptest.NewRequest(http.MethodGet, "/vast", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	assert.Equal(t, http.StatusOK, rec.Code)
-	body, _ := io.ReadAll(rec.Body)
-	// Should use version 3.0 from config
-	assert.Contains(t, string(body), `version="3.0"`)
-}
-
-func TestHandler_CacheControlHeader(t *testing.T) {
-	selector, enricher, formatter := newTestComponents()
-	handler := NewHandler().
-		WithSelector(selector).
-		WithEnricher(enricher).
-		WithFormatter(formatter)
-
-	req := httptest.NewRequest(http.MethodGet, "/vast", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	assert.Equal(t, "no-cache, no-store, must-revalidate", rec.Header().Get("Cache-Control"))
-}
-
-func TestHandler_PodIDFromQuery(t *testing.T) {
-	var capturedReq *openrtb2.BidRequest
-
-	mockAuction := func(ctx context.Context, req *openrtb2.BidRequest) (*openrtb2.BidResponse, error) {
-		capturedReq = req
-		return &openrtb2.BidResponse{}, nil
-	}
-
-	selector, enricher, formatter := newTestComponents()
-	handler := NewHandler().
-		WithSelector(selector).
-		WithEnricher(enricher).
-		WithFormatter(formatter).
-		WithAuctionFunc(mockAuction)
-
-	req := httptest.NewRequest(http.MethodGet, "/vast?pod_id=custom-pod-123", nil)
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	require.NotNil(t, capturedReq)
-	assert.Equal(t, "custom-pod-123", capturedReq.ID)
 }
 
 // Test warnings are captured

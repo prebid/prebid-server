@@ -1,42 +1,42 @@
-# Moduł CTV VAST Enrichment
+# CTV VAST Enrichment Module
 
-Moduł CTV VAST Enrichment to moduł hook Prebid Server, który wzbogaca odpowiedzi VAST (Video Ad Serving Template) o dodatkowe metadane dla reklam Connected TV (CTV).
+The CTV VAST Enrichment module is a Prebid Server hook module that enriches VAST (Video Ad Serving Template) XML responses with additional metadata for Connected TV (CTV) ads.
 
-## Struktura Modułu
+## Module Structure
 
 ```
 modules/prebid/ctv_vast_enrichment/
-├── module.go         # Punkt wejścia modułu PBS (Builder + HandleRawBidderResponseHook)
-├── module_test.go    # Testy modułu
-├── pipeline.go       # Samodzielny pipeline przetwarzania VAST
-├── pipeline_test.go  # Testy pipeline
-├── handler.go        # Handler HTTP dla bezpośrednich żądań VAST
-├── types.go          # Definicje typów, interfejsy i stałe
-├── config.go         # Konfiguracja i mergowanie warstw (host/account/profile)
-├── config_test.go    # Testy konfiguracji
-├── model/            # Struktury danych VAST XML
-│   ├── model.go      # Obiekty domenowe wysokiego poziomu
-│   ├── vast_xml.go   # Struktury XML do marshal/unmarshal
-│   ├── parser.go     # Parser VAST XML
-│   └── *_test.go     # Testy
-├── select/           # Logika selekcji bidów
-│   ├── selector.go   # Implementacje BidSelector
-│   └── *_test.go     # Testy
-├── enrich/           # Wzbogacanie VAST
-│   ├── enrich.go     # Implementacja Enricher (VAST_WINS)
-│   └── *_test.go     # Testy
-└── format/           # Formatowanie VAST XML
-    ├── format.go     # Implementacja Formatter (GAM_SSU)
-    └── *_test.go     # Testy
+├── module.go         # PBS module entry point (Builder + HandleRawBidderResponseHook)
+├── module_test.go    # Module tests
+├── pipeline.go       # Standalone VAST processing pipeline
+├── pipeline_test.go  # Pipeline tests
+├── handler.go        # HTTP handler for direct VAST requests
+├── types.go          # Type definitions, interfaces and constants
+├── config.go         # Configuration and layer merging (host/account/profile)
+├── config_test.go    # Configuration tests
+├── model/            # VAST XML data structures
+│   ├── model.go      # High-level domain objects
+│   ├── vast_xml.go   # XML structures for marshal/unmarshal
+│   ├── parser.go     # VAST XML parser
+│   └── *_test.go     # Tests
+├── select/           # Bid selection logic
+│   ├── selector.go   # BidSelector implementations
+│   └── *_test.go     # Tests
+├── enrich/           # VAST enrichment
+│   ├── enrich.go     # Enricher implementation (VAST_WINS)
+│   └── *_test.go     # Tests
+└── format/           # VAST XML formatting
+    ├── format.go     # Formatter implementation (GAM_SSU)
+    └── *_test.go     # Tests
 ```
 
-## Integracja z PBS
+## PBS Module Integration
 
-Moduł jest zgodny ze standardowym wzorcem modułów Prebid Server.
+This module follows the standard Prebid Server module pattern.
 
-### Rejestracja w `modules/builder.go`
+### Registration in `modules/builder.go`
 
-Moduł musi być zarejestrowany w pliku `modules/builder.go`, który jest centralnym rejestrem wszystkich modułów PBS:
+The module must be registered in `modules/builder.go`, which is the central registry of all PBS modules:
 
 ```go
 import (
@@ -50,136 +50,112 @@ var newModuleBuilders = map[string]map[string]interface{}{
 }
 ```
 
-> **Uwaga:** Nazwa pakietu Go to `ctv_vast_enrichment`, ale subpakiety (enrich, select, format) używają aliasu `vast` do importu pakietu nadrzędnego:
+> **Note:** The Go package name is `ctv_vast_enrichment`, but subpackages (enrich, select, format) use the `vast` alias when importing the parent package:
 > ```go
 > import vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
 > ```
 
-### `module.go` - Główny Punkt Wejścia
+### \`module.go\` - Main Entry Point
 
-```go
-// Builder tworzy nową instancję modułu CTV VAST enrichment.
+\`\`\`go
+// Builder creates a new CTV VAST enrichment module instance.
 func Builder(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, error)
 
-// Module implementuje funkcjonalność wzbogacania CTV VAST jako moduł hook PBS.
+// Module implements the CTV VAST enrichment functionality as a PBS hook module.
 type Module struct {
     hostConfig CTVVastConfig
 }
 
-// HandleRawBidderResponseHook przetwarza odpowiedzi bidderów, wzbogacając VAST XML.
+// HandleRawBidderResponseHook processes bidder responses to enrich VAST XML.
 func (m Module) HandleRawBidderResponseHook(
     ctx context.Context,
     miCtx hookstage.ModuleInvocationContext,
     payload hookstage.RawBidderResponsePayload,
 ) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error)
-```
+\`\`\`
 
 ### Hook Stage
 
-Moduł działa na etapie hooka **RawBidderResponse**, przetwarzając odpowiedź każdego biddera przed agregacją. Dla każdego bida zawierającego VAST XML:
+The module runs at the **RawBidderResponse** hook stage, processing each bidder's response before aggregation. For each bid containing VAST XML:
 
-1. Parsuje VAST XML z pola `AdM` bida
-2. Wzbogaca VAST o pricing, advertiser i metadane kategorii
-3. Tworzy nowy `*adapters.TypedBid` z nowym `*openrtb2.Bid` zawierającym wzbogacony AdM
-4. Zwraca mutację przez `changeSet.RawBidderResponse().Bids().UpdateBids(modifiedBids)`
+1. Parses the VAST XML from the bid's \`AdM\` field
+2. Enriches the VAST with pricing, advertiser, and category metadata
+3. Creates a new `*adapters.TypedBid` with a new `*openrtb2.Bid` containing the enriched AdM
+4. Returns the mutation via `changeSet.RawBidderResponse().Bids().UpdateBids(modifiedBids)`
 
-> **Wzorzec ChangeSet:** Hook nie modyfikuje payload bezpośrednio. Zamiast tego buduje nowy slice `[]adapters.TypedBid` i rejestruje mutację przez `UpdateBids()`. PBS stosuje mutację po powrocie z hooka — zgodnie ze wzorcem z modułu `ortb2blocking`.
+> **ChangeSet Pattern:** The hook does not modify the payload directly. Instead, it builds a new `[]adapters.TypedBid` slice and registers the mutation via `UpdateBids()`. PBS applies the mutation after the hook returns — following the pattern from the `ortb2blocking` module.
 
-### Konfiguracja PBS (`pbs.json`)
+### Configuration
 
-Aby moduł został wywołany podczas aukcji, wymagana jest konfiguracja `host_execution_plan` w sekcji `hooks`:
+The module uses PBS-style layered configuration:
 
-```json
+\`\`\`json
 {
-  "hooks": {
-    "enabled": true,
-    "modules": {
-      "prebid": {
-        "ctv_vast_enrichment": {
-          "enabled": true,
-          "receiver": "GAM_SSU",
-          "default_currency": "USD"
-        }
-      }
-    },
-    "host_execution_plan": {
-      "endpoints": {
-        "/openrtb2/auction": {
-          "stages": {
-            "raw_bidder_response": {
-              "groups": [
-                {
-                  "timeout": 1000,
-                  "hook_sequence": [
-                    {
-                      "module_code": "prebid.ctv_vast_enrichment",
-                      "hook_impl_code": "code123"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        }
+  "modules": {
+    "prebid": {
+      "ctv_vast_enrichment": {
+        "enabled": true,
+        "receiver": "GAM_SSU",
+        "default_currency": "USD",
+        "vast_version_default": "3.0",
+        "max_ads_in_pod": 10
       }
     }
   }
 }
-```
+\`\`\`
 
-> **Ważne:** Sam `enabled_modules` nie wystarczy. PBS wymaga jawnego `host_execution_plan` z definicją stage `raw_bidder_response` i `module_code: "prebid.ctv_vast_enrichment"`, aby hook został faktycznie wywołany.
+Account-level configuration overrides host-level settings.
 
-Konfiguracja na poziomie konta nadpisuje ustawienia na poziomie hosta.
+> **Enabled is opt-in:** The module processes bids only when `enabled` is explicitly set to `true`. A `null`/missing value is treated as `false` — the module will not run.
 
-> **Enabled jest opt-in:** Moduł przetwarza bidy tylko gdy `enabled` jest jawnie ustawione na `true`. Brak wartości (`null`/nieobecne) jest traktowany jako `false` — moduł nie zostanie uruchomiony.
+## Components
 
-## Komponenty
+### \`module.go\` - PBS Module
 
-### `module.go` - Moduł PBS
+Main entry point following PBS module conventions:
 
-Główny punkt wejścia zgodny z konwencjami modułów PBS:
+- **\`Builder()\`** - Creates module instance from JSON config
+- **\`Module\`** - Struct holding host-level configuration
+- **\`HandleRawBidderResponseHook()\`** - Hook implementation that:
+  - Parses account-level config
+  - Merges host and account configs
+  - Skips processing when `enabled` is not explicitly `true` (opt-in)
+  - Enriches VAST in each video bid; allocates the modified bids slice lazily (only when enrichment actually occurs)
+  - Logs errors via `glog` when VAST building fails
 
-- **`Builder()`** - Tworzy instancję modułu z konfiguracji JSON
-- **`Module`** - Struktura przechowująca konfigurację na poziomie hosta
-- **`HandleRawBidderResponseHook()`** - Implementacja hooka:
-  - Parsuje konfigurację na poziomie konta
-  - Merguje konfiguracje hosta i konta
-  - Pomija przetwarzanie gdy `enabled` nie jest jawnie `true` (opt-in)
-  - Wzbogaca VAST w każdym bidzie video; slice zmodyfikowanych bidów alokowany jest leniwie (tylko gdy enrichment faktycznie następuje)
-  - Loguje błędy przez `glog` gdy budowanie VAST się nie powiedzie
+### \`pipeline.go\` - Standalone Pipeline
 
-### `pipeline.go` - Samodzielny Pipeline
+Alternative entry point for direct invocation (used by handler.go):
 
-Alternatywny punkt wejścia do bezpośredniego wywołania (używany przez handler.go):
+- **\`BuildVastFromBidResponse()\`** - Orchestrates the full pipeline:
+  1. Bid selection from auction response
+  2. VAST parsing from each bid's AdM
+  3. Enrichment with metadata
+  4. Formatting to final XML
 
-- **`BuildVastFromBidResponse()`** - Orkiestruje pełny pipeline:
-  1. Selekcja bidów z odpowiedzi aukcji
-  2. Parsowanie VAST z AdM każdego bida
-  3. Wzbogacanie metadanymi
-  4. Formatowanie do końcowego XML
+- **\`Processor\`** - Wrapper with injected dependencies
+- **\`DefaultConfig()\`** - Default configuration for GAM SSU
 
-- **`Processor`** - Wrapper z wstrzykniętymi zależnościami
-- **`DefaultConfig()`** - Domyślna konfiguracja dla GAM SSU
+### \`handler.go\` - HTTP Handler
 
-### `handler.go` - Handler HTTP
+HTTP request handling for CTV VAST ads (optional endpoint):
 
-Obsługa żądań HTTP dla reklam CTV VAST (opcjonalny endpoint):
+- **\`Handler\`** - HTTP handler with configuration and dependencies
+- **\`ServeHTTP()\`** - Handles GET requests, returns VAST XML
+- Builder methods: \`WithConfig()\`, \`WithSelector()\`, etc.
 
-- **`Handler`** - Handler HTTP z konfiguracją i zależnościami
-- **`ServeHTTP()`** - Obsługuje żądania GET, zwraca VAST XML
-- Metody buildera: `WithConfig()`, `WithSelector()`, itp.
+### \`types.go\` - Types and Interfaces
 
-### `types.go` - Typy i Interfejsy
+| Type | Description |
+|------|-------------|
+| \`ReceiverType\` | Receiver type (GAM_SSU, GENERIC) |
+| \`SelectionStrategy\` | Bid selection strategy (SINGLE, TOP_N, max_revenue, min_duration, balanced); unknown values fall back to default |
+| \`CollisionPolicy\` | Collision policy (reject, warn, ignore, VAST_WINS) |
 
-| Typ | Opis |
-|-----|------|
-| `ReceiverType` | Typ odbiorcy (GAM_SSU, GENERIC) |
-| `SelectionStrategy` | Strategia selekcji bidów (SINGLE, TOP_N, max_revenue, min_duration, balanced); nieznane wartości cofają się do domyślnej |
-| `CollisionPolicy` | Polityka kolizji (reject, warn, ignore, VAST_WINS); nieznane wartości cofają się do domyślnej |
+**Interfaces:**
 
-**Interfejsy:**
-
-```go
+\`\`\`go
 type BidSelector interface {
     Select(req, resp, cfg) ([]SelectedBid, []string, error)
 }
@@ -191,98 +167,98 @@ type Enricher interface {
 type Formatter interface {
     Format(ads []EnrichedAd, cfg ReceiverConfig) ([]byte, []string, error)
 }
-```
+\`\`\`
 
-**Struktury Danych:**
+**Data Structures:**
 
-- `CanonicalMeta` - Znormalizowane metadane bida (BidID, Price, Currency, Adomain, itp.)
-- `SelectedBid` - Wybrany bid z metadanymi i numerem sekwencji; pole `Bid` jest wskaźnikiem `*openrtb2.Bid` (zgodnie z resztą PBS)
-- `EnrichedAd` - Wzbogacona reklama gotowa do formatowania
-- `VastResult` - Wynik przetwarzania (XML, ostrzeżenia, błędy)
-- `ReceiverConfig` - Konfiguracja odbiorcy VAST
-- `PlacementRules` - Reguły walidacji (pricing, advertiser, categories)
+- \`CanonicalMeta\` - Normalized bid metadata (BidID, Price, Currency, Adomain, etc.)
+- \`SelectedBid\` - Selected bid with metadata and sequence number; `Bid` field is `*openrtb2.Bid` (pointer, consistent with the rest of PBS)
+- \`EnrichedAd\` - Enriched ad ready for formatting
+- \`VastResult\` - Processing result (XML, warnings, errors)
+- \`ReceiverConfig\` - VAST receiver configuration
+- \`PlacementRules\` - Validation rules (pricing, advertiser, categories)
 
-### `config.go` - Konfiguracja
+### \`config.go\` - Configuration
 
-Warstwowy system konfiguracji w stylu PBS:
+PBS-style layered configuration system:
 
-- **`CTVVastConfig`** - Struktura konfiguracji z polami nullable
-- **`MergeCTVVastConfig()`** - Mergowanie warstw: Host → Account → Profile
+- **\`CTVVastConfig\`** - Configuration structure with nullable fields
+- **\`MergeCTVVastConfig()\`** - Layer merging: Host → Account → Profile
 
-Priorytet warstw (od najniższego do najwyższego):
-1. Host (domyślne)
-2. Account (nadpisuje host)
-3. Profile (nadpisuje wszystko)
+Layer priority (from lowest to highest):
+1. Host (defaults)
+2. Account (overrides host)
+3. Profile (overrides everything)
 
-### `model/` - Struktury VAST XML
+### \`model/\` - VAST XML Structures
 
-#### `vast_xml.go`
+#### \`vast_xml.go\`
 
-Struktury Go mapujące elementy VAST XML:
+Go structures mapping VAST XML elements:
 
-- `Vast` - Element główny `<VAST>`
-- `Ad` - Element `<Ad>` z atrybutami id, sequence
-- `InLine` - Reklama inline z pełnymi danymi
-- `Wrapper` - Reklama wrapper (przekierowanie)
-- `Creative`, `Linear`, `MediaFile` - Elementy kreacji
-- `Pricing`, `Impression`, `Extensions` - Metadane i tracking
+- \`Vast\` - Root element \`<VAST>\`
+- \`Ad\` - Element \`<Ad>\` with id, sequence attributes
+- \`InLine\` - Inline ad with full data
+- \`Wrapper\` - Wrapper ad (redirect)
+- \`Creative\`, \`Linear\`, \`MediaFile\` - Creative elements
+- \`Pricing\`, \`Impression\`, \`Extensions\` - Metadata and tracking
 
-Funkcje pomocnicze:
-- `BuildNoAdVast()` - Tworzy pusty VAST (brak reklam)
-- `BuildSkeletonInlineVast()` - Tworzy minimalny szkielet VAST
-- `Marshal()` / `MarshalCompact()` - Serializacja do XML
-- `clearInnerXML()` - Czyści pola `InnerXML` przed serializacją (zapobiega duplikowaniu elementów)
+Helper functions:
+- `BuildNoAdVast()` - Creates empty VAST (no ads)
+- `BuildSkeletonInlineVast()` - Creates minimal VAST skeleton
+- `Marshal()` / `MarshalCompact()` - Serialize to XML
+- `clearInnerXML()` - Clears `InnerXML` fields before serialization (prevents element duplication)
 
-> **Fix XML:** Struktury VAST używają tagu `,innerxml` do zachowania surowego XML podczas parsowania. Przed `Marshal()` wywoływana jest `clearInnerXML()`, która zeruje pola `InnerXML` na strukturach `Ad`, `InLine`, `Wrapper`, `Creative` i `Linear`, zapobiegając duplikowaniu elementów w wynikowym XML.
+> **XML Fix:** VAST structures use the `,innerxml` tag to preserve raw XML during parsing. Before `Marshal()`, `clearInnerXML()` is called to zero out `InnerXML` fields on `Ad`, `InLine`, `Wrapper`, `Creative`, and `Linear` structs, preventing duplicate elements in the output XML.
 
 #### `parser.go`
 
-Parser VAST XML:
+VAST XML parser:
 
-- **`ParseVastAdm()`** - Parsuje string AdM do struktury Vast
-- **`ParseVastOrSkeleton()`** - Parsuje lub tworzy szkielet jeśli dozwolone
-- **`ExtractFirstAd()`** - Wyciąga pierwszą reklamę z VAST
+- **\`ParseVastAdm()\`** - Parses AdM string to Vast structure
+- **\`ParseVastOrSkeleton()\`** - Parses or creates skeleton if allowed
+- **\`ExtractFirstAd()\`** - Extracts first ad from VAST
 
-### `select/` - Selekcja Bidów
+### \`select/\` - Bid Selection
 
-Logika wyboru bidów z odpowiedzi aukcji:
+Logic for selecting bids from auction response:
 
-- **`PriceSelector`** - Implementacja oparta na cenie:
-  - Filtruje bidy z ceną ≤ 0 lub pustym AdM
-  - Sortuje: deal > non-deal, potem po cenie malejąco
-  - Respektuje `MaxAdsInPod` dla strategii TOP_N
-  - Przypisuje numery sekwencji (1-indexed)
+- **\`PriceSelector\`** - Price-based implementation:
+  - Filters bids with price ≤ 0 or empty AdM
+  - Sorts: deal > non-deal, then by price descending
+  - Respects \`MaxAdsInPod\` for TOP_N strategy
+  - Assigns sequence numbers (1-indexed)
 
-- **`NewSelector(strategy)`** - Fabryka tworząca selektor dla strategii
+- **\`NewSelector(strategy)\`** - Factory creating selector for strategy
 
-### `enrich/` - Wzbogacanie VAST
+### \`enrich/\` - VAST Enrichment
 
-Dodawanie metadanych do reklam VAST:
+Adding metadata to VAST ads:
 
-- **`VastEnricher`** - Implementacja z polityką VAST_WINS:
-  - Istniejące wartości w VAST nie są nadpisywane
-  - Dodaje brakujące: Pricing, Advertiser, Duration, Categories
+- **\`VastEnricher\`** - Implementation with VAST_WINS policy:
+  - Existing values in VAST are not overwritten
+  - Adds missing: Pricing, Advertiser, Duration, Categories
 
-Wzbogacane elementy:
-| Element | Źródło | Lokalizacja |
-|---------|--------|-------------|
-| Pricing | meta.Price | `<Pricing>` lub Extension |
-| Advertiser | meta.Adomain | `<Advertiser>` lub Extension |
-| Duration | meta.DurSec | `<Duration>` w Linear |
-| Categories | meta.Cats | Extension (zawsze) |
+Enriched elements:
+| Element | Source | Location |
+|---------|--------|----------|
+| Pricing | meta.Price | \`<Pricing>\` or Extension |
+| Advertiser | meta.Adomain | \`<Advertiser>\` or Extension |
+| Duration | meta.DurSec | \`<Duration>\` in Linear |
+| Categories | meta.Cats | Extension (always) |
 
-### `format/` - Formatowanie VAST
+### \`format/\` - VAST Formatting
 
-Budowanie końcowego VAST XML:
+Building final VAST XML:
 
-- **`VastFormatter`** - Implementacja GAM SSU:
-  - Buduje dokument VAST z listą elementów `<Ad>`
-  - Ustawia `id` z BidID
-  - Ustawia `sequence` dla podów (wiele reklam)
+- **\`VastFormatter\`** - GAM SSU implementation:
+  - Builds VAST document with list of \`<Ad>\` elements
+  - Sets \`id\` from BidID
+  - Sets \`sequence\` for pods (multiple ads)
 
-## Przepływ Przetwarzania
+## Processing Flow
 
-```
+\`\`\`
 ┌─────────────────────────────────────────────────────┐
 │              PBS Auction Pipeline                    │
 └─────────────────────────────────────────────────────┘
@@ -292,29 +268,29 @@ Budowanie końcowego VAST XML:
 │          RawBidderResponse Hook Stage               │
 │  ┌───────────────────────────────────────────────┐  │
 │  │   HandleRawBidderResponseHook()               │  │
-│  │   Dla każdego bida z VAST w AdM:              │  │
-│  │   1. Parsuje VAST XML                         │  │
-│  │   2. Wzbogaca o pricing/advertiser            │  │
-│  │   3. Aktualizuje bid.AdM                      │  │
+│  │   For each bid with VAST in AdM:              │  │
+│  │   1. Parse VAST XML                           │  │
+│  │   2. Enrich with pricing/advertiser           │  │
+│  │   3. Update bid.AdM                           │  │
 │  └───────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│              Wzbogacona BidderResponse               │
-│              (VAST z <Pricing>, itp.)               │
+│              Enriched BidderResponse                 │
+│              (VAST with <Pricing>, etc.)            │
 └─────────────────────────────────────────────────────┘
-```
+\`\`\`
 
-## Użycie
+## Usage
 
-### Jako Moduł PBS (Rekomendowane)
+### As PBS Module (Recommended)
 
-Moduł jest automatycznie wywoływany podczas pipeline aukcji gdy włączony w konfiguracji.
+The module is automatically invoked during the auction pipeline when enabled in configuration.
 
-**1. Upewnij się, że moduł jest zarejestrowany w `modules/builder.go`** (patrz sekcja "Rejestracja" wyżej).
+**1. Ensure the module is registered in `modules/builder.go`** (see "Registration" section above).
 
-**2. Dodaj konfigurację hooks do `pbs.json`:**
+**2. Add hooks configuration to `pbs.json`:**
 
 ```json
 {
@@ -354,7 +330,7 @@ Moduł jest automatycznie wywoływany podczas pipeline aukcji gdy włączony w k
 }
 ```
 
-**3. Nadpisanie na poziomie konta** (opcjonalne):
+**3. Account-level override** (optional):
 ```json
 {
   "hooks": {
@@ -368,9 +344,9 @@ Moduł jest automatycznie wywoływany podczas pipeline aukcji gdy włączony w k
 }
 ```
 
-### Samodzielny Pipeline (dla handlera HTTP)
+### Standalone Pipeline (for HTTP handler)
 
-```go
+\`\`\`go
 import (
     vast "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment"
     "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/enrich"
@@ -378,16 +354,16 @@ import (
     bidselect "github.com/prebid/prebid-server/v3/modules/prebid/ctv_vast_enrichment/select"
 )
 
-// Konfiguracja
+// Configuration
 cfg := vast.DefaultConfig()
 cfg.MaxAdsInPod = 3
 
-// Tworzenie komponentów
+// Create components
 selector := bidselect.NewSelector(cfg.SelectionStrategy)
 enricher := enrich.NewEnricher()
 formatter := format.NewFormatter()
 
-// Bezpośrednie wywołanie
+// Direct invocation
 result, err := vast.BuildVastFromBidResponse(
     ctx,
     bidRequest,
@@ -397,11 +373,11 @@ result, err := vast.BuildVastFromBidResponse(
     enricher,
     formatter,
 )
-```
+\`\`\`
 
-### Handler HTTP
+### HTTP Handler
 
-```go
+\`\`\`go
 handler := vast.NewHandler().
     WithConfig(cfg).
     WithSelector(selector).
@@ -410,75 +386,75 @@ handler := vast.NewHandler().
     WithAuctionFunc(myAuctionFunc)
 
 http.Handle("/vast", handler)
-```
+\`\`\`
 
-## Konfiguracja Warstwowa
+## Layer Configuration
 
-```go
-// Konfiguracja hosta (domyślne)
+\`\`\`go
+// Host configuration (defaults)
 hostCfg := &vast.CTVVastConfig{
     Receiver:           "GAM_SSU",
     DefaultCurrency:    "USD",
     VastVersionDefault: "4.0",
 }
 
-// Konfiguracja konta (nadpisuje host)
+// Account configuration (overrides host)
 accountCfg := &vast.CTVVastConfig{
     MaxAdsInPod: 5,
 }
 
-// Merge warstw
+// Merge layers
 merged := vast.MergeCTVVastConfig(hostCfg, accountCfg, nil)
-```
+\`\`\`
 
-## Testowanie
+## Testing
 
-Uruchom wszystkie testy modułu:
+Run all module tests:
 
-```bash
+\`\`\`bash
 go test ./modules/prebid/ctv_vast_enrichment/... -v
-```
+\`\`\`
 
-Testy z pokryciem:
+Tests with coverage:
 
-```bash
+\`\`\`bash
 go test ./modules/prebid/ctv_vast_enrichment/... -cover
-```
+\`\`\`
 
-Uruchom tylko testy module.go:
+Run only module.go tests:
 
-```bash
+\`\`\`bash
 go test ./modules/prebid/ctv_vast_enrichment -run TestBuilder -v
 go test ./modules/prebid/ctv_vast_enrichment -run TestHandleRawBidderResponseHook -v
-```
+\`\`\`
 
-## Rozszerzenia
+## Extensions
 
-### Dodawanie Nowego Odbiorcy
+### Adding a New Receiver
 
-1. Dodaj stałą w `types.go`:
-   ```go
+1. Add constant in \`types.go\`:
+   \`\`\`go
    ReceiverMyReceiver ReceiverType = "MY_RECEIVER"
-   ```
+   \`\`\`
 
-2. Zaimplementuj `Formatter` dla nowego formatu w `format/`
+2. Implement \`Formatter\` for the new format in \`format/\`
 
-3. Zaktualizuj `configToReceiverConfig()` w `module.go`
+3. Update \`configToReceiverConfig()\` in \`module.go\`
 
-### Dodawanie Nowej Strategii Selekcji
+### Adding a New Selection Strategy
 
-1. Dodaj stałą w `types.go`:
-   ```go
+1. Add constant in \`types.go\`:
+   \`\`\`go
    SelectionMyStrategy SelectionStrategy = "MY_STRATEGY"
-   ```
+   \`\`\`
 
-2. Zaimplementuj `BidSelector` w `select/`
+2. Implement \`BidSelector\` in \`select/\`
 
-3. Zaktualizuj fabrykę `NewSelector()`
+3. Update \`NewSelector()\` factory
 
-## Zależności
+## Dependencies
 
-- `github.com/prebid/prebid-server/v3/hooks/hookstage` - Interfejsy hooków PBS
-- `github.com/prebid/prebid-server/v3/modules/moduledeps` - Zależności modułów
-- `github.com/prebid/openrtb/v20/openrtb2` - Typy OpenRTB
-- `encoding/xml` - Parsowanie/serializacja XML
+- \`github.com/prebid/prebid-server/v3/hooks/hookstage\` - PBS hook interfaces
+- \`github.com/prebid/prebid-server/v3/modules/moduledeps\` - Module dependencies
+- \`github.com/prebid/openrtb/v20/openrtb2\` - OpenRTB types
+- \`encoding/xml\` - XML parsing/serialization

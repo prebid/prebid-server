@@ -1,3 +1,15 @@
+//go:build ignore
+// +build ignore
+
+// Package ctv_vast_enrichment handler is a work-in-progress standalone HTTP endpoint.
+// Excluded from the build until AuctionFunc integration with exchange.Exchange is complete.
+// See BUG 9 in ctv-bugs-and-resolve.md.
+//
+// To restore: remove the //go:build ignore directive and implement:
+//   - Full query parameter parsing (pod_id, duration, max_ads)
+//   - exchange.Exchange injection via AuctionFunc
+//   - Router registration
+
 package ctv_vast_enrichment
 
 import (
@@ -59,16 +71,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Parse query parameters and build OpenRTB request
-	// This is a placeholder for the actual implementation:
-	// - Parse pod_id, duration, max_ads from query string
-	// - Build openrtb2.BidRequest with Video imp
-	// - Apply site/app context from query or headers
 	bidRequest := h.buildBidRequest(r)
 
 	// TODO: Call auction pipeline
-	// This is a placeholder - actual implementation would:
-	// - Call the Prebid Server auction endpoint
-	// - Get BidResponse from exchange
 	var bidResponse *openrtb2.BidResponse
 	var err error
 
@@ -79,7 +84,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		// No auction function configured - return no-ad
 		bidResponse = &openrtb2.BidResponse{}
 	}
 
@@ -89,29 +93,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		glog.Errorf("ctv_vast_enrichment: BuildVastFromBidResponse error: %v", err)
 	}
 
-	// Set response headers
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
-	// Handle no-ad case
 	if result.NoAd {
-		w.WriteHeader(http.StatusOK) // Still 200 per VAST spec
+		w.WriteHeader(http.StatusOK)
 	}
 
-	// Write VAST XML
 	w.Write(result.VastXML)
 }
 
 // buildBidRequest creates an OpenRTB BidRequest from the HTTP request.
 // TODO: Implement full parsing of query parameters.
 func (h *Handler) buildBidRequest(r *http.Request) *openrtb2.BidRequest {
-	// Placeholder implementation
-	// TODO: Parse these from query string:
-	// - pod_id -> BidRequest.ID
-	// - duration -> Video.MaxDuration
-	// - max_ads -> Video.MaxAds (via pod extension)
-	// - slot_count -> multiple Imp objects
-
 	query := r.URL.Query()
 	podID := query.Get("pod_id")
 	if podID == "" {

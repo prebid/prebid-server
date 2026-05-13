@@ -276,22 +276,18 @@ func (v *Vast) MarshalCompact() ([]byte, error) {
 	return append([]byte(xml.Header), output...), nil
 }
 
-// clearInnerXML clears all InnerXML fields to prevent duplicate content during marshaling.
-// InnerXML is used during parsing to preserve unknown elements, but must be cleared
-// before marshaling to avoid outputting both structured fields AND raw XML.
+// clearInnerXML clears InnerXML only on nodes that are directly modified by enrichment.
+// Nodes higher in the tree (Ad, InLine, Wrapper) get their InnerXML cleared so structured
+// fields (Pricing, Advertiser, etc.) are serialized without duplication.
+// Creative, Linear, MediaFiles, TrackingEvents and other leaf nodes are preserved —
+// this keeps DSP-specific extensions and unknown elements intact (BUG 4 fix).
 func (v *Vast) clearInnerXML() {
 	for i := range v.Ads {
 		v.Ads[i].InnerXML = ""
 		if v.Ads[i].InLine != nil {
 			v.Ads[i].InLine.InnerXML = ""
-			if v.Ads[i].InLine.Creatives != nil {
-				for j := range v.Ads[i].InLine.Creatives.Creative {
-					v.Ads[i].InLine.Creatives.Creative[j].InnerXML = ""
-					if v.Ads[i].InLine.Creatives.Creative[j].Linear != nil {
-						v.Ads[i].InLine.Creatives.Creative[j].Linear.InnerXML = ""
-					}
-				}
-			}
+			// Creative.InnerXML and Linear.InnerXML are intentionally preserved
+			// to keep MediaFiles, TrackingEvents, and DSP extensions intact.
 		}
 		if v.Ads[i].Wrapper != nil {
 			v.Ads[i].Wrapper.InnerXML = ""

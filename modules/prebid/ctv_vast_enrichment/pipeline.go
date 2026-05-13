@@ -178,16 +178,16 @@ func (p *Processor) Process(ctx context.Context, req *openrtb2.BidRequest, resp 
 func DefaultConfig() ReceiverConfig {
 	return ReceiverConfig{
 		Receiver:           ReceiverGAMSSU,
-		DefaultCurrency:    "USD",
-		VastVersionDefault: "4.0",
-		MaxAdsInPod:        5,
+		DefaultCurrency:    DefaultCurrency,
+		VastVersionDefault: DefaultVastVersion, // "3.0" — aligned with config.go constant (BUG 10)
+		MaxAdsInPod:        DefaultMaxAdsInPod,
 		SelectionStrategy:  SelectionMaxRevenue,
-		CollisionPolicy:    CollisionReject,
+		CollisionPolicy:    CollisionVastWins, // "VAST_WINS" — aligned with DefaultCollisionPolicy (BUG 2)
 		Placement: PlacementRules{
 			Pricing: PricingRules{
 				FloorCPM:   0,
 				CeilingCPM: 0,
-				Currency:   "USD",
+				Currency:   DefaultCurrency,
 			},
 			Advertiser: AdvertiserRules{
 				BlockedDomains: []string{},

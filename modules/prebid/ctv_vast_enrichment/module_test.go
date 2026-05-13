@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -168,6 +169,7 @@ func TestHandleRawBidderResponseHook_EnrichesVAST(t *testing.T) {
 		BidderResponse: &adapters.BidderResponse{
 			Bids: []*adapters.TypedBid{
 				{
+					BidType: openrtb_ext.BidTypeVideo,
 					Bid: &openrtb2.Bid{
 						ID:      "bid1",
 						Price:   1.50,
@@ -306,6 +308,7 @@ func TestHandleRawBidderResponseHook_MergesHostAndAccountConfig(t *testing.T) {
 		BidderResponse: &adapters.BidderResponse{
 			Bids: []*adapters.TypedBid{
 				{
+					BidType: openrtb_ext.BidTypeVideo,
 					Bid: &openrtb2.Bid{
 						ID:    "bid1",
 						Price: 2.00,
@@ -352,6 +355,7 @@ func TestHandleRawBidderResponseHook_MultipleBids(t *testing.T) {
 		BidderResponse: &adapters.BidderResponse{
 			Bids: []*adapters.TypedBid{
 				{
+					BidType: openrtb_ext.BidTypeVideo,
 					Bid: &openrtb2.Bid{
 						ID:    "bid1",
 						Price: 1.50,
@@ -359,6 +363,7 @@ func TestHandleRawBidderResponseHook_MultipleBids(t *testing.T) {
 					},
 				},
 				{
+					BidType: openrtb_ext.BidTypeVideo,
 					Bid: &openrtb2.Bid{
 						ID:    "bid2",
 						Price: 2.00,
@@ -406,6 +411,7 @@ func TestHandleRawBidderResponseHook_PreservesExistingPricing(t *testing.T) {
 		BidderResponse: &adapters.BidderResponse{
 			Bids: []*adapters.TypedBid{
 				{
+					BidType: openrtb_ext.BidTypeVideo,
 					Bid: &openrtb2.Bid{
 						ID:    "bid1",
 						Price: 1.50, // Different price
@@ -448,7 +454,7 @@ func TestConfigToReceiverConfig(t *testing.T) {
 		{
 			name:     "empty config uses defaults",
 			input:    CTVVastConfig{},
-			expected: DefaultConfig(),
+			expected: CTVVastConfig{}.ReceiverConfig(),
 		},
 		{
 			name: "receiver GAM_SSU",
@@ -456,8 +462,7 @@ func TestConfigToReceiverConfig(t *testing.T) {
 				Receiver: "GAM_SSU",
 			},
 			expected: func() ReceiverConfig {
-				rc := DefaultConfig()
-				rc.Receiver = ReceiverGAMSSU
+				rc := CTVVastConfig{Receiver: "GAM_SSU"}.ReceiverConfig()
 				return rc
 			}(),
 		},
@@ -467,8 +472,7 @@ func TestConfigToReceiverConfig(t *testing.T) {
 				Receiver: "GENERIC",
 			},
 			expected: func() ReceiverConfig {
-				rc := DefaultConfig()
-				rc.Receiver = ReceiverGeneric
+				rc := CTVVastConfig{Receiver: "GENERIC"}.ReceiverConfig()
 				return rc
 			}(),
 		},
@@ -478,8 +482,7 @@ func TestConfigToReceiverConfig(t *testing.T) {
 				DefaultCurrency: "EUR",
 			},
 			expected: func() ReceiverConfig {
-				rc := DefaultConfig()
-				rc.DefaultCurrency = "EUR"
+				rc := CTVVastConfig{DefaultCurrency: "EUR"}.ReceiverConfig()
 				return rc
 			}(),
 		},
@@ -489,8 +492,7 @@ func TestConfigToReceiverConfig(t *testing.T) {
 				SelectionStrategy: "max_revenue",
 			},
 			expected: func() ReceiverConfig {
-				rc := DefaultConfig()
-				rc.SelectionStrategy = SelectionMaxRevenue
+				rc := CTVVastConfig{SelectionStrategy: "max_revenue"}.ReceiverConfig()
 				return rc
 			}(),
 		},
@@ -500,8 +502,7 @@ func TestConfigToReceiverConfig(t *testing.T) {
 				CollisionPolicy: "reject",
 			},
 			expected: func() ReceiverConfig {
-				rc := DefaultConfig()
-				rc.CollisionPolicy = CollisionReject
+				rc := CTVVastConfig{CollisionPolicy: "reject"}.ReceiverConfig()
 				return rc
 			}(),
 		},
@@ -509,7 +510,8 @@ func TestConfigToReceiverConfig(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := configToReceiverConfig(tc.input)
+			// ReceiverConfig() is now the canonical conversion (BUG 8 fix)
+			result := tc.input.ReceiverConfig()
 			assert.Equal(t, tc.expected.Receiver, result.Receiver)
 			assert.Equal(t, tc.expected.DefaultCurrency, result.DefaultCurrency)
 			assert.Equal(t, tc.expected.SelectionStrategy, result.SelectionStrategy)
@@ -519,6 +521,8 @@ func TestConfigToReceiverConfig(t *testing.T) {
 }
 
 func TestEnrichVastDocument(t *testing.T) {
+	// enrichVastDocument was replaced by hookEnricher.Enrich() (BUG 3 + BUG 8 fix).
+	// These tests now exercise hookEnricher directly.
 	testCases := []struct {
 		name          string
 		inputVast     string
@@ -567,15 +571,19 @@ func TestEnrichVastDocument(t *testing.T) {
 		},
 	}
 
+	e := &hookEnricher{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			vastDoc, err := parseTestVast(tc.inputVast)
 			require.NoError(t, err)
 
-			result := enrichVastDocument(vastDoc, tc.meta, tc.cfg)
-			require.NotNil(t, result)
+			ad := model.ExtractFirstAd(vastDoc)
+			require.NotNil(t, ad)
 
-			xmlBytes, err := result.Marshal()
+			_, enrichErr := e.Enrich(ad, tc.meta, tc.cfg)
+			require.NoError(t, enrichErr)
+
+			xmlBytes, err := vastDoc.Marshal()
 			require.NoError(t, err)
 
 			xmlStr := string(xmlBytes)
@@ -594,8 +602,9 @@ func TestEnrichVastDocument(t *testing.T) {
 }
 
 func TestEnrichVastDocument_NilInput(t *testing.T) {
-	result := enrichVastDocument(nil, CanonicalMeta{}, ReceiverConfig{})
-	assert.Nil(t, result)
+	e := &hookEnricher{}
+	_, err := e.Enrich(nil, CanonicalMeta{}, ReceiverConfig{})
+	assert.NoError(t, err)
 }
 
 // parseTestVast is a helper to parse VAST XML for tests
