@@ -155,24 +155,6 @@ func removeExtEIDs(userExt json.RawMessage, eids *[]openrtb2.EID) json.RawMessag
 	return cleanExt
 }
 
-func getLiveRampEIDs(user *openrtb2.User) []openrtb2.EID {
-	if user == nil {
-		return nil
-	}
-
-	eids := make([]openrtb2.EID, 0, len(user.EIDs))
-	eids = appendLiveRampEIDs(eids, user.EIDs)
-
-	if len(user.Ext) > 0 {
-		var userExt openrtb_ext.ExtUser
-		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			eids = appendLiveRampEIDs(eids, userExt.Eids)
-		}
-	}
-
-	return eids
-}
-
 func appendLiveRampEIDs(dst []openrtb2.EID, src []openrtb2.EID) []openrtb2.EID {
 	for _, eid := range src {
 		if eid.Source == liveRampEIDSource {
