@@ -462,7 +462,7 @@ func TestMakeRequestsErrorCases(t *testing.T) {
 	}
 }
 
-func TestUserWithLiveRampEIDs(t *testing.T) {
+func TestUserWithEIDs(t *testing.T) {
 	testCases := []struct {
 		name         string
 		user         *openrtb2.User
@@ -481,7 +481,7 @@ func TestUserWithLiveRampEIDs(t *testing.T) {
 			user: &openrtb2.User{
 				EIDs: []openrtb2.EID{
 					{
-						Source: liveRampEIDSource,
+						Source: "liveramp.com",
 						UIDs: []openrtb2.UID{
 							{ID: "envelope-26"},
 						},
@@ -493,12 +493,12 @@ func TestUserWithLiveRampEIDs(t *testing.T) {
 		{
 			name: "openrtb 2.5 user ext eids",
 			user: &openrtb2.User{
-				Ext: json.RawMessage(`{"consent":"test-consent","eids":[{"source":"liveramp.com","uids":[{"id":"envelope-25","atype":1,"ext":{"rtiPartner":"idl","stype":"ppuid"}}]}]}`),
+				Ext: json.RawMessage(`{"consent":"test-consent","eids":[{"source":"liveramp.com","uids":[{"id":"envelope-25","atype":1,"ext":{"rtiPartner":"idl","stype":"ppuid"}}]},{"source":"sharedid.org","uids":[{"id":"shared-id"}]}]}`),
 			},
-			expectedJSON: `{"eids":[{"source":"liveramp.com","uids":[{"id":"envelope-25","atype":1,"ext":{"rtiPartner":"idl","stype":"ppuid"}}]}],"ext":{"consent":"test-consent"}}`,
+			expectedJSON: `{"eids":[{"source":"liveramp.com","uids":[{"id":"envelope-25","atype":1,"ext":{"rtiPartner":"idl","stype":"ppuid"}}]},{"source":"sharedid.org","uids":[{"id":"shared-id"}]}],"ext":{"consent":"test-consent"}}`,
 		},
 		{
-			name: "only liveramp eids",
+			name: "all user eids",
 			user: &openrtb2.User{
 				EIDs: []openrtb2.EID{
 					{
@@ -508,14 +508,14 @@ func TestUserWithLiveRampEIDs(t *testing.T) {
 						},
 					},
 					{
-						Source: liveRampEIDSource,
+						Source: "liveramp.com",
 						UIDs: []openrtb2.UID{
 							{ID: "liveramp-id"},
 						},
 					},
 				},
 			},
-			expectedJSON: `{"eids":[{"source":"liveramp.com","uids":[{"id":"liveramp-id"}]}]}`,
+			expectedJSON: `{"eids":[{"source":"sharedid.org","uids":[{"id":"shared-id"}]},{"source":"liveramp.com","uids":[{"id":"liveramp-id"}]}]}`,
 		},
 		{
 			name: "malformed user ext",
@@ -529,7 +529,7 @@ func TestUserWithLiveRampEIDs(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			user := userWithLiveRampEIDs(test.user)
+			user := userWithEIDs(test.user)
 
 			if test.expectedJSON == "" {
 				assert.Nil(t, user)

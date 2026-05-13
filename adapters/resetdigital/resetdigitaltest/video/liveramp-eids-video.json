@@ -95,6 +95,14 @@
           "user": {
             "eids": [
               {
+                "source": "sharedid.org",
+                "uids": [
+                  {
+                    "id": "shared-id"
+                  }
+                ]
+              },
+              {
                 "source": "liveramp.com",
                 "uids": [
                   {

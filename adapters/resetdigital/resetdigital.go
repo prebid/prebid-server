@@ -15,11 +15,10 @@ import (
 )
 
 const (
-	contentTypeJSON   = "application/json"
-	openRTBVersion    = "2.6"
-	currencyUSD       = "USD"
-	bidderSeat        = "resetdigital"
-	liveRampEIDSource = "liveramp.com"
+	contentTypeJSON = "application/json"
+	openRTBVersion  = "2.6"
+	currencyUSD     = "USD"
+	bidderSeat      = "resetdigital"
 )
 
 var baseHeaders = http.Header{
@@ -70,7 +69,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		Device: request.Device,
 		Site:   request.Site,
 		App:    request.App,
-		User:   userWithLiveRampEIDs(request.User),
+		User:   userWithEIDs(request.User),
 		Regs:   request.Regs,
 		Ext:    request.Ext,
 		AT:     request.AT,
@@ -111,14 +110,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	return reqs, nil
 }
 
-func userWithLiveRampEIDs(user *openrtb2.User) *openrtb2.User {
+func userWithEIDs(user *openrtb2.User) *openrtb2.User {
 	if user == nil {
 		return nil
 	}
 
 	userCopy := *user
 	eids := make([]openrtb2.EID, 0, len(user.EIDs))
-	eids = appendLiveRampEIDs(eids, user.EIDs)
+	eids = append(eids, user.EIDs...)
 	userCopy.Ext = removeExtEIDs(user.Ext, &eids)
 	userCopy.EIDs = eids
 
@@ -138,7 +137,7 @@ func removeExtEIDs(userExt json.RawMessage, eids *[]openrtb2.EID) json.RawMessag
 	if rawEIDs, ok := ext["eids"]; ok {
 		var extEIDs []openrtb2.EID
 		if err := json.Unmarshal(rawEIDs, &extEIDs); err == nil {
-			*eids = appendLiveRampEIDs(*eids, extEIDs)
+			*eids = append(*eids, extEIDs...)
 		}
 		delete(ext, "eids")
 	}
@@ -153,16 +152,6 @@ func removeExtEIDs(userExt json.RawMessage, eids *[]openrtb2.EID) json.RawMessag
 	}
 
 	return cleanExt
-}
-
-func appendLiveRampEIDs(dst []openrtb2.EID, src []openrtb2.EID) []openrtb2.EID {
-	for _, eid := range src {
-		if eid.Source == liveRampEIDSource {
-			dst = append(dst, eid)
-		}
-	}
-
-	return dst
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {

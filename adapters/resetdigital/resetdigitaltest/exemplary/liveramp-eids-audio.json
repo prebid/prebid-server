@@ -92,6 +92,14 @@
                     }
                   }
                 ]
+              },
+              {
+                "source": "sharedid.org",
+                "uids": [
+                  {
+                    "id": "shared-id"
+                  }
+                ]
               }
             ]
           },
