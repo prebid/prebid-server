@@ -493,7 +493,7 @@ func TestFormatPrice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
-			result := formatPrice(tt.price)
+			result := model.FormatPrice(tt.price)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

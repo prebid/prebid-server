@@ -200,7 +200,7 @@ func TestHandleRawBidderResponseHook_EnrichesVAST(t *testing.T) {
 	// Verify the bid was enriched
 	enrichedAdM := payload.BidderResponse.Bids[0].Bid.AdM
 	assert.Contains(t, enrichedAdM, "Pricing")
-	assert.Contains(t, enrichedAdM, "1.500000")
+	assert.Contains(t, enrichedAdM, "1.5")
 	assert.Contains(t, enrichedAdM, "CPM")
 	assert.Contains(t, enrichedAdM, "USD")
 }
@@ -392,8 +392,8 @@ func TestHandleRawBidderResponseHook_MultipleBids(t *testing.T) {
 	}
 
 	// Both bids should be enriched
-	assert.Contains(t, payload.BidderResponse.Bids[0].Bid.AdM, "1.500000")
-	assert.Contains(t, payload.BidderResponse.Bids[1].Bid.AdM, "2.000000")
+	assert.Contains(t, payload.BidderResponse.Bids[0].Bid.AdM, "1.5")
+	assert.Contains(t, payload.BidderResponse.Bids[1].Bid.AdM, "2")
 }
 
 func TestHandleRawBidderResponseHook_PreservesExistingPricing(t *testing.T) {

@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/xml"
 	"fmt"
+	"strings"
 )
 
 // Vast represents the root VAST XML element.
@@ -188,6 +189,19 @@ func SecToHHMMSS(seconds int) string {
 	minutes := (seconds % 3600) / 60
 	secs := seconds % 60
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, secs)
+}
+
+// FormatPrice formats a bid price with up to 4 decimal places, trimming
+// trailing zeros. Used by all enrichers to ensure consistent price
+// representation in VAST XML (e.g. 5.5 not 5.5000, 1.25 not 1.2500).
+func FormatPrice(price float64) string {
+	s := fmt.Sprintf("%.4f", price)
+	s = strings.TrimRight(s, "0")
+	s = strings.TrimRight(s, ".")
+	if s == "" {
+		return "0"
+	}
+	return s
 }
 
 // BuildNoAdVast creates a VAST response indicating no ad is available.

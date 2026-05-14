@@ -86,7 +86,7 @@ func (e *VastEnricher) enrichPricing(inline *model.InLine, meta vast.CanonicalMe
 	}
 
 	// Format the price value
-	priceStr := formatPrice(meta.Price)
+	priceStr := model.FormatPrice(meta.Price)
 	currency := meta.Currency
 	if currency == "" {
 		currency = cfg.DefaultCurrency
@@ -240,7 +240,7 @@ func (e *VastEnricher) addDebugExtension(inline *model.InLine, meta vast.Canonic
 		debugXML.WriteString(fmt.Sprintf("<DealID>%s</DealID>", escapeXML(meta.DealID)))
 	}
 	debugXML.WriteString(fmt.Sprintf("<Seat>%s</Seat>", escapeXML(meta.Seat)))
-	debugXML.WriteString(fmt.Sprintf("<Price>%s</Price>", formatPrice(meta.Price)))
+	debugXML.WriteString(fmt.Sprintf("<Price>%s</Price>", model.FormatPrice(meta.Price)))
 	debugXML.WriteString(fmt.Sprintf("<Currency>%s</Currency>", escapeXML(meta.Currency)))
 
 	ext := model.ExtensionXML{
@@ -248,18 +248,6 @@ func (e *VastEnricher) addDebugExtension(inline *model.InLine, meta vast.Canonic
 		InnerXML: debugXML.String(),
 	}
 	inline.Extensions.Extension = append(inline.Extensions.Extension, ext)
-}
-
-// formatPrice formats a price value with appropriate precision.
-func formatPrice(price float64) string {
-	// Use up to 4 decimal places, trimming trailing zeros
-	s := fmt.Sprintf("%.4f", price)
-	s = strings.TrimRight(s, "0")
-	s = strings.TrimRight(s, ".")
-	if s == "" {
-		return "0"
-	}
-	return s
 }
 
 // resolveCollision determines how to handle a field that already exists in the VAST.

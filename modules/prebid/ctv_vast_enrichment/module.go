@@ -3,7 +3,6 @@ package ctv_vast_enrichment
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -241,7 +240,7 @@ func (h *hookEnricher) Enrich(ad *model.Ad, meta CanonicalMeta, cfg ReceiverConf
 			currency = "USD"
 		}
 		inline.Pricing = &model.Pricing{
-			Value:    fmt.Sprintf("%.6f", meta.Price),
+			Value:    model.FormatPrice(meta.Price),
 			Model:    "CPM",
 			Currency: currency,
 		}
