@@ -29,6 +29,7 @@ package ctv_vast_enrichment
 import (
 	"context"
 
+	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
 )
@@ -169,8 +170,13 @@ func NewProcessor(cfg ReceiverConfig, selector BidSelector, enricher Enricher, f
 }
 
 // Process executes the complete VAST processing workflow.
+// If BuildVastFromBidResponse returns a fatal error it is logged and the
+// result is returned as-is (NoAd=true with a no-ad VAST payload).
 func (p *Processor) Process(ctx context.Context, req *openrtb2.BidRequest, resp *openrtb2.BidResponse) VastResult {
-	result, _ := BuildVastFromBidResponse(ctx, req, resp, p.config, p.selector, p.enricher, p.formatter)
+	result, err := BuildVastFromBidResponse(ctx, req, resp, p.config, p.selector, p.enricher, p.formatter)
+	if err != nil {
+		glog.Errorf("ctv_vast_enrichment: pipeline error: %v", err)
+	}
 	return result
 }
 

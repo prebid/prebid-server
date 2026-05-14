@@ -254,6 +254,159 @@ func BuildSkeletonInlineVastWithDuration(version string, durationSec int) *Vast 
 	return vast
 }
 
+// DeepCopy returns a fully independent copy of the Ad and all its nested
+// pointer fields. Modifying any field in the returned Ad (including InLine,
+// Creatives, Pricing, Extensions, etc.) will not affect the original.
+func (a *Ad) DeepCopy() *Ad {
+	if a == nil {
+		return nil
+	}
+	copy := *a
+	copy.InLine = deepCopyInLine(a.InLine)
+	copy.Wrapper = deepCopyWrapper(a.Wrapper)
+	return &copy
+}
+
+// deepCopyInLine returns a deep copy of an InLine element.
+func deepCopyInLine(src *InLine) *InLine {
+	if src == nil {
+		return nil
+	}
+	c := *src
+	c.AdSystem = deepCopyAdSystem(src.AdSystem)
+	if src.Impressions != nil {
+		c.Impressions = make([]Impression, len(src.Impressions))
+		copy(c.Impressions, src.Impressions)
+	}
+	c.Pricing = deepCopyPricing(src.Pricing)
+	c.Creatives = deepCopyCreatives(src.Creatives)
+	c.Extensions = deepCopyExtensions(src.Extensions)
+	return &c
+}
+
+// deepCopyWrapper returns a deep copy of a Wrapper element.
+func deepCopyWrapper(src *Wrapper) *Wrapper {
+	if src == nil {
+		return nil
+	}
+	c := *src
+	c.AdSystem = deepCopyAdSystem(src.AdSystem)
+	if src.Impressions != nil {
+		c.Impressions = make([]Impression, len(src.Impressions))
+		copy(c.Impressions, src.Impressions)
+	}
+	c.Creatives = deepCopyCreatives(src.Creatives)
+	c.Extensions = deepCopyExtensions(src.Extensions)
+	return &c
+}
+
+func deepCopyAdSystem(src *AdSystem) *AdSystem {
+	if src == nil {
+		return nil
+	}
+	c := *src
+	return &c
+}
+
+func deepCopyPricing(src *Pricing) *Pricing {
+	if src == nil {
+		return nil
+	}
+	c := *src
+	return &c
+}
+
+func deepCopyCreatives(src *Creatives) *Creatives {
+	if src == nil {
+		return nil
+	}
+	c := Creatives{}
+	if src.Creative != nil {
+		c.Creative = make([]Creative, len(src.Creative))
+		for i, cr := range src.Creative {
+			cc := cr
+			if cr.UniversalAdID != nil {
+				uaid := *cr.UniversalAdID
+				cc.UniversalAdID = &uaid
+			}
+			cc.Linear = deepCopyLinear(cr.Linear)
+			c.Creative[i] = cc
+		}
+	}
+	return &c
+}
+
+func deepCopyLinear(src *Linear) *Linear {
+	if src == nil {
+		return nil
+	}
+	c := *src
+	c.MediaFiles = deepCopyMediaFiles(src.MediaFiles)
+	c.VideoClicks = deepCopyVideoClicks(src.VideoClicks)
+	c.TrackingEvents = deepCopyTrackingEvents(src.TrackingEvents)
+	if src.AdParameters != nil {
+		ap := *src.AdParameters
+		c.AdParameters = &ap
+	}
+	return &c
+}
+
+func deepCopyMediaFiles(src *MediaFiles) *MediaFiles {
+	if src == nil {
+		return nil
+	}
+	c := MediaFiles{}
+	if src.MediaFile != nil {
+		c.MediaFile = make([]MediaFile, len(src.MediaFile))
+		copy(c.MediaFile, src.MediaFile)
+	}
+	return &c
+}
+
+func deepCopyVideoClicks(src *VideoClicks) *VideoClicks {
+	if src == nil {
+		return nil
+	}
+	c := VideoClicks{}
+	if src.ClickThrough != nil {
+		ct := *src.ClickThrough
+		c.ClickThrough = &ct
+	}
+	if src.ClickTracking != nil {
+		c.ClickTracking = make([]ClickTracking, len(src.ClickTracking))
+		copy(c.ClickTracking, src.ClickTracking)
+	}
+	if src.CustomClick != nil {
+		c.CustomClick = make([]CustomClick, len(src.CustomClick))
+		copy(c.CustomClick, src.CustomClick)
+	}
+	return &c
+}
+
+func deepCopyTrackingEvents(src *TrackingEvents) *TrackingEvents {
+	if src == nil {
+		return nil
+	}
+	c := TrackingEvents{}
+	if src.Tracking != nil {
+		c.Tracking = make([]Tracking, len(src.Tracking))
+		copy(c.Tracking, src.Tracking)
+	}
+	return &c
+}
+
+func deepCopyExtensions(src *Extensions) *Extensions {
+	if src == nil {
+		return nil
+	}
+	c := Extensions{}
+	if src.Extension != nil {
+		c.Extension = make([]ExtensionXML, len(src.Extension))
+		copy(c.Extension, src.Extension)
+	}
+	return &c
+}
+
 // Marshal serializes the Vast struct to XML bytes with XML header.
 func (v *Vast) Marshal() ([]byte, error) {
 	// Clear InnerXML fields to prevent duplicate content

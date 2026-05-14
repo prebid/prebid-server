@@ -75,7 +75,7 @@ const (
 	DefaultMaxAdsInPod       = 10
 	DefaultCollisionPolicy   = "VAST_WINS"
 	DefaultReceiver          = "GAM_SSU"
-	DefaultSelectionStrategy = "max_revenue"
+	DefaultSelectionStrategy = "TOP_N"
 
 	// Placement constants for pricing
 	PlacementVastPricing = "VAST_PRICING"

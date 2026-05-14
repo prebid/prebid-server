@@ -467,17 +467,17 @@ func TestPriceSelector_Select_ComplexSort(t *testing.T) {
 	assert.NoError(t, err)
 	require.Len(t, selected, 6)
 
-	// Expected order:
-	// 1. a (price 3.0, deal) - highest price with deal
-	// 2. b (price 3.0, no deal) - highest price, no deal
-	// 3. c (price 2.0, deal) - same price, deal, ID "c"
-	// 4. d (price 2.0, deal) - same price, deal, ID "d"
-	// 5. e (price 2.0, no deal) - same price, no deal
-	// 6. f (price 1.0) - lowest price
+	// Expected order (deal > price, then price desc, then ID asc):
+	// 1. a (price 3.0, deal) - deal, highest price
+	// 2. c (price 2.0, deal) - deal, ID "c" < "d"
+	// 3. d (price 2.0, deal) - deal, ID "d"
+	// 4. b (price 3.0, no deal) - no deal, highest price
+	// 5. e (price 2.0, no deal) - no deal, same price, ID "e" > "b"
+	// 6. f (price 1.0, no deal) - no deal, lowest price
 	assert.Equal(t, "a", selected[0].Meta.BidID)
-	assert.Equal(t, "b", selected[1].Meta.BidID)
-	assert.Equal(t, "c", selected[2].Meta.BidID)
-	assert.Equal(t, "d", selected[3].Meta.BidID)
+	assert.Equal(t, "c", selected[1].Meta.BidID)
+	assert.Equal(t, "d", selected[2].Meta.BidID)
+	assert.Equal(t, "b", selected[3].Meta.BidID)
 	assert.Equal(t, "e", selected[4].Meta.BidID)
 	assert.Equal(t, "f", selected[5].Meta.BidID)
 }

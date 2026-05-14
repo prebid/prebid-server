@@ -15,7 +15,10 @@ type Selector interface {
 // Supported strategies:
 //   - "SINGLE": Returns a single best bid (PriceSelector with limit 1)
 //   - "TOP_N": Returns up to MaxAdsInPod bids (PriceSelector)
-//   - Default: Falls back to TOP_N behavior
+//
+// The following strategies are defined as constants but not yet implemented;
+// they fall back to TOP_N behaviour:
+//   - "max_revenue", "min_duration", "balanced"
 func NewSelector(strategy vast.SelectionStrategy) Selector {
 	switch strategy {
 	case vast.SelectionSingle:
@@ -23,7 +26,8 @@ func NewSelector(strategy vast.SelectionStrategy) Selector {
 	case vast.SelectionTopN:
 		return NewPriceSelector(0) // 0 means use cfg.MaxAdsInPod
 	default:
-		// Default to TOP_N behavior for unknown strategies
+		// Strategies max_revenue / min_duration / balanced are reserved for future
+		// implementation. Until then, fall back to TOP_N (price-ranked, up to MaxAdsInPod).
 		return NewPriceSelector(0)
 	}
 }

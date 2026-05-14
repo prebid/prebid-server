@@ -10,12 +10,10 @@ modules/prebid/ctv_vast_enrichment/
 ├── module_test.go    # Module tests
 ├── pipeline.go       # Standalone VAST processing pipeline
 ├── pipeline_test.go  # Pipeline tests
-├── handler.go        # HTTP handler for direct VAST requests
 ├── types.go          # Type definitions, interfaces and constants
 ├── config.go         # Configuration and layer merging (host/account/profile)
 ├── config_test.go    # Configuration tests
 ├── model/            # VAST XML data structures
-│   ├── model.go      # High-level domain objects
 │   ├── vast_xml.go   # XML structures for marshal/unmarshal
 │   ├── parser.go     # VAST XML parser
 │   └── *_test.go     # Tests
@@ -126,7 +124,7 @@ Main entry point following PBS module conventions:
 
 ### \`pipeline.go\` - Standalone Pipeline
 
-Alternative entry point for direct invocation (used by handler.go):
+Alternative entry point for direct invocation:
 
 - **\`BuildVastFromBidResponse()\`** - Orchestrates the full pipeline:
   1. Bid selection from auction response
@@ -137,21 +135,13 @@ Alternative entry point for direct invocation (used by handler.go):
 - **\`Processor\`** - Wrapper with injected dependencies
 - **\`DefaultConfig()\`** - Default configuration for GAM SSU
 
-### \`handler.go\` - HTTP Handler
-
-HTTP request handling for CTV VAST ads (optional endpoint):
-
-- **\`Handler\`** - HTTP handler with configuration and dependencies
-- **\`ServeHTTP()\`** - Handles GET requests, returns VAST XML
-- Builder methods: \`WithConfig()\`, \`WithSelector()\`, etc.
-
 ### \`types.go\` - Types and Interfaces
 
 | Type | Description |
 |------|-------------|
 | \`ReceiverType\` | Receiver type (GAM_SSU, GENERIC) |
-| \`SelectionStrategy\` | Bid selection strategy (SINGLE, TOP_N, max_revenue, min_duration, balanced); unknown values fall back to default |
-| \`CollisionPolicy\` | Collision policy (reject, warn, ignore, VAST_WINS) |
+| \`SelectionStrategy\` | Bid selection strategy; implemented: `SINGLE`, `TOP_N`. Constants `max_revenue`, `min_duration`, `balanced` are reserved for future implementation and fall back to `TOP_N` |
+| \`CollisionPolicy\` | Collision policy: `VAST_WINS` / `reject` keep existing VAST value (with warning); `warn` overwrites with warning; `ignore` overwrites silently |
 
 **Interfaces:**
 
@@ -209,7 +199,7 @@ Helper functions:
 - `Marshal()` / `MarshalCompact()` - Serialize to XML
 - `clearInnerXML()` - Clears `InnerXML` fields before serialization (prevents element duplication)
 
-> **XML Fix:** VAST structures use the `,innerxml` tag to preserve raw XML during parsing. Before `Marshal()`, `clearInnerXML()` is called to zero out `InnerXML` fields on `Ad`, `InLine`, `Wrapper`, `Creative`, and `Linear` structs, preventing duplicate elements in the output XML.
+> **XML Fix:** VAST structures use the `,innerxml` tag to preserve raw XML during parsing. Before `Marshal()`, `clearInnerXML()` is called to zero out `InnerXML` fields on `Ad`, `InLine`, and `Wrapper` only. `Creative` and `Linear` `InnerXML` fields are intentionally preserved to keep `<MediaFiles>`, `<TrackingEvents>`, and DSP-specific extensions intact.
 
 #### `parser.go`
 
@@ -235,8 +225,10 @@ Logic for selecting bids from auction response:
 
 Adding metadata to VAST ads:
 
-- **\`VastEnricher\`** - Implementation with VAST_WINS policy:
-  - Existing values in VAST are not overwritten
+- **\`VastEnricher\`** - Respects the configured `CollisionPolicy`:
+  - `VAST_WINS` / `reject`: keeps existing VAST values (with warning)
+  - `warn`: overwrites existing values, emits warning
+  - `ignore`: overwrites silently
   - Adds missing: Pricing, Advertiser, Duration, Categories
 
 Enriched elements:
@@ -344,7 +336,7 @@ The module is automatically invoked during the auction pipeline when enabled in 
 }
 ```
 
-### Standalone Pipeline (for HTTP handler)
+### Standalone Pipeline
 
 \`\`\`go
 import (
@@ -375,19 +367,6 @@ result, err := vast.BuildVastFromBidResponse(
 )
 \`\`\`
 
-### HTTP Handler
-
-\`\`\`go
-handler := vast.NewHandler().
-    WithConfig(cfg).
-    WithSelector(selector).
-    WithEnricher(enricher).
-    WithFormatter(formatter).
-    WithAuctionFunc(myAuctionFunc)
-
-http.Handle("/vast", handler)
-\`\`\`
-
 ## Layer Configuration
 
 \`\`\`go
@@ -395,7 +374,7 @@ http.Handle("/vast", handler)
 hostCfg := &vast.CTVVastConfig{
     Receiver:           "GAM_SSU",
     DefaultCurrency:    "USD",
-    VastVersionDefault: "4.0",
+    VastVersionDefault: "3.0",
 }
 
 // Account configuration (overrides host)

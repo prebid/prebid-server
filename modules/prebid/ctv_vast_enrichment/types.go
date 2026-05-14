@@ -25,11 +25,14 @@ const (
 	SelectionSingle SelectionStrategy = "SINGLE"
 	// SelectionTopN selects up to MaxAdsInPod bids.
 	SelectionTopN SelectionStrategy = "TOP_N"
-	// SelectionMaxRevenue selects bids to maximize total revenue.
+	// SelectionMaxRevenue is reserved for future implementation.
+	// Currently not supported; configs using this value will fall back to TOP_N.
 	SelectionMaxRevenue SelectionStrategy = "max_revenue"
-	// SelectionMinDuration selects bids to minimize total duration.
+	// SelectionMinDuration is reserved for future implementation.
+	// Currently not supported; configs using this value will fall back to TOP_N.
 	SelectionMinDuration SelectionStrategy = "min_duration"
-	// SelectionBalanced balances between revenue and duration.
+	// SelectionBalanced is reserved for future implementation.
+	// Currently not supported; configs using this value will fall back to TOP_N.
 	SelectionBalanced SelectionStrategy = "balanced"
 )
 

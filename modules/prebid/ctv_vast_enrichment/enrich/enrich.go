@@ -50,7 +50,7 @@ func (e *VastEnricher) Enrich(ad *model.Ad, meta vast.CanonicalMeta, cfg vast.Re
 	warnings = append(warnings, advertiserWarnings...)
 
 	// Enrich Duration
-	durationWarnings := e.enrichDuration(inline, meta)
+	durationWarnings := e.enrichDuration(inline, meta, cfg.CollisionPolicy)
 	warnings = append(warnings, durationWarnings...)
 
 	// Enrich Categories (always as extension)
@@ -65,8 +65,7 @@ func (e *VastEnricher) Enrich(ad *model.Ad, meta vast.CanonicalMeta, cfg vast.Re
 	return warnings, nil
 }
 
-// enrichPricing adds pricing information if not present.
-// VAST_WINS: only adds if InLine.Pricing is nil or empty.
+// enrichPricing adds pricing information according to the collision policy.
 func (e *VastEnricher) enrichPricing(inline *model.InLine, meta vast.CanonicalMeta, cfg vast.ReceiverConfig) []string {
 	var warnings []string
 
@@ -75,10 +74,15 @@ func (e *VastEnricher) enrichPricing(inline *model.InLine, meta vast.CanonicalMe
 		return warnings
 	}
 
-	// Check collision policy - VAST_WINS means don't overwrite existing
+	// Check collision: there is an existing Pricing value in the VAST
 	if inline.Pricing != nil && inline.Pricing.Value != "" {
-		warnings = append(warnings, "pricing: VAST_WINS - keeping existing pricing")
-		return warnings
+		overwrite, w := resolveCollision(cfg.CollisionPolicy, "pricing")
+		if w != "" {
+			warnings = append(warnings, w)
+		}
+		if !overwrite {
+			return warnings
+		}
 	}
 
 	// Format the price value
@@ -122,8 +126,7 @@ func (e *VastEnricher) enrichPricing(inline *model.InLine, meta vast.CanonicalMe
 	return warnings
 }
 
-// enrichAdvertiser adds advertiser information if not present.
-// VAST_WINS: only adds if InLine.Advertiser is empty.
+// enrichAdvertiser adds advertiser information according to the collision policy.
 func (e *VastEnricher) enrichAdvertiser(inline *model.InLine, meta vast.CanonicalMeta, cfg vast.ReceiverConfig) []string {
 	var warnings []string
 
@@ -132,10 +135,15 @@ func (e *VastEnricher) enrichAdvertiser(inline *model.InLine, meta vast.Canonica
 		return warnings
 	}
 
-	// Check collision policy - VAST_WINS means don't overwrite existing
+	// Check collision: there is an existing Advertiser value in the VAST
 	if strings.TrimSpace(inline.Advertiser) != "" {
-		warnings = append(warnings, "advertiser: VAST_WINS - keeping existing advertiser")
-		return warnings
+		overwrite, w := resolveCollision(cfg.CollisionPolicy, "advertiser")
+		if w != "" {
+			warnings = append(warnings, w)
+		}
+		if !overwrite {
+			return warnings
+		}
 	}
 
 	// Determine placement location
@@ -161,9 +169,8 @@ func (e *VastEnricher) enrichAdvertiser(inline *model.InLine, meta vast.Canonica
 	return warnings
 }
 
-// enrichDuration adds duration to Linear creative if not present.
-// VAST_WINS: only adds if Linear.Duration is empty.
-func (e *VastEnricher) enrichDuration(inline *model.InLine, meta vast.CanonicalMeta) []string {
+// enrichDuration adds duration to Linear creative according to the collision policy.
+func (e *VastEnricher) enrichDuration(inline *model.InLine, meta vast.CanonicalMeta, policy vast.CollisionPolicy) []string {
 	var warnings []string
 
 	// Skip if no duration to add
@@ -182,10 +189,15 @@ func (e *VastEnricher) enrichDuration(inline *model.InLine, meta vast.CanonicalM
 			continue
 		}
 
-		// Check collision policy - VAST_WINS means don't overwrite existing
+		// Check collision: there is an existing Duration value in the VAST
 		if strings.TrimSpace(creative.Linear.Duration) != "" {
-			warnings = append(warnings, "duration: VAST_WINS - keeping existing duration")
-			continue
+			overwrite, w := resolveCollision(policy, "duration")
+			if w != "" {
+				warnings = append(warnings, w)
+			}
+			if !overwrite {
+				continue
+			}
 		}
 
 		// Set duration in HH:MM:SS format
@@ -248,6 +260,27 @@ func formatPrice(price float64) string {
 		return "0"
 	}
 	return s
+}
+
+// resolveCollision determines how to handle a field that already exists in the VAST.
+// Returns overwrite=true when the enricher should replace the existing value,
+// and a non-empty warning string when the caller should record the event.
+//
+//   - CollisionIgnore  → overwrite silently
+//   - CollisionWarn    → overwrite, emit warning
+//   - CollisionReject  → keep existing, emit warning
+//   - CollisionVastWins (default) → keep existing, emit warning
+func resolveCollision(policy vast.CollisionPolicy, field string) (overwrite bool, warning string) {
+	switch policy {
+	case vast.CollisionIgnore:
+		return true, ""
+	case vast.CollisionWarn:
+		return true, field + ": collision warn - overwriting existing VAST value"
+	case vast.CollisionReject:
+		return false, field + ": collision reject - keeping existing VAST value"
+	default: // CollisionVastWins and any unrecognised value
+		return false, field + ": VAST_WINS - keeping existing VAST value"
+	}
 }
 
 // escapeXML escapes special characters for XML content.

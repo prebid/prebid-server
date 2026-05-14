@@ -173,7 +173,7 @@ func TestFormat_DefaultVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	xmlStr := string(xmlBytes)
-	assert.Contains(t, xmlStr, `version="4.0"`) // defaults to 4.0
+	assert.Contains(t, xmlStr, `version="3.0"`) // defaults to DefaultVastVersion (3.0)
 }
 
 func TestFormat_Version30(t *testing.T) {

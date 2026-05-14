@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/xml"
 	"errors"
+	"strconv"
 	"strings"
 )
 
@@ -133,31 +134,18 @@ func ParseDurationToSeconds(duration string) int {
 	}
 
 	var hours, minutes, seconds int
-	if _, err := parseIntFromString(parts[0], &hours); err != nil {
+	var err error
+	if hours, err = strconv.Atoi(strings.TrimSpace(parts[0])); err != nil {
 		return 0
 	}
-	if _, err := parseIntFromString(parts[1], &minutes); err != nil {
+	if minutes, err = strconv.Atoi(strings.TrimSpace(parts[1])); err != nil {
 		return 0
 	}
-	if _, err := parseIntFromString(parts[2], &seconds); err != nil {
+	if seconds, err = strconv.Atoi(strings.TrimSpace(parts[2])); err != nil {
 		return 0
 	}
 
 	return hours*3600 + minutes*60 + seconds
-}
-
-// parseIntFromString is a helper to parse an integer from a string.
-func parseIntFromString(s string, result *int) (bool, error) {
-	s = strings.TrimSpace(s)
-	var n int
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return false, errors.New("invalid character in number")
-		}
-		n = n*10 + int(c-'0')
-	}
-	*result = n
-	return true, nil
 }
 
 // IsInLineAd returns true if the ad is an InLine ad (not a Wrapper).

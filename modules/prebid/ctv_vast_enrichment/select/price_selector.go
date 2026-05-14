@@ -37,7 +37,7 @@ type bidWithSeat struct {
 // Selection process:
 // 1. Collect all bids from resp.SeatBid[].Bid[]
 // 2. Filter bids: price > 0 and AdM non-empty (unless AllowSkeletonVast is true)
-// 3. Sort by: price desc, then deal exists desc, then bid.ID asc for stability
+// 3. Sort by: deal exists desc, then price desc, then bid.ID asc for stability
 // 4. Return up to maxBids (or cfg.MaxAdsInPod if maxBids is 0)
 // 5. Populate CanonicalMeta for each SelectedBid
 func (s *PriceSelector) Select(req *openrtb2.BidRequest, resp *openrtb2.BidResponse, cfg vast.ReceiverConfig) ([]vast.SelectedBid, []string, error) {
@@ -86,20 +86,20 @@ func (s *PriceSelector) Select(req *openrtb2.BidRequest, resp *openrtb2.BidRespo
 		return nil, warnings, nil
 	}
 
-	// Sort bids: price desc, deal exists desc, bid.ID asc for stability
+	// Sort bids: deal exists desc, then price desc, then bid.ID asc for stability
 	sort.Slice(filteredBids, func(i, j int) bool {
 		bi, bj := filteredBids[i].bid, filteredBids[j].bid
 
-		// Primary: price descending
-		if bi.Price != bj.Price {
-			return bi.Price > bj.Price
-		}
-
-		// Secondary: deal exists descending (deals first)
+		// Primary: deal exists descending (deal bids win over open auction)
 		iHasDeal := bi.DealID != ""
 		jHasDeal := bj.DealID != ""
 		if iHasDeal != jHasDeal {
 			return iHasDeal
+		}
+
+		// Secondary: price descending
+		if bi.Price != bj.Price {
+			return bi.Price > bj.Price
 		}
 
 		// Tertiary: bid ID ascending for stability

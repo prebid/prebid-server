@@ -2,8 +2,6 @@
 package format
 
 import (
-	"encoding/xml"
-
 	vast "github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment"
 	"github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment/model"
 )
@@ -29,7 +27,7 @@ func (f *VastFormatter) Format(ads []vast.EnrichedAd, cfg vast.ReceiverConfig) (
 	// Determine VAST version
 	version := cfg.VastVersionDefault
 	if version == "" {
-		version = "4.0"
+		version = vast.DefaultVastVersion
 	}
 
 	// Handle no-ad case
@@ -52,8 +50,8 @@ func (f *VastFormatter) Format(ads []vast.EnrichedAd, cfg vast.ReceiverConfig) (
 			continue
 		}
 
-		// Create a copy of the ad to avoid modifying the original
-		ad := copyAd(enriched.Ad)
+		// Deep-copy the ad so enrichment does not mutate the original parsed VAST.
+		ad := enriched.Ad.DeepCopy()
 
 		// Set Ad.ID from meta (prefer AdID if tracked, else BidID)
 		ad.ID = deriveAdID(enriched.Meta)
@@ -75,14 +73,14 @@ func (f *VastFormatter) Format(ads []vast.EnrichedAd, cfg vast.ReceiverConfig) (
 		return noAdXML, warnings, nil
 	}
 
-	// Marshal with indentation
-	xmlBytes, err := xml.MarshalIndent(vastDoc, "", "  ")
+	// Marshal using Vast.Marshal() which clears InnerXML on Ad/InLine/Wrapper nodes
+	// before marshaling. This prevents duplicate content when structured fields
+	// (e.g. Pricing, Advertiser) were added by the enricher while InnerXML still
+	// holds the original raw XML from parsing. Consistent with the hook path.
+	output, err := vastDoc.Marshal()
 	if err != nil {
 		return nil, warnings, err
 	}
-
-	// Add XML declaration
-	output := append([]byte(xml.Header), xmlBytes...)
 
 	return output, warnings, nil
 }
@@ -99,15 +97,6 @@ func deriveAdID(meta vast.CanonicalMeta) string {
 		return "imp-" + meta.ImpID
 	}
 	return ""
-}
-
-// copyAd creates a shallow copy of an Ad to avoid modifying the original.
-func copyAd(src *model.Ad) *model.Ad {
-	if src == nil {
-		return nil
-	}
-	ad := *src
-	return &ad
 }
 
 // Ensure VastFormatter implements Formatter interface.

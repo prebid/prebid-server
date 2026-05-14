@@ -160,7 +160,7 @@ func TestReceiverConfig_Defaults(t *testing.T) {
 	assert.Equal(t, "USD", rc.DefaultCurrency)
 	assert.Equal(t, "3.0", rc.VastVersionDefault)
 	assert.Equal(t, 10, rc.MaxAdsInPod)
-	assert.Equal(t, SelectionStrategy("max_revenue"), rc.SelectionStrategy)
+	assert.Equal(t, SelectionStrategy("TOP_N"), rc.SelectionStrategy)
 	assert.Equal(t, CollisionPolicy("VAST_WINS"), rc.CollisionPolicy)
 	assert.False(t, rc.Debug)
 }
