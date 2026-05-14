@@ -42,7 +42,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: coverage-preview
-          repository: bsardo/prebid-server
+          repository: prebid/prebid-server
           path: preview-repo
 
       - name: Upload Coverage Results
