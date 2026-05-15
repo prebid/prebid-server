@@ -168,6 +168,24 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		imp.Rwdd = 1
 	}
 
+	if isRewarded && imp.Video != nil {
+		videoCopy := *imp.Video
+		var extMap map[string]interface{}
+		if videoCopy.Ext != nil {
+			if err := jsonutil.Unmarshal(videoCopy.Ext, &extMap); err != nil {
+				return err
+			}
+		} else {
+			extMap = make(map[string]interface{})
+		}
+		extMap["videotype"] = "rewarded"
+		videoCopy.Ext, err = jsonutil.Marshal(extMap)
+		if err != nil {
+			return err
+		}
+		imp.Video = &videoCopy
+	}
+
 	if out.App != nil {
 		app := *out.App
 		app.Publisher = &openrtb2.Publisher{ID: pubId}
@@ -315,17 +333,6 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 		// fields to zero post-serialization for the time being
 		videoMap["w"] = json.RawMessage("0")
 		videoMap["h"] = json.RawMessage("0")
-
-		// For rewarded video impressions, set Meta's preferred signal.
-		// Meta requires video.ext.videotype to classify the video format.
-		if imp.Rwdd == 1 {
-			extMap, ok := videoMap["ext"].(map[string]interface{})
-			if !ok {
-				extMap = make(map[string]interface{})
-			}
-			extMap["videotype"] = "rewarded"
-			videoMap["ext"] = extMap
-		}
 
 	case openrtb_ext.BidTypeNative:
 		nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
