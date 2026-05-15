@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Ferio Adapter Params",
+  "description": "A schema which validates params accepted by the Ferio adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "Publisher ID",
+      "minLength": 1
+    },
+    "adUnitId": {
+      "type": "string",
+      "description": "Ad Unit ID",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string",
+      "description": "Tenant ID",
+      "minLength": 1
+    }
+  },
+  "required": ["publisherId", "adUnitId", "tenantId"]
+}
