@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -18,6 +17,8 @@ type adapter struct {
 	endpoint string
 }
 
+const bidderExtKey = "bidder"
+
 func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	return &adapter{endpoint: cfg.Endpoint}, nil
 }
@@ -27,7 +28,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	outgoingRequest.Imp = make([]openrtb2.Imp, 0, len(request.Imp))
 
 	var publisherID string
-	var tenantID string
 	var errs []error
 
 	for _, imp := range request.Imp {
@@ -45,18 +45,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			}}
 		}
 
-		if tenantID == "" {
-			tenantID = params.TenantID
-		} else if tenantID != params.TenantID {
-			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("imp %s has tenantId %q, expected %q", imp.ID, params.TenantID, tenantID),
-			}}
-		}
-
 		outgoingImp := imp
 		outgoingImp.TagID = params.AdUnitID
 
-		outgoingImpExt, err := makeOutgoingImpExt(imp.Ext)
+		outgoingImpExt, err := makeOutgoingImpExt(imp.Ext, params)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -77,14 +69,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		return nil, append(errs, err)
 	}
 
-	endpoint, err := buildEndpointURL(a.endpoint, tenantID)
-	if err != nil {
-		return nil, append(errs, err)
-	}
-
 	return []*adapters.RequestData{{
 		Method: http.MethodPost,
-		Uri:    endpoint,
+		Uri:    a.endpoint,
 		Body:   body,
 		Headers: http.Header{
 			"Accept":       []string{"application/json"},
@@ -136,23 +123,13 @@ func parseImpExt(impExt json.RawMessage, impID string) (*openrtb_ext.ExtImpFerio
 	return &params, nil
 }
 
-func buildEndpointURL(endpoint string, tenantID string) (string, error) {
-	endpointURL, err := url.Parse(endpoint)
-	if err != nil {
-		return "", err
-	}
-
-	query := endpointURL.Query()
-	query.Set("tenantId", tenantID)
-	endpointURL.RawQuery = query.Encode()
-
-	return endpointURL.String(), nil
-}
-
-func makeOutgoingImpExt(impExt json.RawMessage) (json.RawMessage, error) {
+func makeOutgoingImpExt(impExt json.RawMessage, params *openrtb_ext.ExtImpFerio) (json.RawMessage, error) {
 	var extMap map[string]json.RawMessage
 	if err := jsonutil.Unmarshal(impExt, &extMap); err != nil {
 		return nil, err
+	}
+	if extMap == nil {
+		extMap = make(map[string]json.RawMessage)
 	}
 
 	for key := range extMap {
@@ -178,9 +155,11 @@ func makeOutgoingImpExt(impExt json.RawMessage) (json.RawMessage, error) {
 		}
 	}
 
-	if len(extMap) == 0 {
-		return nil, nil
+	bidderJSON, err := jsonutil.Marshal(params)
+	if err != nil {
+		return nil, err
 	}
+	extMap[bidderExtKey] = bidderJSON
 
 	return jsonutil.Marshal(extMap)
 }
