@@ -50,7 +50,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ferio.bid/bidder?tenantId=tenant-1",
+        "uri": "https://ferio.bid/bidder",
         "headers": {
           "Accept": [
             "application/json"
@@ -80,7 +80,12 @@
                 ]
               },
               "ext": {
-                "tid": "transaction-1"
+                "tid": "transaction-1",
+                "bidder": {
+                  "publisherId": "pub-1",
+                  "adUnitId": "plc-1",
+                  "tenantId": "tenant-1"
+                }
               }
             },
             {
@@ -93,6 +98,13 @@
                     "h": 90
                   }
                 ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "pub-1",
+                  "adUnitId": "plc-2",
+                  "tenantId": "tenant-1"
+                }
               }
             }
           ]
