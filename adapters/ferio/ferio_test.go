@@ -51,7 +51,7 @@ func TestMakeRequestsSiteMultiImp(t *testing.T) {
 	require.Len(t, requests, 1)
 
 	assert.Equal(t, http.MethodPost, requests[0].Method)
-	assert.Equal(t, "https://ferio.bid/bidder?tenantId=tenant-1", requests[0].Uri)
+	assert.Equal(t, "https://ferio.bid/bidder", requests[0].Uri)
 	assert.Equal(t, []string{"imp-1", "imp-2"}, requests[0].ImpIDs)
 	assert.Equal(t, "application/json;charset=utf-8", requests[0].Headers.Get("Content-Type"))
 	assert.Equal(t, "application/json", requests[0].Headers.Get("Accept"))
@@ -65,8 +65,8 @@ func TestMakeRequestsSiteMultiImp(t *testing.T) {
 	require.Len(t, outgoing.Imp, 2)
 	assert.Equal(t, "plc-1", outgoing.Imp[0].TagID)
 	assert.Equal(t, "plc-2", outgoing.Imp[1].TagID)
-	assert.JSONEq(t, `{"tid":"transaction-1","prebid":{"storedrequest":{"id":"old-stored-request"}}}`, string(outgoing.Imp[0].Ext))
-	assert.Empty(t, outgoing.Imp[1].Ext)
+	assert.JSONEq(t, `{"tid":"transaction-1","prebid":{"storedrequest":{"id":"old-stored-request"}},"bidder":{"publisherId":"pub-1","adUnitId":"plc-1","tenantId":"tenant-1"}}`, string(outgoing.Imp[0].Ext))
+	assert.JSONEq(t, `{"bidder":{"publisherId":"pub-1","adUnitId":"plc-2","tenantId":"tenant-1"}}`, string(outgoing.Imp[1].Ext))
 
 	assert.Equal(t, "original-publisher", req.Site.Publisher.ID)
 	assert.Empty(t, req.Imp[0].TagID)
@@ -88,7 +88,7 @@ func TestMakeRequestsAppPublisher(t *testing.T) {
 	requests, errs := bidder.MakeRequests(req, nil)
 	require.Empty(t, errs)
 	require.Len(t, requests, 1)
-	assert.Equal(t, "https://ferio.bid/bidder?tenantId=tenant-1", requests[0].Uri)
+	assert.Equal(t, "https://ferio.bid/bidder", requests[0].Uri)
 
 	var outgoing openrtb2.BidRequest
 	require.NoError(t, json.Unmarshal(requests[0].Body, &outgoing))
@@ -96,6 +96,7 @@ func TestMakeRequestsAppPublisher(t *testing.T) {
 	require.NotNil(t, outgoing.App.Publisher)
 	assert.Equal(t, "app-pub", outgoing.App.Publisher.ID)
 	assert.Equal(t, "app-plc", outgoing.Imp[0].TagID)
+	assert.JSONEq(t, `{"bidder":{"publisherId":"app-pub","adUnitId":"app-plc","tenantId":"tenant-1"}}`, string(outgoing.Imp[0].Ext))
 }
 
 func TestMakeRequestsRejectsMixedPublisherIDs(t *testing.T) {
@@ -123,7 +124,7 @@ func TestMakeRequestsRejectsMixedPublisherIDs(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "publisherId")
 }
 
-func TestMakeRequestsRejectsMixedTenantIDs(t *testing.T) {
+func TestMakeRequestsAllowsMixedTenantIDs(t *testing.T) {
 	bidder := &adapter{endpoint: "https://ferio.bid/bidder"}
 	req := &openrtb2.BidRequest{
 		ID:   "auction-id",
@@ -143,13 +144,18 @@ func TestMakeRequestsRejectsMixedTenantIDs(t *testing.T) {
 	}
 
 	requests, errs := bidder.MakeRequests(req, nil)
-	assert.Nil(t, requests)
-	require.Len(t, errs, 1)
-	assert.EqualError(t, errs[0], `imp imp-2 has tenantId "tenant-2", expected "tenant-1"`)
+	require.Empty(t, errs)
+	require.Len(t, requests, 1)
+
+	var outgoing openrtb2.BidRequest
+	require.NoError(t, json.Unmarshal(requests[0].Body, &outgoing))
+	require.Len(t, outgoing.Imp, 2)
+	assert.JSONEq(t, `{"bidder":{"publisherId":"pub-1","adUnitId":"plc-1","tenantId":"tenant-1"}}`, string(outgoing.Imp[0].Ext))
+	assert.JSONEq(t, `{"bidder":{"publisherId":"pub-1","adUnitId":"plc-2","tenantId":"tenant-2"}}`, string(outgoing.Imp[1].Ext))
 }
 
-func TestMakeRequestsReplacesExistingTenantIDQueryParam(t *testing.T) {
-	bidder := &adapter{endpoint: "https://ferio.bid/bidder?tenantId=old-tenant&foo=bar"}
+func TestMakeRequestsPreservesConfiguredEndpointQueryParams(t *testing.T) {
+	bidder := &adapter{endpoint: "https://ferio.bid/bidder?foo=bar"}
 	req := &openrtb2.BidRequest{
 		ID:   "auction-id",
 		Site: &openrtb2.Site{},
@@ -163,7 +169,7 @@ func TestMakeRequestsReplacesExistingTenantIDQueryParam(t *testing.T) {
 	requests, errs := bidder.MakeRequests(req, nil)
 	require.Empty(t, errs)
 	require.Len(t, requests, 1)
-	assert.Equal(t, "https://ferio.bid/bidder?foo=bar&tenantId=tenant-1", requests[0].Uri)
+	assert.Equal(t, "https://ferio.bid/bidder?foo=bar", requests[0].Uri)
 }
 
 func TestMakeRequestsInvalidImpExt(t *testing.T) {
