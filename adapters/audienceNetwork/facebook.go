@@ -154,21 +154,12 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 	// PBS moves imp.rwdd to imp.ext.prebid.is_rewarded_inventory via ConvertDownTo25.
 	// Since we clear imp.Ext below, the signal would be lost. Extract it now and
 	// restore it on the struct field so it serializes as imp.rwdd for Meta.
-	isRewarded := imp.Rwdd == 1
-	if !isRewarded && imp.Ext != nil {
+	if imp.Rwdd != 1 && imp.Ext != nil {
 		if val, err := jsonparser.GetInt(imp.Ext, "prebid", "is_rewarded_inventory"); err == nil && val == 1 {
-			isRewarded = true
+			imp.Rwdd = 1
 		}
 	}
-
-	imp.TagID = pubId + "_" + plmtId
-	imp.Ext = nil
-
-	if isRewarded {
-		imp.Rwdd = 1
-	}
-
-	if isRewarded && imp.Video != nil {
+	if imp.Rwdd == 1 && imp.Video != nil {
 		videoCopy := *imp.Video
 		var extMap map[string]interface{}
 		if videoCopy.Ext != nil {
@@ -185,6 +176,9 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		}
 		imp.Video = &videoCopy
 	}
+
+	imp.TagID = pubId + "_" + plmtId
+	imp.Ext = nil
 
 	if out.App != nil {
 		app := *out.App
