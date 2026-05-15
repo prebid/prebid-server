@@ -1,0 +1,62 @@
+{
+  "mockBidRequest": {
+    "id": "auction-no-content",
+    "site": {},
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-1",
+            "adUnitId": "plc-1",
+            "tenantId": "tenant-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ferio.bid/bidder?tenantId=tenant-1",
+        "body": {
+          "id": "auction-no-content",
+          "site": {
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "plc-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

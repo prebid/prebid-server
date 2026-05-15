@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "auction-native",
+    "site": {
+      "domain": "publisher.example"
+    },
+    "imp": [
+      {
+        "id": "imp-native",
+        "native": {
+          "request": "{\"assets\":[{\"id\":1,\"title\":{\"len\":90}}]}"
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "native-pub",
+            "adUnitId": "native-plc",
+            "tenantId": "tenant-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ferio.bid/bidder?tenantId=tenant-1",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "body": {
+          "id": "auction-native",
+          "site": {
+            "domain": "publisher.example",
+            "publisher": {
+              "id": "native-pub"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-native",
+              "tagid": "native-plc",
+              "native": {
+                "request": "{\"assets\":[{\"id\":1,\"title\":{\"len\":90}}]}"
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-native"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "auction-native",
+          "seatbid": [
+            {
+              "seat": "ferio",
+              "bid": [
+                {
+                  "id": "bid-native",
+                  "impid": "imp-native",
+                  "price": 0.75,
+                  "adm": "{\"native\":{\"assets\":[]}}",
+                  "crid": "creative-native",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-native",
+            "impid": "imp-native",
+            "price": 0.75,
+            "adm": "{\"native\":{\"assets\":[]}}",
+            "crid": "creative-native",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
