@@ -242,15 +242,15 @@ func modifyImp(out *openrtb2.Imp) error {
 }
 
 func isValidInterstitial(impType openrtb_ext.BidType, rwdd int8) bool {
-    if impType == openrtb_ext.BidTypeBanner {
-        return true
-    }
+	if impType == openrtb_ext.BidTypeBanner {
+		return true
+	}
 
-    if impType == openrtb_ext.BidTypeVideo && rwdd == 1 {
-        return true
-    }
+	if impType == openrtb_ext.BidTypeVideo && rwdd == 1 {
+		return true
+	}
 
-    return false
+	return false
 }
 
 func extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) {
