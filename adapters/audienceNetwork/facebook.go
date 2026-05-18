@@ -196,11 +196,9 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 func modifyImp(out *openrtb2.Imp) error {
 	impType := resolveImpType(out)
 
-	if out.Instl == 1 && impType != openrtb_ext.BidTypeBanner {
-		if impType != openrtb_ext.BidTypeVideo || out.Rwdd != 1 {
-			return &errortypes.BadInput{
-				Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and rewarded video", out.ID),
-			}
+	if out.Instl == 1 && !isValidInterstitial(impType, out.Rwdd) {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and rewarded video", out.ID),
 		}
 	}
 
@@ -241,6 +239,18 @@ func modifyImp(out *openrtb2.Imp) error {
 	}
 
 	return nil
+}
+
+func isValidInterstitial(impType openrtb_ext.BidType, rwdd int8) bool {
+    if impType == openrtb_ext.BidTypeBanner {
+        return true
+    }
+
+    if impType == openrtb_ext.BidTypeVideo && rwdd == 1 {
+        return true
+    }
+
+    return false
 }
 
 func extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) {
