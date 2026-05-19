@@ -67,13 +67,6 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			network = adnuntiusExt.Network
 		}
 
-		// Remove when we support video.
-		if imp.Video != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only native and banner", imp.ID),
-			}}
-		}
-
 		if imp.Banner != nil {
 			adUnit := generateAdUnit(imp, adnuntiusExt, "banner")
 			adUnit.AdType = ""
@@ -95,6 +88,14 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			}
 
 			adUnit.NativeRequest.Ortb = nativeRequest
+			networkAdunitMap[network] = append(
+				networkAdunitMap[network],
+				adUnit)
+		}
+
+		if imp.Video != nil {
+			adUnit := generateAdUnit(imp, adnuntiusExt, "video")
+			adUnit.AdType = "VAST"
 			networkAdunitMap[network] = append(
 				networkAdunitMap[network],
 				adUnit)
@@ -246,6 +247,11 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 				native = nativeJson
 			}
 
+			if adunit.VastXml != "" {
+				html = adunit.VastXml
+				mType = openrtb2.MarkupVideo
+			}
+
 			if native != nil {
 				html = string(native)
 				mType = openrtb2.MarkupNative
@@ -282,7 +288,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, mType openrtb2.MarkupType, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
 	creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
 	if widthErr != nil {
-		return nil, []error{&errortypes.BadServerResponse{
+			return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Value of width: %s is not a string", ad.CreativeWidth),
 		}}
 	}
