@@ -93,16 +93,54 @@ func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapter
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
 
+	// Map requested media types for fallback BidType resolution
+	impMediaTypeReq := map[string]openrtb_ext.BidType{}
+	for _, imp := range bidReq.Imp {
+		if imp.Banner != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeBanner
+		} else if imp.Video != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeVideo
+		} else if imp.Native != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeNative
+		} else if imp.Audio != nil {
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeAudio
+		}
+	}
+
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			bidType, err := getMediaTypeForBid(sb.Bid[i], impMediaTypeReq)
+			if err != nil {
+				bidType = openrtb_ext.BidTypeBanner // Fallback
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: "banner",
+				BidType: bidType,
 			})
 		}
 	}
 
 	return bidResponse, nil
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext.BidType) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
+	if bidType, ok := impMediaTypeReq[bid.ImpID]; ok {
+		return bidType, nil
+	}
+
+	return "", fmt.Errorf("unmatched impression id: %s", bid.ImpID)
 }
 
 func preprocess(request *openrtb2.BidRequest) []error {
@@ -125,9 +163,19 @@ func preprocess(request *openrtb2.BidRequest) []error {
 			continue
 		}
 
-		addImpInfo(&imp, &secure, cadExt)
+		if imp.Banner == nil && imp.Video == nil && imp.Native == nil && imp.Audio == nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: "We need a Banner, Video, Native or Audio Object in the request",
+			})
+			continue
+		}
 
-		if err := buildImpBanner(&imp); err != nil {
+		if err := addImpInfo(&imp, &secure, cadExt); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		if err := formatBannerSize(&imp); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -139,7 +187,7 @@ func preprocess(request *openrtb2.BidRequest) []error {
 	return errors
 }
 
-func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConnectAd) {
+func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConnectAd) error {
 	imp.TagID = strconv.Itoa(int(cadExt.SiteID))
 	imp.Secure = secure
 
@@ -147,6 +195,26 @@ func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConne
 		imp.BidFloor = cadExt.Bidfloor
 		imp.BidFloorCur = "USD"
 	}
+
+	var extMap map[string]interface{}
+	if imp.Ext != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &extMap); err != nil {
+			return err
+		}
+	} else {
+		extMap = make(map[string]interface{})
+	}
+
+	extMap["networkId"] = int(cadExt.NetworkID)
+	extMap["siteId"] = int(cadExt.SiteID)
+
+	extBytes, err := json.Marshal(extMap)
+	if err != nil {
+		return err
+	}
+	imp.Ext = extBytes
+
+	return nil
 }
 
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
@@ -179,13 +247,9 @@ func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpConnectAd, error) {
 	return &cadExt, nil
 }
 
-func buildImpBanner(imp *openrtb2.Imp) error {
-	imp.Ext = nil
-
+func formatBannerSize(imp *openrtb2.Imp) error {
 	if imp.Banner == nil {
-		return &errortypes.BadInput{
-			Message: "We need a Banner Object in the request",
-		}
+		return nil
 	}
 
 	if imp.Banner.W == nil && imp.Banner.H == nil {

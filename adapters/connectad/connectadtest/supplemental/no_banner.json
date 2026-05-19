@@ -19,7 +19,7 @@
     },
     "expectedMakeRequestsErrors": [
       {
-        "value": "We need a Banner Object in the request",
+        "value": "We need a Banner, Video, Native or Audio Object in the request",
         "comparison": "literal"
       },
       {

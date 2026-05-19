@@ -1,0 +1,114 @@
+{
+  "mockBidRequest": {
+    "id": "test-audio-id",
+    "imp": [
+      {
+        "id": "test-audio-imp-id",
+        "audio": {
+          "mimes": [
+            "audio/mp3"
+          ],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 123456,
+            "networkId": 123456
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "connectad.io",
+      "page": "http://connectad.io/"
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "ip": "111.111.111.111"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://bidder.connectad.io/API?src=pbs",
+        "body": {
+          "id": "test-audio-id",
+          "imp": [
+            {
+              "id": "test-audio-imp-id",
+              "audio": {
+                "mimes": [
+                  "audio/mp3"
+                ],
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 123456,
+                  "networkId": 123456
+                },
+                "networkId": 123456,
+                "siteId": 123456
+              },
+              "tagid": "123456",
+              "secure": 0
+            }
+          ],
+          "site": {
+            "domain": "connectad.io",
+            "page": "http://connectad.io/"
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "111.111.111.111"
+          }
+        },
+        "impIDs": [
+          "test-audio-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-audio-id",
+          "seatbid": [
+            {
+              "seat": "connectad",
+              "bid": [
+                {
+                  "id": "aud-1",
+                  "impid": "test-audio-imp-id",
+                  "price": 15.0,
+                  "adm": "<vast></vast>",
+                  "crid": "a1",
+                  "mtype": 3
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "aud-1",
+            "impid": "test-audio-imp-id",
+            "price": 15.0,
+            "adm": "<vast></vast>",
+            "crid": "a1",
+            "mtype": 3
+          },
+          "type": "audio"
+         }
+      ]
+    }
+  ]
+}

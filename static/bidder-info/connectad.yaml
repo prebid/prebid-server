@@ -15,9 +15,15 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - video
+      - native
+      - audio
   site:
     mediaTypes:
       - banner
+      - video
+      - native
+      - audio
 userSync:
   redirect:
     url: "https://sync.connectad.io/ImageSyncer?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
