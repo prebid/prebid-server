@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Clickio Adapter Params",
+  "description": "OpenRTB params for Clickio SSP adapter",
+  "type": "object",
+  "properties": {
+    "said": {
+      "type": "string",
+      "description": "Ad unit identifier. Required for all requests."
+    },
+    "psid": {
+      "type": "string",
+      "description": "Optional preset identifier."
+    },
+    "template": {
+      "type": "string",
+      "description": "Optional template identifier."
+    }
+  },
+  "required": [
+    "said"
+  ],
+  "additionalProperties": true
+}
