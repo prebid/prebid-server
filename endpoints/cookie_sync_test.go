@@ -2790,7 +2790,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 }
 
 // createAccountJSON creates a JSON representation of account config for testing
-func createAccountJSON(priorityGroups [][]string, defaultCoopSync *bool) json.RawMessage {
+func createAccountJSON(priorityGroups [][]string, defaultCoopSync *bool, priorityGroupsOnly *bool) json.RawMessage {
 	account := map[string]interface{}{
 		"cookie_sync": map[string]interface{}{
 			"priority_groups": priorityGroups,
@@ -2799,6 +2799,10 @@ func createAccountJSON(priorityGroups [][]string, defaultCoopSync *bool) json.Ra
 
 	if defaultCoopSync != nil {
 		account["cookie_sync"].(map[string]interface{})["default_coop_sync"] = *defaultCoopSync
+	}
+
+	if priorityGroupsOnly != nil {
+		account["cookie_sync"].(map[string]interface{})["priority_groups_only"] = *priorityGroupsOnly
 	}
 
 	jsonData, _ := json.Marshal(account)
@@ -2839,13 +2843,15 @@ func TestCookieSyncPriorityGroupsIntegration(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description                  string
-		givenRequestBody             string
-		givenAccountPriorityGroups   [][]string
-		givenAccountDefaultCoopSync  *bool
-		givenGlobalPriorityGroups    [][]string
-		givenCooperativeEnabledByDef bool
-		shouldContainBidders         []string
+		description                    string
+		givenRequestBody               string
+		givenAccountPriorityGroups     [][]string
+		givenAccountDefaultCoopSync    *bool
+		givenAccountPriorityGroupsOnly *bool
+		givenGlobalPriorityGroups      [][]string
+		givenCooperativeEnabledByDef   bool
+		shouldContainBidders           []string
+		shouldNotContainBidders        []string
 	}{
 		{
 			description:      "Account-level priority groups used with cooperative sync enabled",
@@ -2900,6 +2906,31 @@ func TestCookieSyncPriorityGroupsIntegration(t *testing.T) {
 			givenCooperativeEnabledByDef: false,
 			shouldContainBidders:         []string{"appnexus", "rubicon", "pubmatic"},
 		},
+		{
+			description:      "Priority groups only — remaining bidders excluded",
+			givenRequestBody: `{"bidders":["appnexus"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{"rubicon"},
+			},
+			givenAccountDefaultCoopSync:    ptrutil.ToPtr(true),
+			givenAccountPriorityGroupsOnly: ptrutil.ToPtr(true),
+			givenGlobalPriorityGroups:      [][]string{{"ignored"}},
+			givenCooperativeEnabledByDef:   false,
+			shouldContainBidders:           []string{"appnexus", "rubicon"},
+			shouldNotContainBidders:        []string{"pubmatic"},
+		},
+		{
+			description:      "Priority groups only false — remaining bidders included",
+			givenRequestBody: `{"bidders":["appnexus"], "coopSync": true, "limit": 10, "account": "test_account"}`,
+			givenAccountPriorityGroups: [][]string{
+				{"rubicon"},
+			},
+			givenAccountDefaultCoopSync:    ptrutil.ToPtr(true),
+			givenAccountPriorityGroupsOnly: ptrutil.ToPtr(false),
+			givenGlobalPriorityGroups:      [][]string{{"ignored"}},
+			givenCooperativeEnabledByDef:   false,
+			shouldContainBidders:           []string{"appnexus", "rubicon", "pubmatic"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -2937,7 +2968,7 @@ func TestCookieSyncPriorityGroupsIntegration(t *testing.T) {
 				&mockAnalytics,
 				&FakeAccountsFetcher{
 					AccountData: map[string]json.RawMessage{
-						"test_account": createAccountJSON(tc.givenAccountPriorityGroups, tc.givenAccountDefaultCoopSync),
+						"test_account": createAccountJSON(tc.givenAccountPriorityGroups, tc.givenAccountDefaultCoopSync, tc.givenAccountPriorityGroupsOnly),
 					},
 				},
 				bidders,
@@ -2966,6 +2997,11 @@ func TestCookieSyncPriorityGroupsIntegration(t *testing.T) {
 			// Check that expected bidders are present (order may vary due to shuffling)
 			for _, expected := range tc.shouldContainBidders {
 				assert.Contains(t, actualBidders, expected, "Expected bidder %s to be present in response", expected)
+			}
+
+			// Check that excluded bidders are not present
+			for _, excluded := range tc.shouldNotContainBidders {
+				assert.NotContains(t, actualBidders, excluded, "Bidder %s should not be present in response", excluded)
 			}
 		})
 	}
@@ -3110,7 +3146,7 @@ func TestCookieSyncPriorityGroupsEdgeCases(t *testing.T) {
 				&mockAnalytics,
 				&FakeAccountsFetcher{
 					AccountData: map[string]json.RawMessage{
-						"test_account": createAccountJSON(tc.givenAccountPriorityGroups, tc.givenAccountDefaultCoopSync),
+						"test_account": createAccountJSON(tc.givenAccountPriorityGroups, tc.givenAccountDefaultCoopSync, nil),
 					},
 				},
 				bidders,

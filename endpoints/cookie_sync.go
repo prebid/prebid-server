@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/usersync"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	stringutil "github.com/prebid/prebid-server/v4/util/stringutil"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
@@ -186,8 +187,9 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
-			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.findPriorityGroups(account.CookieSync),
+			Enabled:            (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
+			PriorityGroups:     c.findPriorityGroups(account.CookieSync),
+			PriorityGroupsOnly: ptrutil.ValueOrDefault(account.CookieSync.PriorityGroupsOnly),
 		},
 		Debug: request.Debug,
 		Limit: limit,
