@@ -288,7 +288,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 func generateAdResponse(ad Ad, imp openrtb2.Imp, html string, mType openrtb2.MarkupType, request *openrtb2.BidRequest) (*openrtb2.Bid, []error) {
 	creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
 	if widthErr != nil {
-			return nil, []error{&errortypes.BadServerResponse{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Value of width: %s is not a string", ad.CreativeWidth),
 		}}
 	}

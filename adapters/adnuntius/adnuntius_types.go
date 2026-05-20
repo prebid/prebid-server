@@ -73,7 +73,7 @@ type AdUnit struct {
 	MatchedAdCount int
 	ResponseId     string
 	NativeJson     json.RawMessage `json:"nativeJson,omitempty"`
-	VastXml     	 string `json:"vastXml,omitempty"`
+	VastXml        string          `json:"vastXml,omitempty"`
 	Ads            []Ad
 	Deals          []Ad `json:"deals,omitempty"`
 }
