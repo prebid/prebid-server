@@ -399,7 +399,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -651,7 +651,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -1089,7 +1089,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -1209,7 +1209,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -1342,7 +1342,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -1688,7 +1688,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -1807,7 +1807,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -2200,7 +2200,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -2319,7 +2319,7 @@ func TestExecuteBidderRequestStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -2659,7 +2659,7 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -2778,7 +2778,7 @@ func TestExecuteRawBidderResponseStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -3178,7 +3178,7 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -3299,7 +3299,7 @@ func TestExecuteAllProcessedBidResponsesStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -3667,7 +3667,7 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},
@@ -3786,7 +3786,7 @@ func TestExecuteAuctionResponseStage(t *testing.T) {
 												Status: hookanalytics.ActivityStatusSuccess,
 												Results: []hookanalytics.Result{
 													{
-														Status: "run",
+														Status: hookanalytics.ResultStatusRun,
 														Values: map[string]interface{}{
 															"module": "module-1",
 														},

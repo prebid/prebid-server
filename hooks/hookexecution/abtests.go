@@ -10,6 +10,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// randIntn is the random integer source used by applyPlan. It is a package-level
+// variable so tests can inject a deterministic replacement without changing the call site.
+var randIntn = rand.Intn
+
 // ABTests manages A/B testing state for hook module execution.
 // It determines which modules are active for a given request based on
 // host-level and account-level execution plan configuration.
@@ -155,6 +159,10 @@ func (t *ABTests) planAccount() {
 // and account filtering via containsAccount is applied before setting runMap.
 // When deleteOnDisable is true (account plan semantics): disabled entries are removed
 // from all maps, and no account filtering is applied.
+//
+// applyPlan must only be called from within initOnce.Do. sync.Once provides the
+// happens-before memory barrier for all subsequent reads under t.mu. Calling this
+// outside Do would introduce a data race on the maps.
 func (t *ABTests) applyPlan(tests []config.ABTest, deleteOnDisable bool) {
 	for _, abtest := range tests {
 		module := abtest.ModuleCode
@@ -198,7 +206,9 @@ func (t *ABTests) applyPlan(tests []config.ABTest, deleteOnDisable bool) {
 		if abtest.PercentActive != nil && *abtest.PercentActive < uint16(100) {
 			pa = *abtest.PercentActive
 		}
-		t.runMap[module] = uint16(rand.Intn(100)) < pa
+		// Values > 100 are unreachable for static configs (startup-validated).
+		// For dynamic account-level configs, values > 100 silently default to 100 (always run).
+		t.runMap[module] = uint16(randIntn(100)) < pa
 	}
 }
 
