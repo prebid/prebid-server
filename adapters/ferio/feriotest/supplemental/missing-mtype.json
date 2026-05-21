@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "auction-ext-type",
+    "id": "auction-missing-mtype",
     "site": {},
     "imp": [
       {
@@ -36,7 +36,7 @@
           ]
         },
         "body": {
-          "id": "auction-ext-type",
+          "id": "auction-missing-mtype",
           "site": {
             "publisher": {
               "id": "pub-1"
@@ -71,7 +71,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "auction-ext-type",
+          "id": "auction-missing-mtype",
           "seatbid": [
             {
               "seat": "ferio",
@@ -97,23 +97,13 @@
   ],
   "expectedBidResponses": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "bid-1",
-            "impid": "imp-1",
-            "price": 1.00,
-            "adm": "<VAST></VAST>",
-            "crid": "creative-1",
-            "ext": {
-              "prebid": {
-                "type": "video"
-              }
-            }
-          },
-          "type": "video"
-        }
-      ]
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "missing mtype for imp imp-1",
+      "comparison": "literal"
     }
   ]
 }
