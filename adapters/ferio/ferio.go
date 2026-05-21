@@ -226,41 +226,12 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	case 0:
-		return getBidTypeFromExt(bid)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("missing mtype for imp %s", bid.ImpID),
+		}
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unsupported mtype %d for imp %s", bid.MType, bid.ImpID),
-		}
-	}
-}
-
-func getBidTypeFromExt(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
-	var bidExt openrtb_ext.ExtBid
-	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("failed to parse bid.ext for imp %s: %v", bid.ImpID, err),
-		}
-	}
-
-	if bidExt.Prebid == nil || bidExt.Prebid.Type == "" {
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("missing bid.ext.prebid.type for imp %s", bid.ImpID),
-		}
-	}
-
-	bidType, err := openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
-	if err != nil {
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("invalid bid.ext.prebid.type for imp %s: %v", bid.ImpID, err),
-		}
-	}
-
-	switch bidType {
-	case openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative:
-		return bidType, nil
-	default:
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unsupported bid.ext.prebid.type %s for imp %s", bidType, bid.ImpID),
 		}
 	}
 }

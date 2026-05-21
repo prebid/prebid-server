@@ -221,7 +221,6 @@ func TestMakeBidsMediaTypes(t *testing.T) {
 				{ID: "bid-1", ImpID: "imp-1", MType: openrtb2.MarkupBanner},
 				{ID: "bid-2", ImpID: "imp-2", MType: openrtb2.MarkupVideo},
 				{ID: "bid-3", ImpID: "imp-3", MType: openrtb2.MarkupNative},
-				{ID: "bid-4", ImpID: "imp-4", Ext: json.RawMessage(`{"prebid":{"type":"video"}}`)},
 			},
 		}},
 	}
@@ -230,56 +229,29 @@ func TestMakeBidsMediaTypes(t *testing.T) {
 	require.Empty(t, errs)
 	require.NotNil(t, bidResponse)
 	assert.Equal(t, "EUR", bidResponse.Currency)
-	require.Len(t, bidResponse.Bids, 4)
+	require.Len(t, bidResponse.Bids, 3)
 	assert.Equal(t, openrtb_ext.BidTypeBanner, bidResponse.Bids[0].BidType)
 	assert.Equal(t, openrtb_ext.BidTypeVideo, bidResponse.Bids[1].BidType)
 	assert.Equal(t, openrtb_ext.BidTypeNative, bidResponse.Bids[2].BidType)
-	assert.Equal(t, openrtb_ext.BidTypeVideo, bidResponse.Bids[3].BidType)
 }
 
-func TestMakeBidsExtBidTypeErrors(t *testing.T) {
-	testCases := []struct {
-		name        string
-		bidExt      json.RawMessage
-		expectedErr string
-	}{
-		{
-			name:        "missing bid type",
-			bidExt:      json.RawMessage(`{"prebid":{}}`),
-			expectedErr: "missing bid.ext.prebid.type for imp imp-1",
-		},
-		{
-			name:        "invalid bid type",
-			bidExt:      json.RawMessage(`{"prebid":{"type":"unknown"}}`),
-			expectedErr: "invalid bid.ext.prebid.type for imp imp-1",
-		},
-		{
-			name:        "unsupported bid type",
-			bidExt:      json.RawMessage(`{"prebid":{"type":"audio"}}`),
-			expectedErr: "unsupported bid.ext.prebid.type audio for imp imp-1",
-		},
+func TestMakeBidsMissingMType(t *testing.T) {
+	bidder := &adapter{}
+	resp := openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
+				ID:    "bid-1",
+				ImpID: "imp-1",
+				Ext:   json.RawMessage(`{"prebid":{"type":"video"}}`),
+			}},
+		}},
 	}
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			bidder := &adapter{}
-			resp := openrtb2.BidResponse{
-				SeatBid: []openrtb2.SeatBid{{
-					Bid: []openrtb2.Bid{{
-						ID:    "bid-1",
-						ImpID: "imp-1",
-						Ext:   test.bidExt,
-					}},
-				}},
-			}
-
-			bidResponse, errs := bidder.MakeBids(&openrtb2.BidRequest{}, nil, responseData(t, http.StatusOK, resp))
-			require.NotNil(t, bidResponse)
-			assert.Empty(t, bidResponse.Bids)
-			require.Len(t, errs, 1)
-			assert.Contains(t, errs[0].Error(), test.expectedErr)
-		})
-	}
+	bidResponse, errs := bidder.MakeBids(&openrtb2.BidRequest{}, nil, responseData(t, http.StatusOK, resp))
+	require.NotNil(t, bidResponse)
+	assert.Empty(t, bidResponse.Bids)
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Error(), "missing mtype for imp imp-1")
 }
 
 func TestMakeBidsNoContent(t *testing.T) {
