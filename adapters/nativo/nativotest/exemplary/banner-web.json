@@ -24,6 +24,11 @@
         "banner": {
           "w":320,
           "h":50
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 12345678
+          }
         }
       }
     ]
@@ -47,6 +52,11 @@
               "banner": {
                 "w":320,
                 "h":50
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 12345678
+                }
               }
             }
           ],

@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 type ConversantAdapter struct {
@@ -84,7 +85,10 @@ func (c *ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 
 func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant, reqInfo *adapters.ExtraRequestInfo) []error {
 	imp.DisplayManager = "prebid-s2s"
-	imp.DisplayManagerVer = "2.0.0"
+
+	if version.Ver != "" {
+		imp.DisplayManagerVer = version.Ver
+	}
 
 	if imp.BidFloor <= 0 && cnvrExt.BidFloor > 0 {
 		imp.BidFloor = cnvrExt.BidFloor
