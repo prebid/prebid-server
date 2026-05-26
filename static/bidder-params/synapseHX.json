@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Synapse HX Adapter Params",
+  "description": "A schema which validates params accepted by the Synapse HX adapter",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Synapse HX tenant identifier",
+      "minLength": 1
+    },
+    "adUnitId": {
+      "type": "string",
+      "description": "Synapse HX ad unit identifier",
+      "minLength": 1
+    }
+  },
+  "required": ["tenantId"]
+}
