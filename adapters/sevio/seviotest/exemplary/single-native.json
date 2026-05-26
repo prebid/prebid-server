@@ -1,0 +1,82 @@
+{
+    "mockBidRequest": {
+        "id": "testRequestIdNative",
+        "site": {
+            "page": "https://publisher-website.com/web"
+        },
+        "imp": [{
+            "id": "testImpressionId",
+            "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}",
+                "ver": "1.2"
+            },
+            "ext": {
+                "bidder": {
+                    "placementId": "testPlacementId"
+                }
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://test-request.com/prebid",
+            "body": {
+                "id": "testRequestIdNative",
+                "site": {
+                    "page": "https://publisher-website.com/web"
+                },
+                "imp": [{
+                    "id": "testImpressionId",
+                    "native": {
+                        "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}",
+                        "ver": "1.2"
+                    },
+                    "ext": {
+                        "bidder": {
+                            "placementId": "testPlacementId"
+                        }
+                    }
+                }]
+            },
+            "impIDs":["testImpressionId"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "testRequestIdNative",
+                "seatbid": [{
+                    "seat": "sevio",
+                    "bid": [{
+                        "id": "nativeUniqueId",
+                        "impid": "testImpressionId",
+                        "price": 1.75,
+                        "adid": "advertiserUniqueId",
+                        "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hello\"}}]}}",
+                        "cid": "campaignUniqueId",
+                        "crid": "creativeUniqueId",
+                        "mtype": 4
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "nativeUniqueId",
+                "impid": "testImpressionId",
+                "price": 1.75,
+                "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hello\"}}]}}",
+                "adid": "advertiserUniqueId",
+                "cid": "campaignUniqueId",
+                "crid": "creativeUniqueId",
+                "mtype": 4
+            },
+            "type": "native"
+        }]
+    }]
+}
