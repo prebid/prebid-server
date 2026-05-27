@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
 	"net/http"
 	"sync"
 
+	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
 
@@ -192,4 +194,165 @@ func fetchIdentity(ctx context.Context, client *http.Client, routerURL, authKey 
 		return nil, fmt.Errorf("decode identity response: %w", err)
 	}
 	return &out, nil
+}
+
+// fetchAsync runs the full N+1 fan-out in a goroutine. The Done channel is
+// closed when the result (or error) is ready. Callers should:
+//   - wait on <-ar.done (or <-ar.ctx.Done() for graceful timeout)
+//   - read ar.result OR ar.err
+//   - call ar.cancel() to release the context.
+func (ar *AsyncRequest) fetchAsync(br *openrtb2.BidRequest, accountCfg json.RawMessage, requestExt json.RawMessage) {
+	ar.done = make(chan struct{})
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				ar.err = fmt.Errorf("panic in fetchAsync: %v", r)
+			}
+			close(ar.done)
+		}()
+		ar.run(br, accountCfg, requestExt)
+	}()
+}
+
+func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json.RawMessage) {
+	resolver := accountResolver{accountConfig: accountCfg, requestExt: requestExt, moduleCfg: ar.module.cfg}
+	ids, err := resolver.resolveAuction()
+	if err != nil {
+		ar.err = err
+		return
+	}
+
+	// Resolve per-imp placements; dedupe.
+	impToPlacement := make(map[string]string, len(br.Imp))
+	uniquePlacements := []string{}
+	seenPlacement := map[string]struct{}{}
+	for _, imp := range br.Imp {
+		place, ok := resolver.resolvePlacement(imp.TagID)
+		if !ok || place == "" {
+			continue
+		}
+		impToPlacement[imp.ID] = place
+		if _, dup := seenPlacement[place]; !dup {
+			seenPlacement[place] = struct{}{}
+			uniquePlacements = append(uniquePlacements, place)
+		}
+	}
+	if len(uniquePlacements) == 0 {
+		ar.err = errors.New("no placements resolved for any imp")
+		return
+	}
+
+	masked := br
+	if ar.module.cfg.Masking.Enabled {
+		masked = maskBidRequest(br, ar.module.cfg.Masking)
+		if masked == nil {
+			ar.err = errors.New("masking failed; refusing to send unmasked request")
+			return
+		}
+	}
+
+	identities := extractIdentities(masked.User, ar.module.cfg.Masking.User.PreserveEids)
+	country := ""
+	if masked.Device != nil && masked.Device.Geo != nil {
+		country = countryAlpha3ToAlpha2(masked.Device.Geo.Country)
+	}
+
+	// Fan out: N context calls + 1 identity call. Collect results via mutex-
+	// protected maps / pointer. Errors are collected into a buffered channel
+	// (capacity = N+1) so goroutines never block on send.
+	total := len(uniquePlacements) + 1
+	errc := make(chan error, total)
+
+	contextResults := make(map[string]*ContextMatchResponse, len(uniquePlacements))
+	var contextMu sync.Mutex
+	var identityResp *IdentityMatchResponse
+
+	var wg sync.WaitGroup
+	wg.Add(total)
+
+	for _, placement := range uniquePlacements {
+		placement := placement
+		go func() {
+			defer wg.Done()
+			req := &ContextMatchRequest{
+				Type:         TypeContextMatchRequest,
+				RequestID:    mustUUID(),
+				PropertyRID:  ids.PropertyRID,
+				PropertyType: ids.PropertyType,
+				PlacementID:  placement,
+			}
+			if masked.Site != nil && masked.Site.Page != "" {
+				req.ArtifactRefs = []ArtifactRef{{URL: masked.Site.Page}}
+			}
+			resp, err := fetchContext(ar.ctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
+			if err != nil {
+				errc <- fmt.Errorf("context placement=%s: %w", placement, err)
+				return
+			}
+			contextMu.Lock()
+			contextResults[placement] = resp
+			contextMu.Unlock()
+		}()
+	}
+
+	go func() {
+		defer wg.Done()
+		req := &IdentityMatchRequest{
+			Type:           TypeIdentityMatchRequest,
+			RequestID:      mustUUID(),
+			SellerAgentURL: ids.SellerAgentURL,
+			Identities:     identities,
+			Country:        country,
+		}
+		resp, err := fetchIdentity(ar.ctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
+		if err != nil {
+			errc <- fmt.Errorf("identity: %w", err)
+			return
+		}
+		identityResp = resp
+	}()
+
+	wg.Wait()
+	close(errc)
+
+	// P1 strict: any failure means no partial result.
+	for err := range errc {
+		if err != nil {
+			ar.err = err
+			return
+		}
+	}
+
+	perPlacement := make(map[string]PlacementResult, len(contextResults))
+	identityElig := []string{}
+	if identityResp != nil {
+		identityElig = identityResp.EligiblePackageIDs
+	}
+	for placement, ctxResp := range contextResults {
+		perPlacement[placement] = PlacementResult{
+			EligiblePackages: intersect(ctxResp.Offers, identityElig),
+			TargetingKVs:     ctxResp.Signals.TargetingKVs,
+			Segments:         ctxResp.Signals.Segments,
+		}
+	}
+
+	tmpx := ""
+	if identityResp != nil {
+		tmpx = identityResp.Tmpx
+	}
+	ar.result = &AsyncResult{
+		PerPlacement:   perPlacement,
+		ImpToPlacement: impToPlacement,
+		TMPX:           tmpx,
+	}
+}
+
+// mustUUID returns a new random UUID string. Returns "" on the extremely rare
+// failure (entropy exhaustion); downstream handles empty request_id gracefully.
+func mustUUID() string {
+	u, err := uuid.NewV4()
+	if err != nil {
+		return ""
+	}
+	return u.String()
 }

@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/stretchr/testify/require"
 )
 
@@ -186,4 +188,128 @@ func TestFetchIdentity_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want.RequestID, got.RequestID)
 	require.Equal(t, "k1.xyz", got.Tmpx)
+}
+
+func TestFetchAsync_MultiImpThreePlacements_HappyPath(t *testing.T) {
+	var ctxCalls, idCalls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tmp/context":
+			ctxCalls.Add(1)
+			var req ContextMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(ContextMatchResponse{
+				Type:      TypeContextMatchResponse,
+				RequestID: req.RequestID,
+				Offers:    []Offer{{PackageID: "pkg_" + req.PlacementID}},
+				Signals:   Signals{TargetingKVs: []KeyValuePair{{Key: "k_" + req.PlacementID, Value: "v"}}},
+			})
+		case "/tmp/identity":
+			idCalls.Add(1)
+			var req IdentityMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(IdentityMatchResponse{
+				Type:               TypeIdentityMatchResponse,
+				RequestID:          req.RequestID,
+				EligiblePackageIDs: []string{"pkg_header_728x90", "pkg_preroll_video"},
+				Tmpx:               "k1.token",
+			})
+		}
+	}))
+	defer srv.Close()
+
+	mod, err := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	require.NoError(t, err)
+	m := mod.(*Module)
+
+	br := &openrtb2.BidRequest{
+		ID: "auction-1",
+		Imp: []openrtb2.Imp{
+			{ID: "imp1", TagID: "header"},
+			{ID: "imp2", TagID: "sidebar"},
+			{ID: "imp3", TagID: "video"},
+		},
+		Site:   &openrtb2.Site{Domain: "example.com", Page: "https://example.com/x"},
+		User:   &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R1"}]}]}`)},
+		Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
+	}
+	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"header":"header_728x90","sidebar":"sidebar_300x250","video":"preroll_video"}}}}`)
+
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	<-ar.done
+
+	require.NoError(t, ar.err)
+	require.NotNil(t, ar.result)
+	require.Equal(t, int32(3), ctxCalls.Load(), "one context call per unique placement")
+	require.Equal(t, int32(1), idCalls.Load(), "exactly one identity call regardless of imp count")
+
+	require.Equal(t, "k1.token", ar.result.TMPX)
+	require.Equal(t, []string{"pkg_header_728x90"}, ar.result.PerPlacement["header_728x90"].EligiblePackages)
+	require.Equal(t, []string{"pkg_preroll_video"}, ar.result.PerPlacement["preroll_video"].EligiblePackages)
+	require.Empty(t, ar.result.PerPlacement["sidebar_300x250"].EligiblePackages, "sidebar pkg not in identity eligible set")
+
+	require.Equal(t, "header_728x90", ar.result.ImpToPlacement["imp1"])
+}
+
+func TestFetchAsync_SharedPlacementDeduped(t *testing.T) {
+	var ctxCalls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tmp/context":
+			ctxCalls.Add(1)
+			var req ContextMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(ContextMatchResponse{Type: TypeContextMatchResponse, RequestID: req.RequestID, Offers: []Offer{{PackageID: "pkg_shared"}}})
+		case "/tmp/identity":
+			var req IdentityMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(IdentityMatchResponse{Type: TypeIdentityMatchResponse, RequestID: req.RequestID, EligiblePackageIDs: []string{"pkg_shared"}})
+		}
+	}))
+	defer srv.Close()
+
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+	br := &openrtb2.BidRequest{
+		ID:  "a",
+		Imp: []openrtb2.Imp{{ID: "i1", TagID: "h"}, {ID: "i2", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "x.com"},
+	}
+	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"shared"}}}}`)
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(br, cfg, nil)
+	<-ar.done
+	require.Equal(t, int32(1), ctxCalls.Load(), "shared placement dedupes to one context call")
+}
+
+func TestFetchAsync_PartialFailure_P1Strict(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/tmp/identity" {
+			http.Error(w, "boom", http.StatusInternalServerError)
+			return
+		}
+		var req ContextMatchRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewEncoder(w).Encode(ContextMatchResponse{Type: TypeContextMatchResponse, RequestID: req.RequestID, Offers: []Offer{{PackageID: "pkg_a"}}})
+	}))
+	defer srv.Close()
+
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+	br := &openrtb2.BidRequest{
+		ID:  "a",
+		Imp: []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "x.com"},
+	}
+	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`)
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(br, cfg, nil)
+	<-ar.done
+
+	require.Error(t, ar.err, "P1 strict: identity failure means whole fetch is errored")
+	require.Nil(t, ar.result)
 }
