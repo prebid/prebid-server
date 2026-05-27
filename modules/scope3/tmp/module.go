@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	defaultRouterURL     = "https://tmp.interchange.io"
 	defaultTimeoutMs     = 200
 	defaultCacheTTLSecs  = 60
 	defaultCacheSize     = 10 * 1024 * 1024 // 10 MB
@@ -122,9 +121,6 @@ func validate(cfg *Config) error {
 }
 
 func defaults(cfg *Config) {
-	if cfg.RouterURL == "" {
-		cfg.RouterURL = defaultRouterURL
-	}
 	if cfg.TimeoutMs == 0 {
 		cfg.TimeoutMs = defaultTimeoutMs
 	}
