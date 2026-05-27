@@ -145,7 +145,8 @@ func defaults(cfg *Config) {
 
 // Interface assertions.
 var (
-	_ hookstage.Entrypoint = (*Module)(nil)
+	_ hookstage.Entrypoint              = (*Module)(nil)
+	_ hookstage.ProcessedAuctionRequest = (*Module)(nil)
 )
 
 // HandleEntrypointHook initializes per-auction state.
@@ -159,4 +160,31 @@ func (m *Module) HandleEntrypointHook(
 	ar.module = m
 	mc.Set(moduleContextAsyncKey, ar)
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: mc}, nil
+}
+
+// HandleProcessedAuctionHook starts the asynchronous TMP fan-out. Returns
+// immediately while the goroutine runs in parallel with the bidder auction.
+func (m *Module) HandleProcessedAuctionHook(
+	ctx context.Context,
+	miCtx hookstage.ModuleInvocationContext,
+	payload hookstage.ProcessedAuctionRequestPayload,
+) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	var ret hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]
+
+	stored, ok := miCtx.ModuleContext.Get(moduleContextAsyncKey)
+	if !ok {
+		return ret, nil
+	}
+	ar, ok := stored.(*AsyncRequest)
+	if !ok {
+		return ret, nil
+	}
+
+	requestExt := json.RawMessage(nil)
+	if payload.Request != nil && payload.Request.BidRequest != nil {
+		requestExt = payload.Request.BidRequest.Ext
+	}
+
+	ar.fetchAsync(payload.Request.BidRequest, miCtx.AccountConfig, requestExt)
+	return ret, nil
 }

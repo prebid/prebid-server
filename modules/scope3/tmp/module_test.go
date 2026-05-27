@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,4 +97,49 @@ func TestBuilder_Validation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHandleProcessedAuctionHook_KicksOffGoroutine(t *testing.T) {
+	var ctxHit atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/tmp/context" {
+			ctxHit.Store(true)
+		}
+		var rid string
+		if r.URL.Path == "/tmp/context" {
+			var req ContextMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			rid = req.RequestID
+		} else {
+			var req IdentityMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			rid = req.RequestID
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"type": "x", "request_id": rid, "offers": []any{}, "eligible_package_ids": []any{}})
+	}))
+	defer srv.Close()
+
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+
+	mc := hookstage.NewModuleContext()
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	mc.Set(moduleContextAsyncKey, ar)
+
+	br := &openrtb2.BidRequest{
+		ID:   "a",
+		Imp:  []openrtb2.Imp{{ID: "i", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "x.com"},
+	}
+	miCtx := hookstage.ModuleInvocationContext{
+		ModuleContext: mc,
+		AccountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`),
+	}
+	payload := hookstage.ProcessedAuctionRequestPayload{Request: &openrtb_ext.RequestWrapper{BidRequest: br}}
+	_, err := m.HandleProcessedAuctionHook(context.Background(), miCtx, payload)
+	require.NoError(t, err)
+
+	<-ar.done
+	require.True(t, ctxHit.Load(), "context endpoint was called from the goroutine")
 }
