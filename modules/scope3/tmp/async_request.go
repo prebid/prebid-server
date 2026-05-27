@@ -68,3 +68,28 @@ func writePrivacySafeUserIDs(h hash.Hash, user *openrtb2.User) {
 		}
 	}
 }
+
+// intersect returns the package IDs that appear in both the context offers
+// list and the identity-eligible list. Order follows the contextOffers; output
+// is deduplicated. Returns an empty (non-nil) slice when either input is empty.
+func intersect(contextOffers []Offer, identityEligible []string) []string {
+	out := []string{}
+	if len(contextOffers) == 0 || len(identityEligible) == 0 {
+		return out
+	}
+	eligible := make(map[string]struct{}, len(identityEligible))
+	for _, id := range identityEligible {
+		eligible[id] = struct{}{}
+	}
+	seen := make(map[string]struct{}, len(contextOffers))
+	for _, offer := range contextOffers {
+		if _, alreadyEmitted := seen[offer.PackageID]; alreadyEmitted {
+			continue
+		}
+		if _, ok := eligible[offer.PackageID]; ok {
+			out = append(out, offer.PackageID)
+			seen[offer.PackageID] = struct{}{}
+		}
+	}
+	return out
+}

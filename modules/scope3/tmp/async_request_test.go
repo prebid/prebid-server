@@ -47,3 +47,61 @@ func TestIdentityCacheKey_StableAndDistinct(t *testing.T) {
 	c := identityCacheKey(pool, "https://other", "US", idents)
 	require.NotEqual(t, a, c)
 }
+
+func TestIntersect(t *testing.T) {
+	tests := []struct {
+		name           string
+		contextOffers  []Offer
+		identityElig   []string
+		want           []string
+	}{
+		{
+			name:          "both empty",
+			contextOffers: nil,
+			identityElig:  nil,
+			want:          []string{},
+		},
+		{
+			name:          "context empty",
+			contextOffers: nil,
+			identityElig:  []string{"pkg1"},
+			want:          []string{},
+		},
+		{
+			name:          "identity empty",
+			contextOffers: []Offer{{PackageID: "pkg1"}},
+			identityElig:  nil,
+			want:          []string{},
+		},
+		{
+			name:          "full overlap",
+			contextOffers: []Offer{{PackageID: "pkg1"}, {PackageID: "pkg2"}},
+			identityElig:  []string{"pkg2", "pkg1"},
+			want:          []string{"pkg1", "pkg2"}, // order follows contextOffers
+		},
+		{
+			name:          "partial overlap",
+			contextOffers: []Offer{{PackageID: "pkg1"}, {PackageID: "pkg2"}, {PackageID: "pkg3"}},
+			identityElig:  []string{"pkg2"},
+			want:          []string{"pkg2"},
+		},
+		{
+			name:          "no overlap",
+			contextOffers: []Offer{{PackageID: "pkg1"}},
+			identityElig:  []string{"pkg2"},
+			want:          []string{},
+		},
+		{
+			name:          "dedupe within context offers",
+			contextOffers: []Offer{{PackageID: "pkg1"}, {PackageID: "pkg1"}, {PackageID: "pkg2"}},
+			identityElig:  []string{"pkg1", "pkg2"},
+			want:          []string{"pkg1", "pkg2"},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := intersect(tc.contextOffers, tc.identityElig)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
