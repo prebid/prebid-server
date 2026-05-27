@@ -2,6 +2,7 @@
 package tmp
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -11,14 +12,16 @@ import (
 	"time"
 
 	"github.com/coocood/freecache"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 )
 
 const (
-	defaultTimeoutMs     = 200
-	defaultCacheTTLSecs  = 60
-	defaultCacheSize     = 10 * 1024 * 1024 // 10 MB
-	maxIdentitiesPerSpec = 3
+	defaultTimeoutMs       = 200
+	defaultCacheTTLSecs    = 60
+	defaultCacheSize       = 10 * 1024 * 1024 // 10 MB
+	maxIdentitiesPerSpec   = 3
+	moduleContextAsyncKey  = "scope3.tmp.AsyncRequest"
 )
 
 // Config holds module configuration.
@@ -138,4 +141,22 @@ func defaults(cfg *Config) {
 			cfg.Masking.User.PreserveEids = []string{"liveramp.com", "uidapi.com", "id5-sync.com"}
 		}
 	}
+}
+
+// Interface assertions.
+var (
+	_ hookstage.Entrypoint = (*Module)(nil)
+)
+
+// HandleEntrypointHook initializes per-auction state.
+func (m *Module) HandleEntrypointHook(
+	ctx context.Context,
+	miCtx hookstage.ModuleInvocationContext,
+	payload hookstage.EntrypointPayload,
+) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	mc := hookstage.NewModuleContext()
+	ar := newAsyncRequest(payload.Request.Context())
+	ar.module = m
+	mc.Set(moduleContextAsyncKey, ar)
+	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: mc}, nil
 }

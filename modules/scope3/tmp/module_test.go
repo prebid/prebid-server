@@ -1,13 +1,36 @@
 package tmp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/stretchr/testify/require"
 )
+
+// asyncRequestKey aliases the module-internal constant.
+const asyncRequestKey = moduleContextAsyncKey
+
+func TestHandleEntrypointHook_StoresAsyncRequest(t *testing.T) {
+	mod, err := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	require.NoError(t, err)
+	m := mod.(*Module)
+
+	miCtx := hookstage.ModuleInvocationContext{}
+	payload := hookstage.EntrypointPayload{Request: httptest.NewRequest("POST", "/openrtb2/auction", nil)}
+	result, err := m.HandleEntrypointHook(context.Background(), miCtx, payload)
+	require.NoError(t, err)
+	require.NotNil(t, result.ModuleContext)
+
+	stored, ok := result.ModuleContext.Get(asyncRequestKey)
+	require.True(t, ok)
+	_, isAR := stored.(*AsyncRequest)
+	require.True(t, isAR)
+}
 
 func TestBuilder_EmptyConfig(t *testing.T) {
 	m, err := Builder(json.RawMessage(`{}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
