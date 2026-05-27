@@ -14,6 +14,7 @@ import (
 	"github.com/coocood/freecache"
 	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/logger"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/prebid/prebid-server/v4/util/iterutil"
 	"github.com/tidwall/sjson"
@@ -220,11 +221,13 @@ func (m *Module) HandleAuctionResponseHook(
 	select {
 	case <-ar.done:
 	case <-ctx.Done():
+		logger.Warnf("scope3.tmp: auction context cancelled while waiting for TMP result (auction %s)", payload.BidResponse.ID)
 		ret.AnalyticsTags = analyticsErrorTag("scope3_tmp_timeout", "auction context cancelled")
 		return ret, nil
 	}
 
 	if ar.err != nil {
+		logger.Warnf("scope3.tmp: no enrichment for auction %s due to error: %v", payload.BidResponse.ID, ar.err)
 		ret.AnalyticsTags = analyticsErrorTag("scope3_tmp_fetch", ar.err.Error())
 		return ret, nil
 	}

@@ -14,6 +14,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 // contextCacheKey derives a stable hex string from inputs that scope a Context
@@ -207,6 +208,7 @@ func (ar *AsyncRequest) fetchAsync(br *openrtb2.BidRequest, accountCfg json.RawM
 		defer func() {
 			if r := recover(); r != nil {
 				ar.err = fmt.Errorf("panic in fetchAsync: %v", r)
+				logger.Errorf("scope3.tmp: panic in fetchAsync for auction %s: %v", br.ID, r)
 			}
 			close(ar.done)
 		}()
@@ -218,6 +220,7 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 	resolver := accountResolver{accountConfig: accountCfg, requestExt: requestExt, moduleCfg: ar.module.cfg}
 	ids, err := resolver.resolveAuction()
 	if err != nil {
+		logger.Warnf("scope3.tmp: skipping enrichment for auction %s: %v", br.ID, err)
 		ar.err = err
 		return
 	}
@@ -238,6 +241,7 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 		}
 	}
 	if len(uniquePlacements) == 0 {
+		logger.Warnf("scope3.tmp: no placements resolved for any imp in auction %s (property_rid=%s)", br.ID, ids.PropertyRID)
 		ar.err = errors.New("no placements resolved for any imp")
 		return
 	}
@@ -246,6 +250,7 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 	if ar.module.cfg.Masking.Enabled {
 		masked = maskBidRequest(br, ar.module.cfg.Masking)
 		if masked == nil {
+			logger.Errorf("scope3.tmp: masking failed for auction %s (property_rid=%s); refusing to send unmasked", br.ID, ids.PropertyRID)
 			ar.err = errors.New("masking failed; refusing to send unmasked request")
 			return
 		}
@@ -322,6 +327,7 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 			}
 			resp, err := fetchContext(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
 			if err != nil {
+				logger.Errorf("scope3.tmp: context call failed for auction %s placement=%s request_id=%s: %v", br.ID, placement, req.RequestID, err)
 				errc <- fmt.Errorf("context placement=%s: %w", placement, err)
 				cancelFanout()
 				return
@@ -355,6 +361,7 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 			}
 			resp, err := fetchIdentity(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
 			if err != nil {
+				logger.Errorf("scope3.tmp: identity call failed for auction %s request_id=%s: %v", br.ID, req.RequestID, err)
 				errc <- fmt.Errorf("identity: %w", err)
 				cancelFanout()
 				return
