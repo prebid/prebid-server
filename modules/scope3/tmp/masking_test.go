@@ -95,3 +95,66 @@ func TestExtractIdentities_RespectsOrderAndCap(t *testing.T) {
 		})
 	}
 }
+
+func TestMaskBidRequest_StripsSensitiveFields(t *testing.T) {
+	cfg := MaskingConfig{
+		Enabled: true,
+		Geo:     GeoMaskingConfig{PreserveMetro: true, PreserveZip: true, PreserveCity: false, LatLongPrecision: 2},
+		User:    UserMaskingConfig{PreserveEids: []string{"liveramp.com"}},
+		Device:  DeviceMaskingConfig{PreserveMobileIds: false},
+	}
+	lat := 40.7128
+	lon := -74.0059
+	br := &openrtb2.BidRequest{
+		Device: &openrtb2.Device{
+			IP:    "73.158.22.41",
+			IPv6:  "2001:db8::1",
+			UA:    "ua",
+			OS:    "macOS",
+			IFA:   "A1B2-C3D4",
+			Geo:   &openrtb2.Geo{Country: "USA", Region: "NY", City: "NYC", Metro: "501", ZIP: "10001", Lat: &lat, Lon: &lon, Accuracy: 5},
+		},
+		User: &openrtb2.User{
+			ID:       "uid",
+			BuyerUID: "bid",
+			Yob:      1985,
+			Gender:   "M",
+			Keywords: "kw",
+			Ext: []byte(`{"eids":[
+				{"source":"liveramp.com","uids":[{"id":"keep"}]},
+				{"source":"criteo.com","uids":[{"id":"drop"}]}
+			]}`),
+		},
+	}
+
+	masked := maskBidRequest(br, cfg)
+	require.NotNil(t, masked)
+
+	require.Empty(t, masked.Device.IP)
+	require.Empty(t, masked.Device.IPv6)
+	require.Empty(t, masked.Device.IFA)
+	require.NotEmpty(t, masked.Device.UA)
+	require.NotEmpty(t, masked.Device.OS)
+
+	require.Equal(t, "USA", masked.Device.Geo.Country)
+	require.Equal(t, "NY", masked.Device.Geo.Region)
+	require.Empty(t, masked.Device.Geo.City)
+	require.Equal(t, "501", masked.Device.Geo.Metro)
+	require.Equal(t, "10001", masked.Device.Geo.ZIP)
+	require.InDelta(t, 40.71, *masked.Device.Geo.Lat, 0.001)
+	require.InDelta(t, -74.01, *masked.Device.Geo.Lon, 0.001)
+	require.Zero(t, masked.Device.Geo.Accuracy)
+
+	require.Empty(t, masked.User.ID)
+	require.Empty(t, masked.User.BuyerUID)
+	require.Zero(t, masked.User.Yob)
+	require.Empty(t, masked.User.Gender)
+	require.Empty(t, masked.User.Keywords)
+}
+
+func TestMaskBidRequest_DisabledIsPassthrough(t *testing.T) {
+	cfg := MaskingConfig{Enabled: false}
+	br := &openrtb2.BidRequest{Device: &openrtb2.Device{IP: "73.158.22.41"}}
+	masked := maskBidRequest(br, cfg)
+	require.Equal(t, "73.158.22.41", masked.Device.IP)
+}

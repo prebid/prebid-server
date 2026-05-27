@@ -2,6 +2,7 @@ package tmp
 
 import (
 	"encoding/json"
+	"math"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
@@ -112,4 +113,102 @@ func extractIdentities(user *openrtb2.User, preserveEids []string) []IdentityTok
 		return nil
 	}
 	return out
+}
+
+// maskBidRequest returns a deep copy with sensitive fields removed per config.
+// Returns the original (unmodified) if masking is disabled.
+func maskBidRequest(orig *openrtb2.BidRequest, cfg MaskingConfig) *openrtb2.BidRequest {
+	if !cfg.Enabled {
+		return orig
+	}
+	raw, err := json.Marshal(orig)
+	if err != nil {
+		return nil
+	}
+	var copyBR openrtb2.BidRequest
+	if err := json.Unmarshal(raw, &copyBR); err != nil {
+		return nil
+	}
+	maskUser(&copyBR, cfg.User)
+	maskDevice(&copyBR, cfg.Device)
+	maskGeo(&copyBR, cfg.Geo)
+	return &copyBR
+}
+
+func maskUser(br *openrtb2.BidRequest, cfg UserMaskingConfig) {
+	if br.User == nil {
+		return
+	}
+	br.User.ID = ""
+	br.User.BuyerUID = ""
+	br.User.Yob = 0
+	br.User.Gender = ""
+	br.User.Data = nil
+	br.User.Keywords = ""
+	br.User.EIDs = filterEIDs(br.User.EIDs, cfg.PreserveEids)
+}
+
+func filterEIDs(eids []openrtb2.EID, allow []string) []openrtb2.EID {
+	if len(allow) == 0 {
+		return nil
+	}
+	allowSet := make(map[string]struct{}, len(allow))
+	for _, a := range allow {
+		allowSet[a] = struct{}{}
+	}
+	out := make([]openrtb2.EID, 0, len(eids))
+	for _, e := range eids {
+		if _, ok := allowSet[e.Source]; ok {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func maskDevice(br *openrtb2.BidRequest, cfg DeviceMaskingConfig) {
+	if br.Device == nil {
+		return
+	}
+	br.Device.IP = ""
+	br.Device.IPv6 = ""
+	if !cfg.PreserveMobileIds {
+		br.Device.IFA = ""
+		br.Device.DPIDMD5 = ""
+		br.Device.DPIDSHA1 = ""
+		br.Device.MACMD5 = ""
+		br.Device.MACSHA1 = ""
+		br.Device.DIDMD5 = ""
+		br.Device.DIDSHA1 = ""
+	}
+}
+
+func maskGeo(br *openrtb2.BidRequest, cfg GeoMaskingConfig) {
+	if br.Device == nil || br.Device.Geo == nil {
+		return
+	}
+	g := br.Device.Geo
+	if !cfg.PreserveMetro {
+		g.Metro = ""
+	}
+	if !cfg.PreserveZip {
+		g.ZIP = ""
+	}
+	if !cfg.PreserveCity {
+		g.City = ""
+	}
+	g.Accuracy = 0
+	if g.Lat != nil {
+		*g.Lat = truncateLatLong(*g.Lat, cfg.LatLongPrecision)
+	}
+	if g.Lon != nil {
+		*g.Lon = truncateLatLong(*g.Lon, cfg.LatLongPrecision)
+	}
+}
+
+func truncateLatLong(v float64, precision int) float64 {
+	if precision <= 0 {
+		return 0
+	}
+	mult := math.Pow(10, float64(precision))
+	return math.Round(v*mult) / mult
 }
