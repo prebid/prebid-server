@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -800,4 +801,32 @@ func TestFetchAsync_ContextTTLMinIsApplied(t *testing.T) {
 	require.Equal(t, int32(1), ctxCalls.Load(), "cache entry must exist after first call (min TTL applied)")
 	require.Equal(t, int32(1), idCalls.Load(), "identity cache entry must exist after first call")
 	require.Equal(t, []string{"pkg_min"}, ar2.result.PerPlacement["pl_min"].EligiblePackages)
+}
+
+func TestContextMatchRequest_ArtifactRefWireShape(t *testing.T) {
+	var captured []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/tmp/context" {
+			captured, _ = io.ReadAll(r.Body)
+		}
+		_, _ = w.Write([]byte(`{"type":"x","request_id":"","offers":[],"eligible_package_ids":[]}`))
+	}))
+	defer srv.Close()
+
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+
+	br := &openrtb2.BidRequest{
+		ID:   "a",
+		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "ex.com", Page: "https://ex.com/p"},
+	}
+	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`)
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(br, cfg, nil)
+	<-ar.done
+
+	require.NotEmpty(t, captured)
+	require.Contains(t, string(captured), `"artifact_refs":[{"type":"url","value":"https://ex.com/p"}]`)
 }

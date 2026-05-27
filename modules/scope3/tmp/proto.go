@@ -33,8 +33,10 @@ type IdentityToken struct {
 }
 
 // ArtifactRef references public content adjacent to the ad opportunity.
+// Wire shape per AdCP spec: {"type": "url", "value": "https://..."}.
 type ArtifactRef struct {
-	URL string `json:"url,omitempty"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
 }
 
 // ContextMatchRequest is sent to /tmp/context.

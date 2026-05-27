@@ -324,7 +324,7 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 				PlacementID:  placement,
 			}
 			if masked.Site != nil && masked.Site.Page != "" {
-				req.ArtifactRefs = []ArtifactRef{{URL: masked.Site.Page}}
+				req.ArtifactRefs = []ArtifactRef{{Type: "url", Value: masked.Site.Page}}
 			}
 			resp, err := fetchContext(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
 			if err != nil {
