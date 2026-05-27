@@ -260,6 +260,13 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 	// Fan out: N context calls + 1 identity call. Collect results via mutex-
 	// protected maps / pointer. Errors are collected into a buffered channel
 	// (capacity = N+1) so goroutines never block on send.
+	//
+	// gctx is a child context shared by all goroutines. cancelFanout is called
+	// as soon as any goroutine fails so that in-flight HTTP calls are aborted
+	// promptly via their request context.
+	gctx, cancelFanout := context.WithCancel(ar.ctx)
+	defer cancelFanout()
+
 	total := len(uniquePlacements) + 1
 	errc := make(chan error, total)
 
@@ -284,9 +291,10 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 			if masked.Site != nil && masked.Site.Page != "" {
 				req.ArtifactRefs = []ArtifactRef{{URL: masked.Site.Page}}
 			}
-			resp, err := fetchContext(ar.ctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
+			resp, err := fetchContext(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
 			if err != nil {
 				errc <- fmt.Errorf("context placement=%s: %w", placement, err)
+				cancelFanout()
 				return
 			}
 			contextMu.Lock()
@@ -304,9 +312,10 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 			Identities:     identities,
 			Country:        country,
 		}
-		resp, err := fetchIdentity(ar.ctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
+		resp, err := fetchIdentity(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
 		if err != nil {
 			errc <- fmt.Errorf("identity: %w", err)
+			cancelFanout()
 			return
 		}
 		identityResp = resp
