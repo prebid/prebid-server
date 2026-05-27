@@ -1,0 +1,11 @@
+{
+  "id": "auction-three",
+  "imp": [
+    {"id": "imp_header", "tagid": "header", "banner": {"format": [{"w": 728, "h": 90}]}},
+    {"id": "imp_side",   "tagid": "sidebar", "banner": {"format": [{"w": 300, "h": 250}]}},
+    {"id": "imp_video",  "tagid": "video",   "video":  {"mimes": ["video/mp4"]}}
+  ],
+  "site": {"domain": "example.com", "page": "https://example.com/news/x"},
+  "device": {"ua": "ua", "geo": {"country": "USA"}},
+  "user": {"ext": {"eids": [{"source": "liveramp.com", "uids": [{"id": "RID-123"}]}]}}
+}

@@ -1,0 +1,13 @@
+{
+  "scope3": {
+    "tmp": {
+      "property_rid": "01916f3a-9c4e-7000-8000-000000000010",
+      "property_type": "website",
+      "placements": {
+        "header":  "header_728x90",
+        "sidebar": "sidebar_300x250",
+        "video":   "preroll_video"
+      }
+    }
+  }
+}

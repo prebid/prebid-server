@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sync/atomic"
 	"testing"
 
@@ -265,4 +266,39 @@ func TestOutboundWireShape_PrivacyGuarantees(t *testing.T) {
 	ctxID := gjson.GetBytes(contextBody, "request_id").String()
 	idID := gjson.GetBytes(identityBody, "request_id").String()
 	require.NotEqual(t, ctxID, idID, "context and identity request_ids MUST NOT correlate")
+}
+
+func TestEndToEnd_SuccessTMPXOnly(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tmp/context":
+			data, _ := os.ReadFile("testdata/context_response_empty.json")
+			_, _ = w.Write(data)
+		case "/tmp/identity":
+			data, _ := os.ReadFile("testdata/identity_response_with_tmpx_only.json")
+			_, _ = w.Write(data)
+		}
+	}))
+	defer srv.Close()
+
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+
+	brData, _ := os.ReadFile("testdata/bid_request_multi_imp_three_placements.json")
+	var br openrtb2.BidRequest
+	require.NoError(t, json.Unmarshal(brData, &br))
+
+	accountCfg, _ := os.ReadFile("testdata/account_config_three_placements.json")
+
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(&br, accountCfg, nil)
+	<-ar.done
+
+	require.NoError(t, ar.err)
+	require.NotNil(t, ar.result)
+	require.Equal(t, "k1.tokenABC", ar.result.TMPX, "TMPX emitted even when intersection is empty")
+	for _, pr := range ar.result.PerPlacement {
+		require.Empty(t, pr.EligiblePackages, "intersection is empty")
+	}
 }
