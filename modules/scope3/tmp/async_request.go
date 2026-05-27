@@ -1,6 +1,7 @@
 package tmp
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"hash"
@@ -92,4 +93,37 @@ func intersect(contextOffers []Offer, identityEligible []string) []string {
 		}
 	}
 	return out
+}
+
+// AsyncResult is the data the auction response hook reads after fan-out.
+type AsyncResult struct {
+	PerPlacement   map[string]PlacementResult // placement_id → result
+	ImpToPlacement map[string]string          // imp.id → placement_id
+	TMPX           string
+}
+
+// PlacementResult holds the per-placement enrichment that ends up on
+// each bid whose impid maps to this placement.
+type PlacementResult struct {
+	EligiblePackages []string
+	TargetingKVs     []KeyValuePair
+	Segments         []string
+}
+
+// AsyncRequest is per-auction state created in HandleEntrypointHook and
+// drained in HandleAuctionResponseHook.
+type AsyncRequest struct {
+	module *Module
+	ctx    context.Context
+	cancel context.CancelFunc
+	done   chan struct{}
+	result *AsyncResult
+	err    error
+}
+
+// newAsyncRequest creates per-auction state. Done is nil until fetchAsync
+// runs — the auction-response hook must check for nil before reading.
+func newAsyncRequest(parent context.Context) *AsyncRequest {
+	ctx, cancel := context.WithCancel(parent)
+	return &AsyncRequest{ctx: ctx, cancel: cancel}
 }

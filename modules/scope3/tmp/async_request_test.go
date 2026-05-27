@@ -1,6 +1,7 @@
 package tmp
 
 import (
+	"context"
 	"crypto/sha256"
 	"sync"
 	"testing"
@@ -104,4 +105,19 @@ func TestIntersect(t *testing.T) {
 			require.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestAsyncRequest_LifecycleNoFetch(t *testing.T) {
+	parent, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ar := newAsyncRequest(parent)
+	require.NotNil(t, ar)
+	require.NotNil(t, ar.ctx)
+	require.NotNil(t, ar.cancel)
+
+	// No fetch was called; Done channel should be nil.
+	require.Nil(t, ar.done)
+
+	ar.cancel()
 }
