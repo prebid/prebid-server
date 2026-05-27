@@ -49,7 +49,10 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 			return nil, &errortypes.BadInput{Message: "Invalid ext.bidder"}
 		}
 		var extImpTargetVideo openrtb_ext.ExtImpTargetVideo
-		jsonutil.Unmarshal(extBidder.Bidder, &extImpTargetVideo)
+		if err := jsonutil.Unmarshal(extBidder.Bidder, &extImpTargetVideo); err != nil {
+			return nil, err
+		}
+
 		prebid := extBidder.Prebid
 		if prebid == nil {
 			prebid = &openrtb_ext.ExtImpPrebid{}
