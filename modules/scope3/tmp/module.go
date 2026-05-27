@@ -12,8 +12,11 @@ import (
 	"time"
 
 	"github.com/coocood/freecache"
+	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/util/iterutil"
+	"github.com/tidwall/sjson"
 )
 
 const (
@@ -147,6 +150,7 @@ func defaults(cfg *Config) {
 var (
 	_ hookstage.Entrypoint              = (*Module)(nil)
 	_ hookstage.ProcessedAuctionRequest = (*Module)(nil)
+	_ hookstage.AuctionResponse         = (*Module)(nil)
 )
 
 // HandleEntrypointHook initializes per-auction state.
@@ -187,4 +191,101 @@ func (m *Module) HandleProcessedAuctionHook(
 
 	ar.fetchAsync(payload.Request.BidRequest, miCtx.AccountConfig, requestExt)
 	return ret, nil
+}
+
+// HandleAuctionResponseHook waits for the async fan-out to complete (bounded
+// by the hook's context) and writes per-imp enrichment into the response.
+func (m *Module) HandleAuctionResponseHook(
+	ctx context.Context,
+	miCtx hookstage.ModuleInvocationContext,
+	payload hookstage.AuctionResponsePayload,
+) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	var ret hookstage.HookResult[hookstage.AuctionResponsePayload]
+
+	stored, ok := miCtx.ModuleContext.Get(moduleContextAsyncKey)
+	if !ok {
+		return ret, nil
+	}
+	ar, ok := stored.(*AsyncRequest)
+	if !ok {
+		return ret, nil
+	}
+	defer ar.cancel()
+
+	if ar.done == nil {
+		// Processed-auction hook never ran (e.g., test bypass). Nothing to write.
+		return ret, nil
+	}
+
+	select {
+	case <-ar.done:
+	case <-ctx.Done():
+		ret.AnalyticsTags = analyticsErrorTag("scope3_tmp_timeout", "auction context cancelled")
+		return ret, nil
+	}
+
+	if ar.err != nil {
+		ret.AnalyticsTags = analyticsErrorTag("scope3_tmp_fetch", ar.err.Error())
+		return ret, nil
+	}
+	if ar.result == nil {
+		return ret, nil
+	}
+
+	result := ar.result
+	addToTargeting := m.cfg.AddToTargeting
+
+	ret.ChangeSet.AddMutation(
+		func(p hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
+			if p.BidResponse.Ext == nil {
+				p.BidResponse.Ext = []byte("{}")
+			}
+			if result.TMPX != "" {
+				p.BidResponse.Ext, _ = sjson.SetBytes(p.BidResponse.Ext, "scope3.tmp.tmpx", result.TMPX)
+			}
+
+			for seatBid := range iterutil.SlicePointerValues(p.BidResponse.SeatBid) {
+				for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
+					placement, ok := result.ImpToPlacement[bid.ImpID]
+					if !ok {
+						continue
+					}
+					pkg := result.PerPlacement[placement]
+					if bid.Ext == nil {
+						bid.Ext = []byte("{}")
+					}
+					bid.Ext, _ = sjson.SetBytes(bid.Ext, "scope3.tmp.placement_id", placement)
+					bid.Ext, _ = sjson.SetBytes(bid.Ext, "scope3.tmp.eligible_packages", pkg.EligiblePackages)
+					if len(pkg.Segments) > 0 {
+						bid.Ext, _ = sjson.SetBytes(bid.Ext, "scope3.tmp.segments", pkg.Segments)
+					}
+					if addToTargeting {
+						if result.TMPX != "" {
+							bid.Ext, _ = sjson.SetBytes(bid.Ext, "prebid.targeting.TMPX", result.TMPX)
+						}
+						for _, kv := range pkg.TargetingKVs {
+							bid.Ext, _ = sjson.SetBytes(bid.Ext, "prebid.targeting."+kv.Key, kv.Value)
+						}
+					}
+				}
+			}
+			return p, nil
+		},
+		hookstage.MutationUpdate,
+		"ext",
+	)
+	return ret, nil
+}
+
+func analyticsErrorTag(name, msg string) hookanalytics.Analytics {
+	return hookanalytics.Analytics{
+		Activities: []hookanalytics.Activity{{
+			Name:   name,
+			Status: hookanalytics.ActivityStatusError,
+			Results: []hookanalytics.Result{{
+				Status: hookanalytics.ResultStatusError,
+				Values: map[string]interface{}{"error": msg},
+			}},
+		}},
+	}
 }

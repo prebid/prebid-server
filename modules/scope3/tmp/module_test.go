@@ -3,6 +3,7 @@ package tmp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -13,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 )
 
 // asyncRequestKey aliases the module-internal constant.
@@ -142,4 +144,69 @@ func TestHandleProcessedAuctionHook_KicksOffGoroutine(t *testing.T) {
 
 	<-ar.done
 	require.True(t, ctxHit.Load(), "context endpoint was called from the goroutine")
+}
+
+func TestHandleAuctionResponseHook_WritesPerBidExt(t *testing.T) {
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us","add_to_targeting":true}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+
+	mc := hookstage.NewModuleContext()
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.done = make(chan struct{})
+	close(ar.done)
+	ar.result = &AsyncResult{
+		PerPlacement: map[string]PlacementResult{
+			"header_728x90": {EligiblePackages: []string{"pkg_abc"}, TargetingKVs: []KeyValuePair{{Key: "buyer_kv", Value: "v1"}}, Segments: []string{"seg_a"}},
+		},
+		ImpToPlacement: map[string]string{"imp1": "header_728x90"},
+		TMPX:           "k1.token",
+	}
+	mc.Set(moduleContextAsyncKey, ar)
+
+	resp := &openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{ID: "b1", ImpID: "imp1", Ext: json.RawMessage(`{}`)}},
+		}},
+		Ext: json.RawMessage(`{}`),
+	}
+	payload := hookstage.AuctionResponsePayload{BidResponse: resp}
+	miCtx := hookstage.ModuleInvocationContext{ModuleContext: mc}
+
+	result, err := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
+	require.NoError(t, err)
+
+	// Apply the mutations from the ChangeSet, like Prebid does in production.
+	for _, mut := range result.ChangeSet.Mutations() {
+		payload, _ = mut.Apply(payload)
+	}
+
+	respExt := gjson.GetBytes(payload.BidResponse.Ext, "scope3.tmp.tmpx")
+	require.Equal(t, "k1.token", respExt.String())
+
+	bidExt := payload.BidResponse.SeatBid[0].Bid[0].Ext
+	require.Equal(t, "header_728x90", gjson.GetBytes(bidExt, "scope3.tmp.placement_id").String())
+	require.Equal(t, "pkg_abc", gjson.GetBytes(bidExt, "scope3.tmp.eligible_packages.0").String())
+	require.Equal(t, "k1.token", gjson.GetBytes(bidExt, "prebid.targeting.TMPX").String())
+	require.Equal(t, "v1", gjson.GetBytes(bidExt, "prebid.targeting.buyer_kv").String())
+}
+
+func TestHandleAuctionResponseHook_PartialFailureNoMutation(t *testing.T) {
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+
+	mc := hookstage.NewModuleContext()
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.done = make(chan struct{})
+	close(ar.done)
+	ar.err = errors.New("identity: failed")
+	mc.Set(moduleContextAsyncKey, ar)
+
+	resp := &openrtb2.BidResponse{Ext: json.RawMessage(`{}`)}
+	payload := hookstage.AuctionResponsePayload{BidResponse: resp}
+	miCtx := hookstage.ModuleInvocationContext{ModuleContext: mc}
+
+	result, _ := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
+	require.Empty(t, result.ChangeSet.Mutations(), "P1 strict: no mutation on error")
 }
