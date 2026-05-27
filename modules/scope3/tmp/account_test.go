@@ -108,3 +108,79 @@ func TestResolveAuctionIdentifiers(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveAuctionIdentifiers_MissingSellerAgentURL(t *testing.T) {
+	moduleCfg := Config{RouterURL: "https://router"} // No SellerAgentURL
+	r := accountResolver{
+		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website"}}}`),
+		requestExt:    json.RawMessage(`{}`),
+		moduleCfg:     moduleCfg,
+	}
+	_, err := r.resolveAuction()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "seller_agent_url is required")
+}
+
+func TestResolveAuctionIdentifiers_MissingRouterURL(t *testing.T) {
+	moduleCfg := Config{SellerAgentURL: "https://us"} // No RouterURL
+	r := accountResolver{
+		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website"}}}`),
+		requestExt:    json.RawMessage(`{}`),
+		moduleCfg:     moduleCfg,
+	}
+	_, err := r.resolveAuction()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "router_url is required")
+}
+
+func TestResolveAuctionIdentifiers_AccountOverridesModuleDefaults(t *testing.T) {
+	moduleCfg := Config{
+		RouterURL:      "https://router-module",
+		SellerAgentURL: "https://us-module",
+	}
+	r := accountResolver{
+		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","router_url":"https://router-account","seller_agent_url":"https://us-account"}}}`),
+		requestExt:    json.RawMessage(`{}`),
+		moduleCfg:     moduleCfg,
+	}
+	ids, err := r.resolveAuction()
+	require.NoError(t, err)
+	require.Equal(t, "https://router-account", ids.RouterURL)
+	require.Equal(t, "https://us-account", ids.SellerAgentURL)
+}
+
+func TestResolvePlacement_ExtPlacementIDTakesPrecedence(t *testing.T) {
+	moduleCfg := Config{}
+	r := accountResolver{
+		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"placements":{"h":"acct-placement"}}}}`),
+		requestExt:    json.RawMessage(`{"prebid":{"modules":{"scope3":{"tmp":{"placement_id":"ext-placement"}}}}}`),
+		moduleCfg:     moduleCfg,
+	}
+	place, ok := r.resolvePlacement("h")
+	require.True(t, ok)
+	require.Equal(t, "ext-placement", place)
+}
+
+func TestResolvePlacement_AccountFallback(t *testing.T) {
+	moduleCfg := Config{}
+	r := accountResolver{
+		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"placements":{"h":"acct-placement"}}}}`),
+		requestExt:    json.RawMessage(`{}`),
+		moduleCfg:     moduleCfg,
+	}
+	place, ok := r.resolvePlacement("h")
+	require.True(t, ok)
+	require.Equal(t, "acct-placement", place)
+}
+
+func TestResolvePlacement_NotFound(t *testing.T) {
+	moduleCfg := Config{}
+	r := accountResolver{
+		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"placements":{"other":"acct-placement"}}}}`),
+		requestExt:    json.RawMessage(`{}`),
+		moduleCfg:     moduleCfg,
+	}
+	place, ok := r.resolvePlacement("h")
+	require.False(t, ok)
+	require.Equal(t, "", place)
+}

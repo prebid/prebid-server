@@ -158,3 +158,137 @@ func TestMaskBidRequest_DisabledIsPassthrough(t *testing.T) {
 	masked := maskBidRequest(br, cfg)
 	require.Equal(t, "73.158.22.41", masked.Device.IP)
 }
+
+func TestFilterEIDs_AllAllowed(t *testing.T) {
+	eids := []openrtb2.EID{
+		{Source: "liveramp.com", UIDs: []openrtb2.UID{{ID: "R1"}}},
+		{Source: "uidapi.com", UIDs: []openrtb2.UID{{ID: "U2"}}},
+	}
+	allow := []string{"liveramp.com", "uidapi.com"}
+	got := filterEIDs(eids, allow)
+	require.Len(t, got, 2)
+	require.Equal(t, "liveramp.com", got[0].Source)
+	require.Equal(t, "uidapi.com", got[1].Source)
+}
+
+func TestFilterEIDs_PartialAllowed(t *testing.T) {
+	eids := []openrtb2.EID{
+		{Source: "liveramp.com", UIDs: []openrtb2.UID{{ID: "R1"}}},
+		{Source: "criteo.com", UIDs: []openrtb2.UID{{ID: "C1"}}},
+		{Source: "uidapi.com", UIDs: []openrtb2.UID{{ID: "U2"}}},
+	}
+	allow := []string{"liveramp.com", "uidapi.com"}
+	got := filterEIDs(eids, allow)
+	require.Len(t, got, 2)
+	require.Equal(t, "liveramp.com", got[0].Source)
+	require.Equal(t, "uidapi.com", got[1].Source)
+}
+
+func TestFilterEIDs_EmptyAllow(t *testing.T) {
+	eids := []openrtb2.EID{
+		{Source: "liveramp.com", UIDs: []openrtb2.UID{{ID: "R1"}}},
+	}
+	got := filterEIDs(eids, []string{})
+	require.Nil(t, got)
+}
+
+func TestTruncateLatLong_PositiveValues(t *testing.T) {
+	tests := []struct {
+		value     float64
+		precision int
+		want      float64
+	}{
+		{40.7128, 2, 40.71},
+		{-74.0059, 2, -74.01},
+		{12.3456, 1, 12.3},
+		{12.3456, 3, 12.346},
+		{12.3456, 4, 12.3456},
+	}
+	for _, tc := range tests {
+		t.Run("", func(t *testing.T) {
+			got := truncateLatLong(tc.value, tc.precision)
+			require.InDelta(t, tc.want, got, 0.00001)
+		})
+	}
+}
+
+func TestTruncateLatLong_EdgeCases(t *testing.T) {
+	require.Equal(t, 0.0, truncateLatLong(40.7128, 0))
+	require.Equal(t, 0.0, truncateLatLong(40.7128, -1))
+}
+
+func TestExtractIdentities_MalformedJSON(t *testing.T) {
+	// Malformed JSON in user.Ext should not panic; should treat as no EIDs
+	user := &openrtb2.User{
+		Ext: []byte(`{invalid json}`),
+	}
+	got := extractIdentities(user, []string{"liveramp.com"})
+	require.Nil(t, got)
+}
+
+func TestExtractIdentities_EmptyEIDList(t *testing.T) {
+	// EIDs exists but is empty
+	user := &openrtb2.User{
+		ID:  "pub-123",
+		Ext: []byte(`{"eids":[]}`),
+	}
+	got := extractIdentities(user, []string{"liveramp.com"})
+	require.Equal(t, []IdentityToken{{UIDType: "publisher_user_id", UserToken: "pub-123"}}, got)
+}
+
+func TestExtractIdentities_DuplicateSources(t *testing.T) {
+	// Same source twice in eids; should use first
+	user := &openrtb2.User{
+		Ext: []byte(`{"eids":[
+			{"source":"liveramp.com","uids":[{"id":"FIRST"}]},
+			{"source":"liveramp.com","uids":[{"id":"SECOND"}]}
+		]}`),
+	}
+	got := extractIdentities(user, []string{"liveramp.com"})
+	require.Len(t, got, 1)
+	require.Equal(t, "FIRST", got[0].UserToken)
+}
+
+func TestMaskDevice_PreserveMobileIds(t *testing.T) {
+	br := &openrtb2.BidRequest{
+		Device: &openrtb2.Device{
+			IFA:       "A1B2-C3D4",
+			DPIDMD5:   "abc123",
+			MACMD5:    "def456",
+			DIDMD5:    "ghi789",
+		},
+	}
+	// With PreserveMobileIds=true, these should remain
+	cfg := DeviceMaskingConfig{PreserveMobileIds: true}
+	maskDevice(br, cfg)
+	require.Equal(t, "A1B2-C3D4", br.Device.IFA)
+	require.Equal(t, "abc123", br.Device.DPIDMD5)
+	require.Equal(t, "def456", br.Device.MACMD5)
+	require.Equal(t, "ghi789", br.Device.DIDMD5)
+}
+
+func TestMaskGeo_NoDevice(t *testing.T) {
+	br := &openrtb2.BidRequest{} // No device
+	cfg := GeoMaskingConfig{PreserveMetro: true}
+	maskGeo(br, cfg)
+	// Should not panic; device is nil
+	require.Nil(t, br.Device)
+}
+
+func TestMaskGeo_NoGeo(t *testing.T) {
+	br := &openrtb2.BidRequest{
+		Device: &openrtb2.Device{}, // No geo
+	}
+	cfg := GeoMaskingConfig{PreserveMetro: true}
+	maskGeo(br, cfg)
+	// Should not panic; geo is nil
+	require.Nil(t, br.Device.Geo)
+}
+
+func TestMaskUser_NilUser(t *testing.T) {
+	br := &openrtb2.BidRequest{} // No user
+	cfg := UserMaskingConfig{PreserveEids: []string{}}
+	maskUser(br, cfg)
+	// Should not panic
+	require.Nil(t, br.User)
+}
