@@ -41,12 +41,14 @@ func TestContextCacheKey_StableAndDistinct(t *testing.T) {
 	d := contextCacheKey(pool, "rid_A", "place_2", br)
 	require.NotEqual(t, a, d, "different placement_id → different key")
 
+	// Context Match is user-identity-free: same page + different user EIDs
+	// must produce the SAME cache key so multiple users share one entry.
 	br2 := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{Domain: "example.com", Page: "https://example.com/x"},
 		User: &openrtb2.User{Ext: []byte(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R2"}]}]}`)},
 	}
 	e := contextCacheKey(pool, "rid_A", "place_1", br2)
-	require.NotEqual(t, a, e, "different user identifier → different key")
+	require.Equal(t, a, e, "same page, different user EIDs → same key (context cache is user-identity-free)")
 }
 
 func TestIdentityCacheKey_StableAndDistinct(t *testing.T) {
@@ -357,6 +359,8 @@ func TestWriteSiteOrApp_SiteWithoutPage(t *testing.T) {
 }
 
 func TestWritePrivacySafeUserIDs_EmptyEIDs(t *testing.T) {
+	// Context cache key excludes user identity by spec: swapping EIDs on the
+	// same page must produce identical keys.
 	br := &openrtb2.BidRequest{
 		User: &openrtb2.User{
 			Ext: []byte(`{"eids":[]}`), // Empty EIDs
@@ -367,7 +371,7 @@ func TestWritePrivacySafeUserIDs_EmptyEIDs(t *testing.T) {
 	// Add an identity
 	br.User.Ext = []byte(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R1"}]}]}`)
 	key2 := contextCacheKey(pool, "rid", "pl", br)
-	require.NotEqual(t, key1, key2, "adding identity should change cache key")
+	require.Equal(t, key1, key2, "user EIDs must not affect context cache key")
 }
 
 func TestFetchContext_BadStatusCode(t *testing.T) {

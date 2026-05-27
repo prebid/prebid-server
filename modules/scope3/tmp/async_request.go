@@ -18,8 +18,10 @@ import (
 )
 
 // contextCacheKey derives a stable hex string from inputs that scope a Context
-// Match result. Same (property_rid, placement_id, page/app, privacy-safe ids)
-// returns the same key.
+// Match result. Same (property_rid, placement_id, page/app) returns the same
+// key. User identity is intentionally excluded: Context Match is
+// user-identity-free by spec, and multiple users on the same page share one
+// cache entry.
 func contextCacheKey(pool *sync.Pool, propertyRID, placementID string, br *openrtb2.BidRequest) string {
 	h := pool.Get().(hash.Hash)
 	defer pool.Put(h)
@@ -28,7 +30,6 @@ func contextCacheKey(pool *sync.Pool, propertyRID, placementID string, br *openr
 	_, _ = h.Write([]byte("p:" + propertyRID))
 	_, _ = h.Write([]byte("|pl:" + placementID))
 	writeSiteOrApp(h, br)
-	writePrivacySafeUserIDs(h, br.User)
 	return hex.EncodeToString(h.Sum(nil))
 }
 
