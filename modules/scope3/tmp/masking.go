@@ -1,5 +1,11 @@
 package tmp
 
+import (
+	"encoding/json"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+)
+
 // countryAlpha3ToAlpha2 converts an ISO 3166-1 alpha-3 code to alpha-2.
 // Returns "" for unknown or empty input. Input is case-sensitive uppercase.
 func countryAlpha3ToAlpha2(alpha3 string) string {
@@ -59,4 +65,51 @@ var iso3166Alpha3ToAlpha2 = map[string]string{
 	"USA": "US", "UMI": "UM", "URY": "UY", "UZB": "UZ", "VUT": "VU",
 	"VEN": "VE", "VNM": "VN", "VGB": "VG", "VIR": "VI", "WLF": "WF",
 	"ESH": "EH", "YEM": "YE", "ZMB": "ZM", "ZWE": "ZW",
+}
+
+// extractIdentities picks up to 3 identity tokens from the user object, in the
+// order specified by preserveEids. Falls back to publisher user.id only when
+// no eids match and user.id is non-empty.
+//
+// The spec hard-caps Identities at 3 entries (maxItems: 3) because of the TMPX
+// HPKE plaintext byte budget. Builder validation already rejects preserveEids
+// longer than 3, so this function trusts that bound.
+func extractIdentities(user *openrtb2.User, preserveEids []string) []IdentityToken {
+	if user == nil {
+		return nil
+	}
+
+	var ext struct {
+		EIDs []openrtb2.EID `json:"eids"`
+	}
+	if len(user.Ext) > 0 {
+		_ = json.Unmarshal(user.Ext, &ext) // best effort; treat parse failure as no EIDs
+	}
+
+	bySource := make(map[string]string, len(ext.EIDs))
+	for _, eid := range ext.EIDs {
+		if len(eid.UIDs) == 0 {
+			continue
+		}
+		if _, dup := bySource[eid.Source]; dup {
+			continue
+		}
+		bySource[eid.Source] = eid.UIDs[0].ID
+	}
+
+	out := make([]IdentityToken, 0, len(preserveEids))
+	for _, source := range preserveEids {
+		if id, ok := bySource[source]; ok && id != "" {
+			out = append(out, IdentityToken{UIDType: source, UserToken: id})
+		}
+	}
+
+	if len(out) == 0 && user.ID != "" {
+		out = append(out, IdentityToken{UIDType: "publisher_user_id", UserToken: user.ID})
+	}
+
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
