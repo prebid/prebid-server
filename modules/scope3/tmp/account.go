@@ -3,9 +3,24 @@ package tmp
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/tidwall/gjson"
 )
+
+// validPropertyTypes is the set of allowed property_type values per the AdCP TMP spec.
+var validPropertyTypes = map[PropertyType]struct{}{
+	PropertyTypeWebsite:        {},
+	PropertyTypeMobileApp:      {},
+	PropertyTypeCTVApp:         {},
+	PropertyTypeDesktopApp:     {},
+	PropertyTypeDOOH:           {},
+	PropertyTypePodcast:        {},
+	PropertyTypeRadio:          {},
+	PropertyTypeLinearTV:       {},
+	PropertyTypeStreamingAudio: {},
+	PropertyTypeAIAssistant:    {},
+}
 
 // AuctionIdentifiers groups the resolved identifiers shared across all imps.
 type AuctionIdentifiers struct {
@@ -57,6 +72,9 @@ func (r accountResolver) resolveAuction() (AuctionIdentifiers, error) {
 	}
 	if ids.PropertyType == "" {
 		return ids, errors.New("property_type is required")
+	}
+	if _, ok := validPropertyTypes[ids.PropertyType]; !ok {
+		return ids, fmt.Errorf("property_type %q is not a valid AdCP property type", ids.PropertyType)
 	}
 	if ids.SellerAgentURL == "" {
 		return ids, errors.New("seller_agent_url is required")

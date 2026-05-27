@@ -76,6 +76,13 @@ func TestResolveAuctionIdentifiers(t *testing.T) {
 			wantErr:     "property_type is required",
 		},
 		{
+			name:        "invalid property_type rejected",
+			accountJSON: `{"scope3":{"tmp":{"property_rid":"r","property_type":"made_up_type","placements":{"h":"h1"}}}}`,
+			extJSON:     `{}`,
+			impTagID:    "h",
+			wantErr:     `property_type "made_up_type" is not a valid`,
+		},
+		{
 			name:        "unknown tagid yields empty placement_id (caller decides to skip)",
 			accountJSON: `{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"h1"}}}}`,
 			extJSON:     `{}`,
