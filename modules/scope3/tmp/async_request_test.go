@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/coocood/freecache"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
@@ -18,6 +19,10 @@ import (
 
 func newPool() *sync.Pool {
 	return &sync.Pool{New: func() any { return sha256.New() }}
+}
+
+func newTestCache() *freecache.Cache {
+	return freecache.NewCache(1 * 1024 * 1024) // 1 MB is enough for tests
 }
 
 func TestContextCacheKey_StableAndDistinct(t *testing.T) {
@@ -495,12 +500,14 @@ func TestRun_MaskingFailure(t *testing.T) {
 	// When masking is enabled but fails (e.g., marshal/unmarshal error)
 	ar := newAsyncRequest(context.Background())
 	ar.module = &Module{cfg: Config{
-		RouterURL:      "https://router",
-		SellerAgentURL: "https://us",
+		RouterURL:       "https://router",
+		SellerAgentURL:  "https://us",
+		CacheTTLSeconds: 60,
+		CacheSize:       1024 * 1024,
 		Masking: MaskingConfig{
 			Enabled: true,
 		},
-	}, httpClient: &http.Client{}}
+	}, httpClient: &http.Client{}, sha256Pool: newPool(), cache: newTestCache()}
 	
 	br := &openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{
@@ -572,23 +579,221 @@ func TestHandleAuctionResponseHook_ContextTimeout(t *testing.T) {
 	// Test when context times out before async request completes
 	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
-	
+
 	mc := hookstage.NewModuleContext()
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
 	ar.done = make(chan struct{})
 	// Don't close ar.done; it will never signal
 	mc.Set(moduleContextAsyncKey, ar)
-	
+
 	// Create a context that times out immediately
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel the context immediately
-	
+
 	miCtx := hookstage.ModuleInvocationContext{ModuleContext: mc}
 	payload := hookstage.AuctionResponsePayload{BidResponse: &openrtb2.BidResponse{}}
 	result, err := m.HandleAuctionResponseHook(ctx, miCtx, payload)
-	
+
 	require.NoError(t, err)
 	require.NotEmpty(t, result.AnalyticsTags.Activities, "should record timeout error")
 	require.Equal(t, "scope3_tmp_timeout", result.AnalyticsTags.Activities[0].Name)
+}
+
+// newModuleWithCache builds a Module wired to a test server and returns it.
+// cfg is merged with the server URL and seller_agent_url defaults.
+func newModuleForCacheTest(t *testing.T, srv *httptest.Server, extraCfg string) *Module {
+	t.Helper()
+	base := `{"router_url":"` + srv.URL + `","seller_agent_url":"https://us","masking":{"enabled":false}`
+	if extraCfg != "" {
+		base += "," + extraCfg
+	}
+	base += "}"
+	mod, err := Builder(json.RawMessage(base), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	require.NoError(t, err)
+	return mod.(*Module)
+}
+
+func TestFetchAsync_CacheHitSkipsHTTPCall(t *testing.T) {
+	var ctxCalls, idCalls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tmp/context":
+			ctxCalls.Add(1)
+			var req ContextMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(ContextMatchResponse{
+				Type:      TypeContextMatchResponse,
+				RequestID: req.RequestID,
+				Offers:    []Offer{{PackageID: "pkg_cached"}},
+				CacheTTL:  300, // server says cache for 5 min
+			})
+		case "/tmp/identity":
+			idCalls.Add(1)
+			var req IdentityMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(IdentityMatchResponse{
+				Type:               TypeIdentityMatchResponse,
+				RequestID:          req.RequestID,
+				EligiblePackageIDs: []string{"pkg_cached"},
+				Tmpx:               "k1.token",
+				TTLSec:             300,
+			})
+		}
+	}))
+	defer srv.Close()
+
+	m := newModuleForCacheTest(t, srv, `"cache_ttl_seconds":60`)
+
+	br := &openrtb2.BidRequest{
+		ID:   "auction-1",
+		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "example.com", Page: "https://example.com/x"},
+		User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R1"}]}]}`)},
+	}
+	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"header_728x90"}}}}`)
+
+	// First call — should hit the server.
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	<-ar.done
+	require.NoError(t, ar.err)
+	require.Equal(t, int32(1), ctxCalls.Load())
+	require.Equal(t, int32(1), idCalls.Load())
+
+	// Second call with identical inputs — should be served from cache.
+	ar2 := newAsyncRequest(context.Background())
+	ar2.module = m
+	ar2.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	<-ar2.done
+	require.NoError(t, ar2.err)
+	require.Equal(t, int32(1), ctxCalls.Load(), "no new context HTTP call on cache hit")
+	require.Equal(t, int32(1), idCalls.Load(), "no new identity HTTP call on cache hit")
+
+	// Result should be identical.
+	require.Equal(t, ar.result.TMPX, ar2.result.TMPX)
+	require.Equal(t, ar.result.PerPlacement, ar2.result.PerPlacement)
+}
+
+func TestFetchAsync_ZeroTTLBypassesCache(t *testing.T) {
+	var ctxCalls, idCalls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tmp/context":
+			ctxCalls.Add(1)
+			var req ContextMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			// CacheTTL: 0 → server says don't cache
+			_ = json.NewEncoder(w).Encode(ContextMatchResponse{
+				Type:      TypeContextMatchResponse,
+				RequestID: req.RequestID,
+				Offers:    []Offer{{PackageID: "pkg_nocache"}},
+				CacheTTL:  0,
+			})
+		case "/tmp/identity":
+			idCalls.Add(1)
+			var req IdentityMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			// TTLSec: 0 → server says don't cache
+			_ = json.NewEncoder(w).Encode(IdentityMatchResponse{
+				Type:               TypeIdentityMatchResponse,
+				RequestID:          req.RequestID,
+				EligiblePackageIDs: []string{"pkg_nocache"},
+				Tmpx:               "k1.nocache",
+				TTLSec:             0,
+			})
+		}
+	}))
+	defer srv.Close()
+
+	m := newModuleForCacheTest(t, srv, `"cache_ttl_seconds":60`)
+
+	br := &openrtb2.BidRequest{
+		ID:   "auction-nocache",
+		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "nocache.com", Page: "https://nocache.com/x"},
+		User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"NC1"}]}]}`)},
+	}
+	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"pl_nocache"}}}}`)
+
+	// First call.
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	<-ar.done
+	require.NoError(t, ar.err)
+	require.Equal(t, int32(1), ctxCalls.Load())
+	require.Equal(t, int32(1), idCalls.Load())
+
+	// Second call — cache was bypassed, server must be called again.
+	ar2 := newAsyncRequest(context.Background())
+	ar2.module = m
+	ar2.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	<-ar2.done
+	require.NoError(t, ar2.err)
+	require.Equal(t, int32(2), ctxCalls.Load(), "zero CacheTTL must not write to cache; server called again")
+	require.Equal(t, int32(2), idCalls.Load(), "zero TTLSec must not write to cache; server called again")
+}
+
+func TestFetchAsync_ContextTTLMinIsApplied(t *testing.T) {
+	// Server returns a large CacheTTL; module config caps at CacheTTLSeconds=5.
+	// We verify the entry IS cached (second call hits cache) and the call succeeds.
+	var ctxCalls, idCalls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tmp/context":
+			ctxCalls.Add(1)
+			var req ContextMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(ContextMatchResponse{
+				Type:      TypeContextMatchResponse,
+				RequestID: req.RequestID,
+				Offers:    []Offer{{PackageID: "pkg_min"}},
+				CacheTTL:  1000, // server wants 1000 s; module caps at 5 s
+			})
+		case "/tmp/identity":
+			idCalls.Add(1)
+			var req IdentityMatchRequest
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			_ = json.NewEncoder(w).Encode(IdentityMatchResponse{
+				Type:               TypeIdentityMatchResponse,
+				RequestID:          req.RequestID,
+				EligiblePackageIDs: []string{"pkg_min"},
+				Tmpx:               "k1.min",
+				TTLSec:             1000,
+			})
+		}
+	}))
+	defer srv.Close()
+
+	// CacheTTLSeconds=5 is smaller than server's 1000, so min(5, 1000)=5 is used.
+	m := newModuleForCacheTest(t, srv, `"cache_ttl_seconds":5`)
+
+	br := &openrtb2.BidRequest{
+		ID:   "auction-min",
+		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "min.com", Page: "https://min.com/x"},
+		User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"MIN1"}]}]}`)},
+	}
+	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"pl_min"}}}}`)
+
+	// First call — populates cache.
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	<-ar.done
+	require.NoError(t, ar.err)
+	require.Equal(t, int32(1), ctxCalls.Load())
+	require.Equal(t, int32(1), idCalls.Load())
+
+	// Second call — should hit cache (TTL=5s hasn't expired).
+	ar2 := newAsyncRequest(context.Background())
+	ar2.module = m
+	ar2.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	<-ar2.done
+	require.NoError(t, ar2.err)
+	require.Equal(t, int32(1), ctxCalls.Load(), "cache entry must exist after first call (min TTL applied)")
+	require.Equal(t, int32(1), idCalls.Load(), "identity cache entry must exist after first call")
+	require.Equal(t, []string{"pkg_min"}, ar2.result.PerPlacement["pl_min"].EligiblePackages)
 }

@@ -267,17 +267,46 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 	gctx, cancelFanout := context.WithCancel(ar.ctx)
 	defer cancelFanout()
 
-	total := len(uniquePlacements) + 1
-	errc := make(chan error, total)
-
 	contextResults := make(map[string]*ContextMatchResponse, len(uniquePlacements))
 	var contextMu sync.Mutex
 	var identityResp *IdentityMatchResponse
 
+	// Check cache for context results before spawning goroutines. Cache hits are
+	// written directly (no mutex needed; goroutines haven't started yet).
+	placementsToFetch := make([]string, 0, len(uniquePlacements))
+	for _, placement := range uniquePlacements {
+		cacheKey := contextCacheKey(ar.module.sha256Pool, ids.PropertyRID, placement, masked)
+		if cached, err := ar.module.cache.Get([]byte(cacheKey)); err == nil {
+			var resp ContextMatchResponse
+			if json.Unmarshal(cached, &resp) == nil {
+				contextResults[placement] = &resp
+				continue
+			}
+		}
+		placementsToFetch = append(placementsToFetch, placement)
+	}
+
+	// Check cache for identity result.
+	identityCacheKey := identityCacheKey(ar.module.sha256Pool, ids.SellerAgentURL, country, identities)
+	identityCached := false
+	if cached, err := ar.module.cache.Get([]byte(identityCacheKey)); err == nil {
+		var resp IdentityMatchResponse
+		if json.Unmarshal(cached, &resp) == nil {
+			identityResp = &resp
+			identityCached = true
+		}
+	}
+
+	total := len(placementsToFetch)
+	if !identityCached {
+		total++
+	}
+	errc := make(chan error, total)
+
 	var wg sync.WaitGroup
 	wg.Add(total)
 
-	for _, placement := range uniquePlacements {
+	for _, placement := range placementsToFetch {
 		placement := placement
 		go func() {
 			defer wg.Done()
@@ -297,29 +326,52 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 				cancelFanout()
 				return
 			}
+			// Write to cache only when server indicates caching is desired.
+			if resp.CacheTTL != 0 {
+				ttl := ar.module.cfg.CacheTTLSeconds
+				if resp.CacheTTL > 0 && resp.CacheTTL < ttl {
+					ttl = resp.CacheTTL
+				}
+				if data, merr := json.Marshal(resp); merr == nil {
+					cacheKey := contextCacheKey(ar.module.sha256Pool, ids.PropertyRID, placement, masked)
+					_ = ar.module.cache.Set([]byte(cacheKey), data, ttl)
+				}
+			}
 			contextMu.Lock()
 			contextResults[placement] = resp
 			contextMu.Unlock()
 		}()
 	}
 
-	go func() {
-		defer wg.Done()
-		req := &IdentityMatchRequest{
-			Type:           TypeIdentityMatchRequest,
-			RequestID:      mustUUID(),
-			SellerAgentURL: ids.SellerAgentURL,
-			Identities:     identities,
-			Country:        country,
-		}
-		resp, err := fetchIdentity(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
-		if err != nil {
-			errc <- fmt.Errorf("identity: %w", err)
-			cancelFanout()
-			return
-		}
-		identityResp = resp
-	}()
+	if !identityCached {
+		go func() {
+			defer wg.Done()
+			req := &IdentityMatchRequest{
+				Type:           TypeIdentityMatchRequest,
+				RequestID:      mustUUID(),
+				SellerAgentURL: ids.SellerAgentURL,
+				Identities:     identities,
+				Country:        country,
+			}
+			resp, err := fetchIdentity(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
+			if err != nil {
+				errc <- fmt.Errorf("identity: %w", err)
+				cancelFanout()
+				return
+			}
+			// Write to cache only when server indicates caching is desired.
+			if resp.TTLSec != 0 {
+				ttl := ar.module.cfg.CacheTTLSeconds
+				if resp.TTLSec > 0 && resp.TTLSec < ttl {
+					ttl = resp.TTLSec
+				}
+				if data, merr := json.Marshal(resp); merr == nil {
+					_ = ar.module.cache.Set([]byte(identityCacheKey), data, ttl)
+				}
+			}
+			identityResp = resp
+		}()
+	}
 
 	wg.Wait()
 	close(errc)
