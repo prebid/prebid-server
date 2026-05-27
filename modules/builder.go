@@ -6,6 +6,7 @@ import (
 	prebidRulesengine "github.com/prebid/prebid-server/v4/modules/prebid/rulesengine"
 	wurflDevicedetection "github.com/prebid/prebid-server/v4/modules/scientiamobile/wurfl_devicedetection"
 	scope3Rtd "github.com/prebid/prebid-server/v4/modules/scope3/rtd"
+	scope3Tmp "github.com/prebid/prebid-server/v4/modules/scope3/tmp"
 )
 
 // builders returns mapping between module name and its builder
@@ -24,6 +25,7 @@ func builders() ModuleBuilders {
 		},
 		"scope3": {
 			"rtd": scope3Rtd.Builder,
+			"tmp": scope3Tmp.Builder,
 		},
 	}
 }
