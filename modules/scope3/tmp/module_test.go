@@ -302,3 +302,47 @@ func TestEndToEnd_SuccessTMPXOnly(t *testing.T) {
 		require.Empty(t, pr.EligiblePackages, "intersection is empty")
 	}
 }
+
+func TestHandleAuctionResponseHook_RepeatedTargetingKVsBecomeArray(t *testing.T) {
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us","add_to_targeting":true}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+
+	mc := hookstage.NewModuleContext()
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.done = make(chan struct{})
+	close(ar.done)
+	ar.result = &AsyncResult{
+		PerPlacement: map[string]PlacementResult{
+			"p1": {
+				TargetingKVs: []KeyValuePair{
+					{Key: "adcp_pkg", Value: "pkg1"},
+					{Key: "adcp_pkg", Value: "pkg2"},
+					{Key: "single", Value: "v"},
+				},
+			},
+		},
+		ImpToPlacement: map[string]string{"imp1": "p1"},
+	}
+	mc.Set(moduleContextAsyncKey, ar)
+
+	resp := &openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{ID: "b1", ImpID: "imp1", Ext: json.RawMessage(`{}`)}},
+		}},
+		Ext: json.RawMessage(`{}`),
+	}
+	payload := hookstage.AuctionResponsePayload{BidResponse: resp}
+	miCtx := hookstage.ModuleInvocationContext{ModuleContext: mc}
+
+	result, _ := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
+	for _, mut := range result.ChangeSet.Mutations() {
+		payload, _ = mut.Apply(payload)
+	}
+
+	bidExt := payload.BidResponse.SeatBid[0].Bid[0].Ext
+	pkgArr := gjson.GetBytes(bidExt, "prebid.targeting.adcp_pkg")
+	require.True(t, pkgArr.IsArray(), "repeated key should be emitted as JSON array")
+	require.Equal(t, []string{"pkg1", "pkg2"}, []string{pkgArr.Array()[0].String(), pkgArr.Array()[1].String()})
+	require.Equal(t, "v", gjson.GetBytes(bidExt, "prebid.targeting.single").String())
+}

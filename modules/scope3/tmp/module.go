@@ -266,8 +266,22 @@ func (m *Module) HandleAuctionResponseHook(
 						if result.TMPX != "" {
 							bid.Ext, _ = sjson.SetBytes(bid.Ext, "prebid.targeting.TMPX", result.TMPX)
 						}
+						// Group targeting_kvs by key — repeated keys become arrays.
+						grouped := map[string][]string{}
+						order := []string{}
 						for _, kv := range pkg.TargetingKVs {
-							bid.Ext, _ = sjson.SetBytes(bid.Ext, "prebid.targeting."+kv.Key, kv.Value)
+							if _, seen := grouped[kv.Key]; !seen {
+								order = append(order, kv.Key)
+							}
+							grouped[kv.Key] = append(grouped[kv.Key], kv.Value)
+						}
+						for _, key := range order {
+							values := grouped[key]
+							if len(values) == 1 {
+								bid.Ext, _ = sjson.SetBytes(bid.Ext, "prebid.targeting."+key, values[0])
+							} else {
+								bid.Ext, _ = sjson.SetBytes(bid.Ext, "prebid.targeting."+key, values)
+							}
 						}
 					}
 				}
