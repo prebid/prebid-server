@@ -86,6 +86,21 @@ func TestBuilder_Validation(t *testing.T) {
 			name:   "valid minimal config",
 			config: `{"router_url":"https://tmp.interchange.io","seller_agent_url":"https://example.com"}`,
 		},
+		{
+			name:      "router_url not a valid URL",
+			config:    `{"router_url":"::not a url","seller_agent_url":"https://example.com"}`,
+			wantError: "router_url",
+		},
+		{
+			name:      "router_url http rejected",
+			config:    `{"router_url":"http://example.com","seller_agent_url":"https://example.com"}`,
+			wantError: "must use https",
+		},
+		{
+			name:      "router_url http localhost allowed",
+			config:    `{"router_url":"http://127.0.0.1:8080","seller_agent_url":"https://example.com"}`,
+			wantError: "",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

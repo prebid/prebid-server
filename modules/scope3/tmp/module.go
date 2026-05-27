@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -103,6 +104,9 @@ func Builder(rawCfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, e
 func validate(cfg *Config) error {
 	if cfg.RouterURL == "" {
 		return errors.New("router_url is required")
+	}
+	if err := validateRouterURL(cfg.RouterURL); err != nil {
+		return err
 	}
 	if cfg.SellerAgentURL == "" {
 		return errors.New("seller_agent_url is required")
@@ -292,6 +296,34 @@ func (m *Module) HandleAuctionResponseHook(
 		"ext",
 	)
 	return ret, nil
+}
+
+// validateRouterURL requires the URL parse correctly and use HTTPS. Allows
+// http for loopback hosts (localhost, 127.0.0.1, ::1) so unit tests using
+// httptest.NewServer continue to work.
+func validateRouterURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("router_url is not a valid URL: %w", err)
+	}
+	if u.Host == "" {
+		return errors.New("router_url is missing a host")
+	}
+	if u.Scheme == "https" {
+		return nil
+	}
+	if u.Scheme == "http" && isLoopbackHost(u.Hostname()) {
+		return nil
+	}
+	return fmt.Errorf("router_url must use https (got scheme %q)", u.Scheme)
+}
+
+func isLoopbackHost(host string) bool {
+	switch host {
+	case "localhost", "127.0.0.1", "::1":
+		return true
+	}
+	return false
 }
 
 func analyticsErrorTag(name, msg string) hookanalytics.Analytics {
