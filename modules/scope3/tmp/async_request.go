@@ -1,10 +1,14 @@
 package tmp
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"hash"
+	"io"
+	"net/http"
 	"sync"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -126,4 +130,66 @@ type AsyncRequest struct {
 func newAsyncRequest(parent context.Context) *AsyncRequest {
 	ctx, cancel := context.WithCancel(parent)
 	return &AsyncRequest{ctx: ctx, cancel: cancel}
+}
+
+func fetchContext(ctx context.Context, client *http.Client, routerURL, authKey string, req *ContextMatchRequest) (*ContextMatchResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("encode context request: %w", err)
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, routerURL+"/tmp/context", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if authKey != "" {
+		httpReq.Header.Set("x-scope3-auth", authKey)
+	}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("context match returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var out ContextMatchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, fmt.Errorf("decode context response: %w", err)
+	}
+	return &out, nil
+}
+
+func fetchIdentity(ctx context.Context, client *http.Client, routerURL, authKey string, req *IdentityMatchRequest) (*IdentityMatchResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("encode identity request: %w", err)
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, routerURL+"/tmp/identity", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if authKey != "" {
+		httpReq.Header.Set("x-scope3-auth", authKey)
+	}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("identity match returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var out IdentityMatchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, fmt.Errorf("decode identity response: %w", err)
+	}
+	return &out, nil
 }

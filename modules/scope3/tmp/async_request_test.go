@@ -3,6 +3,9 @@ package tmp
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -120,4 +123,67 @@ func TestAsyncRequest_LifecycleNoFetch(t *testing.T) {
 	require.Nil(t, ar.done)
 
 	ar.cancel()
+}
+
+func TestFetchContext_HappyPath(t *testing.T) {
+	want := ContextMatchResponse{
+		Type:      TypeContextMatchResponse,
+		RequestID: "req-x",
+		Offers:    []Offer{{PackageID: "pkg_abc"}},
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		require.Equal(t, "/tmp/context", r.URL.Path)
+		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		_ = json.NewEncoder(w).Encode(want)
+	}))
+	defer srv.Close()
+
+	req := ContextMatchRequest{
+		Type:        TypeContextMatchRequest,
+		RequestID:   "req-x",
+		PropertyRID: "rid",
+		PlacementID: "pl",
+	}
+	got, err := fetchContext(context.Background(), &http.Client{}, srv.URL, "", &req)
+	require.NoError(t, err)
+	require.Equal(t, want.RequestID, got.RequestID)
+	require.Equal(t, "pkg_abc", got.Offers[0].PackageID)
+}
+
+func TestFetchContext_4xx(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "bad request", http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	_, err := fetchContext(context.Background(), &http.Client{}, srv.URL, "", &ContextMatchRequest{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "400")
+}
+
+func TestFetchIdentity_HappyPath(t *testing.T) {
+	want := IdentityMatchResponse{
+		Type:               TypeIdentityMatchResponse,
+		RequestID:          "id-y",
+		EligiblePackageIDs: []string{"pkg_abc"},
+		Tmpx:               "k1.xyz",
+		TTLSec:             60,
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/tmp/identity", r.URL.Path)
+
+		var body IdentityMatchRequest
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+		require.NotEmpty(t, body.RequestID)
+		require.Equal(t, "auth-token", r.Header.Get("x-scope3-auth"))
+		_ = json.NewEncoder(w).Encode(want)
+	}))
+	defer srv.Close()
+
+	req := IdentityMatchRequest{Type: TypeIdentityMatchRequest, RequestID: "id-y", SellerAgentURL: "https://us"}
+	got, err := fetchIdentity(context.Background(), &http.Client{}, srv.URL, "auth-token", &req)
+	require.NoError(t, err)
+	require.Equal(t, want.RequestID, got.RequestID)
+	require.Equal(t, "k1.xyz", got.Tmpx)
 }
