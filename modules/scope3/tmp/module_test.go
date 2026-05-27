@@ -361,3 +361,57 @@ func TestHandleAuctionResponseHook_RepeatedTargetingKVsBecomeArray(t *testing.T)
 	require.Equal(t, []string{"pkg1", "pkg2"}, []string{pkgArr.Array()[0].String(), pkgArr.Array()[1].String()})
 	require.Equal(t, "v", gjson.GetBytes(bidExt, "prebid.targeting.single").String())
 }
+
+func TestHandleAuctionResponseHook_FullyEmptyResultNoMutation(t *testing.T) {
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+	mc := hookstage.NewModuleContext()
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.done = make(chan struct{})
+	close(ar.done)
+	ar.result = &AsyncResult{
+		PerPlacement:   map[string]PlacementResult{"p1": {}},
+		ImpToPlacement: map[string]string{"imp1": "p1"},
+		TMPX:           "",
+	}
+	mc.Set(moduleContextAsyncKey, ar)
+	resp := &openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{{ID: "b1", ImpID: "imp1", Ext: json.RawMessage(`{}`)}}}},
+		Ext:     json.RawMessage(`{}`),
+	}
+	payload := hookstage.AuctionResponsePayload{BidResponse: resp}
+	miCtx := hookstage.ModuleInvocationContext{ModuleContext: mc}
+	result, _ := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
+	require.Empty(t, result.ChangeSet.Mutations(), "no mutation for fully-empty result")
+}
+
+func TestHandleAuctionResponseHook_EmptyEligiblePackagesNotEmitted(t *testing.T) {
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+	mc := hookstage.NewModuleContext()
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	ar.done = make(chan struct{})
+	close(ar.done)
+	ar.result = &AsyncResult{
+		PerPlacement:   map[string]PlacementResult{"p1": {EligiblePackages: []string{}, Segments: []string{"seg_a"}}},
+		ImpToPlacement: map[string]string{"imp1": "p1"},
+		TMPX:           "k1.tok",
+	}
+	mc.Set(moduleContextAsyncKey, ar)
+	resp := &openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{{ID: "b1", ImpID: "imp1", Ext: json.RawMessage(`{}`)}}}},
+		Ext:     json.RawMessage(`{}`),
+	}
+	payload := hookstage.AuctionResponsePayload{BidResponse: resp}
+	miCtx := hookstage.ModuleInvocationContext{ModuleContext: mc}
+	result, _ := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
+	for _, mut := range result.ChangeSet.Mutations() {
+		payload, _ = mut.Apply(payload)
+	}
+	bidExt := payload.BidResponse.SeatBid[0].Bid[0].Ext
+	// Mutation happened (TMPX + segments present), but eligible_packages should be absent.
+	require.False(t, gjson.GetBytes(bidExt, "scope3.tmp.eligible_packages").Exists(), "empty packages should not be written")
+	require.True(t, gjson.GetBytes(bidExt, "scope3.tmp.segments").Exists(), "segments should be written")
+}

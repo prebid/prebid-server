@@ -242,6 +242,27 @@ func (m *Module) HandleAuctionResponseHook(
 	result := ar.result
 	addToTargeting := m.cfg.AddToTargeting
 
+	// Skip mutation entirely if the result has no enrichment for anyone.
+	if result.TMPX == "" {
+		anyPackages := false
+		anyKVs := false
+		anySegs := false
+		for _, pr := range result.PerPlacement {
+			if len(pr.EligiblePackages) > 0 {
+				anyPackages = true
+			}
+			if len(pr.TargetingKVs) > 0 {
+				anyKVs = true
+			}
+			if len(pr.Segments) > 0 {
+				anySegs = true
+			}
+		}
+		if !anyPackages && !anyKVs && !anySegs {
+			return ret, nil
+		}
+	}
+
 	ret.ChangeSet.AddMutation(
 		func(p hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
 			if p.BidResponse.Ext == nil {
@@ -262,7 +283,9 @@ func (m *Module) HandleAuctionResponseHook(
 						bid.Ext = []byte("{}")
 					}
 					bid.Ext, _ = sjson.SetBytes(bid.Ext, "scope3.tmp.placement_id", placement)
-					bid.Ext, _ = sjson.SetBytes(bid.Ext, "scope3.tmp.eligible_packages", pkg.EligiblePackages)
+					if len(pkg.EligiblePackages) > 0 {
+						bid.Ext, _ = sjson.SetBytes(bid.Ext, "scope3.tmp.eligible_packages", pkg.EligiblePackages)
+					}
 					if len(pkg.Segments) > 0 {
 						bid.Ext, _ = sjson.SetBytes(bid.Ext, "scope3.tmp.segments", pkg.Segments)
 					}
