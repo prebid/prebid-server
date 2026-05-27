@@ -160,8 +160,25 @@ func fetchContext(ctx context.Context, client *http.Client, routerURL, authKey s
 		return nil, fmt.Errorf("context match returned status %d: %s", resp.StatusCode, string(body))
 	}
 
+	body, err = io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // cap at 1MB
+	if err != nil {
+		return nil, fmt.Errorf("read context response body: %w", err)
+	}
+	var probe struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &probe); err != nil {
+		return nil, fmt.Errorf("decode context response type: %w", err)
+	}
+	if probe.Type == TypeErrorResponse {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("decode context error_response: %w", err)
+		}
+		return nil, fmt.Errorf("context match returned error_response: code=%s message=%s", errResp.Code, errResp.Message)
+	}
 	var out ContextMatchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.Unmarshal(body, &out); err != nil {
 		return nil, fmt.Errorf("decode context response: %w", err)
 	}
 	return &out, nil
@@ -191,8 +208,25 @@ func fetchIdentity(ctx context.Context, client *http.Client, routerURL, authKey 
 		return nil, fmt.Errorf("identity match returned status %d: %s", resp.StatusCode, string(body))
 	}
 
+	body, err = io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // cap at 1MB
+	if err != nil {
+		return nil, fmt.Errorf("read identity response body: %w", err)
+	}
+	var probe struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &probe); err != nil {
+		return nil, fmt.Errorf("decode identity response type: %w", err)
+	}
+	if probe.Type == TypeErrorResponse {
+		var errResp ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return nil, fmt.Errorf("decode identity error_response: %w", err)
+		}
+		return nil, fmt.Errorf("identity match returned error_response: code=%s message=%s", errResp.Code, errResp.Message)
+	}
 	var out IdentityMatchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.Unmarshal(body, &out); err != nil {
 		return nil, fmt.Errorf("decode identity response: %w", err)
 	}
 	return &out, nil

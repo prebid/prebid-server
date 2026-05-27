@@ -803,6 +803,41 @@ func TestFetchAsync_ContextTTLMinIsApplied(t *testing.T) {
 	require.Equal(t, []string{"pkg_min"}, ar2.result.PerPlacement["pl_min"].EligiblePackages)
 }
 
+func TestFetchContext_ErrorResponseAt200(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Type:      TypeErrorResponse,
+			RequestID: "req-x",
+			Code:      "INVALID_REQUEST",
+			Message:   "missing property_rid",
+		})
+	}))
+	defer srv.Close()
+	_, err := fetchContext(context.Background(), &http.Client{}, srv.URL, "", &ContextMatchRequest{Type: TypeContextMatchRequest, RequestID: "req-x"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error_response")
+	require.Contains(t, err.Error(), "INVALID_REQUEST")
+	require.Contains(t, err.Error(), "missing property_rid")
+}
+
+func TestFetchIdentity_ErrorResponseAt200(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Type:      TypeErrorResponse,
+			RequestID: "id-y",
+			Code:      "SELLER_NOT_AUTHORIZED",
+			Message:   "no active packages",
+		})
+	}))
+	defer srv.Close()
+	_, err := fetchIdentity(context.Background(), &http.Client{}, srv.URL, "", &IdentityMatchRequest{Type: TypeIdentityMatchRequest, RequestID: "id-y"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error_response")
+	require.Contains(t, err.Error(), "SELLER_NOT_AUTHORIZED")
+}
+
 func TestContextMatchRequest_ArtifactRefWireShape(t *testing.T) {
 	var captured []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
