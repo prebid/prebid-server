@@ -1,5 +1,11 @@
 # Scope3 RTD Module
 
+> **Deprecation notice**: For new deployments, prefer `modules/scope3/tmp` —
+> the AdCP Trusted Match Protocol module — which offers stronger privacy
+> guarantees through structurally-separated context and identity matching.
+> See [`../tmp/README.md`](../tmp/README.md). This module remains supported
+> through at least one release cycle for existing integrations.
+
 This module integrates Scope3's Real-Time Data API to provide audience segments for targeting.
 
 ## Maintainer
