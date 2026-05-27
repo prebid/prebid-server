@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -209,4 +210,59 @@ func TestHandleAuctionResponseHook_PartialFailureNoMutation(t *testing.T) {
 
 	result, _ := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
 	require.Empty(t, result.ChangeSet.Mutations(), "P1 strict: no mutation on error")
+}
+
+func TestOutboundWireShape_PrivacyGuarantees(t *testing.T) {
+	var contextBody, identityBody []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		buf, _ := io.ReadAll(r.Body)
+		switch r.URL.Path {
+		case "/tmp/context":
+			contextBody = buf
+		case "/tmp/identity":
+			identityBody = buf
+		}
+		_, _ = w.Write([]byte(`{"type":"x","request_id":"","offers":[],"eligible_package_ids":[]}`))
+	}))
+	defer srv.Close()
+
+	mod, _ := Builder(json.RawMessage(`{
+		"router_url":"`+srv.URL+`",
+		"seller_agent_url":"https://us",
+		"masking":{"enabled":true,"user":{"preserve_eids":["liveramp.com"]}}
+	}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	m := mod.(*Module)
+
+	br := &openrtb2.BidRequest{
+		ID: "a",
+		Imp: []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Site: &openrtb2.Site{Domain: "x.com"},
+		Device: &openrtb2.Device{IP: "1.2.3.4", IFA: "AAA-BBB", Geo: &openrtb2.Geo{Country: "USA"}},
+		User: &openrtb2.User{
+			ID:       "uid",
+			BuyerUID: "buid",
+			Ext:      json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R1"}]},{"source":"criteo.com","uids":[{"id":"DROP"}]}]}`),
+		},
+	}
+
+	ar := newAsyncRequest(context.Background())
+	ar.module = m
+	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`)
+	ar.fetchAsync(br, cfg, nil)
+	<-ar.done
+
+	require.NotEmpty(t, contextBody)
+	require.NotEmpty(t, identityBody)
+
+	require.NotContains(t, string(contextBody), `"ip":"1.2.3.4"`)
+	require.NotContains(t, string(contextBody), `"ifa":"AAA-BBB"`)
+	require.NotContains(t, string(contextBody), `"id":"uid"`)
+	require.NotContains(t, string(identityBody), `"ip":"1.2.3.4"`)
+	require.NotContains(t, string(identityBody), `"package_ids"`)
+	require.NotContains(t, string(identityBody), `"criteo.com"`)
+	require.Contains(t, string(identityBody), `"country":"US"`)
+
+	ctxID := gjson.GetBytes(contextBody, "request_id").String()
+	idID := gjson.GetBytes(identityBody, "request_id").String()
+	require.NotEqual(t, ctxID, idID, "context and identity request_ids MUST NOT correlate")
 }
