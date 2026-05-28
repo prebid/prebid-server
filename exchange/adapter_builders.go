@@ -241,6 +241,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/undertone"
 	"github.com/prebid/prebid-server/v4/adapters/unicorn"
 	"github.com/prebid/prebid-server/v4/adapters/unruly"
+	"github.com/prebid/prebid-server/v4/adapters/vdoai"
 	"github.com/prebid/prebid-server/v4/adapters/vidazoo"
 	"github.com/prebid/prebid-server/v4/adapters/videobyte"
 	"github.com/prebid/prebid-server/v4/adapters/videoheroes"
@@ -511,6 +512,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderUndertone:         undertone.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
 		openrtb_ext.BidderUnruly:            unruly.Builder,
+		openrtb_ext.BidderVdoai:             vdoai.Builder,
 		openrtb_ext.BidderVidazoo:           vidazoo.Builder,
 		openrtb_ext.BidderVideoByte:         videobyte.Builder,
 		openrtb_ext.BidderVideoHeroes:       videoheroes.Builder,

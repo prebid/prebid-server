@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "VDO.AI Adapter Params",
+  "description": "A schema which validates params accepted by the VDO.AI adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Ad network's RTB host"
+    },
+    "adUnitId": {
+      "type": ["integer", "string"],
+      "description": "Ad Unit Id will be generated on VDO.AI Platform."
+    },
+    "adUnitType": {
+      "type": "string",
+      "description": "Type of Ad Unit ('video', 'banner')"
+    },
+    "publisherId": {
+      "type": "string",
+      "description": "Publisher Id will be generated on VDO.AI Platform."
+    },
+    "bidfloor": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Minimum bid floor price in USD"
+    },
+    "custom1": {
+      "type": "string",
+      "description": "Custom targeting field 1"
+    },
+    "custom2": {
+      "type": "string",
+      "description": "Custom targeting field 2"
+    },
+    "custom3": {
+      "type": "string",
+      "description": "Custom targeting field 3"
+    },
+    "custom4": {
+      "type": "string",
+      "description": "Custom targeting field 4"
+    },
+    "custom5": {
+      "type": "string",
+      "description": "Custom targeting field 5"
+    }
+  },
+
+  "required": ["host", "publisherId", "adUnitId", "adUnitType"]
+}
