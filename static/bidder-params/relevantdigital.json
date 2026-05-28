@@ -15,7 +15,7 @@
     "pbsHost": {
       "type": "string",
       "description": "Prebid Server Host supplied by Relevant Digital",
-      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
+      "pattern": "^(https?://)?[a-zA-Z0-9.-]+(:[0-9]+)?$"
     },
     "pbsBufferMs": {
       "type": "number",

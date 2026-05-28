@@ -33,3 +33,10 @@ func TestBuildEndpointURLRejectsUnsafeHost(t *testing.T) {
 	_, err := bidder.buildEndpointURL(&openrtb_ext.ExtRelevantDigital{Host: "127.0.0.1:6060/debug/pprof#"})
 	assert.Error(t, err)
 }
+
+func TestBuildEndpointURLNormalizesRelevantDigitalURLHost(t *testing.T) {
+	bidder := &adapter{endpoint: template.Must(template.New("endpointTemplate").Parse("https://{{.Host}}.relevant-digital.com/openrtb2/auction"))}
+	url, err := bidder.buildEndpointURL(&openrtb_ext.ExtRelevantDigital{Host: "https://foo.relevant-digital.com"})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://foo.relevant-digital.com/openrtb2/auction", url)
+}

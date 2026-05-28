@@ -41,6 +41,8 @@ func TestIsSafePath(t *testing.T) {
 		{name: "fragment injection", path: "auction#fragment", want: false},
 		{name: "scheme relative", path: "//127.0.0.1/admin", want: false},
 		{name: "absolute url", path: "http://127.0.0.1/admin", want: false},
+		{name: "current directory segment", path: "auction/./rtb", want: false},
+		{name: "parent directory segment", path: "auction/../admin", want: false},
 	}
 
 	for _, test := range testCases {
@@ -63,6 +65,8 @@ func TestIsSafePathSegment(t *testing.T) {
 		{name: "slash", segment: "seller/123", want: false},
 		{name: "query", segment: "seller?x=1", want: false},
 		{name: "fragment", segment: "seller#x", want: false},
+		{name: "current directory", segment: ".", want: false},
+		{name: "parent directory", segment: "..", want: false},
 	}
 
 	for _, test := range testCases {

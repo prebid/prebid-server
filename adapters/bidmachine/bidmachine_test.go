@@ -39,4 +39,10 @@ func TestBuildEndpointURLRejectsUnsafeURLParts(t *testing.T) {
 
 	_, err = bidder.buildEndpointURL(openrtb_ext.ExtImpBidmachine{Host: "api-us", Path: "auction/rtb/v2", SellerID: "seller/../other"})
 	assert.Error(t, err)
+
+	_, err = bidder.buildEndpointURL(openrtb_ext.ExtImpBidmachine{Host: "api-us", Path: "auction/rtb/v2", SellerID: ".."})
+	assert.Error(t, err)
+
+	_, err = bidder.buildEndpointURL(openrtb_ext.ExtImpBidmachine{Host: "api-us", Path: "auction/../admin", SellerID: "seller"})
+	assert.Error(t, err)
 }

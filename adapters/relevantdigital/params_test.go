@@ -37,6 +37,7 @@ var validParams = []string{
 	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host" }`,
 	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host", "useSourceBidderCode": true }`,
 	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host", "useSourceBidderCode": false }`,
+	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "https://foo.relevant-digital.com" }`,
 }
 
 var invalidParams = []string{

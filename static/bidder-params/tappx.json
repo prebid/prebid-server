@@ -20,7 +20,19 @@
     "endpoint": {
       "type": "string",
       "description": "Endpoint provided to publisher",
-      "pattern": "^[^/?#]+$"
+      "allOf": [
+        {
+          "pattern": "^[^/?#]+$"
+        },
+        {
+          "not": {
+            "enum": [
+              ".",
+              ".."
+            ]
+          }
+        }
+      ]
     },
     "bidfloor": {
       "type": "number",

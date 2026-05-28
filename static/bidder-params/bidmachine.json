@@ -14,13 +14,34 @@
       "type": "string",
       "minLength": 1,
       "description": "URL path",
-      "pattern": "^[^?#]+$"
+      "allOf": [
+        {
+          "pattern": "^[^?#]+$"
+        },
+        {
+          "not": {
+            "pattern": "(^|/)\\.\\.?(/|$)"
+          }
+        }
+      ]
     },
     "seller_id": {
       "type": "string",
       "minLength": 1,
       "description": "Seller Identifier",
-      "pattern": "^[^/?#]+$"
+      "allOf": [
+        {
+          "pattern": "^[^/?#]+$"
+        },
+        {
+          "not": {
+            "enum": [
+              ".",
+              ".."
+            ]
+          }
+        }
+      ]
     }
   },
   "required": [
