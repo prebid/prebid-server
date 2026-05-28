@@ -201,42 +201,50 @@ type mockModuleContextHook struct {
 }
 
 func (e mockModuleContextHook) HandleEntrypointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleRawAuctionHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleProcessedAuctionHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.ProcessedAuctionRequestPayload) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleBidderRequestHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleRawBidderResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleAllProcessedBidResponsesHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleAuctionResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleExitpointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.ExitpointPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
