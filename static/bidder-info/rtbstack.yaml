@@ -1,0 +1,19 @@
+endpoint: "https://{{.Region}}-adx-admixer.rtb-stack.com/pbs?ssp={{.SspID}}&endpoint={{.ZoneID}}&client={{.PartnerId}}"
+maintainer:
+  email: "prebid@admixer.net"
+gvlVendorID: 511
+openrtb:
+  version: "2.6"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
