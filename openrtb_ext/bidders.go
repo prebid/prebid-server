@@ -222,6 +222,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSeedingAlliance,
 	BidderSeedtag,
 	BidderSaLunaMedia,
+	BidderSevio,
 	BidderSharethrough,
 	BidderShowheroes,
 	BidderSilverMob,
@@ -598,6 +599,7 @@ const (
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSeedtag           BidderName = "seedtag"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
+	BidderSevio             BidderName = "sevio"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderShowheroes        BidderName = "showheroes"
 	BidderSilverMob         BidderName = "silvermob"
