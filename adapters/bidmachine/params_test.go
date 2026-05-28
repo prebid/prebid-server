@@ -39,6 +39,9 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{"seller_id":"1", "host":"127.0.0.1:6060/debug/pprof#", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"api-us", "path":"auction#fragment"}`,
+	`{"seller_id":"seller/../other", "host":"api-us", "path":"auction/rtb/v2"}`,
 	``,
 	`null`,
 	`true`,

@@ -40,6 +40,7 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{"placementId": "11", "host": "127.0.0.1:6060/debug/pprof#"}`,
 	`{"id": "456"}`,
 	`{"placementid": "3456", "host": ""}`,
 	`{"placement_id": 346, "host": ""}`,

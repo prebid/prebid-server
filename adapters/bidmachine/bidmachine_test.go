@@ -2,6 +2,7 @@ package bidmachine
 
 import (
 	"testing"
+	"text/template"
 
 	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v4/config"
@@ -25,4 +26,17 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
+}
+
+func TestBuildEndpointURLRejectsUnsafeURLParts(t *testing.T) {
+	bidder := &adapter{endpoint: template.Must(template.New("endpointTemplate").Parse("https://{{.Host}}.bidmachine.io"))}
+
+	_, err := bidder.buildEndpointURL(openrtb_ext.ExtImpBidmachine{Host: "127.0.0.1:6060/debug/pprof#", Path: "auction/rtb/v2", SellerID: "seller"})
+	assert.Error(t, err)
+
+	_, err = bidder.buildEndpointURL(openrtb_ext.ExtImpBidmachine{Host: "api-us", Path: "auction#fragment", SellerID: "seller"})
+	assert.Error(t, err)
+
+	_, err = bidder.buildEndpointURL(openrtb_ext.ExtImpBidmachine{Host: "api-us", Path: "auction/rtb/v2", SellerID: "seller/../other"})
+	assert.Error(t, err)
 }

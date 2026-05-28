@@ -1,43 +1,48 @@
 {
-	"$schema": "http://json-schema.org/draft-04/schema#",
-	"title": "Tappx Adapter Params",
-	"description": "A schema which validates params accepted by the Tappx adapter",
-	"type": "object",
-	"properties": {
-		"host": {
-			"type": "string",
-			"description": "Tappx host"
-		},
-		"tappxkey": {
-			"type": "string",
-			"description": "An ID which identifies the adunit"
-		},
-		"mktag": {
-			"type": "string",
-			"description": "Minimum bid for this impression expressed in CPM (USD)"
-		},
-		"endpoint": {
-			"type": "string",
-			"description": "Endpoint provided to publisher"
-		},
-		"bidfloor": {
-			"type": "number",
-			"description": "Minimum bid for this impression expressed in CPM (USD)"
-		},
-		"bcid": {
-			"type": "array",
-			"description": "Block list of CID",
-			"items": {
-				"type": "string"
-			}
-		},
-		"bcrid": {
-			"type": "array",
-			"description": "Block list of CRID",
-			"items": {
-				"type": "string"
-			}
-		}
-	},
-	"required": ["tappxkey","endpoint"]
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Tappx Adapter Params",
+  "description": "A schema which validates params accepted by the Tappx adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Tappx host",
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
+    },
+    "tappxkey": {
+      "type": "string",
+      "description": "An ID which identifies the adunit"
+    },
+    "mktag": {
+      "type": "string",
+      "description": "Minimum bid for this impression expressed in CPM (USD)"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Endpoint provided to publisher",
+      "pattern": "^[^/?#]+$"
+    },
+    "bidfloor": {
+      "type": "number",
+      "description": "Minimum bid for this impression expressed in CPM (USD)"
+    },
+    "bcid": {
+      "type": "array",
+      "description": "Block list of CID",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bcrid": {
+      "type": "array",
+      "description": "Block list of CRID",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "tappxkey",
+    "endpoint"
+  ]
 }

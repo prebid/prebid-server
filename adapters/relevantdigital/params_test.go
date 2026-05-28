@@ -40,6 +40,7 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "127.0.0.1:6060/debug/pprof#" }`,
 	`{"accountId": 123, "placementId" : 123, "pbsHost" : ""}`,
 	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host", "useSourceBidderCode": "somethingInvalid" }`,
 }

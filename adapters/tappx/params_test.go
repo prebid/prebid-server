@@ -45,6 +45,7 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{"tappxkey":"pub-12345-android-9876", "endpoint":"legacy/path#fragment"}`,
 	``,
 	`null`,
 	`true`,

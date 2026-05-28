@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 const TAPPX_BIDDER_VERSION = "1.6"
@@ -130,6 +131,11 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	if params.TappxKey == "" {
 		return "", &errortypes.BadInput{
 			Message: "Tappx key undefined",
+		}
+	}
+	if !urlutil.IsSafePathSegment(params.Endpoint) {
+		return "", &errortypes.BadInput{
+			Message: "Invalid Tappx endpoint",
 		}
 	}
 

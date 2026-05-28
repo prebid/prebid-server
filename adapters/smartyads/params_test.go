@@ -25,6 +25,7 @@ func TestValidParams(t *testing.T) {
 }
 
 var invalidParams = []string{
+	`{ "host": "127.0.0.1:6060/debug/pprof#", "sourceid": "partner", "accountid": "hash" }`,
 	``,
 	`null`,
 	`true`,

@@ -3,6 +3,7 @@ package tappx
 import (
 	"regexp"
 	"testing"
+	"text/template"
 
 	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v4/config"
@@ -53,4 +54,10 @@ func TestTsValue(t *testing.T) {
 		return
 	}
 	assert.True(t, match)
+}
+
+func TestBuildEndpointURLRejectsUnsafeEndpoint(t *testing.T) {
+	bidder := &TappxAdapter{endpointTemplate: template.Must(template.New("endpointTemplate").Parse("http://{{.Host}}"))}
+	_, err := bidder.buildEndpointURL(&openrtb_ext.ExtImpTappx{Endpoint: "legacy/path#fragment", TappxKey: "key"}, 1)
+	assert.Error(t, err)
 }
