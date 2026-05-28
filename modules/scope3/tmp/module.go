@@ -32,7 +32,6 @@ const (
 // Config holds module configuration.
 type Config struct {
 	RouterURL       string        `json:"router_url"`
-	SellerAgentURL  string        `json:"seller_agent_url"`
 	AuthKey         string        `json:"auth_key"`
 	TimeoutMs       int           `json:"timeout_ms"`
 	CacheTTLSeconds int           `json:"cache_ttl_seconds"`
@@ -107,9 +106,6 @@ func validate(cfg *Config) error {
 	}
 	if err := validateRouterURL(cfg.RouterURL); err != nil {
 		return err
-	}
-	if cfg.SellerAgentURL == "" {
-		return errors.New("seller_agent_url is required")
 	}
 	if cfg.TimeoutMs < 0 {
 		return errors.New("timeout_ms must be positive")

@@ -29,7 +29,6 @@ hooks:
       tmp:
         enabled: true
         router_url: https://tmp.interchange.io
-        seller_agent_url: https://prebid.example.com/scope3
         auth_key: ${SCOPE3_TMP_AUTH_KEY}
         timeout_ms: 200
         cache_ttl_seconds: 60
@@ -74,29 +73,18 @@ hooks:
                     hook_impl_code: "HandleAuctionResponseHook"
 ```
 
-### Account config (per-publisher stored config)
+### AccountConfig
 
-```json
-{
-  "scope3": {
-    "tmp": {
-      "property_rid": "01916f3a-9c4e-7000-8000-000000000010",
-      "property_type": "website",
-      "placements": {
-        "div-gpt-ad-header":  "header_728x90",
-        "div-gpt-ad-sidebar": "sidebar_300x250",
-        "div-gpt-ad-video":   "preroll_video"
-      }
-    }
-  }
-}
-```
+AccountConfig is not used for TMP identifiers in this version. The publisher's
+Prebid.js must set `property_rid` in the auction ext and `placement_id` in each
+imp's ext (see "Per-request config" below). The TMP router resolves
+`seller_agent_url` and `property_type` server-side from the publisher's
+adagents.json based on the `property_rid`. See the router documentation for
+adagents.json configuration.
 
-`property_rid` and `property_type` are required per-account. Without them the
-module silently skips the auction (no enrichment). `seller_agent_url` defaults
-to the module-level config; account config can override.
+### Per-request config (set by Prebid.js on every auction)
 
-### Per-request override (testing only)
+`property_rid` is set once at the auction level:
 
 ```json
 {
@@ -105,8 +93,7 @@ to the module-level config; account config can override.
       "modules": {
         "scope3": {
           "tmp": {
-            "property_rid": "01916f3a-...",
-            "placement_id": "test_slot"
+            "property_rid": "01916f3a-9c4e-7000-8000-000000000010"
           }
         }
       }
@@ -114,6 +101,47 @@ to the module-level config; account config can override.
   }
 }
 ```
+
+### Per-imp config (set by Prebid.js on each impression)
+
+`placement_id` is set per imp, matching the ad unit to its TMP placement:
+
+```json
+{
+  "imp": [
+    {
+      "id": "imp-header",
+      "ext": {
+        "prebid": {
+          "modules": {
+            "scope3": {
+              "tmp": {
+                "placement_id": "header_728x90"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "imp-video",
+      "ext": {
+        "prebid": {
+          "modules": {
+            "scope3": {
+              "tmp": {
+                "placement_id": "preroll_video"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+Imps without a `placement_id` in their ext are skipped for TMP enrichment.
 
 ## Output shape
 
@@ -162,13 +190,15 @@ guarantees an extra structural separation:
 - `package_ids` is omitted from Identity Match per spec (correlation prevention).
 - Identity tokens are capped at 3 per the TMP spec hard limit (`maxItems: 3`).
 - `request_id`s on the two calls are independent UUIDs.
+- `property_type` and `seller_agent_url` are omitted from outbound wire; the TMP
+  router resolves them server-side from adagents.json.
 
 ## Multi-imp behavior
 
-Each imp's placement is resolved from `account.scope3.tmp.placements[imp.tagid]`.
+Each imp's placement is resolved from `imp.ext.prebid.modules.scope3.tmp.placement_id`.
 Unique placements deduplicate to one Context Match each. Identity Match is one
 call per auction (page-context-free). Per-imp results are scoped onto each
-`seatbid[].bid[]` via `bid.impid` → `imp.tagid` → `placement_id` lookup.
+`seatbid[].bid[]` via `bid.impid` → `placement_id` lookup.
 
 ## Coexistence with scope3.rtd
 

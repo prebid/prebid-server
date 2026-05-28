@@ -35,13 +35,13 @@ func contextCacheKey(pool *sync.Pool, propertyRID, placementID string, br *openr
 
 // identityCacheKey derives a stable hex string from inputs that scope an
 // Identity Match result. Identity match results are page-context-free, so the
-// key intentionally excludes site/app/placement.
-func identityCacheKey(pool *sync.Pool, sellerAgentURL, country string, idents []IdentityToken) string {
+// key intentionally excludes site/app/placement. SellerAgentURL is excluded
+// because the router resolves it server-side; it is not part of the client key.
+func identityCacheKey(pool *sync.Pool, country string, idents []IdentityToken) string {
 	h := pool.Get().(hash.Hash)
 	defer pool.Put(h)
 	h.Reset()
 
-	_, _ = h.Write([]byte("s:" + sellerAgentURL))
 	_, _ = h.Write([]byte("|c:" + country))
 	for _, t := range idents {
 		_, _ = h.Write([]byte("|id:" + t.UIDType + "=" + t.UserToken))
@@ -252,7 +252,7 @@ func (ar *AsyncRequest) fetchAsync(br *openrtb2.BidRequest, accountCfg json.RawM
 }
 
 func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json.RawMessage) {
-	resolver := accountResolver{accountConfig: accountCfg, requestExt: requestExt, moduleCfg: ar.module.cfg}
+	resolver := accountResolver{requestExt: requestExt, moduleCfg: ar.module.cfg}
 	ids, err := resolver.resolveAuction()
 	if err != nil {
 		logger.Warnf("scope3.tmp: skipping enrichment for auction %s: %v", br.ID, err)
@@ -260,12 +260,12 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 		return
 	}
 
-	// Resolve per-imp placements; dedupe.
+	// Resolve per-imp placements from imp.Ext; dedupe.
 	impToPlacement := make(map[string]string, len(br.Imp))
 	uniquePlacements := []string{}
 	seenPlacement := map[string]struct{}{}
 	for _, imp := range br.Imp {
-		place, ok := resolver.resolvePlacement(imp.TagID)
+		place, ok := resolver.resolvePlacement(json.RawMessage(imp.Ext))
 		if !ok || place == "" {
 			continue
 		}
@@ -327,7 +327,7 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 	}
 
 	// Check cache for identity result.
-	identityCacheKey := identityCacheKey(ar.module.sha256Pool, ids.SellerAgentURL, country, identities)
+	identityCacheKey := identityCacheKey(ar.module.sha256Pool, country, identities)
 	identityCached := false
 	if cached, err := ar.module.cache.Get([]byte(identityCacheKey)); err == nil {
 		var resp IdentityMatchResponse
@@ -351,11 +351,12 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 		go func() {
 			defer wg.Done()
 			req := &ContextMatchRequest{
-				Type:         TypeContextMatchRequest,
-				RequestID:    mustUUID(),
-				PropertyRID:  ids.PropertyRID,
-				PropertyType: ids.PropertyType,
-				PlacementID:  placement,
+				Type:        TypeContextMatchRequest,
+				RequestID:   mustUUID(),
+				PropertyRID: ids.PropertyRID,
+				PlacementID: placement,
+				// PropertyType is intentionally omitted; the TMP router resolves
+				// it server-side from the publisher's adagents.json.
 			}
 			if masked.Site != nil && masked.Site.Page != "" {
 				req.ArtifactRefs = []ArtifactRef{{Type: "url", Value: masked.Site.Page}}
@@ -388,11 +389,12 @@ func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json
 		go func() {
 			defer wg.Done()
 			req := &IdentityMatchRequest{
-				Type:           TypeIdentityMatchRequest,
-				RequestID:      mustUUID(),
-				SellerAgentURL: ids.SellerAgentURL,
-				Identities:     identities,
-				Country:        country,
+				Type:       TypeIdentityMatchRequest,
+				RequestID:  mustUUID(),
+				Identities: identities,
+				Country:    country,
+				// SellerAgentURL is intentionally omitted; the TMP router resolves
+				// it server-side from the publisher's adagents.json.
 			}
 			resp, err := fetchIdentity(gctx, ar.module.httpClient, ids.RouterURL, ar.module.cfg.AuthKey, req)
 			if err != nil {

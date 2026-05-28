@@ -26,6 +26,38 @@ func newTestCache() *freecache.Cache {
 	return freecache.NewCache(1 * 1024 * 1024) // 1 MB is enough for tests
 }
 
+// impExtWithPlacement constructs imp.Ext JSON with placement_id set.
+func impExtWithPlacement(placementID string) json.RawMessage {
+	data, _ := json.Marshal(map[string]any{
+		"prebid": map[string]any{
+			"modules": map[string]any{
+				"scope3": map[string]any{
+					"tmp": map[string]any{
+						"placement_id": placementID,
+					},
+				},
+			},
+		},
+	})
+	return data
+}
+
+// auctionExtWithPropertyRID constructs auction ext JSON with property_rid set.
+func auctionExtWithPropertyRID(propertyRID string) json.RawMessage {
+	data, _ := json.Marshal(map[string]any{
+		"prebid": map[string]any{
+			"modules": map[string]any{
+				"scope3": map[string]any{
+					"tmp": map[string]any{
+						"property_rid": propertyRID,
+					},
+				},
+			},
+		},
+	})
+	return data
+}
+
 func TestContextCacheKey_StableAndDistinct(t *testing.T) {
 	pool := newPool()
 	br := &openrtb2.BidRequest{
@@ -55,20 +87,26 @@ func TestContextCacheKey_StableAndDistinct(t *testing.T) {
 func TestIdentityCacheKey_StableAndDistinct(t *testing.T) {
 	pool := newPool()
 	idents := []IdentityToken{{UIDType: "liveramp.com", UserToken: "R1"}}
-	a := identityCacheKey(pool, "https://us", "US", idents)
-	b := identityCacheKey(pool, "https://us", "US", idents)
+	a := identityCacheKey(pool, "US", idents)
+	b := identityCacheKey(pool, "US", idents)
 	require.Equal(t, a, b)
 
-	c := identityCacheKey(pool, "https://other", "US", idents)
+	// Different country → different key.
+	c := identityCacheKey(pool, "GB", idents)
 	require.NotEqual(t, a, c)
+
+	// Different identities → different key.
+	idents2 := []IdentityToken{{UIDType: "liveramp.com", UserToken: "R2"}}
+	d := identityCacheKey(pool, "US", idents2)
+	require.NotEqual(t, a, d)
 }
 
 func TestIntersect(t *testing.T) {
 	tests := []struct {
-		name           string
-		contextOffers  []Offer
-		identityElig   []string
-		want           []string
+		name          string
+		contextOffers []Offer
+		identityElig  []string
+		want          []string
 	}{
 		{
 			name:          "both empty",
@@ -192,7 +230,7 @@ func TestFetchIdentity_HappyPath(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	req := IdentityMatchRequest{Type: TypeIdentityMatchRequest, RequestID: "id-y", SellerAgentURL: "https://us"}
+	req := IdentityMatchRequest{Type: TypeIdentityMatchRequest, RequestID: "id-y"}
 	got, err := fetchIdentity(context.Background(), &http.Client{}, srv.URL, "auth-token", &req)
 	require.NoError(t, err)
 	require.Equal(t, want.RequestID, got.RequestID)
@@ -227,26 +265,27 @@ func TestFetchAsync_MultiImpThreePlacements_HappyPath(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	mod, err := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, err := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	require.NoError(t, err)
 	m := mod.(*Module)
 
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
 		ID: "auction-1",
 		Imp: []openrtb2.Imp{
-			{ID: "imp1", TagID: "header"},
-			{ID: "imp2", TagID: "sidebar"},
-			{ID: "imp3", TagID: "video"},
+			{ID: "imp1", Ext: impExtWithPlacement("header_728x90")},
+			{ID: "imp2", Ext: impExtWithPlacement("sidebar_300x250")},
+			{ID: "imp3", Ext: impExtWithPlacement("preroll_video")},
 		},
 		Site:   &openrtb2.Site{Domain: "example.com", Page: "https://example.com/x"},
 		User:   &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R1"}]}]}`)},
 		Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}},
+		Ext:    requestExt,
 	}
-	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"header":"header_728x90","sidebar":"sidebar_300x250","video":"preroll_video"}}}}`)
 
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	ar.fetchAsync(br, nil, requestExt)
 	<-ar.done
 
 	require.NoError(t, ar.err)
@@ -279,17 +318,22 @@ func TestFetchAsync_SharedPlacementDeduped(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
+
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
-		ID:  "a",
-		Imp: []openrtb2.Imp{{ID: "i1", TagID: "h"}, {ID: "i2", TagID: "h"}},
+		ID: "a",
+		Imp: []openrtb2.Imp{
+			{ID: "i1", Ext: impExtWithPlacement("shared")},
+			{ID: "i2", Ext: impExtWithPlacement("shared")},
+		},
 		Site: &openrtb2.Site{Domain: "x.com"},
+		Ext:  requestExt,
 	}
-	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"shared"}}}}`)
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(br, cfg, nil)
+	ar.fetchAsync(br, nil, requestExt)
 	<-ar.done
 	require.Equal(t, int32(1), ctxCalls.Load(), "shared placement dedupes to one context call")
 }
@@ -306,17 +350,19 @@ func TestFetchAsync_PartialFailure_P1Strict(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
+
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
-		ID:  "a",
-		Imp: []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		ID:   "a",
+		Imp:  []openrtb2.Imp{{ID: "i1", Ext: impExtWithPlacement("p")}},
 		Site: &openrtb2.Site{Domain: "x.com"},
+		Ext:  requestExt,
 	}
-	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`)
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(br, cfg, nil)
+	ar.fetchAsync(br, nil, requestExt)
 	<-ar.done
 
 	require.Error(t, ar.err, "P1 strict: identity failure means whole fetch is errored")
@@ -466,36 +512,35 @@ func TestFetchIdentity_WithAuthKey(t *testing.T) {
 }
 
 func TestFetchAsync_PanicRecovery(t *testing.T) {
-	// Test that panic recovery works in the goroutine
+	// Test that panic recovery works in the goroutine.
+	// A BidRequest with no ext means property_rid will be missing → error.
 	ar := newAsyncRequest(context.Background())
-	ar.module = &Module{cfg: Config{}, httpClient: &http.Client{}}
-	
-	// Create a nil module config to cause a panic in resolveAuction
-	nilModuleCfg := json.RawMessage(`{}`)
-	ar.fetchAsync(&openrtb2.BidRequest{Imp: []openrtb2.Imp{}}, nilModuleCfg, nil)
+	ar.module = &Module{cfg: Config{RouterURL: "https://router"}, httpClient: &http.Client{}}
+
+	ar.fetchAsync(&openrtb2.BidRequest{Imp: []openrtb2.Imp{}}, nil, nil)
 	<-ar.done
-	
+
 	// Should have an error, not panic
 	require.Error(t, ar.err)
-	require.Contains(t, ar.err.Error(), "property_rid is required")
+	require.Contains(t, ar.err.Error(), "property_rid is required in request ext")
 }
 
 func TestRun_NoPlacementsResolved(t *testing.T) {
-	// Test when no imps have valid placements
+	// Test when no imps have valid placements (imps have no placement_id in ext).
 	ar := newAsyncRequest(context.Background())
 	ar.module = &Module{cfg: Config{
-		RouterURL:      "https://router",
-		SellerAgentURL: "https://us",
+		RouterURL: "https://router",
 	}, httpClient: &http.Client{}}
-	
+
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{
-			{ID: "i1", TagID: "unknown_tag"},
+			{ID: "i1"}, // no Ext → no placement_id
 		},
+		Ext: requestExt,
 	}
-	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{}}}}`)
-	ar.run(br, accountCfg, nil)
-	
+	ar.run(br, nil, requestExt)
+
 	require.Error(t, ar.err)
 	require.Contains(t, ar.err.Error(), "no placements resolved")
 	require.Nil(t, ar.result)
@@ -506,25 +551,25 @@ func TestRun_MaskingFailure(t *testing.T) {
 	ar := newAsyncRequest(context.Background())
 	ar.module = &Module{cfg: Config{
 		RouterURL:       "https://router",
-		SellerAgentURL:  "https://us",
 		CacheTTLSeconds: 60,
 		CacheSize:       1024 * 1024,
 		Masking: MaskingConfig{
 			Enabled: true,
 		},
 	}, httpClient: &http.Client{}, sha256Pool: newPool(), cache: newTestCache()}
-	
+
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{
-			{ID: "i1", TagID: "h"},
+			{ID: "i1", Ext: impExtWithPlacement("p")},
 		},
+		Ext: requestExt,
 	}
-	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`)
-	
+
 	// The run function will attempt to mask the bid request.
 	// If masking returns nil, it should return an error.
-	ar.run(br, accountCfg, nil)
-	
+	ar.run(br, nil, requestExt)
+
 	// If masking was successful, we get further errors about network calls.
 	// If masking failed, we get "masking failed" error.
 	// Since our BidRequest is valid, masking should succeed.
@@ -536,26 +581,26 @@ func TestRun_MaskingFailure(t *testing.T) {
 
 func TestHandleAuctionResponseHook_NoAsyncRequest(t *testing.T) {
 	// Test when async request is not in context (should be no-op)
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
-	
+
 	miCtx := hookstage.ModuleInvocationContext{} // Empty context
 	payload := hookstage.AuctionResponsePayload{BidResponse: &openrtb2.BidResponse{}}
 	result, err := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
-	
+
 	require.NoError(t, err)
 	require.Empty(t, result.ChangeSet.Mutations())
 }
 
 func TestHandleProcessedAuctionHook_NoAsyncRequest(t *testing.T) {
 	// Test when async request is not in context (should be no-op)
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
-	
+
 	miCtx := hookstage.ModuleInvocationContext{} // Empty context
 	payload := hookstage.ProcessedAuctionRequestPayload{Request: nil}
 	result, err := m.HandleProcessedAuctionHook(context.Background(), miCtx, payload)
-	
+
 	require.NoError(t, err)
 	// Should return immediately with no action
 	require.Equal(t, hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{}, result)
@@ -563,26 +608,26 @@ func TestHandleProcessedAuctionHook_NoAsyncRequest(t *testing.T) {
 
 func TestHandleAuctionResponseHook_NotDone(t *testing.T) {
 	// Test when async request is in context but done channel is nil (never fetched)
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
-	
+
 	mc := hookstage.NewModuleContext()
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
 	// Don't set ar.done
 	mc.Set(moduleContextAsyncKey, ar)
-	
+
 	miCtx := hookstage.ModuleInvocationContext{ModuleContext: mc}
 	payload := hookstage.AuctionResponsePayload{BidResponse: &openrtb2.BidResponse{}}
 	result, err := m.HandleAuctionResponseHook(context.Background(), miCtx, payload)
-	
+
 	require.NoError(t, err)
 	require.Empty(t, result.ChangeSet.Mutations(), "should skip if done is nil")
 }
 
 func TestHandleAuctionResponseHook_ContextTimeout(t *testing.T) {
 	// Test when context times out before async request completes
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
 	mc := hookstage.NewModuleContext()
@@ -605,11 +650,10 @@ func TestHandleAuctionResponseHook_ContextTimeout(t *testing.T) {
 	require.Equal(t, "scope3_tmp_timeout", result.AnalyticsTags.Activities[0].Name)
 }
 
-// newModuleWithCache builds a Module wired to a test server and returns it.
-// cfg is merged with the server URL and seller_agent_url defaults.
+// newModuleForCacheTest builds a Module wired to a test server and returns it.
 func newModuleForCacheTest(t *testing.T, srv *httptest.Server, extraCfg string) *Module {
 	t.Helper()
-	base := `{"router_url":"` + srv.URL + `","seller_agent_url":"https://us","masking":{"enabled":false}`
+	base := `{"router_url":"` + srv.URL + `","masking":{"enabled":false}`
 	if extraCfg != "" {
 		base += "," + extraCfg
 	}
@@ -650,18 +694,19 @@ func TestFetchAsync_CacheHitSkipsHTTPCall(t *testing.T) {
 
 	m := newModuleForCacheTest(t, srv, `"cache_ttl_seconds":60`)
 
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
 		ID:   "auction-1",
-		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Imp:  []openrtb2.Imp{{ID: "i1", Ext: impExtWithPlacement("header_728x90")}},
 		Site: &openrtb2.Site{Domain: "example.com", Page: "https://example.com/x"},
 		User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R1"}]}]}`)},
+		Ext:  requestExt,
 	}
-	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"header_728x90"}}}}`)
 
 	// First call — should hit the server.
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	ar.fetchAsync(br, nil, requestExt)
 	<-ar.done
 	require.NoError(t, ar.err)
 	require.Equal(t, int32(1), ctxCalls.Load())
@@ -670,7 +715,7 @@ func TestFetchAsync_CacheHitSkipsHTTPCall(t *testing.T) {
 	// Second call with identical inputs — should be served from cache.
 	ar2 := newAsyncRequest(context.Background())
 	ar2.module = m
-	ar2.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	ar2.fetchAsync(br, nil, requestExt)
 	<-ar2.done
 	require.NoError(t, ar2.err)
 	require.Equal(t, int32(1), ctxCalls.Load(), "no new context HTTP call on cache hit")
@@ -714,18 +759,19 @@ func TestFetchAsync_ZeroTTLBypassesCache(t *testing.T) {
 
 	m := newModuleForCacheTest(t, srv, `"cache_ttl_seconds":60`)
 
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
 		ID:   "auction-nocache",
-		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Imp:  []openrtb2.Imp{{ID: "i1", Ext: impExtWithPlacement("pl_nocache")}},
 		Site: &openrtb2.Site{Domain: "nocache.com", Page: "https://nocache.com/x"},
 		User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"NC1"}]}]}`)},
+		Ext:  requestExt,
 	}
-	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"pl_nocache"}}}}`)
 
 	// First call.
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	ar.fetchAsync(br, nil, requestExt)
 	<-ar.done
 	require.NoError(t, ar.err)
 	require.Equal(t, int32(1), ctxCalls.Load())
@@ -734,7 +780,7 @@ func TestFetchAsync_ZeroTTLBypassesCache(t *testing.T) {
 	// Second call — cache was bypassed, server must be called again.
 	ar2 := newAsyncRequest(context.Background())
 	ar2.module = m
-	ar2.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	ar2.fetchAsync(br, nil, requestExt)
 	<-ar2.done
 	require.NoError(t, ar2.err)
 	require.Equal(t, int32(2), ctxCalls.Load(), "zero CacheTTL must not write to cache; server called again")
@@ -775,18 +821,19 @@ func TestFetchAsync_ContextTTLMinIsApplied(t *testing.T) {
 	// CacheTTLSeconds=5 is smaller than server's 1000, so min(5, 1000)=5 is used.
 	m := newModuleForCacheTest(t, srv, `"cache_ttl_seconds":5`)
 
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
 		ID:   "auction-min",
-		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Imp:  []openrtb2.Imp{{ID: "i1", Ext: impExtWithPlacement("pl_min")}},
 		Site: &openrtb2.Site{Domain: "min.com", Page: "https://min.com/x"},
 		User: &openrtb2.User{Ext: json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"MIN1"}]}]}`)},
+		Ext:  requestExt,
 	}
-	accountCfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"pl_min"}}}}`)
 
 	// First call — populates cache.
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	ar.fetchAsync(br, nil, requestExt)
 	<-ar.done
 	require.NoError(t, ar.err)
 	require.Equal(t, int32(1), ctxCalls.Load())
@@ -795,7 +842,7 @@ func TestFetchAsync_ContextTTLMinIsApplied(t *testing.T) {
 	// Second call — should hit cache (TTL=5s hasn't expired).
 	ar2 := newAsyncRequest(context.Background())
 	ar2.module = m
-	ar2.fetchAsync(br, accountCfg, json.RawMessage(`{}`))
+	ar2.fetchAsync(br, nil, requestExt)
 	<-ar2.done
 	require.NoError(t, ar2.err)
 	require.Equal(t, int32(1), ctxCalls.Load(), "cache entry must exist after first call (min TTL applied)")
@@ -848,18 +895,19 @@ func TestContextMatchRequest_ArtifactRefWireShape(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
+	requestExt := auctionExtWithPropertyRID("r")
 	br := &openrtb2.BidRequest{
 		ID:   "a",
-		Imp:  []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		Imp:  []openrtb2.Imp{{ID: "i1", Ext: impExtWithPlacement("p")}},
 		Site: &openrtb2.Site{Domain: "ex.com", Page: "https://ex.com/p"},
+		Ext:  requestExt,
 	}
-	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`)
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(br, cfg, nil)
+	ar.fetchAsync(br, nil, requestExt)
 	<-ar.done
 
 	require.NotEmpty(t, captured)

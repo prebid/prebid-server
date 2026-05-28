@@ -3,95 +3,47 @@ package tmp
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/tidwall/gjson"
 )
 
-// validPropertyTypes is the set of allowed property_type values per the AdCP TMP spec.
-var validPropertyTypes = map[PropertyType]struct{}{
-	PropertyTypeWebsite:        {},
-	PropertyTypeMobileApp:      {},
-	PropertyTypeCTVApp:         {},
-	PropertyTypeDesktopApp:     {},
-	PropertyTypeDOOH:           {},
-	PropertyTypePodcast:        {},
-	PropertyTypeRadio:          {},
-	PropertyTypeLinearTV:       {},
-	PropertyTypeStreamingAudio: {},
-	PropertyTypeAIAssistant:    {},
-}
-
 // AuctionIdentifiers groups the resolved identifiers shared across all imps.
+// PropertyType and SellerAgentURL are intentionally absent: the TMP router
+// resolves them server-side from the publisher's adagents.json.
 type AuctionIdentifiers struct {
-	PropertyRID    string
-	PropertyType   PropertyType
-	SellerAgentURL string
-	RouterURL      string
-	ExtPlacementID string // single value from ext override; applies to every imp if non-empty
+	PropertyRID string
+	RouterURL   string
 }
 
-// accountResolver pulls TMP identifiers from per-request ext, account config, and module config.
-// Precedence: ext > account > module-level default (only for router_url and seller_agent_url).
-// property_rid, property_type, and per-imp placement_id have NO module-level default.
+// accountResolver pulls TMP identifiers from the bid request ext and module
+// config. AccountConfig is no longer used for TMP identifiers; everything comes
+// from the bid request.
 type accountResolver struct {
-	accountConfig json.RawMessage
-	requestExt    json.RawMessage // request.Ext
-	moduleCfg     Config
+	requestExt json.RawMessage // request.Ext
+	moduleCfg  Config
 }
 
 // resolveAuction returns the identifiers that are stable across all imps.
+// Errors if property_rid is missing from request ext.
 func (r accountResolver) resolveAuction() (AuctionIdentifiers, error) {
 	ids := AuctionIdentifiers{
-		RouterURL:      r.moduleCfg.RouterURL,
-		SellerAgentURL: r.moduleCfg.SellerAgentURL,
-	}
-
-	if v := gjson.GetBytes(r.accountConfig, "scope3.tmp.property_rid"); v.Exists() {
-		ids.PropertyRID = v.String()
-	}
-	if v := gjson.GetBytes(r.accountConfig, "scope3.tmp.property_type"); v.Exists() {
-		ids.PropertyType = PropertyType(v.String())
-	}
-	if v := gjson.GetBytes(r.accountConfig, "scope3.tmp.seller_agent_url"); v.Exists() {
-		ids.SellerAgentURL = v.String()
-	}
-	if v := gjson.GetBytes(r.accountConfig, "scope3.tmp.router_url"); v.Exists() {
-		ids.RouterURL = v.String()
+		RouterURL: r.moduleCfg.RouterURL,
 	}
 
 	if v := gjson.GetBytes(r.requestExt, "prebid.modules.scope3.tmp.property_rid"); v.Exists() {
 		ids.PropertyRID = v.String()
 	}
-	if v := gjson.GetBytes(r.requestExt, "prebid.modules.scope3.tmp.placement_id"); v.Exists() {
-		ids.ExtPlacementID = v.String()
-	}
 
 	if ids.PropertyRID == "" {
-		return ids, errors.New("property_rid is required")
-	}
-	if ids.PropertyType == "" {
-		return ids, errors.New("property_type is required")
-	}
-	if _, ok := validPropertyTypes[ids.PropertyType]; !ok {
-		return ids, fmt.Errorf("property_type %q is not a valid AdCP property type", ids.PropertyType)
-	}
-	if ids.SellerAgentURL == "" {
-		return ids, errors.New("seller_agent_url is required")
-	}
-	if ids.RouterURL == "" {
-		return ids, errors.New("router_url is required")
+		return ids, errors.New("property_rid is required in request ext")
 	}
 	return ids, nil
 }
 
-// resolvePlacement returns the placement_id for one imp.
-// Returns ("", false) if the imp's tagid has no mapping and no ext override applies.
-func (r accountResolver) resolvePlacement(impTagID string) (string, bool) {
-	if v := gjson.GetBytes(r.requestExt, "prebid.modules.scope3.tmp.placement_id"); v.Exists() {
-		return v.String(), true
-	}
-	if v := gjson.GetBytes(r.accountConfig, "scope3.tmp.placements."+impTagID); v.Exists() {
+// resolvePlacement returns the placement_id for one imp by reading only from
+// imp.ext. Returns ("", false) if placement_id is absent from imp ext.
+func (r accountResolver) resolvePlacement(impExt json.RawMessage) (string, bool) {
+	if v := gjson.GetBytes(impExt, "prebid.modules.scope3.tmp.placement_id"); v.Exists() {
 		return v.String(), true
 	}
 	return "", false

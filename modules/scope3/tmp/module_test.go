@@ -23,7 +23,7 @@ import (
 const asyncRequestKey = moduleContextAsyncKey
 
 func TestHandleEntrypointHook_StoresAsyncRequest(t *testing.T) {
-	mod, err := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, err := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	require.NoError(t, err)
 	m := mod.(*Module)
 
@@ -54,51 +54,46 @@ func TestBuilder_Validation(t *testing.T) {
 	}{
 		{
 			name:      "missing router_url",
-			config:    `{"seller_agent_url":"https://example.com"}`,
+			config:    `{}`,
 			wantError: "router_url is required",
 		},
 		{
-			name:      "missing seller_agent_url",
-			config:    `{"router_url":"https://tmp.interchange.io"}`,
-			wantError: "seller_agent_url is required",
-		},
-		{
 			name:      "too many preserve_eids",
-			config:    `{"router_url":"https://tmp.interchange.io","seller_agent_url":"https://example.com","masking":{"enabled":true,"user":{"preserve_eids":["a","b","c","d"]}}}`,
+			config:    `{"router_url":"https://tmp.interchange.io","masking":{"enabled":true,"user":{"preserve_eids":["a","b","c","d"]}}}`,
 			wantError: "preserve_eids exceeds spec limit of 3 entries",
 		},
 		{
 			name:      "negative lat_long_precision",
-			config:    `{"router_url":"https://tmp.interchange.io","seller_agent_url":"https://example.com","masking":{"enabled":true,"geo":{"lat_long_precision":-1}}}`,
+			config:    `{"router_url":"https://tmp.interchange.io","masking":{"enabled":true,"geo":{"lat_long_precision":-1}}}`,
 			wantError: "lat_long_precision cannot be negative",
 		},
 		{
 			name:      "lat_long_precision over 4",
-			config:    `{"router_url":"https://tmp.interchange.io","seller_agent_url":"https://example.com","masking":{"enabled":true,"geo":{"lat_long_precision":5}}}`,
+			config:    `{"router_url":"https://tmp.interchange.io","masking":{"enabled":true,"geo":{"lat_long_precision":5}}}`,
 			wantError: "lat_long_precision cannot exceed 4 decimal places for privacy protection",
 		},
 		{
 			name:      "negative timeout_ms",
-			config:    `{"router_url":"https://tmp.interchange.io","seller_agent_url":"https://example.com","timeout_ms":-1}`,
+			config:    `{"router_url":"https://tmp.interchange.io","timeout_ms":-1}`,
 			wantError: "timeout_ms must be positive",
 		},
 		{
 			name:   "valid minimal config",
-			config: `{"router_url":"https://tmp.interchange.io","seller_agent_url":"https://example.com"}`,
+			config: `{"router_url":"https://tmp.interchange.io"}`,
 		},
 		{
 			name:      "router_url not a valid URL",
-			config:    `{"router_url":"::not a url","seller_agent_url":"https://example.com"}`,
+			config:    `{"router_url":"::not a url"}`,
 			wantError: "router_url",
 		},
 		{
 			name:      "router_url http rejected",
-			config:    `{"router_url":"http://example.com","seller_agent_url":"https://example.com"}`,
+			config:    `{"router_url":"http://example.com"}`,
 			wantError: "must use https",
 		},
 		{
 			name:      "router_url http localhost allowed",
-			config:    `{"router_url":"http://127.0.0.1:8080","seller_agent_url":"https://example.com"}`,
+			config:    `{"router_url":"http://127.0.0.1:8080"}`,
 			wantError: "",
 		},
 	}
@@ -138,7 +133,7 @@ func TestHandleProcessedAuctionHook_KicksOffGoroutine(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
 	mc := hookstage.NewModuleContext()
@@ -146,14 +141,15 @@ func TestHandleProcessedAuctionHook_KicksOffGoroutine(t *testing.T) {
 	ar.module = m
 	mc.Set(moduleContextAsyncKey, ar)
 
+	impExt := json.RawMessage(`{"prebid":{"modules":{"scope3":{"tmp":{"placement_id":"p"}}}}}`)
 	br := &openrtb2.BidRequest{
-		ID:   "a",
-		Imp:  []openrtb2.Imp{{ID: "i", TagID: "h"}},
+		ID:  "a",
+		Imp: []openrtb2.Imp{{ID: "i", Ext: impExt}},
 		Site: &openrtb2.Site{Domain: "x.com"},
+		Ext: json.RawMessage(`{"prebid":{"modules":{"scope3":{"tmp":{"property_rid":"r"}}}}}`),
 	}
 	miCtx := hookstage.ModuleInvocationContext{
 		ModuleContext: mc,
-		AccountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`),
 	}
 	payload := hookstage.ProcessedAuctionRequestPayload{Request: &openrtb_ext.RequestWrapper{BidRequest: br}}
 	_, err := m.HandleProcessedAuctionHook(context.Background(), miCtx, payload)
@@ -164,7 +160,7 @@ func TestHandleProcessedAuctionHook_KicksOffGoroutine(t *testing.T) {
 }
 
 func TestHandleAuctionResponseHook_WritesPerBidExt(t *testing.T) {
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us","add_to_targeting":true}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","add_to_targeting":true}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
 	mc := hookstage.NewModuleContext()
@@ -209,7 +205,7 @@ func TestHandleAuctionResponseHook_WritesPerBidExt(t *testing.T) {
 }
 
 func TestHandleAuctionResponseHook_PartialFailureNoMutation(t *testing.T) {
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
 	mc := hookstage.NewModuleContext()
@@ -244,14 +240,14 @@ func TestOutboundWireShape_PrivacyGuarantees(t *testing.T) {
 
 	mod, _ := Builder(json.RawMessage(`{
 		"router_url":"`+srv.URL+`",
-		"seller_agent_url":"https://us",
 		"masking":{"enabled":true,"user":{"preserve_eids":["liveramp.com"]}}
 	}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
+	impExt := json.RawMessage(`{"prebid":{"modules":{"scope3":{"tmp":{"placement_id":"p"}}}}}`)
 	br := &openrtb2.BidRequest{
-		ID: "a",
-		Imp: []openrtb2.Imp{{ID: "i1", TagID: "h"}},
+		ID:  "a",
+		Imp: []openrtb2.Imp{{ID: "i1", Ext: impExt}},
 		Site: &openrtb2.Site{Domain: "x.com"},
 		Device: &openrtb2.Device{IP: "1.2.3.4", IFA: "AAA-BBB", Geo: &openrtb2.Geo{Country: "USA"}},
 		User: &openrtb2.User{
@@ -259,12 +255,12 @@ func TestOutboundWireShape_PrivacyGuarantees(t *testing.T) {
 			BuyerUID: "buid",
 			Ext:      json.RawMessage(`{"eids":[{"source":"liveramp.com","uids":[{"id":"R1"}]},{"source":"criteo.com","uids":[{"id":"DROP"}]}]}`),
 		},
+		Ext: json.RawMessage(`{"prebid":{"modules":{"scope3":{"tmp":{"property_rid":"r"}}}}}`),
 	}
 
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	cfg := json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"p"}}}}`)
-	ar.fetchAsync(br, cfg, nil)
+	ar.fetchAsync(br, nil, br.Ext)
 	<-ar.done
 
 	require.NotEmpty(t, contextBody)
@@ -277,6 +273,11 @@ func TestOutboundWireShape_PrivacyGuarantees(t *testing.T) {
 	require.NotContains(t, string(identityBody), `"package_ids"`)
 	require.NotContains(t, string(identityBody), `"criteo.com"`)
 	require.Contains(t, string(identityBody), `"country":"US"`)
+
+	// seller_agent_url must be absent (router fills it in)
+	require.NotContains(t, string(identityBody), `"seller_agent_url"`)
+	// property_type must be absent (router fills it in)
+	require.NotContains(t, string(contextBody), `"property_type"`)
 
 	ctxID := gjson.GetBytes(contextBody, "request_id").String()
 	idID := gjson.GetBytes(identityBody, "request_id").String()
@@ -296,18 +297,37 @@ func TestEndToEnd_SuccessTMPXOnly(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","seller_agent_url":"https://us","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"`+srv.URL+`","masking":{"enabled":false}}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
 	brData, _ := os.ReadFile("testdata/bid_request_multi_imp_three_placements.json")
 	var br openrtb2.BidRequest
 	require.NoError(t, json.Unmarshal(brData, &br))
 
-	accountCfg, _ := os.ReadFile("testdata/account_config_three_placements.json")
+	// property_rid comes from auction ext; placement_ids come from per-imp ext.
+	requestExt := json.RawMessage(`{"prebid":{"modules":{"scope3":{"tmp":{"property_rid":"01916f3a-9c4e-7000-8000-000000000010"}}}}}`)
+	br.Ext = requestExt
+
+	// Set placement_id on each imp's ext.
+	placements := []string{"header_728x90", "sidebar_300x250", "preroll_video"}
+	for i := range br.Imp {
+		impExtJSON, _ := json.Marshal(map[string]any{
+			"prebid": map[string]any{
+				"modules": map[string]any{
+					"scope3": map[string]any{
+						"tmp": map[string]any{
+							"placement_id": placements[i],
+						},
+					},
+				},
+			},
+		})
+		br.Imp[i].Ext = impExtJSON
+	}
 
 	ar := newAsyncRequest(context.Background())
 	ar.module = m
-	ar.fetchAsync(&br, accountCfg, nil)
+	ar.fetchAsync(&br, nil, requestExt)
 	<-ar.done
 
 	require.NoError(t, ar.err)
@@ -319,7 +339,7 @@ func TestEndToEnd_SuccessTMPXOnly(t *testing.T) {
 }
 
 func TestHandleAuctionResponseHook_RepeatedTargetingKVsBecomeArray(t *testing.T) {
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us","add_to_targeting":true}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","add_to_targeting":true}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 
 	mc := hookstage.NewModuleContext()
@@ -363,7 +383,7 @@ func TestHandleAuctionResponseHook_RepeatedTargetingKVsBecomeArray(t *testing.T)
 }
 
 func TestHandleAuctionResponseHook_FullyEmptyResultNoMutation(t *testing.T) {
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 	mc := hookstage.NewModuleContext()
 	ar := newAsyncRequest(context.Background())
@@ -387,7 +407,7 @@ func TestHandleAuctionResponseHook_FullyEmptyResultNoMutation(t *testing.T) {
 }
 
 func TestHandleAuctionResponseHook_EmptyEligiblePackagesNotEmitted(t *testing.T) {
-	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r","seller_agent_url":"https://us"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
+	mod, _ := Builder(json.RawMessage(`{"router_url":"https://r"}`), moduledeps.ModuleDeps{HTTPClient: &http.Client{}})
 	m := mod.(*Module)
 	mc := hookstage.NewModuleContext()
 	ar := newAsyncRequest(context.Background())

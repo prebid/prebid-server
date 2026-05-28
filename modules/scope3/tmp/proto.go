@@ -46,7 +46,9 @@ type ContextMatchRequest struct {
 	RequestID       string         `json:"request_id"`
 	PropertyRID     string         `json:"property_rid"`
 	PropertyID      string         `json:"property_id,omitempty"`
-	PropertyType    PropertyType   `json:"property_type"`
+	// PropertyType is omitted; the TMP router resolves it server-side from the
+	// publisher's adagents.json based on the property_rid.
+	PropertyType    PropertyType   `json:"property_type,omitempty"`
 	PlacementID     string         `json:"placement_id"`
 	ArtifactRefs    []ArtifactRef  `json:"artifact_refs,omitempty"`
 }
@@ -82,7 +84,9 @@ type IdentityMatchRequest struct {
 	Type            string          `json:"type"`
 	ProtocolVersion string          `json:"protocol_version,omitempty"`
 	RequestID       string          `json:"request_id"`
-	SellerAgentURL  string          `json:"seller_agent_url"`
+	// SellerAgentURL is omitted; the TMP router resolves it server-side from the
+	// publisher's adagents.json based on the property_rid.
+	SellerAgentURL  string          `json:"seller_agent_url,omitempty"`
 	Identities      []IdentityToken `json:"identities"`
 	Country         string          `json:"country,omitempty"`
 }

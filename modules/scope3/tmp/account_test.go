@@ -7,98 +7,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveAuctionIdentifiers(t *testing.T) {
-	moduleCfg := Config{RouterURL: "https://router", SellerAgentURL: "https://us"}
-
+func TestResolveAuction_PropertyRIDFromExt(t *testing.T) {
 	tests := []struct {
-		name        string
-		accountJSON string
-		extJSON     string
-		impTagID    string
-		wantRID     string
-		wantPType   PropertyType
-		wantPlace   string
-		wantSeller  string
-		wantErr     string
+		name       string
+		extJSON    string
+		wantRID    string
+		wantErr    string
 	}{
 		{
-			name:        "all from account",
-			accountJSON: `{"scope3":{"tmp":{"property_rid":"01916f3a","property_type":"website","placements":{"header":"header_728x90"}}}}`,
-			extJSON:     `{}`,
-			impTagID:    "header",
-			wantRID:     "01916f3a",
-			wantPType:   PropertyTypeWebsite,
-			wantPlace:   "header_728x90",
-			wantSeller:  "https://us",
+			name:    "property_rid present in ext",
+			extJSON: `{"prebid":{"modules":{"scope3":{"tmp":{"property_rid":"01916f3a"}}}}}`,
+			wantRID: "01916f3a",
 		},
 		{
-			name:        "ext overrides property_rid",
-			accountJSON: `{"scope3":{"tmp":{"property_rid":"acct","property_type":"website","placements":{"h":"h1"}}}}`,
-			extJSON:     `{"prebid":{"modules":{"scope3":{"tmp":{"property_rid":"override"}}}}}`,
-			impTagID:    "h",
-			wantRID:     "override",
-			wantPType:   PropertyTypeWebsite,
-			wantPlace:   "h1",
-			wantSeller:  "https://us",
+			name:    "property_rid missing from ext",
+			extJSON: `{}`,
+			wantErr: "property_rid is required in request ext",
 		},
 		{
-			name:        "ext placement_id overrides per-imp lookup",
-			accountJSON: `{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"h1"}}}}`,
-			extJSON:     `{"prebid":{"modules":{"scope3":{"tmp":{"placement_id":"test_slot"}}}}}`,
-			impTagID:    "h",
-			wantRID:     "r",
-			wantPType:   PropertyTypeWebsite,
-			wantPlace:   "test_slot",
-			wantSeller:  "https://us",
+			name:    "ext is nil",
+			extJSON: ``,
+			wantErr: "property_rid is required in request ext",
 		},
 		{
-			name:        "account overrides seller_agent_url",
-			accountJSON: `{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"h1"},"seller_agent_url":"https://alt"}}}`,
-			extJSON:     `{}`,
-			impTagID:    "h",
-			wantRID:     "r",
-			wantPType:   PropertyTypeWebsite,
-			wantPlace:   "h1",
-			wantSeller:  "https://alt",
-		},
-		{
-			name:        "missing property_rid is error",
-			accountJSON: `{"scope3":{"tmp":{"property_type":"website","placements":{"h":"h1"}}}}`,
-			extJSON:     `{}`,
-			impTagID:    "h",
-			wantErr:     "property_rid is required",
-		},
-		{
-			name:        "missing property_type is error",
-			accountJSON: `{"scope3":{"tmp":{"property_rid":"r","placements":{"h":"h1"}}}}`,
-			extJSON:     `{}`,
-			impTagID:    "h",
-			wantErr:     "property_type is required",
-		},
-		{
-			name:        "invalid property_type rejected",
-			accountJSON: `{"scope3":{"tmp":{"property_rid":"r","property_type":"made_up_type","placements":{"h":"h1"}}}}`,
-			extJSON:     `{}`,
-			impTagID:    "h",
-			wantErr:     `property_type "made_up_type" is not a valid`,
-		},
-		{
-			name:        "unknown tagid yields empty placement_id (caller decides to skip)",
-			accountJSON: `{"scope3":{"tmp":{"property_rid":"r","property_type":"website","placements":{"h":"h1"}}}}`,
-			extJSON:     `{}`,
-			impTagID:    "unknown_tagid",
-			wantRID:     "r",
-			wantPType:   PropertyTypeWebsite,
-			wantPlace:   "",
-			wantSeller:  "https://us",
+			name:    "property_rid overridden in ext",
+			extJSON: `{"prebid":{"modules":{"scope3":{"tmp":{"property_rid":"override-rid"}}}}}`,
+			wantRID: "override-rid",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			r := accountResolver{
-				accountConfig: json.RawMessage(tc.accountJSON),
-				requestExt:    json.RawMessage(tc.extJSON),
-				moduleCfg:     moduleCfg,
+				requestExt: json.RawMessage(tc.extJSON),
+				moduleCfg:  Config{RouterURL: "https://router"},
 			}
 			ids, err := r.resolveAuction()
 			if tc.wantErr != "" {
@@ -108,86 +49,52 @@ func TestResolveAuctionIdentifiers(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, tc.wantRID, ids.PropertyRID)
-			require.Equal(t, tc.wantPType, ids.PropertyType)
-			require.Equal(t, tc.wantSeller, ids.SellerAgentURL)
-			place, _ := r.resolvePlacement(tc.impTagID)
-			require.Equal(t, tc.wantPlace, place)
+			require.Equal(t, "https://router", ids.RouterURL)
 		})
 	}
 }
 
-func TestResolveAuctionIdentifiers_MissingSellerAgentURL(t *testing.T) {
-	moduleCfg := Config{RouterURL: "https://router"} // No SellerAgentURL
-	r := accountResolver{
-		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website"}}}`),
-		requestExt:    json.RawMessage(`{}`),
-		moduleCfg:     moduleCfg,
+func TestResolvePlacement_FromImpExt(t *testing.T) {
+	tests := []struct {
+		name      string
+		impExtJSON string
+		wantPlace string
+		wantFound bool
+	}{
+		{
+			name:       "placement_id present in imp ext",
+			impExtJSON: `{"prebid":{"modules":{"scope3":{"tmp":{"placement_id":"header_728x90"}}}}}`,
+			wantPlace:  "header_728x90",
+			wantFound:  true,
+		},
+		{
+			name:       "placement_id missing from imp ext",
+			impExtJSON: `{}`,
+			wantPlace:  "",
+			wantFound:  false,
+		},
+		{
+			name:       "imp ext is nil",
+			impExtJSON: ``,
+			wantPlace:  "",
+			wantFound:  false,
+		},
+		{
+			name:       "other fields in imp ext, no placement_id",
+			impExtJSON: `{"prebid":{"modules":{"scope3":{"tmp":{}}}}}`,
+			wantPlace:  "",
+			wantFound:  false,
+		},
 	}
-	_, err := r.resolveAuction()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "seller_agent_url is required")
-}
-
-func TestResolveAuctionIdentifiers_MissingRouterURL(t *testing.T) {
-	moduleCfg := Config{SellerAgentURL: "https://us"} // No RouterURL
-	r := accountResolver{
-		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website"}}}`),
-		requestExt:    json.RawMessage(`{}`),
-		moduleCfg:     moduleCfg,
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := accountResolver{
+				requestExt: json.RawMessage(`{}`),
+				moduleCfg:  Config{},
+			}
+			place, ok := r.resolvePlacement(json.RawMessage(tc.impExtJSON))
+			require.Equal(t, tc.wantFound, ok)
+			require.Equal(t, tc.wantPlace, place)
+		})
 	}
-	_, err := r.resolveAuction()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "router_url is required")
-}
-
-func TestResolveAuctionIdentifiers_AccountOverridesModuleDefaults(t *testing.T) {
-	moduleCfg := Config{
-		RouterURL:      "https://router-module",
-		SellerAgentURL: "https://us-module",
-	}
-	r := accountResolver{
-		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"property_rid":"r","property_type":"website","router_url":"https://router-account","seller_agent_url":"https://us-account"}}}`),
-		requestExt:    json.RawMessage(`{}`),
-		moduleCfg:     moduleCfg,
-	}
-	ids, err := r.resolveAuction()
-	require.NoError(t, err)
-	require.Equal(t, "https://router-account", ids.RouterURL)
-	require.Equal(t, "https://us-account", ids.SellerAgentURL)
-}
-
-func TestResolvePlacement_ExtPlacementIDTakesPrecedence(t *testing.T) {
-	moduleCfg := Config{}
-	r := accountResolver{
-		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"placements":{"h":"acct-placement"}}}}`),
-		requestExt:    json.RawMessage(`{"prebid":{"modules":{"scope3":{"tmp":{"placement_id":"ext-placement"}}}}}`),
-		moduleCfg:     moduleCfg,
-	}
-	place, ok := r.resolvePlacement("h")
-	require.True(t, ok)
-	require.Equal(t, "ext-placement", place)
-}
-
-func TestResolvePlacement_AccountFallback(t *testing.T) {
-	moduleCfg := Config{}
-	r := accountResolver{
-		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"placements":{"h":"acct-placement"}}}}`),
-		requestExt:    json.RawMessage(`{}`),
-		moduleCfg:     moduleCfg,
-	}
-	place, ok := r.resolvePlacement("h")
-	require.True(t, ok)
-	require.Equal(t, "acct-placement", place)
-}
-
-func TestResolvePlacement_NotFound(t *testing.T) {
-	moduleCfg := Config{}
-	r := accountResolver{
-		accountConfig: json.RawMessage(`{"scope3":{"tmp":{"placements":{"other":"acct-placement"}}}}`),
-		requestExt:    json.RawMessage(`{}`),
-		moduleCfg:     moduleCfg,
-	}
-	place, ok := r.resolvePlacement("h")
-	require.False(t, ok)
-	require.Equal(t, "", place)
 }
