@@ -8,24 +8,23 @@ import (
 )
 
 // AuctionIdentifiers groups the resolved identifiers shared across all imps.
-// PropertyType and SellerAgentURL are intentionally absent: the TMP router
-// resolves them server-side from the publisher's adagents.json.
+// The TMP router resolves PropertyType and SellerAgentURL server-side from the
+// publisher's adagents.json.
 type AuctionIdentifiers struct {
 	PropertyRID string
 	RouterURL   string
 }
 
-// accountResolver pulls TMP identifiers from the bid request ext and module
-// config. AccountConfig is no longer used for TMP identifiers; everything comes
-// from the bid request.
-type accountResolver struct {
+// requestIdentifierResolver reads TMP identifiers from the bid request ext:
+// property_rid from auction ext and placement_id from per-imp ext.
+type requestIdentifierResolver struct {
 	requestExt json.RawMessage // request.Ext
 	moduleCfg  Config
 }
 
 // resolveAuction returns the identifiers that are stable across all imps.
 // Errors if property_rid is missing from request ext.
-func (r accountResolver) resolveAuction() (AuctionIdentifiers, error) {
+func (r requestIdentifierResolver) resolveAuction() (AuctionIdentifiers, error) {
 	ids := AuctionIdentifiers{
 		RouterURL: r.moduleCfg.RouterURL,
 	}
@@ -42,7 +41,7 @@ func (r accountResolver) resolveAuction() (AuctionIdentifiers, error) {
 
 // resolvePlacement returns the placement_id for one imp by reading only from
 // imp.ext. Returns ("", false) if placement_id is absent from imp ext.
-func (r accountResolver) resolvePlacement(impExt json.RawMessage) (string, bool) {
+func (r requestIdentifierResolver) resolvePlacement(impExt json.RawMessage) (string, bool) {
 	if v := gjson.GetBytes(impExt, "prebid.modules.scope3.tmp.placement_id"); v.Exists() {
 		return v.String(), true
 	}

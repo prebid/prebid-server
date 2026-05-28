@@ -37,7 +37,7 @@ func TestResolveAuction_PropertyRIDFromExt(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := accountResolver{
+			r := requestIdentifierResolver{
 				requestExt: json.RawMessage(tc.extJSON),
 				moduleCfg:  Config{RouterURL: "https://router"},
 			}
@@ -88,7 +88,7 @@ func TestResolvePlacement_FromImpExt(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := accountResolver{
+			r := requestIdentifierResolver{
 				requestExt: json.RawMessage(`{}`),
 				moduleCfg:  Config{},
 			}

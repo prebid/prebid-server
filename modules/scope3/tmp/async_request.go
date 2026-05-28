@@ -252,7 +252,7 @@ func (ar *AsyncRequest) fetchAsync(br *openrtb2.BidRequest, accountCfg json.RawM
 }
 
 func (ar *AsyncRequest) run(br *openrtb2.BidRequest, accountCfg, requestExt json.RawMessage) {
-	resolver := accountResolver{requestExt: requestExt, moduleCfg: ar.module.cfg}
+	resolver := requestIdentifierResolver{requestExt: requestExt, moduleCfg: ar.module.cfg}
 	ids, err := resolver.resolveAuction()
 	if err != nil {
 		logger.Warnf("scope3.tmp: skipping enrichment for auction %s: %v", br.ID, err)
