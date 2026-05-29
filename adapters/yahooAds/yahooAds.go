@@ -26,7 +26,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("x-openrtb-version", "2.6")
 
 	if request.Device != nil && request.Device.UA != "" {
 		headers.Set("User-Agent", request.Device.UA)
@@ -162,6 +162,8 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 		request.App.ID = extension.Dcn
 	}
 
+	promoteRegsExtTo26(request)
+
 	if request.Imp[0].Banner != nil {
 		banner := *request.Imp[0].Banner
 		request.Imp[0].Banner = &banner
@@ -172,37 +174,68 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 		}
 	}
 
-	if request.Regs != nil && request.Regs.GPP != "" {
-		requestRegs := *request.Regs
-		if requestRegs.Ext == nil {
-			requestRegs.Ext = json.RawMessage("{}")
-		}
-		var regsExt map[string]json.RawMessage
-		err := jsonutil.Unmarshal(requestRegs.Ext, &regsExt)
-		if err != nil {
-			return err
-		}
-		regsExt["gpp"], err = json.Marshal(&requestRegs.GPP)
-		if err != nil {
-			return fmt.Errorf("failed to marshal requestRegs.GPP: %v", err)
-		}
-		if requestRegs.GPPSID != nil {
-			regsExt["gpp_sid"], err = json.Marshal(&requestRegs.GPPSID)
-			if err != nil {
-				return err
-			}
-		}
+	return nil
+}
 
-		requestRegs.Ext, err = json.Marshal(&regsExt)
-		if err != nil {
-			return err
-		}
-		requestRegs.GPP = ""
-		requestRegs.GPPSID = nil
-		request.Regs = &requestRegs
+// promoteRegsExtTo26 moves regs.ext.{gpp, gpp_sid, coppa} to their top-level
+// fields when the publisher sent them in ext and the top-level field is empty.
+func promoteRegsExtTo26(request *openrtb2.BidRequest) {
+	if request.Regs == nil || len(request.Regs.Ext) == 0 {
+		return
 	}
 
-	return nil
+	var regsExt map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(request.Regs.Ext, &regsExt); err != nil {
+		return
+	}
+
+	regsCopy := *request.Regs
+	modified := false
+
+	if regsCopy.COPPA == 0 {
+		if raw, ok := regsExt["coppa"]; ok {
+			var v int8
+			if err := jsonutil.Unmarshal(raw, &v); err == nil {
+				regsCopy.COPPA = v
+				delete(regsExt, "coppa")
+				modified = true
+			}
+		}
+	}
+
+	if regsCopy.GPP == "" {
+		if raw, ok := regsExt["gpp"]; ok {
+			var v string
+			if err := jsonutil.Unmarshal(raw, &v); err == nil {
+				regsCopy.GPP = v
+				delete(regsExt, "gpp")
+				modified = true
+			}
+		}
+	}
+
+	if len(regsCopy.GPPSID) == 0 {
+		if raw, ok := regsExt["gpp_sid"]; ok {
+			var v []int8
+			if err := jsonutil.Unmarshal(raw, &v); err == nil {
+				regsCopy.GPPSID = v
+				delete(regsExt, "gpp_sid")
+				modified = true
+			}
+		}
+	}
+
+	if !modified {
+		return
+	}
+
+	if len(regsExt) == 0 {
+		regsCopy.Ext = nil
+	} else if newExt, err := json.Marshal(regsExt); err == nil {
+		regsCopy.Ext = newExt
+	}
+
+	request.Regs = &regsCopy
 }
 
 func validateBanner(banner *openrtb2.Banner) error {
