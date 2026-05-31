@@ -188,12 +188,6 @@ func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string,
 	if !urlutil.IsSafeHost(params.Host) {
 		return "", &errortypes.BadInput{Message: "Failed to create final URL with provided host"}
 	}
-	if !urlutil.IsSafePath(params.Path) {
-		return "", &errortypes.BadInput{Message: "Invalid Path"}
-	}
-	if !urlutil.IsSafePathSegment(params.SellerID) {
-		return "", &errortypes.BadInput{Message: "Invalid SellerID"}
-	}
 	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
 	uriString, errMacros := macros.ResolveMacros(a.endpoint, endpointParams)
 	if errMacros != nil {

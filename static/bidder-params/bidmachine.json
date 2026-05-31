@@ -13,35 +13,12 @@
     "path": {
       "type": "string",
       "minLength": 1,
-      "description": "URL path",
-      "allOf": [
-        {
-          "pattern": "^[^?#]+$"
-        },
-        {
-          "not": {
-            "pattern": "(^|/)\\.\\.?(/|$)"
-          }
-        }
-      ]
+      "description": "URL path"
     },
     "seller_id": {
       "type": "string",
       "minLength": 1,
-      "description": "Seller Identifier",
-      "allOf": [
-        {
-          "pattern": "^[^/?#]+$"
-        },
-        {
-          "not": {
-            "enum": [
-              ".",
-              ".."
-            ]
-          }
-        }
-      ]
+      "description": "Seller Identifier"
     }
   },
   "required": [
