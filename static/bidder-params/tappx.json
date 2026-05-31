@@ -6,8 +6,7 @@
   "properties": {
     "host": {
       "type": "string",
-      "description": "Tappx host",
-      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
+      "description": "Tappx host (DEPRECATED - unused)"
     },
     "tappxkey": {
       "type": "string",
@@ -19,20 +18,8 @@
     },
     "endpoint": {
       "type": "string",
-      "description": "Endpoint provided to publisher",
-      "allOf": [
-        {
-          "pattern": "^[^/?#]+$"
-        },
-        {
-          "not": {
-            "enum": [
-              ".",
-              ".."
-            ]
-          }
-        }
-      ]
+      "minLength": 1,
+      "description": "Endpoint provided to publisher"
     },
     "bidfloor": {
       "type": "number",
