@@ -218,6 +218,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRise,
 	BidderRoulax,
 	BidderRTBHouse,
+	BidderRTBStack,
 	BidderRubicon,
 	BidderSeedingAlliance,
 	BidderSeedtag,
@@ -243,6 +244,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderStartIO,
 	BidderStroeerCore,
 	BidderTaboola,
+	BidderTAdvertisingBlis,
 	BidderTappx,
 	BidderTeads,
 	BidderTelaria,
@@ -593,6 +595,7 @@ const (
 	BidderRise              BidderName = "rise"
 	BidderRoulax            BidderName = "roulax"
 	BidderRTBHouse          BidderName = "rtbhouse"
+	BidderRTBStack          BidderName = "rtbstack"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSeedtag           BidderName = "seedtag"
@@ -618,6 +621,7 @@ const (
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderTaboola           BidderName = "taboola"
+	BidderTAdvertisingBlis  BidderName = "tadvertising_blis"
 	BidderTappx             BidderName = "tappx"
 	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"

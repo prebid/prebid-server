@@ -1,0 +1,229 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "ext": {
+          "bidder": {
+            "publisherId": "123"
+          }
+        },
+        "id": "test-impression-id",
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "pos": 0,
+          "api": [
+          ]
+        },
+        "tagid": "test-tag-id",
+        "bidfloor": 0,
+        "secure": 1
+      }
+    ],
+    "site": {
+      "publisher": {
+        "id": "123"
+      }
+    },
+    "device": {
+      "ua": "test-user-agent",
+      "geo": {
+        "country": "US"
+      },
+      "dnt": 0,
+      "lmt": 0,
+      "ip": "127.0.0.1",
+      "deviceType": 2,
+      "make": "test-make",
+      "model": "test-model",
+      "os": "test-os",
+      "osv": "test-osv",
+      "h": 1080,
+      "w": 1920,
+      "language": "en",
+      "ifa": "test-ifa"
+    },
+    "test": 1,
+    "at": 1,
+    "tmax": 100,
+    "source": {
+      "fd": 1,
+      "tid": "test-transaction-id",
+      "pchain": "test-pchain",
+      "schain": {
+        "complete": 1,
+        "nodes": [
+          {
+            "asi": "test-asi",
+            "pid": "test-pid",
+            "sid": "test-sid",
+            "rid": "test-rid",
+            "name": "test-name",
+            "domain": "test-domain",
+            "hp": 1,
+            "ext": "test-ext"
+          }
+        ],
+        "ver": "1.0",
+        "ext": "test-ext"
+      },
+      "ext": "test-ext"
+    },
+    "regs": {
+      "coppa": 0,
+      "gdpr": 0
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.endpoint/",
+        "headers": {
+          "Content-Type": ["application/json"],
+          "X-Supply-Partner-Id": ["123"]
+        },
+        "impIDs": [
+          "test-impression-id"
+        ],
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-impression-id",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "pos": 0
+              },
+              "tagid": "test-tag-id",
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "publisherId": "123"
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "123"
+            }
+          },
+          "device": {
+            "devicetype": 2,
+            "ua": "test-user-agent",
+            "geo": {
+              "country": "US"
+            },
+            "dnt": 0,
+            "lmt": 0,
+            "ip": "127.0.0.1",
+            "make": "test-make",
+            "model": "test-model",
+            "os": "test-os",
+            "osv": "test-osv",
+            "h": 1080,
+            "w": 1920,
+            "language": "en",
+            "ifa": "test-ifa"
+          },
+          "test": 1,
+          "at": 1,
+          "tmax": 100,
+          "source": {
+            "fd": 1,
+            "tid": "test-transaction-id",
+            "pchain": "test-pchain",
+            "schain": {
+              "complete": 1,
+              "nodes": [
+                {
+                  "asi": "test-asi",
+                  "sid": "test-sid",
+                  "rid": "test-rid",
+                  "name": "test-name",
+                  "domain": "test-domain",
+                  "hp": 1,
+                  "ext": "test-ext"
+                }
+              ],
+              "ver": "1.0",
+              "ext": "test-ext"
+            },
+            "ext": "test-ext"
+          },
+          "regs": {
+            "gdpr": 0
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "10b1e33f-fddc-4621-a472-d7bff0529cbf",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "1",
+                  "price": 0.78740156,
+                  "protocol": 0,
+                  "adm": "<html><h3>I am an ad</h3></html>",
+                  "adomain": [
+                    "emetriq.com"
+                  ],
+                  "cid": "ay35w7m",
+                  "crid": "id8tke3f",
+                  "attr": [],
+                  "api": 0,
+                  "mtype": 1,
+                  "w": 300,
+                  "h": 250,
+                  "cat": [
+                    "IAB2",
+                    "IAB2-3"
+                  ]
+                }
+              ],
+              "seat": "2271"
+            }
+          ],
+          "cur": "USD",
+          "ext": {
+            "uss": 1
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "1",
+            "price": 0.78740156,
+            "mtype": 1,
+            "adm": "<html><h3>I am an ad</h3></html>",
+            "adomain": [
+              "emetriq.com"
+            ],
+            "cid": "ay35w7m",
+            "crid": "id8tke3f",
+            "w": 300,
+            "h": 250,
+            "cat": [
+              "IAB2",
+              "IAB2-3"
+            ]
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
