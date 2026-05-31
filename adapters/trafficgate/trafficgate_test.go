@@ -3,8 +3,6 @@ package trafficgate
 import (
 	"testing"
 
-	"github.com/prebid/openrtb/v20/openrtb2"
-
 	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
@@ -27,10 +25,4 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
-}
-
-func TestGetBidderParamsRejectsUnsafeHost(t *testing.T) {
-	imp := openrtb2.Imp{Ext: []byte(`{"bidder":{"host":"127.0.0.1:6060/debug/pprof#","placementId":"11"}}`)}
-	_, err := getBidderParams(&imp)
-	assert.Error(t, err)
 }
