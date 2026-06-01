@@ -1,0 +1,46 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "placementId": 625 } }
+      }
+    ],
+    "site": { "id": "271", "domain": "display.eskimi-creatives.com" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ittr.eskimi.com/prebidjs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "secure": 1,
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": { "bidder": { "placementId": 625 } }
+            }
+          ],
+          "site": {
+            "id": "271",
+            "domain": "display.eskimi-creatives.com",
+            "ext": { "placementId": 625 }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 500
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

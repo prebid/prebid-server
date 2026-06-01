@@ -120,6 +120,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEPlanning,
 	BidderEpom,
 	BidderEscalax,
+	BidderEskimi,
 	BidderEVolution,
 	BidderExco,
 	BidderFeedAd,
@@ -496,6 +497,7 @@ const (
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
 	BidderEscalax           BidderName = "escalax"
+	BidderEskimi            BidderName = "eskimi"
 	BidderExco              BidderName = "exco"
 	BidderEVolution         BidderName = "e_volution"
 	BidderFeedAd            BidderName = "feedad"
