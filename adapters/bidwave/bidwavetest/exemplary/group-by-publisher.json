@@ -1,0 +1,170 @@
+{
+  "mockBidRequest": {
+    "id": "bidwave-group-request",
+    "cur": ["EUR"],
+    "site": {
+      "domain": "publisher.example.com"
+    },
+    "device": {
+      "ip": "203.0.113.43",
+      "geo": {
+        "country": "US"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "11111111-1111-4111-8111-111111111111"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 3],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "22222222-2222-4222-8222-222222222222"
+          }
+        }
+      },
+      {
+        "id": "imp-3",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "11111111-1111-4111-8111-111111111111"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidwave.net/rtb/v1/bid",
+        "impIDs": ["imp-1", "imp-3"],
+        "body": {
+          "id": "bidwave-group-request",
+          "cur": ["USD"],
+          "ext": {
+            "bidwave": {
+              "pid": "11111111-1111-4111-8111-111111111111"
+            }
+          },
+          "site": {
+            "domain": "publisher.example.com"
+          },
+          "device": {
+            "ip": "203.0.113.43",
+            "geo": {
+              "country": "US"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "11111111-1111-4111-8111-111111111111"
+                }
+              }
+            },
+            {
+              "id": "imp-3",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "11111111-1111-4111-8111-111111111111"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidwave.net/rtb/v1/bid",
+        "impIDs": ["imp-2"],
+        "body": {
+          "id": "bidwave-group-request",
+          "cur": ["USD"],
+          "ext": {
+            "bidwave": {
+              "pid": "22222222-2222-4222-8222-222222222222"
+            }
+          },
+          "site": {
+            "domain": "publisher.example.com"
+          },
+          "device": {
+            "ip": "203.0.113.43",
+            "geo": {
+              "country": "US"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-2",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 3],
+                "w": 640,
+                "h": 360
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "22222222-2222-4222-8222-222222222222"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
