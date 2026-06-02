@@ -5996,7 +5996,7 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 		}, hookstage.MutationUpdate, "bidRequest", "site.domain",
 	)
 
-	mctx.ModuleContext = map[string]interface{}{"some-ctx": "some-ctx"}
+	mctx.ModuleContext.Set("some-ctx", "some-ctx")
 
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
 }

@@ -21,12 +21,12 @@
             }
         ],
         "site": {
-            "domain": "dev.sparteo.com:4444",
-            "page": "https://dev.sparteo.com:4444/page/test/",
-            "ref": "https://dev.sparteo.com:4444/page/test/",
+            "domain": "dev.sparteo.com",
+            "page": "https://dev.sparteo.com/page/test/",
+            "ref": "https://dev.sparteo.com/page/test/",
             "publisher": {
                 "id": "sparteo",
-                "domain": "dev.sparteo.com:4444",
+                "domain": "dev.sparteo.com",
                 "ext": "not an object"
             }
         }
@@ -34,7 +34,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://bid-test.sparteo.com/s2s-auction",
+                "uri": "https://bid-test.sparteo.com/s2s-auction?network_id=networkId&site_domain=dev.sparteo.com",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -59,10 +59,10 @@
                         }
                     ],
                     "site": {
-                        "domain": "dev.sparteo.com:4444",
-                        "page": "https://dev.sparteo.com:4444/page/test/",
+                        "domain": "dev.sparteo.com",
+                        "page": "https://dev.sparteo.com/page/test/",
                         "publisher": {
-                            "domain": "dev.sparteo.com:4444",
+                            "domain": "dev.sparteo.com",
                             "ext": {
                                 "params": {
                                     "networkId": "networkId"
@@ -70,7 +70,7 @@
                             },
                             "id": "sparteo"    
                         },
-                        "ref": "https://dev.sparteo.com:4444/page/test/"        
+                        "ref": "https://dev.sparteo.com/page/test/"        
                     }
                 },
                 "impIDs": [
