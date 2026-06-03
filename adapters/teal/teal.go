@@ -20,6 +20,7 @@ const (
 	msgAccountValidation   = "account parameter failed validation"
 	msgPlacementValidation = "placement parameter failed validation"
 	msgImpExtParseFmt      = "Error parsing imp.ext for impression %s"
+	msgMixedAccountFmt     = "mixed-account requests are not supported: imp %q account %q differs from request account %q"
 )
 
 // adapter is the Teal openrtb2 bidder.
@@ -46,13 +47,16 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 }
 
 // MakeRequests transforms the openrtb2.BidRequest into a single Teal-bound HTTP
-// request body. Behavior mirrors prebid-server-java's TealBidder.makeHttpRequests:
+// request body. Behavior follows prebid-server-java's TealBidder.makeHttpRequests
+// with one intentional divergence (account-divergence rejection, step 3):
 //
 //  1. Each imp's bidder-slot is decoded into ExtImpTeal and validated for
 //     non-blank account and (when present) non-blank placement.
 //  2. Failed imps are dropped; their parse / validation errors are collected.
 //  3. The first surviving imp's account is propagated to Site.Publisher.ID and
-//     App.Publisher.ID (M2).
+//     App.Publisher.ID (M2). Later imps must use that same account; an imp with a
+//     divergent account is rejected (BadInput) and dropped. Java instead silently
+//     keeps the first account — see upstream Java alignment notes.
 //  4. Each surviving imp gets imp.ext.prebid.storedrequest.id = placement when
 //     placement is set (M1).
 //  5. Request.Ext.bids is stamped with {"pbs": 1} (M3).
@@ -79,9 +83,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			continue
 		}
 
-		// First valid imp's account wins (Java: account = account == null ? ext.getAccount() : account).
+		// All imps in a request must agree on account, which drives the single
+		// request-level publisher.id. The first valid imp establishes it; a later
+		// imp with a different account is rejected and dropped. Intentional
+		// divergence from Java's silent first-wins (account = account == null ?
+		// ext.getAccount() : account); see upstream Java alignment notes.
 		if account == "" {
 			account = ext.Account
+		} else if ext.Account != account {
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf(msgMixedAccountFmt, imp.ID, ext.Account, account),
+			})
+			continue
 		}
 
 		modified, err := modifyImp(&imp, ext.Placement)
@@ -147,6 +160,10 @@ func validateImpExt(ext *openrtb_ext.ExtImpTeal) error {
 
 // isBlank mirrors org.apache.commons.lang3.StringUtils.isBlank: returns true if
 // s is empty or contains only Unicode whitespace runes.
+//
+// Cross-language note: Go's unicode.IsSpace treats U+00A0/U+2007/U+202F as
+// whitespace but Java's StringUtils.isBlank does not, so this is strictly
+// stricter than Java (rejects NBSP-only inputs Java accepts), never looser.
 func isBlank(s string) bool {
 	for _, r := range s {
 		if !unicode.IsSpace(r) {
@@ -280,6 +297,11 @@ func clonePublisherWithID(publisher *openrtb2.Publisher, id string) *openrtb2.Pu
 // "pbs":1 marker is a Teal-side reporting/billing signal — it tells Teal's
 // exchange the request is being routed via prebid-server, distinguishing it
 // from direct integrations.
+//
+// Cross-language note: this and modifyImp (M1) marshal via
+// map[string]json.RawMessage, so Go sorts the keys alphabetically while Java's
+// Jackson preserves insertion order — the wire bytes differ from Java but are
+// logically identical (receivers compare structurally).
 func mergeBidsPBSFlag(existingExt json.RawMessage) (json.RawMessage, error) {
 	ext, err := decodeJSONObject(existingExt)
 	if err != nil {
@@ -292,6 +314,8 @@ func mergeBidsPBSFlag(existingExt json.RawMessage) (json.RawMessage, error) {
 // MakeBids parses the Teal bid response body and packages the bids into a
 // BidderResponse. Status handling follows the canonical adapters helpers:
 // 204 → no-content shortcut, 4xx/5xx → BadServerResponse, 200 → parse body.
+// Bids whose media type cannot be resolved from the matching imp are skipped
+// and their error collected, rather than silently mis-typed as banner.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
@@ -305,46 +329,58 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 		return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
 	}
 
+	impsByID := make(map[string]openrtb2.Imp, len(request.Imp))
+	for _, imp := range request.Imp {
+		impsByID[imp.ID] = imp
+	}
+
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	if bidResponse.Cur != "" {
 		bidderResponse.Currency = bidResponse.Cur
 	}
+	var errs []error
 	for _, seatBid := range bidResponse.SeatBid {
 		for i := range seatBid.Bid {
 			bid := &seatBid.Bid[i]
+			bidType, err := getBidType(bid, impsByID)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     bid,
-				BidType: getBidType(bid, request.Imp),
+				BidType: bidType,
 			})
 		}
 	}
-	return bidderResponse, nil
+	return bidderResponse, errs
 }
 
-// getBidType determines the bid's mediatype by walking imps for the matching ImpID.
-// Priority order matches Java TealBidder.getBidType verbatim:
-// banner > video > audio > native, with banner as the default.
+// getBidType resolves the bid's media type from its matching impression, looked
+// up by ID via impsByID (built once in MakeBids to avoid an O(seatBids×bids×imps)
+// scan). Priority order is banner > video > native.
 //
-// The loop intentionally does NOT break after a non-matching imp scan; Java's
-// for-loop continues iteration when the matching imp is found but has no mediatype
-// declared. Behavior is observably identical to a break for valid (unique-ID)
-// requests, but we preserve the literal Java control flow for fidelity.
-func getBidType(bid *openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for i := range imps {
-		if imps[i].ID == bid.ImpID {
-			switch {
-			case imps[i].Banner != nil:
-				return openrtb_ext.BidTypeBanner
-			case imps[i].Video != nil:
-				return openrtb_ext.BidTypeVideo
-			case imps[i].Audio != nil:
-				return openrtb_ext.BidTypeAudio
-			case imps[i].Native != nil:
-				return openrtb_ext.BidTypeNative
-			}
+// When no imp matches the bid's ImpID, or the matching imp declares no recognized
+// media type, getBidType returns an error so MakeBids can skip the bid and surface
+// the problem in logs rather than silently mis-typing it as banner.
+//
+// Two intentional divergences from Java's TealBidder.getBidType, both flagged in
+// upstream Java alignment notes: (1) no silent banner fallback — Java returns
+// BidType.banner (a latent bug); (2) no audio branch — audio is absent from Teal's
+// declared capabilities in Go and Java alike, so the core's infoawarebidder prunes
+// audio imps before MakeRequests, making Java's audio case dead code.
+func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
+	if imp, ok := impsByID[bid.ImpID]; ok {
+		switch {
+		case imp.Banner != nil:
+			return openrtb_ext.BidTypeBanner, nil
+		case imp.Video != nil:
+			return openrtb_ext.BidTypeVideo, nil
+		case imp.Native != nil:
+			return openrtb_ext.BidTypeNative, nil
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return "", fmt.Errorf("failed to determine bid type for imp %q", bid.ImpID)
 }
 
 // standardHeaders returns the headers Teal expects on every outbound request.

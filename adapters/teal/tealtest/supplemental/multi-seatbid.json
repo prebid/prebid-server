@@ -3,7 +3,7 @@
     "id": "test-request-banner",
     "imp": [
       {
-        "id": "test-imp-1",
+        "id": "imp-banner",
         "banner": {
           "format": [
             {
@@ -14,25 +14,20 @@
         },
         "ext": {
           "bidder": {
-            "account": "first-account",
-            "placement": "placement-1"
+            "account": "multi-acct",
+            "placement": "pb"
           }
         }
       },
       {
-        "id": "test-imp-2",
-        "banner": {
-          "format": [
-            {
-              "w": 728,
-              "h": 90
-            }
-          ]
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"]
         },
         "ext": {
           "bidder": {
-            "account": "second-account",
-            "placement": "placement-2"
+            "account": "multi-acct",
+            "placement": "pv"
           }
         }
       }
@@ -54,7 +49,7 @@
           "id": "test-request-banner",
           "imp": [
             {
-              "id": "test-imp-1",
+              "id": "imp-banner",
               "banner": {
                 "format": [
                   {
@@ -65,34 +60,29 @@
               },
               "ext": {
                 "bidder": {
-                  "account": "first-account",
-                  "placement": "placement-1"
+                  "account": "multi-acct",
+                  "placement": "pb"
                 },
                 "prebid": {
                   "storedrequest": {
-                    "id": "placement-1"
+                    "id": "pb"
                   }
                 }
               }
             },
             {
-              "id": "test-imp-2",
-              "banner": {
-                "format": [
-                  {
-                    "w": 728,
-                    "h": 90
-                  }
-                ]
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4"]
               },
               "ext": {
                 "bidder": {
-                  "account": "second-account",
-                  "placement": "placement-2"
+                  "account": "multi-acct",
+                  "placement": "pv"
                 },
                 "prebid": {
                   "storedrequest": {
-                    "id": "placement-2"
+                    "id": "pv"
                   }
                 }
               }
@@ -103,7 +93,7 @@
             "domain": "example.com",
             "page": "https://example.com/demo",
             "publisher": {
-              "id": "first-account"
+              "id": "multi-acct"
             }
           },
           "ext": {
@@ -112,33 +102,46 @@
             }
           }
         },
-        "impIDs": ["test-imp-1", "test-imp-2"]
+        "impIDs": ["imp-banner", "imp-video"]
       },
       "mockResponse": {
         "status": 200,
         "body": {
           "id": "test-request-banner",
-          "cur": "USD",
+          "cur": "EUR",
           "seatbid": [
             {
+              "seat": "s1",
               "bid": [
                 {
-                  "id": "bid-1",
-                  "impid": "test-imp-1",
-                  "price": 1.10,
-                  "adm": "<div>imp1</div>",
+                  "id": "b1",
+                  "impid": "imp-banner",
+                  "price": 1.00,
+                  "adm": "<div>banner</div>",
                   "w": 300,
                   "h": 250,
                   "crid": "c1"
                 },
                 {
-                  "id": "bid-2",
-                  "impid": "test-imp-2",
-                  "price": 0.80,
-                  "adm": "<div>imp2</div>",
-                  "w": 728,
-                  "h": 90,
+                  "id": "b2",
+                  "impid": "imp-video",
+                  "price": 2.00,
+                  "adm": "<VAST/>",
                   "crid": "c2"
+                }
+              ]
+            },
+            {
+              "seat": "s2",
+              "bid": [
+                {
+                  "id": "b3",
+                  "impid": "imp-banner",
+                  "price": 1.50,
+                  "adm": "<div>banner2</div>",
+                  "w": 300,
+                  "h": 250,
+                  "crid": "c3"
                 }
               ]
             }
@@ -149,14 +152,14 @@
   ],
   "expectedBidResponses": [
     {
-      "currency": "USD",
+      "currency": "EUR",
       "bids": [
         {
           "bid": {
-            "id": "bid-1",
-            "impid": "test-imp-1",
-            "price": 1.10,
-            "adm": "<div>imp1</div>",
+            "id": "b1",
+            "impid": "imp-banner",
+            "price": 1.00,
+            "adm": "<div>banner</div>",
             "w": 300,
             "h": 250,
             "crid": "c1"
@@ -165,13 +168,23 @@
         },
         {
           "bid": {
-            "id": "bid-2",
-            "impid": "test-imp-2",
-            "price": 0.80,
-            "adm": "<div>imp2</div>",
-            "w": 728,
-            "h": 90,
+            "id": "b2",
+            "impid": "imp-video",
+            "price": 2.00,
+            "adm": "<VAST/>",
             "crid": "c2"
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "b3",
+            "impid": "imp-banner",
+            "price": 1.50,
+            "adm": "<div>banner2</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "c3"
           },
           "type": "banner"
         }
