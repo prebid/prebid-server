@@ -1,0 +1,41 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "seat": "pub-seat-1" } }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb-us-e.floxis.tech/pbs?seat=pub-seat-1",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": { "bidder": { "seat": "pub-seat-1" } }
+            }
+          ],
+          "site": { "id": "271", "domain": "example.com" }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 400
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

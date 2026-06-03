@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Floxis Adapter Params",
+  "description": "A schema which validates params accepted by the Floxis adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "seat": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The Floxis seat ID this publisher buys through"
+    },
+    "region": {
+      "type": "string",
+      "enum": ["us-e", "eu", "apac"],
+      "description": "The Floxis RTB region; defaults to us-e when omitted"
+    }
+  },
+  "required": ["seat"]
+}

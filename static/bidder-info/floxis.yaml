@@ -1,0 +1,27 @@
+# The live endpoint is resolved per-request from the bidder's region param via a fixed
+# host allowlist in the adapter (us-e/eu/apac). This endpoint value is the us-e default
+# used for config validation and as the host-config override anchor.
+endpoint: "https://rtb-us-e.floxis.tech/pbs"
+maintainer:
+  email: prebid@floxis.tech
+modifyingVastXmlAllowed: false
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+userSync:
+  redirect:
+    url: "https://px-us-e.floxis.tech/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&us_privacy={{.USPrivacy}}&dest={{.RedirectURL}}"
+    userMacro: "${USER_ID}"
