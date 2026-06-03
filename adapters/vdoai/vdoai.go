@@ -148,8 +148,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 // getMediaTypeForBid determines the media type for a bid.
-// It first tries bid.ext.prebid.type (set by the server), then falls back to
-// detecting from the matching impression's media type objects.
+// It first tries explicit bid response fields, then falls back to the matching
+// impression only when the impression has a single media type.
 func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	// Try bid.ext.prebid.type first
 	if bid.Ext != nil {
@@ -173,18 +173,42 @@ func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 	// Fallback: detect from the matching impression
 	for _, imp := range imps {
 		if imp.ID == bid.ImpID {
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			break
+			return getSingleMediaTypeForImp(imp)
 		}
 	}
 
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("failed to determine media type for bid with imp id \"%s\"", bid.ImpID),
+	}
+}
+
+func getSingleMediaTypeForImp(imp openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var mediaTypes []openrtb_ext.BidType
+	if imp.Banner != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeBanner)
+	}
+	if imp.Video != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeVideo)
+	}
+	if imp.Audio != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeAudio)
+	}
+	if imp.Native != nil {
+		mediaTypes = append(mediaTypes, openrtb_ext.BidTypeNative)
+	}
+
+	if len(mediaTypes) == 1 {
+		return mediaTypes[0], nil
+	}
+
+	if len(mediaTypes) > 1 {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("bid response must include mtype or ext.prebid.type for multi-format impression with id \"%s\"", imp.ID),
+		}
+	}
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("failed to determine media type for bid with imp id \"%s\"", imp.ID),
 	}
 }
 
