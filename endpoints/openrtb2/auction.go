@@ -16,43 +16,43 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/openrtb/v20/openrtb3"
-	"github.com/prebid/prebid-server/v3/bidadjustment"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/privacysandbox"
-	"github.com/prebid/prebid-server/v3/schain"
+	"github.com/prebid/prebid-server/v4/bidadjustment"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/privacysandbox"
+	"github.com/prebid/prebid-server/v4/schain"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	accountService "github.com/prebid/prebid-server/v3/account"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/prebid_cache_client"
-	"github.com/prebid/prebid-server/v3/privacy/ccpa"
-	"github.com/prebid/prebid-server/v3/privacy/lmt"
-	"github.com/prebid/prebid-server/v3/stored_requests"
-	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v3/stored_responses"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/httputil"
-	"github.com/prebid/prebid-server/v3/util/iputil"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/uuidutil"
-	"github.com/prebid/prebid-server/v3/version"
+	accountService "github.com/prebid/prebid-server/v4/account"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/privacy/ccpa"
+	"github.com/prebid/prebid-server/v4/privacy/lmt"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v4/stored_responses"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/httputil"
+	"github.com/prebid/prebid-server/v4/util/iputil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/uuidutil"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 const ampChannel = "amp"
@@ -287,7 +287,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.RequestStatus = metrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		logger.Errorf("/openrtb2/auction Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
@@ -298,7 +298,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	err = setSeatNonBidRaw(req, auctionResponse)
 	if err != nil {
-		glog.Errorf("Error setting seat non-bid: %v", err)
+		logger.Errorf("Error setting seat non-bid: %v", err)
 	}
 	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
 }
@@ -368,7 +368,7 @@ func sendAuctionResponse(
 		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
 		if err != nil {
 			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
-			glog.Errorf(err.Error())
+			logger.Errorf("%v", err)
 			ao.Errors = append(ao.Errors, err)
 		} else {
 			response.Ext = ext
@@ -466,7 +466,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
-			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
+			logger.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
 		}
 		return
 	}
@@ -514,7 +514,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if rejectErr != nil {
 		errs = []error{rejectErr}
 		if err = jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
-			glog.Errorf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
+			logger.Errorf("Failed to unmarshal BidRequest during raw auction stage rejection: %s", err)
 		}
 		return
 	}

@@ -1,4 +1,4 @@
-endpoint: "https://krk.kargo.com/api/v1/openrtb"
+endpoint: "https://krk2.kargo.com/api/v1/openrtb"
 maintainer:
   email: "kraken@kargo.com"
 gvlVendorID: 972

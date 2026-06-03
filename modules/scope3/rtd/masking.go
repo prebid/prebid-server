@@ -4,8 +4,8 @@ import (
 	"math"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/util/iterutil"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/iterutil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 // maskBidRequest creates a deep copy of the bid request with sensitive fields masked
