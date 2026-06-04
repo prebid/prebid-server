@@ -6,7 +6,7 @@ package openrtb_ext
 // BidRequest.Site.Publisher.ID (and BidRequest.App.Publisher.ID, when present).
 // All imps in a request must use the same account: a later imp whose account
 // differs is rejected with a BadInput error and dropped. (Java instead silently
-// keeps the first account — see the adapter's upstream Java alignment notes.)
+// keeps the first account.)
 //
 // Placement is optional. When present and non-blank, the adapter injects
 // imp.ext.prebid.storedrequest.id = placement on a per-imp basis. Pointer-typed

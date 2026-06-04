@@ -56,7 +56,7 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 //  3. The first surviving imp's account is propagated to Site.Publisher.ID and
 //     App.Publisher.ID (M2). Later imps must use that same account; an imp with a
 //     divergent account is rejected (BadInput) and dropped. Java instead silently
-//     keeps the first account — see upstream Java alignment notes.
+//     keeps the first account.
 //  4. Each surviving imp gets imp.ext.prebid.storedrequest.id = placement when
 //     placement is set (M1).
 //  5. Request.Ext.bids is stamped with {"pbs": 1} (M3).
@@ -87,7 +87,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		// request-level publisher.id. The first valid imp establishes it; a later
 		// imp with a different account is rejected and dropped. Intentional
 		// divergence from Java's silent first-wins (account = account == null ?
-		// ext.getAccount() : account); see upstream Java alignment notes.
+		// ext.getAccount() : account).
 		if account == "" {
 			account = ext.Account
 		} else if ext.Account != account {
@@ -364,8 +364,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 // media type, getBidType returns an error so MakeBids can skip the bid and surface
 // the problem in logs rather than silently mis-typing it as banner.
 //
-// Two intentional divergences from Java's TealBidder.getBidType, both flagged in
-// upstream Java alignment notes: (1) no silent banner fallback — Java returns
+// Two intentional divergences from Java's TealBidder.getBidType: (1) no silent
+// banner fallback — Java returns
 // BidType.banner (a latent bug); (2) no audio branch — audio is absent from Teal's
 // declared capabilities in Go and Java alike, so the core's infoawarebidder prunes
 // audio imps before MakeRequests, making Java's audio case dead code.

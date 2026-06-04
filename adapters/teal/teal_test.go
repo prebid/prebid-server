@@ -280,7 +280,7 @@ func TestGetBidType_Priority(t *testing.T) {
 
 // TestGetBidType_Undeterminable — getBidType returns the reviewer-prescribed
 // error (not a silent banner default) when the imp is missing or declares no
-// media type, so MakeBids can skip the bid and surface the issue in logs (R6).
+// media type, so MakeBids can skip the bid and surface the issue in logs.
 func TestGetBidType_Undeterminable(t *testing.T) {
 	bid := &openrtb2.Bid{ImpID: "imp1"}
 
@@ -511,10 +511,9 @@ func TestMergeBidsPBSFlag(t *testing.T) {
 // `null` is treated as an empty object (mirrors Java's
 // ObjectUtils.defaultIfNull(request.getExt(), ExtRequest.empty()) pattern).
 //
-// History: a fuzz harness discovered that `null` was unmarshaled into a nil map,
-// causing the subsequent `ext["bids"] = ...` to panic with "assignment to entry
-// in nil map". mergeBidsPBSFlag (and modifyImp) were hardened to route through
-// decodeJSONObject, which guarantees a non-nil receiver. This test pins the fix.
+// Contract: mergeBidsPBSFlag must route a `null` (or absent) ext through
+// decodeJSONObject so the receiver map is non-nil before `ext["bids"] = ...`,
+// which would otherwise panic with "assignment to entry in nil map".
 func TestMergeBidsPBSFlag_NullInputHandledAsEmpty(t *testing.T) {
 	out, err := mergeBidsPBSFlag(json.RawMessage(`null`))
 	require.NoError(t, err)
