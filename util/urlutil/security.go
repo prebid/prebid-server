@@ -10,5 +10,3 @@ var safeHostPattern = regexp.MustCompile(`^[a-zA-Z0-9.-]+(:[0-9]+)?$`)
 func IsSafeHost(host string) bool {
 	return safeHostPattern.MatchString(host)
 }
-
-
