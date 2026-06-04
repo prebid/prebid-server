@@ -85,7 +85,6 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/consumable"
 	"github.com/prebid/prebid-server/v4/adapters/contxtful"
 	"github.com/prebid/prebid-server/v4/adapters/conversant"
-	"github.com/prebid/prebid-server/v4/adapters/copper6ssp"
 	"github.com/prebid/prebid-server/v4/adapters/cpmstar"
 	"github.com/prebid/prebid-server/v4/adapters/criteo"
 	"github.com/prebid/prebid-server/v4/adapters/cwire"
@@ -355,7 +354,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConsumable:        consumable.Builder,
 		openrtb_ext.BidderContxtful:         contxtful.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
-		openrtb_ext.BidderCopper6ssp:        copper6ssp.Builder,
 		openrtb_ext.BidderCpmstar:           cpmstar.Builder,
 		openrtb_ext.BidderCriteo:            criteo.Builder,
 		openrtb_ext.BidderCWire:             cwire.Builder,
