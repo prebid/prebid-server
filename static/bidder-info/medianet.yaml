@@ -1,5 +1,5 @@
-# Media.net's Prebid Server adapter supports regional endpoints.
-# Set the endpoint below to match the datacenter region where this config is deployed:
+# Media.net supports the following regional endpoint domains.
+# Kindly set the endpoint below to match the datacenter region where this config is deployed:
 #   US East  → https://prebid-adapter-useast.media.net/rtb/pb/prebids2s
 #   US West  → https://prebid-adapter-uswest.media.net/rtb/pb/prebids2s
 #   Asia     → https://prebid-adapter-asia.media.net/rtb/pb/prebids2s
