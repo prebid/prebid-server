@@ -4,6 +4,7 @@
 endpoint: "https://rtb-us-e.floxis.tech/pbs"
 maintainer:
   email: prebid@floxis.tech
+gvlVendorID: 1609
 modifyingVastXmlAllowed: false
 openrtb:
   version: 2.6
