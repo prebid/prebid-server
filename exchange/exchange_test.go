@@ -481,16 +481,6 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
 
-	bidderImpl := &goodSingleBidder{
-		httpRequest: &adapters.RequestData{
-			Method:  "POST",
-			Uri:     server.URL,
-			Body:    []byte(`{"key":"val"}`),
-			Headers: http.Header{},
-		},
-		bidResponse: &adapters.BidderResponse{},
-	}
-
 	e := new(exchange)
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
@@ -509,6 +499,24 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	debugLog := DebugLog{Enabled: true}
 
 	for _, testCase := range testCases {
+		bidderImplAppnexus := &goodSingleBidder{
+			httpRequest: &adapters.RequestData{
+				Method:  "POST",
+				Uri:     server.URL,
+				Body:    []byte(`{"key":"val"}`),
+				Headers: http.Header{},
+			},
+			bidResponse: &adapters.BidderResponse{},
+		}
+		bidderImplTelaria := &goodSingleBidder{
+			httpRequest: &adapters.RequestData{
+				Method:  "POST",
+				Uri:     server.URL,
+				Body:    []byte(`{"key":"val"}`),
+				Headers: http.Header{},
+			},
+			bidResponse: &adapters.BidderResponse{},
+		}
 		bidRequest := &openrtb2.BidRequest{
 			ID: "some-request-id",
 			Imp: []openrtb2.Imp{{
@@ -534,8 +542,8 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		}
 
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
-			openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder1DebugEnabled}, ""),
-			openrtb_ext.BidderTelaria:  AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder2DebugEnabled}, ""),
+			openrtb_ext.BidderAppnexus: AdaptBidder(bidderImplAppnexus, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder1DebugEnabled}, ""),
+			openrtb_ext.BidderTelaria:  AdaptBidder(bidderImplTelaria, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder2DebugEnabled}, ""),
 		}
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
