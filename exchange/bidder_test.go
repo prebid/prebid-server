@@ -17,6 +17,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -2267,9 +2268,12 @@ func TestTimeoutNotificationOn(t *testing.T) {
 		Body:   []byte(`{"id":"this-id","app":{"publisher":{"id":"pub-id"}}}`),
 	}
 
+	var mx sync.Mutex
 	var loggerBuffer bytes.Buffer
 	logger := func(msg string, args ...any) {
+		mx.Lock()
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
+		mx.Unlock()
 	}
 	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
 	bidderAdapter.doRequestImpl(ctx, &bidRequest, logger, time.Now(), tmaxAdjustments)
@@ -2278,8 +2282,10 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	time.Sleep(210 * time.Millisecond)
 
 	logExpected := "TimeoutNotification: error:(context deadline exceeded) body:\n"
+	mx.Lock()
 	logActual := loggerBuffer.String()
 	assert.EqualValues(t, logExpected, logActual)
+	mx.Unlock()
 }
 
 func TestParseDebugInfoTrue(t *testing.T) {
