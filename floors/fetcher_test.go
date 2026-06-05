@@ -1235,8 +1235,11 @@ func getRandomNumber() int {
 func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	refetchCheckInterval = 1
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
+
+	var requestCount atomic.Int32
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			requestCount.Add(1)
 			w.WriteHeader(mockStatus)
 			w.Write(mockResponse)
 		})
@@ -1256,6 +1259,7 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 	}
 	fetcherInstance := mockFetcherInstance(floorConfig, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
+	fetcherInstance.maxRetries = 0
 
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
@@ -1271,13 +1275,19 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 		},
 	}
 
+	uniqueURLs := make(map[string]struct{})
 	for i := 0; i < 50; i++ {
 		fetchConfig.Fetcher.URL = fmt.Sprintf("%s?id=%d", mockHttpServer.URL, getRandomNumber())
+		uniqueURLs[fetchConfig.Fetcher.URL] = struct{}{}
 		fetcherInstance.Fetch(fetchConfig)
 	}
 
 	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
 	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+
+	expectedUniqueURLs := int32(len(uniqueURLs))
+	assert.Eventually(t, func() bool { return requestCount.Load() >= expectedUniqueURLs }, 5*time.Second, 100*time.Millisecond, "All unique URLs should be fetched")
+	assert.True(t, requestCount.Load() <= expectedUniqueURLs, "No more requests than unique URLs should be made")
 }
 
 func TestFetchWhenPriceFloorsDisabled(t *testing.T) {
