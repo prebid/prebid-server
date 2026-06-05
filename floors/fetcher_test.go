@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -795,8 +796,11 @@ func mockFetcherInstance(config config.PriceFloors, httpClient *http.Client, met
 func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	refetchCheckInterval = 1
 	response := []byte(`{"currency":"USD","modelgroups":[{"modelweight":40,"modelversion":"version1","default":5,"values":{"banner|300x600|www.website.com":3,"banner|728x90|www.website.com":5,"banner|300x600|*":4,"banner|300x250|*":2,"*|*|*":16,"*|300x250|*":10,"*|300x600|*":12,"*|300x600|www.website.com":11,"banner|*|*":8,"banner|300x250|www.website.com":1,"*|728x90|www.website.com":13,"*|300x250|www.website.com":9,"*|728x90|*":14,"banner|728x90|*":6,"banner|*|www.website.com":7,"*|*|www.website.com":15},"schema":{"fields":["mediaType","size","domain"],"delimiter":"|"}}]}`)
+
+	var requestCount atomic.Int32
 	mockHandler := func(mockResponse []byte, mockStatus int) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			requestCount.Add(1)
 			w.WriteHeader(mockStatus)
 			w.Write(mockResponse)
 		})
@@ -815,6 +819,7 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	}
 	fetcherInstance := mockFetcherInstance(floorConfig, mockHttpServer.Client(), &metricsConf.NilMetricsEngine{})
 	defer fetcherInstance.Stop()
+	fetcherInstance.maxRetries = 0
 
 	fetchConfig := config.AccountPriceFloors{
 		Enabled:        true,
@@ -837,6 +842,7 @@ func TestFetcherWhenRequestGetSameURLInrequest(t *testing.T) {
 	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
 	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 1 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
 
+	assert.Equal(t, int32(1), requestCount.Load(), "Only one HTTP request should be made for the same URL")
 }
 
 func TestFetcherDataPresentInCache(t *testing.T) {
