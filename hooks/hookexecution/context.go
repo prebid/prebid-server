@@ -3,10 +3,10 @@ package hookexecution
 import (
 	"sync"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/privacy"
 )
 
 // executionContext holds information passed to module's hook during hook execution.
@@ -43,24 +43,27 @@ func (ctx executionContext) getModuleContext(moduleName string) hookstage.Module
 // moduleContexts preserves data the module wants to pass to itself from earlier stages to later stages.
 type moduleContexts struct {
 	sync.RWMutex
-	ctxs map[string]hookstage.ModuleContext // format: {"module_name": hookstage.ModuleContext}
+	ctxs map[string]*hookstage.ModuleContext // format: {"module_name": hookstage.ModuleContext}
 }
 
-func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
+func (mc *moduleContexts) put(moduleName string, mCtx *hookstage.ModuleContext) {
+	if mc == nil {
+		return
+	}
 	mc.Lock()
 	defer mc.Unlock()
 
-	newCtx := mCtx
-	if existingCtx, ok := mc.ctxs[moduleName]; ok && existingCtx != nil {
-		for k, v := range mCtx {
-			existingCtx[k] = v
-		}
-		newCtx = existingCtx
+	existingCtx, ok := mc.ctxs[moduleName]
+	if !ok {
+		mc.ctxs[moduleName] = mCtx
+		return
 	}
-	mc.ctxs[moduleName] = newCtx
+
+	// Add new data to existing context
+	existingCtx.SetAll(mCtx.GetAll())
 }
 
-func (mc *moduleContexts) get(moduleName string) (hookstage.ModuleContext, bool) {
+func (mc *moduleContexts) get(moduleName string) (*hookstage.ModuleContext, bool) {
 	mc.RLock()
 	defer mc.RUnlock()
 	mCtx, ok := mc.ctxs[moduleName]
@@ -72,4 +75,4 @@ type stageModuleContext struct {
 	groupCtx []groupModuleContext
 }
 
-type groupModuleContext map[string]hookstage.ModuleContext
+type groupModuleContext map[string]*hookstage.ModuleContext

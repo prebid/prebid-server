@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
 
 	"github.com/buger/jsonparser"
 	"golang.org/x/net/context/ctxhttp"

@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
+
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/stretchr/testify/require"
 )
 
 func TestImplementation(t *testing.T) {

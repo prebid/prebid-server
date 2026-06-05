@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 type Sender = func(payload []byte) error

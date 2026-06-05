@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/docker/go-units"
-	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error) {

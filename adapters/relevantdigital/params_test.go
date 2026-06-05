@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -35,8 +35,11 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host" }`,
+	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host", "useSourceBidderCode": true }`,
+	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host", "useSourceBidderCode": false }`,
 }
 
 var invalidParams = []string{
 	`{"accountId": 123, "placementId" : 123, "pbsHost" : ""}`,
+	`{"accountId": "5fcf49f83a64ba6602b5be7e", "placementId" : "63b68275b4f35962c8eec9b1_5fcf49f83a64ba6602b5be9a", "pbsHost" : "some-host", "useSourceBidderCode": "somethingInvalid" }`,
 }
