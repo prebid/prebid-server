@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type adapter struct {
@@ -99,6 +100,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	finalEndpoint := a.endpoint
 	if endpoint != "" {
+		if !urlutil.IsSafeHost(endpoint) {
+			return nil, []error{&errortypes.BadInput{Message: "Invalid endpoint"}}
+		}
 		parsedURL, _ := url.Parse(finalEndpoint)
 		host := parsedURL.Host
 		parts := strings.Split(host, ".")
