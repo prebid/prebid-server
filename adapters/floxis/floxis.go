@@ -3,6 +3,7 @@ package floxis
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -18,29 +19,43 @@ type adapter struct {
 	endpoint *template.Template
 }
 
-// regionHosts is a fixed allowlist mapping the bidder's region param to a Floxis RTB
-// host. Routing is never derived from request-supplied hostnames; an unknown or empty
-// region falls back to us-e. This satisfies PBS's "no fully dynamic hostnames" rule.
-var regionHosts = map[string]string{
-	"us-e": "rtb-us-e.floxis.tech",
-	"eu":   "rtb-eu.floxis.tech",
-	"apac": "rtb-apac.floxis.tech",
+const (
+	defaultRegion  = "us-e"
+	defaultPartner = "floxis"
+)
+
+// hostLabelRegex mirrors Prebid.js HOST_LABEL_REGEX: region/partner are interpolated into the
+// request host, so they must be valid DNS labels — a value carrying URL delimiters could
+// otherwise rewrite the request origin. Case-insensitive, single label, max 63 chars.
+var hostLabelRegex = regexp.MustCompile(`(?i)^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+
+func isValidHostLabel(s string) bool {
+	return hostLabelRegex.MatchString(s)
 }
 
-const defaultRegion = "us-e"
-
-// resolveHost returns the Floxis RTB host for the given region, defaulting to us-e for
-// unknown or empty regions.
-func resolveHost(region string) string {
-	if host, ok := regionHosts[region]; ok {
-		return host
+// resolveBidHost mirrors Prebid.js getBidHost: empty region/partner default to us-e/floxis,
+// each must be a valid host label, and floxis itself carries no partner prefix. Routing
+// (which region maps to which datacenter) is handled at DNS/LB level, not here.
+func resolveBidHost(region, partner string) (string, error) {
+	if region == "" {
+		region = defaultRegion
 	}
-	return regionHosts[defaultRegion]
+	if partner == "" {
+		partner = defaultPartner
+	}
+	if !isValidHostLabel(region) || !isValidHostLabel(partner) {
+		return "", &errortypes.BadInput{Message: fmt.Sprintf(
+			"invalid region %q or partner %q; both must be valid host labels", region, partner)}
+	}
+	if partner == defaultPartner {
+		return region + ".floxis.tech", nil
+	}
+	return partner + "-" + region + ".floxis.tech", nil
 }
 
 // Builder builds a new instance of the Floxis adapter for the given bidder with the given
 // config. config.Endpoint is the {{.Host}} template; the host is filled per-request from the
-// bidder's region param via a fixed allowlist (never from request-supplied hostnames).
+// bidder's region/partner params (validated as host labels — never raw request-supplied hostnames).
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	tmpl, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
@@ -60,20 +75,24 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	// All imps in one call route under imp[0]'s seat/host. Reject a request whose imps carry
-	// differing floxis seats or regions rather than silently mis-routing imp[1..].
+	// differing floxis seats, regions, or partners rather than silently mis-routing imp[1..].
 	for i := 1; i < len(request.Imp); i++ {
 		impExt, err := parseImpExt(request.Imp[i])
 		if err != nil {
 			return nil, []error{err}
 		}
-		if impExt.Seat != ext.Seat || impExt.Region != ext.Region {
+		if impExt.Seat != ext.Seat || impExt.Region != ext.Region || impExt.Partner != ext.Partner {
 			return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf(
-				"imp %s seat/region (%q/%q) differs from imp %s (%q/%q); split into separate requests",
-				request.Imp[i].ID, impExt.Seat, impExt.Region, request.Imp[0].ID, ext.Seat, ext.Region)}}
+				"imp %s seat/region/partner (%q/%q/%q) differs from imp %s (%q/%q/%q); split into separate requests",
+				request.Imp[i].ID, impExt.Seat, impExt.Region, impExt.Partner,
+				request.Imp[0].ID, ext.Seat, ext.Region, ext.Partner)}}
 		}
 	}
 
-	host := resolveHost(ext.Region)
+	host, err := resolveBidHost(ext.Region, ext.Partner)
+	if err != nil {
+		return nil, []error{err}
+	}
 	endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: host})
 	if err != nil {
 		return nil, []error{err}

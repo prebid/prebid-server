@@ -24,7 +24,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb-apac.floxis.tech/pbs?seat=pub-seat-apac",
+        "uri": "https://apac.floxis.tech/pbs?seat=pub-seat-apac",
         "body": {
           "id": "test-request-id",
           "imp": [

@@ -1,0 +1,20 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid region .* or partner .*; both must be valid host labels",
+      "comparison": "regex"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "seat": "pub-seat-1", "partner": "bad_host!" } }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" }
+  },
+  "httpCalls": []
+}

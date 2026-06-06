@@ -10,7 +10,8 @@
         "ext": {
           "bidder": {
             "seat": "pub-seat-1",
-            "region": "us-e"
+            "region": "us-e",
+            "partner": "acme"
           }
         }
       }
@@ -24,7 +25,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://us-e.floxis.tech/pbs?seat=pub-seat-1",
+        "uri": "https://acme-us-e.floxis.tech/pbs?seat=pub-seat-1",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -36,7 +37,8 @@
               "ext": {
                 "bidder": {
                   "seat": "pub-seat-1",
-                  "region": "us-e"
+                  "region": "us-e",
+                  "partner": "acme"
                 }
               }
             }
@@ -56,7 +58,7 @@
           "cur": "USD",
           "seatbid": [
             {
-              "seat": "floxis",
+              "seat": "acme",
               "bid": [
                 {
                   "id": "1",

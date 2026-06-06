@@ -37,20 +37,34 @@ func bannerImp(ext string) openrtb2.Imp {
 	}
 }
 
-func TestResolveHost(t *testing.T) {
+func TestResolveBidHost(t *testing.T) {
 	cases := []struct {
-		region string
-		want   string
+		region  string
+		partner string
+		want    string
+		wantErr bool
 	}{
-		{"us-e", "rtb-us-e.floxis.tech"},
-		{"eu", "rtb-eu.floxis.tech"},
-		{"apac", "rtb-apac.floxis.tech"},
-		{"", "rtb-us-e.floxis.tech"},
-		{"mars", "rtb-us-e.floxis.tech"},
-		{"US-E", "rtb-us-e.floxis.tech"},
+		{"us-e", "floxis", "us-e.floxis.tech", false},
+		{"eu", "floxis", "eu.floxis.tech", false},
+		{"apac", "floxis", "apac.floxis.tech", false},
+		{"", "", "us-e.floxis.tech", false},           // both default
+		{"", "floxis", "us-e.floxis.tech", false},     // empty region defaults to us-e
+		{"eu", "", "eu.floxis.tech", false},           // empty partner defaults to floxis
+		{"mars", "floxis", "mars.floxis.tech", false}, // any valid label passes through
+		{"us-e", "acme", "acme-us-e.floxis.tech", false},
+		{"eu", "acme", "acme-eu.floxis.tech", false},
+		{"a.b", "floxis", "", true},     // invalid region label
+		{"us-e", "bad_host!", "", true}, // invalid partner label
+		{"evil.com/x", "floxis", "", true},
 	}
 	for _, c := range cases {
-		assert.Equal(t, c.want, resolveHost(c.region), "region %q", c.region)
+		got, err := resolveBidHost(c.region, c.partner)
+		if c.wantErr {
+			assert.Error(t, err, "region %q partner %q", c.region, c.partner)
+			continue
+		}
+		assert.NoError(t, err, "region %q partner %q", c.region, c.partner)
+		assert.Equal(t, c.want, got, "region %q partner %q", c.region, c.partner)
 	}
 }
 
@@ -71,10 +85,32 @@ func TestSeatIsURLEscaped(t *testing.T) {
 	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
 	assert.Empty(t, errs)
 	assert.Len(t, reqData, 1)
-	assert.Equal(t, "https://rtb-eu.floxis.tech/pbs?seat=a+b%26c", reqData[0].Uri)
+	assert.Equal(t, "https://eu.floxis.tech/pbs?seat=a+b%26c", reqData[0].Uri)
 }
 
-func TestUnknownRegionFallsBackToUSE(t *testing.T) {
+func TestPartnerPrefixesHost(t *testing.T) {
+	req := &openrtb2.BidRequest{
+		ID:   "req-1",
+		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","region":"us-e","partner":"acme"}}`)},
+		Site: &openrtb2.Site{ID: "271"},
+	}
+	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
+	assert.Empty(t, errs)
+	assert.Equal(t, "https://acme-us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
+}
+
+func TestInvalidPartnerRejected(t *testing.T) {
+	req := &openrtb2.BidRequest{
+		ID:   "req-1",
+		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","partner":"bad_host!"}}`)},
+		Site: &openrtb2.Site{ID: "271"},
+	}
+	_, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
+	assert.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Error(), "valid host labels")
+}
+
+func TestValidNonStandardRegionPassesThrough(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		ID:   "req-1",
 		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","region":"mars"}}`)},
@@ -82,7 +118,7 @@ func TestUnknownRegionFallsBackToUSE(t *testing.T) {
 	}
 	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
 	assert.Empty(t, errs)
-	assert.Equal(t, "https://rtb-us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
+	assert.Equal(t, "https://mars.floxis.tech/pbs?seat=abc", reqData[0].Uri)
 }
 
 func TestMissingRegionDefaultsToUSE(t *testing.T) {
@@ -93,7 +129,7 @@ func TestMissingRegionDefaultsToUSE(t *testing.T) {
 	}
 	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
 	assert.Empty(t, errs)
-	assert.Equal(t, "https://rtb-us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
+	assert.Equal(t, "https://us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
 }
 
 func TestInvalidImpExt(t *testing.T) {

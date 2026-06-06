@@ -14,7 +14,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb-us-e.floxis.tech/pbs?seat=pub-seat-1",
+        "uri": "https://us-e.floxis.tech/pbs?seat=pub-seat-1",
         "body": {
           "id": "test-request-id",
           "imp": [

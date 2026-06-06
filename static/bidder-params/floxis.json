@@ -12,8 +12,13 @@
     },
     "region": {
       "type": "string",
-      "enum": ["us-e", "eu", "apac"],
-      "description": "The Floxis RTB region; defaults to us-e when omitted"
+      "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$",
+      "description": "The Floxis RTB region as a host label (e.g. us-e, eu, apac); defaults to us-e when omitted"
+    },
+    "partner": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$",
+      "description": "Partner identifier (default floxis)"
     }
   },
   "required": ["seat"]

@@ -38,6 +38,9 @@ var validParams = []string{
 	`{"seat":"abc","region":"us-e"}`,
 	`{"seat":"abc","region":"eu"}`,
 	`{"seat":"abc","region":"apac"}`,
+	`{"seat":"abc","region":"mars"}`,
+	`{"seat":"x","partner":"acme"}`,
+	`{"seat":"x","region":"eu","partner":"acme"}`,
 }
 
 var invalidParams = []string{
@@ -47,7 +50,9 @@ var invalidParams = []string{
 	`{"region":"us-e"}`,
 	`{"seat":""}`,
 	`{"seat":123}`,
-	`{"seat":"abc","region":"mars"}`,
+	`{"seat":"abc","region":"a.b"}`,
 	`{"seat":"abc","region":123}`,
+	`{"seat":"x","partner":"a.b/c"}`,
+	`{"seat":"x","partner":123}`,
 	`{"seat":"abc","unknownField":"foo"}`,
 }
