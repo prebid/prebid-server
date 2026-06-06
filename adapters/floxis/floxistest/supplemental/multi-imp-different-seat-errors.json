@@ -1,0 +1,25 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-2 seat/region .* differs from imp imp-1 .*",
+      "comparison": "regex"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "seat": "seat-eu", "region": "eu" } }
+      },
+      {
+        "id": "imp-2",
+        "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+        "ext": { "bidder": { "seat": "seat-other", "region": "apac" } }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" }
+  },
+  "httpCalls": []
+}

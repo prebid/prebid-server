@@ -10,7 +10,7 @@
       {
         "id": "imp-2",
         "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
-        "ext": { "bidder": { "seat": "seat-other", "region": "apac" } }
+        "ext": { "bidder": { "seat": "seat-eu", "region": "eu" } }
       }
     ],
     "site": { "id": "271", "domain": "example.com" }
@@ -30,7 +30,7 @@
             {
               "id": "imp-2",
               "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
-              "ext": { "bidder": { "seat": "seat-other", "region": "apac" } }
+              "ext": { "bidder": { "seat": "seat-eu", "region": "eu" } }
             }
           ],
           "site": { "id": "271", "domain": "example.com" }

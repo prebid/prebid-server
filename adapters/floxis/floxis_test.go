@@ -3,6 +3,7 @@ package floxis
 import (
 	"encoding/json"
 	"testing"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -14,7 +15,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderFloxis, config.Adapter{
-		Endpoint: "https://rtb-us-e.floxis.tech/pbs"},
+		Endpoint: "https://{{.Host}}/pbs"},
 		config.Server{ExternalUrl: "http://hosturl.com", DataCenter: "2"})
 
 	if buildErr != nil {
@@ -25,7 +26,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func newAdapter() *adapter {
-	return &adapter{}
+	return &adapter{endpoint: template.Must(template.New("endpointTemplate").Parse("https://{{.Host}}/pbs"))}
 }
 
 func bannerImp(ext string) openrtb2.Imp {

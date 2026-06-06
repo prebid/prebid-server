@@ -3,16 +3,20 @@ package floxis
 import (
 	"fmt"
 	"net/url"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-type adapter struct{}
+type adapter struct {
+	endpoint *template.Template
+}
 
 // regionHosts is a fixed allowlist mapping the bidder's region param to a Floxis RTB
 // host. Routing is never derived from request-supplied hostnames; an unknown or empty
@@ -35,10 +39,14 @@ func resolveHost(region string) string {
 }
 
 // Builder builds a new instance of the Floxis adapter for the given bidder with the given
-// config. The endpoint is resolved per-request from the bidder's region param via a fixed
-// host allowlist, so config.Endpoint is intentionally unused.
+// config. config.Endpoint is the {{.Host}} template; the host is filled per-request from the
+// bidder's region param via a fixed allowlist (never from request-supplied hostnames).
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	return &adapter{}, nil
+	tmpl, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
+	return &adapter{endpoint: tmpl}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -51,8 +59,27 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	// All imps in one call route under imp[0]'s seat/host. Reject a request whose imps carry
+	// differing floxis seats or regions rather than silently mis-routing imp[1..].
+	for i := 1; i < len(request.Imp); i++ {
+		impExt, err := parseImpExt(request.Imp[i])
+		if err != nil {
+			return nil, []error{err}
+		}
+		if impExt.Seat != ext.Seat || impExt.Region != ext.Region {
+			return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf(
+				"imp %s seat/region (%q/%q) differs from imp %s (%q/%q); split into separate requests",
+				request.Imp[i].ID, impExt.Seat, impExt.Region, request.Imp[0].ID, ext.Seat, ext.Region)}}
+		}
+	}
+
 	host := resolveHost(ext.Region)
-	uri := fmt.Sprintf("https://%s/pbs?seat=%s", host, url.QueryEscape(ext.Seat))
+	endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: host})
+	if err != nil {
+		return nil, []error{err}
+	}
+	// seat is not a standard endpoint macro, so it is appended in code as a query param.
+	uri := fmt.Sprintf("%s?seat=%s", endpoint, url.QueryEscape(ext.Seat))
 
 	// The request body is forwarded unchanged; no caller-owned struct is mutated, so
 	// copy-on-write is satisfied by construction.
