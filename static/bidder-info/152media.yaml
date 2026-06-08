@@ -4,17 +4,7 @@ aliasOf: "teqblaze"
 endpoint: "https://#{REGION}#.152media-ssp.com/pserver"
 maintainer:
   email: "info@152media.com"
-capabilities:
-  site:
-    mediaTypes:
-    - banner
-    - video
-    - native
-  app:
-    mediaTypes:
-    - banner
-    - video
-    - native
+gvlVendorID: 1111
 userSync:
   redirect:
     url: "https://cs.152media-ssp.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
