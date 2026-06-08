@@ -8,11 +8,6 @@
       "type": "string",
       "description": "Synapse HX tenant identifier",
       "minLength": 1
-    },
-    "adUnitId": {
-      "type": "string",
-      "description": "Synapse HX ad unit identifier",
-      "minLength": 1
     }
   },
   "required": ["tenantId"]
