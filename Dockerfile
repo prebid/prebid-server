@@ -1,4 +1,5 @@
-FROM ubuntu:22.04 AS build
+ARG BASE_IMAGE=ubuntu:22.04
+FROM ${BASE_IMAGE} AS build
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y --no-install-recommends wget ca-certificates
@@ -26,7 +27,7 @@ ARG TEST="true"
 RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
 RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/v4/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/v4/version.Rev=`git rev-parse HEAD`" .
 
-FROM ubuntu:22.04 AS release
+FROM ${BASE_IMAGE} AS release
 LABEL maintainer="hans.hjort@xandr.com" 
 WORKDIR /usr/local/bin/
 COPY --from=build /app/prebid-server .
