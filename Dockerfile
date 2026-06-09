@@ -1,3 +1,5 @@
+# BASE_IMAGE allows overriding the base image so the build can pull from an
+# internal mirror when docker.io is unreachable. Defaults to upstream ubuntu:22.04.
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE} AS build
 RUN apt-get update && \
