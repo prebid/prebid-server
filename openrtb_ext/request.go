@@ -1,4 +1,4 @@
-package openrtb_ext
+﻿package openrtb_ext
 
 import (
 	"encoding/json"
@@ -68,6 +68,17 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest               `json:"storedrequest,omitempty"`
 	SupportDeals         bool                            `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting            `json:"targeting,omitempty"`
+
+	// Profiles specifies request-level profile IDs to merge into the OpenRTB request.
+	// Profiles are small named ORTB fragments stored server-side, similar to stored requests.
+	Profiles []string `json:"profiles,omitempty"`
+
+	// OutputFormat specifies the desired response format (e.g. "ortb2", "vast4", "vast3").
+	// If not set or not handled by any module, defaults to "ortb2".
+	OutputFormat string `json:"of,omitempty"`
+
+	// OutputModule specifies which module should handle the output format conversion.
+	OutputModule string `json:"om,omitempty"`
 
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
@@ -151,9 +162,11 @@ type ExtRequestPrebidCache struct {
 }
 
 type ExtRequestPrebidServer struct {
-	ExternalUrl string `json:"externalurl"`
-	GvlID       int    `json:"gvlid"`
-	DataCenter  string `json:"datacenter"`
+	ExternalUrl   string `json:"externalurl"`
+	GvlID         int    `json:"gvlid"`
+	DataCenter    string `json:"datacenter"`
+	// RequestMethod stores the HTTP method used ("GET" or "POST") so exit-point modules can detect the channel.
+	RequestMethod string `json:"requestmethod,omitempty"`
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids

@@ -1,4 +1,4 @@
-package openrtb_ext
+﻿package openrtb_ext
 
 import (
 	"encoding/json"
@@ -48,6 +48,9 @@ type ExtImpPrebid struct {
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
 
 	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`
+
+	// Profiles specifies impression-level profile IDs to merge into this impression.
+	Profiles []string `json:"profiles,omitempty"`
 
 	// Imp specifies any imp bidder-specific first party data
 	Imp map[string]json.RawMessage `json:"imp,omitempty"`

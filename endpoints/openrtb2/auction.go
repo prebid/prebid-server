@@ -1,4 +1,4 @@
-package openrtb2
+﻿package openrtb2
 
 import (
 	"compress/gzip"
@@ -300,7 +300,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		logger.Errorf("Error setting seat non-bid: %v", err)
 	}
-	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao, false)
 }
 
 // setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
@@ -347,7 +347,9 @@ func rejectAuctionRequest(
 	ao.Response = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao)
+	// Exit-point stage must NOT be triggered on rejection paths (4xx/5xx errors).
+	// Pass hasErrors=true so sendAuctionResponse skips ExecuteExitpointStage.
+	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao, true)
 }
 
 func sendAuctionResponse(
@@ -358,6 +360,7 @@ func sendAuctionResponse(
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
+	hasErrors bool,
 ) (metrics.Labels, analytics.AuctionObject) {
 	hookExecutor.ExecuteAuctionResponseStage(response)
 
@@ -385,8 +388,12 @@ func sendAuctionResponse(
 
 	w.Header().Set("Content-Type", "application/json")
 
-	// Exitpoint will modify the response and set response headers according to hook implementation.
-	finalResponse := hookExecutor.ExecuteExitpointStage(response, w)
+	// Exitpoint modifies the response and sets response headers according to hook implementation.
+	// Per spec: exitpoint is only triggered when there are no errors during auction processing.
+	var finalResponse interface{} = response
+	if !hasErrors {
+		finalResponse = hookExecutor.ExecuteExitpointStage(response, w)
+	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
@@ -420,6 +427,18 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	errs = nil
 	var err error
 	var errL []error
+
+	// For GET requests, build the request body JSON from query parameters.
+	// The resulting JSON is fed into the normal parseRequest flow as if it were a POST body.
+	if httpRequest.Method == http.MethodGet {
+		getBody, getErr := parseGETRequest(httpRequest)
+		if getErr != nil {
+			errs = []error{getErr}
+			return
+		}
+		httpRequest.Body = io.NopCloser(strings.NewReader(string(getBody)))
+	}
+
 	var r io.ReadCloser = httpRequest.Body
 	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
 	if reqContentEncoding != "" {
