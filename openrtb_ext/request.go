@@ -1,4 +1,4 @@
-﻿package openrtb_ext
+package openrtb_ext
 
 import (
 	"encoding/json"
@@ -162,9 +162,9 @@ type ExtRequestPrebidCache struct {
 }
 
 type ExtRequestPrebidServer struct {
-	ExternalUrl   string `json:"externalurl"`
-	GvlID         int    `json:"gvlid"`
-	DataCenter    string `json:"datacenter"`
+	ExternalUrl string `json:"externalurl"`
+	GvlID       int    `json:"gvlid"`
+	DataCenter  string `json:"datacenter"`
 	// RequestMethod stores the HTTP method used ("GET" or "POST") so exit-point modules can detect the channel.
 	RequestMethod string `json:"requestmethod,omitempty"`
 }

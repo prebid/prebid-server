@@ -1,4 +1,4 @@
-﻿package openrtb2
+package openrtb2
 
 import (
 	"compress/gzip"
