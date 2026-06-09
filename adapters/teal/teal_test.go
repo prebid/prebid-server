@@ -98,48 +98,6 @@ func TestJsonSamples(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Builder
-// ---------------------------------------------------------------------------
-
-// TestBuilder mirrors Java TealBidderTest.creationShouldFailOnInvalidEndpointUrl.
-// The Go port matches Java's HttpUtil.validateUrl semantics: empty, malformed,
-// and non-absolute URLs are all rejected; only well-formed absolute URLs
-// (scheme + host) succeed.
-func TestBuilder(t *testing.T) {
-	t.Run("empty endpoint rejected", func(t *testing.T) {
-		bidder, err := Builder(openrtb_ext.BidderTeal, config.Adapter{Endpoint: ""}, config.Server{})
-		assert.Error(t, err)
-		assert.Nil(t, bidder)
-		assert.Contains(t, err.Error(), "endpoint is required")
-	})
-
-	t.Run("valid endpoint succeeds", func(t *testing.T) {
-		bidder, err := Builder(openrtb_ext.BidderTeal,
-			config.Adapter{Endpoint: testEndpoint},
-			config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-		require.NoError(t, err)
-		require.NotNil(t, bidder)
-	})
-
-	t.Run("malformed endpoint rejected", func(t *testing.T) {
-		// Mirrors Java's HttpUtil.validateUrl rejecting "invalid_url".
-		bidder, err := Builder(openrtb_ext.BidderTeal, config.Adapter{Endpoint: "invalid_url"}, config.Server{})
-		assert.Error(t, err)
-		assert.Nil(t, bidder)
-		assert.Contains(t, err.Error(), "invalid endpoint")
-	})
-
-	t.Run("relative URL rejected", func(t *testing.T) {
-		// "/some/path" is parseable but lacks scheme + host, so it fails the
-		// absolute-URL check that mirrors Java's HttpUtil.validateUrl.
-		bidder, err := Builder(openrtb_ext.BidderTeal, config.Adapter{Endpoint: "/relative/path"}, config.Server{})
-		assert.Error(t, err)
-		assert.Nil(t, bidder)
-		assert.Contains(t, err.Error(), "must be an absolute URL")
-	})
-}
-
-// ---------------------------------------------------------------------------
 // Error-type contract
 //
 // The JSON fixtures verify error MESSAGES but not Go error TYPES. This test

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"unicode"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -28,21 +27,9 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder constructs a Teal bidder configured with the supplied endpoint.
-// The endpoint is validated as an absolute URL (with scheme + host) to mirror
-// Java's HttpUtil.validateUrl behavior, which throws IllegalArgumentException
-// on null/blank/relative URLs.
+// Builder builds a new instance of the Teal adapter for the given bidder with
+// the given config.
 func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
-	if cfg.Endpoint == "" {
-		return nil, errors.New("teal: endpoint is required")
-	}
-	parsed, err := url.ParseRequestURI(cfg.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("teal: invalid endpoint %q: %w", cfg.Endpoint, err)
-	}
-	if parsed.Scheme == "" || parsed.Host == "" {
-		return nil, fmt.Errorf("teal: endpoint %q must be an absolute URL with scheme and host", cfg.Endpoint)
-	}
 	return &adapter{endpoint: cfg.Endpoint}, nil
 }
 
