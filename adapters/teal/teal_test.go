@@ -278,9 +278,9 @@ func TestGetBidType_Priority(t *testing.T) {
 	assert.Equal(t, openrtb_ext.BidTypeBanner, typ)
 }
 
-// TestGetBidType_Undeterminable — getBidType returns the reviewer-prescribed
-// error (not a silent banner default) when the imp is missing or declares no
-// media type, so MakeBids can skip the bid and surface the issue in logs.
+// TestGetBidType_Undeterminable — getBidType returns an explicit error (not a
+// silent banner default) when the imp is missing or declares no media type, so
+// MakeBids can skip the bid and surface the issue in logs.
 func TestGetBidType_Undeterminable(t *testing.T) {
 	bid := &openrtb2.Bid{ImpID: "imp1"}
 

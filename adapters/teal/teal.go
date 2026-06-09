@@ -47,19 +47,17 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 }
 
 // MakeRequests transforms the openrtb2.BidRequest into a single Teal-bound HTTP
-// request body. Behavior follows prebid-server-java's TealBidder.makeHttpRequests
-// with one intentional divergence (account-divergence rejection, step 3):
+// request body:
 //
 //  1. Each imp's bidder-slot is decoded into ExtImpTeal and validated for
 //     non-blank account and (when present) non-blank placement.
 //  2. Failed imps are dropped; their parse / validation errors are collected.
 //  3. The first surviving imp's account is propagated to Site.Publisher.ID and
-//     App.Publisher.ID (M2). Later imps must use that same account; an imp with a
-//     divergent account is rejected (BadInput) and dropped. Java instead silently
-//     keeps the first account.
+//     App.Publisher.ID. Later imps must use that same account; an imp with a
+//     divergent account is rejected (BadInput) and dropped.
 //  4. Each surviving imp gets imp.ext.prebid.storedrequest.id = placement when
-//     placement is set (M1).
-//  5. Request.Ext.bids is stamped with {"pbs": 1} (M3).
+//     placement is set.
+//  5. Request.Ext.bids is stamped with {"pbs": 1}.
 //
 // If no imp survives validation, returns (nil, errs) without dispatching.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -85,9 +83,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 		// All imps in a request must agree on account, which drives the single
 		// request-level publisher.id. The first valid imp establishes it; a later
-		// imp with a different account is rejected and dropped. Intentional
-		// divergence from Java's silent first-wins (account = account == null ?
-		// ext.getAccount() : account).
+		// imp with a different account is rejected and dropped.
 		if account == "" {
 			account = ext.Account
 		} else if ext.Account != account {
@@ -128,9 +124,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	}}, errs
 }
 
-// parseImpExt decodes imp.ext.bidder into ExtImpTeal. Mirrors Java's
-// TealBidder.parseImpExt with the same "Error parsing imp.ext for impression {id}"
-// error message verbatim on failure.
+// parseImpExt decodes imp.ext.bidder into ExtImpTeal.
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTeal, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -143,11 +137,8 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTeal, error) {
 	return &ext, nil
 }
 
-// validateImpExt mirrors Java's TealBidder.validateImpExt:
-//   - Account must be non-blank (org.apache.commons.lang3.StringUtils.isBlank semantics).
-//   - Placement, if present (non-nil), must be non-blank. Absent placement is allowed.
-//
-// Error messages are byte-identical to Java's PreBidException messages.
+// validateImpExt requires a non-blank account and, when placement is present
+// (non-nil), a non-blank placement. Absent placement is allowed.
 func validateImpExt(ext *openrtb_ext.ExtImpTeal) error {
 	if isBlank(ext.Account) {
 		return errors.New(msgAccountValidation)
@@ -158,12 +149,7 @@ func validateImpExt(ext *openrtb_ext.ExtImpTeal) error {
 	return nil
 }
 
-// isBlank mirrors org.apache.commons.lang3.StringUtils.isBlank: returns true if
-// s is empty or contains only Unicode whitespace runes.
-//
-// Cross-language note: Go's unicode.IsSpace treats U+00A0/U+2007/U+202F as
-// whitespace but Java's StringUtils.isBlank does not, so this is strictly
-// stricter than Java (rejects NBSP-only inputs Java accepts), never looser.
+// isBlank returns true if s is empty or contains only Unicode whitespace runes.
 func isBlank(s string) bool {
 	for _, r := range s {
 		if !unicode.IsSpace(r) {
@@ -176,8 +162,7 @@ func isBlank(s string) bool {
 // modifyImp returns a copy of imp with imp.ext.prebid.storedrequest.id set to
 // *placement. Returns the imp unchanged when placement is nil. Existing
 // prebid or storedrequest sub-keys that are not JSON objects are tolerated by
-// replacing them with fresh objects (matches the parent ObjectNode-replacement
-// behavior of the Java side).
+// replacing them with fresh objects.
 func modifyImp(imp *openrtb2.Imp, placement *string) (*openrtb2.Imp, error) {
 	if placement == nil {
 		return imp, nil
@@ -221,20 +206,17 @@ func modifyImp(imp *openrtb2.Imp, placement *string) (*openrtb2.Imp, error) {
 
 // decodeOrEmptyObject decodes raw as a JSON object map. Returns an empty map
 // when raw is absent / "null" / not a JSON object. The returned map is NEVER
-// nil — it is always safe to assign into. Mirrors Java's getOrCreate(parent,
-// field) which replaces non-object children with a fresh ObjectNode rather
-// than failing.
+// nil — it is always safe to assign into.
 func decodeOrEmptyObject(raw json.RawMessage) map[string]json.RawMessage {
 	out, _ := decodeJSONObject(raw)
 	return out
 }
 
 // decodeJSONObject decodes raw into a JSON object map. Treats absent input
-// AND the JSON literal `null` as "empty object" (mirrors Java's
-// ObjectUtils.defaultIfNull pattern). Returns the parse error untouched on
-// invalid JSON or non-object root types so callers can surface a meaningful
-// failure. The returned map is NEVER nil, even on error — callers can safely
-// assign into it.
+// AND the JSON literal `null` as "empty object". Returns the parse error
+// untouched on invalid JSON or non-object root types so callers can surface a
+// meaningful failure. The returned map is NEVER nil, even on error — callers
+// can safely assign into it.
 func decodeJSONObject(raw json.RawMessage) (map[string]json.RawMessage, error) {
 	if len(raw) == 0 {
 		return make(map[string]json.RawMessage), nil
@@ -251,12 +233,11 @@ func decodeJSONObject(raw json.RawMessage) (map[string]json.RawMessage, error) {
 
 // modifyBidRequest applies the request-level mutations:
 //
-//   - Site.Publisher.ID is overwritten with account when site is non-nil (M2)
-//   - App.Publisher.ID is overwritten with account when app is non-nil (M2)
-//   - Request.Ext.bids is stamped with {"pbs":1} (M3)
+//   - Site.Publisher.ID is overwritten with account when site is non-nil
+//   - App.Publisher.ID is overwritten with account when app is non-nil
+//   - Request.Ext.bids is stamped with {"pbs":1}
 //
-// Mirrors Java TealBidder.modifyBidRequest. Returns a value-copy with mutated
-// fields; the caller's request is untouched.
+// Returns a value-copy with mutated fields; the caller's request is untouched.
 func modifyBidRequest(request *openrtb2.BidRequest, account string, modifiedImps []openrtb2.Imp) (*openrtb2.BidRequest, error) {
 	modified := *request
 	modified.Imp = modifiedImps
@@ -280,9 +261,8 @@ func modifyBidRequest(request *openrtb2.BidRequest, account string, modifiedImps
 	return &modified, nil
 }
 
-// clonePublisherWithID returns a copy of publisher with ID overwritten.
-// Creates a fresh Publisher when publisher is nil — mirrors Java's
-// Optional.ofNullable(publisher).map(Publisher::toBuilder).orElseGet(Publisher::builder).
+// clonePublisherWithID returns a copy of publisher with ID overwritten,
+// creating a fresh Publisher when publisher is nil.
 func clonePublisherWithID(publisher *openrtb2.Publisher, id string) *openrtb2.Publisher {
 	if publisher == nil {
 		return &openrtb2.Publisher{ID: id}
@@ -293,15 +273,9 @@ func clonePublisherWithID(publisher *openrtb2.Publisher, id string) *openrtb2.Pu
 }
 
 // mergeBidsPBSFlag returns existingExt with the "bids" property set to
-// {"pbs":1}. If existingExt is empty, returns just the bids property. The
-// "pbs":1 marker is a Teal-side reporting/billing signal — it tells Teal's
-// exchange the request is being routed via prebid-server, distinguishing it
-// from direct integrations.
-//
-// Cross-language note: this and modifyImp (M1) marshal via
-// map[string]json.RawMessage, so Go sorts the keys alphabetically while Java's
-// Jackson preserves insertion order — the wire bytes differ from Java but are
-// logically identical (receivers compare structurally).
+// {"pbs":1}; other ext fields are preserved. The "pbs":1 marker is a Teal-side
+// reporting/billing signal — it tells Teal's exchange the request is being
+// routed via prebid-server, distinguishing it from direct integrations.
 func mergeBidsPBSFlag(existingExt json.RawMessage) (json.RawMessage, error) {
 	ext, err := decodeJSONObject(existingExt)
 	if err != nil {
@@ -357,18 +331,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 }
 
 // getBidType resolves the bid's media type from its matching impression, looked
-// up by ID via impsByID (built once in MakeBids to avoid an O(seatBids×bids×imps)
-// scan). Priority order is banner > video > native.
+// up by ID via impsByID (built once in MakeBids to avoid a per-bid scan of
+// request.Imp). Priority order is banner > video > native.
 //
-// When no imp matches the bid's ImpID, or the matching imp declares no recognized
-// media type, getBidType returns an error so MakeBids can skip the bid and surface
-// the problem in logs rather than silently mis-typing it as banner.
-//
-// Two intentional divergences from Java's TealBidder.getBidType: (1) no silent
-// banner fallback — Java returns
-// BidType.banner (a latent bug); (2) no audio branch — audio is absent from Teal's
-// declared capabilities in Go and Java alike, so the core's infoawarebidder prunes
-// audio imps before MakeRequests, making Java's audio case dead code.
+// When no imp matches the bid's ImpID, or the matching imp declares no
+// recognized media type, getBidType returns an error so MakeBids can skip the
+// bid and surface the problem in logs rather than silently mis-typing it as
+// banner.
 func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
 	if imp, ok := impsByID[bid.ImpID]; ok {
 		switch {
@@ -384,7 +353,6 @@ func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ex
 }
 
 // standardHeaders returns the headers Teal expects on every outbound request.
-// Matches Java's BidderUtil.defaultRequest output (Content-Type + Accept).
 func standardHeaders() http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
