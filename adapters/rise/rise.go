@@ -20,6 +20,14 @@ type adapter struct {
 	endpointURL string
 }
 
+type riseExtBidPrebid struct {
+	Meta *openrtb_ext.ExtBidPrebidMeta `json:"meta,omitempty"`
+}
+
+type riseExtBid struct {
+	Prebid *riseExtBidPrebid `json:"prebid,omitempty"`
+}
+
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	return &adapter{
 		endpointURL: config.Endpoint,
@@ -83,11 +91,25 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
+				BidMeta: getBidMeta(bid),
 			})
 		}
 	}
 
 	return bidResponse, errs
+}
+
+func getBidMeta(bid openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
+	if len(bid.Ext) == 0 {
+		return nil
+	}
+
+	var bidExt riseExtBid
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil || bidExt.Prebid == nil {
+		return nil
+	}
+
+	return bidExt.Prebid.Meta
 }
 
 func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
