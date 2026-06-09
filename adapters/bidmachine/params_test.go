@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -34,8 +34,12 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"seller_id":"1", "host":"api-eu", "path":"auction/rtb/v2"}`,
-	`{"seller_id":"1", "host":"api-us", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host.example.com", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host.example.com:8080", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host-example.test", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"Host.Example.com", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"localhost:3000", "path":"auction/rtb/v2"}`,
 }
 
 var invalidParams = []string{
@@ -47,32 +51,19 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"some_random_field":""}`,
-	`{"seller_id":""}`,
-	`{"seller_id": 1}`,
-	`{"seller_id": 1.2}`,
-	`{"seller_id": null}`,
-	`{"seller_id": true}`,
-	`{"seller_id": []}`,
-	`{"seller_id": {}}`,
-	`{"host":""}`,
-	`{"host": 1}`,
-	`{"host": 1.2}`,
-	`{"host": null}`,
-	`{"host": true}`,
-	`{"host": []}`,
-	`{"host": {}}`,
-	`{"path":""}`,
-	`{"path": 1}`,
-	`{"path": 1.2}`,
-	`{"path": null}`,
-	`{"path": true}`,
-	`{"path": []}`,
-	`{"path": {}}`,
-	`{"seller_id":"", "path": "", host: ""}`,
-	`{"seller_id": 1, "path": 2, host: 3}`,
-	`{"seller_id": 1.2}, "path": 5.5, host: 3.3`,
-	`{"seller_id": null, "path": null, host: null}`,
-	`{"seller_id": true, "path": false, host: true}`,
-	`{"seller_id": [], "path": [], host: []}`,
-	`{"seller_id": {}, "path": {}, host: {}}`,
+	`{"seller_id":"", "host":"host", "path":"auction/rtb/v2"}`,
+	`{"host":"host", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host", "path":""}`,
+	`{"seller_id":"1", "host":"host"}`,
+	`{"seller_id":"1", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"/path", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"//evil.com", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host/path", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host?query=1", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host#fragment", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"user@host", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"https://host.com", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host:notaport", "path":"auction/rtb/v2"}`,
+	`{"seller_id":"1", "host":"host:8080:extra", "path":"auction/rtb/v2"}`,
 }

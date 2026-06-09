@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 // DataType constants

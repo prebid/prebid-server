@@ -33,7 +33,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdmatic,
 	BidderAdmixer,
 	BidderAdnuntius,
-	BidderAdoppler,
 	BidderAdot,
 	BidderAdpone,
 	BidderAdprime,
@@ -69,6 +68,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBeachfront,
 	BidderBeintoo,
 	BidderBematterfull,
+	BidderBeop,
 	BidderBetween,
 	BidderBeyondMedia,
 	BidderBidmachine,
@@ -114,6 +114,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEdge226,
 	BidderDmx,
 	BidderDriftPixel,
+	BidderElementalTV,
 	BidderEmtv,
 	BidderEmxDigital,
 	BidderEPlanning,
@@ -216,10 +217,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRise,
 	BidderRoulax,
 	BidderRTBHouse,
+	BidderRTBStack,
 	BidderRubicon,
 	BidderSeedingAlliance,
 	BidderSeedtag,
 	BidderSaLunaMedia,
+	BidderScalibur,
 	BidderSharethrough,
 	BidderShowheroes,
 	BidderSilverMob,
@@ -241,7 +244,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderStartIO,
 	BidderStroeerCore,
 	BidderTaboola,
+	BidderTAdvertisingBlis,
 	BidderTappx,
+	BidderTargetVideo,
 	BidderTeads,
 	BidderTelaria,
 	BidderTeqBlaze,
@@ -406,7 +411,6 @@ const (
 	BidderAdmatic           BidderName = "admatic"
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
-	BidderAdoppler          BidderName = "adoppler"
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
@@ -442,6 +446,7 @@ const (
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
 	BidderBematterfull      BidderName = "bematterfull"
+	BidderBeop              BidderName = "beop"
 	BidderBetween           BidderName = "between"
 	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
@@ -487,6 +492,7 @@ const (
 	BidderEdge226           BidderName = "edge226"
 	BidderDmx               BidderName = "dmx"
 	BidderDriftPixel        BidderName = "driftpixel"
+	BidderElementalTV       BidderName = "elementaltv"
 	BidderEmtv              BidderName = "emtv"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEPlanning         BidderName = "eplanning"
@@ -589,10 +595,12 @@ const (
 	BidderRise              BidderName = "rise"
 	BidderRoulax            BidderName = "roulax"
 	BidderRTBHouse          BidderName = "rtbhouse"
+	BidderRTBStack          BidderName = "rtbstack"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSeedtag           BidderName = "seedtag"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
+	BidderScalibur          BidderName = "scalibur"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderShowheroes        BidderName = "showheroes"
 	BidderSilverMob         BidderName = "silvermob"
@@ -614,7 +622,9 @@ const (
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderTaboola           BidderName = "taboola"
+	BidderTAdvertisingBlis  BidderName = "tadvertising_blis"
 	BidderTappx             BidderName = "tappx"
+	BidderTargetVideo       BidderName = "targetVideo"
 	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"
 	BidderTeqBlaze          BidderName = "teqblaze"

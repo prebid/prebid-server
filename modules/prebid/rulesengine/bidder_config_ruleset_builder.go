@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
+	"github.com/prebid/prebid-server/v4/rules"
 )
 
 type CountryExclusions = map[string][]string

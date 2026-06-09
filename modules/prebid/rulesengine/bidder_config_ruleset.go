@@ -1,7 +1,7 @@
 package rulesengine
 
 import (
-	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v4/rules"
 )
 
 // buildBidderConfigRuleSet builds a dynamic ruleset based on the geoscope annotations in the

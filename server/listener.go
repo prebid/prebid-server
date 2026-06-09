@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
 )
 
 // monitorableListener tracks any opened connections in the metrics.
