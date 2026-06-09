@@ -48,5 +48,7 @@ var invalidParams = []string{
 	`{}`,
 	`{"placement":"def"}`,
 	`{"account":123}`,
+	`{"account":""}`,
 	`{"account":"abc","placement":42}`,
+	`{"account":"abc","placement":""}`,
 }
