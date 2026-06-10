@@ -1,0 +1,13 @@
+endpoint: "https://g.ezoic.net/ezoic/prebid/adapter/ortb"
+maintainer:
+  email: prebid@ezoic.com
+gvlVendorID: 347
+geoscope:
+  - global
+openrtb:
+  version: 2.6
+modifyingVastXmlAllowed: false
+capabilities:
+  site:
+    mediaTypes:
+      - banner
