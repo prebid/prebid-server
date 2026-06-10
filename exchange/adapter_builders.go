@@ -226,6 +226,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/stackadapt"
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
+	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
 	"github.com/prebid/prebid-server/v4/adapters/taboola"
 	"github.com/prebid/prebid-server/v4/adapters/tadvertising_blis"
 	"github.com/prebid/prebid-server/v4/adapters/tappx"
@@ -501,6 +502,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderStackAdapt:        stackadapt.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
+		openrtb_ext.BidderSynapseHX:         synapseHX.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTAdvertisingBlis:  tadvertising_blis.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
