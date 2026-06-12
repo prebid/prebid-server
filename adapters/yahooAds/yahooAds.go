@@ -231,7 +231,11 @@ func promoteRegsExtTo26(request *openrtb2.BidRequest) {
 
 	if len(regsExt) == 0 {
 		regsCopy.Ext = nil
-	} else if newExt, err := json.Marshal(regsExt); err == nil {
+	} else {
+		newExt, err := json.Marshal(regsExt)
+		if err != nil {
+			return
+		}
 		regsCopy.Ext = newExt
 	}
 
