@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"unicode"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	msgAccountValidation   = "account parameter failed validation"
-	msgPlacementValidation = "placement parameter failed validation"
-	msgImpExtParseFmt      = "Error parsing imp.ext for impression %s"
-	msgMixedAccountFmt     = "mixed-account requests are not supported: imp %q account %q differs from request account %q"
+	msgAccountValidation    = "account parameter failed validation"
+	msgPlacementValidation  = "placement parameter failed validation"
+	msgImpExtParseFmt       = "Error parsing imp.ext for impression %s"
+	msgImpExtBidderParseFmt = "Error parsing imp.ext.bidder for impression %s"
+	msgMixedAccountFmt      = "mixed-account requests are not supported: imp %q account %q differs from request account %q"
 )
 
 // adapter is the Teal openrtb2 bidder.
@@ -119,7 +120,7 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTeal, error) {
 	}
 	var ext openrtb_ext.ExtImpTeal
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &ext); err != nil {
-		return nil, fmt.Errorf(msgImpExtParseFmt, imp.ID)
+		return nil, fmt.Errorf(msgImpExtBidderParseFmt, imp.ID)
 	}
 	return &ext, nil
 }
@@ -136,14 +137,9 @@ func validateImpExt(ext *openrtb_ext.ExtImpTeal) error {
 	return nil
 }
 
-// isBlank returns true if s is empty or contains only Unicode whitespace runes.
+// isBlank reports whether s is empty or contains only whitespace.
 func isBlank(s string) bool {
-	for _, r := range s {
-		if !unicode.IsSpace(r) {
-			return false
-		}
-	}
-	return true
+	return strings.TrimSpace(s) == ""
 }
 
 // modifyImp returns a copy of imp with imp.ext.prebid.storedrequest.id set to
@@ -268,6 +264,9 @@ func mergeBidsPBSFlag(existingExt json.RawMessage) (json.RawMessage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("teal: failed parsing request.ext: %w", err)
 	}
+	// Overwrite any caller-provided ext.bids: the {"pbs":1} marker must be
+	// authoritative for Teal's reporting/billing pipeline, so a value set by the
+	// publisher or upstream middleware is intentionally replaced, not merged.
 	ext["bids"] = json.RawMessage(`{"pbs":1}`)
 	return jsonutil.Marshal(ext)
 }

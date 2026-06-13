@@ -62,7 +62,7 @@ func TestErrorClassification(t *testing.T) {
 		assert.Nil(t, requests)
 		require.Len(t, errs, 1)
 		assert.True(t, isBadInputErr(errs[0]), "got %T", errs[0])
-		assert.Contains(t, errs[0].Error(), "Error parsing imp.ext for impression impId")
+		assert.Contains(t, errs[0].Error(), "Error parsing imp.ext.bidder for impression impId")
 	})
 
 	t.Run("blank account is BadInput", func(t *testing.T) {
