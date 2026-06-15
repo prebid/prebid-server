@@ -1,6 +1,7 @@
-# The {{.Host}} macro is filled per-request from the bidder's region param via a fixed
-# host allowlist in the adapter (us-e/eu/apac); routing is never derived from request-
-# supplied hostnames. The seat query param is appended in code (not a standard macro).
+# The {{.Host}} macro is filled per-request from the bidder's region (and optional partner)
+# params — each validated as a single DNS host-label and interpolated as a subdomain of the
+# fixed .floxis.tech base domain; request-supplied hostnames are never used. The seat query
+# param is appended in code (not a standard macro).
 endpoint: "https://{{.Host}}/pbs"
 maintainer:
   email: prebid@floxis.tech

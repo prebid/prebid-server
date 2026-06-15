@@ -24,6 +24,10 @@
   "httpCalls": [
     {
       "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
         "uri": "https://us-e.floxis.tech/pbs?seat=pub-seat-1",
         "body": {
           "id": "test-request-id",

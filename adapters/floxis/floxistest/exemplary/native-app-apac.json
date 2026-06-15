@@ -24,6 +24,10 @@
   "httpCalls": [
     {
       "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
         "uri": "https://apac.floxis.tech/pbs?seat=pub-seat-apac",
         "body": {
           "id": "test-request-id",

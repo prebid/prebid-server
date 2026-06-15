@@ -2,6 +2,7 @@ package floxis
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"text/template"
@@ -107,11 +108,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
 	return []*adapters.RequestData{{
-		Method: "POST",
-		Uri:    uri,
-		Body:   body,
-		ImpIDs: openrtb_ext.GetImpIDs(request.Imp),
+		Method:  "POST",
+		Uri:     uri,
+		Body:    body,
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}}, nil
 }
 
