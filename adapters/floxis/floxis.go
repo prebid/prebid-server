@@ -34,9 +34,10 @@ func isValidHostLabel(s string) bool {
 	return hostLabelRegex.MatchString(s)
 }
 
-// resolveBidHost mirrors Prebid.js getBidHost: empty region/partner default to us-e/floxis,
-// each must be a valid host label, and floxis itself carries no partner prefix. Routing
-// (which region maps to which datacenter) is handled at DNS/LB level, not here.
+// resolveBidHost returns the {{.Host}} subdomain label for the endpoint template (which pins
+// the fixed .floxis.tech domain). Empty region/partner default to us-e/floxis, each must be a
+// valid host label, and floxis itself carries no partner prefix. Which region maps to which
+// datacenter is handled at DNS/LB level, not here.
 func resolveBidHost(region, partner string) (string, error) {
 	if region == "" {
 		region = defaultRegion
@@ -49,9 +50,9 @@ func resolveBidHost(region, partner string) (string, error) {
 			"invalid region %q or partner %q; both must be valid host labels", region, partner)}
 	}
 	if partner == defaultPartner {
-		return region + ".floxis.tech", nil
+		return region, nil
 	}
-	return partner + "-" + region + ".floxis.tech", nil
+	return partner + "-" + region, nil
 }
 
 // Builder builds a new instance of the Floxis adapter for the given bidder with the given

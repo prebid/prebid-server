@@ -15,7 +15,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderFloxis, config.Adapter{
-		Endpoint: "https://{{.Host}}/pbs"},
+		Endpoint: "https://{{.Host}}.floxis.tech/pbs"},
 		config.Server{ExternalUrl: "http://hosturl.com", DataCenter: "2"})
 
 	if buildErr != nil {
@@ -26,7 +26,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func newAdapter() *adapter {
-	return &adapter{endpoint: template.Must(template.New("endpointTemplate").Parse("https://{{.Host}}/pbs"))}
+	return &adapter{endpoint: template.Must(template.New("endpointTemplate").Parse("https://{{.Host}}.floxis.tech/pbs"))}
 }
 
 func bannerImp(ext string) openrtb2.Imp {
@@ -44,15 +44,15 @@ func TestResolveBidHost(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"us-e", "floxis", "us-e.floxis.tech", false},
-		{"eu", "floxis", "eu.floxis.tech", false},
-		{"apac", "floxis", "apac.floxis.tech", false},
-		{"", "", "us-e.floxis.tech", false},           // both default
-		{"", "floxis", "us-e.floxis.tech", false},     // empty region defaults to us-e
-		{"eu", "", "eu.floxis.tech", false},           // empty partner defaults to floxis
-		{"mars", "floxis", "mars.floxis.tech", false}, // any valid label passes through
-		{"us-e", "acme", "acme-us-e.floxis.tech", false},
-		{"eu", "acme", "acme-eu.floxis.tech", false},
+		{"us-e", "floxis", "us-e", false},
+		{"eu", "floxis", "eu", false},
+		{"apac", "floxis", "apac", false},
+		{"", "", "us-e", false},           // both default
+		{"", "floxis", "us-e", false},     // empty region defaults to us-e
+		{"eu", "", "eu", false},           // empty partner defaults to floxis
+		{"mars", "floxis", "mars", false}, // any valid label passes through
+		{"us-e", "acme", "acme-us-e", false},
+		{"eu", "acme", "acme-eu", false},
 		{"a.b", "floxis", "", true},     // invalid region label
 		{"us-e", "bad_host!", "", true}, // invalid partner label
 		{"evil.com/x", "floxis", "", true},
