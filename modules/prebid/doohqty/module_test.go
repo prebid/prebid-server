@@ -1,4 +1,4 @@
-package doohimpressionvalue
+package doohqty
 
 import (
 	"context"
@@ -25,7 +25,7 @@ type fakeValueProvider struct {
 	calls    [][]lookupKey
 }
 
-func (p *fakeValueProvider) Lookup(_ context.Context, _ string, lookups []lookupKey) (map[lookupKey]impressionValue, []string, error) {
+func (p *fakeValueProvider) Lookup(_ context.Context, _ moduleConfig, _ string, lookups []lookupKey) (map[lookupKey]impressionValue, []string, error) {
 	p.calls = append(p.calls, append([]lookupKey(nil), lookups...))
 	if p.err != nil {
 		return nil, p.warnings, p.err
@@ -44,11 +44,18 @@ func (p *fakeValueProvider) Lookup(_ context.Context, _ string, lookups []lookup
 func newTestModule(provider valueProvider, policy overwritePolicy) *Module {
 	return &Module{
 		cfg: moduleConfig{
-			LookupPaths:     []string{lookupPathDOOHID},
-			OverwritePolicy: policy,
+			Enabled: true,
+			Source: sourceConfig{
+				Type:     sourceTypeRequestLookup,
+				Endpoint: "https://values.example.com/lookup",
+			},
+			LookupPaths:             []string{lookupPathDOOHID},
+			OverwritePolicy:         policy,
+			CacheTTLSeconds:         60,
+			NegativeCacheTTLSeconds: 60,
 		},
-		provider: provider,
-		cache:    newValueCache(1024*1024, 60, 60),
+		provider:     provider,
+		requestCache: newValueCache(1024 * 1024),
 	}
 }
 
@@ -87,38 +94,43 @@ func testLookupValue(path, key string, multiplier float64) impressionValue {
 func TestParseModuleConfig(t *testing.T) {
 	cfg, err := parseModuleConfig(json.RawMessage(`{
 		"enabled": true,
-		"endpoint": "https://values.example.com/lookup",
+		"source": {
+			"type": "request_lookup",
+			"endpoint": "https://values.example.com/lookup"
+		},
 		"lookup_paths": ["dooh.id", "dooh.id", "imp.id"]
 	}`))
 
 	require.NoError(t, err)
-	assert.Equal(t, "https://values.example.com/lookup", cfg.Endpoint)
+	assert.Equal(t, sourceTypeRequestLookup, cfg.Source.Type)
+	assert.Equal(t, "https://values.example.com/lookup", cfg.Source.Endpoint)
 	assert.Equal(t, []string{lookupPathDOOHID, lookupPathImpID}, cfg.LookupPaths)
 	assert.Equal(t, overwritePolicyMissingOnly, cfg.OverwritePolicy)
 	assert.Equal(t, defaultTimeoutMS, cfg.TimeoutMS)
 	assert.Equal(t, defaultCacheTTLSeconds, cfg.CacheTTLSeconds)
 	assert.Equal(t, defaultNegativeCacheTTLSeconds, cfg.NegativeCacheTTLSeconds)
 	assert.Equal(t, defaultCacheSizeBytes, cfg.CacheSizeBytes)
+	assert.Equal(t, defaultSyncRateSeconds, cfg.Source.SyncRateSeconds)
 
 	testCases := []struct {
 		name string
 		data json.RawMessage
 	}{
 		{
-			name: "missing endpoint",
-			data: json.RawMessage(`{"enabled": true}`),
+			name: "unsupported source type",
+			data: json.RawMessage(`{"enabled": true, "source": {"type": "static"}}`),
 		},
 		{
 			name: "unsupported lookup path",
-			data: json.RawMessage(`{"endpoint": "https://values.example.com/lookup", "lookup_paths": ["site.id"]}`),
+			data: json.RawMessage(`{"source": {"endpoint": "https://values.example.com/lookup"}, "lookup_paths": ["site.id"]}`),
 		},
 		{
 			name: "unsupported overwrite policy",
-			data: json.RawMessage(`{"endpoint": "https://values.example.com/lookup", "overwrite_policy": "replace"}`),
+			data: json.RawMessage(`{"source": {"endpoint": "https://values.example.com/lookup"}, "overwrite_policy": "replace"}`),
 		},
 		{
 			name: "negative timeout",
-			data: json.RawMessage(`{"endpoint": "https://values.example.com/lookup", "timeout_ms": -1}`),
+			data: json.RawMessage(`{"source": {"endpoint": "https://values.example.com/lookup"}, "timeout_ms": -1}`),
 		},
 	}
 
@@ -172,13 +184,13 @@ func TestHTTPValueProviderSendsBulkLookupRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := newHTTPValueProvider(moduleConfig{
-		Endpoint: server.URL,
-		Headers:  map[string]string{"Authorization": "Bearer token"},
-	}, server.Client())
+	provider := newHTTPValueProvider(server.Client())
+	cfg := defaultModuleConfig()
+	cfg.Source.Endpoint = server.URL
+	cfg.Source.Headers = map[string]string{"Authorization": "Bearer token"}
 
 	lookup := lookupKey{AccountID: testAccountID, Path: lookupPathDOOHID, Key: "screen-1"}
-	values, warnings, err := provider.Lookup(context.Background(), testAccountID, []lookupKey{lookup})
+	values, warnings, err := provider.Lookup(context.Background(), cfg, testAccountID, []lookupKey{lookup})
 
 	require.NoError(t, err)
 	require.Empty(t, warnings)
@@ -328,8 +340,8 @@ func TestLookupMissErrorAndInvalidValueSkipMutation(t *testing.T) {
 		require.Len(t, provider.calls, 1)
 		assert.Empty(t, firstResult.ChangeSet.Mutations())
 		assert.Empty(t, secondResult.ChangeSet.Mutations())
-		assert.Contains(t, firstResult.Warnings[0], "no DOOH impression value found")
-		assert.Contains(t, secondResult.Warnings[0], "no DOOH impression value found")
+		assert.Contains(t, firstResult.Warnings[0], "no DOOH qty found")
+		assert.Contains(t, secondResult.Warnings[0], "no DOOH qty found")
 	})
 
 	t.Run("invalid value", func(t *testing.T) {

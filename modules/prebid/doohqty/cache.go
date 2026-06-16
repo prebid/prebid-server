@@ -1,4 +1,4 @@
-package doohimpressionvalue
+package doohqty
 
 import (
 	"encoding/json"
@@ -13,17 +13,13 @@ type cachedImpressionValue struct {
 
 type valueCache struct {
 	cache     *freecache.Cache
-	ttl       int
-	negTTL    int
 	marshal   func(v any) ([]byte, error)
 	unmarshal func(data []byte, v any) error
 }
 
-func newValueCache(sizeBytes, ttlSeconds, negativeTTLSeconds int) *valueCache {
+func newValueCache(sizeBytes int) *valueCache {
 	return &valueCache{
 		cache:     freecache.NewCache(sizeBytes),
-		ttl:       ttlSeconds,
-		negTTL:    negativeTTLSeconds,
 		marshal:   json.Marshal,
 		unmarshal: json.Unmarshal,
 	}
@@ -47,12 +43,12 @@ func (c *valueCache) get(key lookupKey) (impressionValue, bool, bool) {
 	return entry.Value, entry.Found, true
 }
 
-func (c *valueCache) setValue(key lookupKey, value impressionValue) {
-	c.set(key, cachedImpressionValue{Found: true, Value: value}, c.ttl)
+func (c *valueCache) setValueWithTTL(key lookupKey, value impressionValue, ttl int) {
+	c.set(key, cachedImpressionValue{Found: true, Value: value}, ttl)
 }
 
-func (c *valueCache) setMiss(key lookupKey) {
-	c.set(key, cachedImpressionValue{Found: false}, c.negTTL)
+func (c *valueCache) setMissWithTTL(key lookupKey, ttl int) {
+	c.set(key, cachedImpressionValue{Found: false}, ttl)
 }
 
 func (c *valueCache) set(key lookupKey, entry cachedImpressionValue, ttl int) {

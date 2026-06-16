@@ -1,4 +1,4 @@
-package doohimpressionvalue
+package doohqty
 
 import "github.com/prebid/openrtb/v20/adcom1"
 

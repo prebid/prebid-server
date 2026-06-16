@@ -1,11 +1,10 @@
-package doohimpressionvalue
+package doohqty
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
@@ -26,21 +25,22 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 	}
 
 	client := &http.Client{
-		Timeout:   time.Duration(cfg.TimeoutMS) * time.Millisecond,
 		Transport: transport,
 	}
 
 	return &Module{
-		cfg:      cfg,
-		provider: newHTTPValueProvider(cfg, client),
-		cache:    newValueCache(cfg.CacheSizeBytes, cfg.CacheTTLSeconds, cfg.NegativeCacheTTLSeconds),
+		cfg:          cfg,
+		provider:     newHTTPValueProvider(client),
+		requestCache: newValueCache(cfg.CacheSizeBytes),
+		csvSource:    newCSVSnapshotSource(context.Background(), client),
 	}, nil
 }
 
 type Module struct {
-	cfg      moduleConfig
-	provider valueProvider
-	cache    *valueCache
+	cfg          moduleConfig
+	provider     valueProvider
+	requestCache *valueCache
+	csvSource    *csvSnapshotSource
 }
 
 func (m *Module) HandleProcessedAuctionHook(
@@ -58,22 +58,34 @@ func (m *Module) HandleProcessedAuctionHook(
 		return result, nil
 	}
 
-	assignments, uniqueLookups, warnings := resolveImpressionLookups(payload.Request, miCtx.AccountID, m.cfg.LookupPaths)
+	cfg, err := applyAccountConfig(m.cfg, miCtx.AccountConfig)
+	if err != nil {
+		return result, hookexecution.NewFailure(err.Error())
+	}
+	if !cfg.Enabled {
+		return result, nil
+	}
+	if cfg.Source.Endpoint == "" {
+		result.Warnings = append(result.Warnings, "DOOH qty source endpoint is not configured")
+		return result, nil
+	}
+
+	assignments, uniqueLookups, warnings := resolveImpressionLookups(payload.Request, miCtx.AccountID, cfg.LookupPaths)
 	result.Warnings = append(result.Warnings, warnings...)
 	if len(uniqueLookups) == 0 {
 		return result, nil
 	}
-	if !hasImpressionNeedingQty(payload.Request, assignments, m.cfg.OverwritePolicy) {
+	if !hasImpressionNeedingQty(payload.Request, assignments, cfg.OverwritePolicy) {
 		return result, nil
 	}
 
-	values, lookupWarnings := m.lookupValues(ctx, miCtx.AccountID, uniqueLookups)
+	values, lookupWarnings := m.lookupValues(ctx, cfg, miCtx.AccountID, uniqueLookups)
 	result.Warnings = append(result.Warnings, lookupWarnings...)
 	if len(values) == 0 {
 		return result, nil
 	}
 
-	if !hasApplicableQtyMutation(payload.Request, assignments, values, m.cfg.OverwritePolicy) {
+	if !hasApplicableQtyMutation(payload.Request, assignments, values, cfg.OverwritePolicy) {
 		return result, nil
 	}
 
@@ -83,8 +95,8 @@ func (m *Module) HandleProcessedAuctionHook(
 			return payload, fmt.Errorf("payload contains a nil bid request")
 		}
 
-		currentAssignments, _, _ := resolveImpressionLookups(payload.Request, miCtx.AccountID, m.cfg.LookupPaths)
-		applyQtyValues(payload.Request, currentAssignments, values, m.cfg.OverwritePolicy)
+		currentAssignments, _, _ := resolveImpressionLookups(payload.Request, miCtx.AccountID, cfg.LookupPaths)
+		applyQtyValues(payload.Request, currentAssignments, values, cfg.OverwritePolicy)
 		return payload, nil
 	}, hookstage.MutationUpdate, "bidrequest", "imp", "qty")
 
@@ -92,13 +104,24 @@ func (m *Module) HandleProcessedAuctionHook(
 	return result, nil
 }
 
-func (m *Module) lookupValues(ctx context.Context, accountID string, lookups []lookupKey) (map[lookupKey]impressionValue, []string) {
+func (m *Module) lookupValues(ctx context.Context, cfg moduleConfig, accountID string, lookups []lookupKey) (map[lookupKey]impressionValue, []string) {
+	switch cfg.Source.Type {
+	case sourceTypeCSVSnapshot:
+		return m.csvSource.Lookup(cfg, accountID, lookups)
+	case sourceTypeRequestLookup:
+		return m.lookupRequestValues(ctx, cfg, accountID, lookups)
+	default:
+		return nil, []string{fmt.Sprintf("DOOH qty source type %q is not supported", cfg.Source.Type)}
+	}
+}
+
+func (m *Module) lookupRequestValues(ctx context.Context, cfg moduleConfig, accountID string, lookups []lookupKey) (map[lookupKey]impressionValue, []string) {
 	values := make(map[lookupKey]impressionValue, len(lookups))
 	warnings := make([]string, 0)
 	uncachedLookups := make([]lookupKey, 0, len(lookups))
 
 	for _, lookup := range lookups {
-		value, found, cached := m.cache.get(lookup)
+		value, found, cached := m.requestCache.get(lookup)
 		if !cached {
 			uncachedLookups = append(uncachedLookups, lookup)
 			continue
@@ -106,7 +129,7 @@ func (m *Module) lookupValues(ctx context.Context, accountID string, lookups []l
 		if found {
 			values[lookup] = value
 		} else {
-			warnings = append(warnings, fmt.Sprintf("no DOOH impression value found for %s=%q", lookup.Path, lookup.Key))
+			warnings = append(warnings, fmt.Sprintf("no DOOH qty found for %s=%q", lookup.Path, lookup.Key))
 		}
 	}
 
@@ -114,30 +137,37 @@ func (m *Module) lookupValues(ctx context.Context, accountID string, lookups []l
 		return values, warnings
 	}
 
-	fetchedValues, providerWarnings, err := m.provider.Lookup(ctx, accountID, uncachedLookups)
+	fetchedValues, providerWarnings, err := m.provider.Lookup(ctx, cfg, accountID, uncachedLookups)
 	warnings = append(warnings, providerWarnings...)
 	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("DOOH impression value lookup failed: %s", err))
+		warnings = append(warnings, fmt.Sprintf("DOOH qty lookup failed: %s", err))
 		return values, warnings
 	}
 
 	for _, lookup := range uncachedLookups {
 		value, ok := fetchedValues[lookup]
 		if !ok {
-			m.cache.setMiss(lookup)
-			warnings = append(warnings, fmt.Sprintf("no DOOH impression value found for %s=%q", lookup.Path, lookup.Key))
+			m.requestCache.setMissWithTTL(lookup, cfg.NegativeCacheTTLSeconds)
+			warnings = append(warnings, fmt.Sprintf("no DOOH qty found for %s=%q", lookup.Path, lookup.Key))
 			continue
 		}
 
 		if err := validateImpressionValue(value); err != nil {
-			m.cache.setMiss(lookup)
-			warnings = append(warnings, fmt.Sprintf("DOOH impression value skipped for %s=%q: %s", lookup.Path, lookup.Key, err))
+			m.requestCache.setMissWithTTL(lookup, cfg.NegativeCacheTTLSeconds)
+			warnings = append(warnings, fmt.Sprintf("DOOH qty skipped for %s=%q: %s", lookup.Path, lookup.Key, err))
 			continue
 		}
 
 		values[lookup] = value
-		m.cache.setValue(lookup, value)
+		m.requestCache.setValueWithTTL(lookup, value, cfg.CacheTTLSeconds)
 	}
 
 	return values, warnings
+}
+
+func (m *Module) Shutdown() error {
+	if m.csvSource != nil {
+		m.csvSource.Shutdown()
+	}
+	return nil
 }

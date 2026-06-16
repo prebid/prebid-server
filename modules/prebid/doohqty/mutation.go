@@ -1,4 +1,4 @@
-package doohimpressionvalue
+package doohqty
 
 import (
 	"fmt"

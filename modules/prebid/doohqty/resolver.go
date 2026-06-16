@@ -1,4 +1,4 @@
-package doohimpressionvalue
+package doohqty
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func resolveImpressionLookups(request *openrtb_ext.RequestWrapper, accountID str
 	for index, imp := range request.GetImp() {
 		lookup, ok := resolveImpressionLookup(request, imp, accountID, lookupPaths)
 		if !ok {
-			warnings = append(warnings, fmt.Sprintf("no DOOH impression value lookup key resolved for imp index %d", index))
+			warnings = append(warnings, fmt.Sprintf("no DOOH qty lookup key resolved for imp index %d", index))
 			continue
 		}
 

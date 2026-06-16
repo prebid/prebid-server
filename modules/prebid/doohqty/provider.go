@@ -1,4 +1,4 @@
-package doohimpressionvalue
+package doohqty
 
 import (
 	"bytes"
@@ -6,18 +6,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type valueProvider interface {
-	Lookup(ctx context.Context, accountID string, lookups []lookupKey) (map[lookupKey]impressionValue, []string, error)
+	Lookup(ctx context.Context, cfg moduleConfig, accountID string, lookups []lookupKey) (map[lookupKey]impressionValue, []string, error)
 }
 
 type httpValueProvider struct {
-	endpoint string
-	headers  map[string]string
-	client   *http.Client
+	client *http.Client
 }
 
 type bulkLookupRequest struct {
@@ -29,15 +28,13 @@ type bulkLookupResponse struct {
 	Values []impressionValue `json:"values"`
 }
 
-func newHTTPValueProvider(cfg moduleConfig, client *http.Client) *httpValueProvider {
+func newHTTPValueProvider(client *http.Client) *httpValueProvider {
 	return &httpValueProvider{
-		endpoint: cfg.Endpoint,
-		headers:  cfg.Headers,
-		client:   client,
+		client: client,
 	}
 }
 
-func (p *httpValueProvider) Lookup(ctx context.Context, accountID string, lookups []lookupKey) (map[lookupKey]impressionValue, []string, error) {
+func (p *httpValueProvider) Lookup(ctx context.Context, cfg moduleConfig, accountID string, lookups []lookupKey) (map[lookupKey]impressionValue, []string, error) {
 	if len(lookups) == 0 {
 		return nil, nil, nil
 	}
@@ -51,13 +48,16 @@ func (p *httpValueProvider) Lookup(ctx context.Context, accountID string, lookup
 		return nil, nil, fmt.Errorf("failed to marshal lookup request: %s", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.endpoint, bytes.NewReader(body))
+	requestCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.TimeoutMS)*time.Millisecond)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, cfg.Source.Endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to build lookup request: %s", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	for name, value := range p.headers {
+	for name, value := range cfg.Source.Headers {
 		req.Header.Set(name, value)
 	}
 
