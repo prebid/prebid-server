@@ -1,0 +1,107 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-eu",
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-eu-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://publisher.eu-adx-admixer.rtb-stack.com/prebid?client=a1b2c3d4-e5f6-7890-abcd-ef1234567890&endpoint=500&ssp=200",
+            "tagId": "eu-banner",
+            "customParams": {
+              "geo": "europe"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://eu-adx-admixer.rtb-stack.com/pbs?ssp=200&endpoint=500&client=a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "body": {
+          "id": "test-request-eu",
+          "site": {
+            "page": "https://example.com",
+            "domain": "example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-eu-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "eu-banner",
+              "ext": {
+                "customParams": {
+                  "geo": "europe"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-eu-banner"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-eu",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-eu-1",
+                  "impid": "imp-eu-banner",
+                  "price": 1.1,
+                  "adm": "<div>EU Banner 300x250</div>",
+                  "crid": "crid-eu-1",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-eu-1",
+            "impid": "imp-eu-banner",
+            "price": 1.1,
+            "adm": "<div>EU Banner 300x250</div>",
+            "crid": "crid-eu-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

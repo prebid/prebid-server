@@ -5,9 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 )
 
 type mockUpdateHeaderEntrypointHook struct{}
@@ -100,6 +101,10 @@ func (e mockRejectHook) HandleAuctionResponseHook(_ context.Context, _ hookstage
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{Reject: true}, nil
 }
 
+func (e mockRejectHook) HandleExitpointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	return hookstage.HookResult[hookstage.ExitpointPayload]{Reject: true}, nil
+}
+
 type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -180,43 +185,67 @@ func (e mockTimeoutHook) HandleAuctionResponseHook(_ context.Context, _ hookstag
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ChangeSet: c}, nil
 }
 
+func (e mockTimeoutHook) HandleExitpointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	time.Sleep(2 * time.Millisecond)
+	c := hookstage.ChangeSet[hookstage.ExitpointPayload]{}
+	c.AddMutation(func(payload hookstage.ExitpointPayload) (hookstage.ExitpointPayload, error) {
+		payload.Response = &openrtb2.BidResponse{ID: "another-id"}
+		return payload, nil
+	}, hookstage.MutationUpdate, "exitpoint", "bidResponse.id")
+
+	return hookstage.HookResult[hookstage.ExitpointPayload]{ChangeSet: c}, nil
+}
+
 type mockModuleContextHook struct {
 	key, val string
 }
 
 func (e mockModuleContextHook) HandleEntrypointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleRawAuctionHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleProcessedAuctionHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.ProcessedAuctionRequestPayload) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleBidderRequestHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleRawBidderResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleAllProcessedBidResponsesHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AllProcessedBidResponsesPayload) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 func (e mockModuleContextHook) HandleAuctionResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ModuleContext: miCtx.ModuleContext}, nil
+}
+
+func (e mockModuleContextHook) HandleExitpointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	miCtx.ModuleContext = hookstage.NewModuleContext()
+	miCtx.ModuleContext.Set(e.key, e.val)
+	return hookstage.HookResult[hookstage.ExitpointPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
 type mockFailureHook struct{}
@@ -257,6 +286,10 @@ func (h mockErrorHook) HandleAllProcessedBidResponsesHook(_ context.Context, _ h
 
 func (h mockErrorHook) HandleAuctionResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, errors.New("unexpected error")
+}
+
+func (h mockErrorHook) HandleExitpointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	return hookstage.HookResult[hookstage.ExitpointPayload]{}, errors.New("unexpected error")
 }
 
 type mockFailedMutationHook struct{}
@@ -384,4 +417,32 @@ func (e mockUpdateBidResponseHook) HandleAuctionResponseHook(_ context.Context, 
 		}, hookstage.MutationUpdate, "auctionResponse", "bidResponse.custom-data")
 
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ChangeSet: c}, nil
+}
+
+type mockUpdateResponseHook struct{}
+
+func (e mockUpdateResponseHook) HandleExitpointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	c := hookstage.ChangeSet[hookstage.ExitpointPayload]{}
+	c.AddMutation(
+		func(payload hookstage.ExitpointPayload) (hookstage.ExitpointPayload, error) {
+			payload.Response = `<VAST version="2.0"/>`
+			payload.W.Header().Set("Content-Type", "application/xml")
+			return payload, nil
+		}, hookstage.MutationUpdate, "exitpoint", "bidResponse.custom-response")
+
+	return hookstage.HookResult[hookstage.ExitpointPayload]{ChangeSet: c}, nil
+}
+
+type mockUpdateResponseAgainHook struct{}
+
+func (e mockUpdateResponseAgainHook) HandleExitpointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	c := hookstage.ChangeSet[hookstage.ExitpointPayload]{}
+	c.AddMutation(
+		func(payload hookstage.ExitpointPayload) (hookstage.ExitpointPayload, error) {
+			payload.Response = &openrtb2.BidResponse{ID: "modified-id"}
+			payload.W.Header().Set("Content-Type", "application/json")
+			return payload, nil
+		}, hookstage.MutationUpdate, "exitpoint", "bidResponse.json-response")
+
+	return hookstage.HookResult[hookstage.ExitpointPayload]{ChangeSet: c}, nil
 }

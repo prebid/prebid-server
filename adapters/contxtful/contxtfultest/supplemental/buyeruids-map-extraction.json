@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-buyeruids-map",
+    "imp": [
+      {
+        "id": "test-imp-buyeruids-map",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "BUYERUID123",
+            "placementId": "buyeruids-placement-test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "buyeruids-site",
+      "domain": "buyeruids.example.com",
+      "page": "https://buyeruids.example.com/test"
+    },
+    "user": {
+      "id": "test-user-buyeruids",
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "contxtful": "foo"
+          }
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/BUYERUID123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-buyeruids-map",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "buyeruids-placement-test"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "BUYERUID123",
+              "version": "v1"
+            }
+          },
+          "ortb2": {
+            "id": "test-request-buyeruids-map",
+            "imp": [
+              {
+                "banner": {
+                  "format": [
+                    {
+                      "h": 250,
+                      "w": 300
+                    }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "customerId": "BUYERUID123",
+                    "placementId": "buyeruids-placement-test"
+                  }
+                },
+                "id": "test-imp-buyeruids-map"
+              }
+            ],
+            "site": {
+              "domain": "buyeruids.example.com",
+              "id": "buyeruids-site",
+              "page": "https://buyeruids.example.com/test"
+            },
+            "user": {
+              "buyeruid": "foo",
+              "ext": {
+                "prebid": {
+                  "buyeruids": {
+                    "contxtful": "foo"
+                  }
+                }
+              },
+              "id": "test-user-buyeruids"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-buyeruids-map"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "requestId": "test-imp-buyeruids-map",
+            "cpm": 2.75,
+            "currency": "USD",
+            "width": 300,
+            "height": 250,
+            "creativeId": "buyeruids-creative-123",
+            "adm": "<div>BuyerUIDs Map Test Ad</div>",
+            "ttl": 300,
+            "netRevenue": true,
+            "mediaType": "banner",
+            "bidderCode": "contxtful",
+            "traceId": "buyeruids-trace-456",
+            "random": 0.654321,
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/BUYERUID123/pbs-impression?b=contxtful-test-imp-buyeruids-map&a=BUYERUID123&bidder=contxtful&impId=test-imp-buyeruids-map&price=2.75&traceId=buyeruids-trace-456&random=0.654321&domain=buyeruids.example.com&adRequestId=test-request-buyeruids-map&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/BUYERUID123/pbs-billing?b=contxtful-test-imp-buyeruids-map&a=BUYERUID123&bidder=contxtful&impId=test-imp-buyeruids-map&price=2.75&traceId=buyeruids-trace-456&random=0.654321&domain=buyeruids.example.com&adRequestId=test-request-buyeruids-map&w=300&h=250&f=b"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "contxtful-test-imp-buyeruids-map",
+            "impid": "test-imp-buyeruids-map",
+            "price": 2.75,
+            "adm": "<div>BuyerUIDs Map Test Ad</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "buyeruids-creative-123",
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/BUYERUID123/pbs-impression?b=contxtful-test-imp-buyeruids-map&a=BUYERUID123&bidder=contxtful&impId=test-imp-buyeruids-map&price=2.75&traceId=buyeruids-trace-456&random=0.654321&domain=buyeruids.example.com&adRequestId=test-request-buyeruids-map&w=300&h=250&f=b",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/BUYERUID123/pbs-billing?b=contxtful-test-imp-buyeruids-map&a=BUYERUID123&bidder=contxtful&impId=test-imp-buyeruids-map&price=2.75&traceId=buyeruids-trace-456&random=0.654321&domain=buyeruids.example.com&adRequestId=test-request-buyeruids-map&w=300&h=250&f=b"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+  ]
+} 

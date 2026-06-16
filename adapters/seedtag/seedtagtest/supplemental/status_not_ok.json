@@ -29,6 +29,7 @@
             "expectedRequest": {
                 "uri": "http://url.seedtag.com",
                 "body": {
+                    "cur": ["USD"],
                     "id": "test-request-id",
                     "imp": [
                         {

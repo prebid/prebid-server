@@ -1,0 +1,9 @@
+aliasOf: "vidazoo"
+endpoint: "https://exchange.omni-dex.io/openrtb/"
+maintainer:
+  email: "dev@vidazoo.com"
+userSync:
+  iframe:
+    url: https://sync.omni-dex.io/api/user/html/6810d0c7f163277130f3d7a9?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    userMacro: ${userId}
+gvlVendorID: 1463

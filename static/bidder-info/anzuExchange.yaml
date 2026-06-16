@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.marketplace-anzu.io/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"

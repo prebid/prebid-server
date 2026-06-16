@@ -1,0 +1,124 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-no-mediatype",
+    "imp": [
+      {
+        "id": "test-imp-no-mediatype",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "customerId": "NOMEDIA123",
+            "placementId": "no-mediatype-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "no-mediatype-site",
+      "domain": "nomediatype.example.com",
+      "page": "https://nomediatype.example.com/test"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.receptivity.io/v1/pbs/NOMEDIA123/bid",
+        "body": {
+          "bidRequests": [
+            {
+              "bidId": "test-imp-no-mediatype",
+              "bidder": "contxtful",
+              "params": {
+                "placementId": "no-mediatype-placement"
+              }
+            }
+          ],
+          "bidderRequest": {
+            "bidderCode": "contxtful"
+          },
+          "config": {
+            "contxtful": {
+              "customer": "NOMEDIA123",
+              "version": "v1"
+            }
+          },
+          "ortb2": {
+            "id": "test-request-no-mediatype",
+            "imp": [
+              {
+                "id": "test-imp-no-mediatype",
+                "banner": {
+                  "format": [
+                    {
+                      "w": 300,
+                      "h": 250
+                    }
+                  ]
+                },
+                "ext": {
+                  "bidder": {
+                    "customerId": "NOMEDIA123",
+                    "placementId": "no-mediatype-placement"
+                  }
+                }
+              }
+            ],
+            "site": {
+              "id": "no-mediatype-site",
+              "domain": "nomediatype.example.com",
+              "page": "https://nomediatype.example.com/test"
+            }
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-no-mediatype"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "cpm": 1.75,
+            "width": 300,
+            "height": 250,
+            "currency": "USD",
+            "requestId": "test-imp-no-mediatype",
+            "adm": "<div style=\"width:300px;height:250px;background:#ff0000;text-align:center;line-height:250px;\">No MediaType Ad</div>",
+            "ttl": 300,
+            "creativeId": "no-mediatype-creative-456",
+            "netRevenue": true,
+            "nurl": "https://monitoring.receptivity.io/v1/pbs/NOMEDIA123/pbs-impression?b=contxtful-test-imp-no-mediatype&a=NOMEDIA123&bidder=contxtful&impId=test-imp-no-mediatype&price=1.75",
+            "burl": "https://monitoring.receptivity.io/v1/pbs/NOMEDIA123/pbs-billing?b=contxtful-test-imp-no-mediatype&a=NOMEDIA123&bidder=contxtful&impId=test-imp-no-mediatype&price=1.75"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid has no ad media type",
+      "comparison": "literal"
+    }
+  ]
+} 

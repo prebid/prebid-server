@@ -1,0 +1,11 @@
+endpoint: "https://alchemyx.live/auction?id={{.AdUnit}}&auth={{.TokenID}}"
+aliasOf: "adverxo"
+maintainer:
+  email: "prebid@alchemyx.io"
+userSync:
+  iframe:
+    url: https://alchemyx.online/usync?type=iframe&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
+  redirect:
+    url: https://alchemyx.online/usync?type=image&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID

@@ -16,3 +16,7 @@ capabilities:
       - video
       - native
       - audio
+userSync:
+  redirect:
+    url: https://cm.metaxads.com/pixel?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}
+    userMacro: "[UID]"

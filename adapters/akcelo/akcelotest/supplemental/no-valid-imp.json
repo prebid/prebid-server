@@ -1,0 +1,13 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [],
+    "tmax": 500
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No valid Imp",
+      "comparison": "literal"
+    }
+  ]
+}

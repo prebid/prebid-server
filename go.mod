@@ -1,18 +1,17 @@
-module github.com/prebid/prebid-server/v3
+module github.com/prebid/prebid-server/v4
 
 go 1.23.0
-
-retract v3.0.0 // Forgot to update major version in import path and module name
 
 require (
 	github.com/51Degrees/device-detection-go/v4 v4.4.35
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/IABTechLab/adscert v0.34.0
 	github.com/NYTimes/gziphandler v1.1.1
+	github.com/WURFL/golang-wurfl v1.30.3
 	github.com/alitto/pond v1.8.3
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/benbjohnson/clock v1.3.0
-	github.com/buger/jsonparser v1.1.1
+	github.com/buger/jsonparser v1.1.2
 	github.com/chasex/glog v0.0.0-20160217080310-c62392af379c
 	github.com/coocood/freecache v1.2.1
 	github.com/docker/go-units v0.4.0
@@ -24,6 +23,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/copystructure v1.2.0
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/reflect2 v1.0.2
 	github.com/prebid/go-gdpr v1.12.0
 	github.com/prebid/go-gpp v0.2.0
@@ -34,7 +34,7 @@ require (
 	github.com/rs/cors v1.11.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.17.1
 	github.com/tidwall/sjson v1.2.5
 	github.com/vrischmann/go-metrics-influxdb v0.1.1
@@ -57,7 +57,6 @@ require (
 	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
