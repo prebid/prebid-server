@@ -17,6 +17,14 @@ The module supports two source modes:
 | `sourcetype` | No | OpenRTB DOOH multiplier source type. Omitted or `0` means unknown. |
 | `vendor` | Required when `sourcetype` is `1` | Vendor name written to `imp.qty.vendor`. |
 
+The value source fields map directly to OpenRTB `imp.qty`:
+
+| Source field | OpenRTB field | Meaning |
+| --- | --- | --- |
+| `multiplier` | `imp.qty.multiplier` | Quantity of billable impressions/events represented by the opportunity. |
+| `sourcetype` | `imp.qty.sourcetype` | Provenance of the multiplier: `0` unknown, `1` measurement vendor, `2` publisher, `3` exchange. |
+| `vendor` | `imp.qty.vendor` | Measurement vendor domain/name. Required when `sourcetype` is `1`. |
+
 Invalid values are skipped. The auction request is left unchanged when no valid value is available.
 
 ## CSV Snapshot Source

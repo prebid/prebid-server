@@ -9,6 +9,8 @@ The module supports two source modes:
 
 `csv_snapshot` is preferred when a publisher can expose all display values in one file because endpoint latency does not block the auction path. `request_lookup` is useful for sparse or highly dynamic values, but cache misses wait on the endpoint up to `timeout_ms`.
 
+The returned `multiplier`, `sourcetype`, and `vendor` fields are written directly to OpenRTB `imp.qty.multiplier`, `imp.qty.sourcetype`, and `imp.qty.vendor`.
+
 For the exact external endpoint contract, see [API_CONTRACT.md](API_CONTRACT.md).
 
 ## Host Configuration
