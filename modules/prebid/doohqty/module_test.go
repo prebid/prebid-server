@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -173,20 +174,22 @@ func TestResolveImpressionLookups(t *testing.T) {
 
 func TestHTTPValueProviderSendsBulkLookupRequest(t *testing.T) {
 	var received bulkLookupRequest
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := &http.Client{Transport: doohQtyRoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.Equal(t, "Bearer token", r.Header.Get("Authorization"))
 
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&received))
-		_, err := w.Write([]byte(`{"values":[{"path":"dooh.id","key":"screen-1","multiplier":12.5,"sourcetype":1,"vendor":"measurement.example"}]}`))
-		require.NoError(t, err)
-	}))
-	defer server.Close()
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"values":[{"path":"dooh.id","key":"screen-1","multiplier":12.5,"sourcetype":1,"vendor":"measurement.example"}]}`)),
+		}, nil
+	})}
 
-	provider := newHTTPValueProvider(server.Client())
+	provider := newHTTPValueProvider(client)
 	cfg := defaultModuleConfig()
-	cfg.Source.Endpoint = server.URL
+	cfg.Source.Endpoint = "https://values.example.com/lookup"
 	cfg.Source.Headers = map[string]string{"Authorization": "Bearer token"}
 
 	lookup := lookupKey{AccountID: testAccountID, Path: lookupPathDOOHID, Key: "screen-1"}
