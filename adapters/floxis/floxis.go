@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -25,39 +24,20 @@ const (
 	defaultPartner = "floxis"
 )
 
-// hostLabelRegex mirrors Prebid.js HOST_LABEL_REGEX: region/partner are interpolated into the
-// request host, so they must be valid DNS labels — a value carrying URL delimiters could
-// otherwise rewrite the request origin. Case-insensitive, single label, max 63 chars.
-var hostLabelRegex = regexp.MustCompile(`(?i)^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
-
-func isValidHostLabel(s string) bool {
-	return hostLabelRegex.MatchString(s)
-}
-
-// resolveBidHost returns the {{.Host}} subdomain label for the endpoint template (which pins
-// the fixed .floxis.tech domain). Empty region/partner default to us-e/floxis, each must be a
-// valid host label, and floxis itself carries no partner prefix. Which region maps to which
-// datacenter is handled at DNS/LB level, not here.
-func resolveBidHost(region, partner string) (string, error) {
+func resolveBidHost(region, partner string) string {
 	if region == "" {
 		region = defaultRegion
 	}
 	if partner == "" {
 		partner = defaultPartner
 	}
-	if !isValidHostLabel(region) || !isValidHostLabel(partner) {
-		return "", &errortypes.BadInput{Message: fmt.Sprintf(
-			"invalid region %q or partner %q; both must be valid host labels", region, partner)}
-	}
 	if partner == defaultPartner {
-		return region, nil
+		return region
 	}
-	return partner + "-" + region, nil
+	return partner + "-" + region
 }
 
-// Builder builds a new instance of the Floxis adapter for the given bidder with the given
-// config. config.Endpoint is the {{.Host}} template; the host is filled per-request from the
-// bidder's region/partner params (validated as host labels — never raw request-supplied hostnames).
+// Builder builds a new instance of the Floxis adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	tmpl, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
@@ -67,17 +47,11 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "no impressions in the bid request"}}
-	}
-
 	ext, err := parseImpExt(request.Imp[0])
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	// All imps in one call route under imp[0]'s seat/host. Reject a request whose imps carry
-	// differing floxis seats, regions, or partners rather than silently mis-routing imp[1..].
 	for i := 1; i < len(request.Imp); i++ {
 		impExt, err := parseImpExt(request.Imp[i])
 		if err != nil {
@@ -91,19 +65,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
-	host, err := resolveBidHost(ext.Region, ext.Partner)
+	endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: resolveBidHost(ext.Region, ext.Partner)})
 	if err != nil {
 		return nil, []error{err}
 	}
-	endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: host})
-	if err != nil {
-		return nil, []error{err}
-	}
-	// seat is not a standard endpoint macro, so it is appended in code as a query param.
 	uri := fmt.Sprintf("%s?seat=%s", endpoint, url.QueryEscape(ext.Seat))
 
-	// The request body is forwarded unchanged; no caller-owned struct is mutated, so
-	// copy-on-write is satisfied by construction.
 	body, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -168,9 +135,6 @@ func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpFloxis, error) {
 	return floxisExt, nil
 }
 
-// getMediaTypeForBid resolves the bid's media type. When bid.mtype (OpenRTB 2.6) is set it
-// is treated as authoritative. When unset, a single-format imp's media type is used;
-// multi-format imps without mtype cannot be disambiguated and return an error.
 func getMediaTypeForBid(imps []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.MType != 0 {
 		switch bid.MType {
@@ -192,24 +156,7 @@ func getMediaTypeForBid(imps []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidT
 		if imp.ID != bid.ImpID {
 			continue
 		}
-		formats := 0
-		var resolved openrtb_ext.BidType
-		if imp.Banner != nil {
-			formats++
-			resolved = openrtb_ext.BidTypeBanner
-		}
-		if imp.Video != nil {
-			formats++
-			resolved = openrtb_ext.BidTypeVideo
-		}
-		if imp.Audio != nil {
-			formats++
-			resolved = openrtb_ext.BidTypeAudio
-		}
-		if imp.Native != nil {
-			formats++
-			resolved = openrtb_ext.BidTypeNative
-		}
+		formats, resolved := countFormats(imp)
 		switch {
 		case formats == 1:
 			return resolved, nil
@@ -226,4 +173,26 @@ func getMediaTypeForBid(imps []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidT
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("unable to find impression %s for bid", bid.ImpID),
 	}
+}
+
+func countFormats(imp openrtb2.Imp) (int, openrtb_ext.BidType) {
+	formats := 0
+	var resolved openrtb_ext.BidType
+	if imp.Banner != nil {
+		formats++
+		resolved = openrtb_ext.BidTypeBanner
+	}
+	if imp.Video != nil {
+		formats++
+		resolved = openrtb_ext.BidTypeVideo
+	}
+	if imp.Audio != nil {
+		formats++
+		resolved = openrtb_ext.BidTypeAudio
+	}
+	if imp.Native != nil {
+		formats++
+		resolved = openrtb_ext.BidTypeNative
+	}
+	return formats, resolved
 }

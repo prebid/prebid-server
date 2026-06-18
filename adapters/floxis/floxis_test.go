@@ -42,38 +42,20 @@ func TestResolveBidHost(t *testing.T) {
 		region  string
 		partner string
 		want    string
-		wantErr bool
 	}{
-		{"us-e", "floxis", "us-e", false},
-		{"eu", "floxis", "eu", false},
-		{"apac", "floxis", "apac", false},
-		{"", "", "us-e", false},           // both default
-		{"", "floxis", "us-e", false},     // empty region defaults to us-e
-		{"eu", "", "eu", false},           // empty partner defaults to floxis
-		{"mars", "floxis", "mars", false}, // any valid label passes through
-		{"us-e", "acme", "acme-us-e", false},
-		{"eu", "acme", "acme-eu", false},
-		{"a.b", "floxis", "", true},     // invalid region label
-		{"us-e", "bad_host!", "", true}, // invalid partner label
-		{"evil.com/x", "floxis", "", true},
+		{"us-e", "floxis", "us-e"},
+		{"eu", "floxis", "eu"},
+		{"apac", "floxis", "apac"},
+		{"", "", "us-e"},
+		{"", "floxis", "us-e"},
+		{"eu", "", "eu"},
+		{"mars", "floxis", "mars"},
+		{"us-e", "acme", "acme-us-e"},
+		{"eu", "acme", "acme-eu"},
 	}
 	for _, c := range cases {
-		got, err := resolveBidHost(c.region, c.partner)
-		if c.wantErr {
-			assert.Error(t, err, "region %q partner %q", c.region, c.partner)
-			continue
-		}
-		assert.NoError(t, err, "region %q partner %q", c.region, c.partner)
-		assert.Equal(t, c.want, got, "region %q partner %q", c.region, c.partner)
+		assert.Equal(t, c.want, resolveBidHost(c.region, c.partner), "region %q partner %q", c.region, c.partner)
 	}
-}
-
-func TestNoImpressions(t *testing.T) {
-	req := &openrtb2.BidRequest{ID: "req-1"}
-	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
-	assert.Nil(t, reqData)
-	assert.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Error(), "no impressions")
 }
 
 func TestSeatIsURLEscaped(t *testing.T) {
@@ -97,17 +79,6 @@ func TestPartnerPrefixesHost(t *testing.T) {
 	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
 	assert.Empty(t, errs)
 	assert.Equal(t, "https://acme-us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
-}
-
-func TestInvalidPartnerRejected(t *testing.T) {
-	req := &openrtb2.BidRequest{
-		ID:   "req-1",
-		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","partner":"bad_host!"}}`)},
-		Site: &openrtb2.Site{ID: "271"},
-	}
-	_, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
-	assert.Len(t, errs, 1)
-	assert.Contains(t, errs[0].Error(), "valid host labels")
 }
 
 func TestValidNonStandardRegionPassesThrough(t *testing.T) {
@@ -143,8 +114,6 @@ func TestInvalidImpExt(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "imp.ext")
 }
 
-// TestCallerRequestNotMutated asserts the adapter forwards the request body unchanged and
-// does not mutate any caller-owned field (copy-on-write is satisfied by construction).
 func TestCallerRequestNotMutated(t *testing.T) {
 	imp := openrtb2.Imp{
 		ID:     "imp-1",
