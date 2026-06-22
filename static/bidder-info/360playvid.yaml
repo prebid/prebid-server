@@ -1,0 +1,11 @@
+aliasOf: "teqblaze"
+endpoint: "https://ssp.360playvid.com/pserver"
+maintainer:
+  email: "prebid@360playvid.com"
+userSync:
+  redirect:
+    url: "https://cookie.360playvid.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&coppa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://cookie.360playvid.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"

@@ -10,8 +10,7 @@
                 },
                 "ext": {
                     "bidder": {
-                        "placement_id": 123456,
-                        "pub_id": 1234
+                        "placement_id": 123456
                     }
                 }
             }
@@ -20,7 +19,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://mfx.mobilefuse.com/openrtb?pub_id=1234",
+                "uri": "http://mfx.mobilefuse.com/openrtb",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -52,11 +51,7 @@
                                     "crid": "test-crid",
                                     "h": 50,
                                     "w": 320,
-                                    "ext": {
-                                        "mf": {
-                                            "media_type": "native"
-                                        }
-                                    }
+                                    "mtype": 4
                                 }
                             ]
                         }
@@ -78,7 +73,8 @@
                         "adm": "{\"native\":{\"link\":{\"url\":\"http://mfx.mobilefuse.com/openrtb\"},\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}",
                         "crid": "test-crid",
                         "h": 50,
-                        "w": 320
+                        "w": 320,
+                        "mtype": 4
                     },
                     "type": "native"
                 }

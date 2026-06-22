@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "test-publiser-id",
+    "site": {
+      "id": "1",
+      "page": "example.com",
+      "publisher": {
+        "id": "pub123"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-ad-unit-code",
+        "banner": {
+          "format": [{"w": 128, "h": 100}]
+        },
+        "ext": {
+          "gpid": "global position id"
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ogury.example.com",
+        "body": {
+          "id": "test-publiser-id",
+          "site": {
+            "id": "1",
+            "page": "example.com",
+            "publisher": {
+              "id": "pub123"
+            }
+          },
+          "imp": [
+            {
+              "id":"imp-ad-unit-code",
+              "tagid": "imp-ad-unit-code",
+              "banner": {
+                "format": [{"w": 128, "h": 100}]
+              },
+              "ext": {
+                "gpid": "global position id"
+              }
+            }
+          ]
+        },
+        "impIDs":["imp-ad-unit-code"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-publiser-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "seat",
+              "bid": [{
+                "id": "some-UUID",
+                "impid": "imp-ad-unit-code",
+                "price": 0.500000,
+                "adm": "adm string",
+                "crid": "crid_10",
+                "h": 100,
+                "w": 128,
+                "mtype": 1
+              }]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "some-UUID",
+            "impid": "imp-ad-unit-code",
+            "price": 0.5,
+            "adm": "adm string",
+            "crid": "crid_10",
+            "h": 100,
+            "w": 128,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

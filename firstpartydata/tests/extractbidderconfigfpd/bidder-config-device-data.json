@@ -1,0 +1,48 @@
+{
+  "description": "Extracts bidder configs for a bidder, handling device data",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "appnexus"
+        ],
+        "config": {
+          "ortb2": {
+            "device": {
+              "ext": {
+                "wurfl": {
+                  "is_mobile": true,
+                  "complete_device_name": "Google Nexus 5",
+                  "form_factor": "Feature Phone",
+                  "model_name": "Nexus 5",
+                  "brand_name": "Google"
+                }
+              },
+              "make": "Google",
+              "model": "Nexus 5"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {
+    "appnexus": {
+      "device": {
+        "ext": {
+          "wurfl": {
+            "is_mobile": true,
+            "complete_device_name": "Google Nexus 5",
+            "form_factor": "Feature Phone",
+            "model_name": "Nexus 5",
+            "brand_name": "Google"
+          }
+        },
+        "make": "Google",
+        "model": "Nexus 5"
+      }
+    }
+  }
+}

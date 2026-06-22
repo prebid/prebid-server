@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 320,
+          "h": 480,
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": "testSid",
+            "token": "testToken",
+            "placementId": "testPlacementId",
+            "appId": "testAppId"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://xyz.test.com?sid=testSid&token=testToken",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "video": {
+                "w": 320,
+                "h": 480,
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "sid": "testSid",
+                  "token": "testToken",
+                  "placementId": "testPlacementId",
+                  "appId": "testAppId"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "ttx",
+              "bid": [{
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "impid": "test-imp-id",
+                "price": 1.2,
+                "adm": "some-ads",
+                "crid": "crid_testid"
+              }]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 1.2,
+            "adm": "some-ads",
+            "crid": "crid_testid"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

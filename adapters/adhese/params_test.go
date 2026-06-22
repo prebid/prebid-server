@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -38,6 +38,11 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"account": "demo", "location": "loc1", "format": "for1"}`,
 	`{"account": "demo", "location": "loc1", "format": "for1", "targets": { "ab": ["test", "test2"]}}`,
+	`{"account": "host", "location": "loc1", "format": "for1"}`,
+	`{"account": "host.example.com", "location": "loc1", "format": "for1"}`,
+	`{"account": "host-example.test", "location": "loc1", "format": "for1"}`,
+	`{"account": "Host.Example.com", "location": "loc1", "format": "for1"}`,
+	`{"account": "localhost", "location": "loc1", "format": "for1"}`,
 }
 
 var invalidParams = []string{
@@ -55,4 +60,14 @@ var invalidParams = []string{
 	`{"account": "demo", "location": "loc1", "format": 5}`,
 	`{"account": "demo", "location": "loc1", "format": "for1", "targets": "test"}`,
 	`{"account": "demo", "location": "loc1", "format": "for1", "targets": 5}`,
+	`{"account": "/path", "location": "loc1", "format": "for1"}`,
+	`{"account": "//evil.com", "location": "loc1", "format": "for1"}`,
+	`{"account": "host/path", "location": "loc1", "format": "for1"}`,
+	`{"account": "host?query=1", "location": "loc1", "format": "for1"}`,
+	`{"account": "host#fragment", "location": "loc1", "format": "for1"}`,
+	`{"account": "user@host", "location": "loc1", "format": "for1"}`,
+	`{"account": "https://host.com", "location": "loc1", "format": "for1"}`,
+	`{"account": "host:notaport", "location": "loc1", "format": "for1"}`,
+	`{"account": "host:8080:extra", "location": "loc1", "format": "for1"}`,
+	`{"account": "host:8080", "location": "loc1", "format": "for1"}`,
 }

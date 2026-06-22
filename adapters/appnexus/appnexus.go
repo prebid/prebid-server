@@ -13,15 +13,15 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"github.com/prebid/prebid-server/v3/util/randomutil"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/util/randomutil"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 const (
@@ -90,7 +90,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		memberId := impExtIncoming.Bidder.Member
+		memberId := string(impExtIncoming.Bidder.Member)
 		if memberId != "" {
 			// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 			// different impressions have different member IDs.
@@ -288,7 +288,7 @@ func handleLegacyParams(appnexusExt *openrtb_ext.ExtImpAppnexus) {
 }
 
 func validateAppnexusExt(appnexusExt *openrtb_ext.ExtImpAppnexus) error {
-	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
+	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || string(appnexusExt.Member) == "") {
 		return &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}

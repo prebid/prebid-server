@@ -1,0 +1,18 @@
+endpoint: "https://v.ex.co/se/openrtb/hb/pbs"
+maintainer:
+  email: "itadmin@ex.co"
+gvlVendorID: 444
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  key: "exco"
+  redirect:
+    url: "https://sync.ex.co/v1/user_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[UID]"

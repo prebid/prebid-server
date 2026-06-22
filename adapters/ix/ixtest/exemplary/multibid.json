@@ -41,7 +41,13 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
+                    }
                 },
                 "impIDs":["test-imp-id"]
             },

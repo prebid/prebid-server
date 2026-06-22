@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "bad-bid-ext",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "widgetId": "123" } }
+      }
+    ],
+    "site": { "page": "http://example.com", "ref": "http://example.com" },
+    "device": { "ua": "ua", "h": 100, "w": 200 }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "uri": "http://example.com/hb",
+        "body": {
+          "id": "bad-bid-ext",
+          "imp": [
+            {
+              "id": "1",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": { "bidder": { "widgetId": "123" } }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "ref": "http://example.com"
+          },
+          "device": { "ua": "ua", "h": 100, "w": 200 },
+          "ext": {
+            "nativery": {
+              "isAmp": false,
+              "widgetId": "123"
+            }
+          }
+        },
+        "impIDs": ["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "r",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "1",
+                  "price": 1.2,
+                  "adm": "<div></div>",
+                  "ext": 123
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedRequestCount": 1,
+  "expectedMakeRequestsErrors": [],
+  "expectedMakeBidsErrors": [
+    { "value": "expect { or n, but found", "comparison": "startswith" }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": []
+    }
+  ]
+}
