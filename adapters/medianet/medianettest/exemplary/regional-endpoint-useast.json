@@ -15,7 +15,8 @@
                 "ext": {
                     "bidder": {
                         "cid": "8CUTSTCID",
-                        "crid": "999999999"
+                        "crid": "999999999",
+                        "region": "USE"
                     }
                 }
             }
@@ -25,7 +26,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://prebid-adapter.media.net/rtb/prebid?src=http%3A%2F%2Flocalhost%3A8080%2Fextrnal_url",
+                "uri": "https://prebid-adapter-useast.media.net/rtb/prebid?src=http%3A%2F%2Flocalhost%3A8080%2Fextrnal_url",
                 "body": {
                     "id": "test-request-id",
                     "imp": [
@@ -42,7 +43,8 @@
                             "ext": {
                                 "bidder": {
                                     "cid": "8CUTSTCID",
-                                    "crid": "999999999"
+                                    "crid": "999999999",
+                                    "region": "USE"
                                 }
                             }
                         }

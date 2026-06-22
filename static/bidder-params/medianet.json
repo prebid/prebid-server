@@ -13,6 +13,11 @@
         "type": "string",
         "minLength": 1,
         "description": "The placement id provided by Media.net."
+      },
+      "region": {
+        "type": "string",
+        "enum": ["USE", "USW", "APAC", "EUC"],
+        "description": "Optional Media.net geolocation code used to route the bid request to a regional datacenter (USE: US East, USW: US West, APAC: Asia, EUC: Europe Central). When omitted, the default endpoint is used."
       }
     },
     "required": [
