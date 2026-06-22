@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
 
 	"github.com/stretchr/testify/assert"
 )

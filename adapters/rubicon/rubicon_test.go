@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -991,6 +991,33 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 			assert.Equal(t, bidResponse.Bids[0].Bid.Ext, givenBidExt)
 		}
 	}
+}
+
+func TestUpdateBidExtWithMeta_OnlySeatSet(t *testing.T) {
+	bid := rubiconBid{
+		Bid: openrtb2.Bid{
+			Ext: nil,
+		},
+		AdmNative: nil,
+	}
+	seat := "test-seat"
+	buyer := 0
+
+	ext := updateBidExtWithMeta(bid, buyer, seat)
+	assert.NotNil(t, ext, "Expected non-nil ext when seat is set")
+
+	var extPrebidWrapper struct {
+		Prebid struct {
+			Meta struct {
+				Seat      string `json:"seat"`
+				NetworkID *int   `json:"networkId,omitempty"`
+			} `json:"meta"`
+		} `json:"prebid"`
+	}
+	err := json.Unmarshal(ext, &extPrebidWrapper)
+	assert.NoError(t, err, "Unmarshal should succeed")
+	assert.Equal(t, seat, extPrebidWrapper.Prebid.Meta.Seat, "Seat should be set")
+	assert.Zero(t, extPrebidWrapper.Prebid.Meta.NetworkID, "NetworkID should be omitted or zero")
 }
 
 func TestOpenRTBResponseBidExtPrebidMetaPassthrough(t *testing.T) {

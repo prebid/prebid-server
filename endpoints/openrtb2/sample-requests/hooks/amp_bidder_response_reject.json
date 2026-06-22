@@ -57,6 +57,8 @@
       "hb_cache_id_rubicon": "0",
       "hb_cache_path": "/pbcache/endpoint",
       "hb_cache_path_rubico": "/pbcache/endpoint",
+      "hb_env": "amp",
+      "hb_env_rubicon": "amp",
       "hb_pb": "1.00",
       "hb_pb_rubicon": "1.00"
     },

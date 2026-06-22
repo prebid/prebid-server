@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {},
+    "device": {
+      "os": "android",
+      "ip": "91.199.242.236",
+      "ua": "random user agent"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "unitId": "123456"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "app request doesn't have a bundle ID",
+      "comparison": "literal"
+    }
+  ]
+}

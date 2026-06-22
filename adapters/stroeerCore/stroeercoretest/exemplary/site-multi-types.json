@@ -134,7 +134,8 @@
               "height": 60,
               "ad": "banner ad",
               "crid": "qwert",
-              "mtype": "banner"
+              "mtype": "banner",
+              "adomain": ["example.com"]
             },
             {
               "id": "3929239282-02",
@@ -144,7 +145,8 @@
               "height": 250,
               "ad": "<vast>video ad</vast>",
               "crid": "wasd",
-              "mtype": "video"
+              "mtype": "video",
+              "adomain": ["test.com"]
             }
           ]
         }
@@ -164,7 +166,8 @@
             "w": 468,
             "h": 60,
             "crid": "qwert",
-            "mtype": 1
+            "mtype": 1,
+            "adomain": ["example.com"]
           },
           "type": "banner"
         },
@@ -177,7 +180,8 @@
             "w": 770,
             "h": 250,
             "crid": "wasd",
-            "mtype": 2
+            "mtype": 2,
+            "adomain": ["test.com"]
           },
           "type": "video"
         }

@@ -1,0 +1,49 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Failed to get device headers",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "de825c88-282e-439a-bcf1-3108344f260c",
+    "imp": [{
+      "id": "224b15d9-c927-4cf7-aee3-9bea24c6f3e3",
+      "banner": {
+        "format": [{
+          "w": 320,
+          "h": 50
+        }],
+        "w": 320,
+        "h": 50
+      },
+      "bidfloor": 0.111,
+      "bidfloorcur": "USD",
+      "ext": {
+        "bidder": {
+          "partnerId": "rh7cnxlpvbjqU5ff",
+          "region": "us"
+        }
+      }
+    }],
+    "app": {
+      "bundle": "com.bundle.app",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.bundle.app&hl=en",
+      "publisher": {
+        "id": "1122334444"
+      }
+    },
+    "user": {
+      "id": "f102c5fe-3d9e-4d14-89f3-8d55248246c7"
+    },
+    "tmax": 1000,
+    "regs": {
+      "ext": {
+        "coppa": 0,
+        "gdpr": 0,
+        "us_privacy": "1YN-"
+      }
+    }
+  },
+  "httpCalls": []
+}

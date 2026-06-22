@@ -1,0 +1,139 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [
+            {
+                "id": "test-native-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "native": {
+				    "request": "{\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"id\":789,\"required\":1,\"title\":{\"len\":140}},{\"id\":1,\"required\":1,\"img\":{\"type\":3,\"w\":250,\"h\":250}},{\"id\":122,\"required\":1,\"img\":{\"type\":1,\"w\":15,\"h\":15}},{\"id\":2,\"required\":1,\"data\":{\"type\":1}},{\"id\":3,\"required\":1,\"data\":{\"type\":2}},{\"id\":4,\"required\":0,\"data\":{\"type\":3}},{\"id\":5,\"required\":0,\"data\":{\"type\":4}},{\"id\":6,\"required\":0,\"data\":{\"type\":5}},{\"id\":7,\"required\":0,\"data\":{\"type\":6}},{\"id\":8,\"required\":0,\"data\":{\"type\":7}},{\"id\":9,\"required\":0,\"data\":{\"type\":8}},{\"id\":10,\"required\":0,\"data\":{\"type\":9}},{\"id\":11,\"required\":0,\"data\":{\"type\":10}},{\"id\":12,\"required\":0,\"data\":{\"type\":11}}]}"
+                },
+                "ext": {
+                    "bidder": {
+                        "auId": "123"
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://whatever.url?format=prebidServer&tzo=0",
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "123",
+                            "targetId": "123-test-native-id:banner",
+                            "nativeRequest": {},
+							"dimensions": [[300,250],[300,600]]
+                        },
+                        {
+                            "auId": "123",
+                            "targetId": "123-test-native-id:native",
+                            "adType": "NATIVE",
+                            "nativeRequest":{"ortb":{"eventtrackers":[{"event":1,"methods":[1,2]},{"event":2,"methods":[1]}],"assets":[{"id":789,"required":1,"title":{"len":140}},{"id":1,"required":1,"img":{"type":3,"w":250,"h":250}},{"id":122,"required":1,"img":{"type":1,"w":15,"h":15}},{"id":2,"required":1,"data":{"type":1}},{"id":3,"required":1,"data":{"type":2}},{"id":4,"required":0,"data":{"type":3}},{"id":5,"required":0,"data":{"type":4}},{"id":6,"required":0,"data":{"type":5}},{"id":7,"required":0,"data":{"type":6}},{"id":8,"required":0,"data":{"type":7}},{"id":9,"required":0,"data":{"type":8}},{"id":10,"required":0,"data":{"type":9}},{"id":11,"required":0,"data":{"type":10}},{"id":12,"required":0,"data":{"type":11}}]}}
+                        }
+                    ],
+                    "context": "prebid.org",
+                    "metaData": {}
+                },
+                "impIDs":["test-native-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "0000000000000123",
+                            "targetId": "123-test-native-id:banner",
+                            "matchedAdCount": 1,
+                            "html": "<ADCODE>",
+                            "responseId": "adn-rsp-900646517",
+                            "ads": [
+                                {
+                                    "destinationUrls": {
+                                        "url": "http://www.google.com"
+                                    },
+                                    "advertiserDomains": ["google.com"],
+                                    "bid": {
+                                        "amount": 19.0,
+                                        "currency": "NOK"
+                                    },
+                                    "adId": "adn-id-1559784094",
+                                    "creativeWidth": "980",
+                                    "creativeHeight": "240",
+                                    "creativeId": "jn9hpzvlsf8cpdmm",
+                                    "lineItemId": "q7y9qm5b0xt9htrv"
+                                }
+                            ]
+                        },
+                        {
+                            "auId": "0000000000000123",
+                            "targetId": "123-test-native-id:native",
+                            "matchedAdCount": 1,
+                            "html": "<ADCODE>",
+                            "nativeJson": {"ortb":{"ver":"1.2","assets":[{"id":789,"required":true,"title":{"text":"Adnuntius Forever"}},{"id":1,"required":true,"img":{"type":3,"url":"https://assets.adnuntius.com/cfacah/qz2pmlqb8k2y8wqhzvn8zy8v3m2p209ms0pjk1wjy8x037mx0g.jpg?id=4013198","w":250,"h":250}},{"id":122,"required":true,"img":{"type":1,"url":"https://assets.adnuntius.com/cfacah/f9tcm571y850k8bt8mp7fsfyrnj6lhr1sz99fzxyfkwglq2znp.jpg?id=4013199","w":15,"h":15}},{"id":2,"required":true,"data":{"type":1,"value":"CNN"}},{"id":3,"required":true,"data":{"type":2,"value":"Adnuntius is a glorious company"}},{"id":4,"required":false,"data":{"type":3,"value":"5"}},{"id":5,"required":false,"data":{"type":4,"value":"1001"}},{"id":6,"required":false,"data":{"type":5,"value":"8923"}},{"id":9,"required":false,"data":{"type":8,"value":"555-1234"}},{"id":11,"required":false,"data":{"type":10,"value":"Click on the link to learn more"}},{"id":12,"required":false,"data":{"type":11,"value":"Adnuntius"}}],"link":{"url":"https://delivery.adnuntius.com/c/F1i91dCdKGIaWlotJHElIzQfj0T8qblUtK9cVXT1Qk8AAAAQCtjQz9kbGWD4nuZy3q6HaHGLAo_4rvebVEWFar2PLtv390pVPgSqDpWMkf24FSxJzl2pN3R3uB61gWbrxyxDx47w2QxHYYa9qYwhaJJf7EZU6ko47RlaZS6pMq83EjVwS5YbUYtMoEBgt7zNBL_EvrwPbYt3Tw3fZxXGWB4plvHLpE0DWObeaOFyAfI9fJ7MHSx68m7OTe-h35x60bk8NwpCuNBG7r1iW9gsWWzt4LDOuU3OQl0Jcgskc90wCbVsYIXv5PvSBqu4kSuC644UEpdMz1cbsw?ct=1640189&r=https%3A%2F%2Fadnuntius.com"},"eventtrackers":[{"event":1,"method":1,"url":"https://delivery.adnuntius.com/b/F1i91dCdKGIaWlotJHElIzQfj0T8qblUtK9cVXT1Qk8AAAAQCtjQz9kbGWD4nuZy3q6HaHGLAo_4rvebVEWFar2PLtv390pVPgSqDpWMkf24FSxJzl2pN3R3uB61gWbrxyxDx47w2QxHYYa9qYwhaJJf7EZU6ko47RlaZS6pMq83EjVwS5YbUYtMoEBgt7zNBL_EvrwPbYt3Tw3fZxXGWB4plvHLpE0DWObeaOFyAfI9fJ7MHSx68m7OTe-h35x60bk8NwpCuNBG7r1iW9gsWWzt4LDOuU3OQl0Jcgskc90wCbVsYIXv5PvSBqu4kSuC644UEpdMz1cbsw.gif"},{"event":2,"method":1,"url":"https://delivery.adnuntius.com/v/F1i91dCdKGIaWlotJHElIzQfj0T8qblUtK9cVXT1Qk8AAAAQCtjQz9kbGWD4nuZy3q6HaHGLAo_4rvebVEWFar2PLtv390pVPgSqDpWMkf24FSxJzl2pN3R3uB61gWbrxyxDx47w2QxHYYa9qYwhaJJf7EZU6ko47RlaZS6pMq83EjVwS5YbUYtMoEBgt7zNBL_EvrwPbYt3Tw3fZxXGWB4plvHLpE0DWObeaOFyAfI9fJ7MHSx68m7OTe-h35x60bk8NwpCuNBG7r1iW9gsWWzt4LDOuU3OQl0Jcgskc90wCbVsYIXv5PvSBqu4kSuC644UEpdMz1cbsw.gif"}]}},
+                            "responseId": "adn-rsp-900646517",
+                            "ads": [
+                                {
+                                    "destinationUrls": {
+                                        "url": "http://www.google.com"
+                                    },
+                                    "advertiserDomains": ["google.com"],
+                                    "bid": {
+                                        "amount": 20.0,
+                                        "currency": "NOK"
+                                    },
+                                    "adId": "adn-id-1559784094",
+                                    "creativeWidth": "980",
+                                    "creativeHeight": "240",
+                                    "creativeId": "jn9hpzvlsf8cpdmm",
+                                    "lineItemId": "q7y9qm5b0xt9htrv"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "adn-id-1559784094",
+                        "impid": "test-native-id",
+                        "price": 20000,
+                        "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":789,\"required\":true,\"title\":{\"text\":\"Adnuntius Forever\"}},{\"id\":1,\"required\":true,\"img\":{\"type\":3,\"url\":\"https://assets.adnuntius.com/cfacah/qz2pmlqb8k2y8wqhzvn8zy8v3m2p209ms0pjk1wjy8x037mx0g.jpg?id=4013198\",\"w\":250,\"h\":250}},{\"id\":122,\"required\":true,\"img\":{\"type\":1,\"url\":\"https://assets.adnuntius.com/cfacah/f9tcm571y850k8bt8mp7fsfyrnj6lhr1sz99fzxyfkwglq2znp.jpg?id=4013199\",\"w\":15,\"h\":15}},{\"id\":2,\"required\":true,\"data\":{\"type\":1,\"value\":\"CNN\"}},{\"id\":3,\"required\":true,\"data\":{\"type\":2,\"value\":\"Adnuntius is a glorious company\"}},{\"id\":4,\"required\":false,\"data\":{\"type\":3,\"value\":\"5\"}},{\"id\":5,\"required\":false,\"data\":{\"type\":4,\"value\":\"1001\"}},{\"id\":6,\"required\":false,\"data\":{\"type\":5,\"value\":\"8923\"}},{\"id\":9,\"required\":false,\"data\":{\"type\":8,\"value\":\"555-1234\"}},{\"id\":11,\"required\":false,\"data\":{\"type\":10,\"value\":\"Click on the link to learn more\"}},{\"id\":12,\"required\":false,\"data\":{\"type\":11,\"value\":\"Adnuntius\"}}],\"link\":{\"url\":\"https://delivery.adnuntius.com/c/F1i91dCdKGIaWlotJHElIzQfj0T8qblUtK9cVXT1Qk8AAAAQCtjQz9kbGWD4nuZy3q6HaHGLAo_4rvebVEWFar2PLtv390pVPgSqDpWMkf24FSxJzl2pN3R3uB61gWbrxyxDx47w2QxHYYa9qYwhaJJf7EZU6ko47RlaZS6pMq83EjVwS5YbUYtMoEBgt7zNBL_EvrwPbYt3Tw3fZxXGWB4plvHLpE0DWObeaOFyAfI9fJ7MHSx68m7OTe-h35x60bk8NwpCuNBG7r1iW9gsWWzt4LDOuU3OQl0Jcgskc90wCbVsYIXv5PvSBqu4kSuC644UEpdMz1cbsw?ct=1640189&r=https%3A%2F%2Fadnuntius.com\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://delivery.adnuntius.com/b/F1i91dCdKGIaWlotJHElIzQfj0T8qblUtK9cVXT1Qk8AAAAQCtjQz9kbGWD4nuZy3q6HaHGLAo_4rvebVEWFar2PLtv390pVPgSqDpWMkf24FSxJzl2pN3R3uB61gWbrxyxDx47w2QxHYYa9qYwhaJJf7EZU6ko47RlaZS6pMq83EjVwS5YbUYtMoEBgt7zNBL_EvrwPbYt3Tw3fZxXGWB4plvHLpE0DWObeaOFyAfI9fJ7MHSx68m7OTe-h35x60bk8NwpCuNBG7r1iW9gsWWzt4LDOuU3OQl0Jcgskc90wCbVsYIXv5PvSBqu4kSuC644UEpdMz1cbsw.gif\"},{\"event\":2,\"method\":1,\"url\":\"https://delivery.adnuntius.com/v/F1i91dCdKGIaWlotJHElIzQfj0T8qblUtK9cVXT1Qk8AAAAQCtjQz9kbGWD4nuZy3q6HaHGLAo_4rvebVEWFar2PLtv390pVPgSqDpWMkf24FSxJzl2pN3R3uB61gWbrxyxDx47w2QxHYYa9qYwhaJJf7EZU6ko47RlaZS6pMq83EjVwS5YbUYtMoEBgt7zNBL_EvrwPbYt3Tw3fZxXGWB4plvHLpE0DWObeaOFyAfI9fJ7MHSx68m7OTe-h35x60bk8NwpCuNBG7r1iW9gsWWzt4LDOuU3OQl0Jcgskc90wCbVsYIXv5PvSBqu4kSuC644UEpdMz1cbsw.gif\"}]}",
+                        "adid": "adn-id-1559784094",
+                        "adomain": ["google.com"],
+                        "cid": "q7y9qm5b0xt9htrv",
+                        "crid": "jn9hpzvlsf8cpdmm",
+                        "mtype": 4,
+                        "w": 980,
+                        "h": 240
+                    },
+                    "type": "native"
+                }
+            ],
+            "currency": "NOK"
+        }
+    ]
+}

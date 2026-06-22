@@ -54,6 +54,12 @@
                             "id": "569749",
                             "name": "publisher-name"
                         }
+                    },
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
                     }
                 },
                 "impIDs":["test-imp-id"]

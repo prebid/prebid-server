@@ -9,11 +9,11 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 const (
@@ -222,15 +222,20 @@ func buildRequestImp(imp *openrtb2.Imp, ext impExtIncoming, displayManagerVer st
 		imp.BidFloor = convertedValue
 	}
 
-	impExt := impExt{
-		Connatix: impExtConnatix{
-			PlacementId:           ext.Bidder.PlacementId,
-			ViewabilityPercentage: ext.Bidder.ViewabilityPercentage,
-		},
+	var incomingExt map[string]interface{}
+	if err := jsonutil.Unmarshal(imp.Ext, &incomingExt); err != nil {
+		incomingExt = make(map[string]interface{})
+	}
+
+	delete(incomingExt, "bidder")
+
+	incomingExt["connatix"] = impExtConnatix{
+		PlacementId:           ext.Bidder.PlacementId,
+		ViewabilityPercentage: ext.Bidder.ViewabilityPercentage,
 	}
 
 	var err error
-	imp.Ext, err = json.Marshal(impExt)
+	imp.Ext, err = json.Marshal(incomingExt)
 
 	return err
 }

@@ -1,11 +1,13 @@
+//go:build cgo
+
 package devicedetection
 
 import (
 	"fmt"
 	"math"
 
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

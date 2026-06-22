@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type adapter struct {
@@ -51,17 +51,24 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	requestCopy := *request
+	// Set the CUR of bid to USD after converting all floors
+	requestCopy.Cur = []string{"USD"}
 	requestCopy.Imp = imps
 	requestJSON, err := jsonutil.Marshal(requestCopy)
 	if err != nil {
 		return nil, []error{err}
 	}
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
 	requestData := &adapters.RequestData{
-		Method: http.MethodPost,
-		Uri:    a.endpoint,
-		Body:   requestJSON,
-		ImpIDs: openrtb_ext.GetImpIDs(requestCopy.Imp),
+		Method:  http.MethodPost,
+		Uri:     a.endpoint,
+		Body:    requestJSON,
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}
 
 	return []*adapters.RequestData{requestData}, errors

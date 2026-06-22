@@ -17,4 +17,6 @@ userSync:
   iframe:
     url: "https://sync.inmobi.com/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
     userMacro: "{ID5UID}"
-
+  redirect:
+    url: "https://sync.inmobi.com/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "{ID5UID}"

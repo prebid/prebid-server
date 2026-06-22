@@ -7,6 +7,8 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - native
   site:
     mediaTypes:
       - banner
+      - native

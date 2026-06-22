@@ -12,18 +12,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/usersync"
+	"github.com/prebid/prebid-server/v4/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/usersync"
 	"github.com/stretchr/testify/assert"
 
-	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
+	metricsConf "github.com/prebid/prebid-server/v4/metrics/config"
 )
 
 func TestSetUIDEndpoint(t *testing.T) {

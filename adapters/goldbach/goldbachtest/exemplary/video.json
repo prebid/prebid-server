@@ -1,0 +1,138 @@
+{
+  "mockBidRequest": {
+    "imp": [
+      {
+        "video": {
+          "api": [1, 2],
+          "mimes": ["video/mp4", "application/javascript"],
+          "protocols": [2, 3, 5, 6, 7, 8],
+          "playbackmethod": [6],
+          "plcmt": 4,
+          "w": 640,
+          "h": 480
+        },
+        "id": "test-imp-123",
+        "ext": {
+          "bidder": {
+            "slotId": "12345678/de-example.ch/slot-id/some-page",
+            "publisherId": "de-example.ch",
+            "customTargeting": {
+              "key1": "value1",
+              "key2": ["value2", "value3"]
+            }
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://www.example.ch/"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"
+    },
+    "id": "723f8906-7f59-4f50-bba9-ed9115ab1663"
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"]
+        },
+        "uri": "https://gold.bach/prebid/adapter-endpoint",
+        "body": {
+          "imp": [
+            {
+              "video": {
+                "api": [1, 2],
+                "mimes": ["video/mp4", "application/javascript"],
+                "protocols": [2, 3, 5, 6, 7, 8],
+                "playbackmethod": [6],
+                "plcmt": 4,
+                "w": 640,
+                "h": 480
+              },
+              "id": "test-imp-123",
+              "ext": {
+                "goldbach": {
+                  "slotId": "12345678/de-example.ch/slot-id/some-page",
+                  "targetings": {
+                    "key1": ["value1"],
+                    "key2": ["value2", "value3"]
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://www.example.ch/"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"
+          },
+          "ext": {
+            "goldbach": {
+              "publisherId": "de-example.ch"
+            }
+          },
+          "id": "723f8906-7f59-4f50-bba9-ed9115ab1663_de-example.ch"
+        },
+        "impIDs": ["test-imp-123"]
+      },
+      "mockResponse": {
+        "status": 201,
+        "headers": {},
+        "body": {
+          "id": "c04f2011-87e9-4cde-9152-78fa2a63078a",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "b334cb75-41d8-4f61-801c-1e785a2fe38d",
+                  "impid": "test-imp-123",
+                  "price": 13.5,
+                  "adm": "test-ad-content",
+                  "adid": "456",
+                  "crid": "1234",
+                  "w": 640,
+                  "h": 480,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "CHF"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "CHF",
+      "bids": [
+        {
+          "bid": {
+            "id": "b334cb75-41d8-4f61-801c-1e785a2fe38d",
+            "impid": "test-imp-123",
+            "price": 13.5,
+            "adm": "test-ad-content",
+            "adid": "456",
+            "crid": "1234",
+            "w": 640,
+            "h": 480,
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

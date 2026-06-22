@@ -13,9 +13,20 @@
       "type": "string",
       "description": "Placement Type (Sticky, Header, ...)"
     },
-    "test": {
+    "sample": {
       "type": "string",
-      "description": "Test Mode"
+      "description": "Sample"
+    },
+    "formats": {
+      "type": "array",
+      "description": "An array of formats to request (banner, native, or video)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "An object containing extra settings for the Missena adapter"
     }
   },
   "required": [

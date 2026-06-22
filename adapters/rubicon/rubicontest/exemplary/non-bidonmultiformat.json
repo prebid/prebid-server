@@ -114,7 +114,9 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -138,7 +140,7 @@
                   }
                 }
               ],
-              "seat": "adman"
+              "seat": "rubicon"
             }
           ],
           "cur": "USD"
@@ -161,7 +163,10 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "type": "banner"
+                "type": "banner",
+                "meta": {
+                  "seat": "rubicon"
+                }
               }
             }
           },

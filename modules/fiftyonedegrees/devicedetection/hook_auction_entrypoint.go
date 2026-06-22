@@ -1,8 +1,10 @@
+//go:build cgo
+
 package devicedetection
 
 import (
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 )
 
 // handleAuctionEntryPointRequestHook is a hookstage.HookFunc that is used to handle the auction entrypoint request hook.
@@ -16,10 +18,10 @@ func handleAuctionEntryPointRequestHook(cfg config, payload hookstage.Entrypoint
 	evidenceFromSua := evidenceExtractor.fromSuaPayload(payload.Body)
 
 	// create a Module context and set the evidence from headers, evidence from sua and dd enabled flag
-	moduleContext := make(hookstage.ModuleContext)
-	moduleContext[evidenceFromHeadersCtxKey] = evidenceFromHeaders
-	moduleContext[evidenceFromSuaCtxKey] = evidenceFromSua
-	moduleContext[ddEnabledCtxKey] = true
+	moduleContext := hookstage.NewModuleContext()
+	moduleContext.Set(evidenceFromHeadersCtxKey, evidenceFromHeaders)
+	moduleContext.Set(evidenceFromSuaCtxKey, evidenceFromSua)
+	moduleContext.Set(ddEnabledCtxKey, true)
 
 	return hookstage.HookResult[hookstage.EntrypointPayload]{
 		ModuleContext: moduleContext,
