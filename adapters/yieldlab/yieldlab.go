@@ -375,14 +375,15 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			}
 
 			var bidType openrtb_ext.BidType
-			if imp.Video != nil {
+			switch {
+			case strings.EqualFold(bid.Adtype, adTypeVideo):
 				bidType = openrtb_ext.BidTypeVideo
 				responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
 				responseBid.AdM = a.makeVast(internalRequest, req, bid)
-			} else if imp.Banner != nil {
+			case strings.EqualFold(bid.Adtype, adTypeBanner):
 				bidType = openrtb_ext.BidTypeBanner
 				responseBid.AdM = a.makeBannerAdSource(internalRequest, req, bid)
-			} else {
+			default:
 				// Yieldlab adapter currently doesn't support Audio and Native ads
 				continue
 			}
