@@ -19,25 +19,25 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/bidadjustment"
-	"github.com/prebid/prebid-server/v3/config/util"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/exchange/entities"
-	"github.com/prebid/prebid-server/v3/experiment/adscert"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	loggerI "github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/version"
+	"github.com/prebid/prebid-server/v4/bidadjustment"
+	"github.com/prebid/prebid-server/v4/config/util"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
+	"github.com/prebid/prebid-server/v4/experiment/adscert"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	loggerI "github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/version"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -616,7 +616,7 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		bidder.logHealthCheck(false)
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			err = &errortypes.Timeout{Message: err.Error()}
 			var corebidder adapters.Bidder = bidder.Bidder
 			// The bidder adapter normally stores an info-aware bidder (a bidder wrapper)
@@ -631,7 +631,6 @@ func (bidder *BidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 				// a loop of trying to report timeouts to the timeout notifications.
 				go bidder.doTimeoutNotification(tb, req, logger)
 			}
-
 		}
 		return &httpCallInfo{
 			request: req,

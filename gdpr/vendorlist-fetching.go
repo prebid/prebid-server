@@ -13,14 +13,18 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"golang.org/x/net/context/ctxhttp"
 )
 
 type saveVendors func(uint16, uint16, api.VendorList)
 type VendorListFetcher func(ctx context.Context, specVersion uint16, listVersion uint16, metricsEngine metrics.MetricsEngine) (vendorlist.VendorList, error)
+
+// latestSpecVersion is the highest GVL specification version supported. Update this value when
+// a new spec version is introduced by the IAB.
+const latestSpecVersion = 3
 
 // This file provides the vendorlist-fetching function for Prebid Server.
 //
@@ -72,7 +76,7 @@ func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16
 			firstListVersion: 2, // The GVL for TCF2 has no vendors defined in its first version. It's very unlikely to be used, so don't preload it.
 		},
 		{
-			specVersion:      3,
+			specVersion:      latestSpecVersion,
 			firstListVersion: 1,
 		},
 	}

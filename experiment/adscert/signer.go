@@ -6,7 +6,7 @@ import (
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
 	"github.com/IABTechLab/adscert/pkg/adscert/logger"
 	"github.com/IABTechLab/adscert/pkg/adscert/signatory"
-	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v4/config"
 )
 
 const SignHeader = "X-Ads-Cert-Auth"

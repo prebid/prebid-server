@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/xeipuuv/gojsonschema"
 )
 

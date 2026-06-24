@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/analytics/agma"
-	"github.com/prebid/prebid-server/v3/analytics/clients"
-	"github.com/prebid/prebid-server/v3/analytics/filesystem"
-	"github.com/prebid/prebid-server/v3/analytics/pubstack"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/privacy"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/analytics/agma"
+	"github.com/prebid/prebid-server/v4/analytics/clients"
+	"github.com/prebid/prebid-server/v4/analytics/filesystem"
+	"github.com/prebid/prebid-server/v4/analytics/pubstack"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/privacy"
 )
 
 // Modules that need to be logged to need to be initialized here

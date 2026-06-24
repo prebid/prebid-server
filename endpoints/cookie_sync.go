@@ -15,23 +15,24 @@ import (
 	"github.com/julienschmidt/httprouter"
 	gpplib "github.com/prebid/go-gpp"
 	gppConstants "github.com/prebid/go-gpp/constants"
-	accountService "github.com/prebid/prebid-server/v3/account"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/privacy/ccpa"
-	gppPrivacy "github.com/prebid/prebid-server/v3/privacy/gpp"
-	"github.com/prebid/prebid-server/v3/stored_requests"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	stringutil "github.com/prebid/prebid-server/v3/util/stringutil"
-	"github.com/prebid/prebid-server/v3/util/timeutil"
+	accountService "github.com/prebid/prebid-server/v4/account"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/privacy/ccpa"
+	gppPrivacy "github.com/prebid/prebid-server/v4/privacy/gpp"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
+	stringutil "github.com/prebid/prebid-server/v4/util/stringutil"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 const receiveCookieDeprecation = "receive-cookie-deprecation"
@@ -183,8 +184,9 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
-			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.findPriorityGroups(account.CookieSync),
+			Enabled:            (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
+			PriorityGroups:     c.findPriorityGroups(account.CookieSync),
+			PriorityGroupsOnly: ptrutil.ValueOrDefault(account.CookieSync.PriorityGroupsOnly),
 		},
 		Debug: request.Debug,
 		Limit: limit,

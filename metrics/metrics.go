@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // Labels defines the labels that can be attached to the metrics.
@@ -497,6 +497,7 @@ type MetricsEngine interface {
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
 	RecordGvlListRequest()
+	RecordLiveGVLFetch(success bool)
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
 	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)

@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/version"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/version"
 )
 
 func compressToGZIP(requestBody []byte) ([]byte, error) {
