@@ -14,7 +14,7 @@ capabilities:
       - banner
       - video
 openrtb:
-  multiformat-supported: false
+  multiformat-supported: true
 userSync:
   iframe:
     url: https://prebid.cwi.re/v1/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&rd={{.RedirectURL}}
