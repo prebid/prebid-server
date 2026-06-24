@@ -376,15 +376,16 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 			var bidType openrtb_ext.BidType
 			switch {
-			case strings.EqualFold(bid.Adtype, adTypeVideo):
+			case strings.EqualFold(bid.Adtype, adTypeVideo) && imp.Video != nil:
 				bidType = openrtb_ext.BidTypeVideo
 				responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
 				responseBid.AdM = a.makeVast(internalRequest, req, bid)
-			case strings.EqualFold(bid.Adtype, adTypeBanner):
+			case strings.EqualFold(bid.Adtype, adTypeBanner) && imp.Banner != nil:
 				bidType = openrtb_ext.BidTypeBanner
 				responseBid.AdM = a.makeBannerAdSource(internalRequest, req, bid)
 			default:
-				// Yieldlab adapter currently doesn't support Audio and Native ads
+				// Discard the bid if the returned adtype was not requested by the imp.
+				// Yieldlab adapter currently doesn't support Audio and Native ads.
 				continue
 			}
 
