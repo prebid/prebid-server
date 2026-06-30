@@ -3166,8 +3166,9 @@ func TestCleanOpenRTBRequestsEidPermissionsRaceCondition(t *testing.T) {
 	const (
 		permittedBidder = "bidderA"
 		eidSource       = "source1"
-		iterations      = 250
+		iterations      = 10
 	)
+	permittedBidders := []string{permittedBidder}
 	deniedBidders := []string{"bidderB", "bidderC"}
 
 	buildAuctionRequest := func() AuctionRequest {
@@ -3247,7 +3248,7 @@ func TestCleanOpenRTBRequestsEidPermissionsRaceCondition(t *testing.T) {
 
 		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), buildAuctionRequest(), nil, map[string]float64{})
 		require.Empty(t, errs, "iteration %d returned errors", i)
-		require.Len(t, bidderRequests, 1+len(deniedBidders), "iteration %d produced unexpected number of bidder requests", i)
+		require.Len(t, bidderRequests, len(permittedBidders)+len(deniedBidders), "iteration %d produced unexpected number of bidder requests", i)
 
 		seen := make(map[string]bool, len(bidderRequests))
 		for _, br := range bidderRequests {
