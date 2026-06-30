@@ -455,6 +455,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapter
 	return out, errs
 }
 
+// resolveBidType reports a bid's media type from the ORIGINAL request imp it fills,
+// not from the Meta-facing transformed copy. This is deliberate: a non-rewarded
+// video interstitial is sent to Meta as banner{0,0}+instl (see modifyImp), but the
+// bid still fills the publisher's video interstitial slot, so it is reported as
+// video. Meta's interstitial creative is a deferred token whose display-vs-video
+// form is resolved client-side at render — the bid carries no media type — so the
+// slot type is the most specific media classification the adapter can assert, and
+// bid.MType is intentionally left unset rather than claiming an unverifiable form.
 func resolveBidType(bid *openrtb2.Bid, req *openrtb2.BidRequest) (openrtb_ext.BidType, error) {
 	for _, imp := range req.Imp {
 		if bid.ImpID == imp.ID {
