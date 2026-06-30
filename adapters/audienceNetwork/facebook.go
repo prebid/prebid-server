@@ -364,7 +364,7 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 	case openrtb_ext.BidTypeNative:
 		nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
 		if !ok {
-			return jsonData, errors.New("unable to find imp[0].video in json data")
+			return jsonData, errors.New("unable to find imp[0].native in json data")
 		}
 
 		// Set w/h to -1 for native impressions based on the facebook native spec.
@@ -439,9 +439,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapter
 			bid.AdID = obj.BidID
 			bid.CrID = obj.BidID
 
+			bidType, err := resolveBidType(&bid, request)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
 			out.Bids = append(out.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: resolveBidType(&bid, request),
+				BidType: bidType,
 			})
 		}
 	}
@@ -449,14 +455,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapter
 	return out, errs
 }
 
-func resolveBidType(bid *openrtb2.Bid, req *openrtb2.BidRequest) openrtb_ext.BidType {
+func resolveBidType(bid *openrtb2.Bid, req *openrtb2.BidRequest) (openrtb_ext.BidType, error) {
 	for _, imp := range req.Imp {
 		if bid.ImpID == imp.ID {
-			return resolveImpType(&imp)
+			return resolveImpType(&imp), nil
 		}
 	}
 
-	panic(fmt.Sprintf("Invalid bid imp ID %s does not match any imp IDs from the original bid request", bid.ImpID))
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("bid %s 'impid' %s does not match any imp in the bid request", bid.ID, bid.ImpID),
+	}
 }
 
 func resolveImpType(imp *openrtb2.Imp) openrtb_ext.BidType {
