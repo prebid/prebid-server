@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"slices"
 	"strings"
 
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -157,6 +158,17 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		reqWrapperCopy := req.CloneAndClearImpWrappers()
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
+
+		// bidRequestCopy is a shallow copy, so User is still the same pointer shared
+		// across every per-bidder iteration. Deep-copy User (and its EIDs slice) so that
+		// in-place mutations such as removeUnpermissionedEids don't corrupt the EIDs seen
+		// by other bidders in this loop. See issue #4792.
+		if bidRequestCopy.User != nil {
+			userCopy := *bidRequestCopy.User
+			userCopy.EIDs = slices.Clone(bidRequestCopy.User.EIDs)
+			bidRequestCopy.User = &userCopy
+		}
+
 		reqWrapperCopy.Imp = imps
 
 		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
