@@ -169,12 +169,7 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		} else {
 			extMap = make(map[string]interface{})
 		}
-		// Preserve an explicit rewarded interstitial signal. Meta documents videotype
-		// "rewarded_interstitial" as distinct from "rewarded"; otherwise default a
-		// rewarded video imp to "rewarded".
-		if vt, _ := extMap["videotype"].(string); vt != "rewarded_interstitial" {
-			extMap["videotype"] = "rewarded"
-		}
+		extMap["videotype"] = "rewarded"
 		videoCopy.Ext, err = jsonutil.Marshal(extMap)
 		if err != nil {
 			return err
