@@ -209,15 +209,28 @@ func modifyImp(out *openrtb2.Imp) error {
 
 	// Meta's only non-rewarded interstitial request shape is banner{0,0}+instl:1, which
 	// renders display or video client-side (per Meta's Audience Network server-to-server
-	// spec). Map a non-rewarded video interstitial to that shape instead of rejecting it,
-	// clearing other media so only the banner interstitial shape is sent. Rewarded video
-	// interstitials keep their video imp so Meta receives videotype "rewarded".
+	// spec). Map a non-rewarded video interstitial to that shape instead of rejecting it.
+	// Rewarded video interstitials keep their video imp so Meta receives videotype "rewarded".
 	if out.Instl == 1 && impType == openrtb_ext.BidTypeVideo && out.Rwdd != 1 {
 		out.Banner = &openrtb2.Banner{}
+		impType = openrtb_ext.BidTypeBanner
+	}
+
+	// Audience Network placements are single-format, so send Meta only the resolved
+	// media object and drop any other media carried by a multi-format impression.
+	switch impType {
+	case openrtb_ext.BidTypeBanner:
 		out.Video = nil
 		out.Audio = nil
 		out.Native = nil
-		impType = openrtb_ext.BidTypeBanner
+	case openrtb_ext.BidTypeVideo:
+		out.Banner = nil
+		out.Audio = nil
+		out.Native = nil
+	case openrtb_ext.BidTypeNative:
+		out.Banner = nil
+		out.Video = nil
+		out.Audio = nil
 	}
 
 	if impType == openrtb_ext.BidTypeBanner {
