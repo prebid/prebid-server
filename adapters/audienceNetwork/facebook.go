@@ -169,7 +169,12 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		} else {
 			extMap = make(map[string]interface{})
 		}
-		extMap["videotype"] = "rewarded"
+		// Preserve an explicit rewarded interstitial signal. Meta documents videotype
+		// "rewarded_interstitial" as distinct from "rewarded"; otherwise default a
+		// rewarded video imp to "rewarded".
+		if vt, _ := extMap["videotype"].(string); vt != "rewarded_interstitial" {
+			extMap["videotype"] = "rewarded"
+		}
 		videoCopy.Ext, err = jsonutil.Marshal(extMap)
 		if err != nil {
 			return err
@@ -196,10 +201,23 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 func modifyImp(out *openrtb2.Imp) error {
 	impType := resolveImpType(out)
 
-	if out.Instl == 1 && !isValidInterstitial(impType, out.Rwdd) {
+	if out.Instl == 1 && !isValidInterstitial(impType) {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and rewarded video", out.ID),
+			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and video", out.ID),
 		}
+	}
+
+	// Meta's only non-rewarded interstitial request shape is banner{0,0}+instl:1, which
+	// renders display or video client-side (per Meta's Audience Network server-to-server
+	// spec). Map a non-rewarded video interstitial to that shape instead of rejecting it,
+	// clearing other media so only the banner interstitial shape is sent. Rewarded video
+	// interstitials keep their video imp so Meta receives videotype "rewarded".
+	if out.Instl == 1 && impType == openrtb_ext.BidTypeVideo && out.Rwdd != 1 {
+		out.Banner = &openrtb2.Banner{}
+		out.Video = nil
+		out.Audio = nil
+		out.Native = nil
+		impType = openrtb_ext.BidTypeBanner
 	}
 
 	if impType == openrtb_ext.BidTypeBanner {
@@ -241,16 +259,8 @@ func modifyImp(out *openrtb2.Imp) error {
 	return nil
 }
 
-func isValidInterstitial(impType openrtb_ext.BidType, rwdd int8) bool {
-	if impType == openrtb_ext.BidTypeBanner {
-		return true
-	}
-
-	if impType == openrtb_ext.BidTypeVideo && rwdd == 1 {
-		return true
-	}
-
-	return false
+func isValidInterstitial(impType openrtb_ext.BidType) bool {
+	return impType == openrtb_ext.BidTypeBanner || impType == openrtb_ext.BidTypeVideo
 }
 
 func extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) {
@@ -382,6 +392,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapter
 	}
 
 	out := adapters.NewBidderResponseWithBidsCapacity(4)
+	if bidResp.Cur != "" {
+		out.Currency = bidResp.Cur
+	}
 	var errs []error
 
 	for _, seatbid := range bidResp.SeatBid {
