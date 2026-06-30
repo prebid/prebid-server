@@ -202,6 +202,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/rtbstack"
 	"github.com/prebid/prebid-server/v4/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/v4/adapters/sa_lunamedia"
+	"github.com/prebid/prebid-server/v4/adapters/scalibur"
 	"github.com/prebid/prebid-server/v4/adapters/seedingAlliance"
 	"github.com/prebid/prebid-server/v4/adapters/seedtag"
 	"github.com/prebid/prebid-server/v4/adapters/sharethrough"
@@ -224,9 +225,11 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/sspBC"
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
+	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
 	"github.com/prebid/prebid-server/v4/adapters/taboola"
 	"github.com/prebid/prebid-server/v4/adapters/tadvertising_blis"
 	"github.com/prebid/prebid-server/v4/adapters/tappx"
+	"github.com/prebid/prebid-server/v4/adapters/targetVideo"
 	"github.com/prebid/prebid-server/v4/adapters/teads"
 	"github.com/prebid/prebid-server/v4/adapters/telaria"
 	"github.com/prebid/prebid-server/v4/adapters/teqblaze"
@@ -476,6 +479,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
 		openrtb_ext.BidderSeedtag:           seedtag.Builder,
 		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
+		openrtb_ext.BidderScalibur:          scalibur.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
 		openrtb_ext.BidderShowheroes:        showheroes.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
@@ -496,9 +500,11 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
+		openrtb_ext.BidderSynapseHX:         synapseHX.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTAdvertisingBlis:  tadvertising_blis.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
+		openrtb_ext.BidderTargetVideo:       targetVideo.Builder,
 		openrtb_ext.BidderTeads:             teads.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
 		openrtb_ext.BidderTeqBlaze:          teqblaze.Builder,
