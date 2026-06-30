@@ -27,7 +27,7 @@ func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server confi
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	body, err := jsonutil.Marshal(request)
 	if err != nil {
-		return nil, []error{fmt.Errorf("unable to marshal openrtb request: %v", err)}
+		return nil, []error{fmt.Errorf("unable to marshal openrtb request: %w", err)}
 	}
 
 	headers := http.Header{}

@@ -15,7 +15,7 @@ const testsBidderEndpoint = "https://g.ezoic.net/ezoic/prebid/adapter/ortb"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderEzoic, config.Adapter{
-		Endpoint: testsBidderEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 347, DataCenter: "2"})
+		Endpoint: testsBidderEndpoint}, config.Server{})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
