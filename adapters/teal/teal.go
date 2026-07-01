@@ -316,15 +316,29 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	return bidderResponse, errs
 }
 
-// getBidType resolves the bid's media type from its matching impression, looked
-// up by ID via impsByID (built once in MakeBids to avoid a per-bid scan of
-// request.Imp). Priority order is banner > video > native.
+// getBidType resolves the bid's media type. Teal declares multiformat-supported,
+// so a single impression can carry more than one media type (e.g. banner+video);
+// introspecting the imp alone cannot disambiguate which format a given bid is for.
+// The authoritative signal is the response's own bid.mtype (OpenRTB 2.6), so it is
+// consulted first.
 //
-// When no imp matches the bid's ImpID, or the matching imp declares no
-// recognized media type, getBidType returns an error so MakeBids can skip the
-// bid and surface the problem in logs rather than silently mis-typing it as
-// banner.
+// Only when the response omits mtype does getBidType fall back to introspecting the
+// matching impression, looked up by ID via impsByID (built once in MakeBids to avoid
+// a per-bid scan of request.Imp), in banner > video > native order. Audio is omitted
+// because it is not in Teal's declared capabilities.
+//
+// When neither the bid's mtype nor a matching imp yields a recognized media type,
+// getBidType returns an error so MakeBids can skip the bid and surface the problem in
+// logs rather than silently mis-typing it.
 func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
 	if imp, ok := impsByID[bid.ImpID]; ok {
 		switch {
 		case imp.Banner != nil:
@@ -335,7 +349,9 @@ func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ex
 			return openrtb_ext.BidTypeNative, nil
 		}
 	}
-	return "", fmt.Errorf("failed to determine bid type for imp %q", bid.ImpID)
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("failed to determine bid type for imp %q", bid.ImpID),
+	}
 }
 
 // standardHeaders returns the headers Teal expects on every outbound request.
