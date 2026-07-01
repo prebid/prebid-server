@@ -1,0 +1,466 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>teal: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/teal/teal.go (95.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package teal
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "net/http"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+const (
+        msgAccountValidation    = "account parameter failed validation"
+        msgPlacementValidation  = "placement parameter failed validation"
+        msgImpExtParseFmt       = "Error parsing imp.ext for impression %s"
+        msgImpExtBidderParseFmt = "Error parsing imp.ext.bidder for impression %s"
+        msgMixedAccountFmt      = "mixed-account requests are not supported: imp %q account %q differs from request account %q"
+)
+
+// adapter is the Teal openrtb2 bidder.
+type adapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the Teal adapter for the given bidder with
+// the given config.
+func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{endpoint: cfg.Endpoint}, nil
+}</span>
+
+// MakeRequests transforms the openrtb2.BidRequest into a single Teal-bound HTTP
+// request body:
+//
+//  1. Each imp's bidder-slot is decoded into ExtImpTeal and validated for
+//     non-blank account and (when present) non-blank placement.
+//  2. Failed imps are dropped; their parse / validation errors are collected.
+//  3. The first surviving imp's account is propagated to Site.Publisher.ID and
+//     App.Publisher.ID. Later imps must use that same account; an imp with a
+//     divergent account is rejected (BadInput) and dropped.
+//  4. Each surviving imp gets imp.ext.prebid.storedrequest.id = placement when
+//     placement is set.
+//  5. Request.Ext.bids is stamped with {"pbs": 1}.
+//
+// If no imp survives validation, returns (nil, errs) without dispatching.
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">modifiedImps := make([]openrtb2.Imp, 0, len(request.Imp))
+        var errs []error
+        var account string
+
+        for i := range request.Imp </span><span class="cov8" title="1">{
+                imp := request.Imp[i]
+                ext, err := parseImpExt(&amp;imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, &amp;errortypes.BadInput{Message: err.Error()})
+                        continue</span>
+                }
+                <span class="cov8" title="1">if err := validateImpExt(ext); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, &amp;errortypes.BadInput{Message: err.Error()})
+                        continue</span>
+                }
+
+                // All imps in a request must agree on account, which drives the single
+                // request-level publisher.id. The first valid imp establishes it; a later
+                // imp with a different account is rejected and dropped.
+                <span class="cov8" title="1">if account == "" </span><span class="cov8" title="1">{
+                        account = ext.Account
+                }</span> else<span class="cov8" title="1"> if ext.Account != account </span><span class="cov8" title="1">{
+                        errs = append(errs, &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf(msgMixedAccountFmt, imp.ID, ext.Account, account),
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">modified, err := modifyImp(&amp;imp, ext.Placement)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, &amp;errortypes.BadInput{Message: err.Error()})
+                        continue</span>
+                }
+                <span class="cov8" title="1">modifiedImps = append(modifiedImps, *modified)</span>
+        }
+
+        <span class="cov8" title="1">if len(modifiedImps) == 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">modifiedRequest, err := modifyBidRequest(request, account, modifiedImps)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, append(errs, err)
+        }</span>
+
+        <span class="cov8" title="1">body, err := jsonutil.Marshal(modifiedRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, append(errs, err)
+        }</span>
+
+        <span class="cov8" title="1">return []*adapters.RequestData{{
+                Method:  http.MethodPost,
+                Uri:     a.endpoint,
+                Body:    body,
+                Headers: standardHeaders(),
+                ImpIDs:  openrtb_ext.GetImpIDs(modifiedRequest.Imp),
+        }}, errs</span>
+}
+
+// parseImpExt decodes imp.ext.bidder into ExtImpTeal.
+func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTeal, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf(msgImpExtParseFmt, imp.ID)
+        }</span>
+        <span class="cov8" title="1">var ext openrtb_ext.ExtImpTeal
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf(msgImpExtBidderParseFmt, imp.ID)
+        }</span>
+        <span class="cov8" title="1">return &amp;ext, nil</span>
+}
+
+// validateImpExt requires a non-blank account and, when placement is present
+// (non-nil), a non-blank placement. Absent placement is allowed.
+func validateImpExt(ext *openrtb_ext.ExtImpTeal) error <span class="cov8" title="1">{
+        if isBlank(ext.Account) </span><span class="cov8" title="1">{
+                return errors.New(msgAccountValidation)
+        }</span>
+        <span class="cov8" title="1">if ext.Placement != nil &amp;&amp; isBlank(*ext.Placement) </span><span class="cov8" title="1">{
+                return errors.New(msgPlacementValidation)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// isBlank reports whether s is empty or contains only whitespace.
+func isBlank(s string) bool <span class="cov8" title="1">{
+        return strings.TrimSpace(s) == ""
+}</span>
+
+// modifyImp returns a copy of imp with imp.ext.prebid.storedrequest.id set to
+// *placement. Returns the imp unchanged when placement is nil. Existing
+// prebid or storedrequest sub-keys that are not JSON objects are tolerated by
+// replacing them with fresh objects.
+func modifyImp(imp *openrtb2.Imp, placement *string) (*openrtb2.Imp, error) <span class="cov8" title="1">{
+        if placement == nil </span><span class="cov8" title="1">{
+                return imp, nil
+        }</span>
+
+        <span class="cov8" title="1">ext, err := decodeJSONObject(imp.Ext)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf(msgImpExtParseFmt, imp.ID)
+        }</span>
+
+        <span class="cov8" title="1">prebid := decodeOrEmptyObject(ext["prebid"])
+        storedRequest := decodeOrEmptyObject(prebid["storedrequest"])
+
+        placementJSON, err := jsonutil.Marshal(*placement)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">storedRequest["id"] = placementJSON
+
+        storedRequestJSON, err := jsonutil.Marshal(storedRequest)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">prebid["storedrequest"] = storedRequestJSON
+
+        prebidJSON, err := jsonutil.Marshal(prebid)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">ext["prebid"] = prebidJSON
+
+        extJSON, err := jsonutil.Marshal(ext)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">modified := *imp
+        modified.Ext = extJSON
+        return &amp;modified, nil</span>
+}
+
+// decodeOrEmptyObject decodes raw as a JSON object map. Returns an empty map
+// when raw is absent / "null" / not a JSON object. The returned map is NEVER
+// nil — it is always safe to assign into.
+func decodeOrEmptyObject(raw json.RawMessage) map[string]json.RawMessage <span class="cov8" title="1">{
+        out, _ := decodeJSONObject(raw)
+        return out
+}</span>
+
+// decodeJSONObject decodes raw into a JSON object map. Treats absent input
+// AND the JSON literal `null` as "empty object". Returns the parse error
+// untouched on invalid JSON or non-object root types so callers can surface a
+// meaningful failure. The returned map is NEVER nil, even on error — callers
+// can safely assign into it.
+func decodeJSONObject(raw json.RawMessage) (map[string]json.RawMessage, error) <span class="cov8" title="1">{
+        if len(raw) == 0 </span><span class="cov8" title="1">{
+                return make(map[string]json.RawMessage), nil
+        }</span>
+        <span class="cov8" title="1">var parsed map[string]json.RawMessage
+        if err := jsonutil.Unmarshal(raw, &amp;parsed); err != nil </span><span class="cov8" title="1">{
+                return make(map[string]json.RawMessage), err
+        }</span>
+        <span class="cov8" title="1">if parsed == nil </span><span class="cov8" title="1">{
+                return make(map[string]json.RawMessage), nil
+        }</span>
+        <span class="cov8" title="1">return parsed, nil</span>
+}
+
+// modifyBidRequest applies the request-level mutations:
+//
+//   - Site.Publisher.ID is overwritten with account when site is non-nil
+//   - App.Publisher.ID is overwritten with account when app is non-nil
+//   - Request.Ext.bids is stamped with {"pbs":1}
+//
+// Returns a value-copy with mutated fields; the caller's request is untouched.
+func modifyBidRequest(request *openrtb2.BidRequest, account string, modifiedImps []openrtb2.Imp) (*openrtb2.BidRequest, error) <span class="cov8" title="1">{
+        modified := *request
+        modified.Imp = modifiedImps
+
+        if request.Site != nil </span><span class="cov8" title="1">{
+                site := *request.Site
+                site.Publisher = clonePublisherWithID(site.Publisher, account)
+                modified.Site = &amp;site
+        }</span>
+        <span class="cov8" title="1">if request.App != nil </span><span class="cov8" title="1">{
+                app := *request.App
+                app.Publisher = clonePublisherWithID(app.Publisher, account)
+                modified.App = &amp;app
+        }</span>
+
+        <span class="cov8" title="1">extJSON, err := mergeBidsPBSFlag(request.Ext)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">modified.Ext = extJSON
+        return &amp;modified, nil</span>
+}
+
+// clonePublisherWithID returns a copy of publisher with ID overwritten,
+// creating a fresh Publisher when publisher is nil.
+func clonePublisherWithID(publisher *openrtb2.Publisher, id string) *openrtb2.Publisher <span class="cov8" title="1">{
+        if publisher == nil </span><span class="cov8" title="1">{
+                return &amp;openrtb2.Publisher{ID: id}
+        }</span>
+        <span class="cov8" title="1">pub := *publisher
+        pub.ID = id
+        return &amp;pub</span>
+}
+
+// mergeBidsPBSFlag returns existingExt with the "bids" property set to
+// {"pbs":1}; other ext fields are preserved. The "pbs":1 marker is a Teal-side
+// reporting/billing signal — it tells Teal's exchange the request is being
+// routed via prebid-server, distinguishing it from direct integrations.
+func mergeBidsPBSFlag(existingExt json.RawMessage) (json.RawMessage, error) <span class="cov8" title="1">{
+        ext, err := decodeJSONObject(existingExt)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("teal: failed parsing request.ext: %w", err)
+        }</span>
+        // Overwrite any caller-provided ext.bids: the {"pbs":1} marker must be
+        // authoritative for Teal's reporting/billing pipeline, so a value set by the
+        // publisher or upstream middleware is intentionally replaced, not merged.
+        <span class="cov8" title="1">ext["bids"] = json.RawMessage(`{"pbs":1}`)
+        return jsonutil.Marshal(ext)</span>
+}
+
+// MakeBids parses the Teal bid response body and packages the bids into a
+// BidderResponse. Status handling follows the canonical adapters helpers:
+// 204 → no-content shortcut, 4xx/5xx → BadServerResponse, 200 → parse body.
+// Bids whose media type cannot be resolved from the matching imp are skipped
+// and their error collected, rather than silently mis-typed as banner.
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var bidResponse openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;bidResponse); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: err.Error()}}
+        }</span>
+
+        <span class="cov8" title="1">impsByID := make(map[string]openrtb2.Imp, len(request.Imp))
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                impsByID[imp.ID] = imp
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+        if bidResponse.Cur != "" </span><span class="cov8" title="1">{
+                bidderResponse.Currency = bidResponse.Cur
+        }</span>
+        <span class="cov8" title="1">var errs []error
+        for _, seatBid := range bidResponse.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := &amp;seatBid.Bid[i]
+                        bidType, err := getBidType(bid, impsByID)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     bid,
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+        <span class="cov8" title="1">return bidderResponse, errs</span>
+}
+
+// getBidType resolves the bid's media type. Teal declares multiformat-supported,
+// so a single impression can carry more than one media type (e.g. banner+video);
+// introspecting the imp alone cannot disambiguate which format a given bid is for.
+// The authoritative signal is the response's own bid.mtype (OpenRTB 2.6), so it is
+// consulted first.
+//
+// Only when the response omits mtype does getBidType fall back to introspecting the
+// matching impression, looked up by ID via impsByID (built once in MakeBids to avoid
+// a per-bid scan of request.Imp), in banner &gt; video &gt; native order. Audio is omitted
+// because it is not in Teal's declared capabilities.
+//
+// When neither the bid's mtype nor a matching imp yields a recognized media type,
+// getBidType returns an error so MakeBids can skip the bid and surface the problem in
+// logs rather than silently mis-typing it.
+func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative, nil</span>
+        }
+        <span class="cov8" title="1">if imp, ok := impsByID[bid.ImpID]; ok </span><span class="cov8" title="1">{
+                switch </span>{
+                case imp.Banner != nil:<span class="cov8" title="1">
+                        return openrtb_ext.BidTypeBanner, nil</span>
+                case imp.Video != nil:<span class="cov8" title="1">
+                        return openrtb_ext.BidTypeVideo, nil</span>
+                case imp.Native != nil:<span class="cov8" title="1">
+                        return openrtb_ext.BidTypeNative, nil</span>
+                }
+        }
+        <span class="cov8" title="1">return "", &amp;errortypes.BadServerResponse{
+                Message: fmt.Sprintf("failed to determine bid type for imp %q", bid.ImpID),
+        }</span>
+}
+
+// standardHeaders returns the headers Teal expects on every outbound request.
+func standardHeaders() http.Header <span class="cov8" title="1">{
+        headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        return headers
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
