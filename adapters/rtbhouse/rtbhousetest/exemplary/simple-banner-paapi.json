@@ -45,7 +45,8 @@
                     },
                     "ext": {
                         "bidder": {}
-                    }
+                    },
+                    "tagid": "test-imp-id"
                 }]
             },
             "impIDs":["test-imp-id"]
