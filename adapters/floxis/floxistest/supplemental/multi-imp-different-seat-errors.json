@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp imp-2 seat/region/partner .* differs from imp imp-1 .*",
+      "value": "imp imp-2 seat/host .* differs from imp imp-1 .*",
       "comparison": "regex"
     }
   ],

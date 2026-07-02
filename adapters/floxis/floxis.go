@@ -52,20 +52,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
+	resolvedHost := resolveBidHost(ext.Region, ext.Partner)
 	for i := 1; i < len(request.Imp); i++ {
 		impExt, err := parseImpExt(request.Imp[i])
 		if err != nil {
 			return nil, []error{err}
 		}
-		if impExt.Seat != ext.Seat || impExt.Region != ext.Region || impExt.Partner != ext.Partner {
+		impHost := resolveBidHost(impExt.Region, impExt.Partner)
+		if impExt.Seat != ext.Seat || impHost != resolvedHost {
 			return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf(
-				"imp %s seat/region/partner (%q/%q/%q) differs from imp %s (%q/%q/%q); split into separate requests",
-				request.Imp[i].ID, impExt.Seat, impExt.Region, impExt.Partner,
-				request.Imp[0].ID, ext.Seat, ext.Region, ext.Partner)}}
+				"imp %s seat/host (%q/%q) differs from imp %s (%q/%q); split into separate requests",
+				request.Imp[i].ID, impExt.Seat, impHost,
+				request.Imp[0].ID, ext.Seat, resolvedHost)}}
 		}
 	}
 
-	endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: resolveBidHost(ext.Region, ext.Partner)})
+	endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: resolvedHost})
 	if err != nil {
 		return nil, []error{err}
 	}
