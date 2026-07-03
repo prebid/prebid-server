@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "SuperEdge Adapter Params",
+  "description": "A schema which validates params accepted by the SuperEdge adapter",
+  "type": "object",
+  "properties": {
+    "sk": {
+      "type": "string",
+      "description": "Different Publisher has different sk，communicate with SuperEdge to obtain it.",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "sk"
+  ]
+}

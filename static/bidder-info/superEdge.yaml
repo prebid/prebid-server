@@ -1,0 +1,11 @@
+endpoint: "https://rtb-us.superedge.co.jp/bid?sk={{.sk}}"
+endpointCompression: gzip
+geoscope:
+  - USA
+maintainer:
+  email: aq@superedge.co.jp
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
