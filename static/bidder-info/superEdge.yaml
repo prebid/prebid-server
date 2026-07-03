@@ -3,7 +3,7 @@ endpointCompression: gzip
 geoscope:
   - USA
 maintainer:
-  email: aq@superedge.co.jp
+  email: op@superedge.co.jp
 capabilities:
   site:
     mediaTypes:
