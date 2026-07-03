@@ -1,4 +1,4 @@
-package mediagoTechnology
+package mgtechnology
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ type adapter struct {
 	EndpointTemplate *template.Template
 }
 
-type mediagoTechnologyResponseBidExt struct {
+type mgtechnologyResponseBidExt struct {
 	MediaType string `json:"mediaType"`
 }
 
@@ -52,11 +52,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 
-	mediagoTechnologyExt, err := getMediaGoTechnologyExt(request)
+	mgtechnologyExt, err := getMgTechnologyExt(request)
 	if err != nil {
 		return nil, err
 	}
-	endPoint, err := a.getEndPoint(mediagoTechnologyExt)
+	endPoint, err := a.getEndPoint(mgtechnologyExt)
 	if err != nil {
 		return nil, err
 	}
@@ -81,17 +81,17 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	}, nil
 }
 
-// getMediaGoTechnologyExt get MediaGoTechnologyExt From ext.bidderparams or ext of First Imp.
-func getMediaGoTechnologyExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtMediaGoTechnology, error) {
-	var extMediaGoTechnology openrtb_ext.ExtMediaGoTechnology
+// getMgTechnologyExt get MgTechnologyExt from ext.bidderparams or ext of first imp.
+func getMgTechnologyExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtMgTechnology, error) {
+	var extMgTechnology openrtb_ext.ExtMgTechnology
 	var extBidder adapters.ExtImpBidder
 
 	reqExt := &openrtb_ext.ExtRequest{}
 	err := jsonutil.Unmarshal(request.Ext, &reqExt)
 	if err != nil {
-		err = jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &extMediaGoTechnology)
-		if err != nil && extMediaGoTechnology.Token != "" {
-			return &extMediaGoTechnology, nil
+		err = jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &extMgTechnology)
+		if err != nil && extMgTechnology.Token != "" {
+			return &extMgTechnology, nil
 		}
 	}
 
@@ -101,18 +101,18 @@ func getMediaGoTechnologyExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtMedi
 		return nil, err
 	}
 
-	var extImpMediaGoTechnology openrtb_ext.ExtImpMediaGoTechnology
-	err = jsonutil.Unmarshal(extBidder.Bidder, &extImpMediaGoTechnology)
+	var extImpMgTechnology openrtb_ext.ExtImpMgTechnology
+	err = jsonutil.Unmarshal(extBidder.Bidder, &extImpMgTechnology)
 	if err != nil {
 		return nil, err
 	}
-	if extImpMediaGoTechnology.Token != "" {
-		extMediaGoTechnology.Token = extImpMediaGoTechnology.Token
-		extMediaGoTechnology.Region = extImpMediaGoTechnology.Region
+	if extImpMgTechnology.Token != "" {
+		extMgTechnology.Token = extImpMgTechnology.Token
+		extMgTechnology.Region = extImpMgTechnology.Region
 
-		return &extMediaGoTechnology, nil
+		return &extMgTechnology, nil
 	}
-	return nil, errors.New("mediagoTechnology token not found")
+	return nil, errors.New("mgtechnology token not found")
 
 }
 
@@ -129,7 +129,7 @@ func getRegionInfo(region string) string {
 	}
 }
 
-func (a *adapter) getEndPoint(ext *openrtb_ext.ExtMediaGoTechnology) (string, error) {
+func (a *adapter) getEndPoint(ext *openrtb_ext.ExtMgTechnology) (string, error) {
 	endPointParams := macros.EndpointTemplateParams{
 		AccountID: url.PathEscape(ext.Token),
 		Host:      url.PathEscape(getRegionInfo(ext.Region)),

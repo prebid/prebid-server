@@ -1,4 +1,4 @@
-package mediagoTechnology
+package mgtechnology
 
 import (
 	"testing"
@@ -11,18 +11,18 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderMediaGoTechnology, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderMgTechnology, config.Adapter{
 		Endpoint: "https://gbid.mediagotechnology.com/api/bid?tn={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "mediagoTechnologytest", bidder)
+	adapterstest.RunJSONBidderTest(t, "mgtechnologytest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderMediaGoTechnology, config.Adapter{Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	_, buildErr := Builder(openrtb_ext.BidderMgTechnology, config.Adapter{Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr)
 }

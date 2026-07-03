@@ -23,7 +23,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "mediagoTechnology token not found",
+      "value": "mgtechnology token not found",
       "comparison": "literal"
     }
   ]
