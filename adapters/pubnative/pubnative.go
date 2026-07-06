@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -55,6 +56,11 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 			continue
 		}
 
+		if err := convertBidFloorCurrency(&imp, reqInfo); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
 		requestCopy.Imp = []openrtb2.Imp{imp}
 		reqJSON, err := json.Marshal(&requestCopy)
 		if err != nil {
@@ -87,6 +93,21 @@ func checkRequest(request *openrtb2.BidRequest) error {
 		}
 	}
 
+	return nil
+}
+
+func convertBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, "USD") {
+		return nil
+	}
+
+	convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+	if err != nil {
+		return err
+	}
+
+	imp.BidFloor = convertedValue
+	imp.BidFloorCur = "USD"
 	return nil
 }
 
