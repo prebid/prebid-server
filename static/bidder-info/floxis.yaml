@@ -1,0 +1,29 @@
+# {{.Host}} is the region/partner subdomain label (e.g. us-e, or acme-us-e for a named partner),
+# validated in the adapter as a single DNS host-label and prefixed onto the fixed .floxis.tech
+# domain below; request-supplied hostnames are never used. The seat query param is appended in
+# code (not a standard macro).
+endpoint: "https://{{.Host}}.floxis.tech/pbs"
+maintainer:
+  email: prebid@floxis.tech
+gvlVendorID: 1609
+modifyingVastXmlAllowed: false
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+userSync:
+  redirect:
+    url: "https://px-us-e.floxis.tech/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&us_privacy={{.USPrivacy}}&dest={{.RedirectURL}}"
+    userMacro: "${USER_ID}"

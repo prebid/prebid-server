@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Floxis Adapter Params",
+  "description": "A schema which validates params accepted by the Floxis adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "seat": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The Floxis seat ID this publisher buys through"
+    },
+    "region": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$",
+      "description": "The Floxis RTB region as a host label (e.g. us-e, eu, apac); defaults to us-e when omitted"
+    },
+    "partner": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$",
+      "description": "Partner identifier (default floxis)"
+    }
+  },
+  "required": ["seat"]
+}
