@@ -1,22 +1,9 @@
-endpoint: "https://endpoint.copper6.com/pserver"
-gvlVendorID: 1356
+aliasOf: "vidazoo"
+endpoint: "https://exchange.copper6.com/openrtb/"
 maintainer:
-  email: "info@copper6.com"
-capabilities:
-  site:
-    mediaTypes:
-    - banner
-    - video
-    - native
-  app:
-    mediaTypes:
-    - banner
-    - video
-    - native
+  email: "dev@vidazoo.com"
 userSync:
-  redirect:
-    url: "https://csync.copper6.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
-    userMacro: "[UID]"
   iframe:
-    url: "https://csync.copper6.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
-    userMacro: "[UID]"
+    url: https://sync.copper6.com/api/user/html/6a1ed92d2dc11401c64d1da4?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    userMacro: ${userId}
+gvlVendorID: 1356
