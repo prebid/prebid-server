@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "https://publisher.com/page"
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "ip": "1.2.3.4"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "protocols": [2, 3, 5, 6]
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "AV_PUBLISHERID": "1234567890abcdef12345678",
+            "AV_CHANNELID": "abcdef1234567890abcdef12"
+          }
+        }
+      }
+    ],
+    "tmax": 3000
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.aniview.com/sspRTB2",
+        "body": {
+          "id": "some-request-id",
+          "site": {
+            "page": "https://publisher.com/page"
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "1.2.3.4"
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "tagid": "abcdef1234567890abcdef12",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480,
+                "protocols": [2, 3, 5, 6]
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "AV_PUBLISHERID": "1234567890abcdef12345678",
+                  "AV_CHANNELID": "abcdef1234567890abcdef12"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "aniview": {
+              "pbs": 1,
+              "publisherId": "1234567890abcdef12345678"
+            }
+          },
+          "tmax": 3000
+        },
+        "impIDs": ["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "1234567890abcdef12345678",
+              "bid": [
+                {
+                  "id": "some-bid-id",
+                  "impid": "some-impression-id",
+                  "price": 2.5,
+                  "adm": "<VAST version=\"4.0\"><Ad id=\"some-ad-id\"><InLine><AdSystem>Aniview</AdSystem><AdTitle>Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\"><![CDATA[https://cdn.aniview.com/creative.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adid": "some-adsource-id",
+                  "crid": "some-creative-id",
+                  "adomain": ["advertiser.com"]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "some-bid-id",
+            "impid": "some-impression-id",
+            "price": 2.5,
+            "adm": "<VAST version=\"4.0\"><Ad id=\"some-ad-id\"><InLine><AdSystem>Aniview</AdSystem><AdTitle>Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\"><![CDATA[https://cdn.aniview.com/creative.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adid": "some-adsource-id",
+            "crid": "some-creative-id",
+            "adomain": ["advertiser.com"]
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

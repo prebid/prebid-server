@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "nurl-request-id",
+    "site": {
+      "page": "https://publisher.com/page"
+    },
+    "imp": [
+      {
+        "id": "nurl-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "AV_PUBLISHERID": "1234567890abcdef12345678",
+            "AV_CHANNELID": "abcdef1234567890abcdef12"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.aniview.com/sspRTB2",
+        "body": {
+          "id": "nurl-request-id",
+          "site": {
+            "page": "https://publisher.com/page"
+          },
+          "imp": [
+            {
+              "id": "nurl-imp-id",
+              "tagid": "abcdef1234567890abcdef12",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "AV_PUBLISHERID": "1234567890abcdef12345678",
+                  "AV_CHANNELID": "abcdef1234567890abcdef12"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "aniview": {
+              "pbs": 1,
+              "publisherId": "1234567890abcdef12345678"
+            }
+          }
+        },
+        "impIDs": ["nurl-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "nurl-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "nurl-bid-id",
+                  "impid": "nurl-imp-id",
+                  "price": 1.7,
+                  "nurl": "https://rtb.aniview.com/vast?bid=nurl-bid-id"
+                },
+                {
+                  "id": "empty-bid-id",
+                  "impid": "nurl-imp-id",
+                  "price": 1.1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "nurl-bid-id",
+            "impid": "nurl-imp-id",
+            "price": 1.7,
+            "nurl": "https://rtb.aniview.com/vast?bid=nurl-bid-id"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

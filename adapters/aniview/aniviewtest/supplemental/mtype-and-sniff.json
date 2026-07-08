@@ -1,0 +1,128 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "https://publisher.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "ext": {
+          "bidder": {
+            "AV_PUBLISHERID": "1234567890abcdef12345678",
+            "AV_CHANNELID": "abcdef1234567890abcdef12"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "debug": true
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.aniview.com/sspRTB2",
+        "body": {
+          "id": "req-id",
+          "site": {
+            "page": "https://publisher.com/page"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "ext": {
+                "bidder": {
+                  "AV_PUBLISHERID": "1234567890abcdef12345678",
+                  "AV_CHANNELID": "abcdef1234567890abcdef12"
+                }
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "tagid": "abcdef1234567890abcdef12"
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "debug": true
+            },
+            "aniview": {
+              "pbs": 1,
+              "publisherId": "1234567890abcdef12345678"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "b-mtype",
+                  "impid": "imp-1",
+                  "price": 2.0,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "mtype": 2
+                },
+                {
+                  "id": "b-sniff",
+                  "impid": "other-imp",
+                  "price": 1.5,
+                  "adm": "  <?xml version=\"1.0\"?><VAST></VAST>"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "b-mtype",
+            "impid": "imp-1",
+            "price": 2.0,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "mtype": 2
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "b-sniff",
+            "impid": "other-imp",
+            "price": 1.5,
+            "adm": "  <?xml version=\"1.0\"?><VAST></VAST>"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

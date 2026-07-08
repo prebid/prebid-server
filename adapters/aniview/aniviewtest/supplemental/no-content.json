@@ -1,0 +1,73 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "https://publisher.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "AV_PUBLISHERID": "1234567890abcdef12345678",
+            "AV_CHANNELID": "abcdef1234567890abcdef12"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.aniview.com/sspRTB2",
+        "body": {
+          "id": "req-id",
+          "site": {
+            "page": "https://publisher.com/page"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "AV_PUBLISHERID": "1234567890abcdef12345678",
+                  "AV_CHANNELID": "abcdef1234567890abcdef12"
+                }
+              },
+              "tagid": "abcdef1234567890abcdef12"
+            }
+          ],
+          "ext": {
+            "aniview": {
+              "pbs": 1,
+              "publisherId": "1234567890abcdef12345678"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": []
+}
