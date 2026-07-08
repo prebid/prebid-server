@@ -46,6 +46,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 )
 
@@ -208,7 +209,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	normalizedGeoscopes := getNormalizedGeoscopes(cfg.BidderInfos)
-	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes}
+	// Dedicated registry for collectors that hook modules register themselves. Modules are built
+	// before the metrics engine (which needs moduleStageNames from the build), so this cannot be the
+	// PBS core registry; the Prometheus listener gathers from both (see server/prometheus.go).
+	moduleMetricsRegistry := prometheus.NewRegistry()
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes, MetricsRegisterer: moduleMetricsRegistry}
 	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		logger.Fatalf("Failed to init hook modules: %v", err)
@@ -216,6 +221,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
+	r.MetricsEngine.ModuleMetricsGatherer = moduleMetricsRegistry
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)

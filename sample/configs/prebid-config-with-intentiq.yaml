@@ -1,0 +1,68 @@
+# Sample prebid-server (Go) configuration that enables the IntentIQ Identity module.
+# Mirrors the prebid-server-java sample (sample/configs/prebid-config-with-intentiq.yaml),
+# translated to the Go server's config schema.
+#
+# Run:
+#   go run . -v 1 -logtostderr --config sample/configs/prebid-config-with-intentiq.yaml
+# then POST an OpenRTB request to http://localhost:8000/openrtb2/auction and inspect the enriched
+# user.eids in ext.debug.resolvedrequest (send "test": 1 in the request to get debug output).
+
+status_response: "ok"
+host: localhost
+port: 8000
+admin_port: 6060
+
+gdpr:
+  default_value: "0"
+
+metrics:
+  # The module registers its own Prometheus collectors; enable the Prometheus endpoint to scrape them
+  # at http://localhost:9090/metrics (series prefixed modules_module_intentiq_identity_custom_*).
+  prometheus:
+    port: 9090
+    namespace: prebid
+    subsystem: server
+
+adapters:
+  generic:
+    enabled: true
+    endpoint: http://localhost:9099/bidder
+
+hooks:
+  enabled: true
+  modules:
+    intentiq:
+      identity:
+        # Region-specific Bid Enhancement endpoint (US shown); point at your mock during local dev.
+        api-endpoint: http://127.0.0.1:9098/profiles_engine/ProfilesEngineServlet
+        reports-endpoint: http://127.0.0.1:9098/profiles_engine/ProfilesEngineServlet
+        partner-id: "383342646"
+        timeout: 6000
+        cache-max-size: 33554432   # in-process (L1) byte budget (~32 MiB)
+        metrics-enabled: true
+        cache:
+          enabled: true
+          ttlseconds: 43200
+          # dev: keep the in-progress marker short so a timed-out resolution retries soon instead of
+          # poisoning the device key for 30 min (default 1800s) when the backend is slow/flapping.
+          in-progress-ttl-seconds: 30
+        redis:
+          host: 127.0.0.1
+          port: 6379
+          # password: ""
+  host_execution_plan:
+    endpoints:
+      /openrtb2/auction:
+        stages:
+          processed_auction_request:
+            groups:
+              - timeout: 6000
+                hook_sequence:
+                  - module_code: "intentiq.identity"
+                    hook_impl_code: "HandleProcessedAuctionHook"
+          auction_response:
+            groups:
+              - timeout: 6000
+                hook_sequence:
+                  - module_code: "intentiq.identity"
+                    hook_impl_code: "HandleAuctionResponseHook"
