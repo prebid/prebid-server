@@ -70,7 +70,8 @@
                   "id": "video-bid-id",
                   "impid": "multi-imp-id",
                   "price": 3.1,
-                  "adm": "<VAST version=\"4.0\"><Ad><InLine><AdSystem>Aniview</AdSystem><Creatives></Creatives></InLine></Ad></VAST>"
+                  "adm": "<VAST version=\"4.0\"><Ad><InLine><AdSystem>Aniview</AdSystem><Creatives></Creatives></InLine></Ad></VAST>",
+                  "mtype": 2
                 }
               ]
             }
@@ -123,7 +124,8 @@
                   "price": 0.9,
                   "adm": "<div>banner creative</div>",
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype": 1
                 }
               ]
             }
@@ -141,7 +143,8 @@
             "id": "video-bid-id",
             "impid": "multi-imp-id",
             "price": 3.1,
-            "adm": "<VAST version=\"4.0\"><Ad><InLine><AdSystem>Aniview</AdSystem><Creatives></Creatives></InLine></Ad></VAST>"
+            "adm": "<VAST version=\"4.0\"><Ad><InLine><AdSystem>Aniview</AdSystem><Creatives></Creatives></InLine></Ad></VAST>",
+            "mtype": 2
           },
           "type": "video"
         }
@@ -157,7 +160,8 @@
             "price": 0.9,
             "adm": "<div>banner creative</div>",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype": 1
           },
           "type": "banner"
         }

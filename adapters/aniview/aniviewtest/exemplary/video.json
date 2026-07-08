@@ -87,7 +87,8 @@
                   "adm": "<VAST version=\"4.0\"><Ad id=\"some-ad-id\"><InLine><AdSystem>Aniview</AdSystem><AdTitle>Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\"><![CDATA[https://cdn.aniview.com/creative.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
                   "adid": "some-adsource-id",
                   "crid": "some-creative-id",
-                  "adomain": ["advertiser.com"]
+                  "adomain": ["advertiser.com"],
+                  "mtype": 2
                 }
               ]
             }
@@ -108,7 +109,8 @@
             "adm": "<VAST version=\"4.0\"><Ad id=\"some-ad-id\"><InLine><AdSystem>Aniview</AdSystem><AdTitle>Ad</AdTitle><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"480\"><![CDATA[https://cdn.aniview.com/creative.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
             "adid": "some-adsource-id",
             "crid": "some-creative-id",
-            "adomain": ["advertiser.com"]
+            "adomain": ["advertiser.com"],
+            "mtype": 2
           },
           "type": "video"
         }

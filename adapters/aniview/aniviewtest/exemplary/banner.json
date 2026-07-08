@@ -71,7 +71,8 @@
                   "crid": "banner-creative-id",
                   "adomain": ["advertiser.com"],
                   "w": 300,
-                  "h": 250
+                  "h": 250,
+                  "mtype": 1
                 }
               ]
             }
@@ -93,7 +94,8 @@
             "crid": "banner-creative-id",
             "adomain": ["advertiser.com"],
             "w": 300,
-            "h": 250
+            "h": 250,
+            "mtype": 1
           },
           "type": "banner"
         }

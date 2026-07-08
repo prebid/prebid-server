@@ -110,18 +110,14 @@
             "mtype": 2
           },
           "type": "video"
-        },
-        {
-          "bid": {
-            "id": "b-sniff",
-            "impid": "other-imp",
-            "price": 1.5,
-            "adm": "  <?xml version=\"1.0\"?><VAST></VAST>"
-          },
-          "type": "video"
         }
       ]
     }
   ],
-  "expectedMakeBidsErrors": []
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Could not define bid type for imp: other-imp",
+      "comparison": "literal"
+    }
+  ]
 }

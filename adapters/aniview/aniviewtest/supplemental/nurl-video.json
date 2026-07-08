@@ -66,7 +66,8 @@
                   "id": "nurl-bid-id",
                   "impid": "nurl-imp-id",
                   "price": 1.7,
-                  "nurl": "https://rtb.aniview.com/vast?bid=nurl-bid-id"
+                  "nurl": "https://rtb.aniview.com/vast?bid=nurl-bid-id",
+                  "mtype": 2
                 },
                 {
                   "id": "empty-bid-id",
@@ -89,7 +90,8 @@
             "id": "nurl-bid-id",
             "impid": "nurl-imp-id",
             "price": 1.7,
-            "nurl": "https://rtb.aniview.com/vast?bid=nurl-bid-id"
+            "nurl": "https://rtb.aniview.com/vast?bid=nurl-bid-id",
+            "mtype": 2
           },
           "type": "video"
         }

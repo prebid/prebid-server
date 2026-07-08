@@ -154,13 +154,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}}
 	}
 
-	// The outgoing request is single media type per imp — use it for media type
-	// inference, not the original request (a multi-format imp carries both types there).
-	var sentRequest openrtb2.BidRequest
-	if err := jsonutil.Unmarshal(requestData.Body, &sentRequest); err != nil {
-		return nil, []error{fmt.Errorf("unmarshal outgoing request: %w", err)}
-	}
-
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid))
 
 	if response.Cur != "" {
@@ -174,7 +167,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				continue
 			}
 
-			bidType, err := getMediaTypeForBid(&bid, &sentRequest)
+			bidType, err := getMediaTypeForBid(&bid)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -190,35 +183,17 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-// getMediaTypeForBid resolves the bid media type: bid.mtype when provided,
-// otherwise the media type of the matching imp (requests are single media type),
-// otherwise VAST markup detection.
-func getMediaTypeForBid(bid *openrtb2.Bid, request *openrtb2.BidRequest) (openrtb_ext.BidType, error) {
+// getMediaTypeForBid resolves the bid media type from bid.mtype, which the
+// exchange sets explicitly on every bid.
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	}
-
-	for _, imp := range request.Imp {
-		if imp.ID == bid.ImpID {
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			break
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
 		}
-	}
-
-	adm := strings.TrimSpace(strings.ToLower(bid.AdM))
-	if strings.HasPrefix(adm, "<vast") || strings.HasPrefix(adm, "<?xml") {
-		return openrtb_ext.BidTypeVideo, nil
-	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
 	}
 }
