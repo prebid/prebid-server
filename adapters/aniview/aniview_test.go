@@ -10,11 +10,10 @@ import (
 )
 
 func TestBuildRequestExtInvalid(t *testing.T) {
-	impExt := &openrtb_ext.ImpExtAniview{PublisherId: "pub", ChannelId: "chan"}
-	if _, err := buildRequestExt([]byte(`"not-an-object"`), impExt); err == nil {
+	if _, err := buildRequestExt([]byte(`"not-an-object"`)); err == nil {
 		t.Error("expected error for non-object request.ext")
 	}
-	ext, err := buildRequestExt([]byte(`{"prebid":{"debug":true}}`), impExt)
+	ext, err := buildRequestExt([]byte(`{"prebid":{"debug":true}}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

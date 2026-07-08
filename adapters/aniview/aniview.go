@@ -19,8 +19,7 @@ type adapter struct {
 }
 
 type aniviewExt struct {
-	PBS         int    `json:"pbs"`
-	PublisherId string `json:"publisherId,omitempty"`
+	PBS int `json:"pbs"`
 }
 
 // Builder builds a new instance of the Aniview adapter for the given bidder with the given config.
@@ -39,6 +38,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
+	requestExt, err := buildRequestExt(request.Ext)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	// One outgoing request per imp and per media type, mirroring the Prebid.js adapter.
 	for _, imp := range request.Imp {
 		impExt, err := extractImpExt(&imp)
@@ -48,12 +52,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		imp.TagID = strings.TrimSpace(impExt.ChannelId)
-
-		requestExt, err := buildRequestExt(request.Ext, impExt)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
 
 		for _, singleTypeImp := range splitImpByMediaType(imp) {
 			requestCopy := *request
@@ -81,7 +79,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 // buildRequestExt merges ext.aniview into the existing request.ext, preserving
 // whatever PBS core has put there.
-func buildRequestExt(requestExt []byte, impExt *openrtb_ext.ImpExtAniview) ([]byte, error) {
+func buildRequestExt(requestExt []byte) ([]byte, error) {
 	extMap := map[string]interface{}{}
 	if len(requestExt) > 0 {
 		if err := jsonutil.Unmarshal(requestExt, &extMap); err != nil {
@@ -89,10 +87,7 @@ func buildRequestExt(requestExt []byte, impExt *openrtb_ext.ImpExtAniview) ([]by
 		}
 	}
 
-	extMap["aniview"] = aniviewExt{
-		PBS:         1,
-		PublisherId: strings.TrimSpace(impExt.PublisherId),
-	}
+	extMap["aniview"] = aniviewExt{PBS: 1}
 
 	ext, err := jsonutil.Marshal(extMap)
 	if err != nil {

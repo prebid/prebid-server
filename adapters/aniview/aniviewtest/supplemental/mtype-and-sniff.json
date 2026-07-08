@@ -61,8 +61,7 @@
               "debug": true
             },
             "aniview": {
-              "pbs": 1,
-              "publisherId": "1234567890abcdef12345678"
+              "pbs": 1
             }
           }
         },
