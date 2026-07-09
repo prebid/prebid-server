@@ -32,6 +32,21 @@ const (
 	RoundingModeUp        BidRoundingMode = "up"
 )
 
+// ArrayMergeMode controls how array fields in ext.prebid.bidderconfig are merged into the base request.
+type ArrayMergeMode string
+
+const (
+	// ArrayMergeModeConcat concatenates bidder config arrays with base request arrays.
+	ArrayMergeModeConcat ArrayMergeMode = "concat"
+	// ArrayMergeModeReplace replaces base request arrays with bidder config arrays (default behavior).
+	ArrayMergeModeReplace ArrayMergeMode = "replace"
+)
+
+// AccountBidderConfig defines account-level settings for ext.prebid.bidderconfig processing.
+type AccountBidderConfig struct {
+	ArrayMerge ArrayMergeMode `mapstructure:"array_merge" json:"array_merge,omitempty"`
+}
+
 // Account represents a publisher account configuration
 type Account struct {
 	ID                      string                                      `mapstructure:"id" json:"id"`
@@ -54,6 +69,7 @@ type Account struct {
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
 	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
+	BidderConfig            AccountBidderConfig                         `mapstructure:"bidderconfig" json:"bidderconfig,omitempty"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

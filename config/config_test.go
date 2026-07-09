@@ -557,6 +557,8 @@ account_defaults:
           max_age_sec: 6000
           max_schema_dims: 10
     bid_rounding: up
+    bidderconfig:
+        array_merge: concat
     bidadjustments:
         mediatype:
             '*':
@@ -734,6 +736,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "account_defaults.price_floors.fetch.max_schema_dims", 10, cfg.AccountDefaults.PriceFloors.Fetcher.MaxSchemaDims)
 
 	assert.Equal(t, RoundingModeUp, cfg.AccountDefaults.BidRounding)
+	assert.Equal(t, ArrayMergeModeConcat, cfg.AccountDefaults.BidderConfig.ArrayMerge)
 
 	// Assert the DSA was correctly unmarshalled and DefaultUnpacked was built correctly
 	expectedDSA := AccountDSA{
