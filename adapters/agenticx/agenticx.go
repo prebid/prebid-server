@@ -1,4 +1,4 @@
-package adsmartx
+package agenticx
 
 import (
 	"fmt"

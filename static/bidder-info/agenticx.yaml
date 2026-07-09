@@ -1,0 +1,22 @@
+endpoint: "https://ads.theagenticx.ai/ads/rtb/prebid/server"
+endpointCompression: gzip
+maintainer:
+  email: prebid@aidigital.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+userSync:
+  iframe:
+    url: "https://ads.theagenticx.ai/sync?ssp_site_id=49964415&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&iframe_enabled=true&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  redirect:
+    url: "https://ads.theagenticx.ai/sync?ssp_site_id=49964415&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&iframe_enabled=false&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
