@@ -125,7 +125,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("X-Openrtb-Version", "2.5")
+	headers.Add("X-Openrtb-Version", "2.6")
 
 	if request.Device != nil {
 		if request.Device.UA != "" {
@@ -182,9 +182,19 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-// getMediaTypeForBid resolves the creative type. Nexverse signals it explicitly through
-// bid.ext.mediaType; otherwise fall back to the OpenRTB 2.6 bid.mtype field.
+// getMediaTypeForBid resolves the creative type. It relies on the authoritative OpenRTB 2.6
+// bid.mtype field and, only when that is not set, falls back to bid.ext.mediaType, which is
+// how Nexverse signals the type on responses that omit mtype. The type is never assumed.
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
 	if len(bid.Ext) > 0 {
 		var bidExt struct {
 			MediaType string `json:"mediaType"`
@@ -201,16 +211,7 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		}
 	}
 
-	switch bid.MType {
-	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner, nil
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
-	default:
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unable to determine media type for bid %s in imp %s", bid.ID, bid.ImpID),
-		}
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Unable to determine media type for bid %s in imp %s", bid.ID, bid.ImpID),
 	}
 }
