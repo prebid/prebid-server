@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Realry adapter params",
+    "description": "Validates params for ext.prebid.bidder.realry",
+    "type": "object",
+    "properties": {
+        "placementId": {
+            "type": "string",
+            "description": "Publisher-side identifier for the slot.",
+            "minLength": 1
+        },
+        "sellerId": {
+            "type": "string",
+            "description": "Optional Realry-side advertiser id assigned by partnerships team.",
+            "minLength": 1
+        }
+    },
+    "required": ["placementId"]
+}

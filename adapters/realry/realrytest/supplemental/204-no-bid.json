@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "test-no-bid",
+    "imp": [
+      {
+        "id": "test-imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "placementId": "slot-x" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.realry.com/bid/openrtb",
+        "body": {
+          "id": "test-no-bid",
+          "imp": [
+            {
+              "id": "test-imp-1",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": { "bidder": { "placementId": "slot-x" } }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
