@@ -1,0 +1,183 @@
+{
+  "mockBidRequest": {
+    "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
+    "at": 2,
+    "cur": ["USD"],
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "4",
+        "native": {
+          "request": "{\"privacy\":1,\"plcmtcnt\":1,\"assets\":[{\"title\":{\"len\":100},\"id\":0,\"required\":1},{\"id\":3,\"img\":{\"hmin\":168,\"wmin\":319,\"type\":3},\"required\":1},{\"id\":4,\"data\":{\"len\":90,\"type\":1},\"required\":1}],\"context\":1,\"ver\":\"1.2\",\"plcmttype\":1}",
+          "api": [7]
+        },
+        "bidfloor": 0.1,
+        "bidfloorcur": "USD",
+        "tagid": "nativo_1166345-RcB2FnjvX-Sp9-Kzy48V1Q-OPEN",
+        "exp": 120,
+        "secure": 1,
+        "instl": 0,
+        "ext": {
+          "bidder": {
+            "publisherId": "prebid-test-pub-001"
+          }
+        }
+      }
+    ],
+    "site": {
+      "cat": ["190_viant_prebid_server"],
+      "domain": "prebid.org",
+      "page": "https://prebid.org/",
+      "publisher": {
+        "id": "prebid-test-pub-001",
+        "name": "Prebid Test Publisher"
+      }
+    },
+    "device": {
+      "devicetype": 2,
+      "ua": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.59 Safari/537.36",
+      "ip": "203.0.113.1",
+      "language": "en",
+      "geo": {
+        "country": "USA",
+        "lat": 40.7128,
+        "lon": -74.006,
+        "type": 2,
+        "zip": "10001"
+      }
+    },
+    "user": {
+      "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+      "ext": {
+        "eids": [
+          {
+            "source": "adserver.org",
+            "uids": [
+              {
+                "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+                "ext": {
+                  "rtiPartner": "TDID"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidders-us.adelphic.net/rtb/v25/viant-prebid-server/bidder",
+        "body": {
+          "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
+          "at": 2,
+          "cur": ["USD"],
+          "tmax": 500,
+          "imp": [
+            {
+              "id": "4",
+              "native": {
+                "request": "{\"privacy\":1,\"plcmtcnt\":1,\"assets\":[{\"title\":{\"len\":100},\"id\":0,\"required\":1},{\"id\":3,\"img\":{\"hmin\":168,\"wmin\":319,\"type\":3},\"required\":1},{\"id\":4,\"data\":{\"len\":90,\"type\":1},\"required\":1}],\"context\":1,\"ver\":\"1.2\",\"plcmttype\":1}",
+                "api": [7]
+              },
+              "bidfloor": 0.1,
+              "bidfloorcur": "USD",
+              "tagid": "nativo_1166345-RcB2FnjvX-Sp9-Kzy48V1Q-OPEN",
+              "exp": 120,
+              "secure": 1
+            }
+          ],
+          "site": {
+            "cat": ["190_viant_prebid_server"],
+            "domain": "prebid.org",
+            "page": "https://prebid.org/",
+            "publisher": {
+              "id": "prebid-test-pub-001",
+              "name": "Prebid Test Publisher"
+            }
+          },
+          "device": {
+            "devicetype": 2,
+            "ua": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.59 Safari/537.36",
+            "ip": "203.0.113.1",
+            "language": "en",
+            "geo": {
+              "country": "USA",
+              "lat": 40.7128,
+              "lon": -74.006,
+              "type": 2,
+              "zip": "10001"
+            }
+          },
+          "user": {
+            "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+            "ext": {
+              "eids": [
+                {
+                  "source": "adserver.org",
+                  "uids": [
+                    {
+                      "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+                      "ext": {
+                        "rtiPartner": "TDID"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "impIDs": ["4"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-native-1",
+                  "impid": "4",
+                  "price": 1.25,
+                  "adid": "69757-native-001",
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"title\":{\"text\":\"Viant Native Ad\"}},{\"id\":3,\"img\":{\"url\":\"https://media-cdn.ipredictive.com/image/native.jpg\",\"w\":319,\"h\":168}}]}}",
+                  "adomain": ["viantinc.com"],
+                  "crid": "native-crid-001",
+                  "mtype": 4
+                }
+              ],
+              "seat": "2722"
+            }
+          ],
+          "bidid": "bid-native-1",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-native-1",
+            "impid": "4",
+            "price": 1.25,
+            "adid": "69757-native-001",
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"title\":{\"text\":\"Viant Native Ad\"}},{\"id\":3,\"img\":{\"url\":\"https://media-cdn.ipredictive.com/image/native.jpg\",\"w\":319,\"h\":168}}]}}",
+            "adomain": ["viantinc.com"],
+            "crid": "native-crid-001",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": { "publisherId": "prebid-test-pub-001" }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://prebid.org/",
+      "publisher": { "id": "prebid-test-pub-001" }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidders-us.adelphic.net/rtb/v25/viant-prebid-server/bidder",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480
+              }
+            }
+          ],
+          "site": {
+            "page": "https://prebid.org/",
+            "publisher": { "id": "prebid-test-pub-001" }
+          }
+        },
+        "impIDs": ["imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "2722",
+              "bid": [
+                {
+                  "id": "bid-no-mtype",
+                  "impid": "imp-video",
+                  "price": 4.10,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "video-crid-001",
+                  "w": 640,
+                  "h": 480
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-no-mtype",
+            "impid": "imp-video",
+            "price": 4.10,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "video-crid-001",
+            "w": 640,
+            "h": 480
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
