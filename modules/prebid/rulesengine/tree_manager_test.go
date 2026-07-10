@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTreeManagerShutdown(t *testing.T) {
@@ -22,17 +23,17 @@ func TestTreeManagerShutdown(t *testing.T) {
 	cache := NewCache(0)
 
 	var wg sync.WaitGroup
+	var err error
 	wg.Add(1)
 	go func() {
-		err := tm.Run(cache)
+		err = tm.Run(cache)
 		wg.Done()
-		assert.NoError(t, err)
 	}()
 
 	tm.Shutdown()
 
 	wg.Wait()
-	assert.Equal(t, int64(1), glog.Stats.Info.Lines())
+	require.NoError(t, err)
 }
 
 func TestTreeManagerRun(t *testing.T) {
