@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -47,7 +48,7 @@ func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
+func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) error {
 	// get the triplelift extension
 	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
@@ -68,12 +69,34 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest) error {
 		imp.TagID = tlext.InvCode
 	}
 
-	// floor is optional
-	if tlext.Floor == nil {
+    // floor is optional
+	if tlext.Floor != nil {
+		imp.BidFloor = *tlext.Floor
+	}
+
+    // Normalize bid floor to USD
+	if err := resolveBidFloorCurrency(imp, reqInfo); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Normalize imp.BidFloor to USD
+func resolveBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 {
 		return nil
 	}
-	imp.BidFloor = *tlext.Floor
-
+	if imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		converted, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		if err != nil {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert bid floor from %s to USD: %s", imp.BidFloorCur, err.Error()),
+			}
+		}
+		imp.BidFloor = converted
+	}
+	imp.BidFloorCur = "USD"
 	return nil
 }
 
@@ -113,7 +136,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, ext
 	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp, request); err == nil {
+		if err := processImp(&imp, request, extra); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)
@@ -185,6 +208,9 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest,
 	var errs []error
 	count := getBidCount(bidResp)
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
+
+	// Bids are always denominated in USD
+	bidResponse.Currency = "USD"
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
