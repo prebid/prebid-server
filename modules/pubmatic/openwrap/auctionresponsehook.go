@@ -402,7 +402,6 @@ func (m OpenWrap) handleAuctionResponseHook(
 		result.ChangeSet.AddMutation(func(ap hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
 			rctx := moduleCtx.ModuleContext["rctx"].(models.RequestCtx)
 			var err error
-			applyBidExpAndBidExtFromCtx(rctx, ap.BidResponse)
 			ap.BidResponse, err = tracker.InjectTrackers(rctx, ap.BidResponse)
 			if err == nil {
 				resetBidIdtoOriginal(ap.BidResponse)
