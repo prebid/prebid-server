@@ -59,6 +59,10 @@ func TestInvalidParams(t *testing.T) {
 			name: "Empty string (violates minLength)",
 			json: `{"pix_id": ""}`,
 		},
+		{
+			name: "Unknown field (additionalProperties: false)",
+			json: `{"pix_id": "123", "unknown_field": "anything"}`,
+		},
 	}
 
 	for _, tt := range tests {

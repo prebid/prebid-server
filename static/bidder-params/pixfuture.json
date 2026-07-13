@@ -12,5 +12,6 @@
   },
   "required": [
     "pix_id"
-  ]
+  ],
+  "additionalProperties": false
 }

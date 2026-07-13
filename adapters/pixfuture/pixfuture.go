@@ -29,11 +29,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	var errs []error
 	var adapterRequests []*adapters.RequestData
-	headers := http.Header{}
-	headers.Set("Content-Type", "application/json")
-	headers.Set("Accept", "application/json")
 
 	for imp := range iterutil.SlicePointerValues(request.Imp) {
+		headers := http.Header{}
+		headers.Set("Content-Type", "application/json")
+		headers.Set("Accept", "application/json")
 
 		var bidderExt adapters.ExtImpBidder
 		var pixfutureExt openrtb_ext.ImpExtPixfuture
