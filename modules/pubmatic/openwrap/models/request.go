@@ -96,19 +96,20 @@ type KeyVal struct {
 
 // RequestExtWrapper holds wrapper specific extension parameters
 type RequestExtWrapper struct {
-	ProfileId            int                    `json:"profileid,omitempty"`
-	VersionId            int                    `json:"versionid,omitempty"`
-	SSAuctionFlag        int                    `json:"ssauction,omitempty"`
-	SumryDisableFlag     int                    `json:"sumry_disable,omitempty"`
-	ClientConfigFlag     int                    `json:"clientconfig,omitempty"`
-	SupportDeals         bool                   `json:"supportdeals,omitempty"`
-	IncludeBrandCategory *int                   `json:"includebrandcategory,omitempty"`
-	ABTestConfig         int                    `json:"abtest,omitempty"`
-	LoggerImpressionID   string                 `json:"wiid,omitempty"`
-	SSAI                 string                 `json:"ssai,omitempty"`
-	KeyValues            map[string]interface{} `json:"kv,omitempty"`
-	Video                ExtRequestWrapperVideo `json:"video,omitempty"`
-	PubId                int                    `json:"-"`
+	ProfileId             int                    `json:"profileid,omitempty"`
+	VersionId             int                    `json:"versionid,omitempty"`
+	SSAuctionFlag         int                    `json:"ssauction,omitempty"`
+	SumryDisableFlag      int                    `json:"sumry_disable,omitempty"`
+	ClientConfigFlag      int                    `json:"clientconfig,omitempty"`
+	SupportDeals          bool                   `json:"supportdeals,omitempty"`
+	IncludeBrandCategory  *int                   `json:"includebrandcategory,omitempty"`
+	ABTestConfig          int                    `json:"abtest,omitempty"`
+	LoggerImpressionID    string                 `json:"wiid,omitempty"`
+	SSAI                  string                 `json:"ssai,omitempty"`
+	KeyValues             map[string]interface{} `json:"kv,omitempty"`
+	Video                 ExtRequestWrapperVideo `json:"video,omitempty"`
+	PubId                 int                    `json:"-"`
+	SdkSubIntegrationPath *int                   `json:"sdksubintegration,omitempty"`
 }
 
 type ExtRequestWrapperVideo struct {

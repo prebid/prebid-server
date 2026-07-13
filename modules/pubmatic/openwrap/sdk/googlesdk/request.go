@@ -470,6 +470,10 @@ func modifyImpression(request *openrtb2.BidRequest, signalImps []openrtb2.Imp) {
 		return
 	}
 
+	if signalImps[0].Exp > 0 {
+		request.Imp[0].Exp = signalImps[0].Exp
+	}
+
 	if signalImps[0].DisplayManager != "" {
 		request.Imp[0].DisplayManager = signalImps[0].DisplayManager
 	}

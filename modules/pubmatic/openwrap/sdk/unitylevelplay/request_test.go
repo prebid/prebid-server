@@ -442,6 +442,30 @@ func TestModifyImpression(t *testing.T) {
 			},
 		},
 		{
+			name: "copies_exp_from_signal_when_positive",
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 0}},
+			},
+			signalImps: []openrtb2.Imp{
+				{ID: "1", Exp: 300},
+			},
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 300}},
+			},
+		},
+		{
+			name: "does_not_overwrite_request_exp_when_signal_exp_is_zero",
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 120}},
+			},
+			signalImps: []openrtb2.Imp{
+				{ID: "1", Exp: 0},
+			},
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 120}},
+			},
+		},
+		{
 			name: "video object",
 			request: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{

@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/exchange"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/adunitconfig"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models"
+	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/sdk/sdkutils"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	uuid "github.com/satori/go.uuid"
 )
@@ -181,8 +182,7 @@ func (m *OpenWrap) addDefaultBids(rctx *models.RequestCtx, bidResponse *openrtb2
 
 func (m *OpenWrap) addDefaultBidsForMultiFloorsConfig(rctx *models.RequestCtx, bidResponse *openrtb2.BidResponse, bidResponseExt openrtb_ext.ExtBidResponse) map[string]map[string][]openrtb2.Bid {
 
-	// MultiBidMultiFloor is only supported for AppLovinMax
-	if rctx.Endpoint != models.EndpointAppLovinMax {
+	if !sdkutils.IsSdkIntegration(rctx.Endpoint) {
 		return rctx.DefaultBids
 	}
 

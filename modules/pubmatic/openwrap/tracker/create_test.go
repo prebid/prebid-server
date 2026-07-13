@@ -421,6 +421,114 @@ func Test_createTrackers(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tracker_url_includes_bexp_and_bexpef",
+			args: args{
+				trackers: map[string]models.OWTracker{},
+				rctx: func() models.RequestCtx {
+					testRctx := rctx
+					testRctx.StartTime = startTime
+					pg, _ := openrtb_ext.NewPriceGranularityFromLegacyID("med")
+					testRctx.PriceGranularity = &pg
+					testRctx.DeviceCtx.Ext = func() *models.ExtDevice {
+						extDevice := models.ExtDevice{}
+						extDevice.UnmarshalJSON([]byte(`{"atts":1}`))
+						return &extDevice
+					}()
+					newImpBidCtx := make(map[string]models.ImpCtx, len(rctx.ImpBidCtx))
+					for impID, imp := range rctx.ImpBidCtx {
+						newImp := imp
+						newBidCtx := make(map[string]models.BidCtx, len(imp.BidCtx))
+						for bidID, bc := range imp.BidCtx {
+							newBidCtx[bidID] = bc
+						}
+						if impID == "impID-1" {
+							bc := newBidCtx["bidID-1"]
+							bc.BidExt.BidExpEnf = 1
+							newBidCtx["bidID-1"] = bc
+						}
+						newImp.BidCtx = newBidCtx
+						newImpBidCtx[impID] = newImp
+					}
+					testRctx.ImpBidCtx = newImpBidCtx
+					return testRctx
+				}(),
+				globalAccountConfig: &config.Account{BidRounding: config.DefaultBidRoundingMode},
+				bidResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{
+						{
+							Bid: []openrtb2.Bid{
+								{
+									ID:      "bidID-1",
+									ImpID:   "impID-1",
+									Price:   8.7,
+									W:       250,
+									H:       300,
+									Exp:     300,
+									ADomain: []string{"domain.com"},
+									DealID:  "deal-id-1",
+									Ext:     json.RawMessage(`{"prebid":{"meta":{"networkId":123456}}}`),
+								},
+							},
+							Seat: "pubmatic",
+						},
+					},
+					Cur: models.USD,
+				},
+				pmMkt: map[string]pubmaticMarketplaceMeta{},
+			},
+			want: map[string]models.OWTracker{
+				"bidID-1": {
+					Tracker: models.Tracker{
+						PubID:     5890,
+						PageURL:   "abc.com",
+						Timestamp: startTime,
+						IID:       "loggerIID",
+						ProfileID: "1234",
+						VersionID: "1",
+						Adunit:    "adunit-1",
+						SlotID:    "impID-1_adunit-1",
+						PartnerInfo: models.Partner{
+							PartnerID:      "prebidBidderCode",
+							BidderCode:     "pubmatic",
+							KGPV:           "adunit-1@250x300",
+							GrossECPM:      8.7,
+							NetECPM:        8.7,
+							BidID:          "bidID-1",
+							OrigBidID:      "bidID-1",
+							AdSize:         "250x300",
+							AdDuration:     20,
+							Adformat:       "banner",
+							ServerSide:     1,
+							Advertiser:     "domain.com",
+							FloorValue:     6.4,
+							FloorRuleValue: 4.4,
+							DealID:         "deal-id-1",
+							NetworkID:      123456,
+							PriceBucket:    "8.60",
+						},
+						Platform:  5,
+						SSAI:      "mediatailor",
+						AdPodSlot: 0,
+						TestGroup: 1,
+						Origin:    "publisher.com",
+						ImpID:     "impID-1",
+						LoggerData: models.LoggerData{
+							KGPSV: "adunit-1@250x300",
+						},
+						CustomDimensions: "author=henry",
+						ATTS:             ptrutil.ToPtr(float64(openrtb_ext.IOSAppTrackingStatusRestricted)),
+						BidExp:           300,
+						BidExpEnf:        1,
+					},
+					TrackerURL:    "https:?adv=domain.com&af=banner&aps=0&atts=1&au=adunit-1&bc=pubmatic&bexp=300&bexpef=1&bidid=bidID-1&cds=author%3Dhenry&di=deal-id-1&dur=20&eg=8.7&en=8.7&frv=4.4&ft=0&fv=6.4&iid=loggerIID&kgpv=adunit-1%40250x300&nwid=123456&orig=publisher.com&origbidid=bidID-1&pb=8.60&pdvid=1&pid=1234&plt=5&pn=prebidBidderCode&psz=250x300&pubid=5890&purl=abc.com&sl=1&slot=impID-1_adunit-1&ss=1&ssai=mediatailor&tgid=1&tst=" + strconv.FormatInt(startTime, 10),
+					Price:         8.7,
+					PriceModel:    "CPM",
+					PriceCurrency: "USD",
+					BidType:       "banner",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

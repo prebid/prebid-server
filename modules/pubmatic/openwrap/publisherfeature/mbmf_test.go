@@ -1071,7 +1071,7 @@ func TestFeatureIsMBMFPublisherEnabled(t *testing.T) {
 					},
 				},
 			},
-			want: true,
+			want: false,
 		},
 	}
 	for _, tt := range tests {
@@ -1257,7 +1257,7 @@ func TestFeatureIsMBMFEnabledForAdUnitFormat(t *testing.T) {
 					},
 				},
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "mbmf publisher enabled for banner",

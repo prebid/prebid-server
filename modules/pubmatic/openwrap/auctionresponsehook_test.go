@@ -1638,6 +1638,104 @@ func TestAuctionResponseHookForEndpointWebS2S(t *testing.T) {
 	}
 }
 
+func TestApplyBidExpAndBidExtFromCtx(t *testing.T) {
+	const (
+		bidID = "bid-1"
+		impID = "imp-1"
+	)
+
+	bidExt := models.BidExt{
+		CreativeType:   "banner",
+		NetECPM:        3.6,
+		OriginalBidCPM: 4,
+		OriginalBidCur: "USD",
+	}
+	wantExt, err := json.Marshal(bidExt)
+	assert.NoError(t, err)
+
+	type args struct {
+		rctx        models.RequestCtx
+		bidResponse *openrtb2.BidResponse
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantExp int64
+		wantExt json.RawMessage
+	}{
+		{
+			name: "clears_bid_exp_when_omit_bid_exp_from_tracker",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint: models.EndpointVideo,
+					ImpBidCtx: map[string]models.ImpCtx{
+						impID: {
+							BidCtx: map[string]models.BidCtx{
+								bidID: {
+									BidExt:                bidExt,
+									OmitBidExpFromTracker: true,
+								},
+							},
+						},
+					},
+				},
+				bidResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Seat: "pubmatic",
+						Bid: []openrtb2.Bid{{
+							ID:    bidID,
+							ImpID: impID,
+							Exp:   300,
+						}},
+					}},
+				},
+			},
+			wantExp: 0,
+			wantExt: wantExt,
+		},
+		{
+			name: "preserves_bid_exp_when_not_omitting_from_tracker",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint: models.EndpointVideo,
+					ImpBidCtx: map[string]models.ImpCtx{
+						impID: {
+							BidCtx: map[string]models.BidCtx{
+								bidID: {
+									BidExt:                bidExt,
+									OmitBidExpFromTracker: false,
+								},
+							},
+						},
+					},
+				},
+				bidResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Seat: "pubmatic",
+						Bid: []openrtb2.Bid{{
+							ID:    bidID,
+							ImpID: impID,
+							Exp:   300,
+						}},
+					}},
+				},
+			},
+			wantExp: 300,
+			wantExt: wantExt,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			applyBidExpAndBidExtFromCtx(tt.args.rctx, tt.args.bidResponse)
+			got := tt.args.bidResponse.SeatBid[0].Bid[0]
+			assert.Equal(t, tt.wantExp, got.Exp, tt.name)
+			assert.JSONEq(t, string(tt.wantExt), string(got.Ext), tt.name)
+		})
+	}
+}
+
 func TestOpenWrapHandleAuctionResponseHook(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockCache := mock_cache.NewMockCache(ctrl)
@@ -1851,6 +1949,87 @@ func TestOpenWrapHandleAuctionResponseHook(t *testing.T) {
 				},
 				err:         nil,
 				bidResponse: json.RawMessage(`{"id":"12345","seatbid":[{"bid":[{"id":"bid-id-1","impid":"Div1","price":5,"adm":"\u003cimg src=\"http://ads.pubmatic.com/AdTag/728x90.png\"\u003e\u003c/img\u003e\u003cdiv style=\"position:absolute;left:0px;top:0px;visibility:hidden;\"\u003e\u003cimg src=\"https://t.pubmatic.com/wt?adv=\u0026af=banner\u0026aps=0\u0026au=%2F43743431%2FDMDemo\u0026bc=appnexus\u0026bidid=4033c510-6d67-4af6-b53f-682ff1a580c3\u0026di=-1\u0026eg=14\u0026en=14\u0026frv=1.57\u0026ft=0\u0026fv=1.57\u0026iid=429d469d-8cfb-495a-9f0c-5f48aa0ede40\u0026kgpv=\u0026orig=ebay.com\u0026origbidid=718825584\u0026pdvid=1\u0026pid=22503\u0026plt=1\u0026pn=appnexus\u0026psz=728x90\u0026pubid=5890\u0026purl=http%3A%2F%2Febay.com%2Finte%2Fautomation%2Fs2s_activation%2Fbanner-with-gdpr-pubmatic-denied-defaultbidder.html%3Fprofileid%3D22503%26pwtv%3D1%26pwtvc%3D1%26appnexus_banner_fixedbid%3D14%26fixedbid%3D1%26debug%3D1\u0026sl=1\u0026slot=%2F43743431%2FDMDemo\u0026ss=1\u0026tst=1704357774\"\u003e\u003c/div\u003e\u003cdiv style=\"position:absolute;left:0px;top:0px;visibility:hidden;\"\u003e\u003cimg src=\"https:?adv=\u0026af=banner\u0026aps=0\u0026au=\u0026bc=pubmatic\u0026bidid=bb57a9e3-fdc2-4772-8071-112dd7f50a6a\u0026di=-1\u0026eg=0\u0026en=0\u0026ft=0\u0026iid=\u0026kgpv=\u0026nwid=6\u0026orig=\u0026origbidid=bid-id-1\u0026pdvid=0\u0026pid=0\u0026plt=0\u0026pn=pubmatic\u0026psz=0x0\u0026pubid=5890\u0026purl=\u0026sl=1\u0026slot=\u0026ss=1\u0026tst=0\"\u003e\u003c/div\u003e","ext":{"prebid":{"meta":{"adaptercode":"pubmatic","advertiserId":4098,"agencyId":4098,"demandSource":"6","mediaType":"banner","networkId":6},"type":"banner","bidid":"bb57a9e3-fdc2-4772-8071-112dd7f50a6a"},"refreshInterval":30,"crtype":"banner","dspid":6,"netecpm":5,"origbidcpm":8,"origbidcur":"USD","ibv":true,"clicktrackers":["http://clicktracker1.com","http://clicktracker2.com"]}}],"seat":"pubmatic"}],"ext":{"responsetimemillis":{"pubmatic":8},"matchedimpression":{"pubmatic":0}}}`),
+			},
+		},
+		{
+			name: "google_gam_sdk_bidding_preserves_bid_exp_when_bidexp_enf_is_1",
+			args: args{
+				ctx: nil,
+				moduleCtx: hookstage.ModuleInvocationContext{
+					ModuleContext: hookstage.ModuleContext{
+						"rctx": models.RequestCtx{
+							PubID:                 5890,
+							PubIDStr:              "5890",
+							Platform:              models.PLATFORM_APP,
+							AppSubIntegrationPath: ptrutil.ToPtr(models.AppSubIntegrationPathIDGoogleAdManagerSDKBidding),
+							ImpBidCtx: map[string]models.ImpCtx{
+								"Div1": {
+									Bidders: map[string]models.PartnerData{
+										"pubmatic": {
+											PartnerID:        123,
+											PrebidBidderCode: "pubmatic",
+										},
+									},
+									Type:     "banner",
+									IsBanner: true,
+								},
+							},
+							BidderResponseTimeMillis: map[string]int{},
+							SeatNonBids:              map[string][]openrtb_ext.NonBid{},
+							PartnerConfigMap: map[int]map[string]string{
+								123: {
+									models.PARTNER_ID:          "123",
+									models.PREBID_PARTNER_NAME: "pubmatic",
+									models.BidderCode:          "pubmatic",
+									models.SERVER_SIDE_FLAG:    "1",
+									models.KEY_GEN_PATTERN:     "_AU_@_W_x_H_",
+									models.TIMEOUT:             "200",
+								},
+								-1: {
+									models.DisplayVersionID: "1",
+									"refreshInterval":       "30",
+									"rev_share":             "0.5",
+								},
+							},
+						},
+					},
+				},
+				payload: hookstage.AuctionResponsePayload{
+					BidResponse: &openrtb2.BidResponse{
+						ID: "12345",
+						SeatBid: []openrtb2.SeatBid{
+							{
+								Seat: "pubmatic",
+								Bid: []openrtb2.Bid{
+									{
+										ID:    "bid-id-1",
+										ImpID: "Div1",
+										Price: 5,
+										Exp:   300,
+										Ext:   json.RawMessage(`{"dspid":6,"origbidcpm":8,"origbidcur":"USD","bidexp_enf":1,"prebid":{"bidid":"bb57a9e3-fdc2-4772-8071-112dd7f50a6a","meta":{"adaptercode":"pubmatic","advertiserId":4098,"agencyId":4098,"demandSource":"6","mediaType":"banner","networkId":6},"type":"banner"}}`),
+									},
+								},
+							},
+						},
+						Ext: json.RawMessage(`{"responsetimemillis":{"pubmatic":8}}`),
+					},
+				},
+			},
+			setup: func() *mock_metrics.MockMetricsEngine {
+				mockEngine := mock_metrics.NewMockMetricsEngine(ctrl)
+				mockEngine.EXPECT().RecordPlatformPublisherPartnerResponseStats(models.PLATFORM_APP, "5890", "pubmatic")
+				mockEngine.EXPECT().RecordPartnerResponseTimeStats("5890", "pubmatic", 8)
+				mockEngine.EXPECT().RecordPublisherResponseTimeStats("5890", gomock.Any())
+				mockEngine.EXPECT().RecordPublisherPartnerNoCookieStats("5890", gomock.Any()).AnyTimes()
+				mockFeature.EXPECT().IsTBFFeatureEnabled(gomock.Any(), gomock.Any()).Return(false).AnyTimes()
+				mockFeature.EXPECT().IsFscApplicable(gomock.Any(), gomock.Any(), gomock.Any()).Return(false).AnyTimes()
+				return mockEngine
+			},
+			doMutate: true,
+			want: want{
+				result:      hookstage.HookResult[hookstage.AuctionResponsePayload]{},
+				err:         nil,
+				bidResponse: json.RawMessage(`{"id":"12345","seatbid":[{"bid":[{"id":"bid-id-1","impid":"Div1","price":5,"adm":"\u003cdiv style=\"position:absolute;left:0px;top:0px;visibility:hidden;\"\u003e\u003cimg src=\"https:?adv=\u0026af=banner\u0026aps=0\u0026asip=14\u0026au=\u0026bc=pubmatic\u0026bexp=300\u0026bexpef=1\u0026bidid=bb57a9e3-fdc2-4772-8071-112dd7f50a6a\u0026di=-1\u0026eg=0\u0026en=0\u0026ft=0\u0026iid=\u0026kgpv=\u0026nwid=6\u0026orig=\u0026origbidid=bid-id-1\u0026pdvid=0\u0026pid=0\u0026plt=0\u0026pn=pubmatic\u0026psz=0x0\u0026pubid=5890\u0026purl=\u0026sl=1\u0026slot=\u0026ss=1\u0026tst=0\"\u003e\u003c/div\u003e","exp":300,"ext":{"prebid":{"meta":{"adaptercode":"pubmatic","advertiserId":4098,"agencyId":4098,"demandSource":"6","mediaType":"banner","networkId":6},"targeting":{"pwtbst":"1","pwtbst_pubmatic":"1","pwtecp":"5.00","pwtecp_pubmatic":"5.00","pwtpid":"pubmatic","pwtpid_pubmatic":"pubmatic","pwtplt":"inapp","pwtplt_pubmatic":"inapp","pwtsid":"bid-id-1","pwtsid_pubmatic":"bid-id-1","pwtsz":"0x0","pwtsz_pubmatic":"0x0"},"type":"banner","bidid":"bb57a9e3-fdc2-4772-8071-112dd7f50a6a"},"refreshInterval":30,"crtype":"banner","dspid":6,"netecpm":5,"origbidcpm":8,"origbidcur":"USD"}}],"seat":"pubmatic"}],"ext":{"responsetimemillis":{"pubmatic":8},"matchedimpression":{"pubmatic":0}}}`),
 			},
 		},
 		{

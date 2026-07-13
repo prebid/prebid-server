@@ -434,6 +434,30 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "OW_prebid_bidderparams_sdksubintegration_under_wrapper",
+			args: args{
+				request: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"wrapper":{"profile":1,"version":2,"sdksubintegration":7}}}}`),
+				},
+			},
+			expectedReqExt: extRequestAdServer{
+				Wrapper: &pubmaticWrapperExt{ProfileID: 1, VersionID: 2, BidderCode: "pubmatic", SdkSubIntegrationPath: ptrutil.ToPtr(7)},
+			},
+			wantErr: false,
+		},
+		{
+			name: "OW_prebid_bidderparams_nested_wrapper_sdksubintegration_like_exchange_filtered",
+			args: args{
+				request: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"wiid":"wid-1","wrapper":{"sdksubintegration":8}}}}`),
+				},
+			},
+			expectedReqExt: extRequestAdServer{
+				Wrapper: &pubmaticWrapperExt{BidderCode: "pubmatic", WrapperImpID: "wid-1", SdkSubIntegrationPath: ptrutil.ToPtr(8)},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

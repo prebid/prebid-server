@@ -1988,7 +1988,12 @@ func TestGetPubMaticWrapperExt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getPubMaticWrapperExt(tt.args.rctx, tt.args.partnerID)
-			assert.Equal(t, tt.want, got)
+			if tt.want == nil {
+				assert.Nil(t, got)
+				return
+			} else {
+				assert.JSONEq(t, string(tt.want), string(got))
+			}
 		})
 	}
 }

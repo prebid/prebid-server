@@ -133,6 +133,10 @@ func (m OpenWrap) handleAuctionResponseHook(
 				bidExt.MultiBidMultiFloorValue = mbmfv
 			}
 
+			if n, err := jsonparser.GetInt(bid.Ext, models.BidExtBidExpEnf); err == nil {
+				bidExt.BidExpEnf = int(n)
+			}
+
 			if bidExt.InBannerVideo {
 				m.metricEngine.RecordIBVRequest(rctx.PubIDStr, rctx.ProfileIDStr)
 			}
@@ -288,10 +292,12 @@ func (m OpenWrap) handleAuctionResponseHook(
 			if impCtx.BidCtx == nil {
 				impCtx.BidCtx = make(map[string]models.BidCtx)
 			}
+			omitTrackerBidExp := models.OmitTrackerBidExp(rctx, bidExt.BidExpEnf)
 			impCtx.BidCtx[bid.ID] = models.BidCtx{
-				BidExt: *bidExt,
-				EG:     eg,
-				EN:     en,
+				BidExt:                *bidExt,
+				EG:                    eg,
+				EN:                    en,
+				OmitBidExpFromTracker: omitTrackerBidExp,
 			}
 			rctx.ImpBidCtx[impId] = impCtx
 		}
@@ -495,6 +501,16 @@ func (m *OpenWrap) updateORTBV25Response(rctx models.RequestCtx, bidResponse *op
 	}
 
 	// update bid ext and other details
+	applyBidExpAndBidExtFromCtx(rctx, bidResponse)
+
+	return bidResponse, nil
+}
+
+// applyBidExpAndBidExtFromCtx sets bid.ext from OW BidCtx and preserves partner bid.exp on the response.
+// When OmitBidExpFromTracker (Google SDK bidding sub-integration 14 or 16 without partner bidexp_enf=1),
+// bid.exp is cleared and bexp/bexpef are omitted from the impression tracker.
+// bidexp_enf is never written on outgoing bid.ext; trackers use BidCtx (partner value + omit flag) for bexpef.
+func applyBidExpAndBidExtFromCtx(rctx models.RequestCtx, bidResponse *openrtb2.BidResponse) {
 	for i, seatBid := range bidResponse.SeatBid {
 		for j, bid := range seatBid.Bid {
 			impId := bid.ImpID
@@ -511,11 +527,14 @@ func (m *OpenWrap) updateORTBV25Response(rctx models.RequestCtx, bidResponse *op
 				continue
 			}
 
-			bidResponse.SeatBid[i].Bid[j].Ext, _ = json.Marshal(bidCtx.BidExt)
+			bidExtOut := bidCtx.BidExt
+			if bidCtx.OmitBidExpFromTracker {
+				bidResponse.SeatBid[i].Bid[j].Exp = 0
+			}
+			bidExtOut.BidExpEnf = 0
+			bidResponse.SeatBid[i].Bid[j].Ext, _ = json.Marshal(bidExtOut)
 		}
 	}
-
-	return bidResponse, nil
 }
 
 func getPlatformName(platform string) string {

@@ -3877,11 +3877,12 @@ func TestGetDomainFromUrl(t *testing.T) {
 
 func TestUpdateRequestExtBidderParamsPubmatic(t *testing.T) {
 	type args struct {
-		bidderParams json.RawMessage
-		cookies      []string
-		loggerID     string
-		bidderCode   string
-		sendBurl     bool
+		bidderParams      json.RawMessage
+		cookies           []string
+		loggerID          string
+		bidderCode        string
+		sendBurl          bool
+		sdkSubIntegration *int
 	}
 	tests := []struct {
 		name    string
@@ -3991,10 +3992,20 @@ func TestUpdateRequestExtBidderParamsPubmatic(t *testing.T) {
 			},
 			want: json.RawMessage(`{"pubmatic":{"Cookie":["test_cookie"],"wiid":"b441a46e-8c1f-428b-9c29-44e2a408a954"}}`),
 		},
+		{
+			name: "sdksubintegration_on_pubmatic_bidderparams_alongside_wiid",
+			args: args{
+				bidderParams:      json.RawMessage(`{"pubmatic":{"pmzoneid":"zone1"}}`),
+				loggerID:          "wid-sdk",
+				bidderCode:        "pubmatic",
+				sdkSubIntegration: ptrutil.ToPtr(16),
+			},
+			want: json.RawMessage(`{"pubmatic":{"wiid":"wid-sdk","wrapper":{"sdksubintegration":16}}}`),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := updateRequestExtBidderParamsPubmatic(tt.args.bidderParams, tt.args.cookies, tt.args.loggerID, tt.args.bidderCode, tt.args.sendBurl)
+			got, err := updateRequestExtBidderParamsPubmatic(tt.args.bidderParams, tt.args.cookies, tt.args.loggerID, tt.args.bidderCode, tt.args.sendBurl, tt.args.sdkSubIntegration)
 			if (err != nil) != tt.wantErr {
 				assert.Equal(t, tt.wantErr, err != nil)
 				return

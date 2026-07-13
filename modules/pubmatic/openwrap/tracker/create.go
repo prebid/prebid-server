@@ -216,6 +216,19 @@ func createTrackers(rctx models.RequestCtx, trackers map[string]models.OWTracker
 				tracker.PartnerInfo.DealID = bid.DealID
 			}
 
+			if impCtx, okImp := rctx.ImpBidCtx[impId]; okImp {
+				if bc, okBid := impCtx.BidCtx[bid.ID]; okBid {
+					if !bc.OmitBidExpFromTracker {
+						if bid.Exp > 0 {
+							tracker.BidExp = bid.Exp
+						}
+						if bc.BidExpEnf == 1 {
+							tracker.BidExpEnf = 1
+						}
+					}
+				}
+			}
+
 			var finalTrackerURL string
 			trackerURL := constructTrackerURL(rctx, tracker)
 			trackURL, err := url.Parse(trackerURL)
@@ -352,6 +365,12 @@ func constructTrackerURL(rctx models.RequestCtx, tracker models.Tracker) string 
 	}
 	if rctx.VastUnWrap.Enabled {
 		v.Set(models.TRKVastUnwrapEnabled, strconv.Itoa(tracker.VastUnwrapEnabled))
+	}
+	if tracker.BidExp > 0 {
+		v.Set(models.TRKBidExp, strconv.FormatInt(tracker.BidExp, 10))
+	}
+	if tracker.BidExpEnf == 1 {
+		v.Set(models.TRKBidExpEnf, strconv.Itoa(tracker.BidExpEnf))
 	}
 
 	queryString := v.Encode()

@@ -150,19 +150,15 @@ func (fe *feature) IsMBMFCountryForPublisher(countryCode string, pubID int) bool
 	return isPresent
 }
 
-// IsMBMFPublisherEnabled returns true if publisher not present in DB or it is present in is_enabled=1
+// IsMBMFPublisherEnabled returns true only if the publisher has an explicit MBMF row with is_enabled=1.
 func (fe *feature) IsMBMFPublisherEnabled(pubID int) bool {
 	idx := fe.mbmf.index.Load()
 	publishers := fe.mbmf.data[idx].enabledPublishers
 	isPublisherEnabled, isPresent := publishers[pubID]
-	if !isPresent {
-		return true
-	}
-	return isPublisherEnabled
+	return isPresent && isPublisherEnabled
 }
 
-// IsMBMFEnabledForAdUnitFormat returns true if publisher entry is not present
-// OR it is present and is_enabled=1 for the given adunit format.
+// IsMBMFEnabledForAdUnitFormat returns true only if the publisher has an explicit, active MBMF config for the ad format.
 func (fe *feature) IsMBMFEnabledForAdUnitFormat(pubID int, adunitFormat string) bool {
 	var floors map[int]*models.MultiFloors
 	idx := fe.mbmf.index.Load()
@@ -174,15 +170,12 @@ func (fe *feature) IsMBMFEnabledForAdUnitFormat(pubID int, adunitFormat string) 
 		floors = fe.mbmf.data[idx].rwddFloors
 	case models.AdUnitFormatBanner:
 		floors = fe.mbmf.data[idx].bannerFloors
-		multiFloors, isPresent := floors[pubID]
-		return isPresent && multiFloors.IsActive
 	default:
 		return false
 	}
 
 	multiFloors, isPresent := floors[pubID]
-	// Return true if no entry is present or if present and active
-	return !isPresent || multiFloors.IsActive
+	return isPresent && multiFloors != nil && multiFloors.IsActive
 }
 
 // GetMBMFFloorsForAdUnitFormat returns floors for publisher specified for MBMF in DB

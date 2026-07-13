@@ -59,6 +59,9 @@ type pubmaticWrapperExt struct {
 	BidderCode string `json:"biddercode,omitempty"`
 
 	WrapperImpID string `json:"wiid,omitempty"`
+
+	// SdkSubIntegrationPath is set from ext.prebid.bidderparams (OpenWrap OW patch on pubmatic) when building the partner ext.
+	SdkSubIntegrationPath *int `json:"sdksubintegration,omitempty"`
 }
 
 type pubmaticBidExtVideo struct {
@@ -103,6 +106,7 @@ const (
 	gpIdKey                  = "gpid"
 	pmZoneIDRequestParamName = "pmzoneid"
 	sendBurlKey              = "sendburl"
+	sdkSubIntegrationKey     = "sdksubintegration"
 	owSDKKey                 = "owsdk"
 )
 
@@ -501,8 +505,11 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 		}
 	}
 
+	// Single read of bidderparams "wrapper" for unmarshal below and OW sdksubintegration patch.
+	wrapperObj := reqExtBidderParams["wrapper"]
+
 	//get request ext bidder params
-	if wrapperObj, present := reqExtBidderParams["wrapper"]; present && len(wrapperObj) != 0 {
+	if len(wrapperObj) > 0 {
 		wrpExt := &pubmaticWrapperExt{}
 		err = jsonutil.Unmarshal(wrapperObj, wrpExt)
 		if err != nil {
@@ -542,13 +549,16 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 
 	// OW patch -start-
 	if wiid, ok := reqExtBidderParams["wiid"]; ok {
-		if pmReqExt.Wrapper == nil {
-			pmReqExt.Wrapper = &pubmaticWrapperExt{}
-		}
 		pmReqExt.Wrapper.WrapperImpID, _ = strconv.Unquote(string(wiid))
 	}
-	if wrapperObj, present := reqExtBidderParams["Cookie"]; present && len(wrapperObj) != 0 {
-		err = json.Unmarshal(wrapperObj, &cookies)
+	// OpenWrap puts sdksubintegration only under bidderparams.wrapper (per-bidder filtered object).
+	if pmReqExt.Wrapper.SdkSubIntegrationPath == nil && len(wrapperObj) > 0 {
+		if n, err := jsonparser.GetInt(wrapperObj, sdkSubIntegrationKey); err == nil {
+			pmReqExt.Wrapper.SdkSubIntegrationPath = ptrutil.ToPtr(int(n))
+		}
+	}
+	if cookieRaw, present := reqExtBidderParams["Cookie"]; present && len(cookieRaw) != 0 {
+		err = json.Unmarshal(cookieRaw, &cookies)
 	}
 	if sendBurl, ok := reqExtBidderParams[sendBurlKey]; ok {
 		pmReqExt.SendBurl, _ = strconv.ParseBool(string(sendBurl))

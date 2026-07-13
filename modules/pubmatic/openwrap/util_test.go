@@ -2410,7 +2410,7 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 		setup func()
 	}{
 		{
-			name: "endpoint is not of applovinmax",
+			name: "endpoint is not an SDK bidding path endpoint",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint: models.EndpointV25,
@@ -2418,6 +2418,122 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 			},
 			want:  nil,
 			setup: func() {},
+		},
+		{
+			name: "GoogleSDK endpoint runs MBMF gating",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointGoogleSDK,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				imp: openrtb2.Imp{
+					TagID: "adunit",
+					Instl: 1,
+				},
+			},
+			want: &models.MultiFloors{IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3},
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(nil)
+				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(&models.MultiFloors{
+					IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3,
+				})
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointGoogleSDK, "5890", models.MBMFSuccess)
+			},
+		},
+		{
+			name: "ApplovinMAX endpoint runs MBMF gating",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointAppLovinMax,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				imp: openrtb2.Imp{
+					TagID: "adunit",
+					Instl: 1,
+				},
+			},
+			want: &models.MultiFloors{IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3},
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(nil)
+				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(&models.MultiFloors{
+					IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3,
+				})
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFSuccess)
+			},
+		},
+		{
+			name: "Unity levelplay endpoint runs MBMF gating",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointUnityLevelPlay,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				imp: openrtb2.Imp{
+					TagID: "adunit",
+					Instl: 1,
+				},
+			},
+			want: &models.MultiFloors{IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3},
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(nil)
+				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(&models.MultiFloors{
+					IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3,
+				})
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointUnityLevelPlay, "5890", models.MBMFSuccess)
+			},
+		},
+		{
+			name: "APS endpoint runs MBMF gating",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointAPS,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				imp: openrtb2.Imp{
+					TagID: "adunit",
+					Instl: 1,
+				},
+			},
+			want: &models.MultiFloors{IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3},
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(nil)
+				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatInstl).Return(&models.MultiFloors{
+					IsActive: true, Tier1: 1, Tier2: 2, Tier3: 3,
+				})
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAPS, "5890", models.MBMFSuccess)
+			},
 		},
 		{
 			name: "publisher is not enabled for multi floors",
@@ -2459,7 +2575,7 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 			},
 		},
 		{
-			name: "pub enabled but adunitformat level disabled for instl",
+			name: "publisher enabled but adunitformat level disabled for instl",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint:  models.EndpointAppLovinMax,
@@ -2483,7 +2599,7 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 			},
 		},
 		{
-			name: "pub enabled for adunitformat instl and adunitlevel floors explicitly disabled",
+			name: "publisher enabled for adunitformat instl and adunitlevel floors explicitly disabled",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint:  models.EndpointAppLovinMax,
@@ -2513,7 +2629,7 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 			},
 		},
 		{
-			name: "pub enabled for adunitformat instl and adunitlevel floors explicitly enabled",
+			name: "publisher enabled for adunitformat instl and adunitlevel floors explicitly enabled",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint:  models.EndpointAppLovinMax,
@@ -2551,7 +2667,7 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 			},
 		},
 		{
-			name: "pub enabled for adunitformat instl and adunitlevel floors not found, go for pubid level adunitformat floors",
+			name: "publisher enabled for adunitformat instl and adunitlevel floors not found, go for pubid level adunitformat floors",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint:  models.EndpointAppLovinMax,
@@ -2588,7 +2704,7 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 			},
 		},
 		{
-			name: "pub enabled for adunitformat instl and adunitlevel floors not found, go for default adunitformat floors",
+			name: "publisher enabled for adunitformat instl and adunitlevel floors not found, go for default adunitformat floors",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint:  models.EndpointAppLovinMax,
@@ -2625,7 +2741,179 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 			},
 		},
 		{
-			name: "pub enabled for adunitformat BANNER and adunitlevel floors not found, DON'T apply default adunitformat floors",
+			name: "publisher enabled but adunitformat level disabled for rewarded video",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointAppLovinMax,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				reward: openrtb2.Int8Ptr(1),
+				imp: openrtb2.Imp{
+					TagID: "adunit-rw",
+					Video: &openrtb2.Video{},
+				},
+			},
+			want: nil,
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatRwddVideo).Return(false)
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFAdUnitFormatDisabled)
+			},
+		},
+		{
+			name: "publisher enabled for adunitformat rewarded video and adunitlevel floors explicitly disabled",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointAppLovinMax,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				reward: openrtb2.Int8Ptr(1),
+				imp: openrtb2.Imp{
+					TagID: "adunit",
+					Video: &openrtb2.Video{},
+				},
+			},
+			want: nil,
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatRwddVideo).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(map[string]*models.MultiFloors{
+					"adunit": {
+						IsActive: false,
+					},
+				})
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFAdUnitDisabled)
+			},
+		},
+		{
+			name: "publisher enabled for adunitformat rewarded video and adunitlevel floors explicitly enabled",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointAppLovinMax,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				reward: openrtb2.Int8Ptr(1),
+				imp: openrtb2.Imp{
+					TagID: "adunit",
+					Video: &openrtb2.Video{},
+				},
+			},
+			want: &models.MultiFloors{
+				IsActive: true,
+				Tier1:    1.1,
+				Tier2:    2.1,
+				Tier3:    3.1,
+			},
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatRwddVideo).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(map[string]*models.MultiFloors{
+					"adunit": {
+						IsActive: true,
+						Tier1:    1.1,
+						Tier2:    2.1,
+						Tier3:    3.1,
+					},
+				})
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFSuccess)
+			},
+		},
+		{
+			name: "publisher enabled for adunitformat rewarded video and adunitlevel floors not found, go for pubid level adunitformat floors",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointAppLovinMax,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				reward: openrtb2.Int8Ptr(1),
+				imp: openrtb2.Imp{
+					TagID: "adunit1234",
+					Video: &openrtb2.Video{},
+				},
+			},
+			want: &models.MultiFloors{
+				IsActive: true,
+				Tier1:    1.1,
+				Tier2:    2.1,
+				Tier3:    3.1,
+			},
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatRwddVideo).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(nil)
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFSuccess)
+				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatRwddVideo).Return(&models.MultiFloors{
+					IsActive: true,
+					Tier1:    1.1,
+					Tier2:    2.1,
+					Tier3:    3.1,
+				})
+			},
+		},
+		{
+			name: "publisher enabled for adunitformat rewarded video and adunitlevel floors not found, go for default adunitformat floors",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint:  models.EndpointAppLovinMax,
+					PubID:     5890,
+					PubIDStr:  "5890",
+					ProfileID: 1234,
+					DeviceCtx: models.DeviceCtx{
+						DerivedCountryCode: "US",
+					},
+				},
+				reward: openrtb2.Int8Ptr(1),
+				imp: openrtb2.Imp{
+					TagID: "adunit1234",
+					Video: &openrtb2.Video{},
+				},
+			},
+			want: &models.MultiFloors{
+				IsActive: true,
+				Tier1:    1,
+				Tier2:    2,
+				Tier3:    3,
+			},
+			setup: func() {
+				mockFeature.EXPECT().IsMBMFCountryForPublisher("US", 5890).Return(true)
+				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
+				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatRwddVideo).Return(true)
+				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(map[string]*models.MultiFloors{})
+				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatRwddVideo).Return(&models.MultiFloors{
+					IsActive: true,
+					Tier1:    1,
+					Tier2:    2,
+					Tier3:    3,
+				})
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFSuccess)
+			},
+		},
+		{
+			name: "publisher enabled for adunitformat BANNER and adunitlevel floors not found, DON'T apply default adunitformat floors",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint:  models.EndpointAppLovinMax,
@@ -2648,8 +2936,7 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
 				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatBanner).Return(true)
 				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(map[string]*models.MultiFloors{})
-				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatBanner).Return(nil)
-				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFAdUnitFormatNotFound)
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFAdUnitDisabled)
 			},
 		},
 		{
@@ -2708,12 +2995,11 @@ func TestOpenWrapGetMultiFloors(t *testing.T) {
 				mockFeature.EXPECT().IsMBMFPublisherEnabled(5890).Return(true)
 				mockFeature.EXPECT().IsMBMFEnabledForAdUnitFormat(5890, models.AdUnitFormatBanner).Return(true)
 				mockFeature.EXPECT().GetProfileAdUnitMultiFloors(1234).Return(map[string]*models.MultiFloors{})
-				mockFeature.EXPECT().GetMBMFFloorsForAdUnitFormat(5890, models.AdUnitFormatBanner).Return(nil)
-				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFAdUnitFormatNotFound)
+				mockEngine.EXPECT().RecordMBMFRequests(models.EndpointAppLovinMax, "5890", models.MBMFAdUnitDisabled)
 			},
 		},
 		{
-			name: "pub enabled but invalid adformat",
+			name: "publisher enabled but invalid adformat",
 			args: args{
 				rctx: models.RequestCtx{
 					Endpoint:  models.EndpointAppLovinMax,

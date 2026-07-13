@@ -452,6 +452,38 @@ func TestModifyImpression(t *testing.T) {
 			},
 		},
 		{
+			name: "Update_exp_from_signal_when_positive",
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp1", Exp: 0},
+				},
+			},
+			signalImps: []openrtb2.Imp{
+				{Exp: 300},
+			},
+			expectedResult: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp1", Exp: 300},
+				},
+			},
+		},
+		{
+			name: "Does_not_overwrite_exp_when_signal_exp_is_zero",
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp1", Exp: 120},
+				},
+			},
+			signalImps: []openrtb2.Imp{
+				{Exp: 0},
+			},
+			expectedResult: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp1", Exp: 120},
+				},
+			},
+		},
+		{
 			name: "Update ClickBrowser",
 			request: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{

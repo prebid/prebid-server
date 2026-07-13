@@ -46,6 +46,10 @@ type Tracker struct {
 	ImpID             string `json:"-"`
 	Secure            int    `json:"-"`
 	VastUnwrapEnabled int
+	// BidExp is OpenRTB bid.exp (seconds); injected on the impression tracker when > 0.
+	BidExp int64
+	// BidExpEnf is bid.ext.bidexp_enf; injected as bexpef on the impression tracker when 1 (omitted with bexp when OmitBidExpFromTracker).
+	BidExpEnf int
 }
 
 // Partner partner information to be logged in tracker object

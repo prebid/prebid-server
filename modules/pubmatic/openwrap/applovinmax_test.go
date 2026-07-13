@@ -152,6 +152,22 @@ func TestUpdateImpression(t *testing.T) {
 			},
 			want: []openrtb2.Imp{{Native: nil}},
 		},
+		{
+			name: "signalImp_exp_overwrites_maxImp_exp",
+			args: args{
+				signalImps: []openrtb2.Imp{{Exp: 3600}},
+				maxImps:    []openrtb2.Imp{{Exp: 120}},
+			},
+			want: []openrtb2.Imp{{Exp: 3600}},
+		},
+		{
+			name: "signalImp_exp_zero_keeps_maxImp_exp",
+			args: args{
+				signalImps: []openrtb2.Imp{{Exp: 0}},
+				maxImps:    []openrtb2.Imp{{Exp: 120}},
+			},
+			want: []openrtb2.Imp{{Exp: 120}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

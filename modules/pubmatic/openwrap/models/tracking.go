@@ -59,6 +59,10 @@ const (
 	TRKNetworkID              = "nwid"
 	TRKVastUnwrapEnabled      = "vu"
 	TRKInViewCountingFlag     = "ctm"
+	// TRKBidExp carries OpenRTB bid.exp (seconds) for impression counting / bid expiration at the ad server.
+	TRKBidExp = "bexp"
+	// TRKBidExpEnf carries bid.ext.bidexp_enf on the impression tracker (omitted with bexp when Google SDK bidding omit rule applies).
+	TRKBidExpEnf = "bexpef"
 )
 
 // video error tracker url parameters

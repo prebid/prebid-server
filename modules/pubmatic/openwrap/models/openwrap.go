@@ -247,6 +247,8 @@ type BidCtx struct {
 	EG float64
 	// EN gross net in USD for tracker and logger
 	EN float64
+	// OmitBidExpFromTracker when true, impression tracker omits bexp/bexpef; response may strip bid.exp per auction response hook.
+	OmitBidExpFromTracker bool
 }
 
 type AdUnitCtx struct {

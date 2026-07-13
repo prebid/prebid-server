@@ -25,6 +25,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models/adunitconfig"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models/nbr"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/profilemetadata"
+	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/sdk/sdkutils"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	gppPolicy "github.com/prebid/prebid-server/v3/privacy/gpp"
 )
@@ -639,7 +640,7 @@ func getAdunitFormat(reward *int8, imp openrtb2.Imp) string {
 
 // getMultiFloors returns all adunitlevel multifloors or to be applied adunitformat multifloors for give imp.
 func (m OpenWrap) getMultiFloors(rctx models.RequestCtx, reward *int8, imp openrtb2.Imp) *models.MultiFloors {
-	if rctx.Endpoint != models.EndpointAppLovinMax {
+	if !sdkutils.IsSdkIntegration(rctx.Endpoint) {
 		return nil
 	}
 
@@ -647,8 +648,7 @@ func (m OpenWrap) getMultiFloors(rctx models.RequestCtx, reward *int8, imp openr
 	//call stat at the end of func with updated mbmfStatus
 	defer func() { m.metricEngine.RecordMBMFRequests(rctx.Endpoint, rctx.PubIDStr, mbmfStatus) }()
 
-	//if pub entry present with is_enabled=1 AND no pub in mbmf_enabled wrapper_feature-> apply mbmf
-	//if pub entry present as is_enabled=0 -> don't apply mbmf
+	// MBMF applies only when the publisher has an explicit MBMF publisher row with is_enabled=1.
 	if !m.pubFeatures.IsMBMFPublisherEnabled(rctx.PubID) {
 		mbmfStatus = models.MBMFPubDisabled
 		return nil
@@ -666,7 +666,7 @@ func (m OpenWrap) getMultiFloors(rctx models.RequestCtx, reward *int8, imp openr
 		return nil
 	}
 
-	//don't apply mbmf if pub is not enabled for adunitFormat
+	// MBMF for this format requires an explicit, active per-format publisher config.
 	if !m.pubFeatures.IsMBMFEnabledForAdUnitFormat(rctx.PubID, adunitFormat) {
 		mbmfStatus = models.MBMFAdUnitFormatDisabled
 		return nil
@@ -683,10 +683,15 @@ func (m OpenWrap) getMultiFloors(rctx models.RequestCtx, reward *int8, imp openr
 			mbmfStatus = models.MBMFSuccess
 			return multifloors
 		}
-		//fallback to adunitformat multifloors if adunitlevel floors not present in DB
 	}
 
-	//return adunitformat multifloors for pubid, if not present then return default multifloors
+	// Banner: only adunit-level floors; no format-level fallback.
+	if adunitFormat == models.AdUnitFormatBanner {
+		mbmfStatus = models.MBMFAdUnitDisabled
+		return nil
+	}
+
+	// Rewarded / interstitial: format-level default floors when adunit-level not present.
 	multifloors := m.pubFeatures.GetMBMFFloorsForAdUnitFormat(rctx.PubID, adunitFormat)
 	if multifloors != nil {
 		mbmfStatus = models.MBMFSuccess
