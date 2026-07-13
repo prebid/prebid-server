@@ -1377,7 +1377,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: nil,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: nil,
 					MaxLimit:     nil,
 				},
@@ -1392,7 +1392,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: intNegative,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 				},
 			},
@@ -1406,7 +1406,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: int0,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 				},
 			},
@@ -1420,7 +1420,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: int10,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 					MaxLimit:     int30,
 				},
@@ -1435,7 +1435,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: int30,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 					MaxLimit:     int10,
 				},
@@ -1450,7 +1450,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: intMax,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{},
+				CookieSync: config.AccountCookieSync{},
 			},
 			expectedRequest: cookieSyncRequest{
 				Limit: intMax,
@@ -1483,7 +1483,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: nil,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: nil,
 				},
 			},
@@ -1497,7 +1497,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: nil,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: &coopSyncTrue,
 				},
 			},
@@ -1511,7 +1511,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: &coopSyncTrue,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: nil,
 				},
 			},
@@ -1525,7 +1525,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: &coopSyncFalse,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: &coopSyncTrue,
 				},
 			},
@@ -1605,6 +1605,52 @@ func TestCookieSyncWriteParseRequestErrorMetrics(t *testing.T) {
 		endpoint.writeParseRequestErrorMetrics(test.err)
 
 		mockMetrics.AssertExpectations(t)
+	}
+}
+
+func TestMergeDisabledIFrameBidders(t *testing.T) {
+	testCases := map[string]struct {
+		givenHost    []string
+		givenAccount []string
+		expected     []string
+	}{
+		"both_nil": {
+			givenHost:    nil,
+			givenAccount: nil,
+			expected:     nil,
+		},
+		"host_only": {
+			givenHost:    []string{"bidderA", "bidderB"},
+			givenAccount: nil,
+			expected:     []string{"bidderA", "bidderB"},
+		},
+		"account_only": {
+			givenHost:    nil,
+			givenAccount: []string{"bidderA", "bidderB"},
+			expected:     []string{"bidderA", "bidderB"},
+		},
+		"union": {
+			givenHost:    []string{"bidderA"},
+			givenAccount: []string{"bidderB"},
+			expected:     []string{"bidderA", "bidderB"},
+		},
+		"dedupe_host_precedence": {
+			givenHost:    []string{"bidderA", "bidderB"},
+			givenAccount: []string{"bidderB", "bidderC"},
+			expected:     []string{"bidderA", "bidderB", "bidderC"},
+		},
+		"wildcard_from_host": {
+			givenHost:    []string{"*"},
+			givenAccount: []string{"bidderA"},
+			expected:     []string{"*", "bidderA"},
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := mergeDisabledIFrameBidders(test.givenHost, test.givenAccount)
+			assert.Equal(t, test.expected, result)
+		})
 	}
 }
 
@@ -2704,7 +2750,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 	testCases := []struct {
 		description            string
 		givenGlobalConfig      config.UserSync
-		givenAccountCookieSync config.CookieSync
+		givenAccountCookieSync config.AccountCookieSync
 		expectedPriorityGroups [][]string
 	}{
 		{
@@ -2712,7 +2758,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(true),
 				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
 			},
@@ -2723,7 +2769,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(false),
 				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
 			},
@@ -2734,7 +2780,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: nil,
 				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
 			},
@@ -2745,7 +2791,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(true),
 				PriorityGroups:  [][]string{},
 			},
@@ -2756,7 +2802,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(true),
 				PriorityGroups:  nil,
 			},
@@ -2767,7 +2813,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: nil,
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: nil,
 				PriorityGroups:  [][]string{{"account1", "account2"}},
 			},

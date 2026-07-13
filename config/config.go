@@ -54,6 +54,9 @@ type Configuration struct {
 	Video             Video           `mapstructure:"video"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
+	// CookieSync holds host-level cookie sync settings that are always enforced and
+	// cannot be overridden by account configuration.
+	CookieSync CookieSync `mapstructure:"cookie_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
 	StoredResponses StoredRequests `mapstructure:"stored_responses"`
@@ -754,7 +757,6 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName openrtb_ext.BidderNameNormalizer) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
-		mapstructure.StringToSliceHookFunc(","),
 		AccountModulesHookFunc(),
 	))); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -1243,7 +1245,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.BindEnv("account_defaults.privacy.dsa.default")
 	v.BindEnv("account_defaults.privacy.dsa.gdpr_only")
-	v.BindEnv("account_defaults.cookie_sync.disabled_iframe_bidders")
 	v.SetDefault("account_defaults.privacy.ipv6.anon_keep_bits", 56)
 	v.SetDefault("account_defaults.privacy.ipv4.anon_keep_bits", 24)
 

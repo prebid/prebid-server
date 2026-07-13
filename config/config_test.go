@@ -637,19 +637,30 @@ func cmpNils(t *testing.T, key string, a interface{}) {
 	assert.Nilf(t, a, "%s: %t != nil", key, a)
 }
 
-func TestDisabledIFrameBiddersFromEnv(t *testing.T) {
-	os.Setenv("PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS", "bidder1,bidder2")
-	defer os.Unsetenv("PBS_ACCOUNT_DEFAULTS_COOKIE_SYNC_DISABLED_IFRAME_BIDDERS")
+func TestDisabledIFrameBiddersFromFile(t *testing.T) {
+	cfgYAML := []byte(`
+gdpr:
+  default_value: "0"
+cookie_sync:
+  disabled_iframe_bidders:
+    - hostBidder1
+    - hostBidder2
+account_defaults:
+  cookie_sync:
+    disabled_iframe_bidders:
+      - accountBidder1
+      - accountBidder2
+`)
 
 	v := viper.New()
 	SetupViper(v, "", bidderInfos)
-	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
+	assert.NoError(t, v.ReadConfig(bytes.NewBuffer(cfgYAML)))
 	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err)
 
-	bidders := cfg.AccountDefaults.CookieSync.DisabledIFrameBidders
-	assert.Equal(t, []string{"bidder1", "bidder2"}, bidders)
+	assert.Equal(t, []string{"hostBidder1", "hostBidder2"}, cfg.CookieSync.DisabledIFrameBidders, "host-level")
+	assert.Equal(t, []string{"accountBidder1", "accountBidder2"}, cfg.AccountDefaults.CookieSync.DisabledIFrameBidders, "account-level")
 }
 
 func TestFullConfig(t *testing.T) {
