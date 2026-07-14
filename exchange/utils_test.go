@@ -3143,9 +3143,16 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 				User: &openrtb2.User{EIDs: test.expectedUserEids},
 			}
 
+			originalUser := reqWrapper.User
+
 			resultErr := removeUnpermissionedEids(&reqWrapper, bidder)
 			assert.NoError(t, resultErr, test.description)
 			assert.Equal(t, expectedRequest, reqWrapper.BidRequest)
+
+			eidsRemoved := len(test.userEids) > 0 && len(test.expectedUserEids) != len(test.userEids)
+			if eidsRemoved {
+				assert.NotSame(t, originalUser, reqWrapper.User, "User must be cloned when EIDs are removed to avoid corrupting shared state")
+			}
 		})
 	}
 }

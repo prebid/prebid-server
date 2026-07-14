@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"slices"
 	"strings"
 
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -158,18 +157,6 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		reqWrapperCopy := req.CloneAndClearImpWrappers()
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
-
-		// bidRequestCopy is a shallow copy, so User is still the same pointer shared
-		// across every per-bidder iteration. removeUnpermissionedEids (below) rewrites
-		// User.EIDs in place, which would corrupt the EIDs seen by other bidders in this
-		// loop. Give each bidder its own User struct and EIDs slice. Other User fields
-		// (Data, Ext, Geo, KwArray) are not mutated in place before applyPrivacy performs
-		// its own full deep clone, so they don't need copying here. See issue #4792.
-		if bidRequestCopy.User != nil {
-			userCopy := *bidRequestCopy.User
-			userCopy.EIDs = slices.Clone(bidRequestCopy.User.EIDs)
-			bidRequestCopy.User = &userCopy
-		}
 
 		reqWrapperCopy.Imp = imps
 
@@ -862,11 +849,14 @@ func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder str
 		return nil
 	}
 
+	// clone User before mutating EIDs to avoid corrupting the shared pointer
+	userCopy := *reqWrapper.User
 	if len(eidsAllowed) == 0 {
-		reqWrapper.User.EIDs = nil
+		userCopy.EIDs = nil
 	} else {
-		reqWrapper.User.EIDs = eidsAllowed
+		userCopy.EIDs = eidsAllowed
 	}
+	reqWrapper.User = &userCopy
 	return nil
 }
 
