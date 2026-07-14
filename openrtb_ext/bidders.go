@@ -623,7 +623,7 @@ const (
 	BidderSspBC             BidderName = "sspBC"
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
-	BidderSuperEdge         BidderName = "superEdge"
+	BidderSuperEdge         BidderName = "superedge"
 	BidderSynapseHX         BidderName = "synapseHX"
 	BidderTaboola           BidderName = "taboola"
 	BidderTAdvertisingBlis  BidderName = "tadvertising_blis"
