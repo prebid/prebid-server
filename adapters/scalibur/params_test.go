@@ -34,9 +34,14 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{}`,
 	`{"placementId":"p123"}`,
 	`{"placementId":"p123", "bidfloor": 1.5}`,
 	`{"placementId":"p123", "bidfloor": 1.5, "bidfloorcur": "USD"}`,
+	`{"host":"eu.scalibur.io"}`,
+	`{"host":"host:8080"}`,
+	`{"bidfloor": 1.5}`,
+	`{"placementId":"p123", "customKey": "customValue"}`,
 }
 
 var invalidParams = []string{
@@ -45,7 +50,7 @@ var invalidParams = []string{
 	`true`,
 	`5`,
 	`[]`,
-	`{}`,
 	`{"placementId": 123}`,
-	`{"bidfloor": 1.5}`,
+	`{"host":"evil.com/path?x=1"}`,
+	`{"host":"https://eu.scalibur.io"}`,
 }

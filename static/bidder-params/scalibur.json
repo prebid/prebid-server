@@ -6,7 +6,8 @@
   "properties": {
     "placementId": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Placement id, applied to imp.tagid. Optional: may instead be supplied per ad unit as imp.tagid. At least one source must resolve or the imp is not served."
     },
     "bidfloor": {
       "type": "number",
@@ -14,9 +15,11 @@
     },
     "bidfloorcur": {
       "type": "string"
+    },
+    "host": {
+      "type": "string",
+      "description": "Overrides the {{.Host}} macro in the endpoint. Bare host with an optional port only.",
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
     }
-  },
-  "required": [
-    "placementId"
-  ]
+  }
 }

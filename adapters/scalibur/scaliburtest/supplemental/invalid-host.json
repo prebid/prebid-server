@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "banner": { "format": [{"w": 300, "h": 250}] },
+      "ext": {
+        "bidder": {
+          "placementId": "test-scl-placement",
+          "host": "evil.com/path?redirect=http://attacker.com#"
+        }
+      }
+    }]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid host",
+      "comparison": "literal"
+    }
+  ]
+}
