@@ -169,12 +169,12 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		} else {
 			extMap = make(map[string]interface{})
 		}
-		// Default a rewarded video imp to videotype "rewarded", but preserve an
-		// explicit "rewarded_interstitial" supplied by the caller. Meta documents
-		// both as distinct rewarded videotypes; rwdd:1 is consistent with either
-		// (a rewarded format), so it is not overwritten. Without this, a caller's
-		// rewarded interstitial signal would be downgraded to plain rewarded video.
-		if vt, _ := extMap["videotype"].(string); vt != "rewarded_interstitial" {
+		// Derive videotype from standard OpenRTB signals. Meta documents
+		// "rewarded" and "rewarded_interstitial" as distinct rewarded videotypes.
+		// Use instl to distinguish: rwdd+instl → rewarded_interstitial, rwdd alone → rewarded.
+		if imp.Instl == 1 {
+			extMap["videotype"] = "rewarded_interstitial"
+		} else {
 			extMap["videotype"] = "rewarded"
 		}
 		videoCopy.Ext, err = jsonutil.Marshal(extMap)
@@ -212,7 +212,7 @@ func modifyImp(out *openrtb2.Imp) error {
 	// Meta's only non-rewarded interstitial request shape is banner{0,0}+instl:1, which
 	// renders display or video client-side (per Meta's Audience Network server-to-server
 	// spec). Map a non-rewarded video interstitial to that shape instead of rejecting it.
-	// Rewarded video interstitials keep their video imp so Meta receives videotype "rewarded".
+	// Rewarded video interstitials keep their video imp so Meta receives videotype "rewarded_interstitial".
 	if out.Instl == 1 && impType == openrtb_ext.BidTypeVideo && out.Rwdd != 1 {
 		out.Banner = &openrtb2.Banner{}
 		impType = openrtb_ext.BidTypeBanner
