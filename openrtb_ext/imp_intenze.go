@@ -1,5 +1,7 @@
 package openrtb_ext
 
 type ExtIntenze struct {
-	AccountID string `json:"accountId"`
+	Region      *string `json:"region,omitempty"`
+	AccountID   *string `json:"accountId,omitempty"`
+	PlacementID *string `json:"placementId,omitempty"`
 }
