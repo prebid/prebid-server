@@ -1,4 +1,4 @@
-package adsmartx
+package agenticx
 
 import (
 	"strings"
@@ -16,9 +16,9 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(
-		openrtb_ext.BidderAdsmartx,
+		openrtb_ext.BidderAgenticx,
 		config.Adapter{
-			Endpoint: "https://ads.adsmartx.com/ads/rtb/prebid/server",
+			Endpoint: "https://ads.theagenticx.ai/ads/rtb/prebid/server",
 		},
 		config.Server{
 			ExternalUrl: "http://hosturl.com",
@@ -28,7 +28,7 @@ func TestJsonSamples(t *testing.T) {
 	)
 
 	require.NoError(t, buildErr, "Builder returned unexpected error")
-	adapterstest.RunJSONBidderTest(t, "adsmartxtest", bidder)
+	adapterstest.RunJSONBidderTest(t, "agenticxtest", bidder)
 }
 
 func TestParseImpExt(t *testing.T) {
@@ -65,6 +65,7 @@ func TestGetBidType(t *testing.T) {
 	}{
 		{"Banner", openrtb2.MarkupBanner, false, openrtb_ext.BidTypeBanner},
 		{"Video", openrtb2.MarkupVideo, false, openrtb_ext.BidTypeVideo},
+		{"Audio", openrtb2.MarkupAudio, false, openrtb_ext.BidTypeAudio},
 		{"Unknown", 99, true, ""},
 	}
 
@@ -90,7 +91,7 @@ func TestMakeRequestsErrors(t *testing.T) {
 	}{
 		{"Invalid ext", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`not-json`)}}, "impID 1:"},
 		{"No valid imps", []openrtb2.Imp{}, "no valid impressions"},
-		{"No banner or video", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"bidfloor": 0.5}}`)}}, "no banner or video object specified"},
+		{"No banner or video or audio", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"bidfloor": 0.5}}`)}}, "no banner, video, or audio object specified"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

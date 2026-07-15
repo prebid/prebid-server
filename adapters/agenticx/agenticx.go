@@ -77,16 +77,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}, errs
 }
 
-func parseImpExt(ext jsonutil.RawMessage) (openrtb_ext.ImpExtAdsmartx, error) {
+func parseImpExt(ext jsonutil.RawMessage) (openrtb_ext.ImpExtAgenticx, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(ext, &bidderExt); err != nil {
-		return openrtb_ext.ImpExtAdsmartx{}, err
+		return openrtb_ext.ImpExtAgenticx{}, err
 	}
-	var adsmartxExt openrtb_ext.ImpExtAdsmartx
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adsmartxExt); err != nil {
-		return openrtb_ext.ImpExtAdsmartx{}, err
+	var agenticxExt openrtb_ext.ImpExtAgenticx
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &agenticxExt); err != nil {
+		return openrtb_ext.ImpExtAgenticx{}, err
 	}
-	return adsmartxExt, nil
+	return agenticxExt, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {

@@ -10,7 +10,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "impID 1: no banner or video object specified",
+      "value": "impID 1: no banner, video, or audio object specified",
       "comparison": "literal"
     },
     {

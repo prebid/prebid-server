@@ -1,4 +1,4 @@
-package adsmartx
+package agenticx
 
 import (
 	"encoding/json"
@@ -27,7 +27,7 @@ func TestValidParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NoError(t, validator.Validate(openrtb_ext.BidderAdsmartx, json.RawMessage(tt.input)))
+			assert.NoError(t, validator.Validate(openrtb_ext.BidderAgenticx, json.RawMessage(tt.input)))
 		})
 	}
 }
@@ -53,7 +53,7 @@ func TestInvalidParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Error(t, validator.Validate(openrtb_ext.BidderAdsmartx, json.RawMessage(tt.input)))
+			assert.Error(t, validator.Validate(openrtb_ext.BidderAgenticx, json.RawMessage(tt.input)))
 		})
 	}
 }

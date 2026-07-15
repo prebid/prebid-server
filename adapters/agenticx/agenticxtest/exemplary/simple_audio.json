@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-video-request",
+    "id": "test-audio-request",
     "device": {
       "ip": "10.0.0.1",
       "ua": "Mozilla/5.0"
@@ -10,17 +10,15 @@
     },
     "imp": [
       {
-        "id": "video-imp-id",
-        "video": {
-          "mimes": ["video/mp4"],
-          "protocols": [1, 2],
-          "w": 640,
-          "h": 480
+        "id": "audio-imp-id",
+        "audio": {
+          "mimes": ["audio/mp4"],
+          "minduration": 5,
+          "maxduration": 30
         },
         "ext": {
           "bidder": {
-            "bidfloor": 1.0,
-            "siteId": "site-456"
+            "bidfloor": 1.0
           }
         }
       }
@@ -31,21 +29,19 @@
       "expectedRequest": {
         "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
         "body": {
-          "id": "test-video-request",
+          "id": "test-audio-request",
           "imp": [
             {
-              "id": "video-imp-id",
-              "video": {
-                "mimes": ["video/mp4"],
-                "protocols": [1, 2],
-                "w": 640,
-                "h": 480
+              "id": "audio-imp-id",
+              "audio": {
+                "mimes": ["audio/mp4"],
+                "minduration": 5,
+                "maxduration": 30
               },
               "bidfloor": 1.0,
               "ext": {
                 "bidder": {
-                  "bidfloor": 1.0,
-                  "siteId": "site-456"
+                  "bidfloor": 1.0
                 }
               }
             }
@@ -58,25 +54,23 @@
             "ua": "Mozilla/5.0"
           }
         },
-        "impIDs": ["video-imp-id"]
+        "impIDs": ["audio-imp-id"]
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-video-request",
+          "id": "test-audio-request",
           "seatbid": [
             {
               "seat": "agenticx",
               "bid": [
                 {
-                  "id": "video-bid-id",
-                  "impid": "video-imp-id",
-                  "price": 5.0,
-                  "adm": "<VAST version=\"3.0\"></VAST>",
-                  "crid": "video-creative-001",
-                  "w": 640,
-                  "h": 480,
-                  "mtype": 2
+                  "id": "audio-bid-id",
+                  "impid": "audio-imp-id",
+                  "price": 2.0,
+                  "adm": "<Ad><InLine></InLine></Ad>",
+                  "crid": "audio-creative-001",
+                  "mtype": 3
                 }
               ]
             }
@@ -92,16 +86,14 @@
       "bids": [
         {
           "bid": {
-            "id": "video-bid-id",
-            "impid": "video-imp-id",
-            "price": 5.0,
-            "adm": "<VAST version=\"3.0\"></VAST>",
-            "crid": "video-creative-001",
-            "w": 640,
-            "h": 480,
-            "mtype": 2
+            "id": "audio-bid-id",
+            "impid": "audio-imp-id",
+            "price": 2.0,
+            "adm": "<Ad><InLine></InLine></Ad>",
+            "crid": "audio-creative-001",
+            "mtype": 3
           },
-          "type": "video"
+          "type": "audio"
         }
       ]
     }
