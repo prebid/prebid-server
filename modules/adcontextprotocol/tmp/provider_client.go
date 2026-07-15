@@ -80,7 +80,10 @@ func (m *Module) doTMP(ctx context.Context, url string, body []byte, signature s
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
+	// Cap the response so a misbehaving upstream cannot exhaust memory on the
+	// auction hot path. The TMP spec targets 200–600 B messages, so 1 MiB is
+	// far more than any legitimate response.
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
 	}

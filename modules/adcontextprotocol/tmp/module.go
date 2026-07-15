@@ -9,10 +9,10 @@
 package tmp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/adcontextprotocol/adcp-go/tmproto"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
@@ -37,8 +37,10 @@ func Builder(raw json.RawMessage, deps moduledeps.ModuleDeps) (any, error) {
 		return nil, fmt.Errorf("adcontextprotocol.tmp: signer: %w", err)
 	}
 
+	// No client-level Timeout: per-call deadlines come from context so that
+	// per-provider TimeoutMs (which can exceed the module default) actually
+	// applies rather than being clipped by an overall client timeout.
 	httpClient := &http.Client{
-		Timeout:   time.Duration(cfg.TimeoutMs) * time.Millisecond,
 		Transport: deps.HTTPClient.Transport,
 	}
 
@@ -70,9 +72,13 @@ var (
 )
 
 // asyncRequest carries a single auction's in-flight TMP fan-out from the
-// entrypoint hook through to the response hook.
+// entrypoint hook through to the response hook. ctx / cancel are owned here
+// (not the hook's own ctx) so the response hook can guarantee no orphan
+// goroutine survives the auction.
 type asyncRequest struct {
 	done   chan struct{}
+	ctx    context.Context
+	cancel context.CancelFunc
 	result *routerResult
 	err    error
 }

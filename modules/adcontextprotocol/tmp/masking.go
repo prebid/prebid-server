@@ -51,7 +51,7 @@ func (m *Module) filterIdentities(tokens []tmproto.IdentityToken) []tmproto.Iden
 			allowed[t] = true
 		}
 	}
-	out := tokens[:0]
+	out := make([]tmproto.IdentityToken, 0, len(tokens))
 	for _, t := range tokens {
 		if allowed[t.UIDType] {
 			out = append(out, t)
