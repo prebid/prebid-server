@@ -32,8 +32,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		if imp.Banner == nil && imp.Video == nil {
-			errs = append(errs, fmt.Errorf("impID %s: no banner or video object specified", imp.ID))
+		if imp.Banner == nil && imp.Video == nil && imp.Audio == nil {
+			errs = append(errs, fmt.Errorf("impID %s: no banner, video, or audio object specified", imp.ID))
 			continue
 		}
 
@@ -131,6 +131,8 @@ func getBidType(mtype openrtb2.MarkupType) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unknown bid type mtype=%d", mtype),
