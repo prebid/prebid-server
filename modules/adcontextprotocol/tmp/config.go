@@ -23,6 +23,17 @@ type Config struct {
 	// can override with their own Timeout field. Default 300 ms.
 	TimeoutMs int `json:"timeout_ms"`
 
+	// DecorrelationMaxDelayMs, when > 0, jitters the second of a provider's
+	// context / identity outbound calls by a random duration in
+	// [0, DecorrelationMaxDelayMs] milliseconds. The pair is also spawned in
+	// a randomized order regardless of this value. Set to 0 to disable the
+	// delay (order randomization remains on — it is free). Default 0.
+	//
+	// Recommended by the TMP spec as a MAY to break timing correlation
+	// between the two calls at a passive observer. Costs latency on the
+	// auction hot path — operators trade privacy for speed by tuning this.
+	DecorrelationMaxDelayMs int `json:"decorrelation_max_delay_ms"`
+
 	// Signing holds the Ed25519 key used to authenticate outbound requests to
 	// TMP providers. Required.
 	Signing SigningConfig `json:"signing"`
@@ -151,6 +162,9 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 
 	if c.TimeoutMs <= 0 {
 		c.TimeoutMs = 300
+	}
+	if c.DecorrelationMaxDelayMs < 0 {
+		return nil, errors.New("decorrelation_max_delay_ms cannot be negative")
 	}
 	if c.PropertyRegistry.CacheTTLSeconds <= 0 {
 		c.PropertyRegistry.CacheTTLSeconds = 3600
