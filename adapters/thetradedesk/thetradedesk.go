@@ -204,6 +204,8 @@ func getBidType(markupType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
 	default:
 		return "", fmt.Errorf("unsupported mtype: %d", markupType)
 	}
