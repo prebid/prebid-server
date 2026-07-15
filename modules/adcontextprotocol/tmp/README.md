@@ -51,13 +51,24 @@ hooks:
         decorrelation_max_delay_ms: 0
         targeting_key: adcp
         add_to_targeting: false
+        # Caps on the segment set surfaced onto the response ext. Guards
+        # against a misbehaving or hostile provider bloating the bid
+        # response.
+        max_segments: 128
+        max_segment_value_len: 256
+        # Masking gates optional finer-grained fields into the context
+        # payload (zip / city / lat-long) and controls which EID sources
+        # / mobile IDs flow into the identity payload. Defaults are
+        # strict: only country / region / metro on the context path;
+        # a small hardcoded EID whitelist on the identity path unless
+        # `enabled: true` and `preserve_eids` narrows or widens it.
         masking:
           enabled: true
           geo:
             preserve_metro: true
             preserve_zip: false
             preserve_city: false
-            lat_long_precision: 2
+            lat_long_precision: 0
           user:
             preserve_eids:
               - liveramp.com
@@ -70,12 +81,6 @@ hooks:
     endpoints:
       /openrtb2/auction:
         stages:
-          entrypoint:
-            groups:
-              - timeout: 5
-                hook_sequence:
-                  - module_code: "adcontextprotocol.tmp"
-                    hook_impl_code: "HandleEntrypointHook"
           auction_processed:
             groups:
               - timeout: 500

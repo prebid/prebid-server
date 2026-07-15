@@ -10,43 +10,52 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-// HandleEntrypointHook allocates the per-auction async request holder along
-// with a cancelable context that survives across hook stages. The response
-// hook cancels it on the way out so an in-flight fan-out does not outlive the
-// auction.
-func (m *Module) HandleEntrypointHook(
-	ctx context.Context,
-	_ hookstage.ModuleInvocationContext,
-	_ hookstage.EntrypointPayload,
-) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	fanoutCtx, cancel := context.WithCancel(ctx)
-	moduleContext := hookstage.NewModuleContext()
-	moduleContext.Set(asyncKey, &asyncRequest{
-		done:   make(chan struct{}),
-		ctx:    fanoutCtx,
-		cancel: cancel,
-	})
-	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: moduleContext}, nil
-}
-
-// HandleProcessedAuctionHook kicks off the TMP fan-out in the background. The
-// auction continues immediately; results are collected in the response hook.
+// HandleProcessedAuctionHook snapshots the relevant fields from the
+// live BidRequest synchronously, allocates the async result holder,
+// then kicks off the TMP fan-out in a background goroutine. The
+// goroutine never touches the BidRequest again — deriveInputs runs on
+// the caller's stack so there is no data race with concurrent hook
+// stages / privacy scrubbing / other modules that continue to mutate
+// the request wrapper after this hook returns.
+//
+// The fan-out context is rooted in context.Background(), NOT the hook
+// caller's context: the framework cancels every hook's own ctx the
+// moment the hook returns (hooks/hookexecution/execution.go), so a
+// derived ctx would be Done before the fan-out started. The response
+// hook cancels it via defer async.cancel() when the auction is ready
+// to serve.
 func (m *Module) HandleProcessedAuctionHook(
 	_ context.Context,
-	miCtx hookstage.ModuleInvocationContext,
+	_ hookstage.ModuleInvocationContext,
 	payload hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
 	var res hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]
-
-	async, ok := m.loadAsync(miCtx)
-	if !ok {
-		return res, nil
-	}
 	if payload.Request == nil || payload.Request.BidRequest == nil {
-		close(async.done)
 		return res, nil
 	}
-	bidRequest := payload.Request.BidRequest
+
+	// Snapshot everything the fan-out needs off the live request BEFORE
+	// spawning the goroutine. deriveInputs is pure CPU with no I/O; the
+	// snapshot is a value (map[string]any is copied by re-emission at
+	// coarseGeo, identities is a fresh []IdentityToken slice, etc.) that
+	// the goroutine can hold independently while the auction rebuilds
+	// req.Ext / user.ext elsewhere.
+	inputs := deriveInputs(&m.cfg, payload.Request.BidRequest)
+	if inputs.PlacementID == "" || (inputs.Domain == "" && inputs.Bundle == "") {
+		// Nothing to fan out — skip both the holder allocation and the
+		// goroutine so the response hook cleanly returns without
+		// waiting.
+		return res, nil
+	}
+
+	fanoutCtx, cancel := context.WithCancel(context.Background())
+	async := &asyncRequest{
+		done:   make(chan struct{}),
+		ctx:    fanoutCtx,
+		cancel: cancel,
+	}
+	moduleCtx := hookstage.NewModuleContext()
+	moduleCtx.Set(asyncKey, async)
 
 	go func() {
 		defer func() {
@@ -55,8 +64,10 @@ func (m *Module) HandleProcessedAuctionHook(
 			}
 			close(async.done)
 		}()
-		async.result = m.fanOut(async.ctx, bidRequest)
+		async.result = m.fanOut(fanoutCtx, inputs)
 	}()
+
+	res.ModuleContext = moduleCtx
 	return res, nil
 }
 
@@ -80,15 +91,27 @@ func (m *Module) HandleAuctionResponseHook(
 	case <-ctx.Done():
 		return res, nil
 	}
-	if async.result == nil || len(async.result.Segments) == 0 {
+
+	var (
+		segments []string
+		errCount int
+	)
+	if async.result != nil {
+		segments = async.result.Segments
+		errCount = async.result.ErrCount
+	}
+	if len(segments) == 0 {
+		res.AnalyticsTags = analyticsForResult(0, errCount)
 		return res, nil
 	}
-	segments := async.result.Segments
 	targetingKey := m.cfg.TargetingKey
 	addToTargeting := m.cfg.AddToTargeting
 
 	res.ChangeSet.AddMutation(
 		func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
+			if payload.BidResponse == nil {
+				return payload, nil
+			}
 			ext := payload.BidResponse.Ext
 			newExt, err := sjson.SetBytes(ext, targetingKey+".segments", segments)
 			if err != nil {
@@ -98,27 +121,24 @@ func (m *Module) HandleAuctionResponseHook(
 			}
 			payload.BidResponse.Ext = ext
 
-			// Per-bid targeting is where GAM et al actually read keys, so
-			// mirror the response-level segments onto each bid's ext when
-			// enabled.
-			if addToTargeting {
-				for seatBid := range iterutil.SlicePointerValues(payload.BidResponse.SeatBid) {
-					for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
-						bidExt := bid.Ext
-						for _, s := range segments {
-							kv := splitKV(s)
-							if kv == nil {
-								continue
-							}
-							updated, err := sjson.SetBytes(bidExt, "prebid.targeting."+kv[0], kv[1])
-							if err != nil {
-								logger.Errorf("adcontextprotocol.tmp: bid targeting set: %v", err)
-								continue
-							}
-							bidExt = updated
-						}
-						bid.Ext = bidExt
+			if !addToTargeting {
+				return payload, nil
+			}
+			// Batch the per-bid targeting update: build the (key,value)
+			// pairs once outside the seatbid loop so each bid gets O(1)
+			// sjson rewrites instead of O(segments).
+			targetingMap := targetingMapFromSegments(segments)
+			if len(targetingMap) == 0 {
+				return payload, nil
+			}
+			for seatBid := range iterutil.SlicePointerValues(payload.BidResponse.SeatBid) {
+				for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
+					updated, err := sjson.SetBytes(bid.Ext, "prebid.targeting", targetingMap)
+					if err != nil {
+						logger.Errorf("adcontextprotocol.tmp: bid targeting set: %v", err)
+						continue
 					}
+					bid.Ext = updated
 				}
 			}
 			return payload, nil
@@ -127,17 +147,47 @@ func (m *Module) HandleAuctionResponseHook(
 		"ext",
 	)
 
-	res.AnalyticsTags = hookanalytics.Analytics{
+	res.AnalyticsTags = analyticsForResult(len(segments), errCount)
+	return res, nil
+}
+
+// analyticsForResult surfaces both success and failure signal so the
+// module cannot silently report Success when every provider errored.
+func analyticsForResult(segments, errCount int) hookanalytics.Analytics {
+	status := hookanalytics.ActivityStatusSuccess
+	resultStatus := hookanalytics.ResultStatusAllow
+	if segments == 0 && errCount > 0 {
+		status = hookanalytics.ActivityStatusError
+		resultStatus = hookanalytics.ResultStatusError
+	}
+	return hookanalytics.Analytics{
 		Activities: []hookanalytics.Activity{{
 			Name:   "adcontextprotocol.tmp.fanout",
-			Status: hookanalytics.ActivityStatusSuccess,
+			Status: status,
 			Results: []hookanalytics.Result{{
-				Status: hookanalytics.ResultStatusAllow,
-				Values: map[string]any{"segments": len(segments)},
+				Status: resultStatus,
+				Values: map[string]any{
+					"segments":  segments,
+					"err_count": errCount,
+				},
 			}},
 		}},
 	}
-	return res, nil
+}
+
+// targetingMapFromSegments converts the "key=value" segment slice into
+// a flat map suitable for a single sjson.SetBytes into
+// ext.prebid.targeting. Duplicate keys keep the last-wins value.
+func targetingMapFromSegments(segments []string) map[string]string {
+	out := make(map[string]string, len(segments))
+	for _, s := range segments {
+		kv := splitKV(s)
+		if kv == nil {
+			continue
+		}
+		out[kv[0]] = kv[1]
+	}
+	return out
 }
 
 func (m *Module) loadAsync(miCtx hookstage.ModuleInvocationContext) (*asyncRequest, bool) {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -121,7 +122,7 @@ func TestFanOut_JoinsContextAndIdentity(t *testing.T) {
 	f := newFixture(t)
 	defer f.Close()
 
-	res := f.Module.fanOut(context.Background(), sampleBidRequest())
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
 	if res == nil || len(res.Segments) == 0 {
 		t.Fatalf("expected segments, got %+v", res)
 	}
@@ -151,7 +152,7 @@ func TestFanOut_ContextOnlyWhenNoIdentityTokens(t *testing.T) {
 	req := sampleBidRequest()
 	req.User = nil // no eids
 
-	res := f.Module.fanOut(context.Background(), req)
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, req))
 	if res == nil || len(res.Segments) == 0 {
 		t.Fatalf("expected segments even without identity; got %+v", res)
 	}
@@ -185,7 +186,7 @@ func TestFanOut_UnknownDomainReturnsEmpty(t *testing.T) {
 		TimeoutMs:               500,
 	}, nil)
 
-	res := f.Module.fanOut(context.Background(), sampleBidRequest())
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
 	if res == nil {
 		t.Fatal("expected non-nil result")
 	}
@@ -201,7 +202,7 @@ func TestFanOut_EmptyPlacementIDShortCircuits(t *testing.T) {
 	req := sampleBidRequest()
 	req.Imp = nil
 
-	res := f.Module.fanOut(context.Background(), req)
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, req))
 	if res == nil {
 		t.Fatal("expected non-nil result")
 	}
@@ -210,44 +211,110 @@ func TestFanOut_EmptyPlacementIDShortCircuits(t *testing.T) {
 	}
 }
 
-func TestFanOut_ProviderPanicRecovered(t *testing.T) {
+// Provider decode error must surface as fan-out completing with empty
+// segments — not a crash, not a hang. This is the low-level "error
+// tolerance" test; genuine panic-recovery is exercised by
+// TestFanOut_PanickingRoundTripper below.
+func TestFanOut_ProviderDecodeErrorSurvives(t *testing.T) {
 	f := newFixture(t)
 	defer f.Close()
 
-	// Make the provider hang up mid-response so JSON decode panics on some
-	// corrupt payload — but more simply, close the connection.
-	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
-		panic("simulated context handler panic")
-	}
-	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
-		panic("simulated identity handler panic")
-	}
-
-	// httptest recovers server-side panics, so this only exercises client-side
-	// recovery when the response body is malformed. We swap in a handler that
-	// returns garbage JSON that decodes to an empty struct, and verify the
-	// module keeps returning a non-nil routerResult (i.e. no crash).
-	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
+	f.ContextHandler = func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("not json"))
 	}
-	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
+	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("not json"))
 	}
 
-	res := f.Module.fanOut(context.Background(), sampleBidRequest())
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
 	if res == nil {
 		t.Fatal("expected non-nil result even when both provider calls error")
 	}
+	if res.ErrCount != 1 {
+		t.Errorf("expected 1 provider with errors; got %d", res.ErrCount)
+	}
+	if len(res.Segments) != 0 {
+		t.Errorf("no segments expected on total decode failure; got %v", res.Segments)
+	}
 }
 
-func TestFanOut_RandomizesContextIdentityOrder(t *testing.T) {
+// panickingRoundTripper panics inside RoundTrip. The fan-out's inner
+// goroutine must recover, record the error, and let the sibling call
+// complete instead of taking the process down.
+type panickingRoundTripper struct{}
+
+func (panickingRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	panic("boom in RoundTrip")
+}
+
+func TestFanOut_PanickingRoundTripper(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+	// Only the context path panics; identity still works via the fixture's
+	// default handler. If panic recovery is broken this either crashes
+	// the test process or leaves the fan-out wedged forever.
+	f.Module.http = &http.Client{Transport: panickingRoundTripper{}}
+
+	done := make(chan *routerResult, 1)
+	go func() {
+		done <- f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
+	}()
+
+	select {
+	case res := <-done:
+		if res == nil {
+			t.Fatal("expected non-nil result after panic recovery")
+		}
+		if res.ErrCount != 1 {
+			t.Errorf("expected 1 provider with errors; got %d", res.ErrCount)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("fan-out did not complete after transport panic — recovery is broken")
+	}
+}
+
+// Fail-closed: identity call errors → offers dropped, not emitted
+// unfiltered. Confirms the fix for review finding #3.
+func TestFanOut_IdentityErrorDropsOffers(t *testing.T) {
 	f := newFixture(t)
 	defer f.Close()
 
+	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	// Context returns real offers.
+	f.ContextHandler = func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{
+			Type:      "context_match_response",
+			RequestID: "req",
+			Offers:    []tmproto.Offer{{PackageID: "pkg-a"}, {PackageID: "pkg-b"}},
+		})
+	}
+
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
+	if res == nil {
+		t.Fatal("expected non-nil result")
+	}
+	for _, s := range res.Segments {
+		if strings.Contains(s, "prov_package=") {
+			t.Errorf("expected no package segments when identity call errored; got %q", s)
+		}
+	}
+}
+
+// Randomization is only observable if the second-to-spawn call is
+// noticeably delayed vs the first — otherwise HTTP arrival order at the
+// fake server is scheduler noise, not evidence of a shuffle. Set a
+// large DecorrelationMaxDelayMs so the second call deterministically
+// sleeps up to N ms before its HTTP round-trip; assert both orderings
+// appear across enough iterations that a broken shuffle fails loudly.
+func TestFanOut_RandomizesContextIdentityOrder(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+	f.Module.cfg.DecorrelationMaxDelayMs = 30
+
 	var mu sync.Mutex
-	seen := map[string]int{} // "context-first" / "identity-first"
-	// Track which endpoint each request hit; whichever handler fires first
-	// per iteration determines the order for that iteration.
+	seen := map[string]int{}
 	var currentIteration string
 	setFirst := func(kind string) {
 		mu.Lock()
@@ -256,21 +323,21 @@ func TestFanOut_RandomizesContextIdentityOrder(t *testing.T) {
 			currentIteration = kind
 		}
 	}
-	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
+	f.ContextHandler = func(w http.ResponseWriter, _ *http.Request) {
 		setFirst("context")
 		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
 	}
-	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
+	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
 		setFirst("identity")
 		_ = json.NewEncoder(w).Encode(tmproto.IdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
 	}
 
-	const iterations = 200
+	const iterations = 40
 	for range iterations {
 		mu.Lock()
 		currentIteration = ""
 		mu.Unlock()
-		_ = f.Module.fanOut(context.Background(), sampleBidRequest())
+		_ = f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
 		mu.Lock()
 		if currentIteration != "" {
 			seen[currentIteration+"-first"]++
@@ -278,13 +345,11 @@ func TestFanOut_RandomizesContextIdentityOrder(t *testing.T) {
 		mu.Unlock()
 	}
 
-	// Both orderings must appear at least once across 200 iterations. The
-	// probability of a single-ordering run is (1/2)^200 — effectively zero.
 	if seen["context-first"] == 0 {
-		t.Errorf("context never fired first across %d iterations; ordering is not randomized", iterations)
+		t.Errorf("context never fired first across %d iterations; shuffle is not randomizing order", iterations)
 	}
 	if seen["identity-first"] == 0 {
-		t.Errorf("identity never fired first across %d iterations; ordering is not randomized", iterations)
+		t.Errorf("identity never fired first across %d iterations; shuffle is not randomizing order", iterations)
 	}
 }
 
@@ -296,7 +361,7 @@ func TestFanOut_DecorrelationDelayDisabledByDefault(t *testing.T) {
 	}
 
 	start := time.Now()
-	_ = f.Module.fanOut(context.Background(), sampleBidRequest())
+	_ = f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
 	elapsed := time.Since(start)
 	// With the delay off, a healthy in-process fixture should complete well
 	// under 100 ms. A generous bound catches regressions without being flaky.
@@ -319,7 +384,7 @@ func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(tmproto.IdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
 	}
 
-	_ = f.Module.fanOut(context.Background(), sampleBidRequest())
+	_ = f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
 	if sawSig == "" {
 		t.Error("expected X-AdCP-Signature to be set on outbound context call")
 	}
