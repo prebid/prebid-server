@@ -3,6 +3,7 @@ package tmp
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -134,12 +135,16 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 			defer cancel()
 
 			// Context and identity fire in parallel per provider so a slow
-			// endpoint on one side does not starve the other.
+			// endpoint on one side does not starve the other. Order is
+			// randomized every request and the second call is optionally
+			// jittered so a passive observer cannot rely on stable timing to
+			// pair the two.
 			var innerWG sync.WaitGroup
 			var mu sync.Mutex
 
+			var calls []func()
 			if p.ContextURL != "" {
-				innerWG.Go(func() {
+				calls = append(calls, func() {
 					defer func() {
 						if r := recover(); r != nil {
 							mu.Lock()
@@ -159,7 +164,7 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 				})
 			}
 			if p.IdentityURL != "" && idReq != nil {
-				innerWG.Go(func() {
+				calls = append(calls, func() {
 					defer func() {
 						if r := recover(); r != nil {
 							mu.Lock()
@@ -176,6 +181,22 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 					} else {
 						res.Identity = resp
 					}
+				})
+			}
+
+			rand.Shuffle(len(calls), func(a, b int) { calls[a], calls[b] = calls[b], calls[a] })
+			maxDelay := m.cfg.DecorrelationMaxDelayMs
+			for idx, call := range calls {
+				innerWG.Go(func() {
+					if idx > 0 && maxDelay > 0 {
+						delay := time.Duration(rand.IntN(maxDelay+1)) * time.Millisecond
+						select {
+						case <-time.After(delay):
+						case <-pCtx.Done():
+							return
+						}
+					}
+					call()
 				})
 			}
 			innerWG.Wait()
