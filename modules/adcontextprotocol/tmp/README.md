@@ -44,7 +44,6 @@ hooks:
             context_url: https://tmp.example.com/context
             timeout_ms: 200
         timeout_ms: 300
-        cache_ttl_seconds: 60
         targeting_key: adcp
         add_to_targeting: false
         masking:

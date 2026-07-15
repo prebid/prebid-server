@@ -23,10 +23,6 @@ type Config struct {
 	// can override with their own Timeout field. Default 300 ms.
 	TimeoutMs int `json:"timeout_ms"`
 
-	// CacheTTLSeconds is the TTL for the local response cache used when the
-	// provider does not return an explicit cache_ttl. Default 60 s.
-	CacheTTLSeconds int `json:"cache_ttl_seconds"`
-
 	// Signing holds the Ed25519 key used to authenticate outbound requests to
 	// TMP providers. Required.
 	Signing SigningConfig `json:"signing"`
@@ -155,9 +151,6 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 
 	if c.TimeoutMs <= 0 {
 		c.TimeoutMs = 300
-	}
-	if c.CacheTTLSeconds <= 0 {
-		c.CacheTTLSeconds = 60
 	}
 	if c.PropertyRegistry.CacheTTLSeconds <= 0 {
 		c.PropertyRegistry.CacheTTLSeconds = 3600

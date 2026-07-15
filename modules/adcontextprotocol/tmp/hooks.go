@@ -6,24 +6,33 @@ import (
 	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/util/iterutil"
 	"github.com/tidwall/sjson"
 )
 
-// HandleEntrypointHook allocates the per-auction async request holder.
+// HandleEntrypointHook allocates the per-auction async request holder along
+// with a cancelable context that survives across hook stages. The response
+// hook cancels it on the way out so an in-flight fan-out does not outlive the
+// auction.
 func (m *Module) HandleEntrypointHook(
-	_ context.Context,
+	ctx context.Context,
 	_ hookstage.ModuleInvocationContext,
 	_ hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	fanoutCtx, cancel := context.WithCancel(ctx)
 	moduleContext := hookstage.NewModuleContext()
-	moduleContext.Set(asyncKey, &asyncRequest{done: make(chan struct{})})
+	moduleContext.Set(asyncKey, &asyncRequest{
+		done:   make(chan struct{}),
+		ctx:    fanoutCtx,
+		cancel: cancel,
+	})
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: moduleContext}, nil
 }
 
 // HandleProcessedAuctionHook kicks off the TMP fan-out in the background. The
 // auction continues immediately; results are collected in the response hook.
 func (m *Module) HandleProcessedAuctionHook(
-	ctx context.Context,
+	_ context.Context,
 	miCtx hookstage.ModuleInvocationContext,
 	payload hookstage.ProcessedAuctionRequestPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
@@ -46,7 +55,7 @@ func (m *Module) HandleProcessedAuctionHook(
 			}
 			close(async.done)
 		}()
-		async.result = m.fanOut(ctx, bidRequest)
+		async.result = m.fanOut(async.ctx, bidRequest)
 	}()
 	return res, nil
 }
@@ -63,6 +72,9 @@ func (m *Module) HandleAuctionResponseHook(
 	if !ok {
 		return res, nil
 	}
+	// Cancelling here releases the fan-out goroutine if it is still running
+	// past the response window — no orphan goroutines beyond the auction.
+	defer async.cancel()
 	select {
 	case <-async.done:
 	case <-ctx.Done():
@@ -84,21 +96,31 @@ func (m *Module) HandleAuctionResponseHook(
 			} else {
 				ext = newExt
 			}
+			payload.BidResponse.Ext = ext
+
+			// Per-bid targeting is where GAM et al actually read keys, so
+			// mirror the response-level segments onto each bid's ext when
+			// enabled.
 			if addToTargeting {
-				for _, s := range segments {
-					kv := splitKV(s)
-					if kv == nil {
-						continue
+				for seatBid := range iterutil.SlicePointerValues(payload.BidResponse.SeatBid) {
+					for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
+						bidExt := bid.Ext
+						for _, s := range segments {
+							kv := splitKV(s)
+							if kv == nil {
+								continue
+							}
+							updated, err := sjson.SetBytes(bidExt, "prebid.targeting."+kv[0], kv[1])
+							if err != nil {
+								logger.Errorf("adcontextprotocol.tmp: bid targeting set: %v", err)
+								continue
+							}
+							bidExt = updated
+						}
+						bid.Ext = bidExt
 					}
-					newExt, err := sjson.SetBytes(ext, "prebid.targeting."+kv[0], kv[1])
-					if err != nil {
-						logger.Errorf("adcontextprotocol.tmp: targeting set: %v", err)
-						continue
-					}
-					ext = newExt
 				}
 			}
-			payload.BidResponse.Ext = ext
 			return payload, nil
 		},
 		hookstage.MutationUpdate,
@@ -127,10 +149,13 @@ func (m *Module) loadAsync(miCtx hookstage.ModuleInvocationContext) (*asyncReque
 	return a, ok
 }
 
-// splitKV splits "key=value" once; returns nil for malformed input.
+// splitKV splits "key=value" on the first '=' and rejects empty keys.
 func splitKV(s string) []string {
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if s[i] == '=' {
+			if i == 0 {
+				return nil
+			}
 			return []string{s[:i], s[i+1:]}
 		}
 	}
