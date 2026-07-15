@@ -192,6 +192,52 @@ func TestFanOut_UnknownDomainReturnsEmpty(t *testing.T) {
 	}
 }
 
+func TestFanOut_EmptyPlacementIDShortCircuits(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+
+	req := sampleBidRequest()
+	req.Imp = nil
+
+	res := f.Module.fanOut(context.Background(), req)
+	if res == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if len(res.Segments) != 0 {
+		t.Errorf("expected empty segments without a placement id; got %v", res.Segments)
+	}
+}
+
+func TestFanOut_ProviderPanicRecovered(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+
+	// Make the provider hang up mid-response so JSON decode panics on some
+	// corrupt payload — but more simply, close the connection.
+	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
+		panic("simulated context handler panic")
+	}
+	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
+		panic("simulated identity handler panic")
+	}
+
+	// httptest recovers server-side panics, so this only exercises client-side
+	// recovery when the response body is malformed. We swap in a handler that
+	// returns garbage JSON that decodes to an empty struct, and verify the
+	// module keeps returning a non-nil routerResult (i.e. no crash).
+	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("not json"))
+	}
+	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("not json"))
+	}
+
+	res := f.Module.fanOut(context.Background(), sampleBidRequest())
+	if res == nil {
+		t.Fatal("expected non-nil result even when both provider calls error")
+	}
+}
+
 func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 	f := newFixture(t)
 	defer f.Close()

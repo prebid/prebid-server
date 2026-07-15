@@ -77,9 +77,15 @@ func (p *propertyResolver) Resolve(ctx context.Context, domain string) (*Propert
 		return rec, ok, nil
 	}
 
-	// Single-flight: collapse concurrent misses for the same domain onto one HTTP call.
+	// Single-flight: collapse concurrent misses for the same domain onto one
+	// HTTP call. The leader's fetch runs in a fresh context so followers are
+	// not tied to whichever caller happened to arrive first — if that caller's
+	// auction times out, the leader keeps going and future callers get the
+	// result from cache.
 	rec, err := p.single.do(key, func() (*PropertyRecord, error) {
-		return p.fetch(ctx, key)
+		leaderCtx, cancel := context.WithTimeout(context.Background(), time.Duration(p.cfg.TimeoutMs)*time.Millisecond)
+		defer cancel()
+		return p.fetch(leaderCtx, key)
 	})
 	if err != nil {
 		return nil, false, err
@@ -114,11 +120,16 @@ func (p *propertyResolver) fetch(ctx context.Context, domain string) (*PropertyR
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		// Drain and close so keep-alive can reuse the connection.
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<16))
+		_ = resp.Body.Close()
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		raw, err := io.ReadAll(resp.Body)
+		// 64 KiB is generous for a single property record.
+		raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
 		if err != nil {
 			return nil, fmt.Errorf("registry read: %w", err)
 		}

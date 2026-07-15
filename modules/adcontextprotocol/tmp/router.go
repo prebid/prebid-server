@@ -2,6 +2,7 @@ package tmp
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -44,6 +45,11 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 	if lookupKey == "" {
 		return &routerResult{}
 	}
+	// PlacementID is a required TMP context field. Firing without one produces
+	// a payload every well-behaved provider will 400, so short-circuit here.
+	if inputs.PlacementID == "" {
+		return &routerResult{}
+	}
 
 	prop, ok, err := m.registry.Resolve(ctx, lookupKey)
 	if err != nil {
@@ -67,9 +73,14 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 		inputs.Identities = m.filterIdentities(inputs.Identities)
 	}
 
+	ctxRequestID, err := newRequestID()
+	if err != nil {
+		logger.Errorf("adcontextprotocol.tmp: request id generation failed: %v", err)
+		return &routerResult{}
+	}
 	ctxReq := &tmproto.ContextMatchRequest{
 		Type:           "context_match_request",
-		RequestID:      newRequestID(),
+		RequestID:      ctxRequestID,
 		PropertyRID:    prop.PropertyRID,
 		PropertyID:     prop.PropertyID,
 		PropertyType:   propertyType,
@@ -80,11 +91,18 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 	}
 
 	// Identity request stays absent when the auction has no usable tokens.
+	// A separate request_id is generated to preserve the TMP privacy
+	// invariant that context and identity ids MUST NOT correlate.
 	var idReq *tmproto.IdentityMatchRequest
 	if len(inputs.Identities) > 0 {
+		idRequestID, err := newRequestID()
+		if err != nil {
+			logger.Errorf("adcontextprotocol.tmp: request id generation failed: %v", err)
+			return &routerResult{}
+		}
 		idReq = &tmproto.IdentityMatchRequest{
 			Type:           "identity_match_request",
-			RequestID:      newRequestID(),
+			RequestID:      idRequestID,
 			SellerAgentURL: m.cfg.SellerAgentURL,
 			Identities:     inputs.Identities,
 			Consent:        inputs.Consent,
@@ -99,6 +117,12 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 		wg.Add(1)
 		go func(i int, p ProviderConfig) {
 			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Errorf("adcontextprotocol.tmp: panic in provider %s fan-out: %v", p.Name, r)
+					results[i] = providerResult{Name: p.Name, Errs: []error{fmt.Errorf("panic: %v", r)}}
+				}
+			}()
 			res := providerResult{Name: p.Name}
 
 			// Per-provider deadline; falls back to the module-level timeout.
@@ -116,6 +140,14 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 
 			if p.ContextURL != "" {
 				innerWG.Go(func() {
+					defer func() {
+						if r := recover(); r != nil {
+							mu.Lock()
+							res.Errs = append(res.Errs, fmt.Errorf("panic in context call: %v", r))
+							mu.Unlock()
+							logger.Errorf("adcontextprotocol.tmp: panic in context call to %s: %v", p.Name, r)
+						}
+					}()
 					resp, err := m.callContext(pCtx, p, ctxReq)
 					mu.Lock()
 					defer mu.Unlock()
@@ -128,6 +160,14 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 			}
 			if p.IdentityURL != "" && idReq != nil {
 				innerWG.Go(func() {
+					defer func() {
+						if r := recover(); r != nil {
+							mu.Lock()
+							res.Errs = append(res.Errs, fmt.Errorf("panic in identity call: %v", r))
+							mu.Unlock()
+							logger.Errorf("adcontextprotocol.tmp: panic in identity call to %s: %v", p.Name, r)
+						}
+					}()
 					resp, err := m.callIdentity(pCtx, p, idReq)
 					mu.Lock()
 					defer mu.Unlock()
@@ -173,11 +213,10 @@ func mergeSegments(results []providerResult) []string {
 		}
 
 		for k, v := range r.Context.Signals {
-			s, ok := v.(string)
-			if !ok {
+			if v == nil {
 				continue
 			}
-			out = append(out, r.Name+"_"+k+"="+s)
+			out = append(out, r.Name+"_"+k+"="+fmt.Sprint(v))
 		}
 	}
 	return out
