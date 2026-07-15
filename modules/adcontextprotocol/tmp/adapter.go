@@ -45,11 +45,17 @@ func deriveInputs(cfg *Config, req *openrtb2.BidRequest) tmpInputs {
 	if req.App != nil {
 		out.Bundle = req.App.Bundle
 	}
-	if def := cfg.DefaultPropertyType; def != "" {
-		out.PropertyType = tmproto.PropertyType(def)
-	} else if req.App != nil {
+	// Prefer OpenRTB auto-detect; fall back to operator default only when the
+	// request carries neither Site nor App. The registry response takes final
+	// priority (applied by the router) — this value is only a fallback.
+	switch {
+	case req.App != nil:
 		out.PropertyType = tmproto.PropertyTypeMobileApp
-	} else {
+	case req.Site != nil:
+		out.PropertyType = tmproto.PropertyTypeWebsite
+	case cfg.DefaultPropertyType != "":
+		out.PropertyType = tmproto.PropertyType(cfg.DefaultPropertyType)
+	default:
 		out.PropertyType = tmproto.PropertyTypeWebsite
 	}
 
@@ -130,16 +136,14 @@ func extractIdentities(user *openrtb2.User) []tmproto.IdentityToken {
 		if uidType == "" {
 			continue
 		}
-		p, ok := priority[eid.Source]
-		if !ok {
-			p = 100
-		}
+		// Every source that survives mapEIDToUIDType has a priority entry;
+		// the map fallback is unreachable.
 		candidates = append(candidates, scored{
 			tok: tmproto.IdentityToken{
 				UIDType:   uidType,
 				UserToken: eid.UIDs[0].ID,
 			},
-			score: p,
+			score: priority[eid.Source],
 		})
 	}
 
@@ -202,13 +206,13 @@ func extractConsent(req *openrtb2.BidRequest) map[string]any {
 }
 
 // newRequestID returns a UUID v4 formatted for the TMP wire.
-func newRequestID() string {
+// Callers MUST propagate the error rather than reusing a fallback ID: TMP
+// requires that context and identity request_ids never correlate, and reusing
+// a deterministic id would silently break that invariant.
+func newRequestID() (string, error) {
 	u, err := uuid.NewV4()
 	if err != nil {
-		// Extremely unlikely (would need a broken RNG). Fall back to a
-		// deterministic identifier — signature verification is unaffected but
-		// dedup at the provider may be weaker on repeats.
-		return "adcp-tmp-request"
+		return "", err
 	}
-	return u.String()
+	return u.String(), nil
 }
