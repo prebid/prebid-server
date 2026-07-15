@@ -12,7 +12,7 @@
       {
         "id": "audio-imp-id",
         "audio": {
-          "mimes": ["audio/mp4"],
+          "mimes": ["audio/mp3"],
           "minduration": 5,
           "maxduration": 30
         },
@@ -34,7 +34,7 @@
             {
               "id": "audio-imp-id",
               "audio": {
-                "mimes": ["audio/mp4"],
+                "mimes": ["audio/mp3"],
                 "minduration": 5,
                 "maxduration": 30
               },
