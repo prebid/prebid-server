@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/adcontextprotocol/adcp-go/tmproto"
 )
@@ -58,6 +59,17 @@ type Config struct {
 	// AddToTargeting mirrors the response signals into prebid.targeting so
 	// downstream ad servers (e.g. GAM) can consume them.
 	AddToTargeting bool `json:"add_to_targeting"`
+
+	// MaxSegments caps the total number of segments emitted onto the
+	// response ext, regardless of how many providers respond or how many
+	// offers/signals they include. Default 128. A hostile-or-buggy
+	// provider cannot bloat the bid response past this bound.
+	MaxSegments int `json:"max_segments"`
+
+	// MaxSegmentValueLen bounds each emitted segment string (name +
+	// separator + value). Default 256. Excess is truncated. A cap of 0
+	// disables truncation.
+	MaxSegmentValueLen int `json:"max_segment_value_len"`
 }
 
 // SigningConfig carries the private-key material used to sign outbound TMP
@@ -127,6 +139,14 @@ type DeviceMaskingConfig struct {
 	PreserveMobileIds bool `json:"preserve_mobile_ids"`
 }
 
+// providerNameRE constrains provider names so an operator cannot
+// accidentally name a provider "hb" (or similar) and have its emitted
+// segment keys collide with Prebid's own reserved targeting keys (e.g.
+// hb_pb, hb_adid). The prefix in emitted segments is provider name +
+// underscore; restricting to a lower-case identifier keeps the prefix
+// unambiguous.
+var providerNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,31}$`)
+
 // validated returns a Config with defaults filled in, along with the parsed
 // Ed25519 private key. Invalid configuration is rejected here rather than at
 // call sites.
@@ -147,11 +167,19 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 	if len(c.Providers) == 0 {
 		return nil, errors.New("at least one provider is required")
 	}
+	seenNames := make(map[string]bool, len(c.Providers))
 	for i := range c.Providers {
 		p := &c.Providers[i]
 		if p.Name == "" {
 			return nil, fmt.Errorf("providers[%d].name is required", i)
 		}
+		if !providerNameRE.MatchString(p.Name) {
+			return nil, fmt.Errorf("providers[%d].name %q must match %s (lowercase letters, digits, underscore, hyphen; up to 32 chars)", i, p.Name, providerNameRE)
+		}
+		if seenNames[p.Name] {
+			return nil, fmt.Errorf("providers[%d].name %q is duplicated", i, p.Name)
+		}
+		seenNames[p.Name] = true
 		if p.IdentityURL == "" && p.ContextURL == "" {
 			return nil, fmt.Errorf("providers[%d] (%s): at least one of identity_url or context_url is required", i, p.Name)
 		}
@@ -180,6 +208,15 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 	}
 	if c.TargetingKey == "" {
 		c.TargetingKey = "adcp"
+	}
+	if c.MaxSegments <= 0 {
+		c.MaxSegments = 128
+	}
+	if c.MaxSegmentValueLen < 0 {
+		return nil, errors.New("max_segment_value_len cannot be negative")
+	}
+	if c.MaxSegmentValueLen == 0 {
+		c.MaxSegmentValueLen = 256
 	}
 	if c.Masking.Enabled {
 		if c.Masking.Geo.LatLongPrecision > 4 {
