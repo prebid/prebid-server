@@ -65,20 +65,23 @@ type Module struct {
 const asyncKey = "adcontextprotocol.tmp.asyncRequest"
 
 // Hook interface assertions — the compiler catches signature drift here.
+// No Entrypoint hook: the module allocates its per-auction async holder
+// in HandleProcessedAuctionHook so the fan-out can inherit a
+// Background-rooted context. Rooting in an entrypoint hook's ctx would
+// leave the fan-out with an already-cancelled parent (the framework
+// cancels each hook's own ctx the moment the hook returns).
 var (
-	_ hookstage.Entrypoint              = (*Module)(nil)
 	_ hookstage.ProcessedAuctionRequest = (*Module)(nil)
 	_ hookstage.AuctionResponse         = (*Module)(nil)
 )
 
-// asyncRequest carries a single auction's in-flight TMP fan-out from the
-// entrypoint hook through to the response hook. ctx / cancel are owned here
-// (not the hook's own ctx) so the response hook can guarantee no orphan
-// goroutine survives the auction.
+// asyncRequest carries a single auction's in-flight TMP fan-out from
+// HandleProcessedAuctionHook to HandleAuctionResponseHook. ctx / cancel
+// are owned here (not any hook's ctx) so the response hook can
+// guarantee no orphan goroutine survives the auction.
 type asyncRequest struct {
 	done   chan struct{}
 	ctx    context.Context
 	cancel context.CancelFunc
 	result *routerResult
-	err    error
 }
