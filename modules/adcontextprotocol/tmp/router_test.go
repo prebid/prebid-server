@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/adcontextprotocol/adcp-go/tmproto"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -235,6 +237,71 @@ func TestFanOut_ProviderPanicRecovered(t *testing.T) {
 	res := f.Module.fanOut(context.Background(), sampleBidRequest())
 	if res == nil {
 		t.Fatal("expected non-nil result even when both provider calls error")
+	}
+}
+
+func TestFanOut_RandomizesContextIdentityOrder(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+
+	var mu sync.Mutex
+	seen := map[string]int{} // "context-first" / "identity-first"
+	// Track which endpoint each request hit; whichever handler fires first
+	// per iteration determines the order for that iteration.
+	var currentIteration string
+	setFirst := func(kind string) {
+		mu.Lock()
+		defer mu.Unlock()
+		if currentIteration == "" {
+			currentIteration = kind
+		}
+	}
+	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
+		setFirst("context")
+		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
+	}
+	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
+		setFirst("identity")
+		_ = json.NewEncoder(w).Encode(tmproto.IdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
+	}
+
+	const iterations = 200
+	for range iterations {
+		mu.Lock()
+		currentIteration = ""
+		mu.Unlock()
+		_ = f.Module.fanOut(context.Background(), sampleBidRequest())
+		mu.Lock()
+		if currentIteration != "" {
+			seen[currentIteration+"-first"]++
+		}
+		mu.Unlock()
+	}
+
+	// Both orderings must appear at least once across 200 iterations. The
+	// probability of a single-ordering run is (1/2)^200 — effectively zero.
+	if seen["context-first"] == 0 {
+		t.Errorf("context never fired first across %d iterations; ordering is not randomized", iterations)
+	}
+	if seen["identity-first"] == 0 {
+		t.Errorf("identity never fired first across %d iterations; ordering is not randomized", iterations)
+	}
+}
+
+func TestFanOut_DecorrelationDelayDisabledByDefault(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+	if f.Module.cfg.DecorrelationMaxDelayMs != 0 {
+		t.Errorf("expected default DecorrelationMaxDelayMs = 0 (off), got %d", f.Module.cfg.DecorrelationMaxDelayMs)
+	}
+
+	start := time.Now()
+	_ = f.Module.fanOut(context.Background(), sampleBidRequest())
+	elapsed := time.Since(start)
+	// With the delay off, a healthy in-process fixture should complete well
+	// under 100 ms. A generous bound catches regressions without being flaky.
+	if elapsed > 100*time.Millisecond {
+		t.Errorf("fan-out took %v with decorrelation disabled; want < 100ms", elapsed)
 	}
 }
 
