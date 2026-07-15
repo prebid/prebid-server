@@ -64,6 +64,14 @@ func newPropertyResolver(cfg PropertyRegistryConfig, transport http.RoundTripper
 	}
 }
 
+// maxDomainKeyLen caps the length of a cache key / registry query
+// parameter derived from the bid request's site.domain or app.bundle.
+// 253 is the RFC 1035 max length of a fully-qualified domain name; app
+// bundle IDs also fit comfortably below it. Longer inputs are rejected
+// so a hostile bid request cannot inflate the LRU or amplify to the
+// registry with garbage keys.
+const maxDomainKeyLen = 253
+
 // Resolve looks up a property by canonical domain (site) or bundle (app).
 // Returns (record, true, nil) on hit, (nil, false, nil) on cached negative,
 // (nil, false, err) on registry error.
@@ -71,6 +79,12 @@ func (p *propertyResolver) Resolve(ctx context.Context, domain string) (*Propert
 	key := strings.ToLower(strings.TrimSpace(domain))
 	if key == "" {
 		return nil, false, errors.New("empty domain")
+	}
+	if len(key) > maxDomainKeyLen {
+		return nil, false, fmt.Errorf("domain length %d exceeds cap %d", len(key), maxDomainKeyLen)
+	}
+	if !isValidDomainOrBundle(key) {
+		return nil, false, errors.New("domain contains invalid characters")
 	}
 
 	if rec, ok, fresh := p.cacheGet(key); fresh {
@@ -133,19 +147,25 @@ func (p *propertyResolver) fetch(ctx context.Context, domain string) (*PropertyR
 		if err != nil {
 			return nil, fmt.Errorf("registry read: %w", err)
 		}
+		// Registry implementations vary. Try the wrapped
+		// {"property": {...}} envelope first; if that yields no
+		// property_rid, try decoding the payload as a bare
+		// PropertyRecord — some deployments (including
+		// agenticadvertising.org's /api/properties/resolve) return the
+		// record directly, not nested.
 		var body registryResponse
 		if err := jsonutil.Unmarshal(raw, &body); err != nil {
 			return nil, fmt.Errorf("registry decode: %w", err)
 		}
-		// Some registry implementations return the record directly, others wrap
-		// it in {"property": {...}}. Handle both.
-		if body.Property != nil {
-			if body.Property.PropertyRID != "" {
-				return body.Property, nil
-			}
+		if body.Property != nil && body.Property.PropertyRID != "" {
+			return body.Property, nil
 		}
 		if body.Found != nil && !*body.Found {
 			return nil, nil
+		}
+		var bare PropertyRecord
+		if err := jsonutil.Unmarshal(raw, &bare); err == nil && bare.PropertyRID != "" {
+			return &bare, nil
 		}
 		return nil, nil
 	case http.StatusNotFound:
@@ -235,4 +255,29 @@ func (s *singleflight) do(key string, fn func() (*PropertyRecord, error)) (*Prop
 	delete(s.calls, key)
 	s.mu.Unlock()
 	return c.rec, c.err
+}
+
+// isValidDomainOrBundle returns true when the input contains only
+// characters plausible in a DNS name or an app-store bundle identifier.
+// Rejects whitespace, control chars, URL delimiters, and quoting —
+// anything a hostile bid request might inject to smuggle payloads
+// through the registry lookup or bloat the LRU key space with garbage.
+// Intentionally permissive on shape: no length-per-label check, no dot
+// requirement — DNS labels can be single-character and bundle ids like
+// `com.example.app` and `com.example-app.v2` are both valid.
+func isValidDomainOrBundle(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+		case c >= '0' && c <= '9':
+		case c == '.' || c == '-' || c == '_':
+		default:
+			return false
+		}
+	}
+	return true
 }

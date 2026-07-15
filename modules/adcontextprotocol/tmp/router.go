@@ -8,18 +8,23 @@ import (
 	"time"
 
 	"github.com/adcontextprotocol/adcp-go/tmproto"
-	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/logger"
 )
 
-// providerResult holds one provider's contribution after both endpoints have
-// been called (whichever were configured). Nil fields mean "not configured" or
-// "call failed" — callers should treat both the same way when merging.
+// providerResult holds one provider's contribution after both endpoints
+// have been called (whichever were configured).
 type providerResult struct {
-	Name     string
-	Context  *tmproto.ContextMatchResponse
+	Name string
+	// Context is set when the context call succeeded, nil otherwise.
+	Context *tmproto.ContextMatchResponse
+	// Identity is set when the identity call succeeded, nil otherwise.
 	Identity *tmproto.IdentityMatchResponse
-	Errs     []error
+	// IdentityAttempted is true when the module actually issued an
+	// identity call for this provider (URL configured AND tokens
+	// present). Lets the merge distinguish "identity errored" (fail
+	// closed) from "identity not applicable" (offers pass).
+	IdentityAttempted bool
+	Errs              []error
 }
 
 // routerResult is the joined view across all providers.
@@ -27,28 +32,26 @@ type routerResult struct {
 	Providers []providerResult
 	// Segments are the flat targeting strings the response hook writes into
 	// bid ext. Each string is "key=value" so consumers can split on the
-	// separator downstream.
+	// separator downstream. Post-cap.
 	Segments []string
+	// ErrCount is the number of providers that produced at least one
+	// error. Surfaced via analytics so a silent-failure regression is
+	// visible in dashboards.
+	ErrCount int
 }
 
-// fanOut executes the module's TMP flow for a single auction: adapt the bid
-// request, resolve the property, then call every configured provider's
-// context and identity endpoints in parallel. Returns quickly if the property
-// cannot be resolved — the auction proceeds without TMP signals.
-func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerResult {
-	inputs := deriveInputs(&m.cfg, req)
-
+// fanOut executes the module's TMP flow for a single auction against a
+// pre-derived tmpInputs snapshot. Caller must have already run
+// deriveInputs synchronously — this function does not touch the
+// BidRequest, so it is safe to run in a background goroutine while the
+// auction continues to mutate the request wrapper.
+func (m *Module) fanOut(ctx context.Context, inputs tmpInputs) *routerResult {
 	// Domain / bundle → property_rid.
 	lookupKey := inputs.Domain
 	if lookupKey == "" {
 		lookupKey = inputs.Bundle
 	}
-	if lookupKey == "" {
-		return &routerResult{}
-	}
-	// PlacementID is a required TMP context field. Firing without one produces
-	// a payload every well-behaved provider will 400, so short-circuit here.
-	if inputs.PlacementID == "" {
+	if lookupKey == "" || inputs.PlacementID == "" {
 		return &routerResult{}
 	}
 
@@ -65,51 +68,8 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 		propertyType = inputs.PropertyType
 	}
 
-	// Apply masking before we let the ContextMatchRequest leave the process.
-	if m.cfg.Masking.Enabled {
-		maskedGeo := m.maskGeoMap(inputs.Geo)
-		if maskedGeo != nil {
-			inputs.Geo = maskedGeo
-		}
-		inputs.Identities = m.filterIdentities(inputs.Identities)
-	}
-
-	ctxRequestID, err := newRequestID()
-	if err != nil {
-		logger.Errorf("adcontextprotocol.tmp: request id generation failed: %v", err)
-		return &routerResult{}
-	}
-	ctxReq := &tmproto.ContextMatchRequest{
-		Type:           "context_match_request",
-		RequestID:      ctxRequestID,
-		PropertyRID:    prop.PropertyRID,
-		PropertyID:     prop.PropertyID,
-		PropertyType:   propertyType,
-		PlacementID:    inputs.PlacementID,
-		SellerAgentURL: m.cfg.SellerAgentURL,
-		Geo:            inputs.Geo,
-		ArtifactRefs:   inputs.ArtifactRefs,
-	}
-
-	// Identity request stays absent when the auction has no usable tokens.
-	// A separate request_id is generated to preserve the TMP privacy
-	// invariant that context and identity ids MUST NOT correlate.
-	var idReq *tmproto.IdentityMatchRequest
-	if len(inputs.Identities) > 0 {
-		idRequestID, err := newRequestID()
-		if err != nil {
-			logger.Errorf("adcontextprotocol.tmp: request id generation failed: %v", err)
-			return &routerResult{}
-		}
-		idReq = &tmproto.IdentityMatchRequest{
-			Type:           "identity_match_request",
-			RequestID:      idRequestID,
-			SellerAgentURL: m.cfg.SellerAgentURL,
-			Identities:     inputs.Identities,
-			Consent:        inputs.Consent,
-			Country:        inputs.Country,
-		}
-	}
+	// Masking is applied at input derivation time (deriveInputs already
+	// respected the masking config) so nothing here needs to re-filter.
 
 	results := make([]providerResult, len(m.cfg.Providers))
 	var wg sync.WaitGroup
@@ -124,101 +84,173 @@ func (m *Module) fanOut(ctx context.Context, req *openrtb2.BidRequest) *routerRe
 					results[i] = providerResult{Name: p.Name, Errs: []error{fmt.Errorf("panic: %v", r)}}
 				}
 			}()
-			res := providerResult{Name: p.Name}
-
-			// Per-provider deadline; falls back to the module-level timeout.
-			timeout := time.Duration(p.TimeoutMs) * time.Millisecond
-			if timeout <= 0 {
-				timeout = time.Duration(m.cfg.TimeoutMs) * time.Millisecond
-			}
-			pCtx, cancel := context.WithTimeout(ctx, timeout)
-			defer cancel()
-
-			// Context and identity fire in parallel per provider so a slow
-			// endpoint on one side does not starve the other. Order is
-			// randomized every request and the second call is optionally
-			// jittered so a passive observer cannot rely on stable timing to
-			// pair the two.
-			var innerWG sync.WaitGroup
-			var mu sync.Mutex
-
-			var calls []func()
-			if p.ContextURL != "" {
-				calls = append(calls, func() {
-					defer func() {
-						if r := recover(); r != nil {
-							mu.Lock()
-							res.Errs = append(res.Errs, fmt.Errorf("panic in context call: %v", r))
-							mu.Unlock()
-							logger.Errorf("adcontextprotocol.tmp: panic in context call to %s: %v", p.Name, r)
-						}
-					}()
-					resp, err := m.callContext(pCtx, p, ctxReq)
-					mu.Lock()
-					defer mu.Unlock()
-					if err != nil {
-						res.Errs = append(res.Errs, err)
-					} else {
-						res.Context = resp
-					}
-				})
-			}
-			if p.IdentityURL != "" && idReq != nil {
-				calls = append(calls, func() {
-					defer func() {
-						if r := recover(); r != nil {
-							mu.Lock()
-							res.Errs = append(res.Errs, fmt.Errorf("panic in identity call: %v", r))
-							mu.Unlock()
-							logger.Errorf("adcontextprotocol.tmp: panic in identity call to %s: %v", p.Name, r)
-						}
-					}()
-					resp, err := m.callIdentity(pCtx, p, idReq)
-					mu.Lock()
-					defer mu.Unlock()
-					if err != nil {
-						res.Errs = append(res.Errs, err)
-					} else {
-						res.Identity = resp
-					}
-				})
-			}
-
-			rand.Shuffle(len(calls), func(a, b int) { calls[a], calls[b] = calls[b], calls[a] })
-			maxDelay := m.cfg.DecorrelationMaxDelayMs
-			for idx, call := range calls {
-				innerWG.Go(func() {
-					if idx > 0 && maxDelay > 0 {
-						delay := time.Duration(rand.IntN(maxDelay+1)) * time.Millisecond
-						select {
-						case <-time.After(delay):
-						case <-pCtx.Done():
-							return
-						}
-					}
-					call()
-				})
-			}
-			innerWG.Wait()
-			results[i] = res
+			results[i] = m.callProvider(ctx, p, inputs, prop, propertyType)
 		}(i, p)
 	}
 	wg.Wait()
 
+	errCount := 0
+	for _, r := range results {
+		if len(r.Errs) > 0 {
+			errCount++
+		}
+	}
+
 	return &routerResult{
 		Providers: results,
-		Segments:  mergeSegments(results),
+		Segments:  m.mergeSegments(results),
+		ErrCount:  errCount,
 	}
+}
+
+// callProvider builds fresh per-provider request objects (so request_ids
+// do not correlate across providers) and issues the configured calls.
+func (m *Module) callProvider(
+	ctx context.Context,
+	p ProviderConfig,
+	inputs tmpInputs,
+	prop *PropertyRecord,
+	propertyType tmproto.PropertyType,
+) providerResult {
+	res := providerResult{Name: p.Name}
+
+	timeout := time.Duration(p.TimeoutMs) * time.Millisecond
+	if timeout <= 0 {
+		timeout = time.Duration(m.cfg.TimeoutMs) * time.Millisecond
+	}
+	pCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Per-provider request IDs — two colluding providers should not be
+	// able to join on identical ids for the same auction. TMP §514/555
+	// requires context and identity ids not correlate; this goes further
+	// and gives each provider its own pair.
+	ctxRequestID, err := newRequestID()
+	if err != nil {
+		res.Errs = append(res.Errs, fmt.Errorf("request id: %w", err))
+		return res
+	}
+	ctxReq := &tmproto.ContextMatchRequest{
+		Type:           "context_match_request",
+		RequestID:      ctxRequestID,
+		PropertyRID:    prop.PropertyRID,
+		PropertyID:     prop.PropertyID,
+		PropertyType:   propertyType,
+		PlacementID:    inputs.PlacementID,
+		SellerAgentURL: m.cfg.SellerAgentURL,
+		Geo:            inputs.Geo,
+		ArtifactRefs:   inputs.ArtifactRefs,
+	}
+
+	var idReq *tmproto.IdentityMatchRequest
+	if p.IdentityURL != "" && len(inputs.Identities) > 0 {
+		idRequestID, err := newRequestID()
+		if err != nil {
+			res.Errs = append(res.Errs, fmt.Errorf("request id: %w", err))
+			return res
+		}
+		idReq = &tmproto.IdentityMatchRequest{
+			Type:           "identity_match_request",
+			RequestID:      idRequestID,
+			SellerAgentURL: m.cfg.SellerAgentURL,
+			Identities:     inputs.Identities,
+			Consent:        inputs.Consent,
+			Country:        inputs.Country,
+		}
+		res.IdentityAttempted = true
+	}
+
+	// Context and identity fire in parallel per provider so a slow
+	// endpoint on one side does not starve the other. Order is
+	// randomized per request and the second call is optionally jittered
+	// so a passive observer cannot rely on stable timing to pair the two.
+	var innerWG sync.WaitGroup
+	var mu sync.Mutex
+
+	var calls []func()
+	if p.ContextURL != "" {
+		calls = append(calls, func() {
+			defer func() {
+				if r := recover(); r != nil {
+					mu.Lock()
+					res.Errs = append(res.Errs, fmt.Errorf("panic in context call: %v", r))
+					mu.Unlock()
+					logger.Errorf("adcontextprotocol.tmp: panic in context call to %s: %v", p.Name, r)
+				}
+			}()
+			resp, err := m.callContext(pCtx, p, ctxReq)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				res.Errs = append(res.Errs, err)
+			} else {
+				res.Context = resp
+			}
+		})
+	}
+	if idReq != nil {
+		calls = append(calls, func() {
+			defer func() {
+				if r := recover(); r != nil {
+					mu.Lock()
+					res.Errs = append(res.Errs, fmt.Errorf("panic in identity call: %v", r))
+					mu.Unlock()
+					logger.Errorf("adcontextprotocol.tmp: panic in identity call to %s: %v", p.Name, r)
+				}
+			}()
+			resp, err := m.callIdentity(pCtx, p, idReq)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				res.Errs = append(res.Errs, err)
+			} else {
+				res.Identity = resp
+			}
+		})
+	}
+
+	rand.Shuffle(len(calls), func(a, b int) { calls[a], calls[b] = calls[b], calls[a] })
+	maxDelay := m.cfg.DecorrelationMaxDelayMs
+	for idx, call := range calls {
+		innerWG.Go(func() {
+			if idx > 0 && maxDelay > 0 {
+				delay := time.Duration(rand.IntN(maxDelay+1)) * time.Millisecond
+				select {
+				case <-time.After(delay):
+				case <-pCtx.Done():
+					return
+				}
+			}
+			call()
+		})
+	}
+	innerWG.Wait()
+	return res
 }
 
 // mergeSegments joins each provider's context offers with its identity
 // eligibility and flattens the survivors into "key=value" strings suitable
 // for prebid targeting. Response-level signals from the context response are
-// passed through as targeting keys directly.
-func mergeSegments(results []providerResult) []string {
+// passed through as targeting keys directly. Capped at cfg.MaxSegments and
+// per-value length so a hostile provider cannot bloat the bid response.
+//
+// Fail-closed on identity error: when a provider was asked to do identity
+// gating (URL configured + tokens present) and the call did not return a
+// response, we drop all its offers. Snapshot of a hostile-or-flaky
+// identity endpoint therefore cannot convert identity-gated packages
+// into unconditionally-served packages.
+func (m *Module) mergeSegments(results []providerResult) []string {
+	maxLen := m.cfg.MaxSegmentValueLen
+	maxCount := m.cfg.MaxSegments
+
 	var out []string
 	for _, r := range results {
 		if r.Context == nil {
+			continue
+		}
+		// Fail closed on identity-attempted-but-errored: eligibility
+		// cannot be established, so no offers pass.
+		if r.IdentityAttempted && r.Identity == nil {
 			continue
 		}
 		eligible := eligibilitySet(r.Identity)
@@ -230,17 +262,51 @@ func mergeSegments(results []providerResult) []string {
 					continue
 				}
 			}
-			out = append(out, r.Name+"_package="+offer.PackageID)
+			if len(out) >= maxCount {
+				return out
+			}
+			out = append(out, boundedSegment(r.Name+"_package="+offer.PackageID, maxLen))
 		}
 
 		for k, v := range r.Context.Signals {
-			if v == nil {
+			if len(out) >= maxCount {
+				return out
+			}
+			str, ok := stringifySignal(v)
+			if !ok {
 				continue
 			}
-			out = append(out, r.Name+"_"+k+"="+fmt.Sprint(v))
+			out = append(out, boundedSegment(r.Name+"_"+k+"="+str, maxLen))
 		}
 	}
 	return out
+}
+
+// stringifySignal accepts scalar signal values (string, bool, number)
+// and rejects non-scalars — a map or slice from a hostile provider
+// would flow into targeting as "map[…]" garbage otherwise.
+func stringifySignal(v any) (string, bool) {
+	if v == nil {
+		return "", false
+	}
+	switch x := v.(type) {
+	case string:
+		return x, true
+	case bool:
+		return fmt.Sprintf("%t", x), true
+	case float64, float32, int, int64, int32:
+		return fmt.Sprintf("%v", x), true
+	}
+	return "", false
+}
+
+// boundedSegment truncates the segment string to the configured cap so
+// a hostile provider cannot make single segments arbitrarily large.
+func boundedSegment(s string, maxLen int) string {
+	if maxLen <= 0 || len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen]
 }
 
 func eligibilitySet(idResp *tmproto.IdentityMatchResponse) map[string]bool {
