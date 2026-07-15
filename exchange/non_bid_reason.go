@@ -5,7 +5,7 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v4/errortypes"
 )
 
 // SeatNonBid list the reasons why bid was not resulted in positive bid

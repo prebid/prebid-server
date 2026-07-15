@@ -217,10 +217,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRise,
 	BidderRoulax,
 	BidderRTBHouse,
+	BidderRTBStack,
 	BidderRubicon,
 	BidderSeedingAlliance,
 	BidderSeedtag,
 	BidderSaLunaMedia,
+	BidderScalibur,
 	BidderSharethrough,
 	BidderShowheroes,
 	BidderSilverMob,
@@ -241,8 +243,11 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSspBC,
 	BidderStartIO,
 	BidderStroeerCore,
+	BidderSynapseHX,
 	BidderTaboola,
+	BidderTAdvertisingBlis,
 	BidderTappx,
+	BidderTargetVideo,
 	BidderTeads,
 	BidderTelaria,
 	BidderTeqBlaze,
@@ -591,10 +596,12 @@ const (
 	BidderRise              BidderName = "rise"
 	BidderRoulax            BidderName = "roulax"
 	BidderRTBHouse          BidderName = "rtbhouse"
+	BidderRTBStack          BidderName = "rtbstack"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSeedtag           BidderName = "seedtag"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
+	BidderScalibur          BidderName = "scalibur"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderShowheroes        BidderName = "showheroes"
 	BidderSilverMob         BidderName = "silvermob"
@@ -615,8 +622,11 @@ const (
 	BidderSspBC             BidderName = "sspBC"
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
+	BidderSynapseHX         BidderName = "synapseHX"
 	BidderTaboola           BidderName = "taboola"
+	BidderTAdvertisingBlis  BidderName = "tadvertising_blis"
 	BidderTappx             BidderName = "tappx"
+	BidderTargetVideo       BidderName = "targetVideo"
 	BidderTeads             BidderName = "teads"
 	BidderTelaria           BidderName = "telaria"
 	BidderTeqBlaze          BidderName = "teqblaze"

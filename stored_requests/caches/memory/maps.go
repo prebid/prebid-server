@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/coocood/freecache"
-	"github.com/prebid/prebid-server/v3/logger"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 // This file contains an interface and some wrapper types for various types of "map-like" structures

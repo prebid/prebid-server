@@ -4,11 +4,16 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 var validParams = []string{
 	`{ "zone": "dc", "exchange": "ex" }`,
+	`{ "zone": "host", "exchange": "ex" }`,
+	`{ "zone": "host.example.com", "exchange": "ex" }`,
+	`{ "zone": "host-example.test", "exchange": "ex" }`,
+	`{ "zone": "Host.Example.com", "exchange": "ex" }`,
+	`{ "zone": "localhost", "exchange": "ex" }`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -39,6 +44,16 @@ var invalidParams = []string{
 	`{ "exchange": "", "zone" : "" }`,
 	`{ "exchange": "ex", "zone" : "" }`,
 	`{ "exchange": "", "zone" : "dc" }`,
+	`{ "zone": "/path", "exchange": "ex" }`,
+	`{ "zone": "//evil.com", "exchange": "ex" }`,
+	`{ "zone": "host/path", "exchange": "ex" }`,
+	`{ "zone": "host?query=1", "exchange": "ex" }`,
+	`{ "zone": "host#fragment", "exchange": "ex" }`,
+	`{ "zone": "user@host", "exchange": "ex" }`,
+	`{ "zone": "https://host.com", "exchange": "ex" }`,
+	`{ "zone": "host:notaport", "exchange": "ex" }`,
+	`{ "zone": "host:8080:extra", "exchange": "ex" }`,
+	`{ "zone": "host:8080", "exchange": "ex" }`,
 }
 
 func TestInvalidParams(t *testing.T) {

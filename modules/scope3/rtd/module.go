@@ -18,12 +18,12 @@ import (
 	"github.com/coocood/freecache"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
-	"github.com/prebid/prebid-server/v3/util/iterutil"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/util/iterutil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/tidwall/sjson"
 )
 
@@ -186,11 +186,11 @@ func (m *Module) HandleEntrypointHook(
 	miCtx hookstage.ModuleInvocationContext,
 	payload hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	moduleContext := hookstage.NewModuleContext()
+	moduleContext.Set(asyncRequestKey, m.NewAsyncRequest(payload.Request))
 	// Initialize module context with sync.Map for thread-safe segment storage
 	return hookstage.HookResult[hookstage.EntrypointPayload]{
-		ModuleContext: hookstage.ModuleContext{
-			asyncRequestKey: m.NewAsyncRequest(payload.Request),
-		},
+		ModuleContext: moduleContext,
 	}, nil
 }
 
@@ -203,7 +203,23 @@ func (m *Module) HandleProcessedAuctionHook(
 	var ret hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]
 	analyticsNamePrefix := "HandleProcessedAuctionHook."
 
-	asyncRequest, ok := miCtx.ModuleContext[asyncRequestKey].(*AsyncRequest)
+	request, ok := miCtx.ModuleContext.Get(asyncRequestKey)
+	if !ok {
+		// Log error but don't fail the auction
+		ret.AnalyticsTags = hookanalytics.Analytics{
+			Activities: []hookanalytics.Activity{{
+				Name:   analyticsNamePrefix + asyncRequestKey,
+				Status: hookanalytics.ActivityStatusError,
+				Results: []hookanalytics.Result{{
+					Status: hookanalytics.ResultStatusError,
+					Values: map[string]interface{}{"error": "failed to get async request from module context"},
+				}},
+			}},
+		}
+		return ret, nil
+	}
+
+	asyncRequest, ok := request.(*AsyncRequest)
 	if !ok {
 		// Log error but don't fail the auction
 		ret.AnalyticsTags = hookanalytics.Analytics{
@@ -233,7 +249,24 @@ func (m *Module) HandleAuctionResponseHook(
 ) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 	analyticsNamePrefix := "HandleAuctionResponseHook."
 	var ret hookstage.HookResult[hookstage.AuctionResponsePayload]
-	asyncRequest, ok := miCtx.ModuleContext[asyncRequestKey].(*AsyncRequest)
+
+	request, ok := miCtx.ModuleContext.Get(asyncRequestKey)
+	if !ok {
+		// Log error but don't fail the auction
+		ret.AnalyticsTags = hookanalytics.Analytics{
+			Activities: []hookanalytics.Activity{{
+				Name:   analyticsNamePrefix + asyncRequestKey,
+				Status: hookanalytics.ActivityStatusError,
+				Results: []hookanalytics.Result{{
+					Status: hookanalytics.ResultStatusError,
+					Values: map[string]interface{}{"error": "failed to get async request from module context"},
+				}},
+			}},
+		}
+		return ret, nil
+	}
+
+	asyncRequest, ok := request.(*AsyncRequest)
 	if !ok {
 		// Log error but don't fail the auction
 		ret.AnalyticsTags = hookanalytics.Analytics{

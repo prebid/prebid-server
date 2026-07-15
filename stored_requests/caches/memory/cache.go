@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/coocood/freecache"
-	"github.com/prebid/prebid-server/v3/logger"
-	"github.com/prebid/prebid-server/v3/stored_requests"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/stored_requests"
 )
 
 // NewCache returns an in-memory Cache which evicts items if:

@@ -13,13 +13,13 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/maputil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/maputil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 )
 
 var supportedBannerHeights = map[int64]struct{}{
@@ -150,6 +150,33 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		return err
 	}
 
+	// Preserve rewarded signal before clearing ext. For ORTB 2.5 adapters,
+	// PBS moves imp.rwdd to imp.ext.prebid.is_rewarded_inventory via ConvertDownTo25.
+	// Since we clear imp.Ext below, the signal would be lost. Extract it now and
+	// restore it on the struct field so it serializes as imp.rwdd for Meta.
+	if imp.Rwdd != 1 && imp.Ext != nil {
+		if val, err := jsonparser.GetInt(imp.Ext, "prebid", "is_rewarded_inventory"); err == nil && val == 1 {
+			imp.Rwdd = 1
+		}
+	}
+	if imp.Rwdd == 1 && imp.Video != nil {
+		videoCopy := *imp.Video
+		var extMap map[string]interface{}
+		if videoCopy.Ext != nil {
+			if err := jsonutil.Unmarshal(videoCopy.Ext, &extMap); err != nil {
+				return err
+			}
+		} else {
+			extMap = make(map[string]interface{})
+		}
+		extMap["videotype"] = "rewarded"
+		videoCopy.Ext, err = jsonutil.Marshal(extMap)
+		if err != nil {
+			return err
+		}
+		imp.Video = &videoCopy
+	}
+
 	imp.TagID = pubId + "_" + plmtId
 	imp.Ext = nil
 
@@ -169,9 +196,9 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 func modifyImp(out *openrtb2.Imp) error {
 	impType := resolveImpType(out)
 
-	if out.Instl == 1 && impType != openrtb_ext.BidTypeBanner {
+	if out.Instl == 1 && !isValidInterstitial(impType, out.Rwdd) {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner", out.ID),
+			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and rewarded video", out.ID),
 		}
 	}
 
@@ -212,6 +239,18 @@ func modifyImp(out *openrtb2.Imp) error {
 	}
 
 	return nil
+}
+
+func isValidInterstitial(impType openrtb_ext.BidType, rwdd int8) bool {
+	if impType == openrtb_ext.BidTypeBanner {
+		return true
+	}
+
+	if impType == openrtb_ext.BidTypeVideo && rwdd == 1 {
+		return true
+	}
+
+	return false
 }
 
 func extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) {
