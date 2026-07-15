@@ -44,6 +44,11 @@ hooks:
             context_url: https://tmp.example.com/context
             timeout_ms: 200
         timeout_ms: 300
+        # Set to a positive value to jitter the second of a provider's context /
+        # identity outbound calls by a random [0, N] ms, breaking timing
+        # correlation at a passive observer. Order of the two calls is always
+        # randomized regardless.
+        decorrelation_max_delay_ms: 0
         targeting_key: adcp
         add_to_targeting: false
         masking:
