@@ -1,36 +1,40 @@
 {
   "mockBidRequest": {
-    "id": "test-bid-floor-set",
+    "id": "status-500",
     "imp": [
       {
         "id": "1",
         "banner": { "w": 300, "h": 250 },
-        "ext": { "bidder": { "bidfloor": 1.23, "sspId": "ssp-123" } }
+        "ext": { "bidder": {} }
       }
     ]
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.adsmartx.com/ads/rtb/prebid/server",
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
         "body": {
-          "id": "test-bid-floor-set",
+          "id": "status-500",
           "imp": [
             {
               "id": "1",
               "banner": { "w": 300, "h": 250 },
-              "bidfloor": 1.23,
-              "ext": { "bidder": { "bidfloor": 1.23, "sspId": "ssp-123" } }
+              "ext": { "bidder": {} }
             }
           ]
         },
         "impIDs": ["1"]
       },
       "mockResponse": {
-        "status": 204,
+        "status": 500,
         "body": {}
       }
     }
   ],
-  "expectedBidResponses": []
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500",
+      "comparison": "regex"
+    }
+  ]
 }

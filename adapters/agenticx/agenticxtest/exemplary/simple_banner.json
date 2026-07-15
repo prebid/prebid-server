@@ -7,7 +7,7 @@
     },
     "app": {
       "id": "1",
-      "bundle": "com.adsmartx.sampleapp"
+    "bundle": "com.agenticx.sampleapp"
     },
     "imp": [
       {
@@ -32,7 +32,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.adsmartx.com/ads/rtb/prebid/server",
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -57,7 +57,7 @@
           ],
           "app": {
             "id": "1",
-            "bundle": "com.adsmartx.sampleapp"
+            "bundle": "com.agenticx.sampleapp"
           },
           "device": {
             "ip": "123.123.123.123",
@@ -72,7 +72,7 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "adsmartx",
+              "seat": "agenticx",
               "bid": [
                 {
                   "id": "test_bid_id",

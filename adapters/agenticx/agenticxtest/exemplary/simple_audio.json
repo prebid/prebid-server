@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "test-audio-request",
+    "device": {
+      "ip": "10.0.0.1",
+      "ua": "Mozilla/5.0"
+    },
+    "site": {
+      "page": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "audio-imp-id",
+        "audio": {
+          "mimes": ["audio/mp3"],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 1.0
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
+        "body": {
+          "id": "test-audio-request",
+          "imp": [
+            {
+              "id": "audio-imp-id",
+              "audio": {
+                "mimes": ["audio/mp3"],
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "bidfloor": 1.0,
+              "ext": {
+                "bidder": {
+                  "bidfloor": 1.0
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          },
+          "device": {
+            "ip": "10.0.0.1",
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": ["audio-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-audio-request",
+          "seatbid": [
+            {
+              "seat": "agenticx",
+              "bid": [
+                {
+                  "id": "audio-bid-id",
+                  "impid": "audio-imp-id",
+                  "price": 2.0,
+                  "adm": "<Ad><InLine></InLine></Ad>",
+                  "crid": "audio-creative-001",
+                  "mtype": 3
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "audio-bid-id",
+            "impid": "audio-imp-id",
+            "price": 2.0,
+            "adm": "<Ad><InLine></InLine></Ad>",
+            "crid": "audio-creative-001",
+            "mtype": 3
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}
