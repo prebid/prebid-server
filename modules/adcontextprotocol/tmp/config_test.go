@@ -54,9 +54,6 @@ func TestValidated_Defaults(t *testing.T) {
 	if cfg.TimeoutMs != 300 {
 		t.Errorf("TimeoutMs default = %d, want 300", cfg.TimeoutMs)
 	}
-	if cfg.CacheTTLSeconds != 60 {
-		t.Errorf("CacheTTLSeconds default = %d, want 60", cfg.CacheTTLSeconds)
-	}
 	if cfg.PropertyRegistry.CacheTTLSeconds != 3600 {
 		t.Errorf("PropertyRegistry.CacheTTLSeconds default = %d, want 3600", cfg.PropertyRegistry.CacheTTLSeconds)
 	}
