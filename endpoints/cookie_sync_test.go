@@ -588,6 +588,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	testCases := []struct {
 		description              string
 		givenConfig              config.UserSync
+		givenCookieSyncConfig    config.CookieSync
 		givenBody                io.Reader
 		givenGDPRConfig          config.GDPR
 		givenCCPAEnabled         bool
@@ -1142,7 +1143,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			},
 		},
 		{
-			description: "IFrame Disabled For Specific Bidders Via Account Config",
+			description: "IFrame Disabled For Specific Bidders",
 			givenBody: strings.NewReader(`{` +
 				`"bidders":["biddera", "bidderb"],` +
 				`"account":"IFrameDisabledAccount"` +
@@ -1154,6 +1155,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				Cooperative: config.UserSyncCooperative{
 					EnabledByDefault: false,
 				},
+			},
+			givenCookieSyncConfig: config.CookieSync{
+				DisabledIFrameBidders: []string{"bidderb"},
 			},
 			expectedPrivacy: macros.UserSyncPrivacy{},
 			expectedRequest: usersync.Request{
@@ -1171,7 +1175,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame: usersync.CompositeFilter{
 						RequestFilter: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
-						AccountFilter: usersync.NewSpecificBidderFilter([]string{"biddera"}, usersync.BidderFilterModeExclude),
+						AccountFilter: usersync.NewSpecificBidderFilter([]string{"bidderb", "biddera"}, usersync.BidderFilterModeExclude),
 					},
 					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
@@ -1197,6 +1201,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		endpoint := cookieSyncEndpoint{
 			config: &config.Configuration{
 				UserSync:        test.givenConfig,
+				CookieSync:      test.givenCookieSyncConfig,
 				AccountRequired: test.givenAccountRequired,
 			},
 			privacyConfig: usersyncPrivacyConfig{
@@ -1643,6 +1648,26 @@ func TestMergeDisabledIFrameBidders(t *testing.T) {
 			givenHost:    []string{"*"},
 			givenAccount: []string{"bidderA"},
 			expected:     []string{"*", "bidderA"},
+		},
+		"wildcard_from_account": {
+			givenHost:    []string{"bidderA"},
+			givenAccount: []string{"*"},
+			expected:     []string{"bidderA", "*"},
+		},
+		"wildcard_not_first_in_host": {
+			givenHost:    []string{"bidderA", "*", "bidderB"},
+			givenAccount: []string{"bidderC"},
+			expected:     []string{"bidderA", "*", "bidderB", "bidderC"},
+		},
+		"wildcard_not_first_in_account": {
+			givenHost:    []string{"bidderA"},
+			givenAccount: []string{"bidderB", "*"},
+			expected:     []string{"bidderA", "bidderB", "*"},
+		},
+		"wildcard_in_both_deduped": {
+			givenHost:    []string{"bidderA", "*"},
+			givenAccount: []string{"*", "bidderB"},
+			expected:     []string{"bidderA", "*", "bidderB"},
 		},
 	}
 

@@ -431,6 +431,8 @@ ccpa:
   enforce: true
 lmt:
   enforce: true
+cookie_sync:
+  disabled_iframe_bidders: ["hostBidder1", "hostBidder2"]
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -637,32 +639,6 @@ func cmpNils(t *testing.T, key string, a interface{}) {
 	assert.Nilf(t, a, "%s: %t != nil", key, a)
 }
 
-func TestDisabledIFrameBiddersFromFile(t *testing.T) {
-	cfgYAML := []byte(`
-gdpr:
-  default_value: "0"
-cookie_sync:
-  disabled_iframe_bidders:
-    - hostBidder1
-    - hostBidder2
-account_defaults:
-  cookie_sync:
-    disabled_iframe_bidders:
-      - accountBidder1
-      - accountBidder2
-`)
-
-	v := viper.New()
-	SetupViper(v, "", bidderInfos)
-	v.SetConfigType("yaml")
-	assert.NoError(t, v.ReadConfig(bytes.NewBuffer(cfgYAML)))
-	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
-	assert.NoError(t, err)
-
-	assert.Equal(t, []string{"hostBidder1", "hostBidder2"}, cfg.CookieSync.DisabledIFrameBidders, "host-level")
-	assert.Equal(t, []string{"accountBidder1", "accountBidder2"}, cfg.AccountDefaults.CookieSync.DisabledIFrameBidders, "account-level")
-}
-
 func TestFullConfig(t *testing.T) {
 	int8One := int8(1)
 
@@ -677,6 +653,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cookie family", "prebid", cfg.HostCookie.Family)
 	cmpStrings(t, "opt out", "http://prebid.org/optout", cfg.HostCookie.OptOutURL)
 	cmpStrings(t, "opt in", "http://prebid.org/optin", cfg.HostCookie.OptInURL)
+	assert.Equal(t, []string{"hostBidder1", "hostBidder2"}, cfg.CookieSync.DisabledIFrameBidders, "cookie_sync.disabled_iframe_bidders")
 	cmpStrings(t, "external url", "http://prebid-server.prebid.org/", cfg.ExternalURL)
 	cmpStrings(t, "host", "prebid-server.prebid.org", cfg.Host)
 	cmpInts(t, "port", 1234, cfg.Port)
