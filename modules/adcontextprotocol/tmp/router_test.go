@@ -127,20 +127,22 @@ func TestFanOut_JoinsContextAndIdentity(t *testing.T) {
 		t.Fatalf("expected segments, got %+v", res)
 	}
 	// pkg-b should be filtered out because identity only returned pkg-a.
-	sawPkgA := false
-	sawPkgB := false
+	// Package IDs land as a single comma-joined entry under the configured
+	// PackageTargetingKey (default adcp_package_id).
+	var pkgSeg string
 	for _, s := range res.Segments {
-		if s == "prov_package=pkg-a" {
-			sawPkgA = true
-		}
-		if s == "prov_package=pkg-b" {
-			sawPkgB = true
+		if strings.HasPrefix(s, "adcp_package_id=") {
+			pkgSeg = s
+			break
 		}
 	}
-	if !sawPkgA {
-		t.Errorf("expected prov_package=pkg-a in segments; got %v", res.Segments)
+	if pkgSeg == "" {
+		t.Errorf("expected adcp_package_id=... in segments; got %v", res.Segments)
 	}
-	if sawPkgB {
+	if !strings.Contains(pkgSeg, "pkg-a") {
+		t.Errorf("expected pkg-a in %q; got %v", pkgSeg, res.Segments)
+	}
+	if strings.Contains(pkgSeg, "pkg-b") {
 		t.Errorf("pkg-b should have been filtered by identity eligibility; got %v", res.Segments)
 	}
 }
@@ -157,17 +159,15 @@ func TestFanOut_ContextOnlyWhenNoIdentityTokens(t *testing.T) {
 		t.Fatalf("expected segments even without identity; got %+v", res)
 	}
 	// Both packages should be present because identity eligibility is not enforced.
-	sawA, sawB := false, false
+	var pkgSeg string
 	for _, s := range res.Segments {
-		if s == "prov_package=pkg-a" {
-			sawA = true
-		}
-		if s == "prov_package=pkg-b" {
-			sawB = true
+		if strings.HasPrefix(s, "adcp_package_id=") {
+			pkgSeg = s
+			break
 		}
 	}
-	if !sawA || !sawB {
-		t.Errorf("expected both packages without identity; got %v", res.Segments)
+	if !strings.Contains(pkgSeg, "pkg-a") || !strings.Contains(pkgSeg, "pkg-b") {
+		t.Errorf("expected both pkg-a and pkg-b in %q; got %v", pkgSeg, res.Segments)
 	}
 }
 
@@ -296,7 +296,7 @@ func TestFanOut_IdentityErrorDropsOffers(t *testing.T) {
 		t.Fatal("expected non-nil result")
 	}
 	for _, s := range res.Segments {
-		if strings.Contains(s, "prov_package=") {
+		if strings.HasPrefix(s, "adcp_package_id=") {
 			t.Errorf("expected no package segments when identity call errored; got %q", s)
 		}
 	}
@@ -390,5 +390,125 @@ func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 	}
 	if sawKid != "kid-1" {
 		t.Errorf("X-AdCP-Key-Id = %q, want kid-1", sawKid)
+	}
+}
+
+// TestMergeSegments_TMPXAndOfferMacros verifies the four spec surfaces the
+// module surfaces onto prebid targeting: package IDs (comma-joined under
+// the configurable single key), per-offer creative macros, response-level
+// context signals, and identity TMPX macros — each with its raw key intact,
+// no provider-name prefix.
+func TestMergeSegments_TMPXAndOfferMacros(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+	}}
+	results := []providerResult{{
+		Name: "prov",
+		Context: &tmproto.ContextMatchResponse{
+			Offers: []tmproto.Offer{
+				{PackageID: "pkg-a", Macros: map[string]string{"brand": "Acme"}},
+				{PackageID: "pkg-b"},
+			},
+			Signals: map[string]any{"iab_cat": "sports"},
+		},
+		Identity: &tmproto.IdentityMatchResponse{
+			EligiblePackageIDs: []string{"pkg-a", "pkg-b"},
+			TmpxMacros: []tmproto.TmpxMacro{
+				{Name: "SCOPE3_TMPX_1", Value: "opaque-chunk-1"},
+			},
+		},
+	}}
+
+	out := m.mergeSegments(results)
+	want := map[string]string{
+		"brand":           "Acme",
+		"iab_cat":         "sports",
+		"SCOPE3_TMPX_1":   "opaque-chunk-1",
+		"adcp_package_id": "pkg-a,pkg-b",
+	}
+	for _, s := range out {
+		kv := strings.SplitN(s, "=", 2)
+		if len(kv) != 2 {
+			t.Errorf("malformed segment %q", s)
+			continue
+		}
+		if want[kv[0]] != kv[1] {
+			t.Errorf("segment %q: want %q for key %q", s, want[kv[0]], kv[0])
+		}
+		delete(want, kv[0])
+	}
+	if len(want) != 0 {
+		t.Errorf("missing expected keys: %v (got %v)", want, out)
+	}
+}
+
+// TestMergeSegments_PackageIDsDedupedAcrossProviders confirms two providers
+// returning the same PackageID collapse into a single value in the joined
+// key — otherwise GAM's IN-targeting list would carry duplicates.
+func TestMergeSegments_PackageIDsDedupedAcrossProviders(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+	}}
+	results := []providerResult{
+		{Name: "a", Context: &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-1"}, {PackageID: "pkg-2"}}}},
+		{Name: "b", Context: &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-2"}, {PackageID: "pkg-3"}}}},
+	}
+
+	out := m.mergeSegments(results)
+	var pkgSeg string
+	for _, s := range out {
+		if strings.HasPrefix(s, "adcp_package_id=") {
+			pkgSeg = s
+		}
+	}
+	if pkgSeg != "adcp_package_id=pkg-1,pkg-2,pkg-3" {
+		t.Errorf("expected pkg-1,pkg-2,pkg-3 (deduped, first-seen order); got %q", pkgSeg)
+	}
+}
+
+// TestMergeSegments_EmptyPackageKeyDisables verifies that setting
+// PackageTargetingKey to "" omits the package line entirely — the escape
+// hatch for operators whose ad server doesn't want it.
+func TestMergeSegments_EmptyPackageKeyDisables(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+	}}
+	out := m.mergeSegments([]providerResult{{
+		Name:    "prov",
+		Context: &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-a"}}},
+	}})
+	for _, s := range out {
+		if strings.HasPrefix(s, "adcp_package_id=") || strings.Contains(s, "package") {
+			t.Errorf("expected no package segment when PackageTargetingKey is empty; got %q", s)
+		}
+	}
+}
+
+// TestMergeSegments_FailClosedDropsTMPX confirms the fail-closed path also
+// suppresses TMPX macros. If the identity call errored the module has no
+// way to know if the token is authorized for the request, so the safe
+// answer is to drop it — otherwise a flaky identity endpoint could leak
+// a token onto an impression the eligibility gate would have blocked.
+func TestMergeSegments_FailClosedDropsTMPX(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+	}}
+	results := []providerResult{{
+		Name:              "prov",
+		Context:           &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-a"}}},
+		IdentityAttempted: true,
+		Identity:          nil,
+	}}
+	out := m.mergeSegments(results)
+	if len(out) != 0 {
+		t.Errorf("expected empty segments on identity-attempted-but-failed; got %v", out)
 	}
 }
