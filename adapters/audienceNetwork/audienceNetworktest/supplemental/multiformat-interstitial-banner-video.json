@@ -4,6 +4,16 @@
         "imp": [
             {
                 "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ],
+                    "w": 300,
+                    "h": 250
+                },
                 "video": {
                     "mimes": ["video/mp4"],
                     "minduration": 15,
@@ -11,12 +21,8 @@
                     "protocols": [2, 3, 5, 6, 7, 8],
                     "linearity": 1,
                     "w": 940,
-                    "h": 560,
-                    "ext": {
-                        "videotype": "rewarded"
-                    }
+                    "h": 560
                 },
-                "rwdd": 1,
                 "instl": 1,
                 "ext": {
                     "bidder": {
@@ -59,20 +65,11 @@
                     "imp": [
                         {
                             "id": "test-imp-id",
-                            "video": {
-                                "mimes": ["video/mp4"],
-                                "minduration": 15,
-                                "maxduration": 30,
-                                "protocols": [2, 3, 5, 6, 7, 8],
-                                "linearity": 1,
+                            "banner": {
                                 "w": 0,
-                                "h": 0,
-                                "ext": {
-                                    "videotype": "rewarded_interstitial"
-                                }
+                                "h": 0
                             },
                             "instl": 1,
-                            "rwdd": 1,
                             "tagid": "123_456"
                         }
                     ],
@@ -96,7 +93,9 @@
                         "platformid": "test-platform-id"
                     }
                 },
-                "impIDs": ["test-imp-id"]
+                "impIDs": [
+                    "test-imp-id"
+                ]
             },
             "mockResponse": {
                 "status": 200,

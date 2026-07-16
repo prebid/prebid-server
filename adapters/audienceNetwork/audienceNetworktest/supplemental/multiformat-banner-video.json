@@ -58,9 +58,14 @@
                 "id": "test-imp-id",
                 "imp": [{
                     "id": "test-imp-id",
-                    "banner": {
-                        "w": -1,
-                        "h": 250
+                    "video": {
+                        "mimes": ["video/mp4"],
+                        "minduration": 15,
+                        "maxduration": 30,
+                        "protocols": [2, 3, 5, 6, 7, 8],
+                        "linearity": 1,
+                        "w": 0,
+                        "h": 0
                     },
                     "tagid": "123_456"
                 }],
@@ -114,7 +119,7 @@
                 "adid": "987",
                 "crid": "987"
             },
-            "type": "banner"
+            "type": "video"
         }]
     }]
 }

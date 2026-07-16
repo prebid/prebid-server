@@ -478,20 +478,33 @@ func resolveBidType(bid *openrtb2.Bid, req *openrtb2.BidRequest) (openrtb_ext.Bi
 }
 
 func resolveImpType(imp *openrtb2.Imp) openrtb_ext.BidType {
-	if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner
+	// Preserve interstitial semantics before applying the general expected-yield
+	// priority. Meta accepts banner and video interstitials, but not native or audio.
+	if imp.Instl == 1 {
+		if imp.Video != nil {
+			return openrtb_ext.BidTypeVideo
+		}
+		if imp.Banner != nil {
+			return openrtb_ext.BidTypeBanner
+		}
 	}
 
+	// Audience Network placements are single-format. For an ordinary multi-format
+	// impression, prefer the formats with the highest likely yield.
 	if imp.Video != nil {
 		return openrtb_ext.BidTypeVideo
 	}
 
-	if imp.Audio != nil {
-		return openrtb_ext.BidTypeAudio
-	}
-
 	if imp.Native != nil {
 		return openrtb_ext.BidTypeNative
+	}
+
+	if imp.Banner != nil {
+		return openrtb_ext.BidTypeBanner
+	}
+
+	if imp.Audio != nil {
+		return openrtb_ext.BidTypeAudio
 	}
 
 	// Required to satisfy compiler. Not reachable in practice due to validations performed in PBS-Core.
