@@ -50,8 +50,11 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	if err != nil {
 		return nil, err
 	}
-	preProcess(request)
-	reqBody, err := jsonutil.Marshal(request)
+	requestCopy := *request
+	requestCopy.Imp = make([]openrtb2.Imp, len(request.Imp))
+	copy(requestCopy.Imp, request.Imp)
+	preProcess(&requestCopy)
+	reqBody, err := jsonutil.Marshal(&requestCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -160,10 +163,10 @@ func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, err
 	default:
 		for _, imp := range imps {
 			if imp.ID == bid.ImpID {
-				if imp.Banner != nil {
+				if imp.Banner != nil && imp.Native == nil {
 					return openrtb_ext.BidTypeBanner, nil
 				}
-				if imp.Native != nil {
+				if imp.Native != nil && imp.Banner == nil {
 					return openrtb_ext.BidTypeNative, nil
 				}
 			}

@@ -4,6 +4,7 @@ geoscope:
   - USA
 maintainer:
   email: op@superedge.co.jp
+gvlVendorID: 1554
 capabilities:
   site:
     mediaTypes:

@@ -13,6 +13,18 @@
             "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
           }
         }
+      },
+      {
+        "id": "test-imp-id-2",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"context\":2,\"plcmttype\":1,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":50}},{\"id\":3,\"required\":1,\"img\":{\"type\":1,\"wmin\":300,\"hmin\":250,\"mimes\":[\"image/jpg\",\"image/png\"]}}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+          }
+        }
       }
     ],
     "site": {
@@ -20,7 +32,7 @@
       "page": "https://www.example.com/"
     }
   },
-  "httpcalls": [
+  "httpCalls": [
     {
       "expectedRequest": {
         "uri": "https://rtb-us.superedge.co.jp/bid?sk=f9f2b1ef23fe2759c2cad0953029a94b",
@@ -38,6 +50,18 @@
                   "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
                 }
               }
+            },
+            {
+              "id": "test-imp-id-2",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"context\":2,\"plcmttype\":1,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":50}},{\"id\":3,\"required\":1,\"img\":{\"type\":1,\"wmin\":300,\"hmin\":250,\"mimes\":[\"image/jpg\",\"image/png\"]}}]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+                }
+              }
             }
           ],
           "site": {
@@ -46,7 +70,8 @@
           }
         },
         "impIDs": [
-          "test-imp-id"
+          "test-imp-id",
+          "test-imp-id-2"
         ]
       },
       "mockResponse": {
@@ -62,6 +87,13 @@
                   "price": 1.2,
                   "adm": "some ads",
                   "crid": "crid_testid"
+                },
+                {
+                  "id": "test-imp-id-2",
+                  "impid": "test-imp-id-2",
+                  "price": 0.8,
+                  "adm": "some native ads 2",
+                  "crid": "crid_testid2"
                 }
               ]
             }
@@ -81,6 +113,16 @@
             "price": 1.2,
             "adm": "some ads",
             "crid": "crid_testid"
+          },
+          "type": "native"
+        },
+        {
+          "bid": {
+            "id": "test-imp-id-2",
+            "impid": "test-imp-id-2",
+            "price": 0.8,
+            "adm": "some native ads 2",
+            "crid": "crid_testid2"
           },
           "type": "native"
         }

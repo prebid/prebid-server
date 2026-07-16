@@ -18,6 +18,23 @@
             "placementId": "testPlacementId"
           }
         }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
+            "placementId": "testPlacementId2"
+          }
+        }
       }
     ],
     "site": {
@@ -58,6 +75,25 @@
                   "placementId": "testPlacementId"
                 }
               }
+            },
+            {
+              "id": "test-imp-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
+                  "placementId": "testPlacementId2"
+                }
+              }
             }
           ],
           "site": {
@@ -74,7 +110,8 @@
           }
         },
         "impIDs": [
-          "test-imp-id"
+          "test-imp-id",
+          "test-imp-id-2"
         ]
       },
       "mockResponse": {
@@ -91,6 +128,13 @@
                   "price": 0.5,
                   "adm": "some-ads",
                   "crid": "crid_testid"
+                },
+                {
+                  "id": "test-imp-id-2",
+                  "impid": "test-imp-id-2",
+                  "price": 1.0,
+                  "adm": "some-ads-2",
+                  "crid": "crid_testid2"
                 }
               ]
             }
@@ -111,6 +155,16 @@
             "price": 0.5,
             "adm": "some-ads",
             "crid": "crid_testid"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "test-imp-id-2",
+            "impid": "test-imp-id-2",
+            "price": 1.0,
+            "adm": "some-ads-2",
+            "crid": "crid_testid2"
           },
           "type": "banner"
         }
