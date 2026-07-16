@@ -3,6 +3,7 @@ package eskimi
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -41,8 +42,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	applyRequestParams(&outgoing, first)
 
-	impExts := make([]*openrtb_ext.ExtImpEskimi, len(outgoing.Imp))
-	impExts[0] = &first
+	// Imps whose ext fails to parse are dropped so malformed data is never
+	// forwarded upstream; the parse error is still reported to the caller.
+	imps := make([]openrtb2.Imp, 0, len(outgoing.Imp))
+	impExts := make([]*openrtb_ext.ExtImpEskimi, 0, len(outgoing.Imp))
+	imps = append(imps, outgoing.Imp[0])
+	impExts = append(impExts, &first)
 	var errs []error
 	for i := 1; i < len(outgoing.Imp); i++ {
 		ext, perr := parseImpExt(outgoing.Imp[i])
@@ -50,8 +55,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, perr)
 			continue
 		}
-		impExts[i] = &ext
+		imps = append(imps, outgoing.Imp[i])
+		impExts = append(impExts, &ext)
 	}
+	outgoing.Imp = imps
 
 	applyImpParams(&outgoing, impExts)
 
@@ -60,11 +67,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, append(errs, err)
 	}
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
 	return []*adapters.RequestData{{
-		Method: "POST",
-		Uri:    a.endpoint,
-		Body:   body,
-		ImpIDs: openrtb_ext.GetImpIDs(outgoing.Imp),
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    body,
+		Headers: headers,
+		ImpIDs:  openrtb_ext.GetImpIDs(outgoing.Imp),
 	}}, errs
 }
 
