@@ -29,7 +29,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	requestCopy := *request
 	requestCopy.Imp = append([]openrtb2.Imp(nil), request.Imp...)
 	for i := range requestCopy.Imp {
-		updateImpExtWithParams(&requestCopy.Imp[i])
+		if err := updateImpExtWithParams(&requestCopy.Imp[i]); err != nil {
+			return nil, []error{&errortypes.BadInput{Message: err.Error()}}
+		}
 	}
 
 	body, err := json.Marshal(&requestCopy)
@@ -50,19 +52,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	}}, nil
 }
 
-func updateImpExtWithParams(imp *openrtb2.Imp) {
+func updateImpExtWithParams(imp *openrtb2.Imp) error {
 	if len(imp.Ext) == 0 {
-		return
+		return nil
 	}
 
 	var impExt map[string]json.RawMessage
 	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
-		return
+		return fmt.Errorf("failed to parse imp.ext for imp %s: %w", imp.ID, err)
 	}
 
 	params := map[string]json.RawMessage{}
 	if rawParams, exists := impExt["params"]; exists && len(rawParams) > 0 {
-		_ = json.Unmarshal(rawParams, &params)
+		if err := json.Unmarshal(rawParams, &params); err != nil {
+			return fmt.Errorf("failed to parse imp.ext.params for imp %s: %w", imp.ID, err)
+		}
 	}
 
 	if said, ok := extractParamFromPrebid(impExt, "said"); ok {
@@ -75,20 +79,21 @@ func updateImpExtWithParams(imp *openrtb2.Imp) {
 		params["template"] = template
 	}
 	if len(params) == 0 {
-		return
+		return nil
 	}
 
 	rawParams, err := json.Marshal(params)
 	if err != nil {
-		return
+		return fmt.Errorf("failed to marshal imp.ext.params for imp %s: %w", imp.ID, err)
 	}
 	impExt["params"] = rawParams
 
 	rawExt, err := json.Marshal(impExt)
 	if err != nil {
-		return
+		return fmt.Errorf("failed to marshal imp.ext for imp %s: %w", imp.ID, err)
 	}
 	imp.Ext = rawExt
+	return nil
 }
 
 func extractParamFromPrebid(impExt map[string]json.RawMessage, key string) (json.RawMessage, bool) {

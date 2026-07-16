@@ -90,8 +90,8 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBWX,
 	BidderCadentApertureMX,
 	BidderCcx,
-	BidderClydo,
 	BidderClickio,
+	BidderClydo,
 	BidderCointraffic,
 	BidderCoinzilla,
 	BidderColossus,
@@ -467,8 +467,8 @@ const (
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
-	BidderClydo             BidderName = "clydo"
 	BidderClickio           BidderName = "clickio"
+	BidderClydo             BidderName = "clydo"
 	BidderCointraffic       BidderName = "cointraffic"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"

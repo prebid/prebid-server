@@ -54,13 +54,13 @@
               },
               "ext": {
                 "bidder": {
-                  "said": "auction-1",
-                  "psid": "placement-1",
+                  "said": "123",
+                  "psid": "321",
                   "template": "template-1"
                 },
                 "params": {
-                  "said": "auction-1",
-                  "psid": "placement-1",
+                  "said": "123",
+                  "psid": "321",
                   "template": "template-1"
                 }
               }

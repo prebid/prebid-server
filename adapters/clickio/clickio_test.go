@@ -55,7 +55,9 @@ func TestUpdateImpExtWithParamsDoesNotUseOtherBidderFromPrebid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"bidder":{"other":{"said":"auction-1"}}}}`),
 	}
 
-	updateImpExtWithParams(imp)
+	if err := updateImpExtWithParams(imp); err != nil {
+		t.Fatalf("updateImpExtWithParams returned unexpected error: %v", err)
+	}
 
 	var ext map[string]json.RawMessage
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
