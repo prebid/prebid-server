@@ -94,19 +94,19 @@
                         {
                             "bid": [
                                 {
-                                    "id": "valid-bid",
+                                    "id": "invalid-bid",
                                     "impid": "test-imp-id",
-                                    "price": 1.000000,
-                                    "adm": "{\"type\":\"ID\",\"bid_id\":\"valid-bid\",\"placement_id\":\"123_456\",\"resolved_placement_id\":\"123_456\",\"sdk_version\":\"5.5.0\",\"device_id\":\"abc\",\"template\":1,\"payload\":null,\"bid_time_token\":\"v4_bidder_token=\"}"
+                                    "price": 0.500000
                                 }
                             ]
                         },
                         {
                             "bid": [
                                 {
-                                    "id": "invalid-bid",
+                                    "id": "valid-bid",
                                     "impid": "test-imp-id",
-                                    "price": 0.500000
+                                    "price": 1.000000,
+                                    "adm": "{\"type\":\"ID\",\"bid_id\":\"valid-bid\",\"placement_id\":\"123_456\",\"resolved_placement_id\":\"123_456\",\"sdk_version\":\"5.5.0\",\"device_id\":\"abc\",\"template\":1,\"payload\":null,\"bid_time_token\":\"v4_bidder_token=\"}"
                                 }
                             ]
                         }
