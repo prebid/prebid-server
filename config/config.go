@@ -53,6 +53,9 @@ type Configuration struct {
 	Video             Video           `mapstructure:"video"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
+	// CookieSync holds host-level cookie sync settings that are always enforced and
+	// cannot be overridden by account configuration.
+	CookieSync CookieSync `mapstructure:"cookie_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
 	StoredResponses StoredRequests `mapstructure:"stored_responses"`
