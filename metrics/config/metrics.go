@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/v4/metrics"
 	prometheusmetrics "github.com/prebid/prebid-server/v4/metrics/prometheus"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prometheus/client_golang/prometheus"
 	gometrics "github.com/rcrowley/go-metrics"
 	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
@@ -61,6 +62,11 @@ type DetailedMetricsEngine struct {
 	metrics.MetricsEngine
 	GoMetrics         *metrics.Metrics
 	PrometheusMetrics *prometheusmetrics.Metrics
+	// ModuleMetricsGatherer holds the dedicated registry that hook modules register their own
+	// Prometheus collectors into (via ModuleDeps.MetricsRegisterer). Modules are built before this
+	// engine, so their registry cannot be the PBS core registry; the Prometheus listener gathers
+	// from both. May be nil when Prometheus is disabled or no module registered anything.
+	ModuleMetricsGatherer prometheus.Gatherer
 }
 
 // MultiMetricsEngine logs metrics to multiple metrics databases The can be useful in transitioning
