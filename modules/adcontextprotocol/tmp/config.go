@@ -53,11 +53,23 @@ type Config struct {
 	Masking MaskingConfig `json:"masking"`
 
 	// TargetingKey is the ext key on the bid response under which we surface
-	// merged TMP signals. Defaults to "adcp".
+	// the raw merged TMP segment list (a []string of "key=value" pairs, useful
+	// for callers that consume the response.ext directly). Defaults to "adcp".
 	TargetingKey string `json:"targeting_key"`
 
-	// AddToTargeting mirrors the response signals into prebid.targeting so
-	// downstream ad servers (e.g. GAM) can consume them.
+	// PackageTargetingKey is the single custom key under which the module
+	// emits all matched package_ids on prebid.targeting, comma-joined and
+	// deduplicated across every provider that responded. Ad-server line items
+	// target on this key with IN semantics (e.g. GAM: adcp_package_id ∈
+	// {pkg_a, pkg_b}). Defaults to "adcp_package_id"; set to "" to disable
+	// package emission on prebid.targeting.
+	PackageTargetingKey string `json:"package_targeting_key"`
+
+	// AddToTargeting mirrors merged package IDs, context response signals,
+	// per-offer creative macros, and identity TMPX macros into
+	// prebid.targeting so downstream ad servers (GAM, VAST URL macros, DOOH
+	// play-log fields) can consume them. Keys are emitted as the agents
+	// return them — no provider-name prefixing.
 	AddToTargeting bool `json:"add_to_targeting"`
 
 	// MaxSegments caps the total number of segments emitted onto the
@@ -208,6 +220,9 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 	}
 	if c.TargetingKey == "" {
 		c.TargetingKey = "adcp"
+	}
+	if c.PackageTargetingKey == "" {
+		c.PackageTargetingKey = "adcp_package_id"
 	}
 	if c.MaxSegments <= 0 {
 		c.MaxSegments = 128
