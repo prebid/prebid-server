@@ -4,7 +4,6 @@ maintainer:
 gvlVendorID: 25
 openrtb:
   version: "2.6"
-  gpp-supported: true
 capabilities:
   app:
     mediaTypes:
