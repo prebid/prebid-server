@@ -60,6 +60,9 @@ func TestValidated_Defaults(t *testing.T) {
 	if cfg.TargetingKey != "adcp" {
 		t.Errorf("TargetingKey default = %q, want %q", cfg.TargetingKey, "adcp")
 	}
+	if cfg.PackageTargetingKey != "adcp_package_id" {
+		t.Errorf("PackageTargetingKey default = %q, want %q", cfg.PackageTargetingKey, "adcp_package_id")
+	}
 }
 
 func TestValidated_ProviderNeedsAtLeastOneURL(t *testing.T) {
