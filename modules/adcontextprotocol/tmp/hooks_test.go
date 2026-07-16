@@ -163,8 +163,8 @@ func TestHooks_EndToEndDeliversSegments(t *testing.T) {
 	// The exact JSON path is `adcp.segments`; a substring search is
 	// enough — the strict assertion is "some segment survived the
 	// hook plumbing", which is the invariant that broke.
-	if !bytesContains(payload.BidResponse.Ext, "prov_package=pkg-a") {
-		t.Errorf("expected prov_package=pkg-a in response ext; got %s", string(payload.BidResponse.Ext))
+	if !bytesContains(payload.BidResponse.Ext, "adcp_package_id=pkg-a") {
+		t.Errorf("expected adcp_package_id=pkg-a in response ext; got %s", string(payload.BidResponse.Ext))
 	}
 }
 
