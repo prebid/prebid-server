@@ -33,7 +33,7 @@ func TestMakeRequestsDoesNotMutateInputRequest(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{
 			{
-				ID: "imp-1",
+				ID:  "imp-1",
 				Ext: json.RawMessage(`{"bidder":{"said":"auction-1"}}`),
 			},
 		},
