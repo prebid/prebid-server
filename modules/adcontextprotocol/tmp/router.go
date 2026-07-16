@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"strings"
 	"sync"
 	"time"
 
@@ -230,20 +231,53 @@ func (m *Module) callProvider(
 
 // mergeSegments joins each provider's context offers with its identity
 // eligibility and flattens the survivors into "key=value" strings suitable
-// for prebid targeting. Response-level signals from the context response are
-// passed through as targeting keys directly. Capped at cfg.MaxSegments and
-// per-value length so a hostile provider cannot bloat the bid response.
+// for prebid targeting. The emitted segments cover four surfaces the AdCP
+// TMP spec calls out (see adcp docs/trusted-match/specification.mdx and
+// adcp-go tmproto/types_gen.go):
+//
+//  1. Matched package IDs → cfg.PackageTargetingKey, comma-joined and
+//     deduplicated across providers. Empty PackageTargetingKey disables
+//     this line entirely.
+//  2. ContextMatchResponse.Signals → raw keys (last-wins on collision
+//     across providers, with an emitted warn segment recording the loser).
+//  3. Offer.Macros (per-offer creative macros) → raw keys.
+//  4. IdentityMatchResponse.TmpxMacros[] → each TmpxMacro's own Name as
+//     the key, Value verbatim. Names are provider-namespaced upstream in
+//     the provider's registered tmpx_macros list; no transformation here.
+//
+// Capped at cfg.MaxSegments and per-value length so a hostile provider
+// cannot bloat the bid response.
 //
 // Fail-closed on identity error: when a provider was asked to do identity
 // gating (URL configured + tokens present) and the call did not return a
-// response, we drop all its offers. Snapshot of a hostile-or-flaky
-// identity endpoint therefore cannot convert identity-gated packages
-// into unconditionally-served packages.
+// response, we drop all its offers AND its TMPX macros. A hostile-or-flaky
+// identity endpoint therefore cannot convert identity-gated packages into
+// unconditionally-served packages, and cannot inject a TMPX token into the
+// bid response by failing partway through.
 func (m *Module) mergeSegments(results []providerResult) []string {
 	maxLen := m.cfg.MaxSegmentValueLen
 	maxCount := m.cfg.MaxSegments
+	pkgKey := m.cfg.PackageTargetingKey
 
 	var out []string
+	appendSeg := func(s string) bool {
+		if len(out) >= maxCount {
+			return false
+		}
+		out = append(out, boundedSegment(s, maxLen))
+		return true
+	}
+
+	// Signal-key tracking so we can log collisions across providers.
+	// The producing provider's name is not exposed in the segment value,
+	// only in the module's own log line — targeting keys stay clean.
+	signalOwner := map[string]string{}
+
+	// Package IDs: collect from every eligible offer, dedup, comma-join.
+	// Order preserved by first-emission so tests are stable.
+	var pkgIDs []string
+	seenPkg := map[string]bool{}
+
 	for _, r := range results {
 		if r.Context == nil {
 			continue
@@ -257,26 +291,63 @@ func (m *Module) mergeSegments(results []providerResult) []string {
 		filterEligibility := r.Identity != nil
 
 		for _, offer := range r.Context.Offers {
-			if filterEligibility {
-				if !eligible[offer.PackageID] {
+			if filterEligibility && !eligible[offer.PackageID] {
+				continue
+			}
+			if !seenPkg[offer.PackageID] {
+				seenPkg[offer.PackageID] = true
+				pkgIDs = append(pkgIDs, offer.PackageID)
+			}
+			// Per-offer creative macros. Only surfaced for eligible offers so
+			// a provider cannot leak macros for packages the identity gate
+			// filtered out.
+			for k, v := range offer.Macros {
+				if v == "" {
 					continue
 				}
+				if prev, dup := signalOwner[k]; dup && prev != r.Name {
+					logger.Warnf("adcontextprotocol.tmp: offer macro key %q from %q overwrites earlier value from %q", k, r.Name, prev)
+				}
+				signalOwner[k] = r.Name
+				if !appendSeg(k + "=" + v) {
+					return out
+				}
 			}
-			if len(out) >= maxCount {
-				return out
-			}
-			out = append(out, boundedSegment(r.Name+"_package="+offer.PackageID, maxLen))
 		}
 
 		for k, v := range r.Context.Signals {
-			if len(out) >= maxCount {
-				return out
-			}
 			str, ok := stringifySignal(v)
 			if !ok {
 				continue
 			}
-			out = append(out, boundedSegment(r.Name+"_"+k+"="+str, maxLen))
+			if prev, dup := signalOwner[k]; dup && prev != r.Name {
+				logger.Warnf("adcontextprotocol.tmp: context signal key %q from %q overwrites earlier value from %q", k, r.Name, prev)
+			}
+			signalOwner[k] = r.Name
+			if !appendSeg(k + "=" + str) {
+				return out
+			}
+		}
+
+		// Identity TMPX macros. Names are already provider-namespaced by the
+		// provider's registered tmpx_macros list (see adcp-go
+		// tmproto/types_gen.go ProviderRegistration.TmpxMacros), so no key
+		// transformation here — pass Name=Value verbatim to the ad server.
+		if r.Identity != nil {
+			for _, tm := range r.Identity.TmpxMacros {
+				if tm.Name == "" || tm.Value == "" {
+					continue
+				}
+				if !appendSeg(tm.Name + "=" + tm.Value) {
+					return out
+				}
+			}
+		}
+	}
+
+	if pkgKey != "" && len(pkgIDs) > 0 {
+		if !appendSeg(pkgKey + "=" + strings.Join(pkgIDs, ",")) {
+			return out
 		}
 	}
 	return out
