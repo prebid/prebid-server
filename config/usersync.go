@@ -12,3 +12,12 @@ type UserSync struct {
 type UserSyncCooperative struct {
 	EnabledByDefault bool `mapstructure:"default"`
 }
+
+// CookieSync specifies host-level cookie sync settings that are always enforced by the
+// host operator. These settings cannot be overridden by account configuration and are
+// unioned with any account-level restrictions.
+type CookieSync struct {
+	// DisabledIFrameBidders lists bidders for which iframe cookie syncs are disabled for
+	// every account. Use "*" to disable iframe syncs for all bidders.
+	DisabledIFrameBidders []string `mapstructure:"disabled_iframe_bidders" json:"disabled_iframe_bidders"`
+}
