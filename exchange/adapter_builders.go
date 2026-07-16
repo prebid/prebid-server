@@ -270,7 +270,6 @@ import (
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
-
 func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
 		openrtb_ext.Bidder33Across:          ttx.Builder,
