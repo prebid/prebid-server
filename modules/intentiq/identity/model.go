@@ -13,7 +13,7 @@ const (
 	// iiqSource is the eid source of the IntentIQ cookie id.
 	iiqSource = "intentiq.com"
 	// sourcePBSGo identifies the request source to the IntentIQ S2S API as prebid-server-go.
-	sourcePBSGo = "pbsgo"
+	sourcePBSGo = "pbgo"
 	// biddingPlatformOpenRTB is the biddingPlatformId reported for OpenRTB impressions.
 	biddingPlatformOpenRTB = "4"
 	// defaultCurrency is used when the bid response omits a currency.

@@ -167,7 +167,7 @@ func TestEnrichSendsUrlParamsAndConsentHeader(t *testing.T) {
 	// Raw query preserves the encoding (%20 for space).
 	assert.Contains(t, cap.rawQuery, "at=39")
 	assert.Contains(t, cap.rawQuery, "dpi=123")
-	assert.Contains(t, cap.rawQuery, "source=pbsgo")
+	assert.Contains(t, cap.rawQuery, "source=pbgo")
 	assert.Contains(t, cap.rawQuery, "uas=Mozilla%2F5.0%20%28iPhone%29")
 	assert.Contains(t, cap.rawQuery, "gdpr=1")
 	assert.Contains(t, cap.rawQuery, "us_privacy=1YNN")

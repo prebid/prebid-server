@@ -12,7 +12,7 @@ This is the Go port of the prebid-server-java `extra/modules/intentiq-identity` 
 ## Operation Details
 
 The resolution request (`processed_auction_request`) sends the
-`at=39`/`mi=10`/`pt=17`/`dpn=1`/`srvrReq=true`/`source=pbsgo` constants plus `dpi` (= `partner-id`),
+`at=39`/`mi=10`/`pt=17`/`dpn=1`/`srvrReq=true`/`source=pbgo` constants plus `dpi` (= `partner-id`),
 and — when present on the request — `ip`, `ipv6`, `uas`, `uh` (UA client hints built from
 `device.sua`), `ref` (site domain/page or app bundle/name), `iiquid` (an existing `intentiq.com`
 eid), `pcid`+`idtype` from `device.ifa` (`idtype 4` for MAID/AAID, `idtype 8` for CTV with the id
@@ -140,7 +140,7 @@ by default). L2 failures are non-fatal — the hook falls through to a live API 
 
 When `reports-endpoint` is set and the `auction_response` hook is in the execution plan, the module
 reports each winning `seatbid[].bid[]` to the IntentIQ impression API — a fire-and-forget GET to
-`<reports-endpoint>?at=45&rtype=1&source=pbsgo&dpi=<partner-id>&rdata=<UTF-8 URL-encoded JSON>`. The
+`<reports-endpoint>?at=45&rtype=1&source=pbgo&dpi=<partner-id>&rdata=<UTF-8 URL-encoded JSON>`. The
 `rdata` carries `bidderCode`, `partnerId`, `cpm`, `currency`, `originalCpm`/`originalCurrency` (from
 the bid ext), `placementId`, `biddingPlatformId=4`, `vrref`, `prebidAuctionId`, `partnerAuctionId`,
 `abTestUuid`, `terminationCause`, `ip`, and `ua`. Because the Go `auction_response` payload exposes

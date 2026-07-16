@@ -23,7 +23,7 @@ func TestResolveURLConstantParams(t *testing.T) {
 	got := resolveURL(cfg, wrap(&openrtb2.BidRequest{}))
 
 	assert.Equal(t,
-		testEndpoint+"?at=39&mi=10&dpi=partner-42&pt=17&dpn=1&srvrReq=true&source=pbsgo",
+		testEndpoint+"?at=39&mi=10&dpi=partner-42&pt=17&dpn=1&srvrReq=true&source=pbgo",
 		got)
 }
 
@@ -45,7 +45,7 @@ func TestResolveURLDeviceIPIPv6AndUserAgentEncoding(t *testing.T) {
 	got := resolveURL(cfg, wrap(req))
 
 	assert.Equal(t,
-		testEndpoint+"?at=39&mi=10&dpi=383342646&pt=17&dpn=1&srvrReq=true&source=pbsgo"+
+		testEndpoint+"?at=39&mi=10&dpi=383342646&pt=17&dpn=1&srvrReq=true&source=pbgo"+
 			"&ip=125.253.50.47&ipv6=2001%3Adb8%3A%3A1&uas=Mozilla%2F5.0%20%28iPhone%29",
 		got)
 }
