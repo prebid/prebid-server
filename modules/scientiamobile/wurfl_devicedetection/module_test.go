@@ -150,7 +150,8 @@ func TestHandleEntrypointHook(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, result.ModuleContext)
-				assert.Equal(t, tc.expectedModuleCtx[wurflHeaderCtxKey], result.ModuleContext[wurflHeaderCtxKey])
+				headers, _ := result.ModuleContext.Get(wurflHeaderCtxKey)
+				assert.Equal(t, tc.expectedModuleCtx[wurflHeaderCtxKey], headers)
 			}
 		})
 	}
@@ -184,11 +185,13 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				extCaps: false,
 			},
 			invocationCtx: hookstage.ModuleInvocationContext{
-				ModuleContext: hookstage.ModuleContext{
-					wurflHeaderCtxKey: map[string]string{
+				ModuleContext: func() *hookstage.ModuleContext {
+					ctx := hookstage.NewModuleContext()
+					ctx.Set(wurflHeaderCtxKey, map[string]string{
 						"User-Agent": "Mozilla/5.0",
-					},
-				},
+					})
+					return ctx
+				}(),
 			},
 			payload:     []byte(`{"device":{"ua":"Mozilla/5.0"}}`),
 			expectedErr: false,
@@ -242,11 +245,13 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				extCaps: true,
 			},
 			invocationCtx: hookstage.ModuleInvocationContext{
-				ModuleContext: hookstage.ModuleContext{
-					wurflHeaderCtxKey: map[string]string{
+				ModuleContext: func() *hookstage.ModuleContext {
+					ctx := hookstage.NewModuleContext()
+					ctx.Set(wurflHeaderCtxKey, map[string]string{
 						"User-Agent": "Mozilla/5.0",
-					},
-				},
+					})
+					return ctx
+				}(),
 			},
 			payload:     []byte(`{"device":{"ua":"Mozilla/5.0"}}`),
 			expectedErr: false,
@@ -288,11 +293,13 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				extCaps: true,
 			},
 			invocationCtx: hookstage.ModuleInvocationContext{
-				ModuleContext: hookstage.ModuleContext{
-					wurflHeaderCtxKey: map[string]string{
+				ModuleContext: func() *hookstage.ModuleContext {
+					ctx := hookstage.NewModuleContext()
+					ctx.Set(wurflHeaderCtxKey, map[string]string{
 						"User-Agent": "Mozilla/5.0",
-					},
-				},
+					})
+					return ctx
+				}(),
 			},
 			payload:     []byte(`{"device":{"ua":"Mozilla/5.0", "ext": {"test": 1}}}`),
 			expectedErr: false,
@@ -328,11 +335,13 @@ func TestHandleRawAuctionHook(t *testing.T) {
 				extCaps: false,
 			},
 			invocationCtx: hookstage.ModuleInvocationContext{
-				ModuleContext: hookstage.ModuleContext{
-					wurflHeaderCtxKey: map[string]string{
+				ModuleContext: func() *hookstage.ModuleContext {
+					ctx := hookstage.NewModuleContext()
+					ctx.Set(wurflHeaderCtxKey, map[string]string{
 						"User-Agent": "Mozilla/5.0",
-					},
-				},
+					})
+					return ctx
+				}(),
 			},
 			payload:         []byte(`{"device":{"ua":"Mozilla/5.0"}}`),
 			expectedErr:     false,
