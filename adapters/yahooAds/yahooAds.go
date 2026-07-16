@@ -179,6 +179,8 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 
 // promoteRegsExtTo26 moves regs.ext.{gpp, gpp_sid, coppa} to their top-level
 // fields when the publisher sent them in ext and the top-level field is empty.
+// When the top-level field is already set, the ext duplicate is removed so
+// only the authoritative top-level value ships.
 func promoteRegsExtTo26(request *openrtb2.BidRequest) {
 	if request.Regs == nil || len(request.Regs.Ext) == 0 {
 		return
@@ -192,36 +194,48 @@ func promoteRegsExtTo26(request *openrtb2.BidRequest) {
 	regsCopy := *request.Regs
 	modified := false
 
-	if regsCopy.COPPA == 0 {
-		if raw, ok := regsExt["coppa"]; ok {
+	// COPPA is a non-pointer int8 in openrtb2.Regs, so an explicit coppa:0 is
+	// indistinguishable from unset; a mis-promotion can only add the COPPA flag
+	// (0 -> 1), never remove it.
+	if raw, ok := regsExt["coppa"]; ok {
+		if regsCopy.COPPA == 0 {
 			var v int8
 			if err := jsonutil.Unmarshal(raw, &v); err == nil {
 				regsCopy.COPPA = v
 				delete(regsExt, "coppa")
 				modified = true
 			}
+		} else {
+			delete(regsExt, "coppa")
+			modified = true
 		}
 	}
 
-	if regsCopy.GPP == "" {
-		if raw, ok := regsExt["gpp"]; ok {
+	if raw, ok := regsExt["gpp"]; ok {
+		if regsCopy.GPP == "" {
 			var v string
 			if err := jsonutil.Unmarshal(raw, &v); err == nil {
 				regsCopy.GPP = v
 				delete(regsExt, "gpp")
 				modified = true
 			}
+		} else {
+			delete(regsExt, "gpp")
+			modified = true
 		}
 	}
 
-	if len(regsCopy.GPPSID) == 0 {
-		if raw, ok := regsExt["gpp_sid"]; ok {
+	if raw, ok := regsExt["gpp_sid"]; ok {
+		if len(regsCopy.GPPSID) == 0 {
 			var v []int8
 			if err := jsonutil.Unmarshal(raw, &v); err == nil {
 				regsCopy.GPPSID = v
 				delete(regsExt, "gpp_sid")
 				modified = true
 			}
+		} else {
+			delete(regsExt, "gpp_sid")
+			modified = true
 		}
 	}
 

@@ -81,8 +81,7 @@
             "gpp": "header~1YNN",
             "gpp_sid": [6],
             "ext": {
-              "param1": "val1",
-              "gpp": "overwritten"
+              "param1": "val1"
             }
           }
         },
