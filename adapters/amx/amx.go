@@ -60,8 +60,12 @@ func ensurePublisherWithID(pub *openrtb2.Publisher, publisherID string) openrtb2
 }
 
 func resolveBidFloor(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
-	if reqInfo == nil || imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, bidderCurrency) {
+	if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, bidderCurrency) {
 		return nil
+	}
+
+	if reqInfo == nil {
+		return fmt.Errorf("cannot convert bid floor currency %s: reqInfo is nil", imp.BidFloorCur)
 	}
 
 	convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, bidderCurrency)
@@ -80,10 +84,11 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 
 	var publisherID string
 	hasBidFloor := false
-	for idx, imp := range reqCopy.Imp {
+	validImps := make([]openrtb2.Imp, 0, len(reqCopy.Imp))
+	for _, imp := range reqCopy.Imp {
 		if err := resolveBidFloor(&imp, req); err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 		if imp.BidFloor > 0 {
 			hasBidFloor = true
@@ -101,10 +106,17 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 			}
 		}
 
-		reqCopy.Imp[idx] = imp
+		validImps = append(validImps, imp)
 	}
 
-	if hasBidFloor && len(reqCopy.Cur) > 0 {
+	if len(validImps) == 0 {
+		return nil, errs
+	}
+	reqCopy.Imp = validImps
+
+	// bid floors are normalized to USD, so request USD bids to keep the
+	// response currency consistent with the floors
+	if hasBidFloor {
 		reqCopy.Cur = []string{bidderCurrency}
 	}
 
