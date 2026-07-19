@@ -254,20 +254,22 @@ func createTaboolaRequests(request *openrtb2.BidRequest) (taboolaRequests []*ope
 }
 
 func makeRequestExt(pageType string, existingExt json.RawMessage) (json.RawMessage, error) {
-	var extMap map[string]interface{}
+	extMap := make(map[string]json.RawMessage)
 	if len(existingExt) > 0 {
 		if err := jsonutil.Unmarshal(existingExt, &extMap); err != nil {
-			extMap = make(map[string]interface{})
+			return nil, fmt.Errorf("could not unmarshal request ext: %s", err)
 		}
-	} else {
-		extMap = make(map[string]interface{})
 	}
 
-	extMap["pageType"] = pageType
+	pageTypeJson, err := json.Marshal(pageType)
+	if err != nil {
+		return nil, fmt.Errorf("could not marshal pageType: %s", err)
+	}
+	extMap["pageType"] = pageTypeJson
 
 	requestExtJson, err := json.Marshal(extMap)
 	if err != nil {
-		return nil, fmt.Errorf("could not marshal request ext, err: %s", err)
+		return nil, fmt.Errorf("could not marshal request ext: %s", err)
 	}
 	return requestExtJson, nil
 }
