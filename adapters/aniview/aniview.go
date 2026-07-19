@@ -34,10 +34,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var requests []*adapters.RequestData
 	var errors []error
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-
 	requestExt, err := buildRequestExt(request.Ext)
 	if err != nil {
 		return nil, []error{err}
@@ -63,6 +59,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				errors = append(errors, fmt.Errorf("marshal bidRequest: %w", err))
 				continue
 			}
+
+			// Headers must be a fresh map per request: RequestData.Headers is
+			// mutable and shared maps would leak mutations across requests.
+			headers := http.Header{}
+			headers.Add("Content-Type", "application/json;charset=utf-8")
+			headers.Add("Accept", "application/json")
 
 			requests = append(requests, &adapters.RequestData{
 				Method:  "POST",
@@ -137,9 +139,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", responseData.StatusCode),
-		}}
+		return nil, []error{err}
 	}
 
 	// The exchange may answer a no-bid as 200 with an empty/whitespace body.
