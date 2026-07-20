@@ -32,7 +32,7 @@ func isCountryAllowed(country string, mode string, countryCodes string) bool {
 }
 
 func shouldApplyCountryFilter(endpoint string) bool {
-	return sdkutils.IsSdkIntegration(endpoint)
+	return sdkutils.IsSdkBiddingEndpoint(endpoint)
 }
 
 func (m *OpenWrap) applyPartnerThrottling(rCtx models.RequestCtx) (map[string]struct{}, bool) {

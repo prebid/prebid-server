@@ -189,6 +189,20 @@ func (mr *MockFeatureMockRecorder) IsCountryGDPREnabled(arg0 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsCountryGDPREnabled", reflect.TypeOf((*MockFeature)(nil).IsCountryGDPREnabled), arg0)
 }
 
+// IsEDSBlockedCountry mocks base method.
+func (m *MockFeature) IsEDSBlockedCountry(arg0 string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsEDSBlockedCountry", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsEDSBlockedCountry indicates an expected call of IsEDSBlockedCountry.
+func (mr *MockFeatureMockRecorder) IsEDSBlockedCountry(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsEDSBlockedCountry", reflect.TypeOf((*MockFeature)(nil).IsEDSBlockedCountry), arg0)
+}
+
 // IsDynamicFloorEnabledPublisher mocks base method.
 func (m *MockFeature) IsDynamicFloorEnabledPublisher(arg0 int) bool {
 	m.ctrl.T.Helper()

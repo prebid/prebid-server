@@ -182,7 +182,7 @@ func (m *OpenWrap) addDefaultBids(rctx *models.RequestCtx, bidResponse *openrtb2
 
 func (m *OpenWrap) addDefaultBidsForMultiFloorsConfig(rctx *models.RequestCtx, bidResponse *openrtb2.BidResponse, bidResponseExt openrtb_ext.ExtBidResponse) map[string]map[string][]openrtb2.Bid {
 
-	if !sdkutils.IsSdkIntegration(rctx.Endpoint) {
+	if !sdkutils.IsSdkBiddingEndpoint(rctx.Endpoint) {
 		return rctx.DefaultBids
 	}
 

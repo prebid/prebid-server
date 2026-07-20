@@ -640,7 +640,7 @@ func getAdunitFormat(reward *int8, imp openrtb2.Imp) string {
 
 // getMultiFloors returns all adunitlevel multifloors or to be applied adunitformat multifloors for give imp.
 func (m OpenWrap) getMultiFloors(rctx models.RequestCtx, reward *int8, imp openrtb2.Imp) *models.MultiFloors {
-	if !sdkutils.IsSdkIntegration(rctx.Endpoint) {
+	if !sdkutils.IsSdkBiddingEndpoint(rctx.Endpoint) {
 		return nil
 	}
 

@@ -15,7 +15,7 @@ import (
 func injectNativeCreativeTrackers(native *openrtb2.Native, bid openrtb2.Bid, tracker models.OWTracker, endpoint string) (string, string, error) {
 	adm := bid.AdM
 	var err error
-	if sdkutils.IsSdkIntegration(endpoint) {
+	if sdkutils.IsSdkBiddingEndpoint(endpoint) {
 		return adm, getBURL(bid.BURL, tracker), nil
 	}
 	if native == nil {

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/mock/gomock"
 	"github.com/prebid/openrtb/v20/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
@@ -64,6 +65,74 @@ var rctx = models.RequestCtx{
 	Endpoint:                 models.EndpointV25,
 	SeatNonBids:              make(map[string][]openrtb_ext.NonBid),
 	WakandaDebug:             &wakanda.Debug{},
+}
+
+func allowEDSBlockedCountryCheck(mockFeature *mock_feature.MockFeature) {
+	mockFeature.EXPECT().IsEDSBlockedCountry(gomock.Any()).Return(false).AnyTimes()
+}
+
+func expectEDSBlockedCountryPartnerConfigMap(mockCache *mock_cache.MockCache) {
+	mockCache.EXPECT().GetPartnerConfigMap(gomock.Any(), gomock.Any(), gomock.Any()).Return(map[int]map[string]string{
+		1: {
+			models.PARTNER_ID:          "1",
+			models.PREBID_PARTNER_NAME: "pubmatic2",
+			models.BidderCode:          "pub2-alias",
+			models.IsAlias:             "1",
+			models.TIMEOUT:             "200",
+			models.PubID:               "301",
+			models.KEY_GEN_PATTERN:     "_AU_@_W_x_H_",
+			models.SERVER_SIDE_FLAG:    "1",
+		},
+		2: {
+			models.PARTNER_ID:          "2",
+			models.PREBID_PARTNER_NAME: "appnexus",
+			models.BidderCode:          "appnexus",
+			models.SERVER_SIDE_FLAG:    "1",
+			models.KEY_GEN_PATTERN:     "_AU_@_W_x_H_",
+			models.TIMEOUT:             "200",
+		},
+		-1: {
+			models.DisplayVersionID: "1",
+			models.PLATFORM_KEY:     models.PLATFORM_APP,
+		},
+	}, nil).AnyTimes()
+	mockCache.EXPECT().GetAdunitConfigFromCache(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&adunitconfig.AdUnitConfig{
+		ConfigPattern: "_AU_@_W_x_H_",
+		Config: map[string]*adunitconfig.AdConfig{
+			"adunit@700x900": {
+				Banner: &adunitconfig.Banner{Enabled: ptrutil.ToPtr(true)},
+				Video:  &adunitconfig.Video{Enabled: ptrutil.ToPtr(true)},
+			},
+		},
+	}).AnyTimes()
+	mockCache.EXPECT().GetMappingsFromCacheV25(gomock.Any(), gomock.Any()).Return(map[string]models.SlotMapping{
+		"adunit@700x900": {
+			SlotName: "adunit@700x900",
+			SlotMappings: map[string]interface{}{
+				models.SITE_CACHE_KEY: "12313",
+				models.TAG_CACHE_KEY:  "45343",
+			},
+		},
+	}).AnyTimes()
+	mockCache.EXPECT().GetSlotToHashValueMapFromCacheV25(gomock.Any(), gomock.Any()).Return(models.SlotMappingInfo{
+		OrderedSlotList: []string{"adunit@700x900"},
+		HashValueMap:    map[string]string{"adunit@700x900": "1232433543534543"},
+	}).AnyTimes()
+	mockCache.EXPECT().GetThrottlePartnersWithCriteria(gomock.Any()).Return(map[string]struct{}{}, nil).AnyTimes()
+}
+
+func getPubmaticEDSFromRequestExt(t *testing.T, ext []byte) string {
+	t.Helper()
+	return getBidderEDSFromRequestExt(t, ext, "pubmatic")
+}
+
+func getBidderEDSFromRequestExt(t *testing.T, ext []byte, bidderCode string) string {
+	t.Helper()
+	edsData, _, _, err := jsonparser.Get(ext, "prebid", "bidderparams", bidderCode, "eds")
+	if err != nil {
+		return ""
+	}
+	return string(edsData)
 }
 
 func getTestBidRequest(isSite bool) *openrtb2.BidRequest {
@@ -4021,6 +4090,7 @@ func TestOpenWrapHandleBeforeValidationHook(t *testing.T) {
 	mockCache := mock_cache.NewMockCache(ctrl)
 	mockEngine := mock_metrics.NewMockMetricsEngine(ctrl)
 	mockFeature := mock_feature.NewMockFeature(ctrl)
+	allowEDSBlockedCountryCheck(mockFeature)
 	mockProfileMetaData := mock_profilemetadata.NewMockProfileMetaData(ctrl)
 	adapters.InitBidders("./static/bidder-params/")
 	resetFakeUUID := openrtb_ext.SetTestFakeUUIDGenerator("30470a14-2949-4110-abce-b62d57304ad5")
@@ -5824,6 +5894,7 @@ func TestCurrencyConverion(t *testing.T) {
 	mockCache := mock_cache.NewMockCache(ctrl)
 	mockEngine := mock_metrics.NewMockMetricsEngine(ctrl)
 	mockFeature := mock_feature.NewMockFeature(ctrl)
+	allowEDSBlockedCountryCheck(mockFeature)
 	mockProfileMetaData := mock_profilemetadata.NewMockProfileMetaData(ctrl)
 
 	type fields struct {
@@ -5977,6 +6048,7 @@ func TestUserAgent_handleBeforeValidationHook(t *testing.T) {
 	mockCache := mock_cache.NewMockCache(ctrl)
 	mockEngine := mock_metrics.NewMockMetricsEngine(ctrl)
 	mockFeature := mock_feature.NewMockFeature(ctrl)
+	allowEDSBlockedCountryCheck(mockFeature)
 
 	type fields struct {
 		cfg          config.Config
@@ -6092,12 +6164,156 @@ func TestUserAgent_handleBeforeValidationHook(t *testing.T) {
 	}
 }
 
+func TestEDSBlockedCountry_handleBeforeValidationHook(t *testing.T) {
+	const bidRequestWithEDS = `{"id":"test","imp":[{"id":"123","tagid":"adunit","banner":{"w":700,"h":900,"format":[{"w":728,"h":90}]},"video":{"mimes":["video/mp4"],"w":640,"h":480},"ext":{"prebid":{}}}],"app":{"publisher":{"id":"5890"},"ext":{"eds":{"install_time":456,"first_launch_time":789,"other":"keep"}}},"device":{"ua":"go-test","ip":"127.0.0.1","ext":{"eds":{"boottime":123,"charging":1,"diskspace":10.5}}},"ext":{"prebid":{},"wrapper":{"profileid":1234,"versionid":1}}}`
+
+	const edsWithBlockedParams = `{"device":{"boottime":123,"charging":1,"diskspace":10.5},"app":{"install_time":456,"first_launch_time":789,"other":"keep"}}`
+	const edsStripped = `{"device":{"charging":1},"app":{"other":"keep"}}`
+
+	adapters.InitBidders("./static/bidder-params/")
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCache := mock_cache.NewMockCache(ctrl)
+	mockEngine := mock_metrics.NewMockMetricsEngine(ctrl)
+	mockFeature := mock_feature.NewMockFeature(ctrl)
+	mockProfileMetaData := mock_profilemetadata.NewMockProfileMetaData(ctrl)
+
+	mockProfileMetaData.EXPECT().GetProfileTypePlatform(gomock.Any()).Return(0, false).AnyTimes()
+	mockFeature.EXPECT().IsAmpMultiformatEnabled(gomock.Any()).Return(false).AnyTimes()
+	mockFeature.EXPECT().IsDynamicFloorEnabledPublisher(gomock.Any()).Return(false).AnyTimes()
+	mockFeature.EXPECT().IsMBMFPublisherEnabled(gomock.Any()).Return(false).AnyTimes()
+	mockEngine.EXPECT().RecordPublisherProfileRequests(gomock.Any(), gomock.Any()).AnyTimes()
+	mockEngine.EXPECT().RecordPublisherRequests(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockEngine.EXPECT().RecordPlatformPublisherPartnerReqStats(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockEngine.EXPECT().RecordPreProcessingTimeStats(gomock.Any(), gomock.Any()).AnyTimes()
+	mockEngine.EXPECT().RecordMBMFRequests(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockEngine.EXPECT().RecordBadRequests(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockEngine.EXPECT().RecordNobidErrPrebidServerRequests(gomock.Any(), gomock.Any()).AnyTimes()
+	expectEDSBlockedCountryPartnerConfigMap(mockCache)
+
+	type want struct {
+		pubmaticEDS     string
+		aliasBidderCode string
+		aliasEDS        string
+	}
+	tests := []struct {
+		name     string
+		endpoint string
+		setup    func()
+		want     want
+	}{
+		{
+			name:     "v25_blocked_country_strips_eds_params",
+			endpoint: models.EndpointV25,
+			setup: func() {
+				mockFeature.EXPECT().IsEDSBlockedCountry(gomock.Any()).Return(true).Times(1)
+				mockFeature.EXPECT().IsTBFFeatureEnabled(gomock.Any(), gomock.Any()).Return(false)
+				mockFeature.EXPECT().IsAnalyticsTrackingThrottled(gomock.Any(), gomock.Any()).Return(false, false)
+			},
+			want: want{
+				pubmaticEDS: edsStripped,
+			},
+		},
+		{
+			name:     "v25_non_blocked_country_preserves_eds_params",
+			endpoint: models.EndpointV25,
+			setup: func() {
+				mockFeature.EXPECT().IsEDSBlockedCountry(gomock.Any()).Return(false).Times(1)
+				mockFeature.EXPECT().IsTBFFeatureEnabled(gomock.Any(), gomock.Any()).Return(false)
+				mockFeature.EXPECT().IsAnalyticsTrackingThrottled(gomock.Any(), gomock.Any()).Return(false, false)
+			},
+			want: want{
+				pubmaticEDS: edsWithBlockedParams,
+			},
+		},
+		{
+			name:     "google_sdk_blocked_country_strips_eds_params",
+			endpoint: models.EndpointGoogleSDK,
+			setup: func() {
+				mockFeature.EXPECT().IsEDSBlockedCountry(gomock.Any()).Return(true).Times(1)
+				mockFeature.EXPECT().IsTBFFeatureEnabled(gomock.Any(), gomock.Any()).Return(false)
+				mockFeature.EXPECT().IsAnalyticsTrackingThrottled(gomock.Any(), gomock.Any()).Return(false, false)
+			},
+			want: want{
+				pubmaticEDS: edsStripped,
+			},
+		},
+		{
+			name:     "v25_blocked_country_strips_eds_params_pubmatic_alias",
+			endpoint: models.EndpointV25,
+			setup: func() {
+				mockFeature.EXPECT().IsEDSBlockedCountry(gomock.Any()).Return(true).Times(1)
+				mockFeature.EXPECT().IsTBFFeatureEnabled(gomock.Any(), gomock.Any()).Return(false)
+				mockFeature.EXPECT().IsAnalyticsTrackingThrottled(gomock.Any(), gomock.Any()).Return(false, false)
+			},
+			want: want{
+				pubmaticEDS:     edsStripped,
+				aliasBidderCode: "pub2-alias",
+				aliasEDS:        edsWithBlockedParams,
+			},
+		},
+		{
+			name:     "non_sdk_non_v25_endpoint_preserves_eds_params",
+			endpoint: models.EndpointAMP,
+			setup: func() {
+				mockFeature.EXPECT().IsTBFFeatureEnabled(gomock.Any(), gomock.Any()).Return(false)
+				mockFeature.EXPECT().IsAnalyticsTrackingThrottled(gomock.Any(), gomock.Any()).Return(false, false)
+			},
+			want: want{
+				pubmaticEDS: edsWithBlockedParams,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setup()
+
+			testRctx := rctx
+			testRctx.Endpoint = tt.endpoint
+			testRctx.DeviceCtx = models.DeviceCtx{UA: "go-test", IP: "127.0.0.1"}
+
+			payload := hookstage.BeforeValidationRequestPayload{BidRequest: &openrtb2.BidRequest{}}
+			assert.NoError(t, json.Unmarshal(json.RawMessage(bidRequestWithEDS), payload.BidRequest))
+
+			m := OpenWrap{
+				cache:           mockCache,
+				metricEngine:    mockEngine,
+				pubFeatures:     mockFeature,
+				profileMetaData: mockProfileMetaData,
+				rateConvertor:   &currency.RateConverter{},
+			}
+
+			got, err := m.handleBeforeValidationHook(context.Background(), hookstage.ModuleInvocationContext{
+				ModuleContext: hookstage.ModuleContext{
+					"rctx": testRctx,
+				},
+			}, payload)
+			assert.NoError(t, err)
+			assert.False(t, got.Reject, tt.name)
+			assert.NotEmpty(t, got.ChangeSet.Mutations(), tt.name)
+
+			for _, mut := range got.ChangeSet.Mutations() {
+				payload, err = mut.Apply(payload)
+				assert.NoError(t, err, tt.name)
+			}
+
+			assert.JSONEq(t, tt.want.pubmaticEDS, getPubmaticEDSFromRequestExt(t, payload.BidRequest.Ext))
+			if tt.want.aliasBidderCode != "" {
+				assert.JSONEq(t, tt.want.aliasEDS, getBidderEDSFromRequestExt(t, payload.BidRequest.Ext, tt.want.aliasBidderCode))
+			}
+		})
+	}
+}
+
 func TestVASTUnwrap_handleBeforeValidationHook(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockCache := mock_cache.NewMockCache(ctrl)
 	mockEngine := mock_metrics.NewMockMetricsEngine(ctrl)
 	mockFeature := mock_feature.NewMockFeature(ctrl)
+	allowEDSBlockedCountryCheck(mockFeature)
 	mockProfileMetaData := mock_profilemetadata.NewMockProfileMetaData(ctrl)
 
 	type fields struct {
@@ -6505,6 +6721,7 @@ func TestImpBidCtx_handleBeforeValidationHook(t *testing.T) {
 	mockCache := mock_cache.NewMockCache(ctrl)
 	mockEngine := mock_metrics.NewMockMetricsEngine(ctrl)
 	mockFeature := mock_feature.NewMockFeature(ctrl)
+	allowEDSBlockedCountryCheck(mockFeature)
 	mockProfileMetaData := mock_profilemetadata.NewMockProfileMetaData(ctrl)
 	type fields struct {
 		cfg          config.Config

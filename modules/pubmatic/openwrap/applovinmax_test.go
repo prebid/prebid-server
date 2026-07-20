@@ -97,6 +97,14 @@ func TestUpdateImpression(t *testing.T) {
 			want: []openrtb2.Imp{{Banner: &openrtb2.Banner{ID: "max_banner", API: []adcom1.APIFramework{1, 2, 3, 4}}}},
 		},
 		{
+			name: "signalImp banner mimes merged into maxImp banner",
+			args: args{
+				signalImps: []openrtb2.Imp{{Banner: &openrtb2.Banner{MIMEs: []string{"image/jpeg", "image/png"}}}},
+				maxImps:    []openrtb2.Imp{{Banner: &openrtb2.Banner{ID: "max_banner"}}},
+			},
+			want: []openrtb2.Imp{{Banner: &openrtb2.Banner{ID: "max_banner", MIMEs: []string{"image/jpeg", "image/png"}}}},
+		},
+		{
 			name: "maxImp has bannertype rewarded",
 			args: args{
 				signalImps: []openrtb2.Imp{{Banner: &openrtb2.Banner{ID: "sdk_banner", API: []adcom1.APIFramework{1, 2, 3, 4}}}},
@@ -364,6 +372,22 @@ func TestUpdateDevice(t *testing.T) {
 			},
 			want: &openrtb2.Device{Ext: json.RawMessage(`{"atts":3,"ifv":"193DBF06-B1D8-4684-BE35-0FB0770C463C"}`)},
 		},
+		{
+			name: "signal_ppi_overwrites_outer_request_ppi",
+			args: args{
+				sdkDevice:  &openrtb2.Device{PPI: 320},
+				maxRequest: &openrtb2.BidRequest{Device: &openrtb2.Device{PPI: 440}},
+			},
+			want: &openrtb2.Device{PPI: 320},
+		},
+		{
+			name: "signal_ppi_applied_when_outer_request_has_no_ppi",
+			args: args{
+				sdkDevice:  &openrtb2.Device{PPI: 320},
+				maxRequest: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "test-ua"}},
+			},
+			want: &openrtb2.Device{UA: "test-ua", PPI: 320},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -623,6 +647,14 @@ func TestUpdateUser(t *testing.T) {
 				maxRequest: &openrtb2.BidRequest{User: &openrtb2.User{ID: "maxID", Yob: 2000, Gender: "F", Keywords: "k52=v43", Ext: json.RawMessage(`{"sessionduration":50,"impdepth":15}`)}},
 			},
 			want: &openrtb2.User{ID: "maxID", Yob: 1999, Gender: "M", Keywords: "k1=v2;k2=v2", Ext: json.RawMessage(`{"sessionduration":40,"impdepth":10}`)},
+		},
+		{
+			name: "signalUserExt has lastadomain",
+			args: args{
+				signalUser: &openrtb2.User{ID: "sdkID", Ext: json.RawMessage(`{"lastadomain":"example.com"}`)},
+				maxRequest: &openrtb2.BidRequest{User: &openrtb2.User{ID: "maxID"}},
+			},
+			want: &openrtb2.User{ID: "maxID", Ext: json.RawMessage(`{"lastadomain":"example.com"}`)},
 		},
 		{
 			name: "signalUserExt_has_sessionduration_and_impdepth_with_consent",
@@ -1028,7 +1060,7 @@ func TestUpdateAppLovinMaxRequest(t *testing.T) {
 			if tt.setup != nil {
 				tt.setup()
 			}
-			got := updateAppLovinMaxRequest(tt.args.requestBody, tt.args.rctx)
+			got := updateAppLovinMaxRequest(tt.args.requestBody, &tt.args.rctx)
 			if json.Valid(tt.want) && json.Valid(got) {
 				assert.JSONEq(t, string(tt.want), string(got), tt.name)
 			} else {

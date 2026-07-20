@@ -67,9 +67,8 @@ func updateImpression(signalImps []openrtb2.Imp, maxImps []openrtb2.Imp) {
 	}
 
 	if maxImps[0].Banner != nil {
-		if signalImp.Banner != nil && len(signalImp.Banner.API) > 0 {
-			maxImps[0].Banner.API = signalImp.Banner.API
-		}
+		// imp.banner.mimes (and api) from signal when present; outer banner object is kept.
+		sdkutils.MergeBanner(maxImps[0].Banner, signalImp.Banner)
 
 		bannertype, err := jsonparser.GetString(maxImps[0].Banner.Ext, "bannertype")
 		if err == nil && bannertype == models.TypeRewarded {
@@ -174,8 +173,8 @@ func updateUser(signalUser *openrtb2.User, maxRequest *openrtb2.BidRequest) {
 		maxRequest.User.Ext = jsonparser.Delete(maxRequest.User.Ext, "sessionduration")
 		maxRequest.User.Ext = jsonparser.Delete(maxRequest.User.Ext, "impdepth")
 	}
-	//Pass user.ext.sessionduration and user.ext.impdepth to ow partners in case of ALMAX integration
-	maxRequest.User.Ext = setIfKeysExists(signalUser.Ext, maxRequest.User.Ext, "consent", "eids", "sessionduration", "impdepth")
+	// Pass user.ext from signal to the shared request for all bidders (ALMAX integration).
+	maxRequest.User.Ext = setIfKeysExists(signalUser.Ext, maxRequest.User.Ext, "consent", "eids", "sessionduration", "impdepth", "lastadomain")
 }
 
 func setIfKeysExists(source []byte, target []byte, keys ...string) []byte {
@@ -222,9 +221,15 @@ func updateRequestWrapper(signalExt json.RawMessage, maxRequest *openrtb2.BidReq
 	}
 }
 
-func updateAppLovinMaxRequest(requestBody []byte, rctx models.RequestCtx) []byte {
+// updateAppLovinMaxRequest merges Max signal into the request. rctx is a pointer so the decoded
+// signal bid request can be stored on rCtx.SignalRequest for PubMatic-only EDS at before_validation.
+func updateAppLovinMaxRequest(requestBody []byte, rctx *models.RequestCtx) []byte {
 	requestBody, rctx.ProfileIDStr = setProfileID(requestBody)
-	signalData := getSignalData(requestBody, rctx)
+	signalData := getSignalData(requestBody, *rctx)
+	// Keep decoded signal for EDS; signal ext.eds is not merged onto the shared request.
+	if signalData != nil {
+		rctx.SignalRequest = signalData
+	}
 	if signalData == nil {
 		return modifyRequestBody(requestBody)
 	}

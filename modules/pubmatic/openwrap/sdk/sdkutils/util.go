@@ -96,7 +96,28 @@ func MergeDevice(dst *openrtb2.Device, src *openrtb2.Device) *openrtb2.Device {
 		dst.ConnectionType = src.ConnectionType
 	}
 
+	// UOE-13721 device.ppi: copied from SDK signal when present.
+	if src.PPI > 0 {
+		dst.PPI = src.PPI
+	}
+
 	return dst
+}
+
+// MergeBanner copies imp.banner fields from SDK signal into the shared request banner.
+// UOE-13721 imp.banner.mimes and api are taken from signal when non-empty; outer-request values are overwritten.
+func MergeBanner(dst, src *openrtb2.Banner) {
+	if dst == nil || src == nil {
+		return
+	}
+
+	if len(src.MIMEs) > 0 {
+		dst.MIMEs = src.MIMEs
+	}
+
+	if src.API != nil {
+		dst.API = src.API
+	}
 }
 
 func mergeGeo(dst *openrtb2.Geo, src *openrtb2.Geo) *openrtb2.Geo {
@@ -204,8 +225,13 @@ func CopyIFV(source, target []byte) []byte {
 	return target
 }
 
-func IsSdkIntegration(endpoint string) bool {
+func IsSdkBiddingEndpoint(endpoint string) bool {
 	return endpoint == models.EndpointAppLovinMax || endpoint == models.EndpointUnityLevelPlay || endpoint == models.EndpointGoogleSDK || endpoint == models.EndpointAPS
+}
+
+// IsSdkEndpoint returns true for SDK mediation endpoints and the v25 endpoint.
+func IsSdkEndpoint(endpoint string) bool {
+	return IsSdkBiddingEndpoint(endpoint) || endpoint == models.EndpointV25
 }
 
 func AddSize300x600ForInterstitialBanner(imp *openrtb2.Imp) {

@@ -22,4 +22,5 @@ type Feature interface {
 	GetEnabledPerformanceDSPs() map[int]struct{}
 	GetInViewEnabledPublishers() map[int]struct{}
 	IsActApplicable(pubId int, seat string, dspId int) bool
+	IsEDSBlockedCountry(countryCode string) bool
 }

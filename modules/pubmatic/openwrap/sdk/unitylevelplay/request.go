@@ -27,7 +27,9 @@ func NewLevelPlay(metricsEngine metrics.MetricsEngine) *LevelPlay {
 	}
 }
 
-func (l *LevelPlay) ModifyRequestWithUnityLevelPlayParams(requestBody []byte) []byte {
+// ModifyRequestWithUnityLevelPlayParams merges LevelPlay signal into the request. rctx is a pointer so
+// the decoded signal bid request can be stored on rCtx.SignalRequest for PubMatic-only EDS at before_validation.
+func (l *LevelPlay) ModifyRequestWithUnityLevelPlayParams(requestBody []byte, rctx *models.RequestCtx) []byte {
 	if len(requestBody) == 0 {
 		return nil
 	}
@@ -52,7 +54,7 @@ func (l *LevelPlay) ModifyRequestWithUnityLevelPlayParams(requestBody []byte) []
 	}
 
 	// modify request with signal data
-	l.modifyRequestWithSignalData(request)
+	l.modifyRequestWithSignalData(request, rctx)
 
 	modifiedRequest, err := jsoniterator.Marshal(request)
 	if err != nil {
@@ -95,7 +97,7 @@ func (l *LevelPlay) modifyRequestWithStaticData(request *openrtb2.BidRequest) {
 	}
 }
 
-func (l *LevelPlay) modifyRequestWithSignalData(request *openrtb2.BidRequest) {
+func (l *LevelPlay) modifyRequestWithSignalData(request *openrtb2.BidRequest, rctx *models.RequestCtx) {
 	if request == nil || request.App == nil || request.App.Ext == nil {
 		return
 	}
@@ -119,6 +121,11 @@ func (l *LevelPlay) modifyRequestWithSignalData(request *openrtb2.BidRequest) {
 		return
 	}
 
+	// Keep decoded signal for EDS; signal ext.eds is not merged onto the shared request ext.
+	if rctx != nil {
+		rctx.SignalRequest = signal
+	}
+
 	modifyImpression(request, signal.Imp)
 	modifyRegs(request, signal.Regs)
 	modifyApp(request, signal.App)
@@ -131,14 +138,7 @@ func (l *LevelPlay) modifyRequestWithSignalData(request *openrtb2.BidRequest) {
 }
 
 func modifyBanner(requestBanner *openrtb2.Banner, signalBanner *openrtb2.Banner) {
-	if requestBanner == nil || signalBanner == nil {
-		return
-	}
-
-	if signalBanner.API != nil {
-		requestBanner.API = signalBanner.API
-	}
-
+	sdkutils.MergeBanner(requestBanner, signalBanner)
 }
 
 func modifyImpression(request *openrtb2.BidRequest, signalImps []openrtb2.Imp) {
@@ -305,6 +305,7 @@ func modifyUser(request *openrtb2.BidRequest, signalUser *openrtb2.User) {
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "impdepth")
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "consent")
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "eids")
+	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "lastadomain")
 }
 
 func modifySource(request *openrtb2.BidRequest, signalSource *openrtb2.Source) {

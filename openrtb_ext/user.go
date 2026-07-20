@@ -25,6 +25,7 @@ type ExtUser struct {
 	Data            json.RawMessage `json:"data,omitempty"`
 	SessionDuration int64           `json:"sessionduration,omitempty"`
 	ImpDepth        int64           `json:"impdepth,omitempty"`
+	LastAdomain     json.RawMessage `json:"lastadomain,omitempty"`
 }
 
 // ExtUserPrebid defines the contract for bidrequest.user.ext.prebid

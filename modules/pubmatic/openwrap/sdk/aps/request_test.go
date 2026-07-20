@@ -128,7 +128,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 			}
 
 			a := NewAPS(mockMetrics)
-			response := a.ModifyRequestWithAPSParams(requestBody, rctx)
+			response := a.ModifyRequestWithAPSParams(requestBody, &rctx)
 			if tt.expectedError {
 				assert.Equal(t, tt.expectedResponse, response)
 				return
@@ -168,6 +168,14 @@ func TestModifyBanner(t *testing.T) {
 			signal:  &openrtb2.Banner{API: []adcom1.APIFramework{7}},
 			expected: &openrtb2.Banner{
 				API: []adcom1.APIFramework{7},
+			},
+		},
+		{
+			name:    "copies_mimes_from_signal",
+			request: &openrtb2.Banner{},
+			signal:  &openrtb2.Banner{MIMEs: []string{"image/jpeg", "image/png"}},
+			expected: &openrtb2.Banner{
+				MIMEs: []string{"image/jpeg", "image/png"},
 			},
 		},
 	}
@@ -625,6 +633,12 @@ func TestUpdateDevice(t *testing.T) {
 				Ext: json.RawMessage(`{"atts":3,"ifv":"193DBF06-B1D8-4684-BE35-0FB0770C463C"}`),
 			}},
 		},
+		{
+			name:     "signal_has_ppi",
+			request:  &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "test-ua"}},
+			signal:   &openrtb2.Device{PPI: 440},
+			expected: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "test-ua", PPI: 440}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -669,14 +683,14 @@ func TestUpdateUser(t *testing.T) {
 				Yob:      2000,
 				Gender:   "M",
 				Keywords: "test,user",
-				Ext:      json.RawMessage(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}]}`),
+				Ext:      json.RawMessage(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}],"lastadomain":"example.com"}`),
 			},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
 				Data:     []openrtb2.Data{{ID: "1"}},
 				Yob:      2000,
 				Gender:   "M",
 				Keywords: "test,user",
-				Ext:      json.RawMessage(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}]}`),
+				Ext:      json.RawMessage(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}],"lastadomain":"example.com"}`),
 			}},
 		},
 		{

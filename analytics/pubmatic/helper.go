@@ -101,7 +101,7 @@ func decodeAPSAdmGzipBase64(adm string) ([]byte, error) {
 
 // RestoreBidResponse restores the original bid response for AppLovinMax / APS / other SDK paths from wrapper signal or compressed adm.
 func RestoreBidResponse(rctx *models.RequestCtx, ao analytics.AuctionObject) error {
-	if !sdkutils.IsSdkIntegration(rctx.Endpoint) {
+	if !sdkutils.IsSdkBiddingEndpoint(rctx.Endpoint) {
 		return nil
 	}
 

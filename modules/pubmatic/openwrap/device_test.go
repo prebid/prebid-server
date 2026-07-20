@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/eds"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
@@ -577,6 +578,18 @@ func TestAmendDeviceObject(t *testing.T) {
 				Ext: json.RawMessage(`{"session_id":"sample_session"}`),
 			},
 		},
+		{
+			name: `clear_ext_when_processed_ext_is_empty`,
+			args: args{
+				device: &openrtb2.Device{
+					Ext: json.RawMessage(`{"ifa_type":"sessionid"}`),
+				},
+				dvc: &models.DeviceCtx{
+					Ext: models.NewExtDevice(),
+				},
+			},
+			want: &openrtb2.Device{},
+		},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
@@ -678,4 +691,18 @@ func TestGetDeviceID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeviceExtClearedAfterIfaTypeProcessing(t *testing.T) {
+	device := &openrtb2.Device{
+		Ext: json.RawMessage(`{"ifa_type":"sessionid"}`),
+	}
+	dvc := models.DeviceCtx{}
+
+	populateDeviceContext(&dvc, device)
+	eds.StripFromDeviceCtx(&dvc)
+	amendDeviceObject(device, &dvc)
+
+	assert.Nil(t, device.Ext)
+	assert.True(t, dvc.Ext.IsEmpty())
 }

@@ -62,7 +62,7 @@ func (ow HTTPLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	}
 
 	var orignalMaxBidResponse *openrtb2.BidResponse
-	if sdkutils.IsSdkIntegration(rCtx.Endpoint) {
+	if sdkutils.IsSdkBiddingEndpoint(rCtx.Endpoint) {
 		orignalMaxBidResponse = new(openrtb2.BidResponse)
 		*orignalMaxBidResponse = *ao.Response
 	}
@@ -81,7 +81,7 @@ func (ow HTTPLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 
 	go send(rCtx, loggerURL, headers, mhttp.NewMultiHttpContext())
 
-	if sdkutils.IsSdkIntegration(rCtx.Endpoint) {
+	if sdkutils.IsSdkBiddingEndpoint(rCtx.Endpoint) {
 		ao.Response = orignalMaxBidResponse
 	}
 

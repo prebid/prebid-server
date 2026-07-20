@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models/nbr"
 	mock_feature "github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/publisherfeature/mock"
+	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/sdk/sdkutils"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/wakanda"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -686,6 +687,10 @@ func TestOpenWrap_handleEntrypointHook(t *testing.T) {
 					gotRctx.LoggerImpressionID = ""
 				}
 				gotRctx.ParsedUidCookie = nil // ignore parsed cookies
+				if sdkutils.IsSdkBiddingEndpoint(gotRctx.Endpoint) {
+					assert.NotNil(t, gotRctx.SignalRequest, "decoded SDK signal must survive rCtx re-init")
+					gotRctx.SignalRequest = nil
+				}
 				got.ModuleContext["rctx"] = gotRctx
 			}
 
