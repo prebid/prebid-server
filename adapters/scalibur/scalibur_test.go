@@ -17,7 +17,7 @@ import (
 func newTestAdapter() adapters.Bidder {
 	adapter, _ := Builder(
 		openrtb_ext.BidderScalibur,
-		config.Adapter{Endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid-server"},
+		config.Adapter{Endpoint: "https://{{.Host}}/adserver/ortb?type=prebid-server"},
 		config.Server{},
 	)
 	return adapter
@@ -80,9 +80,12 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 	assert.Equal(t, float64(1.25), imp.BidFloor)
 	assert.Equal(t, "USD", imp.BidFloorCur)
 
+	// Placement is carried as the ORTB imp.tagid, not in imp.ext.
+	assert.Equal(t, "p123", imp.TagID)
+
 	var outExt map[string]interface{}
 	require.NoError(t, json.Unmarshal(imp.Ext, &outExt))
-	assert.Equal(t, "p123", outExt["placementId"])
+	assert.NotContains(t, outExt, "placementId")
 }
 
 func TestMakeRequests_InvalidExt(t *testing.T) {

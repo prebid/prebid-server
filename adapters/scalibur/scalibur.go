@@ -1,7 +1,6 @@
 package scalibur
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,9 +11,15 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
+
+// defaultHost is used to resolve the {{.Host}} macro when the caller does not
+// supply a host param, preserving the standard Scalibur endpoint.
+const defaultHost = "srv.scalibur.io"
 
 type adapter struct {
 	endpoint *template.Template
@@ -37,6 +42,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var errs []error
 	var validImps []openrtb2.Imp
 
+	// endpointExt holds the endpoint macro values taken from the first valid
+	// impression; the outgoing request has a single URI for the whole request.
+	var endpointExt *openrtb_ext.ExtImpScalibur
+
 	// Process each impression
 	for _, imp := range request.Imp {
 		scaliburExt, err := parseScaliburExt(imp.Ext)
@@ -45,7 +54,24 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
+		if endpointExt == nil {
+			endpointExt = scaliburExt
+		}
+
 		impCopy := imp
+
+		// Resolve the placement as the ORTB imp.tagid. An ad-unit-level tagid
+		// (already on the imp) takes precedence; otherwise the placementId bidder
+		// param is applied. An imp that resolves to no tagid is not served.
+		if impCopy.TagID == "" {
+			impCopy.TagID = scaliburExt.PlacementID
+		}
+		if impCopy.TagID == "" {
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("imp %s: missing placement; set imp.tagid or the placementId param", imp.ID),
+			})
+			continue
+		}
 
 		// Apply bid floor and currency
 		if scaliburExt.BidFloor != nil && *scaliburExt.BidFloor > 0 {
@@ -69,16 +95,32 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			impCopy.BidFloorCur = "USD"
 		}
 
-		// Prepare imp.ext with placementId and params
+		// Prepare imp.ext: pass through every field the publisher sent under
+		// ext.bidder, then overlay the server-computed values. The placement is
+		// carried as the ORTB imp.tagid (above), so placementId is dropped from
+		// the outgoing ext to keep the request ORTB-standard.
 		impExtData := make(map[string]interface{})
-		impExtData["placementId"] = scaliburExt.PlacementID
 
+		var bidderExt adapters.ExtImpBidder
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err == nil {
+			var passthrough map[string]json.RawMessage
+			if err := jsonutil.Unmarshal(bidderExt.Bidder, &passthrough); err == nil {
+				for k, v := range passthrough {
+					impExtData[k] = json.RawMessage(v)
+				}
+			}
+		}
+		delete(impExtData, "placementId")
+
+		// Server-computed floor fields always win over any passed-through value.
+		impExtData["bidfloorcur"] = impCopy.BidFloorCur
 		if impCopy.BidFloor > 0 {
 			impExtData["bidfloor"] = impCopy.BidFloor
+		} else {
+			delete(impExtData, "bidfloor")
 		}
-		impExtData["bidfloorcur"] = impCopy.BidFloorCur
 
-		// Preserve GPID if present
+		// Preserve GPID if present (lives outside ext.bidder)
 		var rawExt map[string]json.RawMessage
 		if err := jsonutil.Unmarshal(imp.Ext, &rawExt); err == nil {
 			if gpid, ok := rawExt["gpid"]; ok {
@@ -168,9 +210,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, append(errs, err)
 	}
 
-	var endpointBuffer bytes.Buffer
-	if err := a.endpoint.Execute(&endpointBuffer, nil); err != nil {
-		return nil, []error{err}
+	uri, err := a.buildEndpointURL(endpointExt)
+	if err != nil {
+		return nil, append(errs, err)
 	}
 
 	headers := http.Header{}
@@ -179,7 +221,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     endpointBuffer.String(),
+		Uri:     uri,
 		Body:    reqJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
@@ -297,6 +339,22 @@ func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, erro
 	}
 
 	return &scaliburExt, nil
+}
+
+// buildEndpointURL resolves the operator-controlled endpoint template using the
+// caller-supplied macro values. Host is SSRF-validated and defaults to the
+// standard Scalibur host, so omitting all params yields the default endpoint.
+func (a *adapter) buildEndpointURL(ext *openrtb_ext.ExtImpScalibur) (string, error) {
+	host := defaultHost
+	if ext != nil && ext.Host != "" {
+		host = ext.Host
+	}
+
+	if !urlutil.IsSafeHost(host) {
+		return "", &errortypes.BadInput{Message: "Invalid host"}
+	}
+
+	return macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: host})
 }
 
 // getBidMediaType determines the media type based on the impression

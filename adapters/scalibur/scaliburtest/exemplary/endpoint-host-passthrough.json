@@ -1,17 +1,25 @@
 {
   "mockBidRequest": {
-    "id": "test-mtype-video-request",
+    "id": "test-request-id",
     "imp": [
       {
         "id": "test-imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
           ]
         },
         "ext": {
           "bidder": {
-            "placementId": "test-placement"
+            "placementId": "test-scl-placement",
+            "host": "eu.scalibur.io",
+            "customKey": "customValue",
+            "nested": {
+              "a": 1
+            }
           }
         }
       }
@@ -20,38 +28,33 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://srv.scalibur.io/adserver/ortb?type=prebid-server",
+        "uri": "https://eu.scalibur.io/adserver/ortb?type=prebid-server",
         "impIDs": [
           "test-imp-id"
         ],
         "body": {
-          "id": "test-mtype-video-request",
+          "id": "test-request-id",
           "imp": [
             {
               "id": "test-imp-id",
-              "video": {
-                "mimes": [
-                  "video/mp4"
-                ],
-                "minduration": 1,
-                "maxduration": 180,
-                "maxbitrate": 30000,
-                "protocols": [
-                  2,
-                  3,
-                  5,
-                  6
-                ],
-                "w": 640,
-                "h": 480,
-                "placement": 1,
-                "linearity": 1
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
               },
               "bidfloorcur": "USD",
               "ext": {
+                "host": "eu.scalibur.io",
+                "customKey": "customValue",
+                "nested": {
+                  "a": 1
+                },
                 "bidfloorcur": "USD"
               },
-              "tagid": "test-placement"
+              "tagid": "test-scl-placement"
             }
           ]
         }
@@ -59,7 +62,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-mtype-video-request",
+          "id": "test-request-id",
           "seatbid": [
             {
               "bid": [
@@ -67,13 +70,15 @@
                   "id": "test-bid-id",
                   "impid": "test-imp-id",
                   "price": 0.5,
-                  "adm": "<VAST>...</VAST>",
+                  "adm": "<html>...</html>",
                   "crid": "test-creative-id",
-                  "mtype": 2
+                  "w": 300,
+                  "h": 250
                 }
               ]
             }
-          ]
+          ],
+          "cur": "USD"
         }
       }
     }
@@ -87,11 +92,12 @@
             "id": "test-bid-id",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "<VAST>...</VAST>",
+            "adm": "<html>...</html>",
             "crid": "test-creative-id",
-            "mtype": 2
+            "w": 300,
+            "h": 250
           },
-          "type": "video"
+          "type": "banner"
         }
       ]
     }
