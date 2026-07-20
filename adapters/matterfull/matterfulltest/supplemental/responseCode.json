@@ -70,7 +70,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-        "value": "Unexpected http status code: 0",
+        "value": "Unexpected status code: 0. Run with request.debug = 1 for more info",
         "comparison": "literal"
       }
     ]

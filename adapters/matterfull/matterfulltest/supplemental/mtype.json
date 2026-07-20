@@ -1,0 +1,89 @@
+{
+  "mockBidRequest": {
+    "id": "testid",
+    "imp": [
+      {
+        "id": "testimpid",
+        "banner": {
+          "w": 320,
+          "h": 250
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "pid": "LUN2gcJFHRwysZVTm8p3"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://prebid.matterfull.co/?uqhash=LUN2gcJFHRwysZVTm8p3",
+        "body": {
+          "id": "testid",
+          "imp": [
+            {
+              "id": "testimpid",
+              "banner": {
+                "w": 320,
+                "h": 250
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "testimpid"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "testbidid",
+                  "impid": "testimpid",
+                  "price": 0.01,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "testbidid",
+            "impid": "testimpid",
+            "price": 0.01,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

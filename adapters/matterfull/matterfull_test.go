@@ -3,12 +3,14 @@ package matterfull
 import (
 	"encoding/json"
 	"math"
+	"net/http"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -69,6 +71,48 @@ func TestMakeBidsInvalidJSON(t *testing.T) {
 	assert.Nil(t, gotResp)
 	require.Len(t, gotErrs, 1)
 	assert.Contains(t, gotErrs[0].Error(), "Bad server response")
+}
+
+func TestMakeBidsResponseStatus(t *testing.T) {
+	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+	}, config.Server{})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		statusCode    int
+		expectedError any
+	}{
+		{
+			name:       "no content",
+			statusCode: http.StatusNoContent,
+		},
+		{
+			name:          "bad request",
+			statusCode:    http.StatusBadRequest,
+			expectedError: &errortypes.BadInput{},
+		},
+		{
+			name:          "server error",
+			statusCode:    http.StatusInternalServerError,
+			expectedError: &errortypes.BadServerResponse{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotResp, gotErrs := bidder.MakeBids(nil, nil, &adapters.ResponseData{StatusCode: tt.statusCode})
+
+			assert.Nil(t, gotResp)
+			if tt.expectedError == nil {
+				assert.Empty(t, gotErrs)
+				return
+			}
+			require.Len(t, gotErrs, 1)
+			assert.IsType(t, tt.expectedError, gotErrs[0])
+		})
+	}
 }
 
 func TestMakeBidsSkipsInvalidBidTypes(t *testing.T) {

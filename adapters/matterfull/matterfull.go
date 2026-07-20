@@ -173,13 +173,12 @@ func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfull) (
 
 // MakeBids translates Matterfull bid response to prebid-server specific format
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if response.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
-		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse
@@ -193,6 +192,10 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	bidResponse := adapters.NewBidderResponse()
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
+
 	var errs []error
 	for _, seatBid := range bidResp.SeatBid {
 		for bid := range iterutil.SlicePointerValues(seatBid.Bid) {
