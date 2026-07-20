@@ -1,0 +1,175 @@
+{
+  "mockBidRequest": {
+    "id": "test-eds-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "adSlot": "AdTag_Div1@300x250",
+            "publisherId": "999",
+            "wrapper": {
+              "version": 1,
+              "profile": 5123
+            }
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36",
+      "ext": {
+        "atts": 1
+      }
+    },
+    "app": {
+      "id": "appID",
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "1234"
+      },
+      "ext": {
+        "orientation": 1
+      }
+    },
+    "ext": {
+      "prebid": {
+        "bidderparams": {
+          "eds": {
+            "device": {
+              "boottime": 1710000000000,
+              "totalmem": 8589934592
+            },
+            "app": {
+              "install_time": 1710000000001
+            }
+          }
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
+        "body": {
+          "id": "test-eds-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "AdTag_Div1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "h": 250,
+                "w": 300
+              }
+            }
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36",
+            "ext": {
+              "atts": 1,
+              "boottime": 1710000000000,
+              "totalmem": 8589934592
+            }
+          },
+          "app": {
+            "id": "appID",
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "999"
+            },
+            "ext": {
+              "orientation": 1,
+              "install_time": 1710000000001
+            }
+          },
+          "ext": {
+            "wrapper": {
+              "profile": 5123,
+              "version": 1,
+              "biddercode": "pubmatic"
+            }
+          }
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-eds-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [
+                {
+                  "id": "7706636740145184841",
+                  "impid": "test-imp-id",
+                  "price": 0.5,
+                  "adid": "29681110",
+                  "adm": "some-test-ad",
+                  "adomain": [
+                    "pubmatic.com"
+                  ],
+                  "crid": "29681110",
+                  "h": 250,
+                  "w": 300,
+                  "mtype": 1,
+                  "ext": {
+                    "dspid": 6,
+                    "deal_channel": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adid": "29681110",
+            "adm": "some-test-ad",
+            "adomain": [
+              "pubmatic.com"
+            ],
+            "crid": "29681110",
+            "w": 300,
+            "h": 250,
+            "mtype": 1,
+            "ext": {
+              "dspid": 6,
+              "deal_channel": 1
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -64,14 +64,14 @@ func UpdateResponseExtOW(w http.ResponseWriter, bidResponse *openrtb2.BidRespons
 	//Send owlogger in response only in case of debug mode
 	if rCtx.Debug && !rCtx.LoggerDisabled {
 		var originalBidResponse *openrtb2.BidResponse
-		if sdkutils.IsSdkIntegration(rCtx.Endpoint) {
+		if sdkutils.IsSdkBiddingEndpoint(rCtx.Endpoint) {
 			originalBidResponse = new(openrtb2.BidResponse)
 			*originalBidResponse = *bidResponse
 			pubmatic.RestoreBidResponse(rCtx, ao)
 		}
 
 		owlogger, _ := pubmatic.GetLogAuctionObjectAsURL(ao, rCtx, false, true)
-		if sdkutils.IsSdkIntegration(rCtx.Endpoint) {
+		if sdkutils.IsSdkBiddingEndpoint(rCtx.Endpoint) {
 			*bidResponse = *originalBidResponse
 		}
 		if len(bidResponse.Ext) == 0 {

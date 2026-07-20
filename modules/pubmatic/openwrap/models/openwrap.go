@@ -125,6 +125,7 @@ type RequestCtx struct {
 	AppStoreUrl                     string
 	UnityLevelPlay                  UnityLevelPlay
 	APS                             APS
+	SignalRequest                   *openrtb2.BidRequest
 	VastUnWrap                      VastUnWrap
 	PerformanceDSPs                 map[int]struct{}
 	InViewEnabledPublishers         map[int]struct{}

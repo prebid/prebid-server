@@ -84,7 +84,7 @@ func (m OpenWrap) handleEntrypointHook(
 	if endpoint == models.EndpointAppLovinMax {
 		rCtx.MetricsEngine = m.metricEngine
 		// updating body locally to access updated fields from signal
-		payload.Body = updateAppLovinMaxRequest(payload.Body, rCtx)
+		payload.Body = updateAppLovinMaxRequest(payload.Body, &rCtx)
 		result.ChangeSet.AddMutation(func(ep hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			ep.Body = payload.Body
 			return ep, nil
@@ -94,7 +94,7 @@ func (m OpenWrap) handleEntrypointHook(
 	if endpoint == models.EndpointGoogleSDK {
 		rCtx.MetricsEngine = m.metricEngine
 		// Update fields from signal
-		payload.Body = googlesdk.ModifyRequestWithGoogleSDKParams(payload.Body, rCtx, m.features)
+		payload.Body = googlesdk.ModifyRequestWithGoogleSDKParams(payload.Body, &rCtx, m.features)
 		result.ChangeSet.AddMutation(func(ep hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			ep.Body = payload.Body
 			return ep, nil
@@ -105,7 +105,7 @@ func (m OpenWrap) handleEntrypointHook(
 		rCtx.MetricsEngine = m.metricEngine
 		// Update fields from signal
 		ulp := unitylevelplay.NewLevelPlay(m.metricEngine)
-		payload.Body = ulp.ModifyRequestWithUnityLevelPlayParams(payload.Body)
+		payload.Body = ulp.ModifyRequestWithUnityLevelPlayParams(payload.Body, &rCtx)
 		result.ChangeSet.AddMutation(func(ep hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			ep.Body = payload.Body
 			return ep, nil
@@ -133,7 +133,7 @@ func (m OpenWrap) handleEntrypointHook(
 			return result, errAps
 		}
 		aps := aps.NewAPS(m.metricEngine)
-		payload.Body = aps.ModifyRequestWithAPSParams(payload.Body, rCtx)
+		payload.Body = aps.ModifyRequestWithAPSParams(payload.Body, &rCtx)
 		result.ChangeSet.AddMutation(func(ep hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			ep.Body = payload.Body
 			return ep, nil
@@ -157,6 +157,8 @@ func (m OpenWrap) handleEntrypointHook(
 	}
 
 	requestDebug, _ := jsonparser.GetBoolean(payload.Body, "ext", "prebid", "debug")
+	// SDK entrypoint handlers above decode signal into rCtx.SignalRequest; preserve it across re-init.
+	signalRequest := rCtx.SignalRequest
 	rCtx = models.RequestCtx{
 		StartTime:          time.Now().Unix(),
 		Debug:              queryParams.Get(models.Debug) == "1" || requestDebug,
@@ -197,6 +199,7 @@ func (m OpenWrap) handleEntrypointHook(
 		ImpCountingMethodEnabledBidders: make(map[string]struct{}),
 		GoogleSDK:                       models.GoogleSDK{StartTime: time.Now()},
 	}
+	rCtx.SignalRequest = signalRequest
 
 	if rCtx.IsCTVRequest {
 		// SSAuction will be always 1 for CTV request
@@ -307,7 +310,7 @@ func GetEndpoint(path, source string, agent string) string {
 }
 
 func getSendBurl(request []byte, endpoint string) bool {
-	if sdkutils.IsSdkIntegration(endpoint) {
+	if sdkutils.IsSdkBiddingEndpoint(endpoint) {
 		return true
 	}
 

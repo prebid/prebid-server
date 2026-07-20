@@ -35,6 +35,7 @@ type feature struct {
 	performanceDSPs         performanceDSPs
 	inViewEnabledPublishers inViewEnabledPublishers
 	act                     act
+	edsBlockedCountries     edsBlockedCountries
 }
 
 var fe *feature
@@ -73,6 +74,7 @@ func New(config Config) *feature {
 			dynamicFloor:            newDynamicFloor(),
 			performanceDSPs:         newPerformanceDSPs(),
 			inViewEnabledPublishers: newInViewEnabledPublishers(),
+			edsBlockedCountries:     newEDSBlockedCountries(),
 		}
 	})
 	return fe
@@ -137,6 +139,7 @@ func (fe *feature) updateFeatureConfigMaps() {
 	fe.updateDynamicFloorEnabledPublishers()
 	fe.updatePerformanceDSPs()
 	fe.updateInViewEnabledPublishers()
+	fe.updateEDSBlockedCountries()
 
 	if err != nil {
 		glog.Error(err.Error())

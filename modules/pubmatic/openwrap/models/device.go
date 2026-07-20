@@ -157,3 +157,13 @@ func (e *ExtDevice) DeleteIFAType() {
 func (e *ExtDevice) DeleteSessionID() {
 	delete(e.data, ExtDeviceSessionID)
 }
+
+// DeleteEds removes PubMatic-only enrichment data from the cached device.ext map.
+func (e *ExtDevice) DeleteEds() {
+	delete(e.data, "eds")
+}
+
+// IsEmpty reports whether device.ext has no keys left to marshal onto the request.
+func (e *ExtDevice) IsEmpty() bool {
+	return e == nil || len(e.data) == 0
+}

@@ -461,7 +461,7 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotReqExt, gotCookie, err := extractPubmaticExtFromRequest(tt.args.request)
+			gotReqExt, gotCookie, err := extractPubmaticExtFromRequest(tt.args.request, nil, nil)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.expectedReqExt, gotReqExt)
 			assert.Equal(t, tt.expectedCookie, gotCookie)

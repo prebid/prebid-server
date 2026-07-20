@@ -1024,6 +1024,16 @@ func TestModifyDevice(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "signal_has_ppi",
+			request: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{UA: "Mozilla/5.0"},
+			},
+			signalDevice: &openrtb2.Device{PPI: 440},
+			expectedResult: &openrtb2.BidRequest{
+				Device: &openrtb2.Device{UA: "Mozilla/5.0", PPI: 440},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1255,7 +1265,7 @@ func TestModifyRequestWithGoogleSDKParams_Privacy(t *testing.T) {
 		}]
 	}`
 
-	result := ModifyRequestWithGoogleSDKParams([]byte(requestBody), models.RequestCtx{MetricsEngine: mockEngine}, nil)
+	result := ModifyRequestWithGoogleSDKParams([]byte(requestBody), &models.RequestCtx{MetricsEngine: mockEngine}, nil)
 
 	modified := &openrtb2.BidRequest{}
 	err = json.Unmarshal(result, modified)
@@ -1487,11 +1497,11 @@ func TestModifyUser(t *testing.T) {
 				},
 			},
 			signalUser: &openrtb2.User{
-				Ext: []byte(`{"sessionduration":3600,"impdepth":5}`),
+				Ext: []byte(`{"sessionduration":3600,"impdepth":5,"lastadomain":"example.com"}`),
 			},
 			expectedResult: &openrtb2.BidRequest{
 				User: &openrtb2.User{
-					Ext: []byte(`{"sessionduration":3600,"impdepth":5}`),
+					Ext: []byte(`{"sessionduration":3600,"impdepth":5,"lastadomain":"example.com"}`),
 				},
 			},
 		},
@@ -1859,7 +1869,7 @@ func TestModifyRequestWithGoogleSDKParams(t *testing.T) {
 				tt.setup()
 			}
 
-			result := ModifyRequestWithGoogleSDKParams([]byte(tt.requestBody), models.RequestCtx{
+			result := ModifyRequestWithGoogleSDKParams([]byte(tt.requestBody), &models.RequestCtx{
 				MetricsEngine: mockEngine,
 			}, tt.features)
 

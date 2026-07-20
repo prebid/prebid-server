@@ -187,7 +187,9 @@ func getWrapperData(body []byte) (*wrapperData, error) {
 	return wprData, nil
 }
 
-func ModifyRequestWithGoogleSDKParams(requestBody []byte, rctx models.RequestCtx, features feature.Features) []byte {
+// ModifyRequestWithGoogleSDKParams merges Google SDK signal into the request. rctx is a pointer so
+// the decoded signal bid request can be stored on rCtx.SignalRequest for PubMatic-only EDS at before_validation.
+func ModifyRequestWithGoogleSDKParams(requestBody []byte, rctx *models.RequestCtx, features feature.Features) []byte {
 	if len(requestBody) == 0 {
 		return requestBody
 	}
@@ -207,7 +209,11 @@ func ModifyRequestWithGoogleSDKParams(requestBody []byte, rctx models.RequestCtx
 	modifyRequestWithStaticData(sdkRequest)
 
 	//Fetch Signal data and modify request
-	signalData := getSignalData(requestBody, rctx, wrapperData)
+	signalData := getSignalData(requestBody, *rctx, wrapperData)
+	// Keep decoded SDK signal for EDS; ext.eds is not merged onto the shared request body.
+	if signalData != nil {
+		rctx.SignalRequest = signalData
+	}
 	modifyRequestWithSignalData(sdkRequest, signalData)
 
 	// Set Publisher Id
@@ -360,6 +366,7 @@ func modifyUser(request *openrtb2.BidRequest, signalUser *openrtb2.User) {
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "sessionduration")
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "impdepth")
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "consent")
+	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "lastadomain")
 }
 
 func modifySource(request *openrtb2.BidRequest, signalSource *openrtb2.Source) {
@@ -434,17 +441,7 @@ func modifyApp(request *openrtb2.BidRequest, signalApp *openrtb2.App) {
 }
 
 func modifyBanner(requestBanner *openrtb2.Banner, signalBanner *openrtb2.Banner) {
-	if requestBanner == nil || signalBanner == nil {
-		return
-	}
-
-	if len(signalBanner.MIMEs) > 0 {
-		requestBanner.MIMEs = signalBanner.MIMEs
-	}
-
-	if len(signalBanner.API) > 0 {
-		requestBanner.API = signalBanner.API
-	}
+	sdkutils.MergeBanner(requestBanner, signalBanner)
 }
 
 func modifyImpExtension(requestImpExt, signalImpExt []byte) []byte {

@@ -88,7 +88,7 @@ func TestModifyRequestWithUnityLevelPlayParams(t *testing.T) {
 			}
 
 			levelPlay := NewLevelPlay(mockMetrics)
-			response := levelPlay.ModifyRequestWithUnityLevelPlayParams(tt.requestBody)
+			response := levelPlay.ModifyRequestWithUnityLevelPlayParams(tt.requestBody, nil)
 
 			if tt.expectedError {
 				assert.Equal(t, tt.expectedResponse, response)
@@ -330,7 +330,7 @@ func TestModifyRequestWithSignalData(t *testing.T) {
 			levelPlay := &LevelPlay{
 				metricsEngine: mockMetrics,
 			}
-			levelPlay.modifyRequestWithSignalData(tt.request)
+			levelPlay.modifyRequestWithSignalData(tt.request, nil)
 
 			if tt.expected == nil {
 				assert.Nil(t, tt.request)
@@ -373,6 +373,12 @@ func TestModifyBanner(t *testing.T) {
 			requestBanner:  &openrtb2.Banner{API: []adcom1.APIFramework{1}},
 			signalBanner:   &openrtb2.Banner{API: []adcom1.APIFramework{2}},
 			expectedBanner: &openrtb2.Banner{API: []adcom1.APIFramework{2}},
+		},
+		{
+			name:           "copies mimes from signal",
+			requestBanner:  &openrtb2.Banner{},
+			signalBanner:   &openrtb2.Banner{MIMEs: []string{"image/jpeg"}},
+			expectedBanner: &openrtb2.Banner{MIMEs: []string{"image/jpeg"}},
 		},
 	}
 
@@ -1007,6 +1013,12 @@ func TestModifyDevice(t *testing.T) {
 				Ext: []byte(`{"atts":3,"ifv":"193DBF06-B1D8-4684-BE35-0FB0770C463C"}`),
 			}},
 		},
+		{
+			name:     "signal_has_ppi",
+			request:  &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "test-ua"}},
+			signal:   &openrtb2.Device{PPI: 440},
+			expected: &openrtb2.BidRequest{Device: &openrtb2.Device{UA: "test-ua", PPI: 440}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1052,14 +1064,14 @@ func TestModifyUser(t *testing.T) {
 				Yob:      2000,
 				Gender:   "M",
 				Keywords: "test,user",
-				Ext:      []byte(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}]}`),
+				Ext:      []byte(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}],"lastadomain":"example.com"}`),
 			},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
 				Data:     []openrtb2.Data{{ID: "1"}},
 				Yob:      2000,
 				Gender:   "M",
 				Keywords: "test,user",
-				Ext:      []byte(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}]}`),
+				Ext:      []byte(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}],"lastadomain":"example.com"}`),
 			}},
 		},
 		{

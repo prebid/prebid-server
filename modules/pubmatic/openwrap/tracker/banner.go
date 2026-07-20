@@ -13,7 +13,7 @@ import (
 )
 
 func injectBannerTracker(rctx models.RequestCtx, tracker models.OWTracker, bid openrtb2.Bid, seat string, pixels []adunitconfig.UniversalPixel) (string, string) {
-	if sdkutils.IsSdkIntegration(rctx.Endpoint) {
+	if sdkutils.IsSdkBiddingEndpoint(rctx.Endpoint) {
 		return bid.AdM, getBURL(bid.BURL, tracker)
 	}
 

@@ -103,7 +103,12 @@ func amendDeviceObject(device *openrtb2.Device, dvc *models.DeviceCtx) {
 	}
 
 	//update device extension
-	if dvc.Ext != nil {
-		device.Ext, _ = dvc.Ext.MarshalJSON()
+	if dvc.Ext == nil {
+		return
 	}
+	if dvc.Ext.IsEmpty() {
+		device.Ext = nil
+		return
+	}
+	device.Ext, _ = dvc.Ext.MarshalJSON()
 }

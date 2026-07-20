@@ -17,7 +17,7 @@ func injectVideoCreativeTrackers(rctx models.RequestCtx, bid openrtb2.Bid, video
 	}
 
 	skipTracker := false
-	if sdkutils.IsSdkIntegration(rctx.Endpoint) {
+	if sdkutils.IsSdkBiddingEndpoint(rctx.Endpoint) {
 		skipTracker = true
 	}
 

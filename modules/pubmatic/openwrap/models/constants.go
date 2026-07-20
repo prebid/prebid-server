@@ -638,6 +638,7 @@ const (
 	FeatureMBMFBannerFloors    = 13
 	FeatureDynamicFloor        = 15
 	FeatureACT                 = 17
+	FeatureEDSBlockedCountries = 19 // eds_blocked_countries
 )
 
 // constants for sdk integrations

@@ -122,7 +122,19 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		displayManager, displayManagerVer = getDisplayManagerAndVer(request.App)
 	}
 
-	newReqExt, cookies, err := extractPubmaticExtFromRequest(request)
+	// flatten eds object in bidderparams onto device.ext and app.ext
+	// on the outbound PubMatic bid request.
+	reqExt, err := unmarshalRequestExt(request)
+	if err != nil {
+		return nil, []error{err}
+	}
+	bidderParams, err := unmarshalPubmaticBidderParams(reqExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+	applyEdsFromBidderParams(request, bidderParams)
+
+	newReqExt, cookies, err := extractPubmaticExtFromRequest(request, reqExt, bidderParams)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -481,8 +493,9 @@ func roundToFourDecimals(in float64) float64 {
 	return math.Round(in*10000) / 10000
 }
 
-// extractPubmaticExtFromRequest parse the req.ext to fetch wrapper and acat params
-func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdServer, []string, error) {
+// extractPubmaticExtFromRequest parse the req.ext to fetch wrapper and acat params.
+// When reqExt and bidderParams are already parsed (e.g. from MakeRequests), pass them to avoid duplicate unmarshals.
+func extractPubmaticExtFromRequest(request *openrtb2.BidRequest, reqExt *openrtb_ext.ExtRequest, reqExtBidderParams map[string]json.RawMessage) (extRequestAdServer, []string, error) {
 	var cookies []string
 	// req.ext.prebid would always be there and Less nil cases to handle, more safe!
 	var pmReqExt extRequestAdServer
@@ -491,20 +504,23 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 		return pmReqExt, cookies, nil
 	}
 
-	reqExt := &openrtb_ext.ExtRequest{}
-	err := jsonutil.Unmarshal(request.Ext, &reqExt)
-	if err != nil {
-		return pmReqExt, cookies, fmt.Errorf("error decoding Request.ext : %s", err.Error())
-	}
-
-	reqExtBidderParams := make(map[string]json.RawMessage)
-	if reqExt.Prebid.BidderParams != nil {
-		err = jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &reqExtBidderParams)
+	if reqExt == nil {
+		var err error
+		reqExt, err = unmarshalRequestExt(request)
 		if err != nil {
 			return pmReqExt, cookies, err
 		}
 	}
 
+	if reqExtBidderParams == nil {
+		var err error
+		reqExtBidderParams, err = unmarshalPubmaticBidderParams(reqExt)
+		if err != nil {
+			return pmReqExt, cookies, err
+		}
+	}
+
+	var err error
 	// Single read of bidderparams "wrapper" for unmarshal below and OW sdksubintegration patch.
 	wrapperObj := reqExtBidderParams["wrapper"]
 
@@ -566,6 +582,32 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 	// OW patch -end-
 
 	return pmReqExt, cookies, nil
+}
+
+func unmarshalRequestExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtRequest, error) {
+	if request == nil || len(request.Ext) == 0 {
+		return nil, nil
+	}
+
+	reqExt := &openrtb_ext.ExtRequest{}
+	if err := jsonutil.Unmarshal(request.Ext, &reqExt); err != nil {
+		return nil, fmt.Errorf("error decoding Request.ext : %s", err.Error())
+	}
+
+	return reqExt, nil
+}
+
+func unmarshalPubmaticBidderParams(reqExt *openrtb_ext.ExtRequest) (map[string]json.RawMessage, error) {
+	if reqExt == nil || len(reqExt.Prebid.BidderParams) == 0 {
+		return map[string]json.RawMessage{}, nil
+	}
+
+	bidderParams := make(map[string]json.RawMessage)
+	if err := jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams); err != nil {
+		return nil, err
+	}
+
+	return bidderParams, nil
 }
 
 func getAlternateBidderCodesFromRequestExt(reqExt *openrtb_ext.ExtRequest) []string {

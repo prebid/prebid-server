@@ -1116,4 +1116,192 @@ func TestAddGoogleSDKParamsToBidExt(t *testing.T) {
 	}
 }
 
+func TestMergeExtJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		base    json.RawMessage
+		overlay json.RawMessage
+		want    string
+	}{
+		{
+			name:    "empty_overlay_returns_base",
+			base:    json.RawMessage(`{"existing":1}`),
+			overlay: nil,
+			want:    `{"existing":1}`,
+		},
+		{
+			name:    "empty_base_returns_overlay",
+			base:    nil,
+			overlay: json.RawMessage(`{"boottime":1710000000000}`),
+			want:    `{"boottime":1710000000000}`,
+		},
+		{
+			name:    "overlay_overwrites_existing_keys",
+			base:    json.RawMessage(`{"boottime":1,"atts":1}`),
+			overlay: json.RawMessage(`{"boottime":1710000000000,"totalmem":8589934592}`),
+			want:    `{"atts":1,"boottime":1710000000000,"totalmem":8589934592}`,
+		},
+		{
+			name:    "empty_base_object_merges_overlay",
+			base:    json.RawMessage(`{}`),
+			overlay: json.RawMessage(`{"install_time":1710000000001}`),
+			want:    `{"install_time":1710000000001}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mergeExtJSON(tt.base, tt.overlay, true)
+			assert.JSONEq(t, tt.want, string(got))
+		})
+	}
+}
+
+func TestExtractEdsFromBidderParams(t *testing.T) {
+	tests := []struct {
+		name         string
+		bidderParams json.RawMessage
+		wantDevice   string
+		wantApp      string
+	}{
+		{
+			name:         "empty_bidderparams",
+			bidderParams: nil,
+		},
+		{
+			name:         "invalid_bidderparams",
+			bidderParams: json.RawMessage(`not-json`),
+		},
+		{
+			name:         "missing_eds_key",
+			bidderParams: json.RawMessage(`{"wrapper":{"profile":1}}`),
+		},
+		{
+			name:         "invalid_eds_payload",
+			bidderParams: json.RawMessage(`{"eds":"not-an-object"}`),
+		},
+		{
+			name:         "valid_eds_payload",
+			bidderParams: json.RawMessage(`{"eds":{"device":{"boottime":1710000000000,"totalmem":8589934592},"app":{"install_time":1710000000001}}}`),
+			wantDevice:   `{"boottime":1710000000000,"totalmem":8589934592}`,
+			wantApp:      `{"install_time":1710000000001}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var params map[string]json.RawMessage
+			if len(tt.bidderParams) > 0 {
+				_ = json.Unmarshal(tt.bidderParams, &params)
+			}
+			got := extractEdsFromBidderParams(params)
+			if tt.wantDevice == "" {
+				assert.Empty(t, got.Device)
+			} else {
+				assert.JSONEq(t, tt.wantDevice, string(got.Device))
+			}
+			if tt.wantApp == "" {
+				assert.Empty(t, got.App)
+			} else {
+				assert.JSONEq(t, tt.wantApp, string(got.App))
+			}
+		})
+	}
+}
+
+func TestApplyEdsToRequest(t *testing.T) {
+	t.Run("nil_request", func(t *testing.T) {
+		applyEdsToRequest(nil, resolvedEds{
+			Device: json.RawMessage(`{"boottime":1710000000000}`),
+		})
+	})
+
+	t.Run("empty_resolved", func(t *testing.T) {
+		req := &openrtb2.BidRequest{}
+		applyEdsToRequest(req, resolvedEds{})
+		assert.Nil(t, req.Device)
+		assert.Nil(t, req.App)
+	})
+
+	t.Run("creates_device_and_app_with_merged_ext", func(t *testing.T) {
+		req := &openrtb2.BidRequest{}
+		applyEdsToRequest(req, resolvedEds{
+			Device: json.RawMessage(`{"boottime":1710000000000}`),
+			App:    json.RawMessage(`{"install_time":1710000000001}`),
+		})
+		assert.JSONEq(t, `{"boottime":1710000000000}`, string(req.Device.Ext))
+		assert.JSONEq(t, `{"install_time":1710000000001}`, string(req.App.Ext))
+	})
+
+	t.Run("merges_into_existing_device_and_app_ext", func(t *testing.T) {
+		req := &openrtb2.BidRequest{
+			Device: &openrtb2.Device{
+				Ext: json.RawMessage(`{"atts":1}`),
+			},
+			App: &openrtb2.App{
+				Ext: json.RawMessage(`{"orientation":1}`),
+			},
+		}
+		applyEdsToRequest(req, resolvedEds{
+			Device: json.RawMessage(`{"boottime":1710000000000}`),
+			App:    json.RawMessage(`{"install_time":1710000000001}`),
+		})
+		assert.JSONEq(t, `{"atts":1,"boottime":1710000000000}`, string(req.Device.Ext))
+		assert.JSONEq(t, `{"install_time":1710000000001,"orientation":1}`, string(req.App.Ext))
+	})
+}
+
+func TestApplyEdsFromBidderParams(t *testing.T) {
+	t.Run("nil_request", func(t *testing.T) {
+		applyEdsFromBidderParams(nil, map[string]json.RawMessage{"eds": json.RawMessage(`{}`)})
+	})
+
+	t.Run("nil_bidderparams", func(t *testing.T) {
+		req := &openrtb2.BidRequest{}
+		applyEdsFromBidderParams(req, nil)
+	})
+
+	t.Run("missing_eds_key", func(t *testing.T) {
+		req := &openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"atts":1}`)}}
+		applyEdsFromBidderParams(req, map[string]json.RawMessage{"wiid": json.RawMessage(`"test"`)})
+		assert.JSONEq(t, `{"atts":1}`, string(req.Device.Ext))
+	})
+
+	t.Run("merges_eds_from_bidderparams_onto_request", func(t *testing.T) {
+		req := &openrtb2.BidRequest{
+			Device: &openrtb2.Device{
+				Ext: json.RawMessage(`{"atts":1}`),
+			},
+			App: &openrtb2.App{
+				Ext: json.RawMessage(`{"orientation":1}`),
+			},
+		}
+		applyEdsFromBidderParams(req, map[string]json.RawMessage{
+			"eds": json.RawMessage(`{"device":{"boottime":1710000000000},"app":{"install_time":1710000000001}}`),
+		})
+		assert.JSONEq(t, `{"atts":1,"boottime":1710000000000}`, string(req.Device.Ext))
+		assert.JSONEq(t, `{"install_time":1710000000001,"orientation":1}`, string(req.App.Ext))
+	})
+}
+
+func TestApplyEdsSurvivesRequestExtReplacement(t *testing.T) {
+	parent := json.RawMessage(`{"prebid":{"bidderparams":{"pubmatic":{"eds":{"device":{"key":"deviceextraedskey","boottime":123},"app":{"key":1}}}}}}`)
+
+	req := &openrtb2.BidRequest{
+		Ext:    parent,
+		Device: &openrtb2.Device{Ext: json.RawMessage(`{}`)},
+		App:    &openrtb2.App{},
+	}
+	applyEdsFromBidderParams(req, map[string]json.RawMessage{
+		"eds": json.RawMessage(`{"device":{"key":"deviceextraedskey","boottime":123},"app":{"key":1}}`),
+	})
+
+	// Simulate pubmatic MakeRequests replacing request.ext after EDS merge.
+	req.Ext = json.RawMessage(`{"wrapper":{"profile":1}}`)
+	parent[0] = 'X'
+
+	_, err := json.Marshal(req)
+	assert.NoError(t, err)
+	assert.True(t, json.Valid(req.Device.Ext))
+	assert.True(t, json.Valid(req.App.Ext))
+}
+
 //Need to write happy path test cases with nil bidExt

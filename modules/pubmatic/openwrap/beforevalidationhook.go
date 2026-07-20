@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/adunitconfig"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/bidderparams"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/customdimensions"
+	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/eds"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/endpoints/legacy/ctv"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models"
 	modelsAdunitConfig "github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models/adunitconfig"
@@ -391,7 +392,7 @@ func (m OpenWrap) handleBeforeValidationHook(
 		}
 
 		// Add size 300x600 for interstitial banner
-		if (sdkutils.IsSdkIntegration(rCtx.Endpoint) || rCtx.Endpoint == models.EndpointV25) && imp.Instl == 1 {
+		if sdkutils.IsSdkEndpoint(rCtx.Endpoint) && imp.Instl == 1 {
 			sdkutils.AddSize300x600ForInterstitialBanner(&imp)
 		}
 
@@ -636,7 +637,7 @@ func (m OpenWrap) handleBeforeValidationHook(
 			}
 		}
 
-		if sdkutils.IsSdkIntegration(rCtx.Endpoint) {
+		if sdkutils.IsSdkBiddingEndpoint(rCtx.Endpoint) {
 			appStoreUrl, isValidAppStoreUrl := getProfileAppStoreUrl(rCtx)
 			if !isValidAppStoreUrl && payload.BidRequest.App != nil && payload.BidRequest.App.StoreURL != "" {
 				appStoreUrl = payload.BidRequest.App.StoreURL
@@ -751,6 +752,22 @@ func (m OpenWrap) handleBeforeValidationHook(
 			}
 		}
 	}
+
+	if pubmaticBidderCodes := pubmaticBidderCodesForEds(rCtx); len(pubmaticBidderCodes) > 0 {
+		requestExt.Prebid.BidderParams, _, _ = eds.BuildPubmaticEdsBidderParams(
+			requestExt.Prebid.BidderParams,
+			rCtx.SignalRequest,
+			payload.BidRequest,
+			pubmaticBidderCodes...,
+		)
+	}
+
+	if sdkutils.IsSdkEndpoint(rCtx.Endpoint) && m.pubFeatures.IsEDSBlockedCountry(rCtx.DeviceCtx.DerivedCountryCode) {
+		if _, ok := rCtx.AdapterThrottleMap[string(openrtb_ext.BidderPubmatic)]; !ok {
+			requestExt.Prebid.BidderParams = eds.StripEDSTier1ParamsForBlockedCountry(requestExt.Prebid.BidderParams)
+		}
+	}
+
 	rCtx.GoogleSDK.SDKRenderedAdID = googlesdk.SetSDKRenderedAdID(payload.BidRequest.App, rCtx.Endpoint)
 
 	// similar to impExt, reuse the existing requestExt to avoid additional memory requests
@@ -794,6 +811,11 @@ func (m OpenWrap) handleBeforeValidationHook(
 				ep.BidRequest.Source.SChain = nil
 			}
 		}
+		// EDS must not remain on the shared request for other bidders. Strip before profile
+		// enrichment so device.ext is not rewritten from cached DeviceCtx after removal.
+		eds.StripFromRequest(ep.BidRequest)
+		eds.StripFromDeviceCtx(&rctx.DeviceCtx)
+
 		ep.BidRequest, err = m.applyProfileChanges(rctx, ep.BidRequest)
 		if err != nil {
 			result.Errors = append(result.Errors, "failed to apply profile changes: "+err.Error())
@@ -824,12 +846,11 @@ func (m *OpenWrap) applyProfileChanges(rctx models.RequestCtx, bidRequest *openr
 		bidRequest.Test = 1
 	}
 
-	if sdkutils.IsSdkIntegration(rctx.Endpoint) && rctx.AppStoreUrl != "" {
+	if sdkutils.IsSdkBiddingEndpoint(rctx.Endpoint) && rctx.AppStoreUrl != "" {
 		bidRequest.App.StoreURL = rctx.AppStoreUrl
 	}
 
-	// Remove app.ext.token
-	if rctx.Endpoint == models.EndpointUnityLevelPlay {
+	if rctx.Endpoint == models.EndpointUnityLevelPlay && bidRequest.App != nil {
 		bidRequest.App.Ext = jsonparser.Delete(bidRequest.App.Ext, "token")
 	}
 
@@ -1128,10 +1149,28 @@ func getDomainFromUrl(pageUrl string) string {
 // 	return uuid.NewV4().String()
 // }
 
+func pubmaticBidderCodesForEds(rCtx models.RequestCtx) []string {
+	codes := make([]string, 0, 1+len(rCtx.Aliases))
+	if _, throttled := rCtx.AdapterThrottleMap[string(openrtb_ext.BidderPubmatic)]; !throttled {
+		codes = append(codes, string(openrtb_ext.BidderPubmatic))
+	}
+	for bidderCode, coreBidder := range rCtx.Aliases {
+		if coreBidder != string(openrtb_ext.BidderPubmatic) {
+			continue
+		}
+		if _, throttled := rCtx.AdapterThrottleMap[bidderCode]; throttled {
+			continue
+		}
+		codes = append(codes, bidderCode)
+	}
+	return codes
+}
+
 // NYC: make this generic. Do we need this?. PBS now has auto_gen_source_tid generator. We can make it to wiid for pubmatic adapter in pubmatic.go
 // Rebuilds ext.prebid.bidderparams.<bidderCode> for OW: replaces the whole bidder object (only wiid, optional wrapper, Cookie, sendburl).
 // Incoming keys for that bidder are not preserved. Profile and version are not carried on request ext here; they live on
 // imp.ext.prebid.bidder.pubmatic.wrapper (WrapExt). So bidderparams.wrapper is only created to hold sdksubintegration for the adapter, not a merge of a full client wrapper.
+// EDS is injected separately via eds.BuildPubmaticEdsBidderParams (uses injectIntoBidderParams with pre-marshaled JSON).
 func updateRequestExtBidderParamsPubmatic(bidderParams json.RawMessage, cookie []string, loggerID, bidderCode string, sendBurl bool, sdkSubIntegration *int) (json.RawMessage, error) {
 	bidderParamsMap := make(map[string]map[string]interface{})
 	_ = json.Unmarshal(bidderParams, &bidderParamsMap) // ignore error, incoming might be nil for now but we still have data to put
