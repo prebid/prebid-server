@@ -88,11 +88,13 @@
             "id": "dcn1"
           },
           "regs": {
-            "coppa": 1,
             "gpp": "header~1YNN",
             "gpp_sid": [
               6
-            ]
+            ],
+            "ext": {
+              "coppa": 1
+            }
           }
         },
         "impIDs": [

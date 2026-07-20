@@ -70,21 +70,11 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 			wantWarning:       true,
 		},
 		{
-			name:      "promote_coppa_only",
-			inRegs:    regsExt(`{"coppa":1}`),
-			wantCoppa: 1,
-			wantNoExt: true,
-		},
-		{
-			// Pins the COPPA int8 limitation documented in promoteRegsExtTo26:
-			// an explicit top-level coppa:0 is indistinguishable from unset.
-			name: "explicit_coppa_zero_overridden_by_ext",
-			inRegs: &openrtb2.Regs{
-				COPPA: 0,
-				Ext:   []byte(`{"coppa":1}`),
-			},
-			wantCoppa: 1,
-			wantNoExt: true,
+			// COPPA is top-level since OpenRTB 2.5 and is not promoted from ext.
+			name:              "coppa_in_ext_not_promoted",
+			inRegs:            regsExt(`{"coppa":1}`),
+			wantExt:           `{"coppa":1}`,
+			wantRegsUnchanged: true,
 		},
 		{
 			name:      "promote_gpp_only",
@@ -99,20 +89,18 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 			wantNoExt:  true,
 		},
 		{
-			name:       "promote_all_three_together",
-			inRegs:     regsExt(`{"coppa":1,"gpp":"X","gpp_sid":[6]}`),
-			wantCoppa:  1,
+			name:       "promote_both_gpp_fields_together",
+			inRegs:     regsExt(`{"gpp":"X","gpp_sid":[6]}`),
 			wantGPP:    "X",
 			wantGPPSID: []int8{6},
 			wantNoExt:  true,
 		},
 		{
-			name:       "promote_with_unrelated_sibling_gpc",
+			name:       "promote_with_unrelated_siblings_coppa_gpc",
 			inRegs:     regsExt(`{"coppa":1,"gpp":"X","gpp_sid":[6],"gpc":"1"}`),
-			wantCoppa:  1,
 			wantGPP:    "X",
 			wantGPPSID: []int8{6},
-			wantExt:    `{"gpc":"1"}`,
+			wantExt:    `{"coppa":1,"gpc":"1"}`,
 		},
 		{
 			name:    "promote_gpp_keep_dsa_object_in_ext",
@@ -122,34 +110,15 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 		},
 		{
 			name:       "wrong_type_gpp_number_stays_in_ext",
-			inRegs:     regsExt(`{"coppa":1,"gpp":123,"gpp_sid":[6]}`),
-			wantCoppa:  1,
+			inRegs:     regsExt(`{"gpp":123,"gpp_sid":[6]}`),
 			wantGPPSID: []int8{6},
 			wantExt:    `{"gpp":123}`,
 		},
 		{
-			name:    "wrong_type_coppa_string_stays_in_ext",
-			inRegs:  regsExt(`{"coppa":"1","gpp":"X"}`),
+			name:    "wrong_type_gpp_sid_string_stays_in_ext",
+			inRegs:  regsExt(`{"gpp":"X","gpp_sid":"oops"}`),
 			wantGPP: "X",
-			wantExt: `{"coppa":"1"}`,
-		},
-		{
-			name:      "wrong_type_gpp_sid_string_stays_in_ext",
-			inRegs:    regsExt(`{"coppa":1,"gpp_sid":"oops"}`),
-			wantCoppa: 1,
-			wantExt:   `{"gpp_sid":"oops"}`,
-		},
-		{
-			name:    "wrong_type_coppa_overflow_stays_in_ext",
-			inRegs:  regsExt(`{"coppa":300,"gpp":"X"}`),
-			wantGPP: "X",
-			wantExt: `{"coppa":300}`,
-		},
-		{
-			name:    "wrong_type_coppa_float_stays_in_ext",
-			inRegs:  regsExt(`{"coppa":1.0,"gpp":"X"}`),
-			wantGPP: "X",
-			wantExt: `{"coppa":1.0}`,
+			wantExt: `{"gpp_sid":"oops"}`,
 		},
 		{
 			name:              "wrong_type_only_regs_untouched",
@@ -168,15 +137,6 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 			inRegs:     regsExt(`{"gpp_sid":[]}`),
 			wantGPPSID: []int8{},
 			wantNoExt:  true,
-		},
-		{
-			name: "top_coppa_already_set_ext_duplicate_stripped",
-			inRegs: &openrtb2.Regs{
-				COPPA: 1,
-				Ext:   []byte(`{"coppa":0}`),
-			},
-			wantCoppa: 1,
-			wantNoExt: true,
 		},
 		{
 			name: "top_gpp_already_set_ext_duplicate_stripped",
@@ -276,9 +236,10 @@ func TestPromoteRegsExtTo26_DoesNotMutateOriginalRegs(t *testing.T) {
 	assert.Equal(t, beforeExt, []byte(originalRegs.Ext), "original Regs.Ext bytes were mutated")
 
 	assert.NotSame(t, originalRegs, got, "promoted regs should be a fresh copy")
-	assert.Equal(t, int8(1), got.COPPA)
+	assert.Equal(t, int8(0), got.COPPA, "coppa is not promoted from ext")
 	assert.Equal(t, "X", got.GPP)
 	assert.Equal(t, []int8{6}, got.GPPSID)
+	assert.JSONEq(t, `{"coppa":1,"gpc":"1"}`, string(got.Ext), "coppa and gpc stay in ext")
 }
 
 // A regs.ext warning must not drop the impression: the bid request still goes
