@@ -1,0 +1,17 @@
+endpoint: "https://ferio.bid/bidder"
+maintainer:
+  email: "prebid@ferio.cloud"
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

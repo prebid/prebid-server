@@ -123,6 +123,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEVolution,
 	BidderExco,
 	BidderFeedAd,
+	BidderFerio,
 	BidderFlatads,
 	BidderFlipp,
 	BidderFreewheelSSP,
@@ -503,6 +504,7 @@ const (
 	BidderExco              BidderName = "exco"
 	BidderEVolution         BidderName = "e_volution"
 	BidderFeedAd            BidderName = "feedad"
+	BidderFerio             BidderName = "ferio"
 	BidderFlatads           BidderName = "flatads"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
