@@ -41,7 +41,7 @@ type Account struct {
 	GDPR                    AccountGDPR                                 `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow              bool                                        `mapstructure:"debug_allow" json:"debug_allow"`
 	DefaultIntegration      string                                      `mapstructure:"default_integration" json:"default_integration"`
-	CookieSync              CookieSync                                  `mapstructure:"cookie_sync" json:"cookie_sync"`
+	CookieSync              AccountCookieSync                           `mapstructure:"cookie_sync" json:"cookie_sync"`
 	Events                  Events                                      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 	TruncateTargetAttribute *int                                        `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes        `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
@@ -56,13 +56,14 @@ type Account struct {
 	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
 }
 
-// CookieSync represents the account-level defaults for the cookie sync endpoint.
-type CookieSync struct {
-	DefaultLimit       *int       `mapstructure:"default_limit" json:"default_limit"`
-	MaxLimit           *int       `mapstructure:"max_limit" json:"max_limit"`
-	DefaultCoopSync    *bool      `mapstructure:"default_coop_sync" json:"default_coop_sync"`
-	PriorityGroups     [][]string `mapstructure:"priority_groups" json:"priority_groups"`
-	PriorityGroupsOnly *bool      `mapstructure:"priority_groups_only" json:"priority_groups_only"`
+// AccountCookieSync represents the account-level defaults for the cookie sync endpoint.
+type AccountCookieSync struct {
+	DefaultLimit          *int       `mapstructure:"default_limit" json:"default_limit"`
+	MaxLimit              *int       `mapstructure:"max_limit" json:"max_limit"`
+	DefaultCoopSync       *bool      `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+	PriorityGroups        [][]string `mapstructure:"priority_groups" json:"priority_groups"`
+	PriorityGroupsOnly    *bool      `mapstructure:"priority_groups_only" json:"priority_groups_only"`
+	DisabledIFrameBidders []string   `mapstructure:"disabled_iframe_bidders" json:"disabled_iframe_bidders"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration
