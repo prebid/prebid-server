@@ -24,9 +24,10 @@
       }
     ]
   },
-"expectedMakeRequestsErrors": [
+  "expectedMakeRequestsErrors": [
     {
-        "value": "expect { or n, but found",
-        "comparison": "startswith"
-    }]
+      "value": "expect { or n, but found",
+      "comparison": "startswith"
+    }
+  ]
 }

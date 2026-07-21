@@ -61,6 +61,7 @@
               "impIDs":["testimpid"]
           },
           "mockResponse": {
+            "status": 500,
             "body": {
                 "seatbid": []
             }
@@ -70,7 +71,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-        "value": "Unexpected status code: 0. Run with request.debug = 1 for more info",
+        "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
         "comparison": "literal"
       }
     ]

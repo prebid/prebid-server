@@ -35,6 +35,7 @@ var validParams = []string{
 
 var invalidParams = []string{
 	`{"publisher": "34563434"}`,
+	`{"pid": "1234567890123456789"}`,
 	`{"pid": "tooshort"}`,
 	`{"pid": 123}`,
 	`nil`,

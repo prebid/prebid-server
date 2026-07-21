@@ -3,6 +3,7 @@ package matterfull
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -23,8 +24,8 @@ type adapter struct {
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	pub2impressions, err := getImpressionsInfo(request.Imp)
-	errs = append(errs, err...)
+	pub2impressions, impErrs := getImpressionsInfo(request.Imp)
+	errs = append(errs, impErrs...)
 	if len(pub2impressions) == 0 {
 		return nil, errs
 	}
@@ -64,7 +65,7 @@ func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][
 
 // Alter impression info to comply with Matterfull platform requirements
 func compatImpression(imp *openrtb2.Imp) error {
-	imp.Ext = nil //do not forward ext to Matterfull platform
+	imp.Ext = nil // do not forward ext to Matterfull platform
 	if imp.Banner != nil {
 		return compatBannerImpression(imp)
 	}
@@ -167,7 +168,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfull) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{PublisherID: params.PublisherID}
+	endpointParams := macros.EndpointTemplateParams{PublisherID: url.QueryEscape(params.PublisherID)}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 

@@ -227,6 +227,36 @@ func TestCompatBannerImpression(t *testing.T) {
 		originalFormats[1] = openrtb2.Format{W: 160, H: 600}
 		assert.Equal(t, openrtb2.Format{W: 728, H: 90}, imp.Banner.Format[0])
 	})
+
+	t.Run("partial explicit size uses first format dimensions", func(t *testing.T) {
+		imp := &openrtb2.Imp{Banner: &openrtb2.Banner{
+			W:      ptr(640),
+			Format: []openrtb2.Format{{W: 300, H: 250}},
+		}}
+
+		err := compatBannerImpression(imp)
+
+		require.NoError(t, err)
+		require.NotNil(t, imp.Banner.W)
+		require.NotNil(t, imp.Banner.H)
+		assert.Equal(t, int64(300), *imp.Banner.W)
+		assert.Equal(t, int64(250), *imp.Banner.H)
+		assert.Nil(t, imp.Banner.Format)
+	})
+}
+
+func TestBuildEndpointURLEscapesPublisherID(t *testing.T) {
+	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+	}, config.Server{})
+	require.NoError(t, err)
+
+	endpoint, err := bidder.(*adapter).buildEndpointURL(&openrtb_ext.ExtImpMatterfull{
+		PublisherID: "publisher&id=other",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "https://prebid.matterfull.co/?uqhash=publisher%26id%3Dother", endpoint)
 }
 
 func TestCompatImpressionWithoutBanner(t *testing.T) {
