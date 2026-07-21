@@ -1,0 +1,30 @@
+{
+  "description": "Extracts bidder configs for a bidder, handling bcat",
+  "inputRequestData": {
+    "data": {},
+    "bidderconfig": [
+      {
+        "bidders": [
+          "appnexus"
+        ],
+        "config": {
+          "ortb2": {
+            "bcat": [
+              "IAB1",
+              "IAB2"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "outputRequestData": {},
+  "bidderConfigFPD": {
+    "appnexus": {
+      "bcat": [
+        "IAB1",
+        "IAB2"
+      ]
+    }
+  }
+}
