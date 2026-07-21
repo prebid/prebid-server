@@ -24,7 +24,6 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 	tests := []struct {
 		name              string
 		inRegs            *openrtb2.Regs
-		wantCoppa         int8
 		wantGPP           string
 		wantGPPSID        []int8
 		wantExt           string // expected regs.ext JSON when it should remain
@@ -39,7 +38,7 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 		},
 		{
 			name:              "regs_without_ext",
-			inRegs:            &openrtb2.Regs{COPPA: 0},
+			inRegs:            &openrtb2.Regs{},
 			wantNoExt:         true,
 			wantRegsUnchanged: true,
 		},
@@ -70,13 +69,6 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 			wantWarning:       true,
 		},
 		{
-			// COPPA is top-level since OpenRTB 2.5 and is not promoted from ext.
-			name:              "coppa_in_ext_not_promoted",
-			inRegs:            regsExt(`{"coppa":1}`),
-			wantExt:           `{"coppa":1}`,
-			wantRegsUnchanged: true,
-		},
-		{
 			name:      "promote_gpp_only",
 			inRegs:    regsExt(`{"gpp":"DBA"}`),
 			wantGPP:   "DBA",
@@ -96,11 +88,11 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 			wantNoExt:  true,
 		},
 		{
-			name:       "promote_with_unrelated_siblings_coppa_gpc",
-			inRegs:     regsExt(`{"coppa":1,"gpp":"X","gpp_sid":[6],"gpc":"1"}`),
+			name:       "promote_with_unrelated_sibling_gpc",
+			inRegs:     regsExt(`{"gpp":"X","gpp_sid":[6],"gpc":"1"}`),
 			wantGPP:    "X",
 			wantGPPSID: []int8{6},
-			wantExt:    `{"coppa":1,"gpc":"1"}`,
+			wantExt:    `{"gpc":"1"}`,
 		},
 		{
 			name:    "promote_gpp_keep_dsa_object_in_ext",
@@ -197,7 +189,6 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, tt.wantCoppa, got.COPPA, "regs.coppa")
 			assert.Equal(t, tt.wantGPP, got.GPP, "regs.gpp")
 			assert.Equal(t, tt.wantGPPSID, got.GPPSID, "regs.gpp_sid")
 
@@ -219,10 +210,9 @@ func TestPromoteRegsExtTo26(t *testing.T) {
 // The original *Regs must never be mutated: other adapters and per-impression
 // copies must keep seeing the publisher's original request shape.
 func TestPromoteRegsExtTo26_DoesNotMutateOriginalRegs(t *testing.T) {
-	originalExt := []byte(`{"coppa":1,"gpp":"X","gpp_sid":[6],"gpc":"1"}`)
+	originalExt := []byte(`{"gpp":"X","gpp_sid":[6],"gpc":"1"}`)
 	originalRegs := &openrtb2.Regs{Ext: append([]byte(nil), originalExt...)}
 
-	beforeCoppa := originalRegs.COPPA
 	beforeGPP := originalRegs.GPP
 	beforeGPPSID := append([]int8(nil), originalRegs.GPPSID...)
 	beforeExt := append([]byte(nil), originalRegs.Ext...)
@@ -230,16 +220,14 @@ func TestPromoteRegsExtTo26_DoesNotMutateOriginalRegs(t *testing.T) {
 	got, warnings := promoteRegsExtTo26(originalRegs)
 
 	assert.Empty(t, warnings)
-	assert.Equal(t, beforeCoppa, originalRegs.COPPA, "original Regs.COPPA was mutated")
 	assert.Equal(t, beforeGPP, originalRegs.GPP, "original Regs.GPP was mutated")
 	assert.Equal(t, beforeGPPSID, originalRegs.GPPSID, "original Regs.GPPSID was mutated")
 	assert.Equal(t, beforeExt, []byte(originalRegs.Ext), "original Regs.Ext bytes were mutated")
 
 	assert.NotSame(t, originalRegs, got, "promoted regs should be a fresh copy")
-	assert.Equal(t, int8(0), got.COPPA, "coppa is not promoted from ext")
 	assert.Equal(t, "X", got.GPP)
 	assert.Equal(t, []int8{6}, got.GPPSID)
-	assert.JSONEq(t, `{"coppa":1,"gpc":"1"}`, string(got.Ext), "coppa and gpc stay in ext")
+	assert.JSONEq(t, `{"gpc":"1"}`, string(got.Ext), "gpc stays in ext")
 }
 
 // A regs.ext warning must not drop the impression: the bid request still goes
