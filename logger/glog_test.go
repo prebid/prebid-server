@@ -1,11 +1,15 @@
 package logger
 
 import (
+	"bytes"
 	"context"
 	"flag"
+	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewGlogLogger(t *testing.T) {
@@ -365,73 +369,100 @@ func TestGlogLogger_BothGlogAndSlogMethods(t *testing.T) {
 	}, "Both GlogLogger and SlogLogger methods should work on same instance")
 }
 
-func TestGlogLogger_FatalCallsExit(t *testing.T) {
-	// Initialize glog flags
-	flag.Set("logtostderr", "true")
+// newTestFatalLogger returns a GlogLogger whose exit is intercepted and whose
+// structured output and goroutine dump are captured in a buffer, so Fatal can be
+// exercised without terminating the test process or spamming stderr. It uses the
+// real constructor (newGlogLogger), so the actual handler and exit path are under
+// test. The returned closures report the exit code and captured output.
+func newTestFatalLogger() (l *GlogLogger, exitCode func() (bool, int), out func() string) {
+	buf := &bytes.Buffer{}
+	l = newGlogLogger(buf)
 
-	logger := NewGlogLogger().(*GlogLogger)
-
-	// Track whether exit was called and with what code
-	exitCalled := false
-	exitCode := -1
-
-	// Override the exit function for testing
-	logger.exitFunc = func(code int) {
-		exitCalled = true
-		exitCode = code
+	called := false
+	code := -1
+	l.exitFunc = func(c int) {
+		called = true
+		code = c
 	}
 
-	// Call Fatal
+	return l, func() (bool, int) { return called, code }, buf.String
+}
+
+func TestGlogLogger_FatalCallsExit(t *testing.T) {
+	logger, exitCode, out := newTestFatalLogger()
+
 	logger.Fatal("fatal error message")
 
-	// Verify exit was called with code 1
-	assert.True(t, exitCalled, "Fatal should call exit function")
-	assert.Equal(t, 1, exitCode, "Fatal should exit with code 1")
+	called, code := exitCode()
+	assert.True(t, called, "Fatal should call exit function")
+	assert.Equal(t, 2, code, "Fatal should exit with code 2 (matching glog fatal)")
+	assert.Contains(t, out(), "fatal error message", "Fatal should emit the structured record")
+	assert.Contains(t, out(), "goroutine", "Fatal should dump all goroutine stacks before exiting")
 }
 
 func TestGlogLogger_FatalContextCallsExit(t *testing.T) {
-	// Initialize glog flags
-	flag.Set("logtostderr", "true")
+	logger, exitCode, out := newTestFatalLogger()
 
-	logger := NewGlogLogger().(*GlogLogger)
-	ctx := context.Background()
+	logger.FatalContext(context.Background(), "fatal error with context", "key", "value")
 
-	// Track whether exit was called and with what code
-	exitCalled := false
-	exitCode := -1
-
-	// Override the exit function for testing
-	logger.exitFunc = func(code int) {
-		exitCalled = true
-		exitCode = code
-	}
-
-	// Call FatalContext
-	logger.FatalContext(ctx, "fatal error with context", "key", "value")
-
-	// Verify exit was called with code 1
-	assert.True(t, exitCalled, "FatalContext should call exit function")
-	assert.Equal(t, 1, exitCode, "FatalContext should exit with code 1")
+	called, code := exitCode()
+	assert.True(t, called, "FatalContext should call exit function")
+	assert.Equal(t, 2, code, "FatalContext should exit with code 2 (matching glog fatal)")
+	assert.Contains(t, out(), "fatal error with context", "FatalContext should emit the structured record")
+	assert.Contains(t, out(), "goroutine", "FatalContext should dump all goroutine stacks before exiting")
 }
 
 func TestGlogLogger_FatalContextWithCustomContext(t *testing.T) {
-	// Initialize glog flags
-	flag.Set("logtostderr", "true")
-
-	logger := NewGlogLogger().(*GlogLogger)
+	logger, exitCode, _ := newTestFatalLogger()
 	ctx := context.WithValue(context.Background(), "requestID", "test-123")
 
-	// Track whether exit was called
-	exitCalled := false
-
-	// Override the exit function for testing
-	logger.exitFunc = func(code int) {
-		exitCalled = true
-	}
-
-	// Call FatalContext with custom context
 	logger.FatalContext(ctx, "fatal with custom context")
 
-	// Verify exit was called
-	assert.True(t, exitCalled, "FatalContext should call exit function even with custom context")
+	called, _ := exitCode()
+	assert.True(t, called, "FatalContext should call exit function even with custom context")
+}
+
+// TestGlogLogger_ReplaceLevelString is the contract test for the level-prefix
+// mapping installed by newGlogLogger (the real constructor): Fatal-level records
+// get an "F" prefix and all lower levels delegate to the handler's default
+// D/I/W/E mapping. Every other test writes to os.Stderr and only asserts
+// NotPanics, so a regression in this closure (e.g. returning "FATAL", or breaking
+// the default delegation) would otherwise go undetected. Logging is done through
+// the underlying slog logger so the fatal level can be exercised without exiting.
+func TestGlogLogger_ReplaceLevelString(t *testing.T) {
+	buf := &bytes.Buffer{}
+	l := newGlogLogger(buf)
+
+	cases := []struct {
+		name       string
+		level      slog.Level
+		wantPrefix string
+	}{
+		{"debug", slog.LevelDebug, "D"},
+		{"info", slog.LevelInfo, "I"},
+		{"warn", slog.LevelWarn, "W"},
+		{"error", slog.LevelError, "E"},
+		{"fatal", LevelFatal, "F"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf.Reset()
+			l.slogLogger.Log(context.Background(), tc.level, "boom")
+			line := strings.TrimLeft(buf.String(), " \t")
+			require.NotEmpty(t, line, "handler should emit a line")
+			assert.Truef(t, strings.HasPrefix(line, tc.wantPrefix),
+				"level %v should render prefix %q, got line %q", tc.level, tc.wantPrefix, line)
+		})
+	}
+}
+
+// TestGlogLogger_InterfaceCompliance pins the split-interface contract: GlogLogger
+// must satisfy each of the composed interfaces, not only the combined Logger.
+func TestGlogLogger_InterfaceCompliance(t *testing.T) {
+	var (
+		_ FormattedLogger  = (*GlogLogger)(nil)
+		_ StructuredLogger = (*GlogLogger)(nil)
+		_ Exiter           = (*GlogLogger)(nil)
+		_ Logger           = (*GlogLogger)(nil)
+	)
 }
