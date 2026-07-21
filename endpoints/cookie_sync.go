@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -30,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/usersync"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	stringutil "github.com/prebid/prebid-server/v4/util/stringutil"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
@@ -167,6 +169,9 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 		return usersync.Request{}, macros.UserSyncPrivacy{}, account, err
 	}
 
+	disabledIFrameBidders := mergeDisabledIFrameBidders(c.config.CookieSync.DisabledIFrameBidders, account.CookieSync.DisabledIFrameBidders)
+	syncTypeFilter = applyDisabledIFrameBidders(syncTypeFilter, disabledIFrameBidders)
+
 	gdprRequestInfo := gdpr.RequestInfo{
 		Consent:    privacyMacros.GDPRConsent,
 		GDPRSignal: gdprSignal,
@@ -183,8 +188,9 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, ma
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
-			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.findPriorityGroups(account.CookieSync),
+			Enabled:            (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
+			PriorityGroups:     c.findPriorityGroups(account.CookieSync),
+			PriorityGroupsOnly: ptrutil.ValueOrDefault(account.CookieSync.PriorityGroupsOnly),
 		},
 		Debug: request.Debug,
 		Limit: limit,
@@ -290,7 +296,7 @@ func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
 	}
 }
 
-func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest, cookieSyncConfig config.CookieSync) cookieSyncRequest {
+func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest, cookieSyncConfig config.AccountCookieSync) cookieSyncRequest {
 	limit := getEffectiveLimit(request.Limit, cookieSyncConfig.DefaultLimit)
 	maxLimit := getEffectiveMaxLimit(cookieSyncConfig.MaxLimit)
 	if maxLimit < limit {
@@ -325,7 +331,7 @@ func getEffectiveMaxLimit(maxLimit *int) int {
 	return math.MaxInt
 }
 
-func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cookieSyncConfig config.CookieSync) cookieSyncRequest {
+func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cookieSyncConfig config.AccountCookieSync) cookieSyncRequest {
 	if request.CooperativeSync == nil && cookieSyncConfig.DefaultCoopSync != nil {
 		request.CooperativeSync = cookieSyncConfig.DefaultCoopSync
 	}
@@ -333,12 +339,66 @@ func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cooki
 	return request
 }
 
-func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.CookieSync) [][]string {
+func (c *cookieSyncEndpoint) findPriorityGroups(accountCookieSyncConfig config.AccountCookieSync) [][]string {
 	// Account-level config takes precedence over global config, which will be deprecated in the future
 	if accountCookieSyncConfig.DefaultCoopSync != nil {
 		return accountCookieSyncConfig.PriorityGroups
 	}
 	return c.config.UserSync.PriorityGroups
+}
+
+// mergeDisabledIFrameBidders returns the union of the host-level and account-level
+// disabled iframe bidder lists. Host-level entries are always enforced and cannot be
+// overridden by account configuration. Duplicates are removed while preserving order,
+// with host entries taking precedence.
+func mergeDisabledIFrameBidders(host, account []string) []string {
+	if len(host) == 0 {
+		return account
+	}
+	if len(account) == 0 {
+		return host
+	}
+
+	merged := make([]string, 0, len(host)+len(account))
+	seen := make(map[string]struct{}, len(host)+len(account))
+	for _, bidder := range host {
+		if _, ok := seen[bidder]; !ok {
+			seen[bidder] = struct{}{}
+			merged = append(merged, bidder)
+		}
+	}
+	for _, bidder := range account {
+		if _, ok := seen[bidder]; !ok {
+			seen[bidder] = struct{}{}
+			merged = append(merged, bidder)
+		}
+	}
+	return merged
+}
+
+// applyDisabledIFrameBidders enforces iframe cookie sync restrictions from the union of
+// host-level and account-level configuration.
+// The disabledIFrameBidders slice supports two formats, matching the filterSettings convention:
+// - "*" (string): disables iframe syncs for all bidders
+// - ["bidderA", "bidderB"] (array): disables iframe syncs for specific bidders only
+// When specific bidders are disabled, a CompositeFilter ANDs the request-level filter with the
+// configured filter, ensuring configuration can only further restrict — never broaden —
+// what the request's filterSettings allows. Redirect syncs are never affected.
+func applyDisabledIFrameBidders(syncTypeFilter usersync.SyncTypeFilter, disabledIFrameBidders []string) usersync.SyncTypeFilter {
+	if len(disabledIFrameBidders) == 0 {
+		return syncTypeFilter
+	}
+
+	if slices.Contains(disabledIFrameBidders, "*") {
+		syncTypeFilter.IFrame = usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude)
+	} else {
+		syncTypeFilter.IFrame = usersync.CompositeFilter{
+			RequestFilter: syncTypeFilter.IFrame,
+			AccountFilter: usersync.NewSpecificBidderFilter(disabledIFrameBidders, usersync.BidderFilterModeExclude),
+		}
+	}
+
+	return syncTypeFilter
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
