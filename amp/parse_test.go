@@ -2,6 +2,7 @@ package amp
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -9,7 +10,9 @@ import (
 	"github.com/prebid/prebid-server/v4/privacy"
 	"github.com/prebid/prebid-server/v4/privacy/ccpa"
 	"github.com/prebid/prebid-server/v4/privacy/gdpr"
+	"github.com/prebid/prebid-server/v4/privacy/gpp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseParams(t *testing.T) {
@@ -694,5 +697,169 @@ func TestParseGdprApplies(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		assert.Equal(t, tc.expectRegsExtGdpr, parseGdprApplies(tc.inGdprApplies), tc.desc)
+	}
+}
+
+func TestParseParamsGppSid(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		expectedSid string
+	}{
+		{
+			name:        "gpp_sid present with single value",
+			url:         "/openrtb2/amp?tag_id=1&gpp_sid=2",
+			expectedSid: "2",
+		},
+		{
+			name:        "gpp_sid present with multiple values",
+			url:         "/openrtb2/amp?tag_id=1&gpp_sid=2,4,6",
+			expectedSid: "2,4,6",
+		},
+		{
+			name:        "gpp_sid absent",
+			url:         "/openrtb2/amp?tag_id=1",
+			expectedSid: "",
+		},
+		{
+			name:        "gpp_sid empty string",
+			url:         "/openrtb2/amp?tag_id=1&gpp_sid=",
+			expectedSid: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest("GET", test.url, nil)
+			params, err := ParseParams(request)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedSid, params.GppSid)
+		})
+	}
+}
+
+func TestReadPolicyGPP(t *testing.T) {
+	const gppConsent = "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"
+	tests := []struct {
+		name            string
+		params          Params
+		gdprEnabled     bool
+		expectNilPolicy bool
+		expectWarning   bool
+		warningContains string
+		expectedGpp     string
+		expectedGppSid  []int8
+	}{
+		{
+			name: "GPP with valid gpp_sid",
+			params: Params{
+				Consent:     gppConsent,
+				ConsentType: ConsentGPP,
+				GppSid:      "2,4,6",
+			},
+			gdprEnabled:    true,
+			expectedGpp:    gppConsent,
+			expectedGppSid: []int8{2, 4, 6},
+		},
+		{
+			name: "GPP with invalid gpp_sid still writes the consent string",
+			params: Params{
+				Consent:     gppConsent,
+				ConsentType: ConsentGPP,
+				GppSid:      "malformed",
+			},
+			gdprEnabled:     true,
+			expectWarning:   true,
+			warningContains: "not a valid comma-separated list of integers",
+			expectedGpp:     gppConsent,
+			expectedGppSid:  nil,
+		},
+		{
+			name: "GPP without gpp_sid",
+			params: Params{
+				Consent:     gppConsent,
+				ConsentType: ConsentGPP,
+				GppSid:      "",
+			},
+			gdprEnabled:    true,
+			expectedGpp:    gppConsent,
+			expectedGppSid: nil,
+		},
+		{
+			// Per issue #3577, gpp_sid is written independently of consent_string.
+			name: "GPP with only gpp_sid and no consent string writes gppsid",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentGPP,
+				GppSid:      "2,4",
+			},
+			gdprEnabled:    true,
+			expectedGpp:    "",
+			expectedGppSid: []int8{2, 4},
+		},
+		{
+			name: "GPP with only a malformed gpp_sid and no consent string writes nothing but warns",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentGPP,
+				GppSid:      "malformed",
+			},
+			gdprEnabled:     true,
+			expectWarning:   true,
+			warningContains: "not a valid comma-separated list of integers",
+			expectedGpp:     "",
+			expectedGppSid:  nil,
+		},
+		{
+			name: "GPP with neither consent string nor gpp_sid returns nil policy",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentGPP,
+				GppSid:      "",
+			},
+			gdprEnabled:     true,
+			expectNilPolicy: true,
+		},
+		{
+			// Guard regression: the gpp_sid carve-out is scoped to consent_type=4 only. A non-GPP
+			// consent type with an empty consent string still short-circuits to NilPolicy even if a
+			// stray gpp_sid is present.
+			name: "non-GPP consent type with empty consent and a stray gpp_sid returns nil policy",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentUSPrivacy,
+				GppSid:      "2,4",
+			},
+			gdprEnabled:     true,
+			expectNilPolicy: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			writer, warning := ReadPolicy(test.params, test.gdprEnabled)
+
+			if test.expectWarning {
+				assert.Error(t, warning)
+				assert.Contains(t, warning.Error(), test.warningContains)
+			} else {
+				assert.NoError(t, warning)
+			}
+
+			if test.expectNilPolicy {
+				assert.IsType(t, privacy.NilPolicyWriter{}, writer)
+				return
+			}
+
+			require.IsType(t, gpp.ConsentWriter{}, writer)
+
+			// The writer must apply regardless of the warning: assert it mutates the request
+			// (a valid gpp string is written even when gpp_sid is malformed). This guards C1.
+			req := &openrtb2.BidRequest{}
+			require.NoError(t, writer.Write(req))
+			require.NotNil(t, req.Regs)
+			assert.Equal(t, test.expectedGpp, req.Regs.GPP)
+			assert.Equal(t, test.expectedGppSid, req.Regs.GPPSID)
+		})
 	}
 }
