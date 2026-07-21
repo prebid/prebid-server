@@ -3,6 +3,8 @@ endpointCompression: gzip
 maintainer:
   email: biddersupport@resetdigital.co
 gvlVendorID: 1162
+openrtb:
+  version: 2.6
 capabilities:
   site:
     mediaTypes:

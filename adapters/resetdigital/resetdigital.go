@@ -69,7 +69,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		Device: request.Device,
 		Site:   request.Site,
 		App:    request.App,
-		User:   request.User,
+		User:   userWithEIDs(request.User),
 		Regs:   request.Regs,
 		Ext:    request.Ext,
 		AT:     request.AT,
@@ -108,6 +108,50 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	}
 
 	return reqs, nil
+}
+
+func userWithEIDs(user *openrtb2.User) *openrtb2.User {
+	if user == nil {
+		return nil
+	}
+
+	userCopy := *user
+	eids := make([]openrtb2.EID, 0, len(user.EIDs))
+	eids = append(eids, user.EIDs...)
+	userCopy.Ext = removeExtEIDs(user.Ext, &eids)
+	userCopy.EIDs = eids
+
+	return &userCopy
+}
+
+func removeExtEIDs(userExt json.RawMessage, eids *[]openrtb2.EID) json.RawMessage {
+	if len(userExt) == 0 {
+		return nil
+	}
+
+	var ext map[string]json.RawMessage
+	if err := json.Unmarshal(userExt, &ext); err != nil {
+		return nil
+	}
+
+	if rawEIDs, ok := ext["eids"]; ok {
+		var extEIDs []openrtb2.EID
+		if err := json.Unmarshal(rawEIDs, &extEIDs); err == nil {
+			*eids = append(*eids, extEIDs...)
+		}
+		delete(ext, "eids")
+	}
+
+	if len(ext) == 0 {
+		return nil
+	}
+
+	cleanExt, err := json.Marshal(ext)
+	if err != nil {
+		return nil
+	}
+
+	return cleanExt
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {

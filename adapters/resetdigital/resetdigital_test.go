@@ -462,6 +462,87 @@ func TestMakeRequestsErrorCases(t *testing.T) {
 	}
 }
 
+func TestUserWithEIDs(t *testing.T) {
+	testCases := []struct {
+		name         string
+		user         *openrtb2.User
+		expectedJSON string
+	}{
+		{
+			name: "no user",
+		},
+		{
+			name:         "no eids",
+			user:         &openrtb2.User{ID: "user-id"},
+			expectedJSON: `{"id":"user-id"}`,
+		},
+		{
+			name: "openrtb 2.6 user eids",
+			user: &openrtb2.User{
+				EIDs: []openrtb2.EID{
+					{
+						Source: "liveramp.com",
+						UIDs: []openrtb2.UID{
+							{ID: "envelope-26"},
+						},
+					},
+				},
+			},
+			expectedJSON: `{"eids":[{"source":"liveramp.com","uids":[{"id":"envelope-26"}]}]}`,
+		},
+		{
+			name: "openrtb 2.5 user ext eids",
+			user: &openrtb2.User{
+				Ext: json.RawMessage(`{"consent":"test-consent","eids":[{"source":"liveramp.com","uids":[{"id":"envelope-25","atype":1,"ext":{"rtiPartner":"idl","stype":"ppuid"}}]},{"source":"sharedid.org","uids":[{"id":"shared-id"}]}]}`),
+			},
+			expectedJSON: `{"eids":[{"source":"liveramp.com","uids":[{"id":"envelope-25","atype":1,"ext":{"rtiPartner":"idl","stype":"ppuid"}}]},{"source":"sharedid.org","uids":[{"id":"shared-id"}]}],"ext":{"consent":"test-consent"}}`,
+		},
+		{
+			name: "all user eids",
+			user: &openrtb2.User{
+				EIDs: []openrtb2.EID{
+					{
+						Source: "sharedid.org",
+						UIDs: []openrtb2.UID{
+							{ID: "shared-id"},
+						},
+					},
+					{
+						Source: "liveramp.com",
+						UIDs: []openrtb2.UID{
+							{ID: "liveramp-id"},
+						},
+					},
+				},
+			},
+			expectedJSON: `{"eids":[{"source":"sharedid.org","uids":[{"id":"shared-id"}]},{"source":"liveramp.com","uids":[{"id":"liveramp-id"}]}]}`,
+		},
+		{
+			name: "malformed user ext",
+			user: &openrtb2.User{
+				ID:  "user-id",
+				Ext: json.RawMessage(`malformed`),
+			},
+			expectedJSON: `{"id":"user-id"}`,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			user := userWithEIDs(test.user)
+
+			if test.expectedJSON == "" {
+				assert.Nil(t, user)
+				return
+			}
+
+			actualJSON, err := json.Marshal(user)
+			assert.NoError(t, err)
+			assert.JSONEq(t, test.expectedJSON, string(actualJSON))
+		})
+	}
+}
+
 func TestParseBidResponseEdgeCases(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderResetDigital, config.Adapter{
 		Endpoint: "https://example.com",
