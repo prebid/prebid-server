@@ -1,10 +1,15 @@
 package logger
 
 import (
+	"bytes"
+	"context"
 	"flag"
+	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewGlogLogger(t *testing.T) {
@@ -19,6 +24,7 @@ func TestNewGlogLogger(t *testing.T) {
 	glogLogger, ok := logger.(*GlogLogger)
 	assert.True(t, ok, "Logger should be of type *GlogLogger")
 	assert.Equal(t, 1, glogLogger.depth, "Default depth should be 1")
+	assert.NotNil(t, glogLogger.slogLogger, "slogLogger field should be initialized")
 }
 
 func TestGlogLogger_ImplementsLoggerInterface(t *testing.T) {
@@ -168,4 +174,295 @@ func TestGlogLogger_SpecialCharacters(t *testing.T) {
 	assert.NotPanics(t, func() {
 		logger.Infof("message with special chars: \n\t\"quotes\" and 'apostrophes'")
 	}, "Messages with special characters should not panic")
+}
+
+// Tests for StructuredLogger interface implementation on GlogLogger
+
+func TestGlogLogger_SlogDebug(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Debug("debug message")
+	}, "Debug should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Debug("debug with args", "key", "value", "number", 42)
+	}, "Debug with args should not panic")
+}
+
+func TestGlogLogger_SlogDebugContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.DebugContext(ctx, "debug with context")
+	}, "DebugContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.DebugContext(ctx, "debug context with args", "key", "value")
+	}, "DebugContext with args should not panic")
+}
+
+func TestGlogLogger_SlogInfo(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Info("info message")
+	}, "Info should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Info("info with args", "status", "ok")
+	}, "Info with args should not panic")
+}
+
+func TestGlogLogger_SlogInfoContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+	ctx := context.WithValue(context.Background(), "requestID", "12345")
+
+	assert.NotPanics(t, func() {
+		logger.InfoContext(ctx, "info with context")
+	}, "InfoContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.InfoContext(ctx, "info with context and args", "component", "test")
+	}, "InfoContext with args should not panic")
+}
+
+func TestGlogLogger_SlogWarn(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Warn("warning message")
+	}, "Warn should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Warn("warning with args", "severity", "medium")
+	}, "Warn with args should not panic")
+}
+
+func TestGlogLogger_SlogWarnContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.WarnContext(ctx, "warning with context")
+	}, "WarnContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.WarnContext(ctx, "warning with context", "severity", "medium")
+	}, "WarnContext with args should not panic")
+}
+
+func TestGlogLogger_SlogError(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	assert.NotPanics(t, func() {
+		logger.Error("error message")
+	}, "Error should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.Error("error with details", "code", 500, "err", "internal error")
+	}, "Error with args should not panic")
+}
+
+func TestGlogLogger_SlogErrorContext(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.ErrorContext(ctx, "error with context")
+	}, "ErrorContext should not panic")
+
+	assert.NotPanics(t, func() {
+		logger.ErrorContext(ctx, "error with context", "component", "api")
+	}, "ErrorContext with args should not panic")
+}
+
+func TestGlogLogger_SlogAllLevels(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	// Test that all slog logging levels work together
+	assert.NotPanics(t, func() {
+		logger.Debug("debug")
+		logger.DebugContext(ctx, "debug context")
+		logger.Info("info")
+		logger.InfoContext(ctx, "info context")
+		logger.Warn("warn")
+		logger.WarnContext(ctx, "warn context")
+		logger.Error("error")
+		logger.ErrorContext(ctx, "error context")
+	}, "All slog logging levels should work without panic")
+}
+
+func TestGlogLogger_SlogWithVariousContexts(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+
+	logger := NewGlogLogger()
+
+	// Test with different context types
+	ctxWithValue := context.WithValue(context.Background(), "requestID", "abc123")
+	ctxBackground := context.Background()
+
+	assert.NotPanics(t, func() {
+		logger.InfoContext(ctxWithValue, "with value context")
+		logger.InfoContext(ctxBackground, "with background context")
+	}, "Different context types should work")
+}
+
+func TestGlogLogger_BothGlogAndSlogMethods(t *testing.T) {
+	// Initialize glog flags
+	flag.Set("logtostderr", "true")
+	flag.Set("v", "2")
+
+	logger := NewGlogLogger()
+	ctx := context.Background()
+
+	// Test that both old-style (Debugf, Infof) and new-style (Debug, Info) methods work
+	assert.NotPanics(t, func() {
+		logger.Debugf("debug formatted")
+		logger.Debug("debug structured")
+		logger.DebugContext(ctx, "debug with context")
+
+		logger.Infof("info formatted: %s", "test")
+		logger.Info("info structured", "key", "value")
+		logger.InfoContext(ctx, "info with context")
+
+		logger.Warnf("warn formatted")
+		logger.Warn("warn structured")
+		logger.WarnContext(ctx, "warn with context")
+
+		logger.Errorf("error formatted: %v", "error")
+		logger.Error("error structured", "err", "error")
+		logger.ErrorContext(ctx, "error with context")
+	}, "Both GlogLogger and SlogLogger methods should work on same instance")
+}
+
+// newTestFatalLogger returns a GlogLogger whose exit is intercepted and whose
+// structured output and goroutine dump are captured in a buffer, so Fatal can be
+// exercised without terminating the test process or spamming stderr. It uses the
+// real constructor (newGlogLogger), so the actual handler and exit path are under
+// test. The returned closures report the exit code and captured output.
+func newTestFatalLogger() (l *GlogLogger, exitCode func() (bool, int), out func() string) {
+	buf := &bytes.Buffer{}
+	l = newGlogLogger(buf)
+
+	called := false
+	code := -1
+	l.exitFunc = func(c int) {
+		called = true
+		code = c
+	}
+
+	return l, func() (bool, int) { return called, code }, buf.String
+}
+
+func TestGlogLogger_FatalCallsExit(t *testing.T) {
+	logger, exitCode, out := newTestFatalLogger()
+
+	logger.Fatal("fatal error message")
+
+	called, code := exitCode()
+	assert.True(t, called, "Fatal should call exit function")
+	assert.Equal(t, 2, code, "Fatal should exit with code 2 (matching glog fatal)")
+	assert.Contains(t, out(), "fatal error message", "Fatal should emit the structured record")
+	assert.Contains(t, out(), "goroutine", "Fatal should dump all goroutine stacks before exiting")
+}
+
+func TestGlogLogger_FatalContextCallsExit(t *testing.T) {
+	logger, exitCode, out := newTestFatalLogger()
+
+	logger.FatalContext(context.Background(), "fatal error with context", "key", "value")
+
+	called, code := exitCode()
+	assert.True(t, called, "FatalContext should call exit function")
+	assert.Equal(t, 2, code, "FatalContext should exit with code 2 (matching glog fatal)")
+	assert.Contains(t, out(), "fatal error with context", "FatalContext should emit the structured record")
+	assert.Contains(t, out(), "goroutine", "FatalContext should dump all goroutine stacks before exiting")
+}
+
+func TestGlogLogger_FatalContextWithCustomContext(t *testing.T) {
+	logger, exitCode, _ := newTestFatalLogger()
+	ctx := context.WithValue(context.Background(), "requestID", "test-123")
+
+	logger.FatalContext(ctx, "fatal with custom context")
+
+	called, _ := exitCode()
+	assert.True(t, called, "FatalContext should call exit function even with custom context")
+}
+
+// TestGlogLogger_ReplaceLevelString is the contract test for the level-prefix
+// mapping installed by newGlogLogger (the real constructor): Fatal-level records
+// get an "F" prefix and all lower levels delegate to the handler's default
+// D/I/W/E mapping. Every other test writes to os.Stderr and only asserts
+// NotPanics, so a regression in this closure (e.g. returning "FATAL", or breaking
+// the default delegation) would otherwise go undetected. Logging is done through
+// the underlying slog logger so the fatal level can be exercised without exiting.
+func TestGlogLogger_ReplaceLevelString(t *testing.T) {
+	buf := &bytes.Buffer{}
+	l := newGlogLogger(buf)
+
+	cases := []struct {
+		name       string
+		level      slog.Level
+		wantPrefix string
+	}{
+		{"debug", slog.LevelDebug, "D"},
+		{"info", slog.LevelInfo, "I"},
+		{"warn", slog.LevelWarn, "W"},
+		{"error", slog.LevelError, "E"},
+		{"fatal", LevelFatal, "F"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf.Reset()
+			l.slogLogger.Log(context.Background(), tc.level, "boom")
+			line := strings.TrimLeft(buf.String(), " \t")
+			require.NotEmpty(t, line, "handler should emit a line")
+			assert.Truef(t, strings.HasPrefix(line, tc.wantPrefix),
+				"level %v should render prefix %q, got line %q", tc.level, tc.wantPrefix, line)
+		})
+	}
+}
+
+// TestGlogLogger_InterfaceCompliance pins the split-interface contract: GlogLogger
+// must satisfy each of the composed interfaces, not only the combined Logger.
+func TestGlogLogger_InterfaceCompliance(t *testing.T) {
+	var (
+		_ FormattedLogger  = (*GlogLogger)(nil)
+		_ StructuredLogger = (*GlogLogger)(nil)
+		_ Exiter           = (*GlogLogger)(nil)
+		_ Logger           = (*GlogLogger)(nil)
+	)
 }
