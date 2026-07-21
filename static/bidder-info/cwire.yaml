@@ -8,9 +8,13 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - video
   site:
     mediaTypes:
       - banner
+      - video
+openrtb:
+  multiformat-supported: true
 userSync:
   iframe:
     url: https://prebid.cwi.re/v1/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&rd={{.RedirectURL}}
