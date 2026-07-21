@@ -1,11 +1,11 @@
 package hooks
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
-	"github.com/prebid/prebid-server/v4/logger"
 )
 
 type Stage string
@@ -206,13 +206,82 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 		Hooks:   make([]HookWrapper[T], 0, len(cfg.HookSequence)),
 	}
 
+	// Hook lookup and assembly. Hooks not found in repository are silently skipped
+	// as they are reported at startup via ValidateExecutionPlan().
 	for _, hookCfg := range cfg.HookSequence {
 		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
 			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
-		} else {
-			logger.Warnf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 
 	return group
+}
+
+// ValidateExecutionPlan checks if execution plan references any modules
+// not registered for the referenced stage (disabled, missing, or implementing
+// a different stage's hook) and returns a list of validation errors.
+// This validation runs once at startup to help identify configuration issues.
+func ValidateExecutionPlan(cfg config.Hooks, repo HookRepository) []error {
+	var errs []error
+
+	validatePlan := func(plan config.HookExecutionPlan, planName string) {
+		for endpoint, epCfg := range plan.Endpoints {
+			for stageName, stageCfg := range epCfg.Stages {
+				for groupIdx, group := range stageCfg.Groups {
+					for _, hookCfg := range group.HookSequence {
+						if !hasHookForStage(repo, hookCfg.ModuleCode, stageName) {
+							errs = append(errs, fmt.Errorf(
+								"hook configuration: %s execution plan references module '%s' "+
+									"at endpoint '%s', stage '%s', group %d, but module is not "+
+									"registered for this stage (module may be disabled, missing, or not implement the stage hook). "+
+									"This hook will be skipped during request processing",
+								planName, hookCfg.ModuleCode, endpoint, stageName, groupIdx,
+							))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	validatePlan(cfg.HostExecutionPlan, "host")
+	validatePlan(cfg.DefaultAccountExecutionPlan, "default-account")
+
+	return errs
+}
+
+// hasHookForStage checks if a module implements a hook for the specific stage.
+// Returns false for unknown stage names — an unknown stage in the plan is a misconfiguration.
+//
+// NOTE: This function must be kept in sync with HookRepository and the Stage constants.
+// If a new stage is added to HookRepository, add a corresponding case here.
+func hasHookForStage(repo HookRepository, moduleCode, stageName string) bool {
+	switch stageName {
+	case StageEntrypoint.String():
+		_, ok := repo.GetEntrypointHook(moduleCode)
+		return ok
+	case StageRawAuctionRequest.String():
+		_, ok := repo.GetRawAuctionHook(moduleCode)
+		return ok
+	case StageProcessedAuctionRequest.String():
+		_, ok := repo.GetProcessedAuctionHook(moduleCode)
+		return ok
+	case StageBidderRequest.String():
+		_, ok := repo.GetBidderRequestHook(moduleCode)
+		return ok
+	case StageRawBidderResponse.String():
+		_, ok := repo.GetRawBidderResponseHook(moduleCode)
+		return ok
+	case StageAllProcessedBidResponses.String():
+		_, ok := repo.GetAllProcessedBidResponsesHook(moduleCode)
+		return ok
+	case StageAuctionResponse.String():
+		_, ok := repo.GetAuctionResponseHook(moduleCode)
+		return ok
+	case StageExitpoint.String():
+		_, ok := repo.GetExitpointHook(moduleCode)
+		return ok
+	default:
+		return false
+	}
 }
