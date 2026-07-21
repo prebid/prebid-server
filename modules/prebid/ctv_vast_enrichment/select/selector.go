@@ -1,0 +1,46 @@
+// Package bidselect provides bid selection logic for CTV VAST ad pods.
+package bidselect
+
+import (
+	vast "github.com/prebid/prebid-server/v4/modules/prebid/ctv_vast_enrichment"
+)
+
+// Selector implements the vast.BidSelector interface.
+// It provides factory methods for different selection strategies.
+type Selector interface {
+	vast.BidSelector
+}
+
+// NewSelector creates a BidSelector based on the selection strategy.
+// Supported strategies:
+//   - "SINGLE": Returns a single best bid (PriceSelector with limit 1)
+//   - "TOP_N": Returns up to MaxAdsInPod bids (PriceSelector)
+//
+// The following strategies are defined as constants but not yet implemented;
+// they fall back to TOP_N behaviour:
+//   - "max_revenue", "min_duration", "balanced"
+func NewSelector(strategy vast.SelectionStrategy) Selector {
+	switch strategy {
+	case vast.SelectionSingle:
+		return NewPriceSelector(1)
+	case vast.SelectionTopN:
+		return NewPriceSelector(0) // 0 means use cfg.MaxAdsInPod
+	default:
+		// Strategies max_revenue / min_duration / balanced are reserved for future
+		// implementation. Until then, fall back to TOP_N (price-ranked, up to MaxAdsInPod).
+		return NewPriceSelector(0)
+	}
+}
+
+// NewSingleSelector creates a selector that returns only the best bid.
+func NewSingleSelector() Selector {
+	return NewPriceSelector(1)
+}
+
+// NewTopNSelector creates a selector that returns up to MaxAdsInPod bids.
+func NewTopNSelector() Selector {
+	return NewPriceSelector(0)
+}
+
+// Ensure PriceSelector implements Selector interface.
+var _ Selector = (*PriceSelector)(nil)
