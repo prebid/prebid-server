@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "invalid-ext",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "w": 300, "h": 250 },
+        "ext": "not-json"
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "impID 1:",
+      "comparison": "regex"
+    },
+    {
+      "value": "no valid impressions",
+      "comparison": "literal"
+    }
+  ]
+}
