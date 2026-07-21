@@ -8,7 +8,9 @@ capabilities:
     mediaTypes:
       - banner
       - native
+      - video
   site:
     mediaTypes:
       - banner
       - native
+      - video
