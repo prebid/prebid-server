@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v4/privacy/gdpr"
 	"github.com/prebid/prebid-server/v4/privacy/gpp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseParams(t *testing.T) {
@@ -737,53 +738,8 @@ func TestParseParamsGppSid(t *testing.T) {
 	}
 }
 
-func TestValidateGppSid(t *testing.T) {
-	tests := []struct {
-		name        string
-		gppSid      string
-		expectedErr string
-	}{
-		{
-			name:        "valid single value",
-			gppSid:      "2",
-			expectedErr: "",
-		},
-		{
-			name:        "valid multiple values",
-			gppSid:      "2,4,6",
-			expectedErr: "",
-		},
-		{
-			name:        "empty string is valid",
-			gppSid:      "",
-			expectedErr: "",
-		},
-		{
-			name:        "invalid - contains letters",
-			gppSid:      "2,abc,6",
-			expectedErr: "GPP SID '2,abc,6' is not a valid comma-separated list of integers.",
-		},
-		{
-			name:        "invalid - malformed",
-			gppSid:      "malformed",
-			expectedErr: "GPP SID 'malformed' is not a valid comma-separated list of integers.",
-		},
-		{
-			name:        "invalid - special characters",
-			gppSid:      "2;4;6",
-			expectedErr: "GPP SID '2;4;6' is not a valid comma-separated list of integers.",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := validateGppSid(test.gppSid)
-			assert.Equal(t, test.expectedErr, err)
-		})
-	}
-}
-
 func TestReadPolicyGPP(t *testing.T) {
+	const gppConsent = "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"
 	tests := []struct {
 		name            string
 		params          Params
@@ -791,51 +747,91 @@ func TestReadPolicyGPP(t *testing.T) {
 		expectNilPolicy bool
 		expectWarning   bool
 		warningContains string
+		expectedGpp     string
+		expectedGppSid  []int8
 	}{
 		{
 			name: "GPP with valid gpp_sid",
 			params: Params{
-				Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				Consent:     gppConsent,
 				ConsentType: ConsentGPP,
 				GppSid:      "2,4,6",
 			},
-			gdprEnabled:     true,
-			expectNilPolicy: false,
-			expectWarning:   false,
+			gdprEnabled:    true,
+			expectedGpp:    gppConsent,
+			expectedGppSid: []int8{2, 4, 6},
 		},
 		{
-			name: "GPP with invalid gpp_sid",
+			name: "GPP with invalid gpp_sid still writes the consent string",
 			params: Params{
-				Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				Consent:     gppConsent,
 				ConsentType: ConsentGPP,
 				GppSid:      "malformed",
 			},
 			gdprEnabled:     true,
-			expectNilPolicy: false,
 			expectWarning:   true,
 			warningContains: "not a valid comma-separated list of integers",
+			expectedGpp:     gppConsent,
+			expectedGppSid:  nil,
 		},
 		{
 			name: "GPP without gpp_sid",
 			params: Params{
-				Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+				Consent:     gppConsent,
 				ConsentType: ConsentGPP,
 				GppSid:      "",
 			},
-			gdprEnabled:     true,
-			expectNilPolicy: false,
-			expectWarning:   false,
+			gdprEnabled:    true,
+			expectedGpp:    gppConsent,
+			expectedGppSid: nil,
 		},
 		{
-			name: "GPP without consent string",
+			// Per issue #3577, gpp_sid is written independently of consent_string.
+			name: "GPP with only gpp_sid and no consent string writes gppsid",
 			params: Params{
 				Consent:     "",
 				ConsentType: ConsentGPP,
 				GppSid:      "2,4",
 			},
+			gdprEnabled:    true,
+			expectedGpp:    "",
+			expectedGppSid: []int8{2, 4},
+		},
+		{
+			name: "GPP with only a malformed gpp_sid and no consent string writes nothing but warns",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentGPP,
+				GppSid:      "malformed",
+			},
+			gdprEnabled:     true,
+			expectWarning:   true,
+			warningContains: "not a valid comma-separated list of integers",
+			expectedGpp:     "",
+			expectedGppSid:  nil,
+		},
+		{
+			name: "GPP with neither consent string nor gpp_sid returns nil policy",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentGPP,
+				GppSid:      "",
+			},
 			gdprEnabled:     true,
 			expectNilPolicy: true,
-			expectWarning:   false,
+		},
+		{
+			// Guard regression: the gpp_sid carve-out is scoped to consent_type=4 only. A non-GPP
+			// consent type with an empty consent string still short-circuits to NilPolicy even if a
+			// stray gpp_sid is present.
+			name: "non-GPP consent type with empty consent and a stray gpp_sid returns nil policy",
+			params: Params{
+				Consent:     "",
+				ConsentType: ConsentUSPrivacy,
+				GppSid:      "2,4",
+			},
+			gdprEnabled:     true,
+			expectNilPolicy: true,
 		},
 	}
 
@@ -843,86 +839,27 @@ func TestReadPolicyGPP(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			writer, warning := ReadPolicy(test.params, test.gdprEnabled)
 
-			if test.expectNilPolicy {
-				assert.IsType(t, privacy.NilPolicyWriter{}, writer)
-			} else {
-				assert.IsType(t, gpp.ConsentWriter{}, writer)
-			}
-
 			if test.expectWarning {
 				assert.Error(t, warning)
 				assert.Contains(t, warning.Error(), test.warningContains)
 			} else {
 				assert.NoError(t, warning)
 			}
-		})
-	}
-}
 
-func TestGppConsentWriterWrite(t *testing.T) {
-	tests := []struct {
-		name              string
-		writer            gpp.ConsentWriter
-		expectedGpp       string
-		expectedGppSid    []int8
-		expectedGppSidNil bool
-	}{
-		{
-			name: "write both gpp and gpp_sid",
-			writer: gpp.ConsentWriter{
-				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				GppSid:  "2,4,6",
-			},
-			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-			expectedGppSid:    []int8{2, 4, 6},
-			expectedGppSidNil: false,
-		},
-		{
-			name: "write only gpp string",
-			writer: gpp.ConsentWriter{
-				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				GppSid:  "",
-			},
-			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-			expectedGppSid:    nil,
-			expectedGppSidNil: true,
-		},
-		{
-			name: "invalid gpp_sid should result in nil GPPSID",
-			writer: gpp.ConsentWriter{
-				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				GppSid:  "malformed",
-			},
-			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-			expectedGppSid:    nil,
-			expectedGppSidNil: true,
-		},
-		{
-			name: "empty gpp string and empty gpp_sid",
-			writer: gpp.ConsentWriter{
-				Consent: "",
-				GppSid:  "",
-			},
-			expectedGpp:       "",
-			expectedGppSid:    nil,
-			expectedGppSidNil: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			req := &openrtb2.BidRequest{}
-			err := test.writer.Write(req)
-
-			assert.NoError(t, err)
-			assert.NotNil(t, req.Regs)
-			assert.Equal(t, test.expectedGpp, req.Regs.GPP)
-
-			if test.expectedGppSidNil {
-				assert.Nil(t, req.Regs.GPPSID)
-			} else {
-				assert.Equal(t, test.expectedGppSid, req.Regs.GPPSID)
+			if test.expectNilPolicy {
+				assert.IsType(t, privacy.NilPolicyWriter{}, writer)
+				return
 			}
+
+			require.IsType(t, gpp.ConsentWriter{}, writer)
+
+			// The writer must apply regardless of the warning: assert it mutates the request
+			// (a valid gpp string is written even when gpp_sid is malformed). This guards C1.
+			req := &openrtb2.BidRequest{}
+			require.NoError(t, writer.Write(req))
+			require.NotNil(t, req.Regs)
+			assert.Equal(t, test.expectedGpp, req.Regs.GPP)
+			assert.Equal(t, test.expectedGppSid, req.Regs.GPPSID)
 		})
 	}
 }

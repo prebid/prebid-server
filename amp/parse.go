@@ -56,9 +56,17 @@ const (
 )
 
 // ReadPolicy returns a privacy writer in accordance to the query values consent, consent_type and gdpr_applies.
-// Returned policy writer could either be GDPR, CCPA or NilPolicy. The second return value is a warning.
+// Returned policy writer could either be GDPR, CCPA, GPP or NilPolicy. The second return value is a
+// non-fatal warning whose meaning depends on the consent type: for GPP an invalid gpp_sid does not
+// invalidate the (still valid) GPP consent string, so the caller applies the writer and only collects the
+// warning; for CCPA/TCF2 a warning about the consent string itself means the caller drops the writer. See
+// overrideWithParams in endpoints/openrtb2/amp_auction.go for how the caller makes that split.
 func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
-	if len(ampParams.Consent) == 0 {
+	// GPP is the one consent type where a signal can arrive without a consent string: per issue #3577
+	// gpp_sid must be written to regs.gppsid independently of consent_string. So don't short-circuit the
+	// GPP case when only gpp_sid is present (matches the PBS-Java AMP behavior).
+	isGPPWithSid := ampParams.ConsentType == ConsentGPP && len(ampParams.GppSid) > 0
+	if len(ampParams.Consent) == 0 && !isGPPWithSid {
 		return privacy.NilPolicyWriter{}, nil
 	}
 
@@ -88,10 +96,14 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 			warningMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
 		}
 	case ConsentGPP:
-		if gppSidErr := validateGppSid(ampParams.GppSid); len(gppSidErr) > 0 {
-			warningMsg = gppSidErr
+		// Parse gpp_sid once here and pass the typed slice to the writer. AMP intentionally degrades
+		// gracefully: an invalid gpp_sid only produces a warning and the GPP consent string is still
+		// written (unlike endpoints/setuid.go, which rejects a malformed gpp_sid with a 400).
+		gppSID, err := stringutil.StrToInt8Slice(ampParams.GppSid)
+		if err != nil {
+			warningMsg = fmt.Sprintf("GPP SID '%s' is not a valid comma-separated list of integers.", ampParams.GppSid)
 		}
-		rv = gpp.ConsentWriter{Consent: ampParams.Consent, GppSid: ampParams.GppSid}
+		rv = gpp.ConsentWriter{Consent: ampParams.Consent, GppSid: gppSID}
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
@@ -152,20 +164,6 @@ func validateTCf2ConsentString(consent string) string {
 	} else {
 		return fmt.Sprintf("Consent string '%s' is not a valid TCF2 consent string.", consent)
 	}
-	return ""
-}
-
-// validateGppSid validates that gpp_sid is a comma-separated list of integers
-func validateGppSid(gppSid string) string {
-	if len(gppSid) == 0 {
-		return ""
-	}
-
-	_, err := stringutil.StrToInt8Slice(gppSid)
-	if err != nil {
-		return fmt.Sprintf("GPP SID '%s' is not a valid comma-separated list of integers.", gppSid)
-	}
-
 	return ""
 }
 

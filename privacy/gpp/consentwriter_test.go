@@ -9,58 +9,53 @@ import (
 
 func TestConsentWriter_Write(t *testing.T) {
 	tests := []struct {
-		name              string
-		writer            ConsentWriter
-		expectedGpp       string
-		expectedGppSid    []int8
-		expectedGppSidNil bool
+		name           string
+		nilReq         bool
+		writer         ConsentWriter
+		expectedGpp    string
+		expectedGppSid []int8
 	}{
 		{
 			name: "write both gpp and gpp_sid",
 			writer: ConsentWriter{
 				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				GppSid:  "2,4,6",
+				GppSid:  []int8{2, 4, 6},
 			},
-			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-			expectedGppSid:    []int8{2, 4, 6},
-			expectedGppSidNil: false,
+			expectedGpp:    "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			expectedGppSid: []int8{2, 4, 6},
 		},
 		{
 			name: "write only gpp string",
 			writer: ConsentWriter{
 				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				GppSid:  "",
+				GppSid:  nil,
 			},
-			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-			expectedGppSid:    nil,
-			expectedGppSidNil: true,
+			expectedGpp:    "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+			expectedGppSid: nil,
 		},
 		{
-			name: "invalid gpp_sid results in nil GPPSID",
+			name: "write only gpp_sid, empty consent",
 			writer: ConsentWriter{
-				Consent: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-				GppSid:  "malformed",
+				Consent: "",
+				GppSid:  []int8{2},
 			},
-			expectedGpp:       "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
-			expectedGppSid:    nil,
-			expectedGppSidNil: true,
+			expectedGpp:    "",
+			expectedGppSid: []int8{2},
 		},
 		{
-			name: "nil request does not panic",
+			name:   "nil request does not panic",
+			nilReq: true,
 			writer: ConsentWriter{
 				Consent: "test",
-				GppSid:  "2",
+				GppSid:  []int8{2},
 			},
-			expectedGpp:       "",
-			expectedGppSid:    nil,
-			expectedGppSidNil: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			var req *openrtb2.BidRequest
-			if test.name != "nil request does not panic" {
+			if !test.nilReq {
 				req = &openrtb2.BidRequest{}
 			}
 
@@ -70,12 +65,7 @@ func TestConsentWriter_Write(t *testing.T) {
 			if req != nil {
 				assert.NotNil(t, req.Regs)
 				assert.Equal(t, test.expectedGpp, req.Regs.GPP)
-
-				if test.expectedGppSidNil {
-					assert.Nil(t, req.Regs.GPPSID)
-				} else {
-					assert.Equal(t, test.expectedGppSid, req.Regs.GPPSID)
-				}
+				assert.Equal(t, test.expectedGppSid, req.Regs.GPPSID)
 			}
 		})
 	}
