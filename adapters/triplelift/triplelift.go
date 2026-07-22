@@ -50,9 +50,9 @@ func processImp(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
 	imp.TagID = tlext.InvCode
 	// floor is optional
 	if tlext.Floor != nil {
-        imp.BidFloor = *tlext.Floor
-    }
-    // Normalize bid floor to USD - TLX expects USD
+		imp.BidFloor = *tlext.Floor
+	}
+	// Normalize bid floor to USD - TLX expects USD
 	if err := resolveBidFloorCurrency(imp, reqInfo); err != nil {
 		return err
 	}
@@ -147,8 +147,8 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	count := getBidCount(bidResp)
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
 
-    // Bids are always denominated in USD
-    bidResponse.Currency = "USD"
+	// Bids are always denominated in USD
+	bidResponse.Currency = "USD"
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
