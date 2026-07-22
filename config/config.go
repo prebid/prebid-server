@@ -1248,8 +1248,11 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("price_floors.fetcher.max_retries", 10)
 
 	v.SetDefault("account_defaults.events_enabled", false)
+	
 	v.SetDefault("compression.response.enable_gzip", false)
 	v.SetDefault("compression.request.enable_gzip", false)
+	v.BindEnv("compression.response.enable_gzip")
+	v.BindEnv("compression.request.enable_gzip")
 
 	v.SetDefault("certificates_file", "")
 
