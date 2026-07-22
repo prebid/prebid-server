@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Aniview Adapter Params",
+  "description": "A schema which validates params accepted by the Aniview adapter",
+  "type": "object",
+  "properties": {
+    "AV_PUBLISHERID": {
+      "type": "string",
+      "description": "The Aniview publisher (network) id.",
+      "minLength": 1
+    },
+    "AV_CHANNELID": {
+      "type": "string",
+      "description": "The Aniview channel id.",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "AV_PUBLISHERID",
+    "AV_CHANNELID"
+  ],
+  "additionalProperties": false
+}

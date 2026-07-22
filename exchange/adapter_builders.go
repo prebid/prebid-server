@@ -40,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/alkimi"
 	alliance_gravity "github.com/prebid/prebid-server/v4/adapters/alliance_gravity"
 	"github.com/prebid/prebid-server/v4/adapters/amx"
+	"github.com/prebid/prebid-server/v4/adapters/aniview"
 	"github.com/prebid/prebid-server/v4/adapters/apacdex"
 	"github.com/prebid/prebid-server/v4/adapters/appnexus"
 	"github.com/prebid/prebid-server/v4/adapters/appush"
@@ -313,6 +314,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAlkimi:            alkimi.Builder,
 		openrtb_ext.BidderAllianceGravity:   alliance_gravity.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
+		openrtb_ext.BidderAniview:           aniview.Builder,
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAppush:            appush.Builder,

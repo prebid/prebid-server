@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "https://publisher.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "ext": {
+          "bidder": {
+            "AV_PUBLISHERID": "1234567890abcdef12345678",
+            "AV_CHANNELID": "   "
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Missing AV_CHANNELID for imp: imp-1",
+      "comparison": "literal"
+    }
+  ]
+}
