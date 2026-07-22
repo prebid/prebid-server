@@ -134,6 +134,42 @@ func TestMissingValues(t *testing.T) {
 	assert.Len(t, errs, 3, "Fetching 3 unknown reqs+imps should return 3 errors")
 }
 
+func TestFetchResponsesRfcCompliant(t *testing.T) {
+	fetcher, close := newTestResponseFetcher(t, []string{"resp-1", "resp-2"}, true)
+	defer close()
+
+	respData, errs := fetcher.FetchResponses(context.Background(), []string{"resp-1", "resp-2"})
+	assert.Empty(t, errs, "Unexpected errors fetching known responses")
+	assertMapKeys(t, respData, "resp-1", "resp-2")
+}
+
+func TestFetchResponses(t *testing.T) {
+	fetcher, close := newTestResponseFetcher(t, []string{"resp-1", "resp-2"}, false)
+	defer close()
+
+	respData, errs := fetcher.FetchResponses(context.Background(), []string{"resp-1", "resp-2"})
+	assert.Empty(t, errs, "Unexpected errors fetching known responses")
+	assertMapKeys(t, respData, "resp-1", "resp-2")
+}
+
+func TestFetchResponsesMissingValues(t *testing.T) {
+	fetcher, close := newPartialResponseFetcher(t, []string{"resp-1", "resp-2", "resp-3"}, []string{"resp-1"}, false)
+	defer close()
+
+	respData, errs := fetcher.FetchResponses(context.Background(), []string{"resp-1", "resp-2", "resp-3"})
+	assertMapKeys(t, respData, "resp-1")
+	assert.Len(t, errs, 2, "Fetching missing responses should return NotFound errors")
+}
+
+func TestFetchResponsesMissingValuesRfcCompliant(t *testing.T) {
+	fetcher, close := newPartialResponseFetcher(t, []string{"resp-1", "resp-2", "resp-3"}, []string{"resp-1"}, true)
+	defer close()
+
+	respData, errs := fetcher.FetchResponses(context.Background(), []string{"resp-1", "resp-2", "resp-3"})
+	assertMapKeys(t, respData, "resp-1")
+	assert.Len(t, errs, 2, "Fetching missing responses should return NotFound errors")
+}
+
 func TestFetchAccountsRfcCompliant(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, true)
 	defer close()
@@ -438,6 +474,53 @@ func newTestAccountFetcher(t *testing.T, expectAccIDs []string, useRfcCompliantB
 	handler := newAccountHandler(t, expectAccIDs, useRfcCompliantBuilder)
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL, useRfcCompliantBuilder), server.Close
+}
+
+func newTestResponseFetcher(t *testing.T, expectResponseIDs []string, useRfcCompliantBuilder bool) (fetcher *HttpFetcher, closer func()) {
+	handler := newResponseHandler(t, expectResponseIDs, expectResponseIDs, useRfcCompliantBuilder)
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL, useRfcCompliantBuilder), server.Close
+}
+
+func newPartialResponseFetcher(t *testing.T, expectResponseIDs []string, returnedResponseIDs []string, useRfcCompliantBuilder bool) (fetcher *HttpFetcher, closer func()) {
+	handler := newResponseHandler(t, expectResponseIDs, returnedResponseIDs, useRfcCompliantBuilder)
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL, useRfcCompliantBuilder), server.Close
+}
+
+func newResponseHandler(t *testing.T, expectResponseIDs []string, returnedResponseIDs []string, useRfcCompliantBuilder bool) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		var gotResponseIDs []string
+		if !useRfcCompliantBuilder {
+			gotResponseIDs = richSplit(query.Get("response-ids"))
+		} else {
+			gotResponseIDs = query["response-id"]
+		}
+
+		assertMatches(t, gotResponseIDs, expectResponseIDs)
+
+		responseIDSet := make(map[string]struct{}, len(returnedResponseIDs))
+		for _, responseID := range returnedResponseIDs {
+			responseIDSet[responseID] = struct{}{}
+		}
+
+		responseData := make(map[string]json.RawMessage, len(returnedResponseIDs))
+		for _, responseID := range gotResponseIDs {
+			if _, ok := responseIDSet[responseID]; ok && responseID != "" {
+				responseData[responseID] = jsonifyID(responseID)
+			}
+		}
+
+		respObj := responseDataContract{Responses: responseData}
+
+		if respBytes, err := jsonutil.Marshal(respObj); err != nil {
+			t.Errorf("failed to marshal responseDataContract in test:  %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.Write(respBytes)
+		}
+	}
 }
 
 func newAccountHandler(t *testing.T, expectAccIDs []string, useRfcCompliantBuilder bool) func(w http.ResponseWriter, r *http.Request) {
