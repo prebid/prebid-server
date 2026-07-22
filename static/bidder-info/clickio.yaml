@@ -1,0 +1,19 @@
+endpoint: "https://o.clickiocdn.com/bids"
+geoscope:
+  - global
+maintainer:
+  email: "github@clickio.com"
+gvlVendorID: 1500
+openrtb:
+  version: 2.6
+  gpp-supported: true
+  multiformat-supported: false
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  key: "clickio"
+  redirect:
+    url: "https://o.clickiocdn.com/pbs_usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
