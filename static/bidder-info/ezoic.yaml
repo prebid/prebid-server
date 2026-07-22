@@ -1,0 +1,23 @@
+# Ezoic requires publisher domains to be registered and approved before
+# bidding; unapproved inventory receives no-bid responses. Contact
+# prebid@ezoic.com to get set up.
+endpoint: "https://g.ezoic.net/ezoic/prebid/adapter/ortb"
+maintainer:
+  email: prebid@ezoic.com
+gvlVendorID: 347
+geoscope:
+  - global
+openrtb:
+  version: 2.6
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
