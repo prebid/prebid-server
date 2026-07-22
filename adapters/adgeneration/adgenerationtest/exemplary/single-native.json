@@ -6,23 +6,17 @@
         },
         "device": {
             "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
-            "ip": "0.0.0.0",
-            "os": "ios",
-            "ifa": "idfa"
+            "ip": "0.0.0.0"
         },
-        "app": {
-            "bundle": "adgneration"
+        "source": {
+            "tid": "transactionid"
         },
         "imp": [
             {
                 "id": "some-impression-id",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        }
-                    ]
+                "native": {
+                    "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":3,\"data\":{\"type\":2,\"len\":150}}]}",
+                    "ver": "1.2"
                 },
                 "ext": {
                     "bidder": {
@@ -36,7 +30,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://d.socdm.com/adgen/prebid?id=58278&posall=SSPLOC&sdktype=2",
+                "uri": "https://d.socdm.com/adgen/prebid?id=58278&posall=SSPLOC&sdktype=0",
                 "body": {
                     "currency": "JPY",
                     "pbver": "unknown",
@@ -47,13 +41,9 @@
                         "imp": [
                             {
                                 "id": "some-impression-id",
-                                "banner": {
-                                    "format": [
-                                        {
-                                            "w": 300,
-                                            "h": 250
-                                        }
-                                    ]
+                                "native": {
+                                    "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627}},{\"id\":3,\"data\":{\"type\":2,\"len\":150}}]}",
+                                    "ver": "1.2"
                                 },
                                 "ext": {
                                     "bidder": {
@@ -65,18 +55,15 @@
                         "site": {
                             "page": "http://example.com/test.html"
                         },
-                        "app": {
-                            "bundle": "adgneration"
-                        },
                         "device": {
                             "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
-                            "ip": "0.0.0.0",
-                            "os": "ios",
-                            "ifa": "idfa"
+                            "ip": "0.0.0.0"
                         },
-                        "tmax": 500
-                    },
-                    "imark": 1
+                        "tmax": 500,
+                        "source": {
+                            "tid": "transactionid"
+                        }
+                    }
                 },
                 "headers": {
                     "Accept": [
@@ -100,17 +87,27 @@
                     "locationid": "58278",
                     "results": [
                         {
-                            "ad": "<!DOCTYPE html>\n  <head>\n    <meta charset=\"UTF-8\">\n  </head>\n  <body>\n    <div id=\"medibasspContainer\">sample-banner-ios</div>\n  </body>\n",
-                            "beacon": "<img src=\"https://tg.socdm.com/bc/v3?b=beaconID&t=.gif\" width=\"1\" height=\"1\" style=\"display:none;border:none;padding:0;margin:0;width:1px;height:1px\"/>",
-                            "beaconurl": "https://tg.socdm.com/bc/v3?b=beaconID&t=.gif",
-                            "cpm": 46.6,
-                            "creativeid": "Dummy_supership.jp",
+                            "ad": "",
+                            "beacon": "",
+                            "beaconurl": "https://tg.socdm.com/native/beacon/nativeBeaconID.gif",
+                            "cpm": 55.5,
+                            "creativeid": "Dummy_native_supership.jp",
                             "dealid": "test-deal-id",
-                            "h": 250,
-                            "w": 300,
                             "ttl": 10,
-                            "landing_url": "",
-                            "scheduleid": "512601"
+                            "landing_url": "https://supership.jp/",
+                            "scheduleid": "512601",
+                            "native": {
+                                "native": {
+                                    "ver": "1.2",
+                                    "assets": [
+                                        { "id": 1, "required": 1, "title": { "text": "Sample Native Ad" } },
+                                        { "id": 2, "required": 1, "img": { "type": 3, "url": "https://i.socdm.com/img/main.png", "w": 1200, "h": 627 } },
+                                        { "id": 3, "data": { "type": 2, "value": "Supership Inc." } }
+                                    ],
+                                    "link": { "url": "https://supership.jp/" },
+                                    "imptrackers": [ "https://tg.socdm.com/native/imp/nativeID" ]
+                                }
+                            }
                         }
                     ]
                 }
@@ -125,14 +122,12 @@
                     "bid": {
                         "id": "58278",
                         "impid": "some-impression-id",
-                        "price": 46.6,
-                        "adm": "<div id=\"medibasspContainer\">sample-banner-ios</div>\n  <img src=\"https://tg.socdm.com/bc/v3?b=beaconID&t=.gif\" width=\"1\" height=\"1\" style=\"display:none;border:none;padding:0;margin:0;width:1px;height:1px\"/>",
-                        "crid": "Dummy_supership.jp",
-                        "w": 300,
-                        "h": 250,
+                        "price": 55.5,
+                        "adm": "{\"native\":{\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Sample Native Ad\"}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"url\":\"https://i.socdm.com/img/main.png\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"type\":2,\"value\":\"Supership Inc.\"}}],\"imptrackers\":[\"https://tg.socdm.com/native/imp/nativeID\",\"https://tg.socdm.com/native/beacon/nativeBeaconID.gif\"],\"link\":{\"url\":\"https://supership.jp/\"},\"ver\":\"1.2\"}}",
+                        "crid": "Dummy_native_supership.jp",
                         "dealid": "test-deal-id"
                     },
-                    "type": "banner"
+                    "type": "native"
                 }
             ]
         }
