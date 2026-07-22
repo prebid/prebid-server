@@ -15,7 +15,7 @@
         "ext": {
           "bidder": {
             "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "placementId": "testPlacementId"
+            "region": "EU"
           }
         }
       }
@@ -28,7 +28,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb-us.superedge.co.jp/bid?sk=f9f2b1ef23fe2759c2cad0953029a94b",
+        "uri": "https://rtb-eu.superedge.co.jp/bid?sk=f9f2b1ef23fe2759c2cad0953029a94b",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -47,7 +47,7 @@
               "ext": {
                 "bidder": {
                   "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-                  "placementId": "testPlacementId"
+                  "region": "EU"
                 }
               }
             }

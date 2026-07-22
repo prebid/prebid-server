@@ -14,8 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "placementId": "testPlacementId"
+            "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
           }
         }
       }
@@ -46,8 +45,7 @@
               },
               "ext": {
                 "bidder": {
-                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-                  "placementId": "testPlacementId"
+                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
                 }
               }
             }

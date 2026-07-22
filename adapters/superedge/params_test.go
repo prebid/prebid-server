@@ -39,6 +39,9 @@ var validParams = []string{
 	`{"sk": "1e9ead5397ae44d78c6792bc7cddc050"}`,
 	`{"sk": "27bb74d57068406ebcbb29ab9bfeb9b9"}`,
 	`{"sk": "0c3356713c184ca186779eecdd5aff5d"}`,
+	`{"sk": "f9f2b1ef23fe2759c2cad0953029a94b", "region": "US"}`,
+	`{"sk": "f9f2b1ef23fe2759c2cad0953029a94b", "region": "EU"}`,
+	`{"sk": "f9f2b1ef23fe2759c2cad0953029a94b", "region": "APAC"}`,
 }
 
 var invalidParams = []string{
@@ -47,4 +50,7 @@ var invalidParams = []string{
 	`{"region": "APAC"}`,
 	`{"region": "US"}`,
 	`{"tn": "27bb74d57068406ebcbb29ab9bfeb9b9"}`,
+	`{"sk": 123}`,
+	`{"sk": ""}`,
+	`{"sk": "f9f2b1ef23fe2759c2cad0953029a94b", "region": "JP"}`,
 }

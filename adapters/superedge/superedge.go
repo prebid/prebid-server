@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -61,7 +62,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("x-openrtb-version", "2.6")
 	return &adapters.RequestData{
 		Method:  "POST",
 		Uri:     endPoint,
@@ -71,23 +72,10 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 	}, nil
 }
 
-// getSuperEdgeExt extracts ExtSuperEdge from the first imp's ext.bidder or request.ext.prebid.bidderparams.
+// getSuperEdgeExt extracts ExtSuperEdge from the first imp's ext.bidder.
 func getSuperEdgeExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtSuperEdge, error) {
 	var extSuperEdge openrtb_ext.ExtSuperEdge
 
-	// Try to get sk from request.ext.prebid.bidderparams first
-	if request.Ext != nil {
-		reqExt := &openrtb_ext.ExtRequest{}
-		if err := jsonutil.Unmarshal(request.Ext, reqExt); err == nil {
-			if len(reqExt.Prebid.BidderParams) > 0 {
-				if err := jsonutil.Unmarshal(reqExt.Prebid.BidderParams, &extSuperEdge); err == nil && extSuperEdge.Sk != "" {
-					return &extSuperEdge, nil
-				}
-			}
-		}
-	}
-
-	// Fallback to first imp's ext.bidder
 	if len(request.Imp) == 0 {
 		return nil, errors.New("superEdge sk not found")
 	}
@@ -101,14 +89,29 @@ func getSuperEdgeExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtSuperEdge, e
 		return nil, err
 	}
 
-	if extSuperEdge.Sk != "" {
-		return &extSuperEdge, nil
+	if extSuperEdge.Sk == "" {
+		return nil, errors.New("superEdge sk not found")
 	}
-	return nil, errors.New("superEdge sk not found")
+	return &extSuperEdge, nil
 }
 
 func (a *adapter) getEndPoint(ext *openrtb_ext.ExtSuperEdge) (string, error) {
-	return macros.ResolveMacros(a.EndpointTemplate, map[string]string{"sk": ext.Sk})
+	endPointParams := macros.EndpointTemplateParams{
+		Host:      url.PathEscape(getRegionHost(ext.Region)),
+		AccountID: url.PathEscape(ext.Sk),
+	}
+	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
+}
+
+func getRegionHost(region string) string {
+	switch region {
+	case "EU":
+		return "rtb-eu"
+	case "APAC":
+		return "rtb-sg"
+	default:
+		return "rtb-us"
+	}
 }
 
 func preProcess(request *openrtb2.BidRequest) {
@@ -137,6 +140,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 		return nil, []error{err}
 	}
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	var errs []error
 	for _, seatBid := range bidResp.SeatBid {
 		for idx := range seatBid.Bid {

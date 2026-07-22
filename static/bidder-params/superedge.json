@@ -6,12 +6,15 @@
   "properties": {
     "sk": {
       "type": "string",
-      "description": "Different Publisher has different sk，communicate with SuperEdge to obtain it.",
+      "description": "Publisher token, communicated by SuperEdge.",
       "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "description": "Server region: US for US Region, EU for EU Region, SG for Singapore Region. Default is US.",
+      "enum": ["US", "EU", "APAC"]
     }
   },
-  "required": [
-    "sk"
-  ],
+  "required": ["sk"],
   "additionalProperties": false
 }

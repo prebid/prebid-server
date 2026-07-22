@@ -14,9 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-            "placementId": "testPlacementId",
-            "region": "EU"
+            "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
           }
         }
       }
@@ -24,14 +22,6 @@
     "site": {
       "id": "test-site-id",
       "page": "https://www.example.com/"
-    },
-    "ext": {
-      "prebid": {
-        "bidderparams": {
-          "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-          "region": "EU"
-        }
-      }
     }
   },
   "httpCalls": [
@@ -55,9 +45,7 @@
               },
               "ext": {
                 "bidder": {
-                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-                  "region": "EU",
-                  "placementId": "testPlacementId"
+                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
                 }
               }
             }
@@ -65,14 +53,6 @@
           "site": {
             "id": "test-site-id",
             "page": "https://www.example.com/"
-          },
-          "ext": {
-            "prebid": {
-              "bidderparams": {
-                "sk": "f9f2b1ef23fe2759c2cad0953029a94b",
-                "region": "EU"
-              }
-            }
           }
         },
         "impIDs": [

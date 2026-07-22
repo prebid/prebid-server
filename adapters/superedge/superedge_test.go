@@ -15,7 +15,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderSuperEdge, config.Adapter{
-		Endpoint: "https://rtb-us.superedge.co.jp/bid?sk={{.sk}}"}, config.Server{ExternalUrl: "http://hosturl.com"})
+		Endpoint: "https://{{.Host}}.superedge.co.jp/bid?sk={{.AccountID}}"}, config.Server{ExternalUrl: "http://hosturl.com"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

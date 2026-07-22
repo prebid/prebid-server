@@ -13,9 +13,7 @@
           ]
         },
         "ext": {
-          "bidder": {
-            "placementId": "testPlacementId"
-          }
+          "bidder": {}
         }
       }
     ],
