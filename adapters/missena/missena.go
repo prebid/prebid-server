@@ -37,10 +37,19 @@ type MissenaAdRequest struct {
 }
 
 type BidServerResponse struct {
-	Ad        string  `json:"ad"`
-	Cpm       float64 `json:"cpm"`
-	Currency  string  `json:"currency"`
-	RequestID string  `json:"requestId"`
+	Ad         string                `json:"ad"`
+	Cpm        float64               `json:"cpm"`
+	Currency   string                `json:"currency"`
+	RequestID  string                `json:"requestId"`
+	Width      int64                 `json:"width"`
+	Height     int64                 `json:"height"`
+	CreativeID string                `json:"creativeId"`
+	DealID     string                `json:"dealId"`
+	Meta       BidServerResponseMeta `json:"meta"`
+}
+
+type BidServerResponseMeta struct {
+	AdvertiserDomains []string `json:"advertiserDomains"`
 }
 
 type UserParams struct {
@@ -271,12 +280,21 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidRes := adapters.NewBidderResponseWithBidsCapacity(1)
 	bidRes.Currency = missenaResponse.Currency
 
+	crid := missenaResponse.CreativeID
+	if crid == "" {
+		crid = missenaResponse.RequestID
+	}
+
 	responseBid := &openrtb2.Bid{
-		ID:    request.ID,
-		Price: float64(missenaResponse.Cpm),
-		ImpID: request.Imp[0].ID,
-		AdM:   missenaResponse.Ad,
-		CrID:  missenaResponse.RequestID,
+		ID:      request.ID,
+		Price:   float64(missenaResponse.Cpm),
+		ImpID:   request.Imp[0].ID,
+		AdM:     missenaResponse.Ad,
+		CrID:    crid,
+		W:       missenaResponse.Width,
+		H:       missenaResponse.Height,
+		DealID:  missenaResponse.DealID,
+		ADomain: missenaResponse.Meta.AdvertiserDomains,
 	}
 
 	b := &adapters.TypedBid{

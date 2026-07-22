@@ -109,7 +109,14 @@
           "ad": "<div>test ad</div>",
           "cpm": 1.5,
           "currency": "EUR",
-          "requestId": "test-request-id"
+          "requestId": "test-request-id",
+          "width": 1,
+          "height": 1,
+          "creativeId": "test-creative-id",
+          "dealId": "test-deal-id",
+          "meta": {
+            "advertiserDomains": ["example-advertiser.com"]
+          }
         }
       }
     }
@@ -124,7 +131,11 @@
             "impid": "test-imp-id",
             "price": 1.5,
             "adm": "<div>test ad</div>",
-            "crid": "test-request-id"
+            "crid": "test-creative-id",
+            "w": 1,
+            "h": 1,
+            "dealid": "test-deal-id",
+            "adomain": ["example-advertiser.com"]
           },
           "type": "banner"
         }
