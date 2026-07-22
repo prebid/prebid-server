@@ -1,7 +1,12 @@
 {
-  "description": "Tests an unknown bid type response",
   "mockBidRequest": {
     "id": "test-request-id",
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "123456789"
+      }
+    },
     "imp": [
       {
         "id": "imp1",
@@ -11,7 +16,7 @@
         },
         "ext": {
           "bidder": {
-            "pix_id": "123"
+            "pix_id": "55463"
           }
         }
       }
@@ -22,11 +27,21 @@
       "expectedRequest": {
         "uri": "http://any.url",
         "headers": {
-          "Content-Type": ["application/json"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "body": {
           "id": "test-request-id",
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "123456789"
+            }
+          },
           "imp": [
             {
               "id": "imp1",
@@ -36,22 +51,20 @@
               },
               "ext": {
                 "bidder": {
-                  "pix_id": "123"
+                  "pix_id": "55463"
                 }
               }
             }
           ]
         },
-        "impIDs": ["imp1"]
+        "impIDs": [
+          "imp1"
+        ]
       },
       "mockResponse": {
         "status": 200,
-        "headers": {
-          "Content-Type": ["application/json"]
-        },
         "body": {
           "id": "test-response-id",
-          "cur": "USD",
           "seatbid": [
             {
               "bid": [
@@ -59,10 +72,11 @@
                   "id": "bid1",
                   "impid": "imp1",
                   "price": 1.23,
-                  "adm": "<div>Ad</div>",
+                  "adm": "<div>Banner Ad</div>",
+                  "mtype": 1,
                   "ext": {
                     "prebid": {
-                      "type": "unknown"
+                      "type": "banner"
                     }
                   }
                 }
@@ -73,11 +87,26 @@
       }
     }
   ],
-  "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Failed to parse bid mediatype for impression imp1 from MType",
-      "comparison": "literal"
+      "bids": [
+        {
+          "bid": {
+            "id": "bid1",
+            "impid": "imp1",
+            "price": 1.23,
+            "adm": "<div>Banner Ad</div>",
+            "mtype": 1,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ],
+      "currency": "USD"
     }
   ]
 }

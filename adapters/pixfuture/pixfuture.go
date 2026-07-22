@@ -104,7 +104,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(expectedBids)
-	bidResponse.Currency = bidResp.Cur
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 
 	var errs []error
 	for i := range bidResp.SeatBid {
@@ -114,9 +116,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
-				errs = append(errs, &errortypes.BadServerResponse{
-					Message: "Failed to parse impression \"" + bid.ImpID + "\" mediatype",
-				})
+				errs = append(errs, err)
 				continue
 			}
 

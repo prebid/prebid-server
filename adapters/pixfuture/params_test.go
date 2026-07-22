@@ -19,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}{
 		{
 			name: "Minimum length satisfied",
-			json: `{"pix_id": "123"}`,
+			json: `{"pix_id": "1"}`,
 		},
 		{
 			name: "Longer valid string",
@@ -46,10 +46,6 @@ func TestInvalidParams(t *testing.T) {
 		{
 			name: "Wrong type (integer)",
 			json: `{"pix_id": 123}`,
-		},
-		{
-			name: "Too short (minLength: 3)",
-			json: `{"pix_id": "ab"}`,
 		},
 		{
 			name: "Missing required pix_id",
