@@ -588,6 +588,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	testCases := []struct {
 		description              string
 		givenConfig              config.UserSync
+		givenCookieSyncConfig    config.CookieSync
 		givenBody                io.Reader
 		givenGDPRConfig          config.GDPR
 		givenCCPAEnabled         bool
@@ -1108,6 +1109,78 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedError:        errCookieSyncAccountBlocked.Error(),
 			givenAccountRequired: true,
 		},
+		{
+			description: "IFrame Disabled For All Bidders Via Account Config Wildcard",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"account":"IFrameDisabledAllAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"a", "b", "c"}},
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+				},
+			},
+			expectedPrivacy: macros.UserSyncPrivacy{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: nil,
+				},
+				Limit: 20,
+				Privacy: usersyncPrivacy{
+					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
+		{
+			description: "IFrame Disabled For Specific Bidders",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["biddera", "bidderb"],` +
+				`"account":"IFrameDisabledAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				PriorityGroups: [][]string{{"biddera", "bidderb", "bidderc"}},
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+				},
+			},
+			givenCookieSyncConfig: config.CookieSync{
+				DisabledIFrameBidders: []string{"bidderb"},
+			},
+			expectedPrivacy: macros.UserSyncPrivacy{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"biddera", "bidderb"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: nil,
+				},
+				Limit: 20,
+				Privacy: usersyncPrivacy{
+					gdprPermissions: &fakePermissions{},
+					activityRequest: emptyActivityPoliciesRequest,
+					gdprSignal:      -1,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame: usersync.CompositeFilter{
+						RequestFilter: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+						AccountFilter: usersync.NewSpecificBidderFilter([]string{"bidderb", "biddera"}, usersync.BidderFilterModeExclude),
+					},
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -1128,6 +1201,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		endpoint := cookieSyncEndpoint{
 			config: &config.Configuration{
 				UserSync:        test.givenConfig,
+				CookieSync:      test.givenCookieSyncConfig,
 				AccountRequired: test.givenAccountRequired,
 			},
 			privacyConfig: usersyncPrivacyConfig{
@@ -1139,6 +1213,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
 				"TestAccount":                   testAccountData,
 				"DisabledAccount":               json.RawMessage(`{"disabled":true}`),
+				"IFrameDisabledAccount":         json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true, "disabled_iframe_bidders": ["biddera"]}}`),
+				"IFrameDisabledAllAccount":      json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true, "disabled_iframe_bidders": ["*"]}}`),
 				"ValidAccountInvalidActivities": json.RawMessage(`{"privacy":{"allowactivities":{"syncUser":{"rules":[{"condition":{"componentName": ["bidderA.bidderB.bidderC"]}}]}}}}`),
 			}},
 		}
@@ -1306,7 +1382,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: nil,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: nil,
 					MaxLimit:     nil,
 				},
@@ -1321,7 +1397,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: intNegative,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 				},
 			},
@@ -1335,7 +1411,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: int0,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 				},
 			},
@@ -1349,7 +1425,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: int10,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 					MaxLimit:     int30,
 				},
@@ -1364,7 +1440,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: int30,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultLimit: int20,
 					MaxLimit:     int10,
 				},
@@ -1379,7 +1455,7 @@ func TestSetLimit(t *testing.T) {
 				Limit: intMax,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{},
+				CookieSync: config.AccountCookieSync{},
 			},
 			expectedRequest: cookieSyncRequest{
 				Limit: intMax,
@@ -1412,7 +1488,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: nil,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: nil,
 				},
 			},
@@ -1426,7 +1502,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: nil,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: &coopSyncTrue,
 				},
 			},
@@ -1440,7 +1516,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: &coopSyncTrue,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: nil,
 				},
 			},
@@ -1454,7 +1530,7 @@ func TestSetCooperativeSync(t *testing.T) {
 				CooperativeSync: &coopSyncFalse,
 			},
 			givenAccount: &config.Account{
-				CookieSync: config.CookieSync{
+				CookieSync: config.AccountCookieSync{
 					DefaultCoopSync: &coopSyncTrue,
 				},
 			},
@@ -1534,6 +1610,188 @@ func TestCookieSyncWriteParseRequestErrorMetrics(t *testing.T) {
 		endpoint.writeParseRequestErrorMetrics(test.err)
 
 		mockMetrics.AssertExpectations(t)
+	}
+}
+
+func TestMergeDisabledIFrameBidders(t *testing.T) {
+	testCases := map[string]struct {
+		givenHost    []string
+		givenAccount []string
+		expected     []string
+	}{
+		"both_nil": {
+			givenHost:    nil,
+			givenAccount: nil,
+			expected:     nil,
+		},
+		"host_only": {
+			givenHost:    []string{"bidderA", "bidderB"},
+			givenAccount: nil,
+			expected:     []string{"bidderA", "bidderB"},
+		},
+		"account_only": {
+			givenHost:    nil,
+			givenAccount: []string{"bidderA", "bidderB"},
+			expected:     []string{"bidderA", "bidderB"},
+		},
+		"union": {
+			givenHost:    []string{"bidderA"},
+			givenAccount: []string{"bidderB"},
+			expected:     []string{"bidderA", "bidderB"},
+		},
+		"dedupe_host_precedence": {
+			givenHost:    []string{"bidderA", "bidderB"},
+			givenAccount: []string{"bidderB", "bidderC"},
+			expected:     []string{"bidderA", "bidderB", "bidderC"},
+		},
+		"wildcard_from_host": {
+			givenHost:    []string{"*"},
+			givenAccount: []string{"bidderA"},
+			expected:     []string{"*", "bidderA"},
+		},
+		"wildcard_from_account": {
+			givenHost:    []string{"bidderA"},
+			givenAccount: []string{"*"},
+			expected:     []string{"bidderA", "*"},
+		},
+		"wildcard_not_first_in_host": {
+			givenHost:    []string{"bidderA", "*", "bidderB"},
+			givenAccount: []string{"bidderC"},
+			expected:     []string{"bidderA", "*", "bidderB", "bidderC"},
+		},
+		"wildcard_not_first_in_account": {
+			givenHost:    []string{"bidderA"},
+			givenAccount: []string{"bidderB", "*"},
+			expected:     []string{"bidderA", "bidderB", "*"},
+		},
+		"wildcard_in_both_deduped": {
+			givenHost:    []string{"bidderA", "*"},
+			givenAccount: []string{"*", "bidderB"},
+			expected:     []string{"bidderA", "*", "bidderB"},
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := mergeDisabledIFrameBidders(test.givenHost, test.givenAccount)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestApplyDisabledIFrameBidders(t *testing.T) {
+	allowAll := usersync.SyncTypeFilter{
+		IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+		Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+	}
+
+	testCases := map[string]struct {
+		givenFilter       usersync.SyncTypeFilter
+		givenBidders      []string
+		expectedIFrame    map[string]bool
+		expectedRedirect  map[string]bool
+		expectedExactSync *usersync.SyncTypeFilter
+	}{
+		"nil": {
+			givenFilter:  allowAll,
+			givenBidders: nil,
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+		},
+		"empty": {
+			givenFilter:  allowAll,
+			givenBidders: []string{},
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+		},
+		"wildcard": {
+			givenFilter:  allowAll,
+			givenBidders: []string{"*"},
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+		},
+		"specific_bidders": {
+			givenFilter:  allowAll,
+			givenBidders: []string{"bidderA", "bidderB"},
+			expectedIFrame: map[string]bool{
+				"biddera": false,
+				"bidderb": false,
+				"bidderc": true,
+			},
+			expectedRedirect: map[string]bool{
+				"biddera": true,
+			},
+		},
+		// wildcard in givenBidders overrides the request-level redirect filter
+		"wildcard_overrides_request_filter": {
+			givenFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewSpecificBidderFilter([]string{"biddera"}, usersync.BidderFilterModeExclude),
+			},
+			givenBidders: []string{"*"},
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewSpecificBidderFilter([]string{"biddera"}, usersync.BidderFilterModeExclude),
+			},
+		},
+		// request already excludes all iframe; account restriction still results in all blocked
+		"request_excludes_all": {
+			givenFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+			givenBidders: []string{"bidderA"},
+			expectedIFrame: map[string]bool{
+				"biddera": false,
+				"bidderb": false,
+			},
+		},
+		// request includes specific bidders; account disables one of them
+		"request_includes_specific": {
+			givenFilter: usersync.SyncTypeFilter{
+				IFrame:   usersync.NewSpecificBidderFilter([]string{"bidderA", "bidderB"}, usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+			givenBidders: []string{"bidderA"},
+			expectedIFrame: map[string]bool{
+				"biddera": false,
+				"bidderb": true,
+				"bidderc": false,
+			},
+		},
+		// wildcard takes precedence when mixed with specific bidders
+		"wildcard_with_specific": {
+			givenFilter:  allowAll,
+			givenBidders: []string{"*", "biddera"},
+			expectedExactSync: &usersync.SyncTypeFilter{
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+			},
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := applyDisabledIFrameBidders(test.givenFilter, test.givenBidders)
+
+			if test.expectedExactSync != nil {
+				assert.Equal(t, *test.expectedExactSync, result)
+			}
+
+			for bidder, expected := range test.expectedIFrame {
+				assert.Equal(t, expected, result.IFrame.Allowed(bidder), "IFrame.Allowed(%s)", bidder)
+			}
+
+			for bidder, expected := range test.expectedRedirect {
+				assert.Equal(t, expected, result.Redirect.Allowed(bidder), "Redirect.Allowed(%s)", bidder)
+			}
+		})
 	}
 }
 
@@ -2517,7 +2775,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 	testCases := []struct {
 		description            string
 		givenGlobalConfig      config.UserSync
-		givenAccountCookieSync config.CookieSync
+		givenAccountCookieSync config.AccountCookieSync
 		expectedPriorityGroups [][]string
 	}{
 		{
@@ -2525,7 +2783,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(true),
 				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
 			},
@@ -2536,7 +2794,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(false),
 				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
 			},
@@ -2547,7 +2805,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: nil,
 				PriorityGroups:  [][]string{{"account1", "account2"}, {"account3"}},
 			},
@@ -2558,7 +2816,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(true),
 				PriorityGroups:  [][]string{},
 			},
@@ -2569,7 +2827,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: [][]string{{"global1", "global2"}, {"global3"}},
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: ptrutil.ToPtr(true),
 				PriorityGroups:  nil,
 			},
@@ -2580,7 +2838,7 @@ func TestCookieSyncFindPriorityGroups(t *testing.T) {
 			givenGlobalConfig: config.UserSync{
 				PriorityGroups: nil,
 			},
-			givenAccountCookieSync: config.CookieSync{
+			givenAccountCookieSync: config.AccountCookieSync{
 				DefaultCoopSync: nil,
 				PriorityGroups:  [][]string{{"account1", "account2"}},
 			},
