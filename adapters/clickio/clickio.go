@@ -34,7 +34,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}
 	}
 
-	body, err := json.Marshal(&requestCopy)
+	body, err := jsonutil.Marshal(&requestCopy)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -58,13 +58,13 @@ func updateImpExtWithParams(imp *openrtb2.Imp) error {
 	}
 
 	var impExt map[string]json.RawMessage
-	if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 		return fmt.Errorf("failed to parse imp.ext for imp %s: %w", imp.ID, err)
 	}
 
 	params := map[string]json.RawMessage{}
 	if rawParams, exists := impExt["params"]; exists && len(rawParams) > 0 {
-		if err := json.Unmarshal(rawParams, &params); err != nil {
+		if err := jsonutil.Unmarshal(rawParams, &params); err != nil {
 			return fmt.Errorf("failed to parse imp.ext.params for imp %s: %w", imp.ID, err)
 		}
 	}
@@ -82,13 +82,13 @@ func updateImpExtWithParams(imp *openrtb2.Imp) error {
 		return nil
 	}
 
-	rawParams, err := json.Marshal(params)
+	rawParams, err := jsonutil.Marshal(params)
 	if err != nil {
 		return fmt.Errorf("failed to marshal imp.ext.params for imp %s: %w", imp.ID, err)
 	}
 	impExt["params"] = rawParams
 
-	rawExt, err := json.Marshal(impExt)
+	rawExt, err := jsonutil.Marshal(impExt)
 	if err != nil {
 		return fmt.Errorf("failed to marshal imp.ext for imp %s: %w", imp.ID, err)
 	}
@@ -110,7 +110,7 @@ func extractParamFromPrebid(impExt map[string]json.RawMessage, key string) (json
 	}
 
 	var prebid map[string]json.RawMessage
-	if err := json.Unmarshal(rawPrebid, &prebid); err != nil {
+	if err := jsonutil.Unmarshal(rawPrebid, &prebid); err != nil {
 		return nil, false
 	}
 
@@ -120,7 +120,7 @@ func extractParamFromPrebid(impExt map[string]json.RawMessage, key string) (json
 	}
 
 	var bidderMap map[string]json.RawMessage
-	if err := json.Unmarshal(rawBidder, &bidderMap); err != nil {
+	if err := jsonutil.Unmarshal(rawBidder, &bidderMap); err != nil {
 		return nil, false
 	}
 
@@ -136,7 +136,7 @@ func extractParamFromBidderExt(raw json.RawMessage, key string) (json.RawMessage
 		return nil, false
 	}
 	var bidderExt map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(raw, &bidderExt); err != nil {
 		return nil, false
 	}
 	value, ok := bidderExt[key]
@@ -194,18 +194,10 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 		if imp.ID != impID {
 			continue
 		}
-		switch {
-		case imp.Banner != nil:
+		if imp.Banner != nil {
 			return openrtb_ext.BidTypeBanner, nil
-		case imp.Video != nil:
-			return openrtb_ext.BidTypeVideo, nil
-		case imp.Native != nil:
-			return openrtb_ext.BidTypeNative, nil
-		case imp.Audio != nil:
-			return openrtb_ext.BidTypeAudio, nil
-		default:
-			return "", &errortypes.BadInput{Message: fmt.Sprintf("Failed to resolve media type for impression \"%s\"", impID)}
 		}
+		return "", &errortypes.BadInput{Message: fmt.Sprintf("Failed to resolve media type for impression \"%s\"", impID)}
 	}
 	return "", &errortypes.BadInput{Message: fmt.Sprintf("Failed to find impression \"%s\"", impID)}
 }
