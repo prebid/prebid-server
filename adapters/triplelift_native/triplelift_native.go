@@ -69,12 +69,12 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest, reqInfo *adapte
 		imp.TagID = tlext.InvCode
 	}
 
-    // floor is optional
+	// floor is optional
 	if tlext.Floor != nil {
 		imp.BidFloor = *tlext.Floor
 	}
 
-    // Normalize bid floor to USD
+	// Normalize bid floor to USD
 	if err := resolveBidFloorCurrency(imp, reqInfo); err != nil {
 		return err
 	}

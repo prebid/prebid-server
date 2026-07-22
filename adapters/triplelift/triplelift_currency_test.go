@@ -49,8 +49,8 @@ var currencyTestCases = map[string]struct {
 		assertError: assert.NoError,
 	},
 	"usd lowercase - no conversion needed": {
-		imp: openrtb2.Imp{BidFloor: 2.0, BidFloorCur: "usd"},
-		setMock: func(m *mock.Mock) {},
+		imp:         openrtb2.Imp{BidFloor: 2.0, BidFloorCur: "usd"},
+		setMock:     func(m *mock.Mock) {},
 		expectedImp: openrtb2.Imp{BidFloor: 2.0, BidFloorCur: "USD"},
 		assertError: assert.NoError,
 	},
