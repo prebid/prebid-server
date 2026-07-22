@@ -62,7 +62,7 @@ func (p *httpApprovalProvider) Lookup(ctx context.Context, cfg moduleConfig, acc
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, nil, fmt.Errorf("approval endpoint returned status %d: %s", resp.StatusCode, string(responseBody))
+		return nil, nil, fmt.Errorf("approval endpoint returned status %d", resp.StatusCode)
 	}
 
 	var response approvalResponse
@@ -80,6 +80,7 @@ func parseApprovalResponse(response approvalResponse, requestedCreatives []creat
 	}
 
 	statuses := make(map[string]approvalStatus, len(response.Creatives))
+	seen := make(map[string]struct{}, len(response.Creatives))
 	warnings := make([]string, 0)
 	for _, creative := range response.Creatives {
 		if creative.CreativeApprovalID == "" {
@@ -90,15 +91,16 @@ func parseApprovalResponse(response approvalResponse, requestedCreatives []creat
 			warnings = append(warnings, fmt.Sprintf("approval response creative skipped because creative_approval_id %q was not requested", creative.CreativeApprovalID))
 			continue
 		}
+		if _, duplicate := seen[creative.CreativeApprovalID]; duplicate {
+			delete(statuses, creative.CreativeApprovalID)
+			warnings = append(warnings, fmt.Sprintf("approval response creative invalidated because creative_approval_id %q was duplicated", creative.CreativeApprovalID))
+			continue
+		}
+		seen[creative.CreativeApprovalID] = struct{}{}
 		if !isValidApprovalStatus(creative.Status) {
 			warnings = append(warnings, fmt.Sprintf("approval response creative skipped because status %q is not supported", creative.Status))
 			continue
 		}
-		if _, exists := statuses[creative.CreativeApprovalID]; exists {
-			warnings = append(warnings, fmt.Sprintf("approval response duplicate creative skipped for creative_approval_id %q", creative.CreativeApprovalID))
-			continue
-		}
-
 		statuses[creative.CreativeApprovalID] = creative.Status
 	}
 

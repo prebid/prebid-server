@@ -1,8 +1,8 @@
 # DOOH Creative Approval API Contract
 
-`prebid.doohcreativeapproval` sends one bulk POST for uncached or due-for-refresh non-exempt creatives in a DOOH auction. The endpoint returns each creative's approval status.
+`prebid.doohcreativeapproval` schedules one background bulk POST for uncached or due-for-refresh non-exempt creatives observed in a DOOH auction. The endpoint returns each creative's approval status for later auctions.
 
-PBS uses this API during auction execution, so the endpoint should be fast and safe to call repeatedly. If PBS cannot get a usable response for a creative without cached status, that bid fails closed.
+The auction does not wait for this API. A first-seen creative is suppressed as `pending`, and existing creatives keep using their cached status while a refresh runs. The endpoint should be idempotent and safe to call repeatedly.
 
 ## Matching
 
@@ -28,6 +28,7 @@ creative_approval_id = "v1:" + sha256(account_id + "\x1f" + bidder + "\x1f" + bi
       "campaign_id": "camp-1",
       "advertiser_domains": ["example.com"],
       "categories": ["IAB1"],
+      "cat_tax": 6,
       "media_type": "video",
       "width": 1920,
       "height": 1080,
@@ -56,24 +57,25 @@ The request may contain one or more creatives. Fields other than `creative_appro
 
 Allowed statuses:
 
-- `approved`: PBS allows the bid and marks the cached status fresh for `approved_ttl_seconds`.
-- `rejected`: PBS removes the bid and marks the cached status fresh for `rejected_ttl_seconds`.
-- `pending`: PBS removes the bid and marks the cached status fresh for `pending_ttl_seconds`.
+- `approved`: later auctions allow the bid and the status is refreshed after `approved_ttl_seconds`.
+- `rejected`: later auctions remove the bid and the status is refreshed after `rejected_ttl_seconds`.
+- `pending`: later auctions remove the bid and the status is refreshed after `pending_ttl_seconds`.
 
-Missing response entries, unknown statuses, and duplicate entries fail closed for the affected creative. Endpoint errors, timeouts, and malformed responses fail closed when PBS has no cached status for that creative. If PBS has a cached status, it keeps using the cached status and schedules another refresh attempt.
+Duplicate entries invalidate the returned status for that creative. Missing entries, unknown statuses, duplicate entries, endpoint errors, timeouts, and malformed responses leave an existing cached status unchanged. A creative without a prior usable status remains `pending`.
 
 ## Cache Semantics
 
 PBS caches approval statuses in process only. The approval endpoint remains the durable source of truth.
 
-The `*_ttl_seconds` settings control status freshness, not cache retention. When a cached status is due for refresh, PBS calls the approval endpoint. If the refresh request fails and the entry still exists in cache, PBS keeps using the cached status.
+The `*_ttl_seconds` settings control status freshness, not cache retention. When a cached status is due for refresh, PBS continues using it and calls the approval endpoint in the background. An unusable response keeps that status and schedules another attempt after `pending_ttl_seconds`.
 
-`cache_size_bytes` limits cache memory use. Entries may be evicted when the cache reaches capacity. Eviction is handled like a missing status: the next matching bid causes PBS to request a status from the approval endpoint, and the bid is suppressed unless PBS gets a usable status.
+`cache_size_bytes` limits cache memory use and must be at least 524288 bytes. Entries may be evicted when the cache reaches capacity. Eviction is handled like a missing status: the next matching bid is suppressed and schedules a background lookup.
 
-If PBS cannot write an entry to the cache, the hook returns a warning. The current auction still uses any fresh status returned by the endpoint, but the creative may be looked up again on a later request.
+Refreshes for the same creative are coalesced within one PBS process. `max_concurrent_lookups` limits concurrent bulk requests; when all slots are busy, PBS retains the current status and a later matching auction can start the refresh.
 
 ## Limitations
 
 - PBS does not expose a cache inspection or cache invalidation API for this module.
-- Approval changes are observed when a cached status is due for refresh, is evicted, or is missing.
+- Approval changes are observed after a background refresh completes, when a cached status is due for refresh, is evicted, or is missing.
 - v1 does not inspect ad markup or media content when generating `creative_approval_id`; it relies on `bid.crid` being stable for the creative approval unit.
+- Cache state and refresh coordination are per PBS process, not shared across a cluster.

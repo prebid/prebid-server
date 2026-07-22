@@ -10,25 +10,28 @@ import (
 )
 
 const (
-	defaultPlatformDOOH       = "dooh"
-	defaultTimeoutMS          = 100
-	defaultCacheSizeBytes     = 10 * 1024 * 1024
-	defaultApprovedTTLSeconds = 3600
-	defaultRejectedTTLSeconds = 300
-	defaultPendingTTLSeconds  = 60
+	defaultPlatformDOOH         = "dooh"
+	defaultTimeoutMS            = 100
+	defaultCacheSizeBytes       = 10 * 1024 * 1024
+	minimumCacheSizeBytes       = 512 * 1024
+	defaultMaxConcurrentLookups = 8
+	defaultApprovedTTLSeconds   = 3600
+	defaultRejectedTTLSeconds   = 300
+	defaultPendingTTLSeconds    = 60
 )
 
 type moduleConfig struct {
-	Enabled            bool              `json:"enabled,omitempty"`
-	Platforms          []string          `json:"platforms,omitempty"`
-	Endpoint           string            `json:"endpoint,omitempty"`
-	Headers            map[string]string `json:"headers,omitempty"`
-	TimeoutMS          int               `json:"timeout_ms,omitempty"`
-	CacheSizeBytes     int               `json:"cache_size_bytes,omitempty"`
-	ApprovedTTLSeconds int               `json:"approved_ttl_seconds,omitempty"`
-	RejectedTTLSeconds int               `json:"rejected_ttl_seconds,omitempty"`
-	PendingTTLSeconds  int               `json:"pending_ttl_seconds,omitempty"`
-	ExemptBidders      []string          `json:"exempt_bidders,omitempty"`
+	Enabled              bool              `json:"enabled,omitempty"`
+	Platforms            []string          `json:"platforms,omitempty"`
+	Endpoint             string            `json:"endpoint,omitempty"`
+	Headers              map[string]string `json:"headers,omitempty"`
+	TimeoutMS            int               `json:"timeout_ms,omitempty"`
+	CacheSizeBytes       int               `json:"cache_size_bytes,omitempty"`
+	MaxConcurrentLookups int               `json:"max_concurrent_lookups,omitempty"`
+	ApprovedTTLSeconds   int               `json:"approved_ttl_seconds,omitempty"`
+	RejectedTTLSeconds   int               `json:"rejected_ttl_seconds,omitempty"`
+	PendingTTLSeconds    int               `json:"pending_ttl_seconds,omitempty"`
+	ExemptBidders        []string          `json:"exempt_bidders,omitempty"`
 }
 
 type moduleConfigOverlay struct {
@@ -56,13 +59,14 @@ func parseModuleConfig(data json.RawMessage) (moduleConfig, error) {
 
 func defaultModuleConfig() moduleConfig {
 	return moduleConfig{
-		Enabled:            true,
-		Platforms:          []string{defaultPlatformDOOH},
-		TimeoutMS:          defaultTimeoutMS,
-		CacheSizeBytes:     defaultCacheSizeBytes,
-		ApprovedTTLSeconds: defaultApprovedTTLSeconds,
-		RejectedTTLSeconds: defaultRejectedTTLSeconds,
-		PendingTTLSeconds:  defaultPendingTTLSeconds,
+		Enabled:              true,
+		Platforms:            []string{defaultPlatformDOOH},
+		TimeoutMS:            defaultTimeoutMS,
+		CacheSizeBytes:       defaultCacheSizeBytes,
+		MaxConcurrentLookups: defaultMaxConcurrentLookups,
+		ApprovedTTLSeconds:   defaultApprovedTTLSeconds,
+		RejectedTTLSeconds:   defaultRejectedTTLSeconds,
+		PendingTTLSeconds:    defaultPendingTTLSeconds,
 	}
 }
 
@@ -134,6 +138,16 @@ func normalizeModuleConfig(cfg moduleConfig) (moduleConfig, error) {
 	}
 	if cfg.CacheSizeBytes == 0 {
 		cfg.CacheSizeBytes = defaultCacheSizeBytes
+	}
+	if cfg.CacheSizeBytes < minimumCacheSizeBytes {
+		return cfg, fmt.Errorf("cache_size_bytes must be at least %d", minimumCacheSizeBytes)
+	}
+
+	if cfg.MaxConcurrentLookups < 0 {
+		return cfg, fmt.Errorf("max_concurrent_lookups cannot be negative")
+	}
+	if cfg.MaxConcurrentLookups == 0 {
+		cfg.MaxConcurrentLookups = defaultMaxConcurrentLookups
 	}
 
 	if cfg.ApprovedTTLSeconds < 0 {

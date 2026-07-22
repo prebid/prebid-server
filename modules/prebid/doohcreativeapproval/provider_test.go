@@ -127,8 +127,19 @@ func TestParseApprovalResponseWarnings(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, map[string]approvalStatus{"v1:approved": approvalStatusApproved}, statuses)
+	assert.Empty(t, statuses)
 	assert.Len(t, warnings, 4)
+}
+
+func TestParseApprovalResponseInvalidatesDuplicateAfterInvalidStatus(t *testing.T) {
+	statuses, warnings, err := parseApprovalResponse(approvalResponse{Creatives: []creativeApprovalResult{
+		{CreativeApprovalID: "v1:creative", Status: "unsupported"},
+		{CreativeApprovalID: "v1:creative", Status: approvalStatusApproved},
+	}}, []creativeApproval{{CreativeApprovalID: "v1:creative"}})
+
+	require.NoError(t, err)
+	assert.Empty(t, statuses)
+	assert.Len(t, warnings, 2)
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)

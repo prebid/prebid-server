@@ -1,8 +1,8 @@
 # DOOH Creative Approval
 
-`prebid.doohcreativeapproval` lets a publisher approve DOOH creatives before they can compete in an auction. The module runs only for DOOH requests and fails closed: a non-exempt bid is allowed through only when its creative approval status is `approved`.
+`prebid.doohcreativeapproval` lets a publisher approve DOOH creatives before they can compete in an auction. The module runs only for DOOH requests. Once the module is active, a non-exempt bid is allowed through only when its last-known creative approval status is `approved`.
 
-PBS is not the durable approval system. It caches statuses in process to reduce endpoint calls and avoid repeated lookups after failures. The publisher approval service remains the source of truth.
+PBS is not the durable approval system. Each PBS process caches statuses locally and refreshes them in the background. The publisher approval service remains the source of truth.
 
 ## Terms And Scope
 
@@ -31,6 +31,7 @@ hooks:
           - dooh
         timeout_ms: 100
         cache_size_bytes: 10485760
+        max_concurrent_lookups: 8
         approved_ttl_seconds: 3600
         rejected_ttl_seconds: 300
         pending_ttl_seconds: 60
@@ -76,23 +77,25 @@ Publisher-specific endpoint config should live in account config:
 }
 ```
 
-Account config can override `enabled`, `platforms`, `endpoint`, `headers`, `timeout_ms`, status refresh TTLs, and `exempt_bidders`. `cache_size_bytes` is host-level because the cache is shared by the module instance.
+Account config can override `enabled`, `platforms`, `endpoint`, `headers`, `timeout_ms`, status refresh TTLs, and `exempt_bidders`. `cache_size_bytes` and `max_concurrent_lookups` are host-level because the cache and refresh limit are shared by the module instance.
+
+`timeout_ms` bounds each background HTTP request. It does not extend the auction or hook execution timeout.
 
 ## Behavior
 
 - Exempt bidders bypass approval and do not call the publisher endpoint.
-- `approved` creatives pass.
-- `rejected`, `pending`, missing, malformed, timed-out, or unknown creatives are removed.
-- When a cached status is due for refresh, PBS asks the publisher endpoint for a fresh status.
-- If the refresh request fails and PBS still has a cached status, PBS keeps using that cached status and schedules another refresh attempt.
-- If there is no cached status and the publisher endpoint cannot return a usable response, PBS treats the creative as `pending`.
-- If PBS cannot write an approval status to the in-process cache, the current bid decision still uses the fresh endpoint response, but the hook returns a warning and the creative may be looked up again on a future request.
+- A first-seen creative is treated as `pending` and removed from the current auction. PBS starts a background lookup for later auctions.
+- Cached `approved` creatives pass. Cached `rejected` and `pending` creatives are removed.
+- When a cached status is due for refresh, PBS keeps using that status while refreshing it in the background.
+- Endpoint errors, timeouts, malformed responses, missing entries, unknown statuses, and duplicate entries do not replace an existing status. PBS retries after `pending_ttl_seconds`.
+- If no prior status exists and the endpoint cannot return a usable status, the creative remains `pending`.
+- Refreshes for the same creative are coalesced. At most `max_concurrent_lookups` bulk requests run in one PBS process.
 
 ## Cache Behavior
 
-The `*_ttl_seconds` settings control when a cached status is due for refresh. They do not delete the last-known status. If a refresh request fails because the publisher endpoint is down, timed out, or returned an unusable response, PBS continues using the last cached status.
+The `*_ttl_seconds` settings control when a cached status is due for refresh. They do not delete the last-known status. Refreshes happen outside the auction path, and an unusable refresh leaves the current status unchanged.
 
-`cache_size_bytes` is a memory cap, not a guarantee that every cached creative remains resident. If the cache reaches capacity, entries can be evicted. An evicted entry is treated as unknown: the next matching bid triggers a publisher endpoint lookup, and the bid is suppressed unless PBS gets a usable status.
+`cache_size_bytes` is a memory cap, not a guarantee that every cached creative remains resident. It must be at least 524288 bytes. If the cache reaches capacity, entries can be evicted. An evicted entry is treated as unknown, so its next bid is suppressed while PBS refreshes it.
 
 PBS does not expose an admin or inspection API for this cache. The approval endpoint should keep the durable approval records.
 
@@ -100,8 +103,9 @@ PBS does not expose an admin or inspection API for this cache. The approval endp
 
 - v1 supports only `platforms: ["dooh"]`. Site and app requests are intentionally ignored.
 - v1 assumes `account_id + bidder + bid.crid` identifies the creative approval unit. It does not hash ad markup, media files, or preview URLs.
-- Approval changes are picked up through refresh attempts, cache misses, or cache eviction, not through a push channel into PBS.
-- Endpoint failures and malformed responses fail closed for creatives without cached status. Creatives with cached status keep using that status until a usable refresh succeeds or the cache entry is evicted.
-- Fresh `pending`, `rejected`, and missing statuses fail closed.
+- Approval changes are picked up through background refreshes, cache misses, or cache eviction, not through a push channel into PBS.
+- Cache contents and refresh work are local to each PBS process. Multiple PBS instances can refresh the same creative independently.
+- A missing endpoint leaves the module inactive for that account. Invalid account config or a PBS hook execution failure can prevent filtering; these are configuration or host-execution failures rather than approval lookup results.
+- The first auction for an uncached creative is always suppressed, even if the publisher endpoint would immediately approve it.
 
 See `API_CONTRACT.md` for the external approval API.

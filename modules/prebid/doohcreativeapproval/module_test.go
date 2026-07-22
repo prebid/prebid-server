@@ -3,7 +3,9 @@ package doohcreativeapproval
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,7 +21,8 @@ func TestBuilder(t *testing.T) {
 	module, err := Builder(json.RawMessage(`{
 		"enabled": true,
 		"endpoint": "http://approval.example.com",
-		"cache_size_bytes": 1048576
+		"cache_size_bytes": 1048576,
+		"max_concurrent_lookups": 2
 	}`), moduledeps.ModuleDeps{HTTPClient: http.DefaultClient})
 
 	require.NoError(t, err)
@@ -28,6 +31,7 @@ func TestBuilder(t *testing.T) {
 	assert.Equal(t, "http://approval.example.com", creativeApprovalModule.cfg.Endpoint)
 	assert.NotNil(t, creativeApprovalModule.provider)
 	assert.NotNil(t, creativeApprovalModule.cache)
+	assert.Equal(t, 2, cap(creativeApprovalModule.refreshes.slots))
 }
 
 func TestBuilderInvalidConfig(t *testing.T) {
@@ -119,17 +123,17 @@ func TestHandleProcessedAuctionHookInvalidAccountConfig(t *testing.T) {
 
 func TestHandleAllProcessedBidResponsesHookNoActiveContext(t *testing.T) {
 	provider := &fakeApprovalProvider{}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: newApprovalCache(1024 * 1024)}
+	module := newTestModule(provider, nil)
 	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(openrtb_ext.BidderName("appnexus"), testBid("cr-1"))}
 
 	result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: "acct"}, payload)
 
 	require.NoError(t, err)
 	assert.Empty(t, result.ChangeSet.Mutations())
-	assert.Equal(t, 0, provider.calls)
+	assert.Equal(t, 0, provider.callCount())
 }
 
-func TestHandleAllProcessedBidResponsesHookFiltersByApprovalStatus(t *testing.T) {
+func TestHandleAllProcessedBidResponsesHookUsesLookupResultsOnLaterAuctions(t *testing.T) {
 	accountID := "acct"
 	bidder := openrtb_ext.BidderName("appnexus")
 	approvedID := creativeApprovalID(accountID, bidder, "approved")
@@ -140,18 +144,26 @@ func TestHandleAllProcessedBidResponsesHookFiltersByApprovalStatus(t *testing.T)
 			rejectedID: approvalStatusRejected,
 		},
 	}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: newApprovalCache(1024 * 1024)}
-	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("approved"), testBid("rejected"))}
+	module := newTestModule(provider, nil)
 
-	result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, payload)
-	payload = applyAllProcessedMutations(payload, result)
+	firstPayload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("approved"), testBid("rejected"))}
+	firstResult, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, firstPayload)
+	firstPayload = applyAllProcessedMutations(firstPayload, firstResult)
 
 	require.NoError(t, err)
-	assert.Len(t, result.ChangeSet.Mutations(), 1)
-	require.Contains(t, payload.Responses, bidder)
-	require.Len(t, payload.Responses[bidder].Bids, 1)
-	assert.Equal(t, "approved", payload.Responses[bidder].Bids[0].Bid.CrID)
-	assert.Equal(t, 1, provider.calls)
+	assert.NotContains(t, firstPayload.Responses, bidder)
+	waitForApprovalRefreshes(t, module)
+
+	secondPayload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("approved"), testBid("rejected"))}
+	secondResult, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, secondPayload)
+	secondPayload = applyAllProcessedMutations(secondPayload, secondResult)
+
+	require.NoError(t, err)
+	assert.Len(t, secondResult.ChangeSet.Mutations(), 1)
+	require.Contains(t, secondPayload.Responses, bidder)
+	require.Len(t, secondPayload.Responses[bidder].Bids, 1)
+	assert.Equal(t, "approved", secondPayload.Responses[bidder].Bids[0].Bid.CrID)
+	assert.Equal(t, 1, provider.callCount())
 }
 
 func TestHandleAllProcessedBidResponsesHookMissingResponseCachesPending(t *testing.T) {
@@ -159,7 +171,7 @@ func TestHandleAllProcessedBidResponsesHookMissingResponseCachesPending(t *testi
 	bidder := openrtb_ext.BidderName("appnexus")
 	creativeID := creativeApprovalID(accountID, bidder, "missing")
 	provider := &fakeApprovalProvider{}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: newApprovalCache(1024 * 1024)}
+	module := newTestModule(provider, nil)
 	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("missing"))}
 
 	result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, payload)
@@ -168,9 +180,11 @@ func TestHandleAllProcessedBidResponsesHookMissingResponseCachesPending(t *testi
 	require.NoError(t, err)
 	assert.Len(t, result.ChangeSet.Mutations(), 1)
 	assert.NotContains(t, payload.Responses, bidder)
+	waitForApprovalRefreshes(t, module)
 	lookup, ok := module.cache.get(creativeID)
 	assert.True(t, ok)
 	assert.Equal(t, approvalStatusPending, lookup.Status)
+	assert.False(t, lookup.RefreshDue)
 }
 
 func TestHandleAllProcessedBidResponsesHookProviderErrorCachesPending(t *testing.T) {
@@ -178,7 +192,7 @@ func TestHandleAllProcessedBidResponsesHookProviderErrorCachesPending(t *testing
 	bidder := openrtb_ext.BidderName("appnexus")
 	creativeID := creativeApprovalID(accountID, bidder, "error")
 	provider := &fakeApprovalProvider{err: errApprovalProvider}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: newApprovalCache(1024 * 1024)}
+	module := newTestModule(provider, nil)
 	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("error"))}
 
 	result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, payload)
@@ -186,10 +200,11 @@ func TestHandleAllProcessedBidResponsesHookProviderErrorCachesPending(t *testing
 
 	require.NoError(t, err)
 	assert.NotContains(t, payload.Responses, bidder)
+	waitForApprovalRefreshes(t, module)
 	lookup, ok := module.cache.get(creativeID)
 	assert.True(t, ok)
 	assert.Equal(t, approvalStatusPending, lookup.Status)
-	assert.Equal(t, 1, provider.calls)
+	assert.Equal(t, 1, provider.callCount())
 }
 
 func TestHandleAllProcessedBidResponsesHookUsesCachedApproval(t *testing.T) {
@@ -197,7 +212,7 @@ func TestHandleAllProcessedBidResponsesHookUsesCachedApproval(t *testing.T) {
 	bidder := openrtb_ext.BidderName("appnexus")
 	creativeID := creativeApprovalID(accountID, bidder, "cached")
 	provider := &fakeApprovalProvider{}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: newApprovalCache(1024 * 1024)}
+	module := newTestModule(provider, nil)
 	module.cache.set(creativeID, approvalStatusApproved, 60)
 	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("cached"))}
 
@@ -205,7 +220,7 @@ func TestHandleAllProcessedBidResponsesHookUsesCachedApproval(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Empty(t, result.ChangeSet.Mutations())
-	assert.Equal(t, 0, provider.calls)
+	assert.Equal(t, 0, provider.callCount())
 }
 
 func TestHandleAllProcessedBidResponsesHookUsesStaleCachedApprovalOnProviderError(t *testing.T) {
@@ -218,7 +233,7 @@ func TestHandleAllProcessedBidResponsesHookUsesStaleCachedApprovalOnProviderErro
 	cache.now = func() time.Time {
 		return now
 	}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: cache}
+	module := newTestModule(provider, cache)
 	require.NoError(t, module.cache.set(creativeID, approvalStatusApproved, 1))
 	now = now.Add(2 * time.Second)
 	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("stale-approved"))}
@@ -227,9 +242,9 @@ func TestHandleAllProcessedBidResponsesHookUsesStaleCachedApprovalOnProviderErro
 
 	require.NoError(t, err)
 	assert.Empty(t, result.ChangeSet.Mutations())
-	require.Len(t, result.Warnings, 1)
-	assert.Contains(t, result.Warnings[0], "DOOH creative approval lookup failed")
-	assert.Equal(t, 1, provider.calls)
+	assert.Empty(t, result.Warnings)
+	waitForApprovalRefreshes(t, module)
+	assert.Equal(t, 1, provider.callCount())
 
 	lookup, ok := module.cache.get(creativeID)
 	require.True(t, ok)
@@ -237,32 +252,53 @@ func TestHandleAllProcessedBidResponsesHookUsesStaleCachedApprovalOnProviderErro
 	assert.False(t, lookup.RefreshDue)
 }
 
-func TestHandleAllProcessedBidResponsesHookRefreshesStaleCachedApproval(t *testing.T) {
+func TestHandleAllProcessedBidResponsesHookUsesStaleStatusUntilRefreshCompletes(t *testing.T) {
 	accountID := "acct"
 	bidder := openrtb_ext.BidderName("appnexus")
 	creativeID := creativeApprovalID(accountID, bidder, "fresh-rejected")
 	now := time.Unix(1000, 0)
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
 	provider := &fakeApprovalProvider{
 		statuses: map[string]approvalStatus{
 			creativeID: approvalStatusRejected,
 		},
+		started: started,
+		release: release,
 	}
 	cache := newApprovalCache(1024 * 1024)
 	cache.now = func() time.Time {
 		return now
 	}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: cache}
+	module := newTestModule(provider, cache)
 	require.NoError(t, module.cache.set(creativeID, approvalStatusApproved, 1))
 	now = now.Add(2 * time.Second)
-	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("fresh-rejected"))}
+	firstPayload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("fresh-rejected"))}
 
-	result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, payload)
-	payload = applyAllProcessedMutations(payload, result)
+	firstResult, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, firstPayload)
 
 	require.NoError(t, err)
-	assert.Len(t, result.ChangeSet.Mutations(), 1)
-	assert.NotContains(t, payload.Responses, bidder)
-	assert.Equal(t, 1, provider.calls)
+	assert.Empty(t, firstResult.ChangeSet.Mutations())
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("approval refresh did not start")
+	}
+
+	secondPayload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("fresh-rejected"))}
+	secondResult, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, secondPayload)
+	require.NoError(t, err)
+	assert.Empty(t, secondResult.ChangeSet.Mutations())
+	assert.Equal(t, 1, provider.callCount())
+
+	close(release)
+	waitForApprovalRefreshes(t, module)
+
+	thirdPayload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("fresh-rejected"))}
+	thirdResult, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, thirdPayload)
+	thirdPayload = applyAllProcessedMutations(thirdPayload, thirdResult)
+	require.NoError(t, err)
+	assert.NotContains(t, thirdPayload.Responses, bidder)
 
 	lookup, ok := module.cache.get(creativeID)
 	require.True(t, ok)
@@ -270,7 +306,78 @@ func TestHandleAllProcessedBidResponsesHookRefreshesStaleCachedApproval(t *testi
 	assert.False(t, lookup.RefreshDue)
 }
 
-func TestHandleAllProcessedBidResponsesHookWarnsOnCacheWriteFailure(t *testing.T) {
+func TestHandleAllProcessedBidResponsesHookKeepsStaleStatusForIncompleteRefresh(t *testing.T) {
+	accountID := "acct"
+	bidder := openrtb_ext.BidderName("appnexus")
+	creativeID := creativeApprovalID(accountID, bidder, "stale-approved")
+	now := time.Unix(1000, 0)
+	cache := newApprovalCache(1024 * 1024)
+	cache.now = func() time.Time { return now }
+	module := newTestModule(&fakeApprovalProvider{}, cache)
+	require.NoError(t, module.cache.set(creativeID, approvalStatusApproved, 1))
+	now = now.Add(2 * time.Second)
+	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("stale-approved"))}
+
+	result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, payload)
+
+	require.NoError(t, err)
+	assert.Empty(t, result.ChangeSet.Mutations())
+	waitForApprovalRefreshes(t, module)
+	lookup, ok := module.cache.get(creativeID)
+	require.True(t, ok)
+	assert.Equal(t, approvalStatusApproved, lookup.Status)
+	assert.False(t, lookup.RefreshDue)
+}
+
+func TestHandleAllProcessedBidResponsesHookCoalescesConcurrentMisses(t *testing.T) {
+	const requests = 20
+	accountID := "acct"
+	bidder := openrtb_ext.BidderName("appnexus")
+	creativeID := creativeApprovalID(accountID, bidder, "same")
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
+	provider := &fakeApprovalProvider{
+		statuses: map[string]approvalStatus{creativeID: approvalStatusApproved},
+		started:  started,
+		release:  release,
+	}
+	module := newTestModule(provider, nil)
+
+	var wg sync.WaitGroup
+	errs := make(chan error, requests)
+	for i := 0; i < requests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("same"))}
+			result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, payload)
+			if err != nil {
+				errs <- err
+				return
+			}
+			payload = applyAllProcessedMutations(payload, result)
+			if _, ok := payload.Responses[bidder]; ok {
+				errs <- fmt.Errorf("first-seen creative was not suppressed")
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("approval refresh did not start")
+	}
+	assert.Equal(t, 1, provider.callCount())
+	close(release)
+	waitForApprovalRefreshes(t, module)
+}
+
+func TestHandleAllProcessedBidResponsesHookSuppressesUnknownWhenCacheWriteFails(t *testing.T) {
 	accountID := "acct"
 	bidder := openrtb_ext.BidderName("appnexus")
 	creativeID := creativeApprovalID(accountID, bidder, "approved")
@@ -283,14 +390,17 @@ func TestHandleAllProcessedBidResponsesHookWarnsOnCacheWriteFailure(t *testing.T
 	cache.marshal = func(v any) ([]byte, error) {
 		return nil, errApprovalProvider
 	}
-	module := &Module{cfg: testModuleConfig(), provider: provider, cache: cache}
+	module := newTestModule(provider, cache)
 	payload := hookstage.AllProcessedBidResponsesPayload{Responses: testResponses(bidder, testBid("approved"))}
 
 	result, err := module.HandleAllProcessedBidResponsesHook(context.Background(), hookstage.ModuleInvocationContext{AccountID: accountID, ModuleContext: testActiveModuleContext()}, payload)
+	payload = applyAllProcessedMutations(payload, result)
 
 	require.NoError(t, err)
-	assert.Empty(t, result.ChangeSet.Mutations())
-	require.Len(t, result.Warnings, 1)
-	assert.Contains(t, result.Warnings[0], "DOOH creative approval cache write failed for creative_approval_id "+creativeID)
-	assert.Equal(t, 1, provider.calls)
+	assert.NotContains(t, payload.Responses, bidder)
+	assert.Empty(t, result.Warnings)
+	waitForApprovalRefreshes(t, module)
+	assert.Equal(t, 1, provider.callCount())
+	_, ok := module.cache.get(creativeID)
+	assert.False(t, ok)
 }

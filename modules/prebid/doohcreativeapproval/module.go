@@ -30,16 +30,18 @@ func Builder(rawConfig json.RawMessage, deps moduledeps.ModuleDeps) (interface{}
 	}
 
 	return &Module{
-		cfg:      cfg,
-		provider: newHTTPApprovalProvider(client),
-		cache:    newApprovalCache(cfg.CacheSizeBytes),
+		cfg:       cfg,
+		provider:  newHTTPApprovalProvider(client),
+		cache:     newApprovalCache(cfg.CacheSizeBytes),
+		refreshes: newApprovalRefreshCoordinator(cfg.MaxConcurrentLookups),
 	}, nil
 }
 
 type Module struct {
-	cfg      moduleConfig
-	provider approvalProvider
-	cache    *approvalCache
+	cfg       moduleConfig
+	provider  approvalProvider
+	cache     *approvalCache
+	refreshes *approvalRefreshCoordinator
 }
 
 func (m *Module) HandleProcessedAuctionHook(
@@ -71,7 +73,7 @@ func (m *Module) HandleProcessedAuctionHook(
 }
 
 func (m *Module) HandleAllProcessedBidResponsesHook(
-	ctx context.Context,
+	_ context.Context,
 	miCtx hookstage.ModuleInvocationContext,
 	payload hookstage.AllProcessedBidResponsesPayload,
 ) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
@@ -88,7 +90,7 @@ func (m *Module) HandleAllProcessedBidResponsesHook(
 		return result, nil
 	}
 
-	statuses, warnings := m.resolveApprovalStatuses(ctx, cfg, miCtx.AccountID, payload.Responses)
+	statuses, warnings := m.resolveApprovalStatuses(cfg, miCtx.AccountID, payload.Responses)
 	result.Warnings = append(result.Warnings, warnings...)
 	if !needsApprovalFilter(payload.Responses, cfg, miCtx.AccountID, statuses) {
 		return result, nil
@@ -113,7 +115,6 @@ func isModuleContextActive(moduleContext *hookstage.ModuleContext) bool {
 }
 
 func (m *Module) resolveApprovalStatuses(
-	ctx context.Context,
 	cfg moduleConfig,
 	accountID string,
 	responses map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid,
@@ -130,54 +131,27 @@ func (m *Module) resolveApprovalStatuses(
 	}
 	sort.Strings(ids)
 
-	cachedLookups := make(map[string]cachedApprovalLookup)
-	refreshCreatives := make([]creativeApproval, 0, len(ids))
+	refreshes := make([]approvalRefresh, 0, len(ids))
 	for _, id := range ids {
 		if cached, ok := m.cache.get(id); ok {
 			statuses[id] = cached.Status
-			cachedLookups[id] = cached
 			if !cached.RefreshDue {
 				continue
 			}
+			refreshes = append(refreshes, approvalRefresh{
+				Creative:       creativesByID[id],
+				FallbackStatus: cached.Status,
+			})
+			continue
 		}
-		refreshCreatives = append(refreshCreatives, creativesByID[id])
-	}
-	if len(refreshCreatives) == 0 {
-		return statuses, warnings
-	}
 
-	fetchedStatuses, providerWarnings, err := m.provider.Lookup(ctx, cfg, accountID, refreshCreatives)
-	warnings = append(warnings, providerWarnings...)
-	if err != nil {
-		warnings = append(warnings, "DOOH creative approval lookup failed: "+err.Error())
-		for _, creative := range refreshCreatives {
-			status := approvalStatusPending
-			if cached, ok := cachedLookups[creative.CreativeApprovalID]; ok {
-				status = cached.Status
-			}
-			statuses[creative.CreativeApprovalID] = status
-			if err := m.cache.set(creative.CreativeApprovalID, status, cfg.PendingTTLSeconds); err != nil {
-				warnings = append(warnings, cacheWriteWarning(creative.CreativeApprovalID, err))
-			}
-		}
-		return statuses, warnings
+		statuses[id] = approvalStatusPending
+		refreshes = append(refreshes, approvalRefresh{
+			Creative:       creativesByID[id],
+			FallbackStatus: approvalStatusPending,
+		})
 	}
-
-	for _, creative := range refreshCreatives {
-		status, ok := fetchedStatuses[creative.CreativeApprovalID]
-		if !ok {
-			status = approvalStatusPending
-			warnings = append(warnings, "DOOH creative approval response missing creative_approval_id "+creative.CreativeApprovalID)
-		}
-		statuses[creative.CreativeApprovalID] = status
-		if err := m.cache.set(creative.CreativeApprovalID, status, ttlForStatus(cfg, status)); err != nil {
-			warnings = append(warnings, cacheWriteWarning(creative.CreativeApprovalID, err))
-		}
-	}
+	warnings = append(warnings, m.scheduleApprovalRefresh(cfg, accountID, refreshes)...)
 
 	return statuses, warnings
-}
-
-func cacheWriteWarning(creativeApprovalID string, err error) string {
-	return "DOOH creative approval cache write failed for creative_approval_id " + creativeApprovalID + ": " + err.Error()
 }

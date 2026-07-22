@@ -43,6 +43,11 @@ func TestNewCreativeApproval(t *testing.T) {
 	assert.EqualValues(t, 15, creative.Duration)
 	assert.Equal(t, "deal-cr-123", creative.DealID)
 	assert.Equal(t, "https://example.com/cr-123.jpg", creative.IURL)
+
+	bid.Bid.ADomain[0] = "changed.example"
+	bid.Bid.Cat[0] = "IAB2"
+	assert.Equal(t, []string{"advertiser.example"}, creative.AdvertiserDomains)
+	assert.Equal(t, []string{"IAB1"}, creative.Categories)
 }
 
 func TestNewCreativeApprovalMissingCreativeID(t *testing.T) {

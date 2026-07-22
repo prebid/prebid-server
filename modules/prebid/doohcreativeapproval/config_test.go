@@ -16,6 +16,7 @@ func TestParseModuleConfigDefaults(t *testing.T) {
 	assert.Equal(t, []string{defaultPlatformDOOH}, cfg.Platforms)
 	assert.Equal(t, defaultTimeoutMS, cfg.TimeoutMS)
 	assert.Equal(t, defaultCacheSizeBytes, cfg.CacheSizeBytes)
+	assert.Equal(t, defaultMaxConcurrentLookups, cfg.MaxConcurrentLookups)
 	assert.Equal(t, defaultApprovedTTLSeconds, cfg.ApprovedTTLSeconds)
 	assert.Equal(t, defaultRejectedTTLSeconds, cfg.RejectedTTLSeconds)
 	assert.Equal(t, defaultPendingTTLSeconds, cfg.PendingTTLSeconds)
@@ -58,6 +59,16 @@ func TestParseModuleConfigErrors(t *testing.T) {
 			expectedErr: "cache_size_bytes cannot be negative",
 		},
 		{
+			name:        "cache-size-below-freecache-minimum",
+			config:      json.RawMessage(`{"cache_size_bytes":1024}`),
+			expectedErr: "cache_size_bytes must be at least 524288",
+		},
+		{
+			name:        "negative-max-concurrent-lookups",
+			config:      json.RawMessage(`{"max_concurrent_lookups":-1}`),
+			expectedErr: "max_concurrent_lookups cannot be negative",
+		},
+		{
 			name:        "negative-approved-ttl",
 			config:      json.RawMessage(`{"approved_ttl_seconds":-1}`),
 			expectedErr: "approved_ttl_seconds cannot be negative",
@@ -96,7 +107,8 @@ func TestApplyAccountConfig(t *testing.T) {
 	base.ApprovedTTLSeconds = 300
 	base.RejectedTTLSeconds = 400
 	base.PendingTTLSeconds = 500
-	base.CacheSizeBytes = 12345
+	base.CacheSizeBytes = 2 * minimumCacheSizeBytes
+	base.MaxConcurrentLookups = 3
 	base.ExemptBidders = []string{"hostbidder"}
 
 	accountConfig := json.RawMessage(`{
@@ -104,6 +116,7 @@ func TestApplyAccountConfig(t *testing.T) {
 		"endpoint": "https://account.example.com/approval",
 		"headers": {"X-Account": "account"},
 		"timeout_ms": 10,
+		"max_concurrent_lookups": 99,
 		"approved_ttl_seconds": 11,
 		"rejected_ttl_seconds": 12,
 		"pending_ttl_seconds": 13,
@@ -120,7 +133,8 @@ func TestApplyAccountConfig(t *testing.T) {
 	assert.Equal(t, 11, cfg.ApprovedTTLSeconds)
 	assert.Equal(t, 12, cfg.RejectedTTLSeconds)
 	assert.Equal(t, 13, cfg.PendingTTLSeconds)
-	assert.Equal(t, 12345, cfg.CacheSizeBytes)
+	assert.Equal(t, 2*minimumCacheSizeBytes, cfg.CacheSizeBytes)
+	assert.Equal(t, 3, cfg.MaxConcurrentLookups)
 	assert.Equal(t, []string{"appnexus", "rubicon"}, cfg.ExemptBidders)
 }
 

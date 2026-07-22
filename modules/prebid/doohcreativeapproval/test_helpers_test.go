@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync"
+	"testing"
+	"time"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/exchange/entities"
@@ -13,14 +16,15 @@ import (
 
 func testModuleConfig() moduleConfig {
 	return moduleConfig{
-		Enabled:            true,
-		Platforms:          []string{defaultPlatformDOOH},
-		Endpoint:           "http://approval.example.com/creative-approval",
-		TimeoutMS:          defaultTimeoutMS,
-		CacheSizeBytes:     defaultCacheSizeBytes,
-		ApprovedTTLSeconds: defaultApprovedTTLSeconds,
-		RejectedTTLSeconds: defaultRejectedTTLSeconds,
-		PendingTTLSeconds:  defaultPendingTTLSeconds,
+		Enabled:              true,
+		Platforms:            []string{defaultPlatformDOOH},
+		Endpoint:             "http://approval.example.com/creative-approval",
+		TimeoutMS:            defaultTimeoutMS,
+		CacheSizeBytes:       defaultCacheSizeBytes,
+		MaxConcurrentLookups: defaultMaxConcurrentLookups,
+		ApprovedTTLSeconds:   defaultApprovedTTLSeconds,
+		RejectedTTLSeconds:   defaultRejectedTTLSeconds,
+		PendingTTLSeconds:    defaultPendingTTLSeconds,
 	}
 }
 
@@ -69,24 +73,81 @@ func applyAllProcessedMutations(payload hookstage.AllProcessedBidResponsesPayloa
 }
 
 type fakeApprovalProvider struct {
+	mu        sync.Mutex
 	statuses  map[string]approvalStatus
 	warnings  []string
 	err       error
 	calls     int
 	creatives []creativeApproval
+	started   chan<- struct{}
+	release   <-chan struct{}
 }
 
-func (p *fakeApprovalProvider) Lookup(_ context.Context, _ moduleConfig, _ string, creatives []creativeApproval) (map[string]approvalStatus, []string, error) {
+func (p *fakeApprovalProvider) Lookup(ctx context.Context, _ moduleConfig, _ string, creatives []creativeApproval) (map[string]approvalStatus, []string, error) {
+	p.mu.Lock()
 	p.calls++
 	p.creatives = append([]creativeApproval(nil), creatives...)
-	if p.err != nil {
-		return nil, p.warnings, p.err
-	}
 	statuses := make(map[string]approvalStatus, len(p.statuses))
 	for id, status := range p.statuses {
 		statuses[id] = status
 	}
-	return statuses, p.warnings, nil
+	warnings := append([]string(nil), p.warnings...)
+	err := p.err
+	started := p.started
+	release := p.release
+	p.mu.Unlock()
+
+	if started != nil {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+	}
+	if release != nil {
+		select {
+		case <-release:
+		case <-ctx.Done():
+			return nil, warnings, ctx.Err()
+		}
+	}
+	if err != nil {
+		return nil, warnings, err
+	}
+	return statuses, warnings, nil
+}
+
+func (p *fakeApprovalProvider) callCount() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.calls
+}
+
+func newTestModule(provider approvalProvider, cache *approvalCache) *Module {
+	cfg := testModuleConfig()
+	if cache == nil {
+		cache = newApprovalCache(cfg.CacheSizeBytes)
+	}
+	return &Module{
+		cfg:       cfg,
+		provider:  provider,
+		cache:     cache,
+		refreshes: newApprovalRefreshCoordinator(cfg.MaxConcurrentLookups),
+	}
+}
+
+func waitForApprovalRefreshes(t *testing.T, module *Module) {
+	t.Helper()
+	done := make(chan struct{})
+	go func() {
+		module.refreshes.wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for approval refreshes")
+	}
 }
 
 func testAccountConfig(t interface{ Helper() }, value string) json.RawMessage {
