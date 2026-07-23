@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-bad",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": ""
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "propertyKey is required",
+      "comparison": "literal"
+    }
+  ]
+}

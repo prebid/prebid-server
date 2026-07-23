@@ -1,0 +1,124 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "abc123def456"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/article"
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "ip": "1.2.3.4",
+      "ext": {
+        "panxo": {
+          "v1": "session-token-abc",
+          "uid": "550e8400-e29b-41d4-a716-446655440000"
+        }
+      }
+    },
+    "user": {
+      "buyeruid": "550e8400-e29b-41d4-a716-446655440000"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.5/bid?key=abc123def456&source=prebid-server",
+        "impIDs": ["test-imp-id"],
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {"w": 300, "h": 250}
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "propertyKey": "abc123def456"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/article"
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "1.2.3.4",
+            "ext": {
+              "panxo": {
+                "v1": "session-token-abc",
+                "uid": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            }
+          },
+          "user": {
+            "buyeruid": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "test-imp-id",
+                  "price": 5.00,
+                  "adm": "<div>ad markup</div>",
+                  "crid": "creative-123",
+                  "w": 300,
+                  "h": 250,
+                  "adomain": ["advertiser.com"]
+                }
+              ],
+              "seat": "panxo"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "test-imp-id",
+            "price": 5.00,
+            "adm": "<div>ad markup</div>",
+            "crid": "creative-123",
+            "w": 300,
+            "h": 250,
+            "adomain": ["advertiser.com"]
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

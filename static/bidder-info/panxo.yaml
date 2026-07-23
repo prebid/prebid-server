@@ -1,0 +1,15 @@
+endpoint: "https://panxo-sys.com/openrtb/2.5/bid"
+maintainer:
+  email: "prebid@panxo.ai"
+gvlVendorID: 1527
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url: "https://panxo-sys.com/usersync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: ""
