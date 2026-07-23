@@ -18,7 +18,7 @@
     },
     "expectedMakeRequestsErrors": [
       {
-        "value": "We need a Banner Object in the request",
+        "value": "DeepIntent only supports Banner and Video media types. Ignoring ImpID=test-banner-imp-id",
         "comparison": "literal"
       }
     ]
