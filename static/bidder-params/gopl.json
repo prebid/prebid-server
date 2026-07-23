@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "sspBC Bid Adapter Params",
-  "description": "A schema which validates params accepted by the sspBC bid adapter",
+  "title": "Gopl Bid Adapter Params",
+  "description": "A schema which validates params accepted by the gopl bid adapter",
   "type": "object",
   "properties": {
     "siteid": {

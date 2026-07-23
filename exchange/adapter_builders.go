@@ -115,6 +115,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/gamoshi"
 	"github.com/prebid/prebid-server/v4/adapters/globalsun"
 	"github.com/prebid/prebid-server/v4/adapters/goldbach"
+	"github.com/prebid/prebid-server/v4/adapters/gopl"
 	"github.com/prebid/prebid-server/v4/adapters/grid"
 	"github.com/prebid/prebid-server/v4/adapters/gumgum"
 	"github.com/prebid/prebid-server/v4/adapters/huaweiads"
@@ -222,7 +223,6 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/sovrn"
 	"github.com/prebid/prebid-server/v4/adapters/sovrnXsp"
 	"github.com/prebid/prebid-server/v4/adapters/sparteo"
-	"github.com/prebid/prebid-server/v4/adapters/sspBC"
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
@@ -498,7 +498,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSovrnXsp:          sovrnXsp.Builder,
 		openrtb_ext.BidderSparteo:           sparteo.Builder,
-		openrtb_ext.BidderSspBC:             sspBC.Builder,
+		openrtb_ext.BidderGopl:              gopl.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderSynapseHX:         synapseHX.Builder,
