@@ -6623,6 +6623,7 @@ func TestMergeWithArrayConcat(t *testing.T) {
 		name           string
 		base           string
 		patch          string
+		incomingIsBase bool
 		expectedResult string
 		expectError    bool
 	}{
@@ -6679,9 +6680,10 @@ func TestMergeWithArrayConcat(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:  "array fields are concatenated",
-			base:  `{"bcat":["IAB1"],"badv":["evil.com"]}`,
-			patch: `{"bcat":["IAB2"],"badv":["bad.com"]}`,
+			name:           "incoming is base - incoming entries come first",
+			base:           `{"bcat":["IAB1"],"badv":["evil.com"]}`,
+			patch:          `{"bcat":["IAB2"],"badv":["bad.com"]}`,
+			incomingIsBase: true,
 			expectedResult: `{
 				"bcat":["IAB1","IAB2"],
 				"badv":["evil.com","bad.com"]
@@ -6689,9 +6691,51 @@ func TestMergeWithArrayConcat(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:  "non-array fields should follow RFC 7386 merge",
-			base:  `{"bcat":["IAB1"],"site":{"id":"1","name":"base"}}`,
-			patch: `{"bcat":["IAB2"],"site":{"name":"patch"},"id":"req1"}`,
+			name:           "incoming is patch - incoming entries still come first",
+			base:           `{"bcat":["IAB1"],"badv":["evil.com"]}`,
+			patch:          `{"bcat":["IAB2"],"badv":["bad.com"]}`,
+			incomingIsBase: false,
+			expectedResult: `{
+				"bcat":["IAB2","IAB1"],
+				"badv":["bad.com","evil.com"]
+			}`,
+			expectError: false,
+		},
+		{
+			name:           "non-array base with array patch keeps replace semantics",
+			base:           `{"bcat":"not-an-array"}`,
+			patch:          `{"bcat":["IAB2"]}`,
+			incomingIsBase: true,
+			expectedResult: `{
+				"bcat":["IAB2"]
+			}`,
+			expectError: false,
+		},
+		{
+			name:           "array base with non-array patch keeps replace semantics",
+			base:           `{"bcat":["IAB1"]}`,
+			patch:          `{"bcat":"not-an-array"}`,
+			incomingIsBase: true,
+			expectedResult: `{
+				"bcat":"not-an-array"
+			}`,
+			expectError: false,
+		},
+		{
+			name:           "empty arrays on both sides keep replace semantics",
+			base:           `{"bcat":[]}`,
+			patch:          `{"bcat":[]}`,
+			incomingIsBase: true,
+			expectedResult: `{
+				"bcat":[]
+			}`,
+			expectError: false,
+		},
+		{
+			name:           "non-array fields should follow RFC 7386 merge",
+			base:           `{"bcat":["IAB1"],"site":{"id":"1","name":"base"}}`,
+			patch:          `{"bcat":["IAB2"],"site":{"name":"patch"},"id":"req1"}`,
+			incomingIsBase: true,
 			expectedResult: `{
 				"bcat":["IAB1","IAB2"],
 				"site":{"id":"1","name":"patch"},
@@ -6699,11 +6743,17 @@ func TestMergeWithArrayConcat(t *testing.T) {
 			}`,
 			expectError: false,
 		},
+		{
+			name:        "malformed patch surfaces the MergePatch error",
+			base:        `{"bcat":["IAB1"]}`,
+			patch:       `{"bcat":`,
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := mergeWithArrayConcat([]byte(tt.base), []byte(tt.patch), []string{"bcat", "badv", "foo"})
+			result, err := mergeWithArrayConcat([]byte(tt.base), []byte(tt.patch), []string{"bcat", "badv", "foo"}, tt.incomingIsBase)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -6724,6 +6774,23 @@ func TestMergeWithArrayConcat(t *testing.T) {
 	}
 }
 
+// TestMergeWithArrayConcatPreservesNumbers locks the critical fix: concat mode must not
+// round-trip the document through float64. Numbers anywhere in the request (large IDs,
+// tmax, floor prices) must survive byte-for-byte, which the map[string]interface{} rewrite
+// did not guarantee. Asserted on raw bytes because json.Unmarshal into interface{} would
+// itself lose the precision under test.
+func TestMergeWithArrayConcatPreservesNumbers(t *testing.T) {
+	base := []byte(`{"bcat":["IAB1"],"tmax":12345678901234567}`)
+	patch := []byte(`{"bcat":["IAB2"],"ext":{"price":1234567890123456789}}`)
+
+	result, err := mergeWithArrayConcat(base, patch, []string{"bcat", "badv"}, true)
+	require.NoError(t, err)
+
+	assert.Contains(t, string(result), "12345678901234567", "tmax must stay exact")
+	assert.Contains(t, string(result), "1234567890123456789", "ext.price must stay exact")
+	assert.Contains(t, string(result), `["IAB1","IAB2"]`, "bcat must be concatenated")
+}
+
 func TestProcessStoredRequests_HasStoredBidRequestArrayMerge(t *testing.T) {
 	tests := []struct {
 		name                string
@@ -6737,7 +6804,8 @@ func TestProcessStoredRequests_HasStoredBidRequestArrayMerge(t *testing.T) {
 		hasStoredBidRequest bool
 	}{
 		{
-			name:               "concat mode - both have bcat and badv",
+			// Non-UUID path: canonical order is incoming entries first, stored appended (D1).
+			name:               "concat mode non-UUID - incoming entries first, then stored",
 			incomingRequest:    `{"bcat":["IAB3"],"badv":["competitor.com"],"id":"req1","imp":[{"id":"imp1"}]}`,
 			storedBidRequestID: "stored1",
 			storedBidRequest:   `{"bcat":["IAB1"],"badv":["evil.com"],"id":"storereq2"}`,
@@ -6746,8 +6814,8 @@ func TestProcessStoredRequests_HasStoredBidRequestArrayMerge(t *testing.T) {
 			{
 				"id":"req1",
 				"imp":[{"id":"imp1"}],
-				"bcat":["IAB1","IAB3"],
-				"badv":["evil.com","competitor.com"]
+				"bcat":["IAB3","IAB1"],
+				"badv":["competitor.com","evil.com"]
 			}`,
 			hasStoredBidRequest: true,
 		},
@@ -6806,7 +6874,8 @@ func TestProcessStoredRequests_HasStoredBidRequestArrayMerge(t *testing.T) {
 			hasStoredBidRequest: false,
 		},
 		{
-			name:               "UUID generation with concat mode",
+			// UUID path: same canonical order as the non-UUID path — incoming first, stored appended (D1).
+			name:               "concat mode UUID - incoming entries first, then stored",
 			incomingRequest:    `{"bcat":["IAB3"],"imp":[{"id":"imp1"}]}`,
 			storedBidRequestID: "stored1",
 			storedBidRequest:   `{"bcat":["IAB1","IAB2"],"site":{"id":"site1"},"id":"{{UUID}}"}`,
@@ -6886,7 +6955,8 @@ func TestProcessStoredRequests_DefaultRequestArrayMerge(t *testing.T) {
 		expectedRequest string
 	}{
 		{
-			name:            "concat mode - both default and incoming have bcat",
+			// Default request is host-side: incoming entries first, host default appended (D1).
+			name:            "concat mode - incoming entries first, then default",
 			incomingRequest: `{"bcat":["IAB3"],"id":"req1","imp":[{"id":"imp1"}]}`,
 			defaultRequest:  `{"bcat":["IAB1","IAB2"]}`,
 			arrayMergeMode:  config.ArrayMergeConcat,
@@ -6894,7 +6964,7 @@ func TestProcessStoredRequests_DefaultRequestArrayMerge(t *testing.T) {
 			{
 				"id":"req1",
 				"imp":[{"id":"imp1"}],
-				"bcat":["IAB1","IAB2","IAB3"]
+				"bcat":["IAB3","IAB1","IAB2"]
 			}`,
 		},
 		{

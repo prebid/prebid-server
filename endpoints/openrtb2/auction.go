@@ -1689,11 +1689,27 @@ func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []b
 	return storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs
 }
 
-// mergeWithArrayConcat performs JSON merge with array concatenation for specific fields.
-// For the specified arrayFields (e.g., "bcat", "badv"), arrays are concatenated
-// All other fields follow RFC 7386 JSON Merge Patch semantics.
-// Empty arrays inside the patch request will clear the base request arrays (preserving RFC 7386 semantics).
-func mergeWithArrayConcat(base, patch []byte, arrayFields []string) ([]byte, error) {
+// arrayConcatFields lists the request fields whose arrays are concatenated (rather
+// than replaced) when an account enables concat mode. Kept package-level so it is not
+// re-allocated on every merge call. These are block-list fields where accumulating the
+// stored/host and incoming entries is the intended behavior.
+var arrayConcatFields = []string{"bcat", "badv"}
+
+// mergeWithArrayConcat merges patch into base with RFC 7386 JSON Merge Patch semantics,
+// except that for arrayFields the base and patch arrays are concatenated instead of
+// replaced. Every other field — and the byte-exact formatting of untouched numbers — is
+// preserved by MergePatch, so large/high-precision values are never round-tripped through
+// float64 (unlike a full map[string]any decode).
+//
+// Concat order is canonical: the incoming request's entries come first and the stored/host
+// entries are appended (see issue #4638 / decision D1). Because the two call sites put the
+// incoming request on opposite sides of the merge (base on the UUID path, patch otherwise),
+// incomingIsBase tells the function which side is the incoming request so the order stays
+// consistent without disturbing the pre-existing, intentional scalar precedence of each path.
+//
+// If a field is absent, not an array, or empty on either side, RFC 7386 replace semantics
+// apply (e.g. an explicit "bcat": [] in the winning request still clears the field).
+func mergeWithArrayConcat(base, patch []byte, arrayFields []string, incomingIsBase bool) ([]byte, error) {
 	if len(base) == 0 {
 		return patch, nil
 	}
@@ -1701,54 +1717,52 @@ func mergeWithArrayConcat(base, patch []byte, arrayFields []string) ([]byte, err
 		return base, nil
 	}
 
-	// Parse both JSON documents
-	var baseObj, patchObj map[string]interface{}
-	if err := jsonutil.UnmarshalValid(base, &baseObj); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal base request: %w", err)
-	}
-	if err := jsonutil.UnmarshalValid(patch, &patchObj); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal patch request: %w", err)
+	merged, err := jsonpatch.MergePatch(base, patch)
+	if err != nil {
+		return nil, err
 	}
 
-	// For each array field, concat if both exist and are non-empty arrays, otherwise preserve RFC 7386 semantics
 	for _, field := range arrayFields {
-		baseVal, ok := baseObj[field]
-		if !ok {
+		baseArr, baseType, _, baseErr := jsonparser.Get(base, field)
+		if baseErr != nil || baseType != jsonparser.Array {
 			continue
 		}
-		patchVal, ok := patchObj[field]
-		if !ok {
-			continue
-		}
-
-		baseArr, ok := baseVal.([]interface{})
-		if !ok {
-			continue
-		}
-		patchArr, ok := patchVal.([]interface{})
-		if !ok {
+		patchArr, patchType, _, patchErr := jsonparser.Get(patch, field)
+		if patchErr != nil || patchType != jsonparser.Array {
 			continue
 		}
 
-		if len(patchArr) > 0 && len(baseArr) > 0 {
-			combined := make([]interface{}, len(baseArr)+len(patchArr))
-			copy(combined, baseArr)
-			copy(combined[len(baseArr):], patchArr)
-			patchObj[field] = combined
+		var baseElems, patchElems []json.RawMessage
+		if err := jsonutil.Unmarshal(baseArr, &baseElems); err != nil {
+			return nil, err
+		}
+		if err := jsonutil.Unmarshal(patchArr, &patchElems); err != nil {
+			return nil, err
+		}
+		// Empty on either side keeps RFC 7386 replace semantics.
+		if len(baseElems) == 0 || len(patchElems) == 0 {
+			continue
+		}
+
+		// Canonical order: incoming request's entries first, stored/host entries appended.
+		incoming, stored := patchElems, baseElems
+		if incomingIsBase {
+			incoming, stored = baseElems, patchElems
+		}
+		combined := make([]json.RawMessage, 0, len(incoming)+len(stored))
+		combined = append(combined, incoming...)
+		combined = append(combined, stored...)
+
+		combinedJSON, err := jsonutil.Marshal(combined)
+		if err != nil {
+			return nil, err
+		}
+		if merged, err = jsonparser.Set(merged, combinedJSON, field); err != nil {
+			return nil, err
 		}
 	}
 
-	// Perform RFC 7386 merge on the modified objects
-	baseBytes, err := jsonutil.Marshal(baseObj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal base object: %w", err)
-	}
-	patchBytes, err := jsonutil.Marshal(patchObj)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal patch object: %w", err)
-	}
-
-	return jsonpatch.MergePatch(baseBytes, patchBytes)
+	return merged, nil
 }
 
 func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []ImpExtPrebidData, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage, storedBidRequestId string, hasStoredBidRequest bool, account *config.Account) ([]byte, map[string]exchange.ImpExtInfo, []error) {
@@ -1761,9 +1775,11 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 	resolvedRequest := requestJson
 
 	useConcatMode := account != nil && account.StoredRequest.ArrayMerge == config.ArrayMergeConcat
-	merge := func(base, patch []byte) ([]byte, error) {
+	// incomingIsBase reports whether the incoming request is the merge base (true only on
+	// the UUID path). It only affects concat ordering, never scalar precedence.
+	merge := func(base, patch []byte, incomingIsBase bool) ([]byte, error) {
 		if useConcatMode {
-			return mergeWithArrayConcat(base, patch, []string{"bcat", "badv"})
+			return mergeWithArrayConcat(base, patch, arrayConcatFields, incomingIsBase)
 		}
 		return jsonpatch.MergePatch(base, patch)
 	}
@@ -1784,13 +1800,15 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 				return nil, nil, errL
 			}
 
-			resolvedRequest, err = merge(requestJson, uuidPatch)
+			// UUID path: incoming request is the merge base (stored-derived uuidPatch wins scalars).
+			resolvedRequest, err = merge(requestJson, uuidPatch, true)
 			if err != nil {
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
 				return nil, nil, errL
 			}
 		} else {
-			resolvedRequest, err = merge(storedRequests[storedBidRequestId], requestJson)
+			// Non-UUID path: stored request is the merge base (incoming wins scalars).
+			resolvedRequest, err = merge(storedRequests[storedBidRequestId], requestJson, false)
 			if err != nil {
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
 				return nil, nil, errL
@@ -1800,7 +1818,8 @@ func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []Im
 
 	// apply default stored request
 	if deps.defaultRequest {
-		merged, err := merge(deps.defReqJSON, resolvedRequest)
+		// Default request is host-side (like stored); the resolved request carries the incoming entries.
+		merged, err := merge(deps.defReqJSON, resolvedRequest, false)
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(resolvedRequest)
 			if hasErr {

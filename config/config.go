@@ -174,6 +174,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
 	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
+	errs = cfg.AccountDefaults.StoredRequest.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		logger.Warnf(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
