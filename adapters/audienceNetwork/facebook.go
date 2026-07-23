@@ -169,7 +169,14 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 		} else {
 			extMap = make(map[string]interface{})
 		}
-		extMap["videotype"] = "rewarded"
+		// Derive videotype from standard OpenRTB signals. Meta documents
+		// "rewarded" and "rewarded_interstitial" as distinct rewarded videotypes.
+		// Use instl to distinguish: rwdd+instl → rewarded_interstitial, rwdd alone → rewarded.
+		if imp.Instl == 1 {
+			extMap["videotype"] = "rewarded_interstitial"
+		} else {
+			extMap["videotype"] = "rewarded"
+		}
 		videoCopy.Ext, err = jsonutil.Marshal(extMap)
 		if err != nil {
 			return err
@@ -196,10 +203,36 @@ func (a *adapter) modifyRequest(out *openrtb2.BidRequest) error {
 func modifyImp(out *openrtb2.Imp) error {
 	impType := resolveImpType(out)
 
-	if out.Instl == 1 && !isValidInterstitial(impType, out.Rwdd) {
+	if out.Instl == 1 && !isValidInterstitial(impType) {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and rewarded video", out.ID),
+			Message: fmt.Sprintf("imp #%s: interstitial imps are only supported for banner and video", out.ID),
 		}
+	}
+
+	// Meta's only non-rewarded interstitial request shape is banner{0,0}+instl:1, which
+	// renders display or video client-side (per Meta's Audience Network server-to-server
+	// spec). Map a non-rewarded video interstitial to that shape instead of rejecting it.
+	// Rewarded video interstitials keep their video imp so Meta receives videotype "rewarded_interstitial".
+	if out.Instl == 1 && impType == openrtb_ext.BidTypeVideo && out.Rwdd != 1 {
+		out.Banner = &openrtb2.Banner{}
+		impType = openrtb_ext.BidTypeBanner
+	}
+
+	// Audience Network placements are single-format, so send Meta only the resolved
+	// media object and drop any other media carried by a multi-format impression.
+	switch impType {
+	case openrtb_ext.BidTypeBanner:
+		out.Video = nil
+		out.Audio = nil
+		out.Native = nil
+	case openrtb_ext.BidTypeVideo:
+		out.Banner = nil
+		out.Audio = nil
+		out.Native = nil
+	case openrtb_ext.BidTypeNative:
+		out.Banner = nil
+		out.Video = nil
+		out.Audio = nil
 	}
 
 	if impType == openrtb_ext.BidTypeBanner {
@@ -241,16 +274,8 @@ func modifyImp(out *openrtb2.Imp) error {
 	return nil
 }
 
-func isValidInterstitial(impType openrtb_ext.BidType, rwdd int8) bool {
-	if impType == openrtb_ext.BidTypeBanner {
-		return true
-	}
-
-	if impType == openrtb_ext.BidTypeVideo && rwdd == 1 {
-		return true
-	}
-
-	return false
+func isValidInterstitial(impType openrtb_ext.BidType) bool {
+	return impType == openrtb_ext.BidTypeBanner || impType == openrtb_ext.BidTypeVideo
 }
 
 func extractPlacementAndPublisher(out *openrtb2.Imp) (string, string, error) {
@@ -341,7 +366,7 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 	case openrtb_ext.BidTypeNative:
 		nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
 		if !ok {
-			return jsonData, errors.New("unable to find imp[0].video in json data")
+			return jsonData, errors.New("unable to find imp[0].native in json data")
 		}
 
 		// Set w/h to -1 for native impressions based on the facebook native spec.
@@ -382,6 +407,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapter
 	}
 
 	out := adapters.NewBidderResponseWithBidsCapacity(4)
+	if bidResp.Cur != "" {
+		out.Currency = bidResp.Cur
+	}
 	var errs []error
 
 	for _, seatbid := range bidResp.SeatBid {
@@ -413,9 +441,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapter
 			bid.AdID = obj.BidID
 			bid.CrID = obj.BidID
 
+			bidType, err := resolveBidType(&bid, request)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
 			out.Bids = append(out.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: resolveBidType(&bid, request),
+				BidType: bidType,
 			})
 		}
 	}
@@ -423,31 +457,54 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, adapterRequest *adapter
 	return out, errs
 }
 
-func resolveBidType(bid *openrtb2.Bid, req *openrtb2.BidRequest) openrtb_ext.BidType {
+// resolveBidType reports a bid's media type from the ORIGINAL request imp it fills,
+// not from the Meta-facing transformed copy. This is deliberate: a non-rewarded
+// video interstitial is sent to Meta as banner{0,0}+instl (see modifyImp), but the
+// bid still fills the publisher's video interstitial slot, so it is reported as
+// video. Meta's interstitial creative is a deferred token whose display-vs-video
+// form is resolved client-side at render — the bid carries no media type — so the
+// slot type is the most specific media classification the adapter can assert, and
+// bid.MType is intentionally left unset rather than claiming an unverifiable form.
+func resolveBidType(bid *openrtb2.Bid, req *openrtb2.BidRequest) (openrtb_ext.BidType, error) {
 	for _, imp := range req.Imp {
 		if bid.ImpID == imp.ID {
-			return resolveImpType(&imp)
+			return resolveImpType(&imp), nil
 		}
 	}
 
-	panic(fmt.Sprintf("Invalid bid imp ID %s does not match any imp IDs from the original bid request", bid.ImpID))
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("bid %s 'impid' %s does not match any imp in the bid request", bid.ID, bid.ImpID),
+	}
 }
 
 func resolveImpType(imp *openrtb2.Imp) openrtb_ext.BidType {
-	if imp.Banner != nil {
-		return openrtb_ext.BidTypeBanner
+	// Preserve interstitial semantics before applying the general expected-yield
+	// priority. Meta accepts banner and video interstitials, but not native or audio.
+	if imp.Instl == 1 {
+		if imp.Video != nil {
+			return openrtb_ext.BidTypeVideo
+		}
+		if imp.Banner != nil {
+			return openrtb_ext.BidTypeBanner
+		}
 	}
 
+	// Audience Network placements are single-format. For an ordinary multi-format
+	// impression, prefer the formats with the highest likely yield.
 	if imp.Video != nil {
 		return openrtb_ext.BidTypeVideo
 	}
 
-	if imp.Audio != nil {
-		return openrtb_ext.BidTypeAudio
-	}
-
 	if imp.Native != nil {
 		return openrtb_ext.BidTypeNative
+	}
+
+	if imp.Banner != nil {
+		return openrtb_ext.BidTypeBanner
+	}
+
+	if imp.Audio != nil {
+		return openrtb_ext.BidTypeAudio
 	}
 
 	// Required to satisfy compiler. Not reachable in practice due to validations performed in PBS-Core.
