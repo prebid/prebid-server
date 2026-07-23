@@ -1,0 +1,16 @@
+endpoint: "https://ads.dxtech.ai/pbs"
+maintainer:
+  email: "support@dxtech.ai"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://sync.dxtech.ai/usync-pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: "$UID"
