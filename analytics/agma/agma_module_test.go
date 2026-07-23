@@ -11,9 +11,9 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/analytics"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -697,39 +697,4 @@ func TestRaceEnd2End(t *testing.T) {
 	mu.Unlock()
 
 	assert.Equal(t, expected, actual)
-}
-
-func TestShutdownFlush(t *testing.T) {
-	cfg := config.AgmaAnalytics{
-		Enabled: true,
-		Endpoint: config.AgmaAnalyticsHttpEndpoint{
-			Url:     "http://localhost:8000/event",
-			Timeout: "5s",
-		},
-		Buffers: config.AgmaAnalyticsBuffer{
-			EventCount: 1000,
-			BufferSize: "100mb",
-			Timeout:    "5m",
-		},
-		Accounts: []config.AgmaAnalyticsAccount{
-			{
-				PublisherId: "track-me",
-				Code:        "abc",
-			},
-		},
-	}
-	mockedSender := new(MockedSender)
-	mockedSender.On("Send", mock.Anything).Return(nil)
-	clockMock := clock.NewMock()
-	logger, err := newAgmaLogger(cfg, mockedSender.Send, clockMock)
-	assert.NoError(t, err)
-
-	go logger.start()
-	logger.LogAuctionObject(&mockValidAuctionObject)
-	logger.Shutdown()
-
-	time.Sleep(10 * time.Millisecond)
-
-	mockedSender.AssertCalled(t, "Send", mock.Anything)
-	mockedSender.AssertNumberOfCalls(t, "Send", 1)
 }

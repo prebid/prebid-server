@@ -5,10 +5,10 @@
       {
         "id": "test-imp-id",
         "video": {
-          "w": 728, 
+          "w": 728,
           "h": 90,
           "protocols": [2],
-          "placement": 1,
+          "plcmt": 1,
           "startdelay": -2,
           "playbackmethod": [2],
           "mimes": ["foo", "bar"]
@@ -44,10 +44,10 @@
             {
               "id":"test-imp-id",
               "video": {
-                "w": 728, 
+                "w": 728,
                 "h": 90,
                 "protocols": [2],
-                "placement": 1,
+                "plcmt": 1,
                 "startdelay": -2,
                 "playbackmethod": [2],
                 "mimes": ["foo", "bar"]

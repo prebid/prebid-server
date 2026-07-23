@@ -1,0 +1,121 @@
+{
+  "mockBidRequest": {
+    "id": "fwssp-test",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 300,
+          "h": 250,
+          "maxduration": 30,
+          "minduration": 5,
+          "startdelay": -1,
+          "minbitrate": 300,
+          "maxbitrate": 1500,
+          "maxseq": 5,
+          "poddur": 120
+        },
+        "ext": {
+          "bidder": {
+            "custom_site_section_id": "ss_12345",
+            "network_id": "123456",
+            "profile_id": "123456:prof_12345"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://testfreewheel.com",
+        "body": {
+          "id": "fwssp-test",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 300,
+                "h": 250,
+                "maxduration": 30,
+                "minduration": 5,
+                "startdelay": -1,
+                "minbitrate": 300,
+                "maxbitrate": 1500,
+                "maxseq": 5,
+                "poddur": 120
+              },
+              "ext": {
+                "custom_site_section_id": "ss_12345",
+                "network_id": "123456",
+                "profile_id": "123456:prof_12345"
+              }
+            }
+          ]
+        },
+        "headers": {
+          "Componentid": [
+            "prebid-go"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "fwssp-test",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "12345_fwssp-test_1",
+                  "impid": "imp-1",
+                  "price": 1.0,
+                  "adid": "7857",
+                  "adm": "<VAST version='2.0'></VAST>",
+                  "cid": "4001",
+                  "crid": "7857"
+                }
+              ],
+              "seat": "FreeWheel"
+            }
+          ],
+          "bidid": "fwssp-test",
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "12345_fwssp-test_1",
+            "impid": "imp-1",
+            "price": 1.0,
+            "adid": "7857",
+            "adm": "<VAST version='2.0'></VAST>",
+            "cid": "4001",
+            "crid": "7857"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Flatads Adapter Params",
+  "description": "A schema which validates params accepted by the Flatads adapter",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Token of the publisher",
+      "minLength": 1
+    },
+    "publisherId": {
+      "type": "string",
+      "description": "Flatads Publisher Id",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "token",
+    "publisherId"
+  ]
+}

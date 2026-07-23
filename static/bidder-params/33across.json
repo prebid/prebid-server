@@ -19,5 +19,8 @@
         "description": "Zone Id"
       }
     },
-    "required": ["productId", "siteId"]
+    "anyOf": [
+      { "required": ["productId", "siteId"] },
+      { "required": ["productId", "zoneId"] }
+    ]
   }

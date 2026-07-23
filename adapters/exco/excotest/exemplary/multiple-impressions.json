@@ -1,0 +1,177 @@
+{
+  "mockBidRequest": {
+    "id": "multiple-impressions",
+    "site": {
+      "page": "example.com",
+      "publisher": {
+        "id": "exco-publisherId"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 },
+            { "w": 728, "h": 90 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "exco-accountId",
+            "publisherId": "exco-publisherId",
+            "tagId": "exco-banner-tagId"
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4", "video/webm"],
+          "w": 640,
+          "h": 360,
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "exco-accountId",
+            "publisherId": "exco-publisherId",
+            "tagId": "exco-video-tagId"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://testjsonsample.com",
+        "body": {
+          "id": "multiple-impressions",
+          "site": {
+            "page": "example.com",
+            "publisher": {
+              "id": "exco-publisherId"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {
+                "format": [
+                  { "w": 300, "h": 250 },
+                  { "w": 728, "h": 90 }
+                ]
+              },
+              "tagid": "exco-banner-tagId",
+              "ext": {
+                "bidder": {
+                  "accountId": "exco-accountId",
+                  "publisherId": "exco-publisherId",
+                  "tagId": "exco-banner-tagId"
+                }
+              }
+            },
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4", "video/webm"],
+                "w": 640,
+                "h": 360,
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [2, 3]
+              },
+              "tagid": "exco-video-tagId",
+              "ext": {
+                "bidder": {
+                  "accountId": "exco-accountId",
+                  "publisherId": "exco-publisherId",
+                  "tagId": "exco-video-tagId"
+                }
+              }
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["imp-banner", "imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multiple-impressions",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "imp-banner",
+                  "impid": "imp-banner",
+                  "price": 1.5,
+                  "adid": "8888",
+                  "adm": "<html><body><div>Banner Ad</div></body></html>",
+                  "cid": "4001",
+                  "crid": "8888",
+                  "mtype": 1
+                },
+                {
+                  "id": "imp-video",
+                  "impid": "imp-video",
+                  "price": 2.5,
+                  "adid": "9999",
+                  "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='3.0'></VAST>",
+                  "cid": "5001",
+                  "crid": "9999",
+                  "mtype": 2
+                }
+              ],
+              "seat": "exco"
+            }
+          ],
+          "bidid": "multiple-impressions",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "imp-banner",
+            "impid": "imp-banner",
+            "price": 1.5,
+            "adid": "8888",
+            "adm": "<html><body><div>Banner Ad</div></body></html>",
+            "cid": "4001",
+            "crid": "8888",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "imp-video",
+            "impid": "imp-video",
+            "price": 2.5,
+            "adid": "9999",
+            "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='3.0'></VAST>",
+            "cid": "5001",
+            "crid": "9999",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

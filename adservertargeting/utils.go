@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func splitAndGet(path string, data []byte, delimiter string) (string, error) {

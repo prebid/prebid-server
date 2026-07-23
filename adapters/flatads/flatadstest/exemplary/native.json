@@ -1,0 +1,114 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id-native",
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "imp": [
+      {
+        "id": "test-imp-id-native",
+        "native": {
+          "request": ""
+        },
+        "ext": {
+          "bidder": {
+            "token": "66668888",
+            "publisherId": "1111"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "uri": "https://test.endpoint.com/api/rtbs/adx/rtb?x-net-id=1111&x-net-token=66668888",
+        "body": {
+          "id": "test-request-id-native",
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "imp": [
+            {
+              "id": "test-imp-id-native",
+              "native": {
+                "request": ""
+              },
+              "ext": {
+                "bidder": {
+                  "token": "66668888",
+                  "publisherId": "1111"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id-native"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-native",
+          "seatbid": [
+            {
+              "seat": "flatads",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id-native",
+                  "price": 0.5,
+                  "adm": "some-test-ad-native",
+                  "crid": "crid_10",
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id-native",
+            "price": 0.5,
+            "adm": "some-test-ad-native",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

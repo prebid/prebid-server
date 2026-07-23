@@ -1,0 +1,25 @@
+endpoint: "https://prebid.lb.infinity.blismedia.com/rtb/213/{{.SupplyId}}"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: prebid-support@blis.com
+gvlVendorID: 94
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://tr.blismedia.com/v1/api/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: "%%BLIS_USER_TOKEN%%"

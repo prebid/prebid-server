@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
@@ -81,19 +81,12 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 			imp.BidFloor = extBidFloor
 		}
 
-		var impExtBuffer []byte
-		impExtBuffer, err = json.Marshal(&sovrnImpExt{
-			Bidder:     sovrnExt,
-			AdUnitCode: sovrnExt.AdUnitCode,
-		})
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
-
-		imp.Ext = impExtBuffer
 
 		// Validate video params if appropriate
 		video := imp.Video

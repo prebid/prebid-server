@@ -1,5 +1,7 @@
 endpoint: "https://prebid.ad.smaato.net/oapi/prebid"
 endpointCompression: gzip
+geoscope:
+  - global
 maintainer:
   email: "prebid@smaato.com"
 gvlVendorID: 82

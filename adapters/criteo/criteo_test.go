@@ -7,13 +7,12 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func TestJsonSamples(t *testing.T) {
-
 	bidder, buildErr := Builder(openrtb_ext.BidderCriteo, config.Adapter{
 		Endpoint: "https://ssp-bidder.criteo.com/openrtb/pbs/auction/request?profile=230"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})

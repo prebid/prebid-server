@@ -1,0 +1,8 @@
+aliasOf: 'teqblaze'
+endpoint: 'https://traffic1.rocketlab.ai/pserver'
+maintainer:
+  email: 'support@rocketlab.ai'
+userSync:
+  redirect:
+    url: 'https://usync.rocketlab.ai/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}'
+    userMacro: '[UID]'

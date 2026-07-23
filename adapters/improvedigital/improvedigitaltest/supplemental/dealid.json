@@ -14,7 +14,7 @@
     },
     "imp": [
       {
-        "id": "test-imp-id-banner",
+        "id": "test-imp-id-banner-1",
         "banner": {
           "format": [
             {
@@ -30,7 +30,7 @@
         }
       },
       {
-        "id": "test-imp-id-banner",
+        "id": "test-imp-id-banner-2",
         "banner": {
           "format": [
             {
@@ -46,7 +46,7 @@
         }
       },
       {
-        "id": "test-imp-id-banner",
+        "id": "test-imp-id-banner-3",
         "banner": {
           "format": [
             {
@@ -62,7 +62,7 @@
         }
       },
       {
-        "id": "test-imp-id-banner",
+        "id": "test-imp-id-banner-4",
         "banner": {
           "format": [
             {
@@ -78,7 +78,7 @@
         }
       },
       {
-        "id": "test-imp-id-banner",
+        "id": "test-imp-id-banner-5",
         "banner": {
           "format": [
             {
@@ -114,7 +114,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id-banner",
+              "id": "test-imp-id-banner-1",
               "banner": {
                 "format": [
                   {
@@ -131,7 +131,7 @@
             }
           ]
         },
-        "impIDs":["test-imp-id-banner"]
+        "impIDs":["test-imp-id-banner-1"]
       },
       "mockResponse": {
         "status": 200,
@@ -143,7 +143,7 @@
               "bid": [
                 {
                   "id": "randomid1",
-                  "impid": "test-imp-id-banner",
+                  "impid": "test-imp-id-banner-1",
                   "price": 0.5,
                   "adid": "12345678",
                   "adm": "some-test-ad-html",
@@ -186,7 +186,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id-banner",
+              "id": "test-imp-id-banner-2",
               "banner": {
                 "format": [
                   {
@@ -203,7 +203,7 @@
             }
           ]
         },
-        "impIDs":["test-imp-id-banner"]
+        "impIDs":["test-imp-id-banner-2"]
       },
       "mockResponse": {
         "status": 200,
@@ -215,7 +215,7 @@
               "bid": [
                 {
                   "id": "randomid1",
-                  "impid": "test-imp-id-banner",
+                  "impid": "test-imp-id-banner-2",
                   "price": 0.5,
                   "adid": "12345678",
                   "adm": "some-test-ad-html",
@@ -258,7 +258,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id-banner",
+              "id": "test-imp-id-banner-3",
               "banner": {
                 "format": [
                   {
@@ -275,7 +275,7 @@
             }
           ]
         },
-        "impIDs":["test-imp-id-banner"]
+        "impIDs":["test-imp-id-banner-3"]
       },
       "mockResponse": {
         "status": 200,
@@ -287,7 +287,7 @@
               "bid": [
                 {
                   "id": "randomid",
-                  "impid": "test-imp-id-banner",
+                  "impid": "test-imp-id-banner-3",
                   "price": 0.5,
                   "adid": "12345678",
                   "adm": "some-test-ad-html",
@@ -329,7 +329,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id-banner",
+              "id": "test-imp-id-banner-4",
               "banner": {
                 "format": [
                   {
@@ -346,7 +346,7 @@
             }
           ]
         },
-        "impIDs":["test-imp-id-banner"]
+        "impIDs":["test-imp-id-banner-4"]
       },
       "mockResponse": {
         "status": 200,
@@ -358,7 +358,7 @@
               "bid": [
                 {
                   "id": "randomid",
-                  "impid": "test-imp-id-banner",
+                  "impid": "test-imp-id-banner-4",
                   "price": 0.5,
                   "adid": "12345678",
                   "adm": "some-test-ad-html",
@@ -401,7 +401,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id-banner",
+              "id": "test-imp-id-banner-5",
               "banner": {
                 "format": [
                   {
@@ -418,7 +418,7 @@
             }
           ]
         },
-        "impIDs":["test-imp-id-banner"]
+        "impIDs":["test-imp-id-banner-5"]
       },
       "mockResponse": {
         "status": 200,
@@ -430,7 +430,7 @@
               "bid": [
                 {
                   "id": "randomid",
-                  "impid": "test-imp-id-banner",
+                  "impid": "test-imp-id-banner-5",
                   "price": 0.5,
                   "adid": "12345678",
                   "adm": "some-test-ad-html",
@@ -462,7 +462,7 @@
         {
           "bid": {
             "id": "randomid1",
-            "impid": "test-imp-id-banner",
+            "impid": "test-imp-id-banner-1",
             "price": 0.5,
             "adm": "some-test-ad-html",
             "adid": "12345678",
@@ -491,7 +491,7 @@
         {
           "bid": {
             "id": "randomid1",
-            "impid": "test-imp-id-banner",
+            "impid": "test-imp-id-banner-2",
             "price": 0.5,
             "adm": "some-test-ad-html",
             "adid": "12345678",
@@ -519,7 +519,7 @@
         {
           "bid": {
             "id": "randomid",
-            "impid": "test-imp-id-banner",
+            "impid": "test-imp-id-banner-3",
             "price": 0.5,
             "adm": "some-test-ad-html",
             "adid": "12345678",
@@ -546,7 +546,7 @@
         {
           "bid": {
             "id": "randomid",
-            "impid": "test-imp-id-banner",
+            "impid": "test-imp-id-banner-4",
             "price": 0.5,
             "adm": "some-test-ad-html",
             "adid": "12345678",
@@ -574,7 +574,7 @@
         {
           "bid": {
             "id": "randomid",
-            "impid": "test-imp-id-banner",
+            "impid": "test-imp-id-banner-5",
             "price": 0.5,
             "adm": "some-test-ad-html",
             "adid": "12345678",

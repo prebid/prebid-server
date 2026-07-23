@@ -1,3 +1,5 @@
+//go:build cgo
+
 package devicedetection
 
 import (
@@ -6,7 +8,7 @@ import (
 	"os"
 
 	"github.com/51Degrees/device-detection-go/v4/dd"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type config struct {

@@ -348,7 +348,7 @@
                   }
                 }
               ],
-              "seat": "adman"
+              "seat": "rubicon"
             }
           ],
           "cur": "USD"
@@ -372,7 +372,8 @@
             "ext": {
               "prebid": {
                 "meta": {
-                  "networkId": 123
+                  "networkId": 123,
+                  "seat": "rubicon"
                 },
                 "type": "native"
               }

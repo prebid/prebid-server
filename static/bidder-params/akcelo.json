@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Akcelo Adapter Params",
+  "description": "A schema which validates params accepted by the Akcelo adapter",
+  "type": "object",
+  "properties": {
+    "adUnitID": {
+      "type": "number",
+      "description": "The identifier of the ad unit. Will be provided by your account manager."
+    },
+    "siteId": {
+      "type": "number",
+      "description": "The identifier of the site. Will be provided by your account manager."
+    },
+    "test": {
+      "type": "number",
+      "description": "Whether to display test creatives or not. Default is 0."
+    }
+  },
+  "required": ["adUnitId", "siteId"]
+}

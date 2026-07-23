@@ -374,7 +374,7 @@
                   }
                 }
               ],
-              "seat": "adman"
+              "seat": "rubicon"
             }
           ],
           "cur": "USD"
@@ -397,7 +397,10 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "type": "video"
+                "type": "video",
+                "meta": {
+                  "seat": "rubicon"
+                }
               }
             }
           },

@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "1",
+      "bundle": "com.example",
+      "publisher": {
+        "id":  "pub-id"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "bidder": {
+            "assetKey": "OGY",
+            "adUnitId": "123"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ogury.example.com",
+        "body": {
+          "app": {
+            "id": "1",
+            "bundle": "com.example",
+            "publisher": {
+              "id":  "pub-id"
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"imp-id",
+              "tagid": "imp-id",
+              "banner": {
+                "format": [{"w": 320, "h": 50}]
+              },
+              "ext": {
+                "assetKey": "OGY",
+                "adUnitId": "123"
+              }
+            }
+          ]
+        },
+        "impIDs":["imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "seat",
+              "bid": [{
+                "id": "some-UUID",
+                "impid": "imp-id",
+                "price": 0.500000,
+                "nurl": "example nurl",
+                "adm": "adm string",
+                "crid": "crid_10",
+                "h": 100,
+                "w": 128,
+                "mtype": 1
+              }]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "some-UUID",
+            "impid": "imp-id",
+            "price": 0.5,
+            "nurl": "example nurl",
+            "adm": "adm string",
+            "crid": "crid_10",
+            "h": 100,
+            "w": 128,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

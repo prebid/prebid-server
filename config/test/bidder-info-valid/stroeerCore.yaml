@@ -28,4 +28,3 @@ userSync:
     redirectUrl: "{{.ExternalURL}}/setuid/redirect"
     externalUrl: "https://redirect.host"
     userMacro: "#UID"
-  supportCors: true

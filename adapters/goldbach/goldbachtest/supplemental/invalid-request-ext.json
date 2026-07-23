@@ -1,0 +1,81 @@
+{
+  "mockBidRequest": {
+    "imp": [
+      {
+        "id": "test-imp-123",
+        "banner": {
+          "h": 250,
+          "w": 300,
+          "pos": 0
+        },
+        "ext": {
+          "bidder": {
+            "slotId": "12345678/de-example.ch/slot-id/some-page",
+            "publisherId": "de-example.ch"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://www.example.ch/"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"
+    },
+    "ext": {
+      "goldbach": "invalid request ext"
+    },
+    "id": "723f8906-7f59-4f50-bba9-ed9115ab1663"
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"]
+        },
+        "uri": "https://gold.bach/prebid/adapter-endpoint",
+        "body": {
+          "imp": [
+            {
+              "ext": {
+                "goldbach": {
+                  "slotId": "12345678/de-example.ch/slot-id/some-page"
+                }
+              },
+              "id": "test-imp-123",
+              "banner": {
+                "h": 250,
+                "w": 300,
+                "pos": 0
+              }
+            }
+          ],
+          "site": {
+            "page": "https://www.example.ch/"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"
+          },
+          "ext": {
+            "goldbach": {
+              "publisherId": "de-example.ch"
+            }
+          },
+          "id": "723f8906-7f59-4f50-bba9-ed9115ab1663_de-example.ch"
+        },
+        "impIDs": ["test-imp-123"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "^unable to unmarshal request.ext:",
+      "comparison": "regex"
+    }
+  ]
+}

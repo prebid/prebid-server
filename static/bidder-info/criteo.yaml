@@ -1,4 +1,6 @@
 endpoint: "https://ssp-bidder.criteo.com/openrtb/pbs/auction/request?profile=230"
+geoscope:
+  - global
 maintainer:
   email: "prebid@criteo.com"
 gvlVendorID: 91

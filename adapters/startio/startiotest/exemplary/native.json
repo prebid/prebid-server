@@ -1,0 +1,157 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id-8cd85aed-25a6-4db0",
+    "imp": [
+      {
+        "id": "imp-id-1-27b9e54b56de702",
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "startio": {}
+            }
+          }
+        },
+        "native": {
+          "ver": "1.1",
+          "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisherid001"
+      },
+      "id": "4204204209"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?identifier=test",
+        "body": {
+          "id": "auction-req-id-8cd85aed-25a6-4db0",
+          "imp": [
+            {
+              "id": "imp-id-1-27b9e54b56de702",
+              "ext": {
+                "prebid": {
+                  "bidder": {
+                    "startio": {}
+                  }
+                }
+              },
+              "native": {
+                "ver": "1.1",
+                "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisherid001"
+            },
+            "id": "4204204209"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id-1-27b9e54b56de702"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "bid-resp-id-675ad335fcb3286441b5",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+                  "impid": "imp-id-1-27b9e54b56de702",
+                  "price": 0.5,
+                  "adid": "adid-29681110",
+                  "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"len\":90,\"text\":\"Title\"}},{\"id\":2,\"img\":{\"w\":320,\"h\":250,\"url\":\"https://img.image.com/product/image.jpg\"}},{\"id\":3,\"img\":{\"w\":50,\"h\":50,\"url\":\"https://img.image.com/product/icon.jpg\"}},{\"id\":4,\"data\":{\"type\":2,\"value\":\"Description\"}},{\"id\":5,\"data\":{\"type\":1,\"value\":\"Sponsored by Start.io\"}}],\"link\":{\"url\":\"https://click.url.com\"},\"imptrackers\":[\"https://impression.url.com\"],\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://event.url.com\"}],\"ver\":\"1.2\"}}",
+                  "adomain": [
+                    "start.io"
+                  ],
+                  "cid": "cid-958",
+                  "crid": "crid-29681110",
+                  "h": 250,
+                  "w": 300,
+                  "cat": [
+                    "IAB9-1"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "native"
+                    }
+                  }
+                }
+              ],
+              "seat": "seat-1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "id": "bid-resp-id-675ad335fcb3286441b5",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-item-id-097ae4ab-80c2-4ff9-8696-9ef0cc7f92f1",
+            "impid": "imp-id-1-27b9e54b56de702",
+            "cat": [
+              "IAB9-1"
+            ],
+            "h": 250,
+            "w": 300,
+            "cid": "cid-958",
+            "crid": "crid-29681110",
+            "adid": "adid-29681110",
+            "price": 0.5,
+            "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"len\":90,\"text\":\"Title\"}},{\"id\":2,\"img\":{\"w\":320,\"h\":250,\"url\":\"https://img.image.com/product/image.jpg\"}},{\"id\":3,\"img\":{\"w\":50,\"h\":50,\"url\":\"https://img.image.com/product/icon.jpg\"}},{\"id\":4,\"data\":{\"type\":2,\"value\":\"Description\"}},{\"id\":5,\"data\":{\"type\":1,\"value\":\"Sponsored by Start.io\"}}],\"link\":{\"url\":\"https://click.url.com\"},\"imptrackers\":[\"https://impression.url.com\"],\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://event.url.com\"}],\"ver\":\"1.2\"}}",
+            "adomain": [
+              "start.io"
+            ],
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

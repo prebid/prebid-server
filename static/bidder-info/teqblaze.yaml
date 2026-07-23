@@ -1,0 +1,14 @@
+whiteLabelOnly: true
+maintainer:
+  email: "github@teqblaze.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

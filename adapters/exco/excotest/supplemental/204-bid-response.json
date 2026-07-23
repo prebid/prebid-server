@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "exco-test",
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "exco-publisherId"
+      }
+    },
+    "imp": [
+      {
+        "id": "204-bid-response_imp",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "exco-accountId",
+            "publisherId": "exco-publisherId",
+            "tagId": "exco-tagId"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://testjsonsample.com",
+        "body":{
+          "id": "exco-test",
+          "site": {
+            "page": "prebid.org",
+            "publisher": {
+              "id": "exco-publisherId"
+            }
+          },
+          "imp": [{
+            "id": "204-bid-response_imp",
+            "video": {
+              "mimes": ["video/mp4"],
+              "w": 300,
+              "h": 250
+            },
+            "tagid": "exco-tagId",
+            "ext": {
+              "bidder": {
+                "accountId": "exco-accountId",
+                "publisherId": "exco-publisherId",
+                "tagId": "exco-tagId"
+              }
+            }
+          }]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["204-bid-response_imp"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body" : {}
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}
+

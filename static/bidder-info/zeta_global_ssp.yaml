@@ -20,6 +20,9 @@ capabilities:
       - audio
 userSync:
   redirect:
-    url: https://ssp.disqus.com/redirectuser?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}
+    url: https://ssp.disqus.com/redirectuser?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}
     userMacro: 'BUYERUID'
+openrtb:
+  version: 2.6
+  gpp-supported: true
 

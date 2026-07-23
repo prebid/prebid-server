@@ -1,0 +1,4 @@
+aliasOf: 'teqblaze'
+endpoint: "https://balancer.mediayo.ai/pserver"
+maintainer:
+  email: "admin@mediayo.co"

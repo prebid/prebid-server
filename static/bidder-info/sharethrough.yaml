@@ -4,6 +4,8 @@ maintainer:
 gvlVendorID: 80
 openrtb:
   version: 2.6
+geoscope:
+  - global
 capabilities:
   app:
     mediaTypes:

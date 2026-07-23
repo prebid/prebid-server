@@ -91,7 +91,8 @@
               "cpm": 2,
               "ad": "<vast><div>video</div></vast>",
               "crid": "wasd",
-              "mtype": "video"
+              "mtype": "video",
+              "adomain": ["example.com"]
             }
           ]
         }
@@ -108,7 +109,8 @@
           "price": 2,
           "adm": "<vast><div>video</div></vast>",
           "crid": "wasd",
-          "mtype": 2
+          "mtype": 2,
+          "adomain": ["example.com"]
         },
         "type": "video"
       }]

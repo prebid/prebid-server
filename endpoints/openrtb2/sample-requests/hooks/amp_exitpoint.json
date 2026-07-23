@@ -1,0 +1,50 @@
+{
+    "description": "Amp Exitpoint",
+    "query": "tag_id=101&trace=verbose",
+    "config": {
+        "mockBidders": [
+            {
+                "bidderName": "pubmatic",
+                "currency": "USD",
+                "price": 2
+            }
+        ]
+    },
+    "mockBidRequest": {
+        "id": "my-req-id",
+        "site": {
+            "page": "test.somepage.com"
+        },
+        "imp": [
+            {
+                "id": "my-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "prebid": {
+                        "bidder": {
+                            "pubmatic": {
+                                "publisherId": 12345
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "ext": {
+            "prebid": {
+                "debug": true
+            }
+        }
+    },
+    "expectedAmpResponse": {
+        "id": "modified-id"
+    },
+    "expectedReturnCode": 200
+}

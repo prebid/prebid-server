@@ -33,7 +33,18 @@
                             "cricket"
                         ]
                     },
-                    "gpid":"/1111/home"
+                    "gpid":"/1111/home",
+                    "skadn": {
+                        "versions": [
+                            "2.0",
+                            "2.1"
+                        ],
+                        "sourceapp": "11111",
+                        "skadnetids": [
+                            "424m5254lk.skadnetwork",
+                            "4fzdc2evr5.skadnetwork"
+                        ]
+                    }
                 }
             }
         ],
@@ -70,7 +81,18 @@
                             "ext": {
                                 "dfp_ad_unit_code": "/1111/home",
                                 "key_val": "k1=v1|k2=v2|sport=rugby,cricket",
-                                "gpid":"/1111/home"
+                                "gpid":"/1111/home",
+                                "skadn": {
+                                    "versions": [
+                                        "2.0",
+                                        "2.1"
+                                    ],
+                                    "sourceapp": "11111",
+                                    "skadnetids": [
+                                        "424m5254lk.skadnetwork",
+                                        "4fzdc2evr5.skadnetwork"
+                                    ]
+                                }
                             }
                         }
                     ],
@@ -113,6 +135,7 @@
                                     "h": 250,
                                     "w": 300,
                                     "dealid": "test deal",
+                                    "mtype": 1,
                                     "ext": {
                                         "dspid": 6,
                                         "deal_channel": 1
@@ -145,6 +168,7 @@
                         "w": 300,
                         "h": 250,
                         "dealid": "test deal",
+                        "mtype": 1,
                         "ext": {
                             "dspid": 6,
                             "deal_channel": 1

@@ -1,0 +1,16 @@
+aliasOf: "teqblaze"
+endpoint: "http://endpoint.anzumarketplace.com/pserver"
+maintainer:
+  email: "prebid@anzu.io"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native

@@ -132,7 +132,8 @@
             "impid": "test-imp-id",
             "price": 2.01,
             "w": 728,
-            "h": 90
+            "h": 90,
+            "adomain": ["yieldlab"]
           },
           "type": "banner"
         },
@@ -145,7 +146,8 @@
             "impid": "test-imp-id2",
             "price": 1.31,
             "w": 300,
-            "h": 250
+            "h": 250,
+            "adomain": ["yieldlab"]
           },
           "type": "banner"
         }

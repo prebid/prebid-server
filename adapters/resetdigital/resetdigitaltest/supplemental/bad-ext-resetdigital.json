@@ -1,0 +1,32 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": 123
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing resetDigitalExt from bidderExt.bidder:",
+      "comparison": "regex"
+    }
+  ]
+}

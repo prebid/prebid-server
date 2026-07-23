@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/exchange/entities"
-	"github.com/prebid/prebid-server/v3/experiment/adscert"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
+	"github.com/prebid/prebid-server/v4/experiment/adscert"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	goCurrency "golang.org/x/text/currency"
 )
 
@@ -39,6 +39,14 @@ func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRe
 		}
 	}
 	return seatBids, extraBidderRespInfo, errs
+}
+
+func (v *validatedBidder) logHealthCheck(success bool) {
+	v.bidder.logHealthCheck(success)
+}
+
+func (v *validatedBidder) shouldRequest() bool {
+	return v.bidder.shouldRequest()
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids

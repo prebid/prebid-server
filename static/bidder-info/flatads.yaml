@@ -1,0 +1,17 @@
+endpoint: "https://bid.rtbshark.com/api/rtbs/adx/rtb?x-net-id={{.PublisherID}}&x-net-token={{.TokenID}}"
+endpointCompression: gzip
+maintainer:
+  email: "adxbusiness@flat-ads.com"
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

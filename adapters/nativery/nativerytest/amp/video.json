@@ -1,0 +1,138 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 15,
+          "maxduration": 30,
+          "protocols": [2, 3, 5, 6, 7, 8],
+          "w": 940,
+          "h": 560
+        },
+        "ext": {
+          "bidder": {
+            "widgetId": "1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com",
+      "ref": "http://example.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+      "h": 500,
+      "w": 1000
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/hb",
+        "body": {
+          "id": "test-request-id",
+          "ext": {
+            "nativery": {
+              "isAmp": true,
+              "widgetId": "1"
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "minduration": 15,
+                "maxduration": 30,
+                "protocols": [2, 3, 5, 6, 7, 8],
+                "w": 940,
+                "h": 560
+              },
+              "ext": {
+                "bidder": {
+                  "widgetId": "1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "ref": "http://example.com"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+            "h": 500,
+            "w": 1000
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-request-id",
+                  "impid": "test-imp-id",
+                  "price": 1000,
+                  "nurl": "http://example.com/win/1000",
+                  "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"4.0\"> ...",
+                  "adomain": ["example.com"],
+                  "cid": "test-cid",
+                  "crid": "test-crid",
+                  "cat": ["IAB13-4"],
+                  "mtype": 2,
+                  "ext": {
+                    "nativery": {
+                      "adv_id": "1",
+                      "brand_category_id": 1,
+                      "bid_ad_media_type": "video"
+                    }
+                  }
+                }
+              ],
+              "seat": "nat-123"
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-request-id",
+            "impid": "test-imp-id",
+            "price": 1000,
+            "nurl": "http://example.com/win/1000",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"4.0\"> ...",
+            "adomain": ["example.com"],
+            "cid": "test-cid",
+            "crid": "test-crid",
+            "cat": ["IAB13-4"],
+            "mtype": 2,
+            "ext": {
+              "nativery": {
+                "adv_id": "1",
+                "brand_category_id": 1,
+                "bid_ad_media_type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

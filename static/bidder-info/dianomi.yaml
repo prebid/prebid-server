@@ -16,8 +16,8 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: 'https://www-prebid.dianomi.com/prebid/usersync/index.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
+    url: 'https://www-prebid.dianomi.com/prebid/usersync/index.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
     userMacro: '$UID'
   redirect:
-    url: 'https://data.dianomi.com/frontend/usync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
+    url: 'https://data.dianomi.com/frontend/usync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
     userMacro: '$UID'

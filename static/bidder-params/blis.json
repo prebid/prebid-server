@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Blis Adapter Params",
+  "description": "A schema which validates params accepted by the Blis adapter",
+  "type": "object",
+
+  "properties": {
+    "spid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique supply partner ID provided by Blis"
+    }
+  },
+
+  "required": ["spid"]
+}

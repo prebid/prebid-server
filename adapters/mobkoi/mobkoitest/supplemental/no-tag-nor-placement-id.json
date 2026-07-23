@@ -27,9 +27,7 @@
           "h": 50
         },
         "ext": {
-          "bidder": {
-            "adServerBaseUrl": "http://dev.mobkoi.com"
-          }
+          "bidder": {}
         }
       }
     ]

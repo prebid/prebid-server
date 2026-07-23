@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type RequestExt struct {
@@ -32,7 +32,7 @@ func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) {
+func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool, extUser openrtb_ext.ExtUser) (string, []error) {
 	uri, err := url.Parse(a.endpoint)
 	if err != nil {
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
@@ -78,6 +78,22 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 
 	if noCookies {
 		q.Set("noCookies", "true")
+	}
+
+	if len(extUser.Eids) > 0 {
+		hasValidEid := false
+		for _, eid := range extUser.Eids {
+			if len(eid.UIDs) > 0 {
+				hasValidEid = true
+				break
+			}
+		}
+		if hasValidEid {
+			eidsJSON, err := jsonutil.Marshal(extUser.Eids)
+			if err == nil {
+				q.Set("eids", string(eidsJSON))
+			}
+		}
 	}
 
 	q.Set("tzo", strconv.Itoa(tzo))
@@ -191,6 +207,27 @@ func generateAdUnit(imp openrtb2.Imp, adnuntiusExt openrtb_ext.ImpExtAdnunitus, 
 	if adnuntiusExt.MaxDeals > 0 {
 		adUnit.MaxDeals = adnuntiusExt.MaxDeals
 	}
+
+	if adnuntiusExt.Targeting.Category != nil {
+		adUnit.Category = adnuntiusExt.Targeting.Category
+	}
+
+	if adnuntiusExt.Targeting.Segments != nil {
+		adUnit.Segments = adnuntiusExt.Targeting.Segments
+	}
+
+	if adnuntiusExt.Targeting.Keywords != nil {
+		adUnit.Keywords = adnuntiusExt.Targeting.Keywords
+	}
+
+	if adnuntiusExt.Targeting.KeyValues != nil {
+		adUnit.KeyValues = adnuntiusExt.Targeting.KeyValues
+	}
+
+	if adnuntiusExt.Targeting.AdUnitMatchingLabel != nil {
+		adUnit.AdUnitMatchingLabel = adnuntiusExt.Targeting.AdUnitMatchingLabel
+	}
+
 	return adUnit
 }
 

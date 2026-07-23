@@ -1,0 +1,372 @@
+{
+  "mockBidRequest": {
+    "id": "test-multi-request-id",
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": { "widgetId": "1" }
+        }
+      },
+      {
+        "id": "imp-native",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":100,\"hmin\":100}}],\"context\":1,\"plcmttype\":1}"
+        },
+        "ext": {
+          "bidder": { "widgetId": "1" }
+        }
+      },
+      {
+        "id": "imp-hybrid",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200}}],\"context\":1,\"plcmttype\":1}"
+        },
+        "ext": {
+          "bidder": { "widgetId": "1" }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com",
+      "ref": "http://example.com"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+      "h": 500,
+      "w": 1000
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/hb",
+        "body": {
+          "id": "test-multi-request-id",
+          "ext": {
+            "nativery": { "isAmp": false, "widgetId": "1" }
+          },
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": {
+                "bidder": {
+                  "widgetId": "1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "ref": "http://example.com"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+            "h": 500,
+            "w": 1000
+          }
+        },
+        "impIDs": ["imp-banner"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-multi-request-id",
+          "seatbid": [
+            {
+              "seat": "nat-123",
+              "bid": [
+                {
+                  "id": "bid-banner",
+                  "impid": "imp-banner",
+                  "price": 800,
+                  "adm": "<div>banner ad</div>",
+                  "adomain": ["example.com"],
+                  "cid": "cid-banner",
+                  "crid": "crid-banner",
+                  "cat": ["IAB13-4"],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1,
+                  "ext": {
+                    "nativery": {
+                      "adv_id": "1",
+                      "brand_category_id": 1,
+                      "bid_ad_media_type": "display"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/hb",
+        "body": {
+          "id": "test-multi-request-id",
+          "ext": {
+            "nativery": { "isAmp": false, "widgetId": "1" }
+          },
+          "imp": [
+            {
+              "id": "imp-native",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":100,\"hmin\":100}}],\"context\":1,\"plcmttype\":1}"
+              },
+              "ext": {
+                "bidder": {
+                  "widgetId": "1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "ref": "http://example.com"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+            "h": 500,
+            "w": 1000
+          }
+        },
+        "impIDs": ["imp-native"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-multi-request-id",
+          "seatbid": [
+            {
+              "seat": "nat-123",
+              "bid": [
+                {
+                  "id": "bid-native",
+                  "impid": "imp-native",
+                  "price": 600,
+                  "adm": "{\"native\":{\"assets\":[…],\"link\":{\"url\":\"http://example.com/click\"}}}",
+                  "adomain": ["example.com"],
+                  "cid": "cid-native",
+                  "crid": "crid-native",
+                  "cat": ["IAB15-1"],
+                  "mtype": 3,
+                  "ext": {
+                    "nativery": {
+                      "adv_id": "1",
+                      "brand_category_id": 1,
+                      "bid_ad_media_type": "native"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/hb",
+        "body": {
+          "id": "test-multi-request-id",
+          "ext": {
+            "nativery": { "isAmp": false, "widgetId": "1" }
+          },
+          "imp": [
+            {
+              "id": "imp-hybrid",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200}}],\"context\":1,\"plcmttype\":1}"
+              },
+              "ext": {
+                "bidder": {
+                  "widgetId": "1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "ref": "http://example.com"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36",
+            "h": 500,
+            "w": 1000
+          }
+        },
+        "impIDs": ["imp-hybrid"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-multi-request-id",
+          "seatbid": [
+            {
+              "seat": "nat-123",
+              "bid": [
+                {
+                  "id": "bid-hybrid-banner",
+                  "impid": "imp-hybrid",
+                  "price": 1000,
+                  "adm": "<div>hybrid banner</div>",
+                  "adomain": ["example.com"],
+                  "cid": "cid-hybrid-banner",
+                  "crid": "crid-hybrid-banner",
+                  "cat": ["IAB13-4"],
+                  "w": 728,
+                  "h": 90,
+                  "mtype": 1,
+                  "ext": {
+                    "nativery": {
+                      "adv_id": "1",
+                      "brand_category_id": 1,
+                      "bid_ad_media_type": "display"
+                    }
+                  }
+                },
+                {
+                  "id": "bid-hybrid-native",
+                  "impid": "imp-hybrid",
+                  "price": 500,
+                  "adm": "{\"native\":{\"assets\":[…],\"link\":{\"url\":\"http://example.com/click2\"}}}",
+                  "adomain": ["example.com"],
+                  "cid": "cid-hybrid-native",
+                  "crid": "crid-hybrid-native",
+                  "cat": ["IAB15-1"],
+                  "mtype": 3,
+                  "ext": {
+                    "nativery": {
+                      "adv_id": "1",
+                      "brand_category_id": 1,
+                      "bid_ad_media_type": "native"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner",
+            "impid": "imp-banner",
+            "price": 800,
+            "adm": "<div>banner ad</div>",
+            "adomain": ["example.com"],
+            "cid": "cid-banner",
+            "crid": "crid-banner",
+            "cat": ["IAB13-4"],
+            "w": 300,
+            "h": 250,
+            "mtype": 1,
+            "ext": {
+              "nativery": {
+                "adv_id": "1",
+                "brand_category_id": 1,
+                "bid_ad_media_type": "display"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-native",
+            "impid": "imp-native",
+            "price": 600,
+            "adm": "{\"native\":{\"assets\":[…],\"link\":{\"url\":\"http://example.com/click\"}}}",
+            "adomain": ["example.com"],
+            "cid": "cid-native",
+            "crid": "crid-native",
+            "cat": ["IAB15-1"],
+            "mtype": 3,
+            "ext": {
+              "nativery": {
+                "adv_id": "1",
+                "brand_category_id": 1,
+                "bid_ad_media_type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    },
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-hybrid-banner",
+            "impid": "imp-hybrid",
+            "price": 1000,
+            "adm": "<div>hybrid banner</div>",
+            "adomain": ["example.com"],
+            "cid": "cid-hybrid-banner",
+            "crid": "crid-hybrid-banner",
+            "cat": ["IAB13-4"],
+            "w": 728,
+            "h": 90,
+            "mtype": 1,
+            "ext": {
+              "nativery": {
+                "adv_id": "1",
+                "brand_category_id": 1,
+                "bid_ad_media_type": "display"
+              }
+            }
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-hybrid-native",
+            "impid": "imp-hybrid",
+            "price": 500,
+            "adm": "{\"native\":{\"assets\":[…],\"link\":{\"url\":\"http://example.com/click2\"}}}",
+            "adomain": ["example.com"],
+            "cid": "cid-hybrid-native",
+            "crid": "crid-hybrid-native",
+            "cat": ["IAB15-1"],
+            "mtype": 3,
+            "ext": {
+              "nativery": {
+                "adv_id": "1",
+                "brand_category_id": 1,
+                "bid_ad_media_type": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

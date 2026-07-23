@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Boldwin-Rapid Adapter Params",
+  "description": "A schema which validates params accepted by the Boldwin-rapid adapter",
+  "type": "object",
+
+  "properties": {
+    "pid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Publisher ID"
+    },
+    "tid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Placement ID"
+    }
+  },
+  "required": ["pid", "tid"]
+}

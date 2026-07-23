@@ -1,7 +1,7 @@
 package connatix
 
 import (
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 type adapter struct {
@@ -10,10 +10,6 @@ type adapter struct {
 
 type impExtIncoming struct {
 	Bidder openrtb_ext.ExtImpConnatix `json:"bidder"`
-}
-
-type impExt struct {
-	Connatix impExtConnatix `json:"connatix"`
 }
 
 type impExtConnatix struct {
