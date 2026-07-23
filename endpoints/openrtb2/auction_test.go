@@ -5037,7 +5037,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 			ao := analytics.AuctionObject{}
 			account := &config.Account{DebugAllow: true}
 
-			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao, false)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")
