@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://good.site/url"
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 111,
+              "h": 111
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "pubname": "PUB123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri":  "prebid-use.atomex.net/ag=PUB123",
+
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://good.site/url"
+          },
+          "imp": [
+            {
+              "id": "imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 111,
+                    "h": 111
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "pubname": "PUB123"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "interactiveoffers",
+              "bid": [
+                {
+                  "id": "randomid",
+                  "impid": "imp-id",
+                  "price": 0.5,
+                  "adid": "12345678",
+                  "adm": "some-test-ad",
+                  "cid": "987",
+                  "crid": "12345678",
+                  "h": 111,
+                  "w": 111,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "randomid",
+            "impid": "imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "adid": "12345678",
+            "cid": "987",
+            "crid": "12345678",
+            "w": 111,
+            "h": 111,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
