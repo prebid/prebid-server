@@ -432,6 +432,8 @@ ccpa:
   enforce: true
 lmt:
   enforce: true
+cookie_sync:
+  disabled_iframe_bidders: ["hostBidder1", "hostBidder2"]
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -654,6 +656,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cookie family", "prebid", cfg.HostCookie.Family)
 	cmpStrings(t, "opt out", "http://prebid.org/optout", cfg.HostCookie.OptOutURL)
 	cmpStrings(t, "opt in", "http://prebid.org/optin", cfg.HostCookie.OptInURL)
+	assert.Equal(t, []string{"hostBidder1", "hostBidder2"}, cfg.CookieSync.DisabledIFrameBidders, "cookie_sync.disabled_iframe_bidders")
 	cmpStrings(t, "external url", "http://prebid-server.prebid.org/", cfg.ExternalURL)
 	cmpStrings(t, "host", "prebid-server.prebid.org", cfg.Host)
 	cmpInts(t, "port", 1234, cfg.Port)

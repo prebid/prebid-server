@@ -1,0 +1,77 @@
+name: Adapter Code Coverage Report
+
+on:
+  workflow_run:
+    workflows: ["Adapter Code Coverage"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  report-coverage:
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-results
+          path: coverage-results
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Read PR Metadata
+        id: pr_metadata
+        run: |
+          echo "pr_number=$(cat coverage-results/pr-metadata/pr_number)" >> $GITHUB_OUTPUT
+          echo "head_sha=$(cat coverage-results/pr-metadata/head_sha)" >> $GITHUB_OUTPUT
+          echo "directories=$(cat coverage-results/pr-metadata/directories.json)" >> $GITHUB_OUTPUT
+          echo "coverage_dir=$(pwd)/coverage-results" >> $GITHUB_OUTPUT
+
+      - name: Checkout Coverage Preview Branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: coverage-preview
+          repository: prebid/prebid-server
+          path: preview-repo
+
+      - name: Upload Coverage Results
+        id: commit_coverage
+        run: |
+          timestamp=$(date +%s)
+          directory=preview-repo/.github/preview/${{ github.event.workflow_run.id }}_${timestamp}
+          mkdir -p $directory
+          cp -r coverage-results/*.html $directory/
+          cd preview-repo
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/preview/*
+          git commit -m 'Add coverage files for run ${{ github.event.workflow_run.id }}'
+          git push origin coverage-preview
+          echo "remote_coverage_preview_dir=.github/preview/${{ github.event.workflow_run.id }}_${timestamp}" >> $GITHUB_OUTPUT
+
+      - name: Add Coverage Summary To Pull Request
+        if: steps.commit_coverage.outputs.remote_coverage_preview_dir != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+            const helper = utils.coverageHelper({
+              github, context,
+              headSha: '${{ steps.pr_metadata.outputs.head_sha }}', 
+              tmpCoverageDir: '${{ steps.pr_metadata.outputs.coverage_dir }}', 
+              remoteCoverageDir: '${{ steps.commit_coverage.outputs.remote_coverage_preview_dir }}',
+              prNumber: ${{ steps.pr_metadata.outputs.pr_number }}
+            })
+            const adapterDirectories = JSON.parse('${{ steps.pr_metadata.outputs.directories }}')
+            await helper.AddCoverageSummary(adapterDirectories)

@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.rtb-nuclion.io/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"
