@@ -1,4 +1,4 @@
-endpoint: "https://www-prebid.dianomi.com/cgi-bin/smartads_prebid.pl"
+endpoint: "https://dianomi-bidder-proxy.dianomi.com/traffic_proxy"
 disabled: true
 maintainer:
   email: 'prebid-maintainer@dianomi.com'
