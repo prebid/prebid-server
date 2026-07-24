@@ -11,8 +11,8 @@
       },
       "ext": {
         "bidder": {
-          "publisherId": "123",
-          "supplyId": "ssp-1"
+          "publisherId": "pub&123",
+          "supplyId": "ssp 1"
         }
       }
     }],
@@ -35,15 +35,15 @@
           },
           "ext": {
             "bidder": {
-              "publisherId": "123",
-              "supplyId": "ssp-1"
+              "publisherId": "pub&123",
+              "supplyId": "ssp 1"
             }
           }
         }],
         "site": {
           "page": "https://example.com/page",
           "publisher": {
-            "id": "123"
+            "id": "pub&123"
           }
         }
       },
