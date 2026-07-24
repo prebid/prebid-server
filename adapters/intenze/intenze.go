@@ -3,18 +3,15 @@ package intenze
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
 	"net/http"
 	"net/url"
-	"slices"
-	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	// "github.com/prebid/prebid-server/v4/macros"
+
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
@@ -35,14 +32,7 @@ var sspSubdomainsRegions = map[string]string{
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	bidder := &adapter{
-		endpoint: template,
-	}
+	bidder := &adapter{}
 	return bidder, nil
 }
 
@@ -142,16 +132,13 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtIntenze) (string, erro
 		var exists bool
 		subdomain, exists = regionMap[*params.Region]
 		if !exists {
-			keys := slices.Collect(maps.Keys(regionMap))
-			validRegions := strings.Join(keys, "\", \"")
-
 			return "", &errortypes.BadInput{
-				Message: fmt.Sprintf("invalid region: %s. Expected \"%s\"", *params.Region, validRegions),
+				Message: fmt.Sprintf("invalid region: %s. Expected us-east, eu or apac", *params.Region),
 			}
 		}
 	}
 
-	endpoint := fmt.Sprintf("http://%s.intenze.co/%s?%s=%s", subdomain, route, queryKey, url.QueryEscape(queryValue))
+	endpoint := fmt.Sprintf("https://%s.intenze.co/%s?%s=%s", subdomain, route, queryKey, url.QueryEscape(queryValue))
 
 	return endpoint, nil
 }

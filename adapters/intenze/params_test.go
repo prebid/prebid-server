@@ -9,7 +9,8 @@ import (
 
 var validParams = []string{
 	`{"accountId": "hash"}`,
-	`{"subdomain": "ssp-api", "placementId": "id"}`,
+	`{"placementId": "id"}`,
+	`{"region": "us-east", "placementId": "id"}`,
 }
 
 func TestValidParams(t *testing.T) {

@@ -4,9 +4,9 @@
     "description": "A schema which validates params accepted by the Intenze adapter",
     "type": "object",
     "properties": {
-        "subdomain": {
+        "region": {
             "type": "string",
-            "description": "Specify regional/platform variated subdomain of SSP/Exchange. By default lb-east of ad exchange is used.",
+            "description": "Target region traffic. By default us-east.",
             "minLength": 1
         },
         "accountId": {
