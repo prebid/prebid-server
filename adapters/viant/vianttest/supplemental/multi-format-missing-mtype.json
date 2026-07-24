@@ -3,8 +3,13 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "imp-banner",
+        "id": "imp-multi",
         "banner": { "w": 300, "h": 250 },
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480
+        },
         "ext": {
           "bidder": { "publisherId": "prebid-test-pub-001" }
         }
@@ -24,8 +29,13 @@
           "cur": ["USD"],
           "imp": [
             {
-              "id": "imp-banner",
-              "banner": { "w": 300, "h": 250 }
+              "id": "imp-multi",
+              "banner": { "w": 300, "h": 250 },
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480
+              }
             }
           ],
           "site": {
@@ -33,7 +43,7 @@
             "publisher": { "id": "prebid-test-pub-001" }
           }
         },
-        "impIDs": ["imp-banner"]
+        "impIDs": ["imp-multi"]
       },
       "mockResponse": {
         "status": 200,
@@ -45,13 +55,13 @@
               "seat": "2722",
               "bid": [
                 {
-                  "id": "bid-unknown",
-                  "impid": "imp-does-not-exist",
-                  "price": 1.50,
-                  "adm": "<div>ad markup</div>",
-                  "crid": "crid-unknown",
-                  "w": 300,
-                  "h": 250
+                  "id": "bid-no-mtype",
+                  "impid": "imp-multi",
+                  "price": 4.10,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "video-crid-001",
+                  "w": 640,
+                  "h": 480
                 }
               ]
             }
@@ -68,7 +78,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unsupported MType 0 for bid imp-does-not-exist",
+      "value": "unsupported MType 0 for bid imp-multi",
       "comparison": "literal"
     }
   ]

@@ -213,11 +213,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		bidderResponse.Currency = defaultCurrency
 	}
 
+	var errs []error
 	for _, seatBid := range bidResponse.SeatBid {
 		for i := range seatBid.Bid {
 			bid := &seatBid.Bid[i]
-			bidType, err := getMediaTypeForBid(bid, request.Imp)
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
+				errs = append(errs, err)
 				continue
 			}
 
@@ -228,10 +230,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 
-	return bidderResponse, nil
+	return bidderResponse, errs
 }
 
-func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -241,24 +243,9 @@ func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.Bid
 		return openrtb_ext.BidTypeNative, nil
 	case openrtb2.MarkupAudio:
 		return openrtb_ext.BidTypeAudio, nil
-	}
-
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
-			if imp.Audio != nil {
-				return openrtb_ext.BidTypeAudio, nil
-			}
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported MType %d for bid %s", bid.MType, bid.ImpID),
 		}
 	}
-
-	return "", fmt.Errorf("unable to determine media type for bid %s", bid.ID)
 }
