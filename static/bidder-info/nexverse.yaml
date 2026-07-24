@@ -1,0 +1,14 @@
+endpoint: "https://rtb.nexverse.ai"
+maintainer:
+  email: "anand.kumar@nexverse.ai"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

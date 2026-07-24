@@ -168,6 +168,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/nativery"
 	"github.com/prebid/prebid-server/v4/adapters/nativo"
 	"github.com/prebid/prebid-server/v4/adapters/nextmillennium"
+	"github.com/prebid/prebid-server/v4/adapters/nexverse"
 	"github.com/prebid/prebid-server/v4/adapters/nexx360"
 	"github.com/prebid/prebid-server/v4/adapters/nobid"
 	"github.com/prebid/prebid-server/v4/adapters/ogury"
@@ -444,6 +445,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNativery:          nativery.Builder,
 		openrtb_ext.BidderNativo:            nativo.Builder,
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
+		openrtb_ext.BidderNexverse:          nexverse.Builder,
 		openrtb_ext.BidderNexx360:           nexx360.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
 		openrtb_ext.BidderOgury:             ogury.Builder,
