@@ -16,7 +16,7 @@
           "bidder": {
             "siteId": 123456,
             "networkId": 123456,
-            "bidfloor": 0.10
+            "bidfloor": 0.1
           }
         }
       }
@@ -64,7 +64,16 @@
               "tagid": "123456",
               "secure": 0,
               "bidfloor": 0.1,
-              "bidfloorcur": "USD"
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "siteId": 123456,
+                  "networkId": 123456,
+                  "bidfloor": 0.1
+                },
+                "networkId": 123456,
+                "siteId": 123456
+              }
             }
           ],
           "site": {
@@ -77,7 +86,9 @@
             "dnt": 1
           }
         },
-        "impIDs":["test-banner-imp-id"]
+        "impIDs": [
+          "test-banner-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,

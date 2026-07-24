@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "test-native-id",
+    "imp": [
+      {
+        "id": "test-native-imp-id",
+        "native": {
+          "request": "{\"native\":{}}"
+        },
+        "ext": {
+          "bidder": {
+            "siteId": 123456,
+            "networkId": 123456
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "connectad.io",
+      "page": "http://connectad.io/"
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "ip": "111.111.111.111"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://bidder.connectad.io/API?src=pbs",
+        "body": {
+          "id": "test-native-id",
+          "imp": [
+            {
+              "id": "test-native-imp-id",
+              "native": {
+                "request": "{\"native\":{}}"
+              },
+              "ext": {
+                "bidder": {
+                  "siteId": 123456,
+                  "networkId": 123456
+                },
+                "networkId": 123456,
+                "siteId": 123456
+              },
+              "tagid": "123456",
+              "secure": 0
+            }
+          ],
+          "site": {
+            "domain": "connectad.io",
+            "page": "http://connectad.io/"
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "111.111.111.111"
+          }
+        },
+        "impIDs": [
+          "test-native-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-native-id",
+          "seatbid": [
+            {
+              "seat": "connectad",
+              "bid": [
+                {
+                  "id": "nat-1",
+                  "impid": "test-native-imp-id",
+                  "price": 30.0,
+                  "adm": "{\"native\":{\"assets\":[]}}",
+                  "crid": "n1",
+                  "mtype": 4
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "nat-1",
+            "impid": "test-native-imp-id",
+            "price": 30.0,
+            "adm": "{\"native\":{\"assets\":[]}}",
+            "crid": "n1",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
