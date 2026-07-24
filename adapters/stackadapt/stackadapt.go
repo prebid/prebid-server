@@ -1,10 +1,10 @@
 package stackadapt
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"text/template"
@@ -50,7 +50,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		return nil, []error{err}
 	}
 
-	body, err := json.Marshal(request)
+	body, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{fmt.Errorf("marshal bidRequest: %w", err)}
 	}
@@ -69,8 +69,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 func (a *adapter) buildEndpointURL(publisherID, supplyID string) (string, error) {
 	params := macros.EndpointTemplateParams{
-		PublisherID: publisherID,
-		SupplyId:    supplyID,
+		PublisherID: url.QueryEscape(publisherID),
+		SupplyId:    url.QueryEscape(supplyID),
 	}
 	return macros.ResolveMacros(a.endpoint, params)
 }
@@ -88,8 +88,12 @@ func setImpsAndGetEndpointParams(request *openrtb2.BidRequest) (string, string, 
 			return "", "", &errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: unable to unmarshal bidder ext: %s", i, err.Error())}
 		}
 
-		publisherID = saExt.PublisherId
-		supplyID = saExt.SupplyId
+		if i == 0 {
+			publisherID = saExt.PublisherId
+			supplyID = saExt.SupplyId
+		} else if saExt.PublisherId != publisherID || saExt.SupplyId != supplyID {
+			return "", "", &errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: all imps must have the same publisherId and supplyId", i)}
+		}
 
 		if saExt.PlacementId != nil {
 			request.Imp[i].TagID = *saExt.PlacementId
@@ -210,18 +214,15 @@ func resolveMacros(bid *openrtb2.Bid) {
 }
 
 func getNativeAdm(adm string) (string, error) {
-	nativeAdm := make(map[string]interface{})
-	if err := jsonutil.Unmarshal([]byte(adm), &nativeAdm); err != nil {
+	value, dataType, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+	if err != nil {
+		if errors.Is(err, jsonparser.KeyPathNotFoundError) {
+			return adm, nil
+		}
 		return adm, errors.New("unable to unmarshal native adm")
 	}
-
-	if _, ok := nativeAdm["native"]; ok {
-		value, dataType, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
-		if err != nil || dataType != jsonparser.Object {
-			return adm, errors.New("unable to get native adm")
-		}
-		adm = string(value)
+	if dataType != jsonparser.Object {
+		return adm, errors.New("unable to get native adm")
 	}
-
-	return adm, nil
+	return string(value), nil
 }

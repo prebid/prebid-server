@@ -129,8 +129,13 @@ func TestGetNativeAdm(t *testing.T) {
 			expectedAdm: `{"link":{"url":"https://example.com"},"assets":[{"id":1,"title":{"text":"Title"}}]}`,
 		},
 		{
-			name:    "invalid_json",
-			adm:     `not json`,
+			name:        "no_native_key_passthrough",
+			adm:         `not json`,
+			expectedAdm: `not json`,
+		},
+		{
+			name:    "malformed_native_envelope",
+			adm:     `{"native":`,
 			wantErr: true,
 		},
 		{
@@ -146,7 +151,7 @@ func TestGetNativeAdm(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.JSONEq(t, tt.expectedAdm, result)
+				assert.Equal(t, tt.expectedAdm, result)
 			}
 		})
 	}
@@ -257,17 +262,29 @@ func TestSetImpsAndGetEndpointParams(t *testing.T) {
 		assert.Contains(t, err.Error(), "unable to unmarshal bidder ext")
 	})
 
-	t.Run("multi_imp_uses_last_publisher_id_and_supply_id", func(t *testing.T) {
+	t.Run("multi_imp_same_publisher_id_and_supply_id", func(t *testing.T) {
 		req := &openrtb2.BidRequest{
 			Imp: []openrtb2.Imp{
-				{Ext: json.RawMessage(`{"bidder":{"publisherId":"first","supplyId":"ssp-first"}}`)},
-				{Ext: json.RawMessage(`{"bidder":{"publisherId":"second","supplyId":"ssp-second"}}`)},
+				{Ext: json.RawMessage(`{"bidder":{"publisherId":"pub-1","supplyId":"ssp-1"}}`)},
+				{Ext: json.RawMessage(`{"bidder":{"publisherId":"pub-1","supplyId":"ssp-1"}}`)},
 			},
 		}
 		pubID, supplyID, err := setImpsAndGetEndpointParams(req)
 		assert.NoError(t, err)
-		assert.Equal(t, "second", pubID)
-		assert.Equal(t, "ssp-second", supplyID)
+		assert.Equal(t, "pub-1", pubID)
+		assert.Equal(t, "ssp-1", supplyID)
+	})
+
+	t.Run("multi_imp_mismatched_publisher_id_or_supply_id", func(t *testing.T) {
+		req := &openrtb2.BidRequest{
+			Imp: []openrtb2.Imp{
+				{Ext: json.RawMessage(`{"bidder":{"publisherId":"pub-1","supplyId":"ssp-1"}}`)},
+				{Ext: json.RawMessage(`{"bidder":{"publisherId":"pub-2","supplyId":"ssp-1"}}`)},
+			},
+		}
+		_, _, err := setImpsAndGetEndpointParams(req)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "all imps must have the same publisherId and supplyId")
 	})
 
 	t.Run("zero_bidfloor_not_set", func(t *testing.T) {

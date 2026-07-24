@@ -55,4 +55,6 @@ var invalidParams = []string{
 	`{"publisherId":"pub-123","supplyId":""}`,
 	`{"publisherId":"pub-123","supplyId":"ssp-1","bidfloor":-1}`,
 	`{"publisherId":"pub-123","supplyId":"ssp-1","banner":"invalid"}`,
+	`{"publisherId":"pub-123","supplyId":"ssp-1","bidfloor":"high"}`,
+	`{"publisherId":"pub-123","supplyId":"ssp-1","banner":{"expdir":["a"]}}`,
 }
