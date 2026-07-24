@@ -1,0 +1,200 @@
+{
+  "mockBidRequest": {
+    "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
+    "at": 2,
+    "cur": ["USD"],
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+          "h": 250,
+          "w": 300,
+          "format": [
+            {
+              "h": 250,
+              "w": 300
+            }
+          ]
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "exp": 120,
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "publisherId": "prebid-test-pub-001"
+          }
+        }
+      }
+    ],
+    "site": {
+      "cat": ["190_viant_prebid_server"],
+      "domain": "prebid.org",
+      "page": "https://prebid.org/",
+      "publisher": {
+        "id": "prebid-test-pub-001",
+        "name": "Prebid Test Publisher"
+      }
+    },
+    "device": {
+      "devicetype": 2,
+      "ua": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.59 Safari/537.36",
+      "ip": "203.0.113.1",
+      "language": "en",
+      "geo": {
+        "country": "USA",
+        "lat": 40.7128,
+        "lon": -74.006,
+        "type": 2,
+        "zip": "10001"
+      }
+    },
+    "user": {
+      "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+      "ext": {
+        "eids": [
+          {
+            "source": "adserver.org",
+            "uids": [
+              {
+                "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+                "ext": {
+                  "rtiPartner": "TDID"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidders-us.adelphic.net/rtb/v25/viant-prebid-server/bidder",
+        "body": {
+          "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
+          "at": 2,
+          "cur": ["USD"],
+          "tmax": 500,
+          "imp": [
+            {
+              "id": "1",
+              "banner": {
+                "h": 250,
+                "w": 300,
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 300
+                  }
+                ]
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "exp": 120,
+              "secure": 1
+            }
+          ],
+          "site": {
+            "cat": ["190_viant_prebid_server"],
+            "domain": "prebid.org",
+            "page": "https://prebid.org/",
+            "publisher": {
+              "id": "prebid-test-pub-001",
+              "name": "Prebid Test Publisher"
+            }
+          },
+          "device": {
+            "devicetype": 2,
+            "ua": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.59 Safari/537.36",
+            "ip": "203.0.113.1",
+            "language": "en",
+            "geo": {
+              "country": "USA",
+              "lat": 40.7128,
+              "lon": -74.006,
+              "type": 2,
+              "zip": "10001"
+            }
+          },
+          "user": {
+            "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+            "ext": {
+              "eids": [
+                {
+                  "source": "adserver.org",
+                  "uids": [
+                    {
+                      "id": "7b3e4f5a-8c9d-0e1f-a2b3-c4d5e6f70001",
+                      "ext": {
+                        "rtiPartner": "TDID"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "impIDs": ["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "1",
+                  "price": 2.89,
+                  "adid": "69757-553138-2667435",
+                  "adm": "<div>ad markup</div>",
+                  "adomain": ["viantinc.com"],
+                  "iurl": "https://media-cdn.ipredictive.com/image/69757/creative_300x250.gif",
+                  "crid": "24877748",
+                  "cat": ["IAB10-2"],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ],
+              "seat": "2722"
+            }
+          ],
+          "bidid": "bid-1",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "1",
+            "price": 2.89,
+            "adid": "69757-553138-2667435",
+            "adm": "<div>ad markup</div>",
+            "adomain": ["viantinc.com"],
+            "iurl": "https://media-cdn.ipredictive.com/image/69757/creative_300x250.gif",
+            "crid": "24877748",
+            "cat": ["IAB10-2"],
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

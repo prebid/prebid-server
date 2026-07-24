@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-valid",
+        "banner": { "w": 300, "h": 250 },
+        "ext": {
+          "bidder": { "publisherId": "prebid-test-pub-001" }
+        }
+      },
+      {
+        "id": "imp-invalid",
+        "banner": { "w": 728, "h": 90 },
+        "ext": {
+          "bidder": { "publisherId": "" }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://prebid.org/",
+      "publisher": { "id": "prebid-test-pub-001" }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidders-us.adelphic.net/rtb/v25/viant-prebid-server/bidder",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "imp-valid",
+              "banner": { "w": 300, "h": 250 }
+            }
+          ],
+          "site": {
+            "page": "https://prebid.org/",
+            "publisher": { "id": "prebid-test-pub-001" }
+          }
+        },
+        "impIDs": ["imp-valid"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "2722",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-valid",
+                  "price": 2.89,
+                  "adm": "<div>ad markup</div>",
+                  "crid": "24877748",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp.ext.bidder.publisherId is required for impression index 1",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-valid",
+            "price": 2.89,
+            "adm": "<div>ad markup</div>",
+            "crid": "24877748",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

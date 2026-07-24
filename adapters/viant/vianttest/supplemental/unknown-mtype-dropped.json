@@ -1,0 +1,75 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": { "w": 300, "h": 250 },
+        "ext": {
+          "bidder": { "publisherId": "prebid-test-pub-001" }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://prebid.org/",
+      "publisher": { "id": "prebid-test-pub-001" }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidders-us.adelphic.net/rtb/v25/viant-prebid-server/bidder",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": { "w": 300, "h": 250 }
+            }
+          ],
+          "site": {
+            "page": "https://prebid.org/",
+            "publisher": { "id": "prebid-test-pub-001" }
+          }
+        },
+        "impIDs": ["imp-banner"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "2722",
+              "bid": [
+                {
+                  "id": "bid-unknown",
+                  "impid": "imp-does-not-exist",
+                  "price": 1.50,
+                  "adm": "<div>ad markup</div>",
+                  "crid": "crid-unknown",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported MType 0 for bid imp-does-not-exist",
+      "comparison": "literal"
+    }
+  ]
+}
