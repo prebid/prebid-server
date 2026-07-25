@@ -317,3 +317,192 @@ func TestParseGETRequest_CSVParams(t *testing.T) {
 		assert.Equal(t, []interface{}{float64(1), float64(2)}, api)
 	})
 }
+
+// TestParseGETRequest_SaridAndImpProfilesCoexist is a regression test: setting both
+// sarid and iprof must produce imp.ext.prebid containing BOTH keys. Previously the
+// imp-profiles branch overwrote imp.Ext wholesale, silently dropping
+// storedauctionresponse.
+func TestParseGETRequest_SaridAndImpProfilesCoexist(t *testing.T) {
+	m := parseGETResult(t, "srid=test-req&sarid=stored-resp-1&iprof=p1,p2")
+	impPrebid := getImpExtPrebid(t, m)
+
+	sar, ok := impPrebid["storedauctionresponse"].(map[string]interface{})
+	require.True(t, ok, "imp.ext.prebid.storedauctionresponse missing or not an object")
+	assert.Equal(t, "stored-resp-1", sar["id"])
+
+	profiles, ok := impPrebid["profiles"].([]interface{})
+	require.True(t, ok, "imp.ext.prebid.profiles missing or not an array")
+	assert.Equal(t, []interface{}{"p1", "p2"}, profiles)
+}
+
+// TestParseGETRequest_ImpProfilesOnly verifies profiles land on imp.ext.prebid.profiles
+// when no sarid is supplied.
+func TestParseGETRequest_ImpProfilesOnly(t *testing.T) {
+	m := parseGETResult(t, "srid=test-req&iprof=only-one")
+	impPrebid := getImpExtPrebid(t, m)
+
+	profiles, ok := impPrebid["profiles"].([]interface{})
+	require.True(t, ok, "imp.ext.prebid.profiles missing or not an array")
+	assert.Equal(t, []interface{}{"only-one"}, profiles)
+	assert.NotContains(t, impPrebid, "storedauctionresponse")
+}
+
+// TestSetGETImpExtField_InvalidExistingExt verifies that malformed imp.ext is
+// reported instead of being silently discarded.
+func TestSetGETImpExtField_InvalidExistingExt(t *testing.T) {
+	_, err := setGETImpExtField(json.RawMessage(`{not json`), "prebid", "profiles", []string{"a"})
+	assert.Error(t, err)
+}
+
+// TestSetGETImpExtField_NonObjectOuterKey verifies we do not clobber a conflicting
+// non-object value at imp.ext.prebid.
+func TestSetGETImpExtField_NonObjectOuterKey(t *testing.T) {
+	_, err := setGETImpExtField(json.RawMessage(`{"prebid":"scalar"}`), "prebid", "profiles", []string{"a"})
+	assert.Error(t, err)
+}
+
+// TestSetGETImpExtField_PreservesUnrelatedKeys verifies sibling keys survive a merge.
+func TestSetGETImpExtField_PreservesUnrelatedKeys(t *testing.T) {
+	out, err := setGETImpExtField(json.RawMessage(`{"bidder":{"x":1},"prebid":{"keep":"me"}}`), "prebid", "profiles", []string{"a"})
+	require.NoError(t, err)
+
+	var m map[string]interface{}
+	require.NoError(t, json.Unmarshal(out, &m))
+	assert.Contains(t, m, "bidder")
+
+	prebid, ok := m["prebid"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "me", prebid["keep"])
+	assert.Equal(t, []interface{}{"a"}, prebid["profiles"])
+}
+
+// parseGETResultWithHeaders parses a GET request with both query params and headers.
+func parseGETResultWithHeaders(t *testing.T, rawQuery string, headers map[string]string) map[string]interface{} {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	data, err := parseGETRequest(req)
+	require.NoError(t, err)
+	var out map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &out))
+	return out
+}
+
+// getDevice extracts the device object from a parsed bid-request map.
+func getDevice(t *testing.T, m map[string]interface{}) map[string]interface{} {
+	t.Helper()
+	raw, ok := m["device"]
+	require.True(t, ok, "device missing")
+	dev, ok := raw.(map[string]interface{})
+	require.True(t, ok, "device not a map")
+	return dev
+}
+
+// TestParseGETRequest_RequiredDeviceHeaders covers the Audio Req12-14 mandatory
+// headers: X-Device-IP -> device.ip and X-Device-User-Agent -> device.ua.
+func TestParseGETRequest_RequiredDeviceHeaders(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
+		"X-Device-IP":         "203.0.113.10",
+		"X-Device-User-Agent": "AudioPlayer/2.1 (Roku)",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "203.0.113.10", dev["ip"])
+	assert.Equal(t, "AudioPlayer/2.1 (Roku)", dev["ua"])
+}
+
+// TestParseGETRequest_OptionalDeviceHeaders covers make/model/os plus the player
+// header which maps to imp[0].displaymanager rather than the device object.
+func TestParseGETRequest_OptionalDeviceHeaders(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
+		"X-Device-Make":   "Roku",
+		"X-Device-Model":  "Ultra",
+		"X-Device-Os":     "RokuOS",
+		"X-Device-Player": "SuperPlayer 4.2",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "Roku", dev["make"])
+	assert.Equal(t, "Ultra", dev["model"])
+	assert.Equal(t, "RokuOS", dev["os"])
+
+	imps, ok := m["imp"].([]interface{})
+	require.True(t, ok && len(imps) > 0)
+	imp := imps[0].(map[string]interface{})
+	assert.Equal(t, "SuperPlayer 4.2", imp["displaymanager"])
+}
+
+// TestParseGETRequest_HeadersOverrideQueryParams asserts the Tech Response 3.1
+// rule 4 precedence: headers win over conflicting query string values.
+func TestParseGETRequest_HeadersOverrideQueryParams(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req&ua=QueryAgent/1.0", map[string]string{
+		"X-Device-User-Agent": "HeaderAgent/2.0",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "HeaderAgent/2.0", dev["ua"], "header must override query param")
+}
+
+// TestParseGETRequest_QueryUsedWhenHeaderAbsent verifies the query value survives
+// when no corresponding header is supplied.
+func TestParseGETRequest_QueryUsedWhenHeaderAbsent(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req&ua=QueryAgent/1.0", nil)
+	dev := getDevice(t, m)
+	assert.Equal(t, "QueryAgent/1.0", dev["ua"])
+}
+
+// TestParseGETRequest_XDeviceIPBeatsProxyHeaders verifies the explicit device
+// header is preferred over proxy-populated forwarding headers.
+func TestParseGETRequest_XDeviceIPBeatsProxyHeaders(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
+		"X-Device-IP":     "203.0.113.10",
+		"X-Forwarded-For": "198.51.100.7",
+		"X-Real-IP":       "198.51.100.8",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "203.0.113.10", dev["ip"])
+}
+
+// TestParseGETRequest_ForwardedForChain verifies only the originating client IP
+// is taken from a comma-separated X-Forwarded-For chain.
+func TestParseGETRequest_ForwardedForChain(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
+		"X-Forwarded-For": "198.51.100.7, 10.0.0.1, 10.0.0.2",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "198.51.100.7", dev["ip"])
+}
+
+// TestParseGETRequest_IPv6Header verifies an IPv6 device header lands on
+// device.ipv6 rather than device.ip.
+func TestParseGETRequest_IPv6Header(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
+		"X-Device-IP": "2001:db8::1",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "2001:db8::1", dev["ipv6"])
+	assert.NotContains(t, dev, "ip")
+}
+
+// TestParseGETRequest_MalformedIPHeaderIgnored verifies an unparsable IP is
+// dropped rather than written through to the bid request.
+func TestParseGETRequest_MalformedIPHeaderIgnored(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
+		"X-Device-IP": "not-an-ip",
+	})
+	if raw, ok := m["device"]; ok {
+		dev := raw.(map[string]interface{})
+		assert.NotContains(t, dev, "ip")
+		assert.NotContains(t, dev, "ipv6")
+	}
+}
+
+// TestParseGETRequest_PlayerHeaderWithoutImpIsSafe guards against an index panic
+// if the player header arrives on a request with no impression.
+func TestParseGETRequest_PlayerHeaderWithoutImpIsSafe(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
+	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
+	assert.NotPanics(t, func() {
+		_, err := parseGETRequest(req)
+		require.NoError(t, err)
+	})
+}

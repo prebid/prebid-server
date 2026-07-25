@@ -428,55 +428,30 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	var err error
 	var errL []error
 
-	// For GET requests, build the request body JSON from query parameters.
-	// The resulting JSON is fed into the normal parseRequest flow as if it were a POST body.
-	if httpRequest.Method == http.MethodGet {
-		getBody, getErr := parseGETRequest(httpRequest)
-		if getErr != nil {
-			errs = []error{getErr}
+	var requestJson []byte
+
+	switch httpRequest.Method {
+	case http.MethodGet:
+		// GET requests carry the bid request in query parameters; the JSON is
+		// constructed in-process, so compression negotiation and body size
+		// limits do not apply.
+		requestJson, err = parseGETRequest(httpRequest)
+		if err != nil {
+			errs = []error{err}
 			return
 		}
-		httpRequest.Body = io.NopCloser(strings.NewReader(string(getBody)))
-	}
-
-	var r io.ReadCloser = httpRequest.Body
-	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
-	if reqContentEncoding != "" {
-		if !deps.cfg.Compression.Request.IsSupported(reqContentEncoding) {
-			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEncoding)}
+	case http.MethodPost:
+		requestJson, err = readRequestBody(httpRequest, deps.cfg)
+		if err != nil {
+			errs = []error{err}
 			return
-		} else {
-			r, err = getCompressionEnabledReader(httpRequest.Body, reqContentEncoding)
-			if err != nil {
-				errs = []error{err}
-				return
-			}
 		}
-	}
-	defer r.Close()
-	limitedReqReader := &io.LimitedReader{
-		R: r,
-		N: deps.cfg.MaxRequestSize,
-	}
-
-	requestJson, err := io.ReadAll(limitedReqReader)
-	if err != nil {
-		errs = []error{err}
+	default:
+		errs = []error{fmt.Errorf("unsupported HTTP method: %s", httpRequest.Method)}
 		return
 	}
-	labels.RequestSize = len(requestJson)
 
-	if limitedReqReader.N <= 0 {
-		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
-		// This is because it only reads up to N bytes. To check if the request was too large,
-		//  we need to look at the next byte of its underlying reader, limitedReader.R.
-		if _, err := limitedReqReader.R.Read(make([]byte, 1)); err != io.EOF {
-			// Discard the rest of the request body so that the connection can be reused.
-			io.Copy(io.Discard, httpRequest.Body)
-			errs = []error{fmt.Errorf("request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
-			return
-		}
-	}
+	labels.RequestSize = len(requestJson)
 
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}

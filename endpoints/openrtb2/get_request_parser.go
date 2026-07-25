@@ -3,6 +3,7 @@ package openrtb2
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 // parseGETRequest builds an OpenRTB BidRequest JSON from HTTP GET query parameters.
@@ -21,7 +23,8 @@ import (
 //  1. Stored request (loaded later in the normal parseRequest / processStoredRequests flow)
 //  2. Request profiles (rprof / req_profiles) — declared in ext.prebid.profiles
 //  3. Individual GET query params mapped to OpenRTB fields
-//  4. HTTP headers (Referer, User-Agent, X-Forwarded-For handled by existing parseRequest logic)
+//  4. HTTP headers override conflicting query values (Tech Response §3.1 rule 4);
+//     see applyGETHeaderParams.
 func parseGETRequest(r *http.Request) ([]byte, error) {
 	q := r.URL.Query()
 
@@ -71,7 +74,10 @@ func parseGETRequest(r *http.Request) ([]byte, error) {
 	applyGETPrivacyParams(q, req)
 
 	// Build imp[0]
-	imp := buildImpFromGET(q)
+	imp, err := buildImpFromGET(q)
+	if err != nil {
+		return nil, err
+	}
 	req.Imp = []openrtb2.Imp{imp}
 
 	// Publisher ID
@@ -87,6 +93,15 @@ func parseGETRequest(r *http.Request) ([]byte, error) {
 
 	// Content params (site.content / app.content)
 	applyGETContentParams(q, req)
+
+	// HTTP header overrides.
+	//
+	// Run AFTER all query-param mapping: per the Tech Response (§3.1 rule 4),
+	// HTTP headers take precedence over conflicting query string values. GET
+	// query strings can be truncated or rewritten by intermediate proxies,
+	// whereas headers are set by the player/device closest to the user, so the
+	// header value is considered the more trustworthy source.
+	applyGETHeaderParams(r.Header, req)
 
 	// Blocking
 	if bcat := qCSV(q, "bcat"); len(bcat) > 0 {
@@ -113,7 +128,7 @@ func parseGETRequest(r *http.Request) ([]byte, error) {
 
 // buildImpFromGET creates the single impression object from GET query params.
 // GET interface supports exactly one impression per request.
-func buildImpFromGET(q url.Values) openrtb2.Imp {
+func buildImpFromGET(q url.Values) (openrtb2.Imp, error) {
 	imp := openrtb2.Imp{}
 
 	// slot → imp.tagid
@@ -123,15 +138,21 @@ func buildImpFromGET(q url.Values) openrtb2.Imp {
 
 	// stored auction response
 	if sarid := qFirst(q, "sarid"); sarid != "" {
-		imp.Ext = setGETImpExtField(imp.Ext, "prebid", "storedauctionresponse", map[string]string{"id": sarid})
+		ext, err := setGETImpExtField(imp.Ext, "prebid", "storedauctionresponse", map[string]string{"id": sarid})
+		if err != nil {
+			return imp, err
+		}
+		imp.Ext = ext
 	}
 
-	// Imp-level profiles
+	// Imp-level profiles. Merged into imp.ext.prebid rather than assigned, so it
+	// does not clobber sibling keys such as storedauctionresponse set above.
 	if iprof := qCSV(q, "iprof", "imp_profiles"); len(iprof) > 0 {
-		impPrebid := openrtb_ext.ExtImpPrebid{Profiles: iprof}
-		if extBytes, merr := json.Marshal(map[string]interface{}{"prebid": impPrebid}); merr == nil {
-			imp.Ext = extBytes
+		ext, err := setGETImpExtField(imp.Ext, "prebid", "profiles", iprof)
+		if err != nil {
+			return imp, err
 		}
+		imp.Ext = ext
 	}
 
 	// Determine media type and populate accordingly
@@ -154,7 +175,7 @@ func buildImpFromGET(q url.Values) openrtb2.Imp {
 		}
 	}
 
-	return imp
+	return imp, nil
 }
 
 func applyGETBannerParams(q url.Values, b *openrtb2.Banner) {
@@ -520,20 +541,110 @@ func applyGETContentParams(q url.Values, req *openrtb2.BidRequest) {
 	}
 }
 
-// setGETImpExtField merges a value into imp.ext at path ext["outerKey"]["innerKey"].
-func setGETImpExtField(ext json.RawMessage, outerKey, innerKey string, value interface{}) json.RawMessage {
+// applyGETHeaderParams maps the X-Device-* HTTP headers onto the bid request.
+//
+// Per the Audio requirements (Req12-14), these headers are the authoritative
+// source for device information on the GET interface and therefore override any
+// conflicting value already set from query parameters.
+//
+// Required:
+//   - X-Device-IP         → device.ip / device.ipv6
+//   - X-Device-User-Agent → device.ua
+//
+// Optional:
+//   - X-Device-Make       → device.make
+//   - X-Device-Model      → device.model
+//   - X-Device-Os         → device.os
+//   - X-Device-Player     → imp[0].displaymanager
+//
+// Standard fallbacks (User-Agent, X-Forwarded-For, X-Real-IP, True-Client-IP)
+// are only consulted when the corresponding X-Device-* header is absent, so an
+// explicit device header always wins over a proxy-populated one.
+func applyGETHeaderParams(h http.Header, req *openrtb2.BidRequest) {
+	device := func() *openrtb2.Device {
+		if req.Device == nil {
+			req.Device = &openrtb2.Device{}
+		}
+		return req.Device
+	}
+
+	// device.ua - X-Device-User-Agent takes priority over the standard User-Agent.
+	if ua := firstHeader(h, "X-Device-User-Agent", "User-Agent"); ua != "" {
+		device().UA = ua
+	}
+
+	// device.ip / device.ipv6 - X-Device-IP takes priority over proxy headers.
+	// X-Forwarded-For may carry a comma-separated chain; the first entry is the
+	// originating client.
+	if ip := firstHeader(h, "X-Device-IP", "X-Forwarded-For", "X-Real-IP", "True-Client-IP"); ip != "" {
+		if comma := strings.IndexByte(ip, ','); comma >= 0 {
+			ip = ip[:comma]
+		}
+		ip = strings.TrimSpace(ip)
+
+		if parsed := net.ParseIP(ip); parsed != nil {
+			if parsed.To4() != nil {
+				device().IP = ip
+			} else {
+				device().IPv6 = ip
+			}
+		}
+	}
+
+	if make := firstHeader(h, "X-Device-Make"); make != "" {
+		device().Make = make
+	}
+	if model := firstHeader(h, "X-Device-Model"); model != "" {
+		device().Model = model
+	}
+	if os := firstHeader(h, "X-Device-Os"); os != "" {
+		device().OS = os
+	}
+
+	// imp[0].displaymanager - the audio/video player identifier.
+	if player := firstHeader(h, "X-Device-Player"); player != "" && len(req.Imp) > 0 {
+		req.Imp[0].DisplayManager = player
+	}
+}
+
+// firstHeader returns the first non-empty value among the given header names.
+func firstHeader(h http.Header, names ...string) string {
+	for _, name := range names {
+		if v := strings.TrimSpace(h.Get(name)); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// setGETImpExtField merges a value into imp.ext at path ext[outerKey][innerKey],
+// preserving any keys that are already present. It returns an error rather than
+// silently discarding malformed JSON, so the caller can reject the request
+// instead of emitting an imp.ext that quietly lost data.
+func setGETImpExtField(ext json.RawMessage, outerKey, innerKey string, value interface{}) (json.RawMessage, error) {
 	m := map[string]interface{}{}
 	if len(ext) > 0 {
-		_ = json.Unmarshal(ext, &m)
+		if err := jsonutil.Unmarshal(ext, &m); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal imp.ext while setting %s.%s: %w", outerKey, innerKey, err)
+		}
 	}
-	outer, _ := m[outerKey].(map[string]interface{})
-	if outer == nil {
+
+	outer, ok := m[outerKey].(map[string]interface{})
+	if !ok {
+		if existing, present := m[outerKey]; present && existing != nil {
+			return nil, fmt.Errorf("imp.ext.%s must be a JSON object to set %s", outerKey, innerKey)
+		}
 		outer = map[string]interface{}{}
 	}
+
 	outer[innerKey] = value
 	m[outerKey] = outer
-	b, _ := json.Marshal(m)
-	return b
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal imp.ext while setting %s.%s: %w", outerKey, innerKey, err)
+	}
+	return b, nil
 }
 
 // --- query param helpers ---
@@ -565,12 +676,28 @@ func qCSV(q url.Values, names ...string) []string {
 	return result
 }
 
-// qInt parses the first matching param as an integer. Returns -1 if absent or invalid.
+// qInt parses the first matching param (alias-aware) as an integer.
+//
+// A malformed value is deliberately treated the same as an absent one: both
+// return -1, which callers interpret as "leave the field unset" so the value
+// falls back to the stored request / profile default.
+//
+// This is intentional and follows the GET interface requirements, which state
+// that invalid parameter values are dropped and unknown parameters are silently
+// ignored, rather than failing the request. GET query strings can be truncated
+// or mangled by intermediate proxies, so a single bad parameter must not reject
+// an otherwise serviceable auction request.
+//
+// Note that -1 is also a legitimate sentinel for several OpenRTB fields (e.g.
+// startdelay, podseq, slotinpod), which is why call sites use field-specific
+// comparisons such as `> 0` or `>= 0` instead of a blanket check.
 func qInt(q url.Values, names ...string) int {
 	return qParseInt(qFirst(q, names...))
 }
 
-// qParseInt parses a string as int, returning -1 on error or empty string.
+// qParseInt parses a string as an int, returning -1 for both an empty string and
+// an unparsable value. See qInt for why invalid input is dropped rather than
+// surfaced as an error.
 func qParseInt(s string) int {
 	if s == "" {
 		return -1
@@ -583,6 +710,8 @@ func qParseInt(s string) int {
 }
 
 // qInts parses a comma-separated string of integers from the first matching param.
+// Individual entries that are not positive integers are dropped, consistent with
+// the invalid-values-are-dropped rule described on qInt.
 func qInts(q url.Values, names ...string) []int {
 	s := qFirst(q, names...)
 	if s == "" {
