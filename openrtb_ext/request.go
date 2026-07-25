@@ -165,8 +165,13 @@ type ExtRequestPrebidServer struct {
 	ExternalUrl string `json:"externalurl"`
 	GvlID       int    `json:"gvlid"`
 	DataCenter  string `json:"datacenter"`
-	// RequestMethod stores the HTTP method used ("GET" or "POST") so exit-point modules can detect the channel.
-	RequestMethod string `json:"requestmethod,omitempty"`
+	// HTTPMethod stores the HTTP method used ("GET" or "POST") so exit-point modules can detect the channel.
+	//
+	// The JSON name matches prebid-server-java's `ExtRequestPrebidServer.httpMethod`
+	// (added in PR #4378), which serializes as `http_method` under Jackson's
+	// SNAKE_CASE strategy. Keeping the two implementations in sync matters because
+	// modules read this field off the ORTB request.
+	HTTPMethod string `json:"http_method,omitempty"`
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids

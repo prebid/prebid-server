@@ -60,7 +60,7 @@ func parseGETRequest(r *http.Request) ([]byte, error) {
 
 	// Mark request method so exit-point modules can detect GET channel.
 	prebid.Server = &openrtb_ext.ExtRequestPrebidServer{
-		RequestMethod: http.MethodGet,
+		HTTPMethod: http.MethodGet,
 	}
 
 	// tmax

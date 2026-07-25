@@ -45,21 +45,29 @@ func TestExtRequestPrebid_OutputFormat(t *testing.T) {
 	})
 }
 
-// --- TestExtRequestPrebidServer_RequestMethod ---
+// --- TestExtRequestPrebidServer_HTTPMethod ---
 
-func TestExtRequestPrebidServer_RequestMethod(t *testing.T) {
-	t.Run("requestmethod present when set", func(t *testing.T) {
-		s := ExtRequestPrebidServer{RequestMethod: "GET"}
+// The JSON name must stay aligned with prebid-server-java's `http_method`
+// (ExtRequestPrebidServer.httpMethod under Jackson SNAKE_CASE).
+func TestExtRequestPrebidServer_HTTPMethod(t *testing.T) {
+	t.Run("http_method present when set", func(t *testing.T) {
+		s := ExtRequestPrebidServer{HTTPMethod: "GET"}
 		data, err := json.Marshal(s)
 		require.NoError(t, err)
-		assert.Contains(t, string(data), `"requestmethod":"GET"`)
+		assert.Contains(t, string(data), `"http_method":"GET"`)
 	})
 
-	t.Run("requestmethod absent when empty", func(t *testing.T) {
+	t.Run("http_method absent when empty", func(t *testing.T) {
 		s := ExtRequestPrebidServer{}
 		data, err := json.Marshal(s)
 		require.NoError(t, err)
-		assert.False(t, strings.Contains(string(data), `"requestmethod"`), "requestmethod should be absent")
+		assert.False(t, strings.Contains(string(data), `"http_method"`), "http_method should be absent")
+	})
+
+	t.Run("http_method round-trips from JSON", func(t *testing.T) {
+		var s ExtRequestPrebidServer
+		require.NoError(t, json.Unmarshal([]byte(`{"http_method":"POST"}`), &s))
+		assert.Equal(t, "POST", s.HTTPMethod)
 	})
 }
 
