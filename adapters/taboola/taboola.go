@@ -261,13 +261,13 @@ func makeRequestExt(pageType string, existingExt json.RawMessage) (json.RawMessa
 		}
 	}
 
-	pageTypeJson, err := json.Marshal(pageType)
+	pageTypeJson, err := jsonutil.Marshal(pageType)
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal pageType: %s", err)
 	}
 	extMap["pageType"] = pageTypeJson
 
-	requestExtJson, err := json.Marshal(extMap)
+	requestExtJson, err := jsonutil.Marshal(extMap)
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal request ext: %s", err)
 	}
