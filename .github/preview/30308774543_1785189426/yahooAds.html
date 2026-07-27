@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>yahooAds: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/yahooAds/yahooAds.go (92.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package yahooAds
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+        "github.com/prebid/prebid-server/v4/util/ptrutil"
+)
+
+type adapter struct {
+        URI string
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errors []error
+
+        reqs := make([]*adapters.RequestData, 0, len(request.Imp))
+        headers := http.Header{}
+
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        headers.Add("x-openrtb-version", "2.6")
+
+        if request.Device != nil &amp;&amp; request.Device.UA != "" </span><span class="cov8" title="1">{
+                headers.Set("User-Agent", request.Device.UA)
+        }</span>
+
+        // Regs depends only on request-level data, so promote once and reuse the
+        // result for every per-impression copy.
+        <span class="cov8" title="1">promotedRegs, regsWarnings := promoteRegsExtTo26(request.Regs)
+        errors = append(errors, regsWarnings...)
+
+        for idx, imp := range request.Imp </span><span class="cov8" title="1">{
+                var bidderExt adapters.ExtImpBidder
+                err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt)
+                if err != nil </span><span class="cov8" title="1">{
+                        err = &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("imp #%d: ext.bidder not provided", idx),
+                        }
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">var yahooAdsExt openrtb_ext.ExtImpYahooAds
+                err = jsonutil.Unmarshal(bidderExt.Bidder, &amp;yahooAdsExt)
+                if err != nil </span><span class="cov0" title="0">{
+                        err = &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
+                        }
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                // Split up multi-impression requests into multiple requests so that
+                // each split request is only associated to a single impression
+                <span class="cov8" title="1">reqCopy := *request
+                reqCopy.Imp = []openrtb2.Imp{imp}
+                reqCopy.Regs = promotedRegs
+
+                if request.Site != nil </span><span class="cov8" title="1">{
+                        siteCopy := *request.Site
+                        reqCopy.Site = &amp;siteCopy
+                }</span> else<span class="cov8" title="1"> if request.App != nil </span><span class="cov8" title="1">{
+                        appCopy := *request.App
+                        reqCopy.App = &amp;appCopy
+                }</span>
+
+                <span class="cov8" title="1">if err := changeRequestForBidService(&amp;reqCopy, &amp;yahooAdsExt); err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">reqJSON, err := json.Marshal(&amp;reqCopy)
+                if err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">reqs = append(reqs, &amp;adapters.RequestData{
+                        Method:  "POST",
+                        Uri:     a.URI,
+                        Body:    reqJSON,
+                        Headers: headers,
+                        ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
+                })</span>
+        }
+
+        <span class="cov8" title="1">return reqs, errors</span>
+}
+
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+
+        if response.StatusCode == http.StatusNoContent </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Bad server response: %d.", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
+
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for _, bid := range sb.Bid </span><span class="cov8" title="1">{
+                        bid := bid
+                        exists, mediaTypeId := getImpInfo(bid.ImpID, internalRequest.Imp)
+                        if !exists </span><span class="cov8" title="1">{
+                                return nil, []error{&amp;errortypes.BadServerResponse{
+                                        Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
+                                }}
+                        }</span>
+
+                        <span class="cov8" title="1">if openrtb_ext.BidTypeBanner != mediaTypeId &amp;&amp;
+                                openrtb_ext.BidTypeVideo != mediaTypeId </span><span class="cov8" title="1">{
+                                //only banner and video are mediaTypeId, anything else is ignored
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bid,
+                                BidType: mediaTypeId,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) <span class="cov8" title="1">{
+        var mediaType openrtb_ext.BidType
+        var exists bool
+        for _, imp := range imps </span><span class="cov8" title="1">{
+                if imp.ID == impId </span><span class="cov8" title="1">{
+                        exists = true
+                        if imp.Banner != nil </span><span class="cov8" title="1">{
+                                mediaType = openrtb_ext.BidTypeBanner
+                        }</span> else<span class="cov8" title="1"> if imp.Video != nil </span><span class="cov8" title="1">{
+                                mediaType = openrtb_ext.BidTypeVideo
+                        }</span>
+                        <span class="cov8" title="1">break</span>
+                }
+        }
+        <span class="cov8" title="1">return exists, mediaType</span>
+}
+
+func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpYahooAds) error <span class="cov8" title="1">{
+        /* Always override the tag ID and (site ID or app ID) of the request */
+        request.Imp[0].TagID = extension.Pos
+        if request.Site != nil </span><span class="cov8" title="1">{
+                request.Site.ID = extension.Dcn
+        }</span> else<span class="cov8" title="1"> if request.App != nil </span><span class="cov8" title="1">{
+                request.App.ID = extension.Dcn
+        }</span>
+
+        <span class="cov8" title="1">if request.Imp[0].Banner != nil </span><span class="cov8" title="1">{
+                banner := *request.Imp[0].Banner
+                request.Imp[0].Banner = &amp;banner
+
+                err := validateBanner(&amp;banner)
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// promoteRegsExtTo26 moves regs.ext.{gpp, gpp_sid} to their top-level fields
+// when the publisher sent them in ext and the top-level field is empty.
+// When the top-level field is already set, the ext duplicate is removed so
+// only the authoritative top-level value ships. A regs.ext that is not a JSON
+// object is passed through untouched with a non-fatal warning.
+func promoteRegsExtTo26(regs *openrtb2.Regs) (*openrtb2.Regs, []error) <span class="cov8" title="1">{
+        if regs == nil || len(regs.Ext) == 0 </span><span class="cov8" title="1">{
+                return regs, nil
+        }</span>
+
+        <span class="cov8" title="1">var regsExt map[string]json.RawMessage
+        if err := jsonutil.Unmarshal(regs.Ext, &amp;regsExt); err != nil </span><span class="cov8" title="1">{
+                return regs, []error{&amp;errortypes.Warning{
+                        Message: "regs.ext is not a JSON object; skipped OpenRTB 2.6 regs promotion",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">regsCopy := *regs
+        modified := false
+
+        if raw, ok := regsExt["gpp"]; ok </span><span class="cov8" title="1">{
+                if regsCopy.GPP == "" </span><span class="cov8" title="1">{
+                        var v string
+                        if err := jsonutil.Unmarshal(raw, &amp;v); err == nil </span><span class="cov8" title="1">{
+                                regsCopy.GPP = v
+                                delete(regsExt, "gpp")
+                                modified = true
+                        }</span>
+                } else<span class="cov8" title="1"> {
+                        delete(regsExt, "gpp")
+                        modified = true
+                }</span>
+        }
+
+        <span class="cov8" title="1">if raw, ok := regsExt["gpp_sid"]; ok </span><span class="cov8" title="1">{
+                if len(regsCopy.GPPSID) == 0 </span><span class="cov8" title="1">{
+                        var v []int8
+                        if err := jsonutil.Unmarshal(raw, &amp;v); err == nil </span><span class="cov8" title="1">{
+                                regsCopy.GPPSID = v
+                                delete(regsExt, "gpp_sid")
+                                modified = true
+                        }</span>
+                } else<span class="cov8" title="1"> {
+                        delete(regsExt, "gpp_sid")
+                        modified = true
+                }</span>
+        }
+
+        <span class="cov8" title="1">if !modified </span><span class="cov8" title="1">{
+                return regs, nil
+        }</span>
+
+        <span class="cov8" title="1">if len(regsExt) == 0 </span><span class="cov8" title="1">{
+                regsCopy.Ext = nil
+        }</span> else<span class="cov8" title="1"> {
+                // stdlib json.Marshal is used because it writes a nil RawMessage as null.
+                newExt, err := json.Marshal(regsExt)
+                if err != nil </span><span class="cov0" title="0">{
+                        return regs, nil
+                }</span>
+                <span class="cov8" title="1">regsCopy.Ext = newExt</span>
+        }
+
+        <span class="cov8" title="1">return &amp;regsCopy, nil</span>
+}
+
+func validateBanner(banner *openrtb2.Banner) error <span class="cov8" title="1">{
+        if banner.W != nil &amp;&amp; banner.H != nil </span><span class="cov8" title="1">{
+                if *banner.W == 0 || *banner.H == 0 </span><span class="cov8" title="1">{
+                        return fmt.Errorf("Invalid sizes provided for Banner %dx%d", *banner.W, *banner.H)
+                }</span>
+                <span class="cov0" title="0">return nil</span>
+        }
+
+        <span class="cov8" title="1">if len(banner.Format) == 0 </span><span class="cov8" title="1">{
+                return fmt.Errorf("No sizes provided for Banner %v", banner.Format)
+        }</span>
+
+        <span class="cov8" title="1">banner.W = ptrutil.ToPtr(banner.Format[0].W)
+        banner.H = ptrutil.ToPtr(banner.Format[0].H)
+
+        return nil</span>
+}
+
+// Builder builds a new instance of the YahooAds adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                URI: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
