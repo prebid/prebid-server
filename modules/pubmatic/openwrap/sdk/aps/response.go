@@ -58,6 +58,11 @@ func getBids(rctx models.RequestCtx, bidResponse *openrtb2.BidResponse) []openrt
 	//setting complete compressed bid responnse as signal data in the bid.AdM field
 	bid.AdM = string(compressedResponse)
 
+	if len(bid.Ext) == 0 {
+		bid.Ext = []byte(`{}`)
+	}
+	bid.Ext, _ = jsonparser.Set(bid.Ext, []byte(`""`), "sdkbridge", "placementId")
+
 	return []openrtb2.Bid{bid}
 }
 

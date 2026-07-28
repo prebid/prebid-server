@@ -212,7 +212,7 @@ func TestApplyAPSResponse(t *testing.T) {
 					},
 				},
 			},
-			description: "Valid APS request should compress response and transform structure; bid Ext is preserved",
+			description: "Valid APS request should compress response and transform structure; bid Ext includes sdkbridge.placementId",
 		},
 	}
 
@@ -232,7 +232,7 @@ func TestApplyAPSResponse(t *testing.T) {
 				assert.Len(t, result.SeatBid[0].Bid, 1)
 				assert.Equal(t, tt.expected.SeatBid[0].Bid[0].ID, result.SeatBid[0].Bid[0].ID)
 				assert.NotEmpty(t, result.SeatBid[0].Bid[0].AdM, "AdM should contain compressed data")
-				assert.JSONEq(t, `{"custom": "data"}`, string(result.SeatBid[0].Bid[0].Ext))
+				assert.JSONEq(t, `{"custom":"data","sdkbridge":{"placementId":""}}`, string(result.SeatBid[0].Bid[0].Ext))
 			} else {
 				// For all other cases, the response should remain unchanged
 				assert.Equal(t, &originalResponse, result, tt.description)
@@ -279,7 +279,7 @@ func TestApplyAPSResponse_AdmRoundTrip(t *testing.T) {
 	assert.Equal(t, "resp-outer", out.ID)
 	assert.Equal(t, "bid-inner", out.BidID)
 	assert.Equal(t, "EUR", out.Cur)
-	assert.JSONEq(t, `{"x":1}`, string(out.SeatBid[0].Bid[0].Ext))
+	assert.JSONEq(t, `{"x":1,"sdkbridge":{"placementId":""}}`, string(out.SeatBid[0].Bid[0].Ext))
 
 	adm := out.SeatBid[0].Bid[0].AdM
 	raw, err := base64.StdEncoding.DecodeString(adm)
@@ -449,7 +449,7 @@ func TestGetBids(t *testing.T) {
 				},
 			},
 			expectedLen: 1,
-			description: "Complex AdM should be compressed; bid Ext is preserved",
+			description: "Complex AdM should be compressed; bid Ext includes sdkbridge.placementId",
 		},
 		{
 			name: "Invalid ext should return nil",
@@ -479,7 +479,11 @@ func TestGetBids(t *testing.T) {
 				if len(result) > 0 {
 					assert.Equal(t, tt.bidResponse.SeatBid[0].Bid[0].ID, result[0].ID)
 					assert.NotEmpty(t, result[0].AdM, "AdM should contain compressed data")
-					assert.Equal(t, tt.bidResponse.SeatBid[0].Bid[0].Ext, result[0].Ext, "Ext should be preserved from source bid")
+					if len(tt.bidResponse.SeatBid[0].Bid[0].Ext) > 0 {
+						assert.JSONEq(t, `{"custom":"data","sdkbridge":{"placementId":""}}`, string(result[0].Ext))
+					} else {
+						assert.JSONEq(t, `{"sdkbridge":{"placementId":""}}`, string(result[0].Ext))
+					}
 				}
 			}
 		})
