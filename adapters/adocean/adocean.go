@@ -146,7 +146,11 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp *openrtb2.Imp, p
 	requestURL.Path = "/_" + strconv.Itoa(randomizedPart) + "/ad.json"
 	// RFC 3986 requires that spaces in query parameters be encoded as %20,
 	// but the Go standard library encodes them as +
-	requestURL.RawQuery = strings.ReplaceAll(buildQuery(request, imp, params).Encode(), "+", "%20")
+	query, err := buildQuery(request, imp, params)
+	if err != nil {
+		return nil, err
+	}
+	requestURL.RawQuery = strings.ReplaceAll(query.Encode(), "+", "%20")
 	if len(requestURL.String()) >= maxUriLength {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("AdOcean request URL exceeds maximum length of %d characters", maxUriLength),
@@ -161,9 +165,14 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp *openrtb2.Imp, p
 	}, nil
 }
 
-func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb_ext.ExtImpAdOcean) url.Values {
+func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb_ext.ExtImpAdOcean) (url.Values, error) {
 	query := url.Values{}
 	query.Set("pbsrv_v", adapterVersion)
+	if params.MasterID == "" || params.SlaveID == "" {
+		return nil, &errortypes.BadInput{
+			Message: "missing required AdOcean parameters: masterId and slaveId must be provided",
+		}
+	}
 	query.Set("id", params.MasterID)
 	query.Set("slaves", shortSlaveID(params.SlaveID))
 
@@ -199,7 +208,7 @@ func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb
 		}
 	}
 
-	return query
+	return query, nil
 }
 
 func shortSlaveID(slaveID string) string {
@@ -298,6 +307,10 @@ func (a *adapter) MakeBids(
 			continue
 		}
 		bidderResponse.Currency = currency
+	}
+
+	if len(bidderResponse.Bids) == 0 {
+		return nil, errs
 	}
 
 	return bidderResponse, errs

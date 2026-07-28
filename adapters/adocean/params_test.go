@@ -44,5 +44,6 @@ var invalidParams = []string{
 	`{"emitterPrefix":"myao.adocean.pl","masterId":"tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7","slaveId":"adoceanmyaozpniqismex"}`,
 	`{"emitterPrefix":"myao","masterId":"master/id","slaveId":"adoceanmyaozpniqismex"}`,
 	`{"emitterPrefix":"myao","masterId":"tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7","slaveId":"myaozpniqismex"}`,
+	`{"emitterPrefix":"myao","masterId":"tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7"}`,
 	`{"emitterPrefix":"myao","masterId":"tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7","slaveId":"adoceanmyaozpniqismex","emitterRequestParams":["invalid"]}`,
 }

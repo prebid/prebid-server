@@ -11,7 +11,7 @@
     },
     "device": {
       "ua": "test-user-agent",
-      "ip": "1.0.0.0"
+      "ipv6": "1000:ab8::1"
     },
     "site": {
       "page": "https://example.com/publisher_page"
@@ -21,14 +21,18 @@
         "id": "banner-imp",
         "banner": {
           "format": [
-            {"w": 300, "h": 250}
+            {"w": 300, "h": 250},
+            {"w": 400, "h": 600}
           ]
         },
         "ext": {
           "bidder": {
             "emitterPrefix": "myao",
             "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
-            "slaveId": "adoceanmyaozpniqismex"
+            "slaveId": "adoceanmyaozpniqismex",
+            "emitterRequestParams": {
+              "special key": "special +value"
+            }
           }
         }
       }
@@ -37,19 +41,19 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://myao.adocean.pl/_10000000/ad.json?aosize=300x250&aouserid=gemius-user-id&gdpr=1&gdpr_consent=BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&pbsrv_v=2.0.0&slaves=zpniqismex",
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?aosize=300x250%2C400x600&aouserid=gemius-user-id&gdpr=1&gdpr_consent=BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&pbsrv_v=2.0.0&slaves=zpniqismex&special%20key=special%20%2Bvalue",
         "headers": {
           "Accept": ["application/json"],
           "Content-Type": ["application/json;charset=utf-8"],
           "Referer": ["https://example.com/publisher_page"],
           "User-Agent": ["test-user-agent"],
-          "X-Forwarded-For": ["1.0.0.0"]
+          "X-Forwarded-For": ["1000:ab8::1"]
         },
         "impIDs": ["banner-imp"]
       },
       "mockResponse": {
-        "status": 200,
-        "body": []
+        "status": 204,
+        "body": {}
       }
     }
   ],
