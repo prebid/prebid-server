@@ -53,7 +53,7 @@ func (m *Module) HandleProcessedAuctionHook(
 
 	cfg, err := applyAccountConfig(m.cfg, miCtx.AccountConfig)
 	if err != nil {
-		return result, hookexecution.NewFailure(err.Error())
+		return result, hookexecution.NewFailure("%s", err)
 	}
 	if !cfg.Enabled {
 		return result, nil
@@ -84,7 +84,7 @@ func (m *Module) HandleAllProcessedBidResponsesHook(
 
 	cfg, err := applyAccountConfig(m.cfg, miCtx.AccountConfig)
 	if err != nil {
-		return result, hookexecution.NewFailure(err.Error())
+		return result, hookexecution.NewFailure("%s", err)
 	}
 	if !cfg.Enabled || cfg.Endpoint == "" || len(payload.Responses) == 0 {
 		return result, nil
