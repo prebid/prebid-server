@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "video-request",
+    "test": 1,
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "1.0.0.0"
+    },
+    "imp": [
+      {
+        "id": "video-imp",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 10,
+          "maxduration": 60,
+          "placement": 2
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaolifgmvmpfj"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=video-imp: AdOcean doesn't support outstream video",
+      "comparison": "literal"
+    }
+  ]
+}

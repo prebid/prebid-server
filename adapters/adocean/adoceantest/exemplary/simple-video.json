@@ -1,0 +1,77 @@
+{
+  "mockBidRequest": {
+    "id": "video-request",
+    "test": 1,
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "1.0.0.0"
+    },
+    "imp": [
+      {
+        "id": "video-imp",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 10,
+          "maxduration": 60
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaolifgmvmpfj"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?dur=60&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&maxdur=60&mindur=10&pbsrv_v=2.0.0&slaves=lifgmvmpfj&spots=1",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["1.0.0.0"]
+        },
+        "impIDs": ["video-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": "adoceanmyaolifgmvmpfj",
+            "price": "0.019000",
+            "ttl": "360",
+            "crid": "qpqhltkgpu",
+            "currency": "EUR",
+            "width": "300",
+            "height": "250",
+            "isVideo": true,
+            "code": "%3C!--%20Video%20Creative%20--%3E"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "adoceanmyaolifgmvmpfj",
+            "impid": "video-imp",
+            "price": 0.019,
+            "adm": "<!-- Video Creative -->",
+            "crid": "qpqhltkgpu",
+            "w": 300,
+            "h": 250,
+            "exp": 360
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

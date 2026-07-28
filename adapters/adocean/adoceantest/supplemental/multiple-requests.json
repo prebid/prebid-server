@@ -1,0 +1,217 @@
+{
+  "mockBidRequest": {
+    "id": "multiple-requests",
+    "test": 1,
+    "regs": {
+      "gdpr": 1
+    },
+    "user": {
+      "buyeruid": "gemius-user-id",
+      "consent": "BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA"
+    },
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "1.0.0.0"
+    },
+    "site": {
+      "page": "https://example.com/publisher_page"
+    },
+    "imp": [
+      {
+        "id": "banner-imp-one",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaozpniqismex"
+          }
+        }
+      },
+      {
+        "id": "banner-imp-two",
+        "banner": {
+          "format": [
+            {"w": 400, "h": 600}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaowafpdwlrks"
+          }
+        }
+      },
+      {
+        "id": "video-imp",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 10,
+          "maxduration": 60,
+          "plcmt": 1
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaolifgmvmpfj"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?aosize=300x250&aouserid=gemius-user-id&gdpr=1&gdpr_consent=BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&pbsrv_v=2.0.0&slaves=zpniqismex",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Referer": ["https://example.com/publisher_page"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["1.0.0.0"]
+        },
+        "impIDs": ["banner-imp-one"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": "adoceanmyaozpniqismex",
+            "price": "0.019000",
+            "ttl": "360",
+            "crid": "banner-one-creative",
+            "currency": "EUR",
+            "width": "300",
+            "height": "250",
+            "isVideo": false,
+            "code": "%3C!--%20Banner%20one%20--%3E",
+            "adomain": ["adocean.pl"]
+          }
+        ]
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?aosize=400x600&aouserid=gemius-user-id&gdpr=1&gdpr_consent=BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&pbsrv_v=2.0.0&slaves=wafpdwlrks",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Referer": ["https://example.com/publisher_page"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["1.0.0.0"]
+        },
+        "impIDs": ["banner-imp-two"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": "adoceanmyaowafpdwlrks",
+            "price": "0.020000",
+            "ttl": "240",
+            "crid": "banner-two-creative",
+            "currency": "EUR",
+            "width": "400",
+            "height": "600",
+            "isVideo": false,
+            "code": "%3C!--%20Banner%20two%20--%3E",
+            "adomain": ["adocean.pl"]
+          }
+        ]
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?aouserid=gemius-user-id&dur=60&gdpr=1&gdpr_consent=BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&maxdur=60&mindur=10&pbsrv_v=2.0.0&slaves=lifgmvmpfj&spots=1",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Referer": ["https://example.com/publisher_page"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["1.0.0.0"]
+        },
+        "impIDs": ["video-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": "adoceanmyaolifgmvmpfj",
+            "price": "0.021000",
+            "ttl": "120",
+            "crid": "video-creative",
+            "currency": "EUR",
+            "width": "640",
+            "height": "360",
+            "isVideo": true,
+            "code": "%3C!--%20Video%20--%3E"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "adoceanmyaozpniqismex",
+            "impid": "banner-imp-one",
+            "price": 0.019,
+            "adm": "<!-- Banner one -->",
+            "crid": "banner-one-creative",
+            "adomain": ["adocean.pl"],
+            "w": 300,
+            "h": 250,
+            "exp": 360
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "adoceanmyaowafpdwlrks",
+            "impid": "banner-imp-two",
+            "price": 0.02,
+            "adm": "<!-- Banner two -->",
+            "crid": "banner-two-creative",
+            "adomain": ["adocean.pl"],
+            "w": 400,
+            "h": 600,
+            "exp": 240
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "adoceanmyaolifgmvmpfj",
+            "impid": "video-imp",
+            "price": 0.021,
+            "adm": "<!-- Video -->",
+            "crid": "video-creative",
+            "w": 640,
+            "h": 360,
+            "exp": 120
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "mockBidRequest": {
+    "id": "banner-request",
+    "test": 1,
+    "regs": {
+      "gdpr": 1
+    },
+    "user": {
+      "buyeruid": "gemius-user-id",
+      "consent": "BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA"
+    },
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "1.0.0.0"
+    },
+    "site": {
+      "page": "https://example.com/publisher_page"
+    },
+    "imp": [
+      {
+        "id": "banner-imp",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaozpniqismex"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?aosize=300x250&aouserid=gemius-user-id&gdpr=1&gdpr_consent=BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&pbsrv_v=2.0.0&slaves=zpniqismex",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Referer": ["https://example.com/publisher_page"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["1.0.0.0"]
+        },
+        "impIDs": ["banner-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": []
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ]
+}
