@@ -200,6 +200,9 @@ func (m OpenWrap) handleEntrypointHook(
 		GoogleSDK:                       models.GoogleSDK{StartTime: time.Now()},
 	}
 	rCtx.SignalRequest = signalRequest
+	if sdkutils.IsSdkEndpoint(endpoint) {
+		rCtx.EdsStatus = models.ResolveEdsStatus(sdkutils.IsSdkBiddingEndpoint(endpoint), requestExtWrapper, signalRequest)
+	}
 
 	if rCtx.IsCTVRequest {
 		// SSAuction will be always 1 for CTV request

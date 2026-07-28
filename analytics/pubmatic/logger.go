@@ -71,6 +71,7 @@ func GetLogAuctionObjectAsURL(ao analytics.AuctionObject, rCtx *models.RequestCt
 	}
 
 	wlog.logProfileMetaData(rCtx)
+	wlog.logEdsStatus(rCtx)
 
 	wlog.logIntegrationType(rCtx.Endpoint)
 

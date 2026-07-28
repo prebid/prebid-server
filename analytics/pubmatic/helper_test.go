@@ -987,6 +987,48 @@ func TestWloggerRecord_logProfileMetaData(t *testing.T) {
 	}
 }
 
+func TestWloggerRecord_logEdsStatus(t *testing.T) {
+	tests := []struct {
+		name          string
+		rctx          *models.RequestCtx
+		wantEdsStatus *int
+	}{
+		{
+			name: "edsstatus set on request ctx",
+			rctx: &models.RequestCtx{
+				EdsStatus: ptrutil.ToPtr(1),
+			},
+			wantEdsStatus: ptrutil.ToPtr(1),
+		},
+		{
+			name: "edsstatus disabled",
+			rctx: &models.RequestCtx{
+				EdsStatus: ptrutil.ToPtr(0),
+			},
+			wantEdsStatus: ptrutil.ToPtr(0),
+		},
+		{
+			name: "edsstatus unknown",
+			rctx: &models.RequestCtx{
+				EdsStatus: ptrutil.ToPtr(-1),
+			},
+			wantEdsStatus: ptrutil.ToPtr(-1),
+		},
+		{
+			name:          "edsstatus absent from request ctx",
+			rctx:          &models.RequestCtx{},
+			wantEdsStatus: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wlog := &WloggerRecord{}
+			wlog.logEdsStatus(tt.rctx)
+			assert.Equal(t, tt.wantEdsStatus, wlog.EdsStatus, tt.name)
+		})
+	}
+}
+
 func TestSetWakandaWinningBidFlag(t *testing.T) {
 	type args struct {
 		wakandaDebug wakanda.WakandaDebug
