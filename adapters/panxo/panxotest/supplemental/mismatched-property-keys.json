@@ -1,0 +1,42 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-mismatch",
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "abc123def456"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {"w": 728, "h": 90}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "different999key"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "all impressions must share the same propertyKey, imp[1] has different value",
+      "comparison": "literal"
+    }
+  ]
+}

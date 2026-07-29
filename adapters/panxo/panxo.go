@@ -1,9 +1,9 @@
 package panxo
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -49,21 +49,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}}
 	}
 
-	if bidderExt.PropertyKey == "" {
-		return nil, []error{&errortypes.BadInput{
-			Message: "propertyKey is required",
-		}}
-	}
-
 	// Validate all impressions share the same propertyKey
 	for i := 1; i < len(request.Imp); i++ {
 		var impExtBidder adapters.ExtImpBidder
 		var impBidderExt openrtb_ext.ExtImpPanxo
 		if err := jsonutil.Unmarshal(request.Imp[i].Ext, &impExtBidder); err != nil {
-			continue
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("invalid imp.ext for impression index %d: %s", i, err.Error()),
+			}}
 		}
 		if err := jsonutil.Unmarshal(impExtBidder.Bidder, &impBidderExt); err != nil {
-			continue
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("invalid imp.ext.bidder for impression index %d: %s", i, err.Error()),
+			}}
 		}
 		if impBidderExt.PropertyKey != bidderExt.PropertyKey {
 			return nil, []error{&errortypes.BadInput{
@@ -72,12 +70,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 	}
 
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, append(errs, err)
 	}
 
-	url := fmt.Sprintf("%s?key=%s&source=prebid-server", a.endpoint, bidderExt.PropertyKey)
+	endpointURL := fmt.Sprintf("%s?key=%s&source=prebid-server", a.endpoint, url.QueryEscape(bidderExt.PropertyKey))
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -85,7 +83,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	return []*adapters.RequestData{{
 		Method:  http.MethodPost,
-		Uri:     url,
+		Uri:     endpointURL,
 		Body:    reqJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
@@ -93,20 +91,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("unexpected status code: %d", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected status code: %d", response.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp openrtb2.BidResponse

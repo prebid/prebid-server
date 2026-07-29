@@ -1,6 +1,6 @@
 {
   "mockBidRequest": {
-    "id": "test-request-bad",
+    "id": "test-request-invalid-imp-ext",
     "imp": [
       {
         "id": "test-imp-id",
@@ -9,9 +9,7 @@
             {"w": 300, "h": 250}
           ]
         },
-        "ext": {
-          "bidder": "not-an-object"
-        }
+        "ext": "not-an-object"
       }
     ],
     "site": {
@@ -20,7 +18,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "invalid imp.ext.bidder for impression index 0: .*",
+      "value": "invalid imp.ext for impression index 0: .*",
       "comparison": "regex"
     }
   ]
