@@ -271,6 +271,9 @@ import (
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
+// Adapter registration is kept in this separate file for ease of use and to aid
+// in resolving merge conflicts.
+
 func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
 		openrtb_ext.Bidder33Across:          ttx.Builder,

@@ -46,10 +46,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			errs = append(errs, err)
 			continue
 		}
-		if pixfutureExt.PixID == "" {
-			errs = append(errs, &errortypes.BadInput{Message: "Missing required parameter pix_id"})
-			continue
-		}
 
 		requestCopy := *request
 		requestCopy.Imp = []openrtb2.Imp{*imp} // slice notation with dereferencing
