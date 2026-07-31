@@ -389,7 +389,6 @@ func sendAuctionResponse(
 	w.Header().Set("Content-Type", "application/json")
 
 	// Exitpoint modifies the response and sets response headers according to hook implementation.
-	// Per spec: exitpoint is only triggered when there are no errors during auction processing.
 	var finalResponse interface{} = response
 	if !hasErrors {
 		finalResponse = hookExecutor.ExecuteExitpointStage(response, w)
@@ -435,7 +434,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		// GET requests carry the bid request in query parameters; the JSON is
 		// constructed in-process, so compression negotiation and body size
 		// limits do not apply.
-		requestJson, err = parseGETRequest(httpRequest)
+		requestJson, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
 		if err != nil {
 			errs = []error{err}
 			return
@@ -533,6 +532,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	// The GET interface assumes a single impression per request. Enforced after stored
+	// requests are merged, since that is where extra imps can appear.
+	if httpRequest.Method == http.MethodGet {
+		enforceSingleImp(httpRequest, req.BidRequest, accountId)
 	}
 
 	// normalize to openrtb 2.6

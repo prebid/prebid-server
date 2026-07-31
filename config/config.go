@@ -59,7 +59,11 @@ type Configuration struct {
 	// StoredRequestsTimeout defines the number of milliseconds before a timeout occurs with stored requests fetch
 	StoredRequestsTimeout int `mapstructure:"stored_requests_timeout_ms"`
 
-	MaxRequestSize       int64             `mapstructure:"max_request_size"`
+	MaxRequestSize int64 `mapstructure:"max_request_size"`
+	// MaxInitialLineLength caps the size of the HTTP request line (method + URI + protocol)
+	// accepted by the GET auction interface. Query strings are length limited in practice and
+	// this guards against malicious resource exhaustion attacks.
+	MaxInitialLineLength int               `mapstructure:"max_initial_line_length"`
 	Analytics            Analytics         `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64             `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR              `mapstructure:"gdpr"`
@@ -168,6 +172,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
+	}
+	if cfg.MaxInitialLineLength < 0 {
+		errs = append(errs, fmt.Errorf("cfg.max_initial_line_length must be >= 0. Got %d", cfg.MaxInitialLineLength))
 	}
 	errs = cfg.GDPR.validate(v, errs)
 	errs = cfg.CurrencyConverter.validate(errs)
@@ -1154,6 +1161,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&f={{.SyncType}}&uid={{.UserMacro}}")
 
 	v.SetDefault("max_request_size", 1024*256)
+	v.SetDefault("max_initial_line_length", 8192)
 	v.SetDefault("analytics.file.filename", "")
 	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
 	v.SetDefault("analytics.pubstack.scopeid", "change-me")

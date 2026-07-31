@@ -11,9 +11,38 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/config/util"
+	"github.com/prebid/prebid-server/v4/logger"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
+
+// getMultiImpLogSampleRate is the fraction of discarded-impression events written to the
+// application log. The condition is not expected in normal operation, but a misconfigured
+// stored request can trigger it on every request, so the log entry is sampled.
+const getMultiImpLogSampleRate = 0.01
+
+// enforceSingleImp implements the GET interface assumption that a request carries exactly
+// one impression. If merging the stored request yields more than one imp, every
+// imp after the first is discarded and a sampled log entry is emitted with the referrer and
+// account so the misconfiguration can be traced back to its publisher.
+func enforceSingleImp(httpRequest *http.Request, req *openrtb2.BidRequest, accountID string) {
+	if req == nil || len(req.Imp) <= 1 {
+		return
+	}
+
+	discarded := len(req.Imp) - 1
+	req.Imp = req.Imp[:1]
+
+	util.LogRandomSample(
+		fmt.Sprintf(
+			"GET /openrtb2/auction resolved to %d impressions; discarded %d after the first. referrer=%q account=%q",
+			discarded+1, discarded, httpRequest.Referer(), accountID,
+		),
+		logger.Warnf,
+		getMultiImpLogSampleRate,
+	)
+}
 
 // parseGETRequest builds an OpenRTB BidRequest JSON from HTTP GET query parameters.
 // The stored request ID (srid) is required — without it we cannot know the auction structure.
@@ -21,11 +50,18 @@ import (
 //
 // Parameter precedence (lowest → highest):
 //  1. Stored request (loaded later in the normal parseRequest / processStoredRequests flow)
-//  2. Request profiles (rprof / req_profiles) — declared in ext.prebid.profiles
-//  3. Individual GET query params mapped to OpenRTB fields
-//  4. HTTP headers override conflicting query values (Tech Response §3.1 rule 4);
+//  2. Individual GET query params mapped to OpenRTB fields
+//  3. HTTP headers override conflicting query values (Tech Response §3.1 rule 4);
 //     see applyGETHeaderParams.
-func parseGETRequest(r *http.Request) ([]byte, error) {
+func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) {
+	// Query strings are length limited by clients and intermediaries. Enforcing an explicit
+	// cap here guards against malicious resource exhaustion attacks.
+	if maxInitialLineLength > 0 {
+		if lineLength := len(r.Method) + 1 + len(r.URL.RequestURI()) + 1 + len(r.Proto); lineLength > maxInitialLineLength {
+			return nil, fmt.Errorf("request line exceeded max size of %d bytes", maxInitialLineLength)
+		}
+	}
+
 	q := r.URL.Query()
 
 	// srid is required — without a stored request we cannot construct a valid auction request.
@@ -39,11 +75,6 @@ func parseGETRequest(r *http.Request) ([]byte, error) {
 	// Build ext.prebid skeleton
 	prebid := openrtb_ext.ExtRequestPrebid{}
 	prebid.StoredRequest = &openrtb_ext.ExtStoredRequest{ID: srid}
-
-	// Request-level profiles
-	if rprof := qCSV(q, "rprof", "req_profiles"); len(rprof) > 0 {
-		prebid.Profiles = rprof
-	}
 
 	// Output format / module (for exit-point modules)
 	if of := qFirst(q, "of"); of != "" {
@@ -139,16 +170,6 @@ func buildImpFromGET(q url.Values) (openrtb2.Imp, error) {
 	// stored auction response
 	if sarid := qFirst(q, "sarid"); sarid != "" {
 		ext, err := setGETImpExtField(imp.Ext, "prebid", "storedauctionresponse", map[string]string{"id": sarid})
-		if err != nil {
-			return imp, err
-		}
-		imp.Ext = ext
-	}
-
-	// Imp-level profiles. Merged into imp.ext.prebid rather than assigned, so it
-	// does not clobber sibling keys such as storedauctionresponse set above.
-	if iprof := qCSV(q, "iprof", "imp_profiles"); len(iprof) > 0 {
-		ext, err := setGETImpExtField(imp.Ext, "prebid", "profiles", iprof)
 		if err != nil {
 			return imp, err
 		}
@@ -680,7 +701,7 @@ func qCSV(q url.Values, names ...string) []string {
 //
 // A malformed value is deliberately treated the same as an absent one: both
 // return -1, which callers interpret as "leave the field unset" so the value
-// falls back to the stored request / profile default.
+// falls back to the stored request default.
 //
 // This is intentional and follows the GET interface requirements, which state
 // that invalid parameter values are dropped and unknown parameters are silently

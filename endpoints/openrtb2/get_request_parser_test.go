@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +17,7 @@ import (
 func parseGETResult(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
-	data, err := parseGETRequest(req)
+	data, err := parseGETRequest(req, 0)
 	require.NoError(t, err)
 	var out map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &out))
@@ -61,14 +63,14 @@ func getImpExtPrebid(t *testing.T, m map[string]interface{}) map[string]interfac
 func TestParseGETRequest_RequiresSrid(t *testing.T) {
 	t.Run("missing srid returns error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction", nil)
-		_, err := parseGETRequest(req)
+		_, err := parseGETRequest(req, 0)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "srid")
 	})
 
 	t.Run("srid present returns no error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=abc", nil)
-		_, err := parseGETRequest(req)
+		_, err := parseGETRequest(req, 0)
 		assert.NoError(t, err)
 	})
 }
@@ -102,7 +104,7 @@ func TestParseGETRequest_Tmax(t *testing.T) {
 
 	t.Run("invalid tmax (abc) is ignored, no error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=x&tmax=abc", nil)
-		_, err := parseGETRequest(req)
+		_, err := parseGETRequest(req, 0)
 		assert.NoError(t, err)
 	})
 }
@@ -123,30 +125,6 @@ func TestParseGETRequest_Debug(t *testing.T) {
 		if exists {
 			assert.NotEqual(t, true, val)
 		}
-	})
-}
-
-// --- TestParseGETRequest_Profiles ---
-
-func TestParseGETRequest_Profiles(t *testing.T) {
-	t.Run("rprof sets request-level profiles", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x&rprof=android-device,show-abc")
-		prebid := getExtPrebid(t, m)
-		profilesRaw, ok := prebid["profiles"]
-		require.True(t, ok, "ext.prebid.profiles missing")
-		profiles, ok := profilesRaw.([]interface{})
-		require.True(t, ok)
-		assert.Equal(t, []interface{}{"android-device", "show-abc"}, profiles)
-	})
-
-	t.Run("iprof sets imp-level profiles", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x&iprof=highbandwidth")
-		impPrebid := getImpExtPrebid(t, m)
-		profilesRaw, ok := impPrebid["profiles"]
-		require.True(t, ok, "imp[0].ext.prebid.profiles missing")
-		profiles, ok := profilesRaw.([]interface{})
-		require.True(t, ok)
-		assert.Equal(t, []interface{}{"highbandwidth"}, profiles)
 	})
 }
 
@@ -318,52 +296,34 @@ func TestParseGETRequest_CSVParams(t *testing.T) {
 	})
 }
 
-// TestParseGETRequest_SaridAndImpProfilesCoexist is a regression test: setting both
-// sarid and iprof must produce imp.ext.prebid containing BOTH keys. Previously the
-// imp-profiles branch overwrote imp.Ext wholesale, silently dropping
-// storedauctionresponse.
-func TestParseGETRequest_SaridAndImpProfilesCoexist(t *testing.T) {
-	m := parseGETResult(t, "srid=test-req&sarid=stored-resp-1&iprof=p1,p2")
+// TestParseGETRequest_SaridSetsStoredAuctionResponse verifies sarid lands on
+// imp.ext.prebid.storedauctionresponse without clobbering the rest of imp.ext.
+func TestParseGETRequest_SaridSetsStoredAuctionResponse(t *testing.T) {
+	m := parseGETResult(t, "srid=test-req&sarid=stored-resp-1")
 	impPrebid := getImpExtPrebid(t, m)
 
 	sar, ok := impPrebid["storedauctionresponse"].(map[string]interface{})
 	require.True(t, ok, "imp.ext.prebid.storedauctionresponse missing or not an object")
 	assert.Equal(t, "stored-resp-1", sar["id"])
-
-	profiles, ok := impPrebid["profiles"].([]interface{})
-	require.True(t, ok, "imp.ext.prebid.profiles missing or not an array")
-	assert.Equal(t, []interface{}{"p1", "p2"}, profiles)
-}
-
-// TestParseGETRequest_ImpProfilesOnly verifies profiles land on imp.ext.prebid.profiles
-// when no sarid is supplied.
-func TestParseGETRequest_ImpProfilesOnly(t *testing.T) {
-	m := parseGETResult(t, "srid=test-req&iprof=only-one")
-	impPrebid := getImpExtPrebid(t, m)
-
-	profiles, ok := impPrebid["profiles"].([]interface{})
-	require.True(t, ok, "imp.ext.prebid.profiles missing or not an array")
-	assert.Equal(t, []interface{}{"only-one"}, profiles)
-	assert.NotContains(t, impPrebid, "storedauctionresponse")
 }
 
 // TestSetGETImpExtField_InvalidExistingExt verifies that malformed imp.ext is
 // reported instead of being silently discarded.
 func TestSetGETImpExtField_InvalidExistingExt(t *testing.T) {
-	_, err := setGETImpExtField(json.RawMessage(`{not json`), "prebid", "profiles", []string{"a"})
+	_, err := setGETImpExtField(json.RawMessage(`{not json`), "prebid", "storedauctionresponse", map[string]string{"id": "a"})
 	assert.Error(t, err)
 }
 
 // TestSetGETImpExtField_NonObjectOuterKey verifies we do not clobber a conflicting
 // non-object value at imp.ext.prebid.
 func TestSetGETImpExtField_NonObjectOuterKey(t *testing.T) {
-	_, err := setGETImpExtField(json.RawMessage(`{"prebid":"scalar"}`), "prebid", "profiles", []string{"a"})
+	_, err := setGETImpExtField(json.RawMessage(`{"prebid":"scalar"}`), "prebid", "storedauctionresponse", map[string]string{"id": "a"})
 	assert.Error(t, err)
 }
 
 // TestSetGETImpExtField_PreservesUnrelatedKeys verifies sibling keys survive a merge.
 func TestSetGETImpExtField_PreservesUnrelatedKeys(t *testing.T) {
-	out, err := setGETImpExtField(json.RawMessage(`{"bidder":{"x":1},"prebid":{"keep":"me"}}`), "prebid", "profiles", []string{"a"})
+	out, err := setGETImpExtField(json.RawMessage(`{"bidder":{"x":1},"prebid":{"keep":"me"}}`), "prebid", "storedauctionresponse", map[string]string{"id": "a"})
 	require.NoError(t, err)
 
 	var m map[string]interface{}
@@ -373,7 +333,7 @@ func TestSetGETImpExtField_PreservesUnrelatedKeys(t *testing.T) {
 	prebid, ok := m["prebid"].(map[string]interface{})
 	require.True(t, ok)
 	assert.Equal(t, "me", prebid["keep"])
-	assert.Equal(t, []interface{}{"a"}, prebid["profiles"])
+	assert.Equal(t, map[string]interface{}{"id": "a"}, prebid["storedauctionresponse"])
 }
 
 // parseGETResultWithHeaders parses a GET request with both query params and headers.
@@ -383,7 +343,7 @@ func parseGETResultWithHeaders(t *testing.T, rawQuery string, headers map[string
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	data, err := parseGETRequest(req)
+	data, err := parseGETRequest(req, 0)
 	require.NoError(t, err)
 	var out map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &out))
@@ -502,7 +462,115 @@ func TestParseGETRequest_PlayerHeaderWithoutImpIsSafe(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
 	assert.NotPanics(t, func() {
-		_, err := parseGETRequest(req)
+		_, err := parseGETRequest(req, 0)
 		require.NoError(t, err)
+	})
+}
+
+// --- Query string length limit (Tech Response 3.1, consideration 1) ---
+
+// TestParseGETRequest_MaxInitialLineLength verifies the request line cap that guards
+// against malicious resource exhaustion attacks via oversized query strings.
+func TestParseGETRequest_MaxInitialLineLength(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		rawQuery             string
+		maxInitialLineLength int
+		expectedErr          string
+	}{
+		{
+			name:                 "limit disabled accepts long query string",
+			rawQuery:             "srid=test-req&kv=" + strings.Repeat("a", 20000),
+			maxInitialLineLength: 0,
+		},
+		{
+			name:                 "query string within limit",
+			rawQuery:             "srid=test-req",
+			maxInitialLineLength: 8192,
+		},
+		{
+			name:                 "query string over limit is rejected",
+			rawQuery:             "srid=test-req&kv=" + strings.Repeat("a", 9000),
+			maxInitialLineLength: 8192,
+			expectedErr:          "request line exceeded max size of 8192 bytes",
+		},
+		{
+			name:                 "negative limit behaves as disabled",
+			rawQuery:             "srid=test-req&kv=" + strings.Repeat("a", 9000),
+			maxInitialLineLength: -1,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+test.rawQuery, nil)
+
+			result, err := parseGETRequest(req, test.maxInitialLineLength)
+
+			if test.expectedErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), test.expectedErr)
+				assert.Nil(t, result)
+				return
+			}
+			require.NoError(t, err)
+			assert.NotEmpty(t, result)
+		})
+	}
+}
+
+// --- Single impression assumption (Tech Response 3.1) ---
+
+// TestEnforceSingleImp verifies that impressions after the first are discarded, since
+// the GET interface assumes exactly one impression per request.
+func TestEnforceSingleImp(t *testing.T) {
+	testCases := []struct {
+		name         string
+		imps         []openrtb2.Imp
+		expectedImps []string
+	}{
+		{
+			name:         "nil imps untouched",
+			imps:         nil,
+			expectedImps: nil,
+		},
+		{
+			name:         "single imp untouched",
+			imps:         []openrtb2.Imp{{ID: "imp-1"}},
+			expectedImps: []string{"imp-1"},
+		},
+		{
+			name:         "extra imps discarded",
+			imps:         []openrtb2.Imp{{ID: "imp-1"}, {ID: "imp-2"}, {ID: "imp-3"}},
+			expectedImps: []string{"imp-1"},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			httpReq := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
+			httpReq.Header.Set("Referer", "https://publisher.example.com/show")
+			bidReq := &openrtb2.BidRequest{ID: "req-id", Imp: test.imps}
+
+			enforceSingleImp(httpReq, bidReq, "test-account")
+
+			actualImps := make([]string, 0, len(bidReq.Imp))
+			for _, imp := range bidReq.Imp {
+				actualImps = append(actualImps, imp.ID)
+			}
+			if test.expectedImps == nil {
+				assert.Empty(t, actualImps)
+				return
+			}
+			assert.Equal(t, test.expectedImps, actualImps)
+		})
+	}
+}
+
+// TestEnforceSingleImpNilRequest guards against a panic when the bid request is nil.
+func TestEnforceSingleImpNilRequest(t *testing.T) {
+	httpReq := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
+	assert.NotPanics(t, func() {
+		enforceSingleImp(httpReq, nil, "test-account")
 	})
 }
