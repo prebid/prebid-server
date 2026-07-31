@@ -1,0 +1,21 @@
+endpoint: "https://rtb.hx.compasonline.com/pbs"
+maintainer:
+  email: prebid@compas-inc.com
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://sync.hx.compasonline.com/pbserver/image?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "${VISITOR_ID}"
+  iframe:
+    url: "https://sync.hx.compasonline.com/pbserver/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "${VISITOR_ID}"
