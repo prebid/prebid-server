@@ -35,18 +35,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		headers.Set("Content-Type", "application/json")
 		headers.Set("Accept", "application/json")
 
-		var bidderExt adapters.ExtImpBidder
-		var pixfutureExt openrtb_ext.ImpExtPixfuture
-
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &pixfutureExt); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
 		requestCopy := *request
 		requestCopy.Imp = []openrtb2.Imp{*imp} // slice notation with dereferencing
 
