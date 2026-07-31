@@ -49,9 +49,6 @@ type ExtImpPrebid struct {
 
 	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`
 
-	// Profiles specifies impression-level profile IDs to merge into this impression.
-	Profiles []string `json:"profiles,omitempty"`
-
 	// Imp specifies any imp bidder-specific first party data
 	Imp map[string]json.RawMessage `json:"imp,omitempty"`
 }
