@@ -1,0 +1,73 @@
+name: Adapter Semgrep Report
+
+on:
+  workflow_run:
+    workflows: ["Adapter Semgrep Check"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  report-semgrep:
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Semgrep Artifacts
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Read PR Metadata
+        id: pr_metadata
+        if: steps.download.outcome == 'success'
+        run: |
+          echo "pr_number=$(cat semgrep-results/pr-metadata/pr_number)" >> $GITHUB_OUTPUT
+          echo "head_sha=$(cat semgrep-results/pr-metadata/head_sha)" >> $GITHUB_OUTPUT
+          echo "event=$(cat semgrep-results/pr-metadata/event)" >> $GITHUB_OUTPUT
+
+      - name: Add Pull Request Comment
+        id: add_pull_request_comment
+        if: steps.download.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            const fs = require('fs')
+            const utils = require('./.github/workflows/helpers/pull-request-utils.js')
+            const semgrepResult = JSON.parse(fs.readFileSync('semgrep-results/semgrep_result.json', 'utf8'))
+            const diff = JSON.parse(fs.readFileSync('semgrep-results/diff.json', 'utf8'))
+            const helper = utils.semgrepHelper({
+                github, context,
+                event: '${{ steps.pr_metadata.outputs.event }}',
+                semgrepResult,
+                diff,
+                headSha: '${{ steps.pr_metadata.outputs.head_sha }}',
+                prNumber: ${{ steps.pr_metadata.outputs.pr_number }}
+            })
+            const { previousScan, currentScan } = await helper.addReviewComments()
+            return previousScan.unAddressedComments + currentScan.newComments
+
+      - name: Check Results
+        if: steps.download.outcome == 'success'
+        run: |
+          if [ "${{steps.add_pull_request_comment.outputs.result}}" -ne "0" ]; then
+              echo 'Semgrep has found "${{steps.add_pull_request_comment.outputs.result}}" errors'
+              exit 1
+          else
+              echo 'Semgrep did not find any errors in the pull request changes'
+          fi
