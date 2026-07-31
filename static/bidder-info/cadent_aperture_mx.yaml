@@ -1,4 +1,4 @@
-endpoint: "https://hb.emxdgt.com"
+endpoint: "https://hb-pub.ssp.cadent.com"
 maintainer:
   email: "contactaperturemx@cadent.tv"
 gvlVendorID: 183
@@ -13,5 +13,5 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: "https://cs.emxdgt.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://cs.ssp.cadent.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
