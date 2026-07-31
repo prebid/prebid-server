@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/v4/account"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/logger"
 	"github.com/prebid/prebid-server/v4/metrics"
@@ -35,7 +36,14 @@ import (
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
 func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router, provider db_provider.DbProvider) (fetcher stored_requests.AllFetcher, shutdown func()) {
-	// Create database connection if given options for one
+	return createLegacyCachedStoredRequests(cfg, metricsEngine, client, router, provider)
+}
+
+func createStoredRequestSource(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider) stored_requests.AllFetcher {
+	return newFetcher(cfg, client, provider)
+}
+
+func prepareStoredRequestsProvider(cfg *config.StoredRequests, provider db_provider.DbProvider) db_provider.DbProvider {
 	if cfg.Database.ConnectionInfo.Database != "" {
 		if provider == nil {
 			logger.Infof("Connecting to Database for Stored %s. Driver=%s, DB=%s, host=%s, port=%d, user=%s",
@@ -53,9 +61,29 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 			logger.Fatalf("Multiple database connection settings found in config, only a single database connection is currently supported.")
 		}
 	}
+	return provider
+}
+
+func createRawStoredRequests(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider) (fetcher stored_requests.AllFetcher, shutdown func()) {
+	provider = prepareStoredRequestsProvider(cfg, provider)
+	fetcher = createStoredRequestSource(cfg, client, provider)
+	shutdown = func() {
+		if provider == nil {
+			return
+		}
+
+		if err := provider.Close(); err != nil {
+			logger.Errorf("Error closing DB connection: %v", err)
+		}
+	}
+	return
+}
+
+func createLegacyCachedStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router, provider db_provider.DbProvider) (fetcher stored_requests.AllFetcher, shutdown func()) {
+	provider = prepareStoredRequestsProvider(cfg, provider)
 
 	eventProducers := newEventProducers(cfg, client, provider, metricsEngine, router)
-	fetcher = newFetcher(cfg, client, provider)
+	fetcher = createStoredRequestSource(cfg, client, provider)
 
 	var shutdown1 func()
 
@@ -110,7 +138,13 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredRequestsAMP, metricsEngine, client, router, provider)
 	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, provider)
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, provider)
-	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, provider)
+	var fetcher5 stored_requests.AllFetcher
+	var shutdown5 func()
+	if cfg.Accounts.V2Enabled {
+		fetcher5, shutdown5 = createRawStoredRequests(&cfg.Accounts, client, provider)
+	} else {
+		fetcher5, shutdown5 = CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, provider)
+	}
 	fetcher6, shutdown6 := CreateStoredRequests(&cfg.StoredResponses, metricsEngine, client, router, provider)
 
 	fetcher = fetcher1.(stored_requests.Fetcher)
@@ -119,6 +153,17 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	videoFetcher = fetcher4.(stored_requests.Fetcher)
 	accountsFetcher = fetcher5.(stored_requests.AccountFetcher)
 	storedRespFetcher = fetcher6.(stored_requests.Fetcher)
+
+	// Fetchers 2.0: when enabled, wrap the raw account source with the typed
+	// cachekit fetcher. With v2_enabled=false the legacy byte-cache path is used
+	// unchanged.
+	if cfg.Accounts.V2Enabled {
+		v2Accounts, err := account.NewCacheKitAccountFetcher(fetcher5, cfg.Accounts.CacheV2, cfg.AccountDefaultsJSON(), nil, metricsEngine)
+		if err != nil {
+			logger.Fatalf("Failed to initialize Fetchers 2.0 account fetcher: %v", err)
+		}
+		accountsFetcher = v2Accounts
+	}
 
 	shutdown = func() {
 		shutdown1()
@@ -157,8 +202,9 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 	}
 	if cfg.Database.FetcherQueries.QueryTemplate != "" {
 		logger.Infof("Loading Stored %s data via Database.\nQuery: %s", cfg.DataType(), cfg.Database.FetcherQueries.QueryTemplate)
-		idList = append(idList, db_fetcher.NewFetcher(provider,
-			cfg.Database.FetcherQueries.QueryTemplate, cfg.Database.FetcherQueries.QueryTemplate))
+		idList = append(idList, db_fetcher.NewFetcherWithAccountsQuery(provider,
+			cfg.Database.FetcherQueries.QueryTemplate, cfg.Database.FetcherQueries.QueryTemplate,
+			cfg.Database.CacheInitialization.Query))
 	} else if cfg.Database.CacheInitialization.Query != "" && cfg.Database.PollUpdates.Query != "" {
 		//in this case data will be loaded to cache via poll for updates event
 		idList = append(idList, empty_fetcher.EmptyFetcher{})

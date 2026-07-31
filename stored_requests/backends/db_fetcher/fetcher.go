@@ -1,8 +1,10 @@
 package db_fetcher
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/lib/pq"
 	"github.com/prebid/prebid-server/v4/logger"
@@ -14,6 +16,18 @@ func NewFetcher(
 	provider db_provider.DbProvider,
 	queryTemplate string,
 	responseQueryTemplate string,
+) stored_requests.AllFetcher {
+	return NewFetcherWithAccountsQuery(provider, queryTemplate, responseQueryTemplate, "")
+}
+
+// NewFetcherWithAccountsQuery is like NewFetcher but also accepts a query that
+// returns every account row (id, data, dataType), enabling FetchAllAccounts for
+// bulk cache preloading. An empty accountsQuery disables bulk account loading.
+func NewFetcherWithAccountsQuery(
+	provider db_provider.DbProvider,
+	queryTemplate string,
+	responseQueryTemplate string,
+	accountsQuery string,
 ) stored_requests.AllFetcher {
 
 	if provider == nil {
@@ -29,6 +43,7 @@ func NewFetcher(
 		provider:              provider,
 		queryTemplate:         queryTemplate,
 		responseQueryTemplate: responseQueryTemplate,
+		accountsQuery:         accountsQuery,
 	}
 }
 
@@ -37,6 +52,7 @@ type dbFetcher struct {
 	provider              db_provider.DbProvider
 	queryTemplate         string
 	responseQueryTemplate string
+	accountsQuery         string
 }
 
 func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
@@ -152,6 +168,44 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 
 func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (json.RawMessage, []error) {
 	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
+}
+
+// FetchAllAccounts runs the configured accounts query and returns every account
+// row keyed by ID. Rows with null/empty data are skipped. The bytes are raw (not
+// defaults-merged); callers merge account defaults as needed. Bulk loading is
+// unavailable when no accounts query was configured.
+func (fetcher *dbFetcher) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
+	if fetcher.accountsQuery == "" {
+		return nil, []error{errors.New("db_fetcher: bulk account loading is not configured (set stored_requests.database.initialize_caches.query)")}
+	}
+
+	rows, err := fetcher.provider.QueryContext(ctx, fetcher.accountsQuery)
+	if err != nil {
+		return nil, []error{err}
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			logger.Errorf("error closing DB connection: %v", cerr)
+		}
+	}()
+
+	accounts := make(map[string]json.RawMessage)
+	for rows.Next() {
+		var id string
+		var data []byte
+		var dataType string
+		if err := rows.Scan(&id, &data, &dataType); err != nil {
+			return nil, []error{err}
+		}
+		if len(data) == 0 || bytes.Equal(data, []byte("null")) {
+			continue
+		}
+		accounts[id] = data
+	}
+	if rows.Err() != nil {
+		return nil, []error{rows.Err()}
+	}
+	return accounts, nil
 }
 
 func (fetcher *dbFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

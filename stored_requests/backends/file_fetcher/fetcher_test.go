@@ -99,6 +99,19 @@ func TestAccountFetcher(t *testing.T) {
 
 }
 
+func TestFileFetcherFetchAllAccounts(t *testing.T) {
+	fetcher, err := NewFileFetcher("./test")
+	assert.NoError(t, err, "Failed to create test fetcher")
+
+	bulk, ok := fetcher.(stored_requests.AllAccountsFetcher)
+	assert.True(t, ok, "file fetcher should support bulk account loading")
+
+	accounts, errs := bulk.FetchAllAccounts(context.Background())
+	assertErrorCount(t, 0, errs)
+	assert.Contains(t, accounts, "valid", "FetchAllAccounts should return every in-memory account")
+	assert.True(t, json.Valid(accounts["valid"]), "returned account bytes should be valid JSON")
+}
+
 func TestInvalidDirectory(t *testing.T) {
 	_, err := NewFileFetcher("./nonexistant-directory")
 	if err == nil {
