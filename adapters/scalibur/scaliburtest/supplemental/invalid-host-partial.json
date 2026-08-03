@@ -59,9 +59,7 @@
                 ]
               },
               "bidfloorcur": "USD",
-              "ext": {
-                "host": "eu.scalibur.io"
-              },
+              "ext": {},
               "tagid": "placement-good"
             }
           ]

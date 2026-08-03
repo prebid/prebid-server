@@ -107,9 +107,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		// Prepare imp.ext: pass through every field the publisher sent under
-		// ext.bidder, then overlay the server-computed values. The placement is
-		// carried as the ORTB imp.tagid (above), so placementId is dropped from
-		// the outgoing ext to keep the request ORTB-standard.
+		// ext.bidder, then overlay the server-computed values. The two adapter
+		// config params are dropped to keep the request ORTB-standard:
+		// placementId because the placement is carried as the ORTB imp.tagid
+		// (above), and host because it has already been consumed to build the
+		// endpoint this request is being sent to.
 		impExtData := make(map[string]interface{})
 
 		var bidderExt adapters.ExtImpBidder
@@ -122,6 +124,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			}
 		}
 		delete(impExtData, "placementId")
+		delete(impExtData, "host")
 
 		// Server-computed floor fields always win over any passed-through value.
 		// With no floor there is no floor currency either, so neither is sent.
