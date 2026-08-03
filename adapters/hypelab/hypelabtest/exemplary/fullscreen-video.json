@@ -80,8 +80,7 @@
                   "mtype": 2,
                   "ext": {
                     "hypelab": {
-                      "creative_type": "video",
-                      "native_render": false
+                      "start_muted": true
                     }
                   }
                 }
@@ -109,8 +108,7 @@
             "mtype": 2,
             "ext": {
               "hypelab": {
-                "creative_type": "video",
-                "native_render": false
+                "start_muted": true
               }
             }
           }

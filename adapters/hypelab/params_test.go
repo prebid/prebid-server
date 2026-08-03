@@ -35,6 +35,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"property_slug":"test-property","placement_slug":"test-placement"}`,
+	`{"property_slug":"my-property-123","placement_slug":"banner_top"}`,
 }
 
 var invalidParams = []string{

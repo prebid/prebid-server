@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -24,15 +23,7 @@ type adapter struct {
 	endpoint string
 }
 
-type bidExt struct {
-	HypeLab *hypeLabBidExt `json:"hypelab,omitempty"`
-}
-
-type hypeLabBidExt struct {
-	CreativeType string `json:"creative_type,omitempty"`
-}
-
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	return &adapter{endpoint: config.Endpoint}, nil
 }
 
@@ -92,6 +83,9 @@ func makeOutgoingImp(imp openrtb2.Imp) (openrtb2.Imp, error) {
 	imp.DisplayManager = displayManager
 	imp.DisplayManagerVer = prebidServerVersion()
 
+	// The HypeLab exchange resolves the property and placement from
+	// imp.ext.bidder.property_slug / placement_slug, so the params must be
+	// forwarded in the outgoing request.
 	imp.Ext, err = jsonutil.Marshal(map[string]openrtb_ext.ExtImpHypeLab{
 		"bidder": params,
 	})
@@ -126,6 +120,9 @@ func getImpParams(imp openrtb2.Imp) (openrtb_ext.ExtImpHypeLab, error) {
 	return params, nil
 }
 
+// setRequestExt sets ext.source and ext.provider_version, which the HypeLab
+// exchange requires to identify the integration type and version of the
+// caller (its bidding logic differs between prebid and SDK traffic).
 func setRequestExt(request *openrtb2.BidRequest) error {
 	var ext map[string]json.RawMessage
 	if len(request.Ext) > 0 {
@@ -167,14 +164,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	impLookup := makeImpLookup(request.Imp)
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
+	}
 
 	var errs []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getBidMediaType(&seatBid.Bid[i], impLookup)
+			bidType, err := getBidMediaType(&seatBid.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -194,22 +192,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-func makeImpLookup(imps []openrtb2.Imp) map[string]openrtb2.Imp {
-	lookup := make(map[string]openrtb2.Imp, len(imps))
-	for _, imp := range imps {
-		lookup[imp.ID] = imp
-	}
-	return lookup
-}
-
-func getBidMediaType(bid *openrtb2.Bid, impLookup map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
-	imp, ok := impLookup[bid.ImpID]
-	if !ok {
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bid %s references unknown imp %s", bid.ID, bid.ImpID),
-		}
-	}
-
+// The HypeLab exchange sets mtype on every bid, so no markup or imp-based
+// fallback is needed to resolve the media type.
+func getBidMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -217,80 +202,9 @@ func getBidMediaType(bid *openrtb2.Bid, impLookup map[string]openrtb2.Imp) (open
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	}
-	if bid.MType != 0 {
+	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bid %s uses unsupported mtype %d", bid.ID, bid.MType),
-		}
-	}
-
-	bidType, found, err := getBidMediaTypeFromExt(bid)
-	if err != nil {
-		return "", err
-	}
-	if found {
-		return bidType, nil
-	}
-
-	if strings.HasPrefix(strings.TrimSpace(bid.AdM), "<VAST") {
-		return openrtb_ext.BidTypeVideo, nil
-	}
-
-	if bidType, ok := getBidMediaTypeFromImp(imp); ok {
-		return bidType, nil
-	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("unable to determine media type for bid %s on imp %s", bid.ID, bid.ImpID),
-	}
-}
-
-func getBidMediaTypeFromImp(imp openrtb2.Imp) (openrtb_ext.BidType, bool) {
-	var bidType openrtb_ext.BidType
-	var mediaTypeCount int
-	if imp.Banner != nil {
-		bidType = openrtb_ext.BidTypeBanner
-		mediaTypeCount++
-	}
-	if imp.Video != nil {
-		bidType = openrtb_ext.BidTypeVideo
-		mediaTypeCount++
-	}
-	if imp.Native != nil {
-		bidType = openrtb_ext.BidTypeNative
-		mediaTypeCount++
-	}
-
-	return bidType, mediaTypeCount == 1
-}
-
-func getBidMediaTypeFromExt(bid *openrtb2.Bid) (openrtb_ext.BidType, bool, error) {
-	if len(bid.Ext) == 0 {
-		return "", false, nil
-	}
-
-	var ext bidExt
-	if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
-		return "", false, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bid %s has invalid ext", bid.ID),
-		}
-	}
-	if ext.HypeLab == nil {
-		return "", false, nil
-	}
-
-	switch ext.HypeLab.CreativeType {
-	case "display":
-		return openrtb_ext.BidTypeBanner, true, nil
-	case "video":
-		return openrtb_ext.BidTypeVideo, true, nil
-	case "native":
-		return openrtb_ext.BidTypeNative, true, nil
-	case "":
-		return "", false, nil
-	default:
-		return "", false, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bid %s has unsupported creative_type %s", bid.ID, ext.HypeLab.CreativeType),
 		}
 	}
 }
