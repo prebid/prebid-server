@@ -5,11 +5,7 @@ type ExtImpScalibur struct {
 	BidFloor    *float64 `json:"bidfloor,omitempty"`    // optional, used as fallback
 	BidFloorCur string   `json:"bidfloorcur,omitempty"` // optional, defaults to USD if empty
 
-	// Host optionally overrides the endpoint host by filling the {{.Host}} macro
-	// in the operator-controlled endpoint template (adapters.scalibur.endpoint).
-	// When omitted it falls back to the standard Scalibur host, so the default
-	// endpoint is preserved unchanged. It is SSRF-validated. Impressions naming
-	// different hosts are grouped into one outgoing request per host.
+	// Host optionally fills the {{.Host}} macro in the endpoint template; SSRF-validated.
 	Host string `json:"host,omitempty"`
 }
 

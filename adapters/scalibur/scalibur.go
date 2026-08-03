@@ -17,8 +17,7 @@ import (
 	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
-// defaultHost is used to resolve the {{.Host}} macro when the caller does not
-// supply a host param, preserving the standard Scalibur endpoint.
+// defaultHost resolves the {{.Host}} macro when no host param is supplied.
 const defaultHost = "srv.scalibur.io"
 
 type adapter struct {
@@ -26,8 +25,6 @@ type adapter struct {
 }
 
 // hostGroup collects the impressions that resolve to a single endpoint host.
-// Impressions may each carry their own host param, so one incoming bid request
-// can fan out into one outgoing request per distinct host.
 type hostGroup struct {
 	host string
 	imps []openrtb2.Imp
@@ -49,9 +46,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	// Impressions are grouped by the endpoint host they resolve to, in
-	// first-seen order, so every host a publisher asked for is honored instead
-	// of only the first one.
+	// Group impressions by the host they resolve to, in first-seen order.
 	var groups []*hostGroup
 	groupByHost := make(map[string]*hostGroup)
 
@@ -71,9 +66,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		impCopy := imp
 
-		// Resolve the placement as the ORTB imp.tagid. An ad-unit-level tagid
-		// (already on the imp) takes precedence; otherwise the placementId bidder
-		// param is applied. An imp that resolves to no tagid is not served.
+		// Placement is carried as the ORTB imp.tagid; an ad-unit-level tagid wins.
 		if impCopy.TagID == "" {
 			impCopy.TagID = scaliburExt.PlacementID
 		}
@@ -106,12 +99,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			impCopy.BidFloorCur = "USD"
 		}
 
-		// Prepare imp.ext: pass through every field the publisher sent under
-		// ext.bidder, then overlay the server-computed values. The two adapter
-		// config params are dropped to keep the request ORTB-standard:
-		// placementId because the placement is carried as the ORTB imp.tagid
-		// (above), and host because it has already been consumed to build the
-		// endpoint this request is being sent to.
+		// Pass ext.bidder through, minus the adapter config params, then overlay computed values.
 		impExtData := make(map[string]interface{})
 
 		var bidderExt adapters.ExtImpBidder
@@ -126,8 +114,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		delete(impExtData, "placementId")
 		delete(impExtData, "host")
 
-		// Server-computed floor fields always win over any passed-through value.
-		// With no floor there is no floor currency either, so neither is sent.
+		// Computed floor fields win; no floor means no floor currency.
 		if impCopy.BidFloor > 0 {
 			impExtData["bidfloor"] = impCopy.BidFloor
 			impExtData["bidfloorcur"] = impCopy.BidFloorCur
@@ -221,8 +208,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 	}
 
-	// One outgoing request per distinct host, each carrying only the
-	// impressions that asked for that host.
+	// One outgoing request per distinct host.
 	requests := make([]*adapters.RequestData, 0, len(groups))
 	for _, group := range groups {
 		requestCopy := *request
@@ -369,10 +355,7 @@ func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, erro
 	return &scaliburExt, nil
 }
 
-// resolveEndpointHost determines the endpoint host for a single impression. The
-// host param is caller-supplied, so it is SSRF-validated; when omitted it falls
-// back to the standard Scalibur host, meaning an imp with no host param yields
-// the default endpoint.
+// resolveEndpointHost returns the SSRF-validated endpoint host for one impression.
 func resolveEndpointHost(impID string, ext *openrtb_ext.ExtImpScalibur) (string, error) {
 	host := defaultHost
 	if ext.Host != "" {
@@ -388,8 +371,7 @@ func resolveEndpointHost(impID string, ext *openrtb_ext.ExtImpScalibur) (string,
 	return host, nil
 }
 
-// buildEndpointURL resolves the operator-controlled endpoint template with the
-// host resolved by resolveEndpointHost.
+// buildEndpointURL resolves the endpoint template with the given host.
 func (a *adapter) buildEndpointURL(host string) (string, error) {
 	return macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: host})
 }

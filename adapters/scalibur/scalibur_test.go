@@ -125,8 +125,7 @@ func TestMakeRequests_NoFloorOmitsExtFloorFields(t *testing.T) {
 	assert.NotContains(t, outExt, "bidfloorcur")
 }
 
-// Impressions may each name their own host, so a request must fan out into one
-// outgoing request per distinct host, in first-seen order.
+// Imps naming different hosts fan out into one request per host, in first-seen order.
 func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
 	bidder := newTestAdapter()
 
