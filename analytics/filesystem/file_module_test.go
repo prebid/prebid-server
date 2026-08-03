@@ -3,11 +3,15 @@ package filesystem
 import (
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/v4/analytics"
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -45,6 +49,52 @@ func TestAuctionObject_ToJson(t *testing.T) {
 	}
 	if aoJson := jsonifyAuctionObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
 		t.Fatalf("AuctionObject failed to convert to json")
+	}
+}
+
+func TestAuctionObject_ToJsonIncludesRulesEngineWarningAnalytics(t *testing.T) {
+	ao := &analytics.AuctionObject{
+		Status: http.StatusOK,
+		HookExecutionOutcome: []hookexecution.StageOutcome{
+			{
+				Groups: []hookexecution.GroupOutcome{
+					{
+						InvocationResults: []hookexecution.HookOutcome{
+							{
+								HookID: hookexecution.HookID{
+									ModuleCode:   "prebid.rulesengine",
+									HookImplCode: "rulesengine",
+								},
+								AnalyticsTags: hookanalytics.Analytics{
+									Activities: []hookanalytics.Activity{{
+										Name:   "rules_engine_bidder_filtering",
+										Status: hookanalytics.ActivityStatusSuccess,
+										Results: []hookanalytics.Result{{
+											Status: hookanalytics.ResultStatusBlock,
+											Values: map[string]interface{}{
+												"code":   errortypes.RulesEngineBidderExcludedWarningCode,
+												"reason": "excluded_by_rule",
+											},
+										}},
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	aoJSON := jsonifyAuctionObject(ao)
+
+	if strings.Contains(aoJSON, "Transactional Logs Error") {
+		t.Fatalf("AuctionObject failed to convert to json")
+	}
+	if !strings.Contains(aoJSON, `"name":"rules_engine_bidder_filtering"`) ||
+		!strings.Contains(aoJSON, `"code":`+strconv.Itoa(errortypes.RulesEngineBidderExcludedWarningCode)) ||
+		!strings.Contains(aoJSON, `"reason":"excluded_by_rule"`) {
+		t.Fatalf("AuctionObject json did not include structured rules engine warning analytics: %s", aoJSON)
 	}
 }
 
