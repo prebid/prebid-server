@@ -1,23 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "bidwave-test-request",
-    "site": {
-      "domain": "publisher.example.com",
-      "page": "https://publisher.example.com/article"
-    },
-    "device": {
-      "ip": "203.0.113.42",
-      "ua": "Mozilla/5.0",
-      "geo": {
-        "country": "USA",
-        "region": "CA",
-        "city": "San Francisco"
-      }
-    },
+    "id": "bidwave-unsupported-mtype-request",
     "imp": [
       {
         "id": "imp-1",
-        "tagid": "/bidwave/example/banner",
         "banner": {
           "format": [
             {
@@ -40,25 +26,11 @@
         "uri": "https://rtb.bidwave.net/rtb/v1/bid",
         "impIDs": ["imp-1"],
         "body": {
-          "id": "bidwave-test-request",
-          "site": {
-            "domain": "publisher.example.com",
-            "page": "https://publisher.example.com/article"
-          },
-          "device": {
-            "ip": "203.0.113.42",
-            "ua": "Mozilla/5.0",
-            "geo": {
-              "country": "USA",
-              "region": "CA",
-              "city": "San Francisco"
-            }
-          },
+          "id": "bidwave-unsupported-mtype-request",
           "cur": ["USD"],
           "imp": [
             {
               "id": "imp-1",
-              "tagid": "/bidwave/example/banner",
               "banner": {
                 "format": [
                   {
@@ -79,7 +51,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "bidwave-test-request",
+          "id": "bidwave-unsupported-mtype-request",
           "cur": "USD",
           "seatbid": [
             {
@@ -89,11 +61,9 @@
                   "id": "bid-1",
                   "impid": "imp-1",
                   "price": 1.25,
-                  "adm": "<div>ad</div>",
+                  "adm": "native markup",
                   "crid": "creative-1",
-                  "w": 300,
-                  "h": 250,
-                  "mtype": 1
+                  "mtype": 4
                 }
               ]
             }
@@ -105,21 +75,13 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "bid-1",
-            "impid": "imp-1",
-            "price": 1.25,
-            "adm": "<div>ad</div>",
-            "crid": "creative-1",
-            "w": 300,
-            "h": 250,
-            "mtype": 1
-          },
-          "type": "banner"
-        }
-      ]
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported mtype 4 for impression with ID: \"imp-1\"",
+      "comparison": "literal"
     }
   ]
 }

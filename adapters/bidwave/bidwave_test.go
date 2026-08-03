@@ -77,12 +77,12 @@ func TestGetBidType(t *testing.T) {
 		{
 			name:        "missing mtype",
 			bid:         openrtb2.Bid{ImpID: "imp-1"},
-			expectedErr: "Bid must have non-zero MType for impression with ID: \"imp-1\"",
+			expectedErr: "bid must have non-zero mtype for impression with ID: \"imp-1\"",
 		},
 		{
 			name:        "unsupported mtype",
 			bid:         openrtb2.Bid{ImpID: "imp-1", MType: openrtb2.MarkupNative},
-			expectedErr: "Unsupported MType 4 for impression with ID: \"imp-1\"",
+			expectedErr: "unsupported mtype 4 for impression with ID: \"imp-1\"",
 		},
 	}
 

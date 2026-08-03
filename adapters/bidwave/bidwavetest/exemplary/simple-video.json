@@ -1,30 +1,25 @@
 {
   "mockBidRequest": {
-    "id": "bidwave-test-request",
+    "id": "bidwave-video-request",
     "site": {
       "domain": "publisher.example.com",
-      "page": "https://publisher.example.com/article"
+      "page": "https://publisher.example.com/video"
     },
     "device": {
-      "ip": "203.0.113.42",
-      "ua": "Mozilla/5.0",
-      "geo": {
-        "country": "USA",
-        "region": "CA",
-        "city": "San Francisco"
-      }
+      "ip": "203.0.113.44",
+      "ua": "Mozilla/5.0"
     },
     "imp": [
       {
         "id": "imp-1",
-        "tagid": "/bidwave/example/banner",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
+        "tagid": "/bidwave/example/video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3],
+          "w": 640,
+          "h": 360
         },
         "ext": {
           "bidder": {
@@ -40,32 +35,27 @@
         "uri": "https://rtb.bidwave.net/rtb/v1/bid",
         "impIDs": ["imp-1"],
         "body": {
-          "id": "bidwave-test-request",
+          "id": "bidwave-video-request",
           "site": {
             "domain": "publisher.example.com",
-            "page": "https://publisher.example.com/article"
+            "page": "https://publisher.example.com/video"
           },
           "device": {
-            "ip": "203.0.113.42",
-            "ua": "Mozilla/5.0",
-            "geo": {
-              "country": "USA",
-              "region": "CA",
-              "city": "San Francisco"
-            }
+            "ip": "203.0.113.44",
+            "ua": "Mozilla/5.0"
           },
           "cur": ["USD"],
           "imp": [
             {
               "id": "imp-1",
-              "tagid": "/bidwave/example/banner",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
+              "tagid": "/bidwave/example/video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [2, 3],
+                "w": 640,
+                "h": 360
               }
             }
           ],
@@ -79,7 +69,7 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "bidwave-test-request",
+          "id": "bidwave-video-request",
           "cur": "USD",
           "seatbid": [
             {
@@ -88,12 +78,12 @@
                 {
                   "id": "bid-1",
                   "impid": "imp-1",
-                  "price": 1.25,
-                  "adm": "<div>ad</div>",
-                  "crid": "creative-1",
-                  "w": 300,
-                  "h": 250,
-                  "mtype": 1
+                  "price": 2.5,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "video-creative-1",
+                  "w": 640,
+                  "h": 360,
+                  "mtype": 2
                 }
               ]
             }
@@ -110,14 +100,14 @@
           "bid": {
             "id": "bid-1",
             "impid": "imp-1",
-            "price": 1.25,
-            "adm": "<div>ad</div>",
-            "crid": "creative-1",
-            "w": 300,
-            "h": 250,
-            "mtype": 1
+            "price": 2.5,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "video-creative-1",
+            "w": 640,
+            "h": 360,
+            "mtype": 2
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }

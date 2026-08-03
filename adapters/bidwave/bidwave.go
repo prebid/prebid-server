@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -16,8 +15,6 @@ import (
 )
 
 const defaultCurrency = "USD"
-
-var uuidRegex = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 
 type adapter struct {
 	endpoint string
@@ -108,6 +105,7 @@ func groupImpsByPublisherID(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestI
 			errs = append(errs, err)
 			continue
 		}
+		imp.Ext = nil
 
 		if groupIndex, ok := groupIndexes[publisherID]; ok {
 			groups[groupIndex].imps = append(groups[groupIndex].imps, imp)
@@ -136,12 +134,6 @@ func parsePublisherID(imp openrtb2.Imp) (string, error) {
 	if err := jsonutil.Unmarshal(ext.Bidder, &params); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("invalid bidwave params for impression %s: %s", imp.ID, err.Error()),
-		}
-	}
-
-	if !uuidRegex.MatchString(params.PublisherID) {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("invalid publisherId for impression %s", imp.ID),
 		}
 	}
 
@@ -177,7 +169,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	var bidResponse openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(response.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Bad Server Response",
+			Message: fmt.Sprintf("unable to unmarshal response: %s", err.Error()),
 		}}
 	}
 
@@ -214,11 +206,11 @@ func getBidType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeVideo, nil
 	case 0:
 		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Bid must have non-zero MType for impression with ID: \"%s\"", bid.ImpID),
+			Message: fmt.Sprintf("bid must have non-zero mtype for impression with ID: \"%s\"", bid.ImpID),
 		}
 	default:
 		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unsupported MType %d for impression with ID: \"%s\"", bid.MType, bid.ImpID),
+			Message: fmt.Sprintf("unsupported mtype %d for impression with ID: \"%s\"", bid.MType, bid.ImpID),
 		}
 	}
 }
