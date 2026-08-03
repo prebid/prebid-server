@@ -1,6 +1,9 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "site": {
+      "page": "https://www.example.com/article"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -15,11 +18,7 @@
         "ext": {
           "bidder": {
             "placementId": "test-scl-placement",
-            "host": "eu.scalibur.io",
-            "customKey": "customValue",
-            "nested": {
-              "a": 1
-            }
+            "host": "eu.scalibur.io"
           }
         }
       }
@@ -34,6 +33,9 @@
         ],
         "body": {
           "id": "test-request-id",
+          "site": {
+            "page": "https://www.example.com/article"
+          },
           "imp": [
             {
               "id": "test-imp-id",
@@ -47,12 +49,7 @@
               },
               "bidfloorcur": "USD",
               "ext": {
-                "host": "eu.scalibur.io",
-                "customKey": "customValue",
-                "nested": {
-                  "a": 1
-                },
-                "bidfloorcur": "USD"
+                "host": "eu.scalibur.io"
               },
               "tagid": "test-scl-placement"
             }
@@ -63,6 +60,7 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
+          "cur": "USD",
           "seatbid": [
             {
               "bid": [
@@ -77,8 +75,7 @@
                 }
               ]
             }
-          ],
-          "cur": "USD"
+          ]
         }
       }
     }

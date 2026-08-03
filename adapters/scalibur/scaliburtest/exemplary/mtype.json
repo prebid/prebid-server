@@ -41,9 +41,7 @@
                 ]
               },
               "bidfloorcur": "USD",
-              "ext": {
-                "bidfloorcur": "USD"
-              },
+              "ext": {},
               "tagid": "test-placement"
             }
           ]

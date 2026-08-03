@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-bad-host",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-bad",
+            "host": "evil.com/path"
+          }
+        }
+      },
+      {
+        "id": "imp-good-host",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-good",
+            "host": "eu.scalibur.io"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://eu.scalibur.io/adserver/ortb?type=prebid-server",
+        "impIDs": [
+          "imp-good-host"
+        ],
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-good-host",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "bidfloorcur": "USD",
+              "ext": {
+                "host": "eu.scalibur.io"
+              },
+              "tagid": "placement-good"
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-bad-host: invalid host evil.com/path",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

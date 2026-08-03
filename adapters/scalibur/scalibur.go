@@ -25,6 +25,14 @@ type adapter struct {
 	endpoint *template.Template
 }
 
+// hostGroup collects the impressions that resolve to a single endpoint host.
+// Impressions may each carry their own host param, so one incoming bid request
+// can fan out into one outgoing request per distinct host.
+type hostGroup struct {
+	host string
+	imps []openrtb2.Imp
+}
+
 // Builder builds a new instance of the Scalibur adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	temp, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -40,11 +48,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // MakeRequests creates the HTTP requests which should be made to fetch bids from Scalibur.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var validImps []openrtb2.Imp
 
-	// endpointExt holds the endpoint macro values taken from the first valid
-	// impression; the outgoing request has a single URI for the whole request.
-	var endpointExt *openrtb_ext.ExtImpScalibur
+	// Impressions are grouped by the endpoint host they resolve to, in
+	// first-seen order, so every host a publisher asked for is honored instead
+	// of only the first one.
+	var groups []*hostGroup
+	groupByHost := make(map[string]*hostGroup)
 
 	// Process each impression
 	for _, imp := range request.Imp {
@@ -54,8 +63,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		if endpointExt == nil {
-			endpointExt = scaliburExt
+		host, err := resolveEndpointHost(imp.ID, scaliburExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
 
 		impCopy := imp
@@ -113,11 +124,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		delete(impExtData, "placementId")
 
 		// Server-computed floor fields always win over any passed-through value.
-		impExtData["bidfloorcur"] = impCopy.BidFloorCur
+		// With no floor there is no floor currency either, so neither is sent.
 		if impCopy.BidFloor > 0 {
 			impExtData["bidfloor"] = impCopy.BidFloor
+			impExtData["bidfloorcur"] = impCopy.BidFloorCur
 		} else {
 			delete(impExtData, "bidfloor")
+			delete(impExtData, "bidfloorcur")
 		}
 
 		// Preserve GPID if present (lives outside ext.bidder)
@@ -175,18 +188,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			impCopy.Video = &videoCopy
 		}
 
-		validImps = append(validImps, impCopy)
+		group, ok := groupByHost[host]
+		if !ok {
+			group = &hostGroup{host: host}
+			groupByHost[host] = group
+			groups = append(groups, group)
+		}
+		group.imps = append(group.imps, impCopy)
 	}
 
 	// If no valid impressions, return errors
-	if len(validImps) == 0 {
+	if len(groups) == 0 {
 		return nil, errs
 	}
-
-	// Create the outgoing request
-	requestCopy := *request
-	requestCopy.Imp = validImps
-	requestCopy.Cur = nil
 
 	isDebug := request.Test == 1
 	if !isDebug && len(request.Ext) > 0 {
@@ -196,38 +210,49 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 	}
 
+	var reqExtJSON json.RawMessage
 	if isDebug {
 		reqExt := openrtb_ext.ExtRequestScalibur{IsDebug: 1}
-		if reqExtJSON, err := jsonutil.Marshal(reqExt); err == nil {
-			requestCopy.Ext = reqExtJSON
+		if marshalled, err := jsonutil.Marshal(reqExt); err == nil {
+			reqExtJSON = marshalled
 		}
-	} else {
-		requestCopy.Ext = nil
 	}
 
-	reqJSON, err := jsonutil.Marshal(requestCopy)
-	if err != nil {
-		return nil, append(errs, err)
+	// One outgoing request per distinct host, each carrying only the
+	// impressions that asked for that host.
+	requests := make([]*adapters.RequestData, 0, len(groups))
+	for _, group := range groups {
+		requestCopy := *request
+		requestCopy.Imp = group.imps
+		requestCopy.Cur = nil
+		requestCopy.Ext = reqExtJSON
+
+		reqJSON, err := jsonutil.Marshal(requestCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		uri, err := a.buildEndpointURL(group.host)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		headers := http.Header{}
+		headers.Add("Content-Type", "application/json;charset=utf-8")
+		headers.Add("Accept", "application/json")
+
+		requests = append(requests, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     uri,
+			Body:    reqJSON,
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
+		})
 	}
 
-	uri, err := a.buildEndpointURL(endpointExt)
-	if err != nil {
-		return nil, append(errs, err)
-	}
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-
-	requestData := &adapters.RequestData{
-		Method:  "POST",
-		Uri:     uri,
-		Body:    reqJSON,
-		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
-	}
-
-	return []*adapters.RequestData{requestData}, errs
+	return requests, errs
 }
 
 // MakeBids unpacks the server's response into bids.
@@ -341,19 +366,28 @@ func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, erro
 	return &scaliburExt, nil
 }
 
-// buildEndpointURL resolves the operator-controlled endpoint template using the
-// caller-supplied macro values. Host is SSRF-validated and defaults to the
-// standard Scalibur host, so omitting all params yields the default endpoint.
-func (a *adapter) buildEndpointURL(ext *openrtb_ext.ExtImpScalibur) (string, error) {
+// resolveEndpointHost determines the endpoint host for a single impression. The
+// host param is caller-supplied, so it is SSRF-validated; when omitted it falls
+// back to the standard Scalibur host, meaning an imp with no host param yields
+// the default endpoint.
+func resolveEndpointHost(impID string, ext *openrtb_ext.ExtImpScalibur) (string, error) {
 	host := defaultHost
-	if ext != nil && ext.Host != "" {
+	if ext.Host != "" {
 		host = ext.Host
 	}
 
 	if !urlutil.IsSafeHost(host) {
-		return "", &errortypes.BadInput{Message: "Invalid host"}
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("imp %s: invalid host %s", impID, host),
+		}
 	}
 
+	return host, nil
+}
+
+// buildEndpointURL resolves the operator-controlled endpoint template with the
+// host resolved by resolveEndpointHost.
+func (a *adapter) buildEndpointURL(host string) (string, error) {
 	return macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: host})
 }
 

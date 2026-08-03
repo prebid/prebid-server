@@ -2,6 +2,7 @@ package scalibur
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -86,6 +87,81 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 	var outExt map[string]interface{}
 	require.NoError(t, json.Unmarshal(imp.Ext, &outExt))
 	assert.NotContains(t, outExt, "placementId")
+}
+
+func TestMakeRequests_NoFloorOmitsExtFloorFields(t *testing.T) {
+	bidder := newTestAdapter()
+
+	ext, _ := json.Marshal(adapters.ExtImpBidder{
+		Bidder: json.RawMessage(`{"placementId": "p123"}`),
+	})
+
+	req := &openrtb2.BidRequest{
+		ID: "req-no-floor",
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "imp1",
+				Ext:    ext,
+				Banner: &openrtb2.Banner{W: ptrInt64(300), H: ptrInt64(250)},
+			},
+		},
+	}
+
+	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{
+		CurrencyConversions: &mockConversions{},
+	})
+
+	require.Len(t, errs, 0)
+	require.Len(t, requests, 1)
+
+	var out openrtb2.BidRequest
+	require.NoError(t, json.Unmarshal(requests[0].Body, &out))
+
+	var outExt map[string]interface{}
+	require.NoError(t, json.Unmarshal(out.Imp[0].Ext, &outExt))
+
+	// With no floor there is no floor currency either.
+	assert.NotContains(t, outExt, "bidfloor")
+	assert.NotContains(t, outExt, "bidfloorcur")
+}
+
+// Impressions may each name their own host, so a request must fan out into one
+// outgoing request per distinct host, in first-seen order.
+func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
+	bidder := newTestAdapter()
+
+	impWithHost := func(id, host string) openrtb2.Imp {
+		ext, _ := json.Marshal(adapters.ExtImpBidder{
+			Bidder: json.RawMessage(fmt.Sprintf(`{"placementId": %q, "host": %q}`, "p-"+id, host)),
+		})
+		return openrtb2.Imp{
+			ID:     id,
+			Ext:    ext,
+			Banner: &openrtb2.Banner{W: ptrInt64(300), H: ptrInt64(250)},
+		}
+	}
+
+	req := &openrtb2.BidRequest{
+		ID: "req-multi-host",
+		Imp: []openrtb2.Imp{
+			impWithHost("imp-eu", "eu.scalibur.io"),
+			impWithHost("imp-us", "us.scalibur.io"),
+			impWithHost("imp-eu-2", "eu.scalibur.io"),
+		},
+	}
+
+	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{
+		CurrencyConversions: &mockConversions{},
+	})
+
+	require.Len(t, errs, 0)
+	require.Len(t, requests, 2)
+
+	assert.Equal(t, "https://eu.scalibur.io/adserver/ortb?type=prebid-server", requests[0].Uri)
+	assert.Equal(t, []string{"imp-eu", "imp-eu-2"}, requests[0].ImpIDs)
+
+	assert.Equal(t, "https://us.scalibur.io/adserver/ortb?type=prebid-server", requests[1].Uri)
+	assert.Equal(t, []string{"imp-us"}, requests[1].ImpIDs)
 }
 
 func TestMakeRequests_InvalidExt(t *testing.T) {

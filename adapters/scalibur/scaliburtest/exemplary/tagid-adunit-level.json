@@ -19,9 +19,7 @@
           "tagid": "adunit-42",
           "banner": { "format": [{"w": 300, "h": 250}] },
           "bidfloorcur": "USD",
-          "ext": {
-            "bidfloorcur": "USD"
-          }
+          "ext": {}
         }]
       }
     },

@@ -43,7 +43,6 @@
               },
               "bidfloorcur": "USD",
               "ext": {
-                "bidfloorcur": "USD",
                 "gpid": "test-gpid-value"
               },
               "tagid": "test-scl-placement"

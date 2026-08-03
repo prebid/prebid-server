@@ -48,9 +48,7 @@
                 "maxbitrate": 30000
               },
               "bidfloorcur": "USD",
-              "ext": {
-                "bidfloorcur": "USD"
-              },
+              "ext": {},
               "tagid": "46"
             }
           ]

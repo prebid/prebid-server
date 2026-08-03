@@ -15,7 +15,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid host",
+      "value": "imp test-imp-id: invalid host evil.com/path?redirect=http://attacker.com#",
       "comparison": "literal"
     }
   ]

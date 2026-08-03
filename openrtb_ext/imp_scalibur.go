@@ -8,7 +8,8 @@ type ExtImpScalibur struct {
 	// Host optionally overrides the endpoint host by filling the {{.Host}} macro
 	// in the operator-controlled endpoint template (adapters.scalibur.endpoint).
 	// When omitted it falls back to the standard Scalibur host, so the default
-	// endpoint is preserved unchanged. It is SSRF-validated.
+	// endpoint is preserved unchanged. It is SSRF-validated. Impressions naming
+	// different hosts are grouped into one outgoing request per host.
 	Host string `json:"host,omitempty"`
 }
 
