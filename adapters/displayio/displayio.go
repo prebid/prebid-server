@@ -130,7 +130,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapte
 	var bidResp openrtb2.BidResponse
 
 	if err := jsonutil.Unmarshal(responseData.Body, &bidResp); err != nil {
-		msg := fmt.Sprintf("Bad server response: %d", err)
+		msg := fmt.Sprintf("Bad server response: %v", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 
@@ -178,8 +178,14 @@ func getBidMediaTypeFromMtype(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("unexpected media type for bid: %s", bid.ImpID)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported MType %d", bid.MType),
+		}
 	}
 }
 
