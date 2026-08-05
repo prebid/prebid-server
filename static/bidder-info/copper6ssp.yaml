@@ -1,7 +1,7 @@
 aliasOf: "vidazoo"
 endpoint: "https://exchange.copper6.com/openrtb/"
 maintainer:
-  email: "dev@vidazoo.com"
+  email: "operations@copper6.com"
 userSync:
   iframe:
     url: https://sync.copper6.com/api/user/html/6a1ed92d2dc11401c64d1da4?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
