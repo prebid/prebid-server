@@ -52,19 +52,14 @@ type extCacheInstructions struct {
 }
 
 func (c extCacheInstructions) shouldReturnCreative(bidType openrtb_ext.BidType) bool {
-	cacheApplies := false
-	returnCreative := false
-
-	if c.cacheBids {
-		cacheApplies = true
-		returnCreative = c.returnCreativeBids
+	if c.cacheBids && !c.returnCreativeBids {
+		return false
 	}
-	if bidType == openrtb_ext.BidTypeVideo && c.cacheVAST {
-		cacheApplies = true
-		returnCreative = returnCreative || c.returnCreativeVAST
+	if bidType == openrtb_ext.BidTypeVideo && c.cacheVAST && !c.returnCreativeVAST {
+		return false
 	}
 
-	return !cacheApplies || returnCreative
+	return true
 }
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.

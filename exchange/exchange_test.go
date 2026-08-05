@@ -1415,10 +1415,10 @@ func TestBidReturnsCreative(t *testing.T) {
 			"",
 		},
 		{
-			"bids returnCreative true preserves video creative when VAST returnCreative is false",
+			"VAST returnCreative false removes video creative when bids returnCreative is true",
 			openrtb_ext.BidTypeVideo,
 			extCacheInstructions{cacheBids: true, cacheVAST: true, returnCreativeBids: true, returnCreativeVAST: false},
-			sampleAd,
+			"",
 		},
 		{
 			"bids returnCreative false removes banner creative when VAST returnCreative is true",
@@ -1427,10 +1427,10 @@ func TestBidReturnsCreative(t *testing.T) {
 			"",
 		},
 		{
-			"VAST returnCreative true preserves video creative when bids returnCreative is false",
+			"bids returnCreative false removes video creative when VAST returnCreative is true",
 			openrtb_ext.BidTypeVideo,
 			extCacheInstructions{cacheBids: true, cacheVAST: true, returnCreativeBids: false, returnCreativeVAST: true},
-			sampleAd,
+			"",
 		},
 	}
 
