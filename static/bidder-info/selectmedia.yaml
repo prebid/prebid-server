@@ -1,0 +1,26 @@
+disabled: true
+# We have the following regional endpoint domains:  'us-east' - for US_EAST, 'eu' - for EU
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+aliasOf: "teqblaze"
+endpoint: "https://#{REGION}#.zxyvrtd.com/pserver"
+gvlVendorID: 775
+maintainer:
+  email: "prebid@selectmedia.asia"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://sync.zxyvrtd.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://sync.zxyvrtd.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"

@@ -104,6 +104,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/eplanning"
 	"github.com/prebid/prebid-server/v4/adapters/epom"
 	"github.com/prebid/prebid-server/v4/adapters/escalax"
+	"github.com/prebid/prebid-server/v4/adapters/eskimi"
 	"github.com/prebid/prebid-server/v4/adapters/exco"
 	"github.com/prebid/prebid-server/v4/adapters/feedad"
 	"github.com/prebid/prebid-server/v4/adapters/flatads"
@@ -199,8 +200,10 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/rise"
 	"github.com/prebid/prebid-server/v4/adapters/roulax"
 	"github.com/prebid/prebid-server/v4/adapters/rtbhouse"
+	"github.com/prebid/prebid-server/v4/adapters/rtbstack"
 	"github.com/prebid/prebid-server/v4/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/v4/adapters/sa_lunamedia"
+	"github.com/prebid/prebid-server/v4/adapters/scalibur"
 	"github.com/prebid/prebid-server/v4/adapters/seedingAlliance"
 	"github.com/prebid/prebid-server/v4/adapters/seedtag"
 	"github.com/prebid/prebid-server/v4/adapters/sharethrough"
@@ -223,9 +226,13 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/sspBC"
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
+	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
 	"github.com/prebid/prebid-server/v4/adapters/taboola"
+	"github.com/prebid/prebid-server/v4/adapters/tadvertising_blis"
 	"github.com/prebid/prebid-server/v4/adapters/tappx"
+	"github.com/prebid/prebid-server/v4/adapters/targetVideo"
 	"github.com/prebid/prebid-server/v4/adapters/teads"
+	"github.com/prebid/prebid-server/v4/adapters/teal"
 	"github.com/prebid/prebid-server/v4/adapters/telaria"
 	"github.com/prebid/prebid-server/v4/adapters/teqblaze"
 	"github.com/prebid/prebid-server/v4/adapters/theadx"
@@ -371,6 +378,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
 		openrtb_ext.BidderEscalax:           escalax.Builder,
+		openrtb_ext.BidderEskimi:            eskimi.Builder,
 		openrtb_ext.BidderExco:              exco.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderFeedAd:            feedad.Builder,
@@ -469,10 +477,12 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRise:              rise.Builder,
 		openrtb_ext.BidderRoulax:            roulax.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
+		openrtb_ext.BidderRTBStack:          rtbstack.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
 		openrtb_ext.BidderSeedtag:           seedtag.Builder,
 		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
+		openrtb_ext.BidderScalibur:          scalibur.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
 		openrtb_ext.BidderShowheroes:        showheroes.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
@@ -493,9 +503,13 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
+		openrtb_ext.BidderSynapseHX:         synapseHX.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
+		openrtb_ext.BidderTAdvertisingBlis:  tadvertising_blis.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
+		openrtb_ext.BidderTargetVideo:       targetVideo.Builder,
 		openrtb_ext.BidderTeads:             teads.Builder,
+		openrtb_ext.BidderTeal:              teal.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
 		openrtb_ext.BidderTeqBlaze:          teqblaze.Builder,
 		openrtb_ext.BidderTheadx:            theadx.Builder,

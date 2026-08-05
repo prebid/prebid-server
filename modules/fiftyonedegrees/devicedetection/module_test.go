@@ -44,7 +44,7 @@ func (m *mockEvidenceExtractor) fromSuaPayload(payload []byte) []stringEvidence 
 	return args.Get(0).([]stringEvidence)
 }
 
-func (m *mockEvidenceExtractor) extract(ctx hookstage.ModuleContext) ([]onpremise.Evidence, string, error) {
+func (m *mockEvidenceExtractor) extract(ctx *hookstage.ModuleContext) ([]onpremise.Evidence, string, error) {
 	args := m.Called(ctx)
 
 	res := args.Get(0)
@@ -131,16 +131,18 @@ func TestHandleEntrypointHookAccountAllowed(t *testing.T) {
 	result, err := module.HandleEntrypointHook(nil, hookstage.ModuleInvocationContext{}, hookstage.EntrypointPayload{})
 	assert.NoError(t, err)
 
+	evidenceFromHeadersCtx, _ := result.ModuleContext.Get(evidenceFromHeadersCtxKey)
 	assert.Equal(
-		t, result.ModuleContext[evidenceFromHeadersCtxKey], []stringEvidence{{
+		t, evidenceFromHeadersCtx, []stringEvidence{{
 			Prefix: "123",
 			Key:    "key",
 			Value:  "val",
 		}},
 	)
 
+	evidenceFromSuaCtx, _ := result.ModuleContext.Get(evidenceFromSuaCtxKey)
 	assert.Equal(
-		t, result.ModuleContext[evidenceFromSuaCtxKey], []stringEvidence{{
+		t, evidenceFromSuaCtx, []stringEvidence{{
 			Prefix: "123",
 			Key:    "User-Agent",
 			Value:  "ua",
@@ -179,9 +181,8 @@ func TestHandleRawAuctionHookExtractError(t *testing.T) {
 		accountValidator:  &mockValidator,
 	}
 
-	mctx := make(hookstage.ModuleContext)
-
-	mctx[ddEnabledCtxKey] = true
+	mctx := hookstage.NewModuleContext()
+	mctx.Set(ddEnabledCtxKey, true)
 
 	result, err := module.HandleRawAuctionHook(
 		context.TODO(), hookstage.ModuleInvocationContext{
@@ -280,8 +281,8 @@ func TestHandleRawAuctionHookEnrichment(t *testing.T) {
 		accountValidator:  &mockValidator,
 	}
 
-	mctx := make(hookstage.ModuleContext)
-	mctx[ddEnabledCtxKey] = true
+	mctx := hookstage.NewModuleContext()
+	mctx.Set(ddEnabledCtxKey, true)
 
 	result, err := module.HandleRawAuctionHook(
 		nil, hookstage.ModuleInvocationContext{
@@ -483,8 +484,8 @@ func TestHandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 		accountValidator:  &mockValidator,
 	}
 
-	mctx := make(hookstage.ModuleContext)
-	mctx[ddEnabledCtxKey] = true
+	mctx := hookstage.NewModuleContext()
+	mctx.Set(ddEnabledCtxKey, true)
 
 	result, err := module.HandleRawAuctionHook(
 		nil, hookstage.ModuleInvocationContext{
