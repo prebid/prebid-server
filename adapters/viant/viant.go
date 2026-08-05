@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -13,25 +12,6 @@ import (
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
-
-// defaultCurrency is the fallback Viant bids in and the target we convert
-// unsupported bid floor currencies into.
-const defaultCurrency = "USD"
-
-// supportedCurrencies are the bid floor currencies Viant can interpret directly.
-// Floors already in one of these are passed through untouched so Viant applies
-// its own conversion rates; anything else is converted to defaultCurrency first.
-// Adding a newly supported currency here is the only change needed to stop
-// converting it.
-var supportedCurrencies = map[string]struct{}{
-	"USD": {},
-	"GBP": {},
-	"CAD": {},
-	"EUR": {},
-	"AUD": {},
-	"SAR": {},
-	"AED": {},
-}
 
 type adapter struct {
 	endpoint string
@@ -76,27 +56,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		imp := request.Imp[i]
 		imp.Ext = stripBidderExt(imp.Ext)
-
-		if imp.BidFloor > 0 && imp.BidFloorCur != "" {
-			if _, ok := supportedCurrencies[strings.ToUpper(imp.BidFloorCur)]; !ok {
-				convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, defaultCurrency)
-				if err != nil {
-					// Viant accepts requests in currencies it doesn't support without
-					// erroring and simply bids in USD. Mirror that leniency: if we can't
-					// express the floor in USD, drop the floor rather than the impression
-					// so Viant can still return a (USD) bid.
-					errs = append(errs, &errortypes.Warning{
-						Message: fmt.Sprintf("dropping unconvertible bid floor for impression index %d: %s", i, err.Error()),
-					})
-					imp.BidFloor = 0
-					imp.BidFloorCur = ""
-				} else {
-					imp.BidFloorCur = defaultCurrency
-					imp.BidFloor = convertedValue
-				}
-			}
-		}
-
 		cleanImps = append(cleanImps, imp)
 	}
 
@@ -107,11 +66,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	reqCopy.Imp = cleanImps
-	// Viant prices its bids in any currency it supports, so pass a supported
-	// requested currency straight through and let it respond in that currency.
-	// For unsupported currencies (or none) ask for USD and let Prebid core
-	// convert the USD bid into the publisher's requested currency downstream.
-	reqCopy.Cur = []string{resolveRequestCurrency(request.Cur)}
 
 	requestJSON, err := json.Marshal(reqCopy)
 	if err != nil {
@@ -131,20 +85,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}}, errs
 }
 
-// resolveRequestCurrency returns the first requested currency Viant supports so
-// it can bid in it directly. If none of the requested currencies are supported
-// (or none were requested), it returns defaultCurrency.
-func resolveRequestCurrency(requestCurrencies []string) string {
-	for _, cur := range requestCurrencies {
-		if _, ok := supportedCurrencies[strings.ToUpper(cur)]; ok {
-			return cur
-		}
-	}
-	return defaultCurrency
-}
-
 // stripBidderExt removes the "bidder" and "prebid" keys from imp.ext,
-// returning nil if nothing else remains.
+// returning nil if nothing else remains. If imp.ext is not a JSON object
+// (and therefore can't be unmarshalled into a map), it is returned unchanged
+// so the original value is preserved rather than silently dropped.
 func stripBidderExt(ext json.RawMessage) json.RawMessage {
 	if ext == nil {
 		return nil
@@ -152,7 +96,7 @@ func stripBidderExt(ext json.RawMessage) json.RawMessage {
 
 	var extMap map[string]json.RawMessage
 	if err := jsonutil.Unmarshal(ext, &extMap); err != nil {
-		return nil
+		return ext
 	}
 
 	delete(extMap, openrtb_ext.PrebidExtBidderKey)
@@ -205,13 +149,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	// Viant bids in the requested currency when it supports it, so trust the
-	// currency it reports. Fall back to USD if the response omits it.
-	if bidResponse.Cur != "" {
-		bidderResponse.Currency = bidResponse.Cur
-	} else {
-		bidderResponse.Currency = defaultCurrency
-	}
+	bidderResponse.Currency = bidResponse.Cur
 
 	var errs []error
 	for _, seatBid := range bidResponse.SeatBid {

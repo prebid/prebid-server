@@ -17,9 +17,3 @@ capabilities:
       - video
       - native
       - audio
-  dooh:
-    mediaTypes:
-      - banner
-      - video
-      - native
-      - audio
