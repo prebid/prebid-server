@@ -1,0 +1,37 @@
+# Tunnl accepts no publisher parameters. The endpoint below is fully determined
+# by this config plus the impression's media type.
+#
+# The endpoint default below targets the US region. We have three regional
+# endpoints, and the region code appears TWICE in each: once in the host and
+# once in the sid. Both must always carry the same code.
+#
+#   US    endpoint: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlus{{.MediaType}}"
+#   EU    endpoint: "https://eu1.rapidtag.net/api/v1/bid?sid=tunnleu{{.MediaType}}"
+#   APAC  endpoint: "https://ap1.rapidtag.net/api/v1/bid?sid=tunnlap{{.MediaType}}"
+#
+# Hosts outside the US should override adapters.tunnl.endpoint in their own
+# deployment config with the matching line above, rather than editing this file.
+#
+# Leave {{.MediaType}} as-is. The adapter replaces it with ban, vid or nat per
+# impression, because each endpoint serves a single media type.
+endpoint: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlus{{.MediaType}}"
+endpointCompression: gzip
+gvlVendorID: 540
+maintainer:
+  email: prebid@tunnl.com
+geoscope:
+  - global
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+openrtb:
+  version: 2.6
+  multiformat-supported: true

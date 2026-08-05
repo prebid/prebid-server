@@ -1,0 +1,105 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "publisher-id"
+      }
+    },
+    "device": {
+      "ua": "test-ua",
+      "ip": "192.0.2.1",
+      "ifa": "eb6685ef-b9d0-48b9-a1c2-db7894790f93"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "publisher-id"
+            }
+          },
+          "device": {
+            "ua": "test-ua",
+            "ip": "192.0.2.1",
+            "ifa": "eb6685ef-b9d0-48b9-a1c2-db7894790f93"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {}
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "test-imp-id",
+                  "price": 0.9,
+                  "adm": "<div>app banner</div>",
+                  "crid": "creative-1",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "test-imp-id",
+            "price": 0.9,
+            "adm": "<div>app banner</div>",
+            "crid": "creative-1",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
