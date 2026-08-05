@@ -120,6 +120,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEPlanning,
 	BidderEpom,
 	BidderEscalax,
+	BidderEskimi,
 	BidderEVolution,
 	BidderExco,
 	BidderFeedAd,
@@ -243,11 +244,13 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSspBC,
 	BidderStartIO,
 	BidderStroeerCore,
+	BidderSynapseHX,
 	BidderTaboola,
 	BidderTAdvertisingBlis,
 	BidderTappx,
 	BidderTargetVideo,
 	BidderTeads,
+	BidderTeal,
 	BidderTelaria,
 	BidderTeqBlaze,
 	BidderTheadx,
@@ -498,6 +501,7 @@ const (
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
 	BidderEscalax           BidderName = "escalax"
+	BidderEskimi            BidderName = "eskimi"
 	BidderExco              BidderName = "exco"
 	BidderEVolution         BidderName = "e_volution"
 	BidderFeedAd            BidderName = "feedad"
@@ -621,11 +625,13 @@ const (
 	BidderSspBC             BidderName = "sspBC"
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
+	BidderSynapseHX         BidderName = "synapseHX"
 	BidderTaboola           BidderName = "taboola"
 	BidderTAdvertisingBlis  BidderName = "tadvertising_blis"
 	BidderTappx             BidderName = "tappx"
 	BidderTargetVideo       BidderName = "targetVideo"
 	BidderTeads             BidderName = "teads"
+	BidderTeal              BidderName = "teal"
 	BidderTelaria           BidderName = "telaria"
 	BidderTeqBlaze          BidderName = "teqblaze"
 	BidderTheadx            BidderName = "theadx"
