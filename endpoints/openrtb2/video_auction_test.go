@@ -813,7 +813,7 @@ func TestHandleError(t *testing.T) {
 			giveErrors: []error{
 				&errortypes.AccountDisabled{},
 			},
-			wantCode:          503,
+			wantCode:          http.StatusForbidden,
 			wantMetricsStatus: metrics.RequestStatusBlockedApp,
 		},
 		{
@@ -821,7 +821,7 @@ func TestHandleError(t *testing.T) {
 			giveErrors: []error{
 				&errortypes.BlockedApp{},
 			},
-			wantCode:          503,
+			wantCode:          http.StatusForbidden,
 			wantMetricsStatus: metrics.RequestStatusBlockedApp,
 		},
 		{
