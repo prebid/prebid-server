@@ -169,12 +169,19 @@ type PropertyRegistryConfig struct {
 }
 
 // ProviderConfig describes a single downstream TMP provider (identity agent,
-// context agent, or both).
+// context agent, or both). At least one of IdentityURL or ContextURL MUST
+// be set — the two fields are independently optional but not both empty;
+// validated() rejects an all-empty pair.
 type ProviderConfig struct {
 	Name string `json:"name"`
-	// IdentityURL, if set, receives IdentityMatch requests.
+	// IdentityURL is the provider's /identity endpoint. Empty means this
+	// provider does not serve identity — the router skips its identity
+	// call and any offers pass through the eligibility gate unfiltered.
 	IdentityURL string `json:"identity_url"`
-	// ContextURL, if set, receives ContextMatch requests.
+	// ContextURL is the provider's /context endpoint. Empty means this
+	// provider does not serve context — the router does not fetch offers
+	// from it, and its identity eligibility (if configured) contributes
+	// nothing on its own.
 	ContextURL string `json:"context_url"`
 	// TimeoutMs overrides the module-level timeout for this provider. Optional.
 	TimeoutMs int `json:"timeout_ms"`
