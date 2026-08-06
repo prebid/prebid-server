@@ -8,7 +8,7 @@ require (
 	github.com/IABTechLab/adscert v0.34.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/WURFL/golang-wurfl v1.30.3
-	github.com/adcontextprotocol/adcp-go v0.0.0-20260703103742-c8f541ba6888
+	github.com/adcontextprotocol/adcp-go/tmproto v0.1.0
 	github.com/alitto/pond v1.8.3
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/benbjohnson/clock v1.3.0
@@ -49,10 +49,12 @@ require (
 )
 
 require (
+	github.com/adcontextprotocol/adcp-go/urlcanon v0.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
