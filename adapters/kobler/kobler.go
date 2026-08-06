@@ -1,7 +1,6 @@
 package kobler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
@@ -59,7 +58,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		ext.Kobler = &KoblerRequestExt{
 			reqInfo.PageViewId,
 		}
-		jsonExt, err := json.Marshal(ext)
+		jsonExt, err := jsonutil.Marshal(ext)
 		if err != nil {
 			errors = append(errors, err)
 			return nil, errors
