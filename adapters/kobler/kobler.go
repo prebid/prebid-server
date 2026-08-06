@@ -33,10 +33,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-type RequestExt struct {
-	Kobler *KoblerRequestExt `json:"kobler,omitempty"`
-}
-
 type KoblerRequestExt struct {
 	PageViewId string `json:"page_view_id,omitempty"`
 }
@@ -54,11 +50,24 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 	}
 
 	if reqInfo.PageViewId != "" {
-		var ext RequestExt
-		ext.Kobler = &KoblerRequestExt{
-			reqInfo.PageViewId,
+		extMap := make(map[string]jsonutil.RawMessage)
+		if len(sanitizedRequest.Ext) > 0 {
+			if err := jsonutil.Unmarshal(sanitizedRequest.Ext, &extMap); err != nil {
+				errors = append(errors, err)
+				return nil, errors
+			}
 		}
-		jsonExt, err := jsonutil.Marshal(ext)
+
+		koblerExt, err := jsonutil.Marshal(&KoblerRequestExt{
+			reqInfo.PageViewId,
+		})
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+		extMap["kobler"] = koblerExt
+
+		jsonExt, err := jsonutil.Marshal(extMap)
 		if err != nil {
 			errors = append(errors, err)
 			return nil, errors
