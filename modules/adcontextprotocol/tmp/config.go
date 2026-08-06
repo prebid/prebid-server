@@ -129,13 +129,35 @@ type SigningConfig struct {
 
 // PropertyRegistryConfig configures the domain → property_rid resolver.
 type PropertyRegistryConfig struct {
-	// Endpoint is the resolve endpoint of the property registry, e.g.
-	// https://agenticadvertising.org/api/properties/resolve. Domain is
-	// appended as ?domain=… on GET.
+	// Endpoint is the POST resolve endpoint of the property catalog, e.g.
+	// https://agenticadvertising.org/api/registry/resolve. The module sends
+	// `{identifiers: [{type, value}], provenance: {...}, mode}` and parses
+	// resolved[].property_rid out of the response. Default:
+	// https://agenticadvertising.org/api/registry/resolve.
 	Endpoint string `json:"endpoint"`
 	// AuthBearer is the optional bearer token sent as Authorization: Bearer …
-	// on registry calls. May be substituted from env in deployment YAML.
+	// on registry calls. Required for Mode="resolve" (contributes and
+	// creates missing catalog entries); optional for Mode="lookup" (pure
+	// read). May be substituted from env in deployment YAML.
 	AuthBearer string `json:"auth_bearer"`
+	// Mode selects the resolve verb: "resolve" (default; requires
+	// AuthBearer; contributes new identifiers to the catalog) or "lookup"
+	// (pure read; no auth needed; returns null property_rid for unknown
+	// identifiers). Publishers running Prebid Server against a shared
+	// catalog SHOULD use "resolve" so their inventory lights up on the
+	// catalog even when a domain is new.
+	Mode string `json:"mode"`
+	// ProvenanceType is the FactProvenance.type envelope on every request.
+	// Enum, from adcp catalog-openapi.ts: agency_allowlist,
+	// publisher_declaration, impression_log, ssp_inventory, deal_history,
+	// data_partner, member_assertion. `crawl` is reserved for server-side
+	// pipelines and rejected by the registry. Default: member_assertion —
+	// a Prebid Server operator resolving on behalf of their own member org.
+	ProvenanceType string `json:"provenance_type"`
+	// ProvenanceContext is an optional free-text annotation attached to
+	// FactProvenance.context (e.g. "prebid-server:staging"). Ignored when
+	// empty.
+	ProvenanceContext string `json:"provenance_context"`
 	// CacheTTLSeconds is how long a successful lookup is memoized. Default 3600.
 	CacheTTLSeconds int `json:"cache_ttl_seconds"`
 	// NegativeCacheTTLSeconds is how long a "not found" answer is memoized. Default 300.
@@ -277,7 +299,28 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 		}
 	}
 	if c.PropertyRegistry.Endpoint == "" {
-		return nil, errors.New("property_registry.endpoint is required")
+		c.PropertyRegistry.Endpoint = "https://agenticadvertising.org/api/registry/resolve"
+	}
+	switch c.PropertyRegistry.Mode {
+	case "":
+		c.PropertyRegistry.Mode = "resolve"
+	case "resolve", "lookup":
+		// ok
+	default:
+		return nil, fmt.Errorf("property_registry.mode %q must be one of resolve, lookup", c.PropertyRegistry.Mode)
+	}
+	if c.PropertyRegistry.Mode == "resolve" && c.PropertyRegistry.AuthBearer == "" {
+		return nil, errors.New("property_registry.auth_bearer is required when mode is resolve; use mode: lookup for the unauthenticated read")
+	}
+	if c.PropertyRegistry.ProvenanceType == "" {
+		c.PropertyRegistry.ProvenanceType = "member_assertion"
+	}
+	switch c.PropertyRegistry.ProvenanceType {
+	case "agency_allowlist", "publisher_declaration", "impression_log",
+		"ssp_inventory", "deal_history", "data_partner", "member_assertion":
+		// ok — enum from adcp catalog-openapi.ts FactProvenance.type
+	default:
+		return nil, fmt.Errorf("property_registry.provenance_type %q is not a valid adcp FactProvenance.type", c.PropertyRegistry.ProvenanceType)
 	}
 
 	if c.TimeoutMs <= 0 {

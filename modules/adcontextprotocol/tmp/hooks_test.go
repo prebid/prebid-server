@@ -28,14 +28,8 @@ import (
 func newHooksFixtureModule(t *testing.T) (*Module, func()) {
 	t.Helper()
 	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"property": map[string]any{
-				"property_rid":  "01916f3a-1234-7000-8000-000000000001",
-				"property_id":   "fixture",
-				"property_type": "website",
-				"domain":        r.URL.Query().Get("domain"),
-			},
-		})
+		domain := decodeResolveRequest(t, r)
+		_ = json.NewEncoder(w).Encode(resolvedShape("01916f3a-1234-7000-8000-000000000001", "website", domain))
 	}))
 	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -62,7 +56,7 @@ func newHooksFixtureModule(t *testing.T) (*Module, func()) {
 			KeyID:         "kid-1",
 			PrivateKeyPEM: genTestKey(t),
 		},
-		PropertyRegistry: PropertyRegistryConfig{Endpoint: registry.URL},
+		PropertyRegistry: PropertyRegistryConfig{Endpoint: registry.URL, Mode: "lookup"},
 		Providers: []ProviderConfig{{
 			Name:        "prov",
 			IdentityURL: provider.URL + "/identity",

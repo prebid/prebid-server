@@ -29,15 +29,8 @@ func newFixture(t *testing.T) *tmpFixture {
 	t.Helper()
 	f := &tmpFixture{}
 	f.Registry = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		domain := r.URL.Query().Get("domain")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"property": map[string]any{
-				"property_rid":  "01916f3a-1234-7000-8000-000000000001",
-				"property_id":   "fixture",
-				"property_type": "website",
-				"domain":        domain,
-			},
-		})
+		domain := decodeResolveRequest(t, r)
+		_ = json.NewEncoder(w).Encode(resolvedShape("01916f3a-1234-7000-8000-000000000001", "website", domain))
 	}))
 	f.Provider = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -74,7 +67,7 @@ func newFixture(t *testing.T) *tmpFixture {
 			KeyID:         "kid-1",
 			PrivateKeyPEM: genTestKey(t),
 		},
-		PropertyRegistry: PropertyRegistryConfig{Endpoint: f.Registry.URL},
+		PropertyRegistry: PropertyRegistryConfig{Endpoint: f.Registry.URL, Mode: "lookup"},
 		Providers: []ProviderConfig{{
 			Name:        "prov",
 			IdentityURL: f.Provider.URL + "/identity",
@@ -181,6 +174,8 @@ func TestFanOut_UnknownDomainReturnsEmpty(t *testing.T) {
 	}))
 	f.Module.registry = newPropertyResolver(PropertyRegistryConfig{
 		Endpoint:                f.Registry.URL,
+		Mode:                    "lookup",
+		ProvenanceType:          "member_assertion",
 		NegativeCacheTTLSeconds: 60,
 		CacheSize:               4,
 		TimeoutMs:               500,
