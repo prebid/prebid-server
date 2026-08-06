@@ -32,8 +32,20 @@ hooks:
           # your deployment YAML.
           private_key_pem: ${ADCP_TMP_SIGNING_KEY_PEM}
         property_registry:
-          endpoint: https://agenticadvertising.org/api/properties/resolve
-          auth_bearer: ${ADCP_REGISTRY_TOKEN}   # optional
+          # POST /api/registry/resolve — adcp catalog-openapi.ts
+          # ResolveRequest/ResolveResponse. The module sends
+          # {identifiers:[{type,value}], provenance, mode} and reads
+          # resolved[0].property_rid.
+          endpoint: https://agenticadvertising.org/api/registry/resolve
+          # "resolve" (default) contributes the identifier to the catalog
+          # and requires auth_bearer. "lookup" is a pure read with no auth
+          # and returns null property_rid for unknown identifiers.
+          mode: resolve
+          auth_bearer: ${ADCP_REGISTRY_TOKEN}
+          # FactProvenance.type — how the catalog attributes this request.
+          # See adcp catalog-openapi.ts FactProvenance for the enum.
+          provenance_type: member_assertion
+          provenance_context: prebid-server
           cache_ttl_seconds: 3600
           negative_cache_ttl_seconds: 300
           cache_size: 4096
@@ -130,7 +142,9 @@ hooks:
 | `seller_agent_url` | Publicly reachable URL identifying this Prebid Server deployment as a seller agent. Must appear as one of `authorized_agents[].url` in the publisher's `adagents.json` (compared under AdCP URL canonicalization). |
 | `signing.key_id` | Sent in `X-AdCP-Key-Id`. Verifiers use it to look up the matching Ed25519 public key. |
 | `signing.private_key_pem` | PEM-encoded PKCS#8 Ed25519 private key. |
-| `property_registry.endpoint` | Resolves `site.domain` / `app.bundle` → `property_rid` via a `GET ?domain=…` call. |
+| `property_registry.endpoint` | Resolves `site.domain` / `app.bundle` → `property_rid` via `POST /api/registry/resolve` (adcp `ResolveRequest`/`ResolveResponse`). Defaults to `https://agenticadvertising.org/api/registry/resolve` when omitted. |
+| `property_registry.mode` | `resolve` (default) contributes to the catalog and requires `auth_bearer`; `lookup` is an unauthenticated pure read. |
+| `property_registry.provenance_type` | Enum from adcp `FactProvenance.type`. Default `member_assertion`. `crawl` is reserved for server-side pipelines and rejected. |
 | `providers[].name` | Stable provider identifier (adcp `provider_id`). Appears verbatim in logs, metrics, and as the outer key of `tmpx_macro_mapping`. Charset matches the adcp spec: `^[A-Za-z0-9_]{1,64}$`. |
 | `providers[].identity_url` or `providers[].context_url` | At least one is required per provider. |
 | `providers[].tmpx_slots` | Optional. Ordered list of `slot_id`s the provider registered in adcp `provider-registration.json`. Required when the provider emits TMPX. The module drops any provider response whose emitted slot sequence is not a non-empty ordered prefix of this list. |
