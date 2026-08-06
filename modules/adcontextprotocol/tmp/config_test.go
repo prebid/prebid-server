@@ -117,14 +117,68 @@ func TestValidated_MaskingDefaultEIDList(t *testing.T) {
 func TestValidated_TmpxMacroMappingRejectsUnknownProvider(t *testing.T) {
 	cfg := validConfig(t)
 	cfg.TmpxMacroMapping = map[string]map[string]string{
-		"not-a-configured-provider": {"primary": "TMPX_1"},
+		"other_provider": {"primary": "TMPX_1"},
 	}
 	_, err := cfg.validated()
 	if err == nil {
 		t.Fatal("expected error when tmpx_macro_mapping references an unknown provider")
 	}
-	if !strings.Contains(err.Error(), "not-a-configured-provider") {
+	if !strings.Contains(err.Error(), "other_provider") {
 		t.Errorf("expected error to name the offending provider; got %v", err)
+	}
+}
+
+func TestValidated_ProviderNameRejectsSpecCharsetViolation(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].Name = "has-a-hyphen"
+	_, err := cfg.validated()
+	if err == nil {
+		t.Fatal("expected error when provider name uses a char outside the adcp provider_id charset")
+	}
+}
+
+func TestValidated_TmpxSlotsOverV1Cap(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].TmpxSlots = []string{"a", "b", "c"}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when tmpx_slots exceeds v1 cap")
+	}
+}
+
+func TestValidated_TmpxSlotIDCharsetEnforced(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].TmpxSlots = []string{"1_leading_digit"}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when a slot_id fails the adcp charset")
+	}
+}
+
+func TestValidated_TmpxSlotsRejectDuplicates(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].TmpxSlots = []string{"primary", "primary"}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when tmpx_slots has duplicates")
+	}
+}
+
+func TestValidated_TmpxMacroMappingRejectsSlotNotInRegistration(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].TmpxSlots = []string{"primary"}
+	cfg.TmpxMacroMapping = map[string]map[string]string{
+		"example": {"unregistered": "TMPX_X"},
+	}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when mapping references a slot_id the provider did not register")
+	}
+}
+
+func TestValidated_TmpxMacroMappingSlotIDCharsetEnforced(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TmpxMacroMapping = map[string]map[string]string{
+		"example": {"1_bad_slot": "TMPX_1"},
+	}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when mapping slot_id fails the adcp charset")
 	}
 }
 
