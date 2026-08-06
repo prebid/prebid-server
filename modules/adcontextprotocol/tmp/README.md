@@ -43,16 +43,29 @@ hooks:
             identity_url: https://tmp.example.com/identity
             context_url: https://tmp.example.com/context
             timeout_ms: 200
+            # `tmpx_slots` mirrors the provider's registered
+            # `tmpx_slots` list from adcp provider-registration.json.
+            # Order is significant: the module enforces the ordered-
+            # prefix invariant (adcp#5971) on incoming responses —
+            # any provider whose emitted `tmpx_chunks[].slot_id`
+            # sequence deviates (reordered, sparse, unregistered,
+            # over-cap) has its chunks dropped atomically. Required
+            # only when the provider emits TMPX. Capped at 2 per
+            # adcp v1.
+            tmpx_slots:
+              - primary
+              - secondary
         # Publisher-owned deployment configuration that resolves each
-        # provider's ordered TMPX chunks (provider-local {slot_id, value}
-        # pairs, per adcp publisher-tmpx-config.json) to local ad-server
-        # macro names on this Prebid Server surface. Outer key is the
-        # provider's `name` above; inner key is the provider-local
-        # `slot_id` the provider registered in `tmpx_slots`; value is the
-        # publisher-local destination (GAM key, VAST URL macro, DOOH
-        # play-log field). Providers absent from this map emit no TMPX
-        # targeting. Chunks with an unmapped slot cause the whole
-        # provider's chunks to be dropped for that impression
+        # provider's ordered TMPX chunks (provider-local {slot_id,
+        # value} pairs, per adcp publisher-tmpx-config.json) to local
+        # ad-server macro names on this Prebid Server surface. Outer
+        # key MUST match one of the `providers[].name` above (used as
+        # `provider_id` in the adcp spec); inner key MUST be a
+        # `slot_id` the provider declared in `tmpx_slots`; value is
+        # the publisher-local destination (GAM key, VAST URL macro,
+        # DOOH play-log field). Providers absent from this map emit
+        # no TMPX targeting. Chunks with an unmapped slot cause the
+        # whole provider's chunks to be dropped for that impression
         # (fail-closed).
         tmpx_macro_mapping:
           example:
@@ -118,9 +131,10 @@ hooks:
 | `signing.key_id` | Sent in `X-AdCP-Key-Id`. Verifiers use it to look up the matching Ed25519 public key. |
 | `signing.private_key_pem` | PEM-encoded PKCS#8 Ed25519 private key. |
 | `property_registry.endpoint` | Resolves `site.domain` / `app.bundle` → `property_rid` via a `GET ?domain=…` call. |
-| `providers[].name` | Stable provider identifier. Appears verbatim in logs, metrics, and as the outer key of `tmpx_macro_mapping`. Charset: `[a-z0-9][a-z0-9_-]{0,31}`. |
+| `providers[].name` | Stable provider identifier (adcp `provider_id`). Appears verbatim in logs, metrics, and as the outer key of `tmpx_macro_mapping`. Charset matches the adcp spec: `^[A-Za-z0-9_]{1,64}$`. |
 | `providers[].identity_url` or `providers[].context_url` | At least one is required per provider. |
-| `tmpx_macro_mapping` | Optional. Publisher-owned map of `provider_name → slot_id → ad-server macro name` used to route each provider's TMPX chunks. Omit to disable TMPX targeting. |
+| `providers[].tmpx_slots` | Optional. Ordered list of `slot_id`s the provider registered in adcp `provider-registration.json`. Required when the provider emits TMPX. The module drops any provider response whose emitted slot sequence is not a non-empty ordered prefix of this list. |
+| `tmpx_macro_mapping` | Optional. Publisher-owned map of `provider_id → slot_id → ad-server macro name` used to route each provider's TMPX chunks. Omit to disable TMPX targeting. Missing entries for a provider's registered slots produce a startup warning; unmapped slots seen at serve time fail closed. |
 
 ### Providers
 

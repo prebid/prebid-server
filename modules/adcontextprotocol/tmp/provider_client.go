@@ -3,6 +3,7 @@ package tmp
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,11 +59,48 @@ func (m *Module) callIdentity(ctx context.Context, p ProviderConfig, req *tmprot
 	if err != nil {
 		return nil, err
 	}
+	if forbidden := findForbiddenProviderResponseFields(body); forbidden != "" {
+		return nil, fmt.Errorf("identity response from %s carries forbidden provider-hop field %q; adcp provider-identity-match-response.json rejects router-hop and envelope-extension fields", p.Name, forbidden)
+	}
 	var resp tmproto.ProviderIdentityMatchResponse
 	if err := jsonutil.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("identity decode: %w", err)
 	}
 	return &resp, nil
+}
+
+// forbiddenProviderResponseFields enumerates the top-level fields the
+// provider→router shape MUST NOT carry per adcp
+// provider-identity-match-response.json's `not: {anyOf: [...]}` clause.
+// The router (this module) MUST reject any provider response that carries
+// any of these — they belong on the router→publisher hop only, or, for
+// `context` / `ext`, are explicitly forbidden to prevent envelope-level
+// data leakage across the identity privacy boundary.
+var forbiddenProviderResponseFields = []string{
+	"tmpx_providers",
+	"tmpx",
+	"tmpx_values",
+	"tmpx_macros",
+	"context",
+	"ext",
+}
+
+// findForbiddenProviderResponseFields returns the first top-level field
+// name present in the raw JSON body that the provider→router response
+// schema forbids, or "" when the body carries none. Uses a minimal
+// map[string]json.RawMessage decode so it costs a single pass and does
+// not require touching the strongly-typed response struct.
+func findForbiddenProviderResponseFields(body []byte) string {
+	var top map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(body, &top); err != nil {
+		return ""
+	}
+	for _, f := range forbiddenProviderResponseFields {
+		if _, ok := top[f]; ok {
+			return f
+		}
+	}
+	return ""
 }
 
 // doTMP sends a signed TMP request and returns the raw response body. A
