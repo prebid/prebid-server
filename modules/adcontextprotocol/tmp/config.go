@@ -12,10 +12,37 @@ import (
 
 // Config is the JSON configuration for the module. See README.md.
 type Config struct {
-	// SellerAgentURL identifies this Prebid Server deployment as a seller agent.
-	// MUST match one of the property's adagents.json authorized_agents[].url
-	// entries (compared with AdCP URL canonicalization). Same value for every
-	// user on a given placement — carries no user identity.
+	// SellerAgentURL identifies this Prebid Server deployment as a seller
+	// agent. The value is sent on every outbound context / identity
+	// request AND is folded into the Ed25519 signing preimage — so it is
+	// the receiving agent's handle on this deployment for both package
+	// evaluation and signature verification. Same value for every user
+	// on a given placement; carries no user identity.
+	//
+	// Operational contract — the same canonical URL MUST resolve in all
+	// three of these places, or the receiving agent has no way to
+	// verify us:
+	//
+	//   1. The publisher's adagents.json `authorized_agents[].url` for
+	//      every property served by this deployment (spec `agent_url`
+	//      per adcp docs/reference/url-canonicalization).
+	//   2. A row in the AdCP registry's `/api/registry/authorizations`
+	//      endpoint whose `agent_url` matches this value and whose
+	//      `signing_keys[]` carries the Ed25519 pubkey paired with
+	//      Signing.KeyID below (adcp-go tmproto.LazyAuthorizationKeyStore
+	//      queries `?agent_url=<this>` to fetch it).
+	//   3. This config field.
+	//
+	// All comparisons are AdCP URL canonicalization, not byte-equality
+	// (see adcp docs/reference/url-canonicalization and
+	// tmproto.NormalizeProviderEndpointURL) — case, default ports, and
+	// trailing-slash normalization are transparent, but path is
+	// significant, so e.g. `https://seller.example.com/` and
+	// `https://seller.example.com/agent` are different agents. A
+	// mismatch in any of the three surfaces yields a hard 401 at the
+	// receiving agent (ErrSignatureKeyUnknown), because seller_agent_url
+	// is bound into the signed input — a request that reports one URL
+	// but is signed under another cannot be verified.
 	SellerAgentURL string `json:"seller_agent_url"`
 
 	// PropertyType default when the registry does not return one. Optional.
