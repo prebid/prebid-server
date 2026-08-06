@@ -817,7 +817,7 @@ func TestHandleError(t *testing.T) {
 			wantMetricsStatus: metrics.RequestStatusBlockedApp,
 		},
 		{
-			description: "Blocked app - return 503 with blocked metrics status",
+			description: "Blocked app - return 403 with blocked metrics status",
 			giveErrors: []error{
 				&errortypes.BlockedApp{},
 			},
