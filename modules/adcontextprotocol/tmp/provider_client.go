@@ -37,7 +37,11 @@ func (m *Module) callContext(ctx context.Context, p ProviderConfig, req *tmproto
 // callIdentity signs and POSTs an IdentityMatch request to the provider's
 // identity endpoint. The wire request keeps the Country field, but signing
 // strips it via BuildIdentityMatchSigningInput's canonical form.
-func (m *Module) callIdentity(ctx context.Context, p ProviderConfig, req *tmproto.IdentityMatchRequest) (*tmproto.IdentityMatchResponse, error) {
+//
+// The provider→router hop returns ProviderIdentityMatchResponse (eligibility
+// plus provider-local TMPX chunks). This module IS the router — publisher-
+// facing shape reassembly happens locally via the TmpxMacroMapping config.
+func (m *Module) callIdentity(ctx context.Context, p ProviderConfig, req *tmproto.IdentityMatchRequest) (*tmproto.ProviderIdentityMatchResponse, error) {
 	epoch := tmproto.CurrentEpoch()
 	endpoint := tmproto.NormalizeProviderEndpointURL(p.IdentityURL)
 	sig, err := m.signer.SignIdentityMatch(req, endpoint, epoch)
@@ -54,7 +58,7 @@ func (m *Module) callIdentity(ctx context.Context, p ProviderConfig, req *tmprot
 	if err != nil {
 		return nil, err
 	}
-	var resp tmproto.IdentityMatchResponse
+	var resp tmproto.ProviderIdentityMatchResponse
 	if err := jsonutil.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("identity decode: %w", err)
 	}

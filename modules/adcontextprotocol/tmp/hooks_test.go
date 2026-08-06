@@ -46,7 +46,7 @@ func newHooksFixtureModule(t *testing.T) (*Module, func()) {
 				Offers:    []tmproto.Offer{{PackageID: "pkg-a"}},
 			})
 		case "/identity":
-			_ = json.NewEncoder(w).Encode(tmproto.IdentityMatchResponse{
+			_ = json.NewEncoder(w).Encode(tmproto.ProviderIdentityMatchResponse{
 				Type:               "identity_match_response",
 				RequestID:          "req",
 				EligiblePackageIDs: []string{"pkg-a"},

@@ -43,6 +43,21 @@ hooks:
             identity_url: https://tmp.example.com/identity
             context_url: https://tmp.example.com/context
             timeout_ms: 200
+        # Publisher-owned deployment configuration that resolves each
+        # provider's ordered TMPX chunks (provider-local {slot_id, value}
+        # pairs, per adcp publisher-tmpx-config.json) to local ad-server
+        # macro names on this Prebid Server surface. Outer key is the
+        # provider's `name` above; inner key is the provider-local
+        # `slot_id` the provider registered in `tmpx_slots`; value is the
+        # publisher-local destination (GAM key, VAST URL macro, DOOH
+        # play-log field). Providers absent from this map emit no TMPX
+        # targeting. Chunks with an unmapped slot cause the whole
+        # provider's chunks to be dropped for that impression
+        # (fail-closed).
+        tmpx_macro_mapping:
+          example:
+            primary: TMPX_1
+            secondary: TMPX_2
         timeout_ms: 300
         # Set to a positive value to jitter the second of a provider's context /
         # identity outbound calls by a random [0, N] ms, breaking timing
@@ -103,8 +118,9 @@ hooks:
 | `signing.key_id` | Sent in `X-AdCP-Key-Id`. Verifiers use it to look up the matching Ed25519 public key. |
 | `signing.private_key_pem` | PEM-encoded PKCS#8 Ed25519 private key. |
 | `property_registry.endpoint` | Resolves `site.domain` / `app.bundle` → `property_rid` via a `GET ?domain=…` call. |
-| `providers[].name` | Human-readable label; used as the prefix on emitted targeting keys. |
+| `providers[].name` | Stable provider identifier. Appears verbatim in logs, metrics, and as the outer key of `tmpx_macro_mapping`. Charset: `[a-z0-9][a-z0-9_-]{0,31}`. |
 | `providers[].identity_url` or `providers[].context_url` | At least one is required per provider. |
+| `tmpx_macro_mapping` | Optional. Publisher-owned map of `provider_name → slot_id → ad-server macro name` used to route each provider's TMPX chunks. Omit to disable TMPX targeting. |
 
 ### Providers
 
@@ -131,16 +147,31 @@ cache.
 
 ## Response surface
 
-Merged signals are written to the auction response `ext` under the configured
-`targeting_key` (default `adcp`):
+Merged targeting is written to the auction response `ext` under the configured
+`targeting_key` (default `adcp`) as a flat list of `key=value` strings. Four
+surfaces are covered per the adcp TMP spec:
+
+- **Package IDs** eligible under identity, comma-joined under
+  `package_targeting_key` (default `adcp_package_id`).
+- **Response-level context signals** — the identity-agent-neutral
+  `ContextMatchResponse.signals` map, one `key=value` per scalar entry.
+- **Per-offer creative macros** — `Offer.macros` for offers that survived
+  the identity eligibility gate.
+- **Identity TMPX chunks** resolved through `tmpx_macro_mapping`. Providers
+  emit `{slot_id, value}` pairs against their registered `tmpx_slots`; the
+  publisher's mapping decides the ad-server destination for each pair on
+  this surface. Chunks with unmapped slots are dropped atomically for that
+  provider (fail-closed).
 
 ```json
 {
   "ext": {
     "adcp": {
       "segments": [
-        "example_package=pkg-fall-2026",
-        "example_segment=auto_intender"
+        "adcp_package_id=pkg-fall-2026,pkg-holiday",
+        "iab_cat=IAB1",
+        "brand=Acme",
+        "TMPX_1=opaque-chunk-value"
       ]
     }
   }

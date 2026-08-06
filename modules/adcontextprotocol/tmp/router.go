@@ -19,7 +19,9 @@ type providerResult struct {
 	// Context is set when the context call succeeded, nil otherwise.
 	Context *tmproto.ContextMatchResponse
 	// Identity is set when the identity call succeeded, nil otherwise.
-	Identity *tmproto.IdentityMatchResponse
+	// This is the provider→router shape (eligibility + provider-local
+	// TmpxChunks), not the router→publisher shape.
+	Identity *tmproto.ProviderIdentityMatchResponse
 	// IdentityAttempted is true when the module actually issued an
 	// identity call for this provider (URL configured AND tokens
 	// present). Lets the merge distinguish "identity errored" (fail
@@ -241,16 +243,23 @@ func (m *Module) callProvider(
 //  2. ContextMatchResponse.Signals → raw keys (last-wins on collision
 //     across providers, with an emitted warn segment recording the loser).
 //  3. Offer.Macros (per-offer creative macros) → raw keys.
-//  4. IdentityMatchResponse.TmpxMacros[] → each TmpxMacro's own Name as
-//     the key, Value verbatim. Names are provider-namespaced upstream in
-//     the provider's registered tmpx_macros list; no transformation here.
+//  4. ProviderIdentityMatchResponse.TmpxChunks[] → each chunk resolved
+//     to a publisher-local ad-server macro via cfg.TmpxMacroMapping
+//     (keyed on provider.Name → slot_id → macro_name), emitted as
+//     macro_name=value. Provider→router carries `{slot_id, value}`
+//     pairs (opaque provider-local IDs); the publisher's deployment
+//     configuration owns the destination namespace. Chunks whose
+//     (provider, slot_id) are absent from the mapping are dropped
+//     atomically for that provider on that impression (fail closed),
+//     matching the router-conformance rule in adcp
+//     publisher-tmpx-config.json.
 //
 // Capped at cfg.MaxSegments and per-value length so a hostile provider
 // cannot bloat the bid response.
 //
 // Fail-closed on identity error: when a provider was asked to do identity
 // gating (URL configured + tokens present) and the call did not return a
-// response, we drop all its offers AND its TMPX macros. A hostile-or-flaky
+// response, we drop all its offers AND its TMPX chunks. A hostile-or-flaky
 // identity endpoint therefore cannot convert identity-gated packages into
 // unconditionally-served packages, and cannot inject a TMPX token into the
 // bid response by failing partway through.
@@ -329,17 +338,23 @@ func (m *Module) mergeSegments(results []providerResult) []string {
 			}
 		}
 
-		// Identity TMPX macros. Names are already provider-namespaced by the
-		// provider's registered tmpx_macros list (see adcp-go
-		// tmproto/types_gen.go ProviderRegistration.TmpxMacros), so no key
-		// transformation here — pass Name=Value verbatim to the ad server.
-		if r.Identity != nil {
-			for _, tm := range r.Identity.TmpxMacros {
-				if tm.Name == "" || tm.Value == "" {
-					continue
-				}
-				if !appendSeg(tm.Name + "=" + tm.Value) {
-					return out
+		// Identity TMPX chunks. The provider emits (slot_id, value)
+		// pairs against its registered tmpx_slots; the publisher-owned
+		// TmpxMacroMapping resolves (provider, slot_id) to the local
+		// ad-server macro name. Emit macro=value for every chunk with a
+		// mapping entry; drop this provider's chunks atomically when
+		// any chunk's slot is unmapped (fail-closed per adcp
+		// publisher-tmpx-config.json).
+		if r.Identity != nil && len(r.Identity.TmpxChunks) > 0 {
+			providerMap := m.cfg.TmpxMacroMapping[r.Name]
+			pairs, ok := resolveTmpxChunks(providerMap, r.Identity.TmpxChunks)
+			if !ok {
+				logger.Warnf("adcontextprotocol.tmp: dropping provider %q tmpx_chunks: mapping is missing an entry for one or more slot_ids", r.Name)
+			} else {
+				for _, kv := range pairs {
+					if !appendSeg(kv) {
+						return out
+					}
 				}
 			}
 		}
@@ -351,6 +366,28 @@ func (m *Module) mergeSegments(results []providerResult) []string {
 		}
 	}
 	return out
+}
+
+// resolveTmpxChunks maps a provider's ordered chunk sequence to
+// publisher-local "macro=value" segments via the publisher's
+// (slot_id → macro_name) table for that provider. Any chunk whose
+// slot_id is not mapped fails the whole provider closed — the provider's
+// chunks are dropped atomically. Empty values are skipped without
+// tripping the fail-closed path. Returns (pairs, ok=false) when any
+// slot is unmapped so the caller can log and drop.
+func resolveTmpxChunks(providerMap map[string]string, chunks []tmproto.TmpxChunk) ([]string, bool) {
+	pairs := make([]string, 0, len(chunks))
+	for _, ch := range chunks {
+		if ch.Value == "" {
+			continue
+		}
+		macro, ok := providerMap[ch.SlotID]
+		if !ok || macro == "" {
+			return nil, false
+		}
+		pairs = append(pairs, macro+"="+ch.Value)
+	}
+	return pairs, true
 }
 
 // stringifySignal accepts scalar signal values (string, bool, number)
@@ -380,7 +417,7 @@ func boundedSegment(s string, maxLen int) string {
 	return s[:maxLen]
 }
 
-func eligibilitySet(idResp *tmproto.IdentityMatchResponse) map[string]bool {
+func eligibilitySet(idResp *tmproto.ProviderIdentityMatchResponse) map[string]bool {
 	if idResp == nil {
 		return nil
 	}

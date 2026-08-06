@@ -66,11 +66,41 @@ type Config struct {
 	PackageTargetingKey string `json:"package_targeting_key"`
 
 	// AddToTargeting mirrors merged package IDs, context response signals,
-	// per-offer creative macros, and identity TMPX macros into
+	// per-offer creative macros, and identity TMPX chunks into
 	// prebid.targeting so downstream ad servers (GAM, VAST URL macros, DOOH
-	// play-log fields) can consume them. Keys are emitted as the agents
-	// return them — no provider-name prefixing.
+	// play-log fields) can consume them. Signal and offer-macro keys are
+	// emitted as the agents return them. Identity TMPX values are keyed on
+	// the publisher-local macro names resolved from TmpxMacroMapping —
+	// providers never name the destination.
 	AddToTargeting bool `json:"add_to_targeting"`
+
+	// TmpxMacroMapping is the publisher-owned deployment configuration that
+	// resolves each provider's ordered TMPX chunks to local ad-server macro
+	// names (or targeting keys, VAST URL substitutions, DOOH play-log
+	// fields) on this Prebid Server surface. Outer map key is the
+	// provider's Name in this module's Providers[] (used as `provider_id`
+	// in the adcp TMP spec); inner map key is the provider-local `slot_id`
+	// the provider registered in `tmpx_slots`; value is the ad-server
+	// destination the publisher trafficks against.
+	//
+	// The map is authored by the same operator who trafficks the
+	// corresponding ad-server line items; it never travels on the wire
+	// between identity provider and this module. This keeps macro naming a
+	// deployment concern rather than a protocol identifier: a hostile or
+	// misconfigured identity provider cannot pick a macro name the
+	// publisher did not intend.
+	//
+	// At serve time, the router iterates
+	// ProviderIdentityMatchResponse.tmpx_chunks[] for each provider and
+	// emits macro=value for every chunk whose slot_id is present in the
+	// inner map. A chunk whose (provider, slot_id) is absent causes the
+	// whole provider's chunks to be dropped atomically for that impression
+	// (fail-closed per adcp publisher-tmpx-config.json). Providers with no
+	// entry in the outer map produce no TMPX targeting on this surface.
+	//
+	// See docs/trusted-match/specification.mdx and publisher-tmpx-config.json
+	// in the adcontextprotocol/adcp repo for the wire-level model.
+	TmpxMacroMapping map[string]map[string]string `json:"tmpx_macro_mapping"`
 
 	// MaxSegments caps the total number of segments emitted onto the
 	// response ext, regardless of how many providers respond or how many
@@ -151,12 +181,12 @@ type DeviceMaskingConfig struct {
 	PreserveMobileIds bool `json:"preserve_mobile_ids"`
 }
 
-// providerNameRE constrains provider names so an operator cannot
-// accidentally name a provider "hb" (or similar) and have its emitted
-// segment keys collide with Prebid's own reserved targeting keys (e.g.
-// hb_pb, hb_adid). The prefix in emitted segments is provider name +
-// underscore; restricting to a lower-case identifier keeps the prefix
-// unambiguous.
+// providerNameRE constrains provider names to a subset of the adcp
+// provider_id charset (alphanumeric + underscore, up to 64 chars per the
+// spec) so the name can appear verbatim in logs, metrics, and the outer
+// key of TmpxMacroMapping without quoting or normalization mismatches.
+// Restricted to lower-case for operational uniformity within a single
+// deployment.
 var providerNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,31}$`)
 
 // validated returns a Config with defaults filled in, along with the parsed
@@ -242,6 +272,22 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 		}
 		if len(c.Masking.User.PreserveEids) == 0 {
 			c.Masking.User.PreserveEids = []string{"liveramp.com", "uidapi.com", "id5-sync.com"}
+		}
+	}
+	for providerID, slotMap := range c.TmpxMacroMapping {
+		if !seenNames[providerID] {
+			return nil, fmt.Errorf("tmpx_macro_mapping refers to provider %q that is not in providers[]", providerID)
+		}
+		if len(slotMap) == 0 {
+			return nil, fmt.Errorf("tmpx_macro_mapping[%q] is empty; omit the provider to disable its TMPX targeting", providerID)
+		}
+		for slotID, macro := range slotMap {
+			if slotID == "" {
+				return nil, fmt.Errorf("tmpx_macro_mapping[%q]: slot_id must be non-empty", providerID)
+			}
+			if macro == "" {
+				return nil, fmt.Errorf("tmpx_macro_mapping[%q][%q]: destination macro must be non-empty", providerID, slotID)
+			}
 		}
 	}
 	return priv, nil
