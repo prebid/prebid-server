@@ -113,3 +113,37 @@ func TestValidated_MaskingDefaultEIDList(t *testing.T) {
 		t.Fatal("expected default EID list to be populated when masking is enabled")
 	}
 }
+
+func TestValidated_TmpxMacroMappingRejectsUnknownProvider(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TmpxMacroMapping = map[string]map[string]string{
+		"not-a-configured-provider": {"primary": "TMPX_1"},
+	}
+	_, err := cfg.validated()
+	if err == nil {
+		t.Fatal("expected error when tmpx_macro_mapping references an unknown provider")
+	}
+	if !strings.Contains(err.Error(), "not-a-configured-provider") {
+		t.Errorf("expected error to name the offending provider; got %v", err)
+	}
+}
+
+func TestValidated_TmpxMacroMappingRejectsEmptyMacro(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TmpxMacroMapping = map[string]map[string]string{
+		"example": {"primary": ""},
+	}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when destination macro is empty")
+	}
+}
+
+func TestValidated_TmpxMacroMappingAcceptsValidEntry(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TmpxMacroMapping = map[string]map[string]string{
+		"example": {"primary": "TMPX_1", "secondary": "TMPX_2"},
+	}
+	if _, err := cfg.validated(); err != nil {
+		t.Errorf("expected valid config, got %v", err)
+	}
+}
