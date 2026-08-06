@@ -1,4 +1,4 @@
-package seedtag
+package eskimi
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderSeedtag, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderEskimi, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,24 +27,30 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderSeedtag, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderEskimi, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
 }
 
 var validParams = []string{
-	`{"adUnitId": "27604970"}`,
-	`{"publisherId": "abc123", "integrationType": "ronId"}`,
+	`{"placementId":625}`,
+	`{"placementId":625,"bidFloor":0.5,"bidFloorCur":"USD"}`,
+	`{"placementId":625,"bcat":["IAB1"],"badv":["bad.com"],"bapp":["com.bad.app"]}`,
+	`{"placementId":625,"battr":[1,2,17]}`,
 }
 
 var invalidParams = []string{
-	`{"adUnitId": 123}`,
-	`{"adUnitId": ""}`,
+	``,
+	`null`,
 	`{}`,
-	`{"publisherId": "abc123"}`,
-	`{"integrationType": "ronId"}`,
-	`{"publisherId": "", "integrationType": "ronId"}`,
-	`{"publisherId": "abc123", "integrationType": "unknown"}`,
-	`{"adUnitId": "27604970", "publisherId": "abc123", "integrationType": "ronId"}`,
+	`{"placementId":"625"}`,
+	`{"placementId":625.5}`,
+	`{"placementId":0}`,
+	`{"placementId":-1}`,
+	`{"bidFloor":0.5}`,
+	`{"placementId":625,"bcat":"IAB1"}`,
+	`{"placementId":625,"battr":[0]}`,
+	`{"placementId":625,"battr":[18]}`,
+	`{"placementId":625,"unknownField":"foo"}`,
 }
