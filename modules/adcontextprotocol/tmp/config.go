@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/adcontextprotocol/adcp-go/tmproto"
+	"github.com/prebid/prebid-server/v4/logger"
 )
 
 // Config is the JSON configuration for the module. See README.md.
@@ -155,6 +156,20 @@ type ProviderConfig struct {
 	ContextURL string `json:"context_url"`
 	// TimeoutMs overrides the module-level timeout for this provider. Optional.
 	TimeoutMs int `json:"timeout_ms"`
+
+	// TmpxSlots is the ordered list of provider-local slot IDs this
+	// provider registered in its `tmpx_slots` field per adcp
+	// provider-registration.json. The module uses it to enforce the
+	// ordered-prefix invariant on incoming responses (adcp#5971): a
+	// provider's emitted tmpx_chunks[].slot_id sequence MUST be a
+	// non-empty ordered prefix of this list; any other sequence
+	// (reordered, sparse, unregistered, over-cap) causes the whole
+	// provider's chunks to be dropped atomically for that impression.
+	//
+	// Required only when the provider will emit TMPX. Providers that do
+	// not populate tmpx_chunks omit this list. Cap of 2 slots in v1
+	// mirrors the schema's maxItems=2.
+	TmpxSlots []string `json:"tmpx_slots"`
 }
 
 // MaskingConfig mirrors the categories the previous RTD module exposed, so
@@ -181,13 +196,29 @@ type DeviceMaskingConfig struct {
 	PreserveMobileIds bool `json:"preserve_mobile_ids"`
 }
 
-// providerNameRE constrains provider names to a subset of the adcp
-// provider_id charset (alphanumeric + underscore, up to 64 chars per the
-// spec) so the name can appear verbatim in logs, metrics, and the outer
-// key of TmpxMacroMapping without quoting or normalization mismatches.
-// Restricted to lower-case for operational uniformity within a single
-// deployment.
-var providerNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,31}$`)
+// providerNameRE matches the adcp `provider_id` charset from
+// provider-registration.json (`^[A-Za-z0-9_]+$`, 1–64 chars). The name
+// appears verbatim in logs, metrics, and as the outer key of
+// TmpxMacroMapping — matching the spec charset avoids quoting or
+// normalization mismatches when the same identifier flows across
+// registration and mapping.
+var providerNameRE = regexp.MustCompile(`^[A-Za-z0-9_]{1,64}$`)
+
+// tmpxSlotIDRE matches the adcp `slot_id` charset from tmpx-chunk.json
+// (`^[a-zA-Z][a-zA-Z0-9_]*$`, 1–64 chars). Applied to both provider
+// TmpxSlots entries and TmpxMacroMapping inner keys.
+var tmpxSlotIDRE = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
+
+// tmpxMaxSlots mirrors the v1 slot cap from provider-registration.json
+// and tmpx-chunk-derived response schemas.
+const tmpxMaxSlots = 2
+
+// tmpxMaxSlotIDLen mirrors the schema's `slot_id` maxLength.
+const tmpxMaxSlotIDLen = 64
+
+// tmpxMaxMacroLen mirrors publisher-tmpx-config.json's inner-value
+// maxLength for ad-server destination strings.
+const tmpxMaxMacroLen = 128
 
 // validated returns a Config with defaults filled in, along with the parsed
 // Ed25519 private key. Invalid configuration is rejected here rather than at
@@ -216,7 +247,7 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 			return nil, fmt.Errorf("providers[%d].name is required", i)
 		}
 		if !providerNameRE.MatchString(p.Name) {
-			return nil, fmt.Errorf("providers[%d].name %q must match %s (lowercase letters, digits, underscore, hyphen; up to 32 chars)", i, p.Name, providerNameRE)
+			return nil, fmt.Errorf("providers[%d].name %q must match adcp provider_id charset %s", i, p.Name, providerNameRE)
 		}
 		if seenNames[p.Name] {
 			return nil, fmt.Errorf("providers[%d].name %q is duplicated", i, p.Name)
@@ -224,6 +255,25 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 		seenNames[p.Name] = true
 		if p.IdentityURL == "" && p.ContextURL == "" {
 			return nil, fmt.Errorf("providers[%d] (%s): at least one of identity_url or context_url is required", i, p.Name)
+		}
+		if len(p.TmpxSlots) > tmpxMaxSlots {
+			return nil, fmt.Errorf("providers[%d] (%s): tmpx_slots holds %d entries; adcp v1 caps registered slots at %d", i, p.Name, len(p.TmpxSlots), tmpxMaxSlots)
+		}
+		seenSlots := make(map[string]bool, len(p.TmpxSlots))
+		for j, slotID := range p.TmpxSlots {
+			if slotID == "" {
+				return nil, fmt.Errorf("providers[%d] (%s): tmpx_slots[%d] must be non-empty", i, p.Name, j)
+			}
+			if len(slotID) > tmpxMaxSlotIDLen {
+				return nil, fmt.Errorf("providers[%d] (%s): tmpx_slots[%d] %q exceeds %d chars", i, p.Name, j, slotID, tmpxMaxSlotIDLen)
+			}
+			if !tmpxSlotIDRE.MatchString(slotID) {
+				return nil, fmt.Errorf("providers[%d] (%s): tmpx_slots[%d] %q must match adcp slot_id charset %s", i, p.Name, j, slotID, tmpxSlotIDRE)
+			}
+			if seenSlots[slotID] {
+				return nil, fmt.Errorf("providers[%d] (%s): tmpx_slots[%d] %q is duplicated (schema requires uniqueItems)", i, p.Name, j, slotID)
+			}
+			seenSlots[slotID] = true
 		}
 	}
 	if c.PropertyRegistry.Endpoint == "" {
@@ -274,21 +324,66 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 			c.Masking.User.PreserveEids = []string{"liveramp.com", "uidapi.com", "id5-sync.com"}
 		}
 	}
+	providerSlots := make(map[string]map[string]bool, len(c.Providers))
+	for i := range c.Providers {
+		p := &c.Providers[i]
+		set := make(map[string]bool, len(p.TmpxSlots))
+		for _, s := range p.TmpxSlots {
+			set[s] = true
+		}
+		providerSlots[p.Name] = set
+	}
 	for providerID, slotMap := range c.TmpxMacroMapping {
+		if !providerNameRE.MatchString(providerID) {
+			return nil, fmt.Errorf("tmpx_macro_mapping key %q must match adcp provider_id charset %s", providerID, providerNameRE)
+		}
 		if !seenNames[providerID] {
 			return nil, fmt.Errorf("tmpx_macro_mapping refers to provider %q that is not in providers[]", providerID)
 		}
 		if len(slotMap) == 0 {
 			return nil, fmt.Errorf("tmpx_macro_mapping[%q] is empty; omit the provider to disable its TMPX targeting", providerID)
 		}
+		if len(slotMap) > tmpxMaxSlots {
+			return nil, fmt.Errorf("tmpx_macro_mapping[%q] holds %d entries; adcp v1 caps slots at %d", providerID, len(slotMap), tmpxMaxSlots)
+		}
+		registered := providerSlots[providerID]
 		for slotID, macro := range slotMap {
-			if slotID == "" {
-				return nil, fmt.Errorf("tmpx_macro_mapping[%q]: slot_id must be non-empty", providerID)
+			if !tmpxSlotIDRE.MatchString(slotID) {
+				return nil, fmt.Errorf("tmpx_macro_mapping[%q]: slot_id %q must match adcp slot_id charset %s", providerID, slotID, tmpxSlotIDRE)
+			}
+			if len(slotID) > tmpxMaxSlotIDLen {
+				return nil, fmt.Errorf("tmpx_macro_mapping[%q]: slot_id %q exceeds %d chars", providerID, slotID, tmpxMaxSlotIDLen)
 			}
 			if macro == "" {
 				return nil, fmt.Errorf("tmpx_macro_mapping[%q][%q]: destination macro must be non-empty", providerID, slotID)
 			}
+			if len(macro) > tmpxMaxMacroLen {
+				return nil, fmt.Errorf("tmpx_macro_mapping[%q][%q]: destination macro exceeds %d chars", providerID, slotID, tmpxMaxMacroLen)
+			}
+			if len(registered) > 0 && !registered[slotID] {
+				return nil, fmt.Errorf("tmpx_macro_mapping[%q][%q] references a slot_id not in provider %q tmpx_slots %v", providerID, slotID, providerID, c.providerSlotList(providerID))
+			}
+		}
+		if len(registered) > 0 {
+			for slotID := range registered {
+				if _, ok := slotMap[slotID]; !ok {
+					logger.Warnf("adcontextprotocol.tmp: tmpx_macro_mapping[%q] has no entry for registered slot_id %q; that slot will fail closed at serve time", providerID, slotID)
+				}
+			}
 		}
 	}
 	return priv, nil
+}
+
+// providerSlotList returns the ordered tmpx_slots list for a provider by
+// name, or nil when the provider is not configured. Used only for error
+// messages so operators see the registered list next to the offending
+// mapping entry.
+func (c *Config) providerSlotList(name string) []string {
+	for i := range c.Providers {
+		if c.Providers[i].Name == name {
+			return c.Providers[i].TmpxSlots
+		}
+	}
+	return nil
 }

@@ -338,22 +338,39 @@ func (m *Module) mergeSegments(results []providerResult) []string {
 			}
 		}
 
-		// Identity TMPX chunks. The provider emits (slot_id, value)
-		// pairs against its registered tmpx_slots; the publisher-owned
-		// TmpxMacroMapping resolves (provider, slot_id) to the local
-		// ad-server macro name. Emit macro=value for every chunk with a
-		// mapping entry; drop this provider's chunks atomically when
-		// any chunk's slot is unmapped (fail-closed per adcp
-		// publisher-tmpx-config.json).
+		// Identity TMPX chunks. Two spec MUSTs apply here:
+		//
+		//   1. Ordered-prefix slot contract (adcp#5971,
+		//      provider-identity-match-response.json): the provider's
+		//      emitted slot_id sequence MUST be a non-empty ordered
+		//      prefix of its registered tmpx_slots list. Any deviation
+		//      (empty, reordered, sparse, unregistered, over-cap, or
+		//      duplicate) drops the provider's chunks atomically.
+		//
+		//   2. Publisher-owned destination mapping
+		//      (publisher-tmpx-config.json): each surviving chunk's
+		//      (provider, slot_id) MUST resolve through TmpxMacroMapping
+		//      to a publisher-local ad-server destination. Any unmapped
+		//      slot fails the whole provider closed on this impression.
+		//
+		// Both are enforced together: if either check fails, the whole
+		// provider's chunks are dropped. Other providers on the same
+		// response are unaffected.
 		if r.Identity != nil && len(r.Identity.TmpxChunks) > 0 {
-			providerMap := m.cfg.TmpxMacroMapping[r.Name]
-			pairs, ok := resolveTmpxChunks(providerMap, r.Identity.TmpxChunks)
-			if !ok {
-				logger.Warnf("adcontextprotocol.tmp: dropping provider %q tmpx_chunks: mapping is missing an entry for one or more slot_ids", r.Name)
+			registered := m.providerTmpxSlots(r.Name)
+			if !enforceProviderSlotContract(registered, r.Identity.TmpxChunks) {
+				emitted := chunkSlotIDs(r.Identity.TmpxChunks)
+				logger.Warnf("adcontextprotocol.tmp: dropping provider %q tmpx_chunks: emitted slot sequence %v is not an ordered prefix of registered slots %v", r.Name, emitted, registered)
 			} else {
-				for _, kv := range pairs {
-					if !appendSeg(kv) {
-						return out
+				providerMap := m.cfg.TmpxMacroMapping[r.Name]
+				pairs, ok := resolveTmpxChunks(providerMap, r.Identity.TmpxChunks)
+				if !ok {
+					logger.Warnf("adcontextprotocol.tmp: dropping provider %q tmpx_chunks: publisher tmpx_macro_mapping is missing an entry for one or more slot_ids or a chunk carried an empty value", r.Name)
+				} else {
+					for _, kv := range pairs {
+						if !appendSeg(kv) {
+							return out
+						}
 					}
 				}
 			}
@@ -371,15 +388,16 @@ func (m *Module) mergeSegments(results []providerResult) []string {
 // resolveTmpxChunks maps a provider's ordered chunk sequence to
 // publisher-local "macro=value" segments via the publisher's
 // (slot_id → macro_name) table for that provider. Any chunk whose
-// slot_id is not mapped fails the whole provider closed — the provider's
-// chunks are dropped atomically. Empty values are skipped without
-// tripping the fail-closed path. Returns (pairs, ok=false) when any
-// slot is unmapped so the caller can log and drop.
+// slot_id has no mapping entry, or whose value is empty
+// (tmpx-chunk.json marks value required with minLength 1), fails the
+// whole provider closed — the provider's chunks are dropped atomically
+// per publisher-tmpx-config.json. Returns (pairs, ok=false) so the
+// caller logs once and drops.
 func resolveTmpxChunks(providerMap map[string]string, chunks []tmproto.TmpxChunk) ([]string, bool) {
 	pairs := make([]string, 0, len(chunks))
 	for _, ch := range chunks {
 		if ch.Value == "" {
-			continue
+			return nil, false
 		}
 		macro, ok := providerMap[ch.SlotID]
 		if !ok || macro == "" {
@@ -388,6 +406,49 @@ func resolveTmpxChunks(providerMap map[string]string, chunks []tmproto.TmpxChunk
 		pairs = append(pairs, macro+"="+ch.Value)
 	}
 	return pairs, true
+}
+
+// enforceProviderSlotContract mirrors adcp-go router/slot_contract.go and
+// implements the router MUST from adcp#5971: a provider's emitted
+// tmpx_chunks[].slot_id sequence must be a non-empty ordered prefix of
+// that provider's registered tmpx_slots. Any other sequence (empty,
+// reordered, sparse, unregistered, longer than registered, duplicate)
+// returns false so the caller drops the provider's chunks atomically.
+func enforceProviderSlotContract(registered []string, chunks []tmproto.TmpxChunk) bool {
+	if len(chunks) == 0 || len(chunks) > len(registered) {
+		return false
+	}
+	for i, c := range chunks {
+		if registered[i] != c.SlotID {
+			return false
+		}
+	}
+	return true
+}
+
+// providerTmpxSlots returns the registered tmpx_slots list for the named
+// provider, or nil when the provider is not configured. Nil forces the
+// slot-contract check to fail — a provider that has emitted chunks
+// without any registered slots cannot satisfy the ordered-prefix
+// invariant.
+func (m *Module) providerTmpxSlots(name string) []string {
+	for i := range m.cfg.Providers {
+		if m.cfg.Providers[i].Name == name {
+			return m.cfg.Providers[i].TmpxSlots
+		}
+	}
+	return nil
+}
+
+// chunkSlotIDs extracts the emitted slot_id sequence for diagnostic
+// logging. Kept separate from enforceProviderSlotContract so the hot
+// path does not allocate when the contract holds.
+func chunkSlotIDs(chunks []tmproto.TmpxChunk) []string {
+	out := make([]string, len(chunks))
+	for i, c := range chunks {
+		out[i] = c.SlotID
+	}
+	return out
 }
 
 // stringifySignal accepts scalar signal values (string, bool, number)

@@ -238,6 +238,36 @@ func TestFanOut_ProviderDecodeErrorSurvives(t *testing.T) {
 	}
 }
 
+// A provider that returns a well-formed identity response but sneaks in
+// a router-hop field (`tmpx_providers`, `tmpx`, etc.) MUST be rejected —
+// adcp provider-identity-match-response.json's `not: {anyOf: [...]}`
+// clause is a schema-level MUST. The module surfaces this as a
+// provider-level error so the auction still completes.
+func TestFanOut_RejectsForbiddenRouterHopFieldOnProviderResponse(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+
+	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"type":"identity_match_response","request_id":"r","eligible_package_ids":["pkg-a"],"serve_window_sec":60,"tmpx":"leaked"}`))
+	}
+
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
+	if res == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if res.ErrCount != 1 {
+		t.Errorf("expected 1 provider with errors when identity response leaks a router-hop field; got %d", res.ErrCount)
+	}
+	// The context call should have succeeded — its offers stay in the merge,
+	// but eligibility is unknown so identity-attempted fails closed and no
+	// package segments emit.
+	for _, s := range res.Segments {
+		if strings.HasPrefix(s, "adcp_package_id") {
+			t.Errorf("identity-forbidden-field rejection must fail closed; got package segment %q", s)
+		}
+	}
+}
+
 // panickingRoundTripper panics inside RoundTrip. The fan-out's inner
 // goroutine must recover, record the error, and let the sibling call
 // complete instead of taking the process down.
@@ -403,6 +433,9 @@ func TestMergeSegments_TMPXAndOfferMacros(t *testing.T) {
 		PackageTargetingKey: "adcp_package_id",
 		MaxSegments:         64,
 		MaxSegmentValueLen:  256,
+		Providers: []ProviderConfig{
+			{Name: "prov", TmpxSlots: []string{"primary"}},
+		},
 		TmpxMacroMapping: map[string]map[string]string{
 			"prov": {"primary": "TMPX_1"},
 		},
@@ -526,6 +559,9 @@ func TestMergeSegments_TMPXUnmappedSlotDropsProvider(t *testing.T) {
 		PackageTargetingKey: "adcp_package_id",
 		MaxSegments:         64,
 		MaxSegmentValueLen:  256,
+		Providers: []ProviderConfig{
+			{Name: "prov", TmpxSlots: []string{"primary", "secondary"}},
+		},
 		TmpxMacroMapping: map[string]map[string]string{
 			"prov": {"primary": "TMPX_1"},
 		},
@@ -560,6 +596,109 @@ func TestMergeSegments_TMPXUnmappedSlotDropsProvider(t *testing.T) {
 	}
 }
 
+// TestEnforceProviderSlotContract covers the ordered-prefix invariant
+// from adcp#5971. Mirrors the reference implementation in adcp-go
+// router/slot_contract.go so any drift shows up here first.
+func TestEnforceProviderSlotContract(t *testing.T) {
+	slot := func(id string) tmproto.TmpxChunk { return tmproto.TmpxChunk{SlotID: id, Value: "v"} }
+	cases := []struct {
+		name       string
+		registered []string
+		chunks     []tmproto.TmpxChunk
+		want       bool
+	}{
+		{"exact-prefix-one", []string{"primary", "secondary"}, []tmproto.TmpxChunk{slot("primary")}, true},
+		{"exact-full", []string{"primary", "secondary"}, []tmproto.TmpxChunk{slot("primary"), slot("secondary")}, true},
+		{"empty-chunks", []string{"primary"}, nil, false},
+		{"no-registration", nil, []tmproto.TmpxChunk{slot("primary")}, false},
+		{"reordered", []string{"primary", "secondary"}, []tmproto.TmpxChunk{slot("secondary"), slot("primary")}, false},
+		{"sparse", []string{"primary", "secondary"}, []tmproto.TmpxChunk{slot("secondary")}, false},
+		{"unregistered", []string{"primary"}, []tmproto.TmpxChunk{slot("other")}, false},
+		{"over-cap", []string{"primary"}, []tmproto.TmpxChunk{slot("primary"), slot("primary")}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := enforceProviderSlotContract(tc.registered, tc.chunks); got != tc.want {
+				t.Errorf("enforceProviderSlotContract(%v, %v) = %v, want %v", tc.registered, tc.chunks, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestMergeSegments_TMPXReorderedSlotsDropped verifies the ordered-prefix
+// slot contract at the merge layer: even when every emitted slot_id is
+// mapped, an out-of-order sequence causes the whole provider's chunks
+// to be dropped. This closes the gap where a compromised provider could
+// hijack a peer's macro slot by reordering.
+func TestMergeSegments_TMPXReorderedSlotsDropped(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+		Providers: []ProviderConfig{
+			{Name: "prov", TmpxSlots: []string{"primary", "secondary"}},
+		},
+		TmpxMacroMapping: map[string]map[string]string{
+			"prov": {"primary": "TMPX_1", "secondary": "TMPX_2"},
+		},
+	}}
+	results := []providerResult{{
+		Name: "prov",
+		Context: &tmproto.ContextMatchResponse{
+			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
+		},
+		Identity: &tmproto.ProviderIdentityMatchResponse{
+			EligiblePackageIDs: []string{"pkg-a"},
+			TmpxChunks: []tmproto.TmpxChunk{
+				{SlotID: "secondary", Value: "v2"},
+				{SlotID: "primary", Value: "v1"},
+			},
+		},
+	}}
+	out := m.mergeSegments(results)
+	for _, s := range out {
+		if strings.HasPrefix(s, "TMPX_") {
+			t.Errorf("expected TMPX chunks dropped on out-of-order sequence; got %q", s)
+		}
+	}
+}
+
+// TestMergeSegments_TMPXEmptyValueFailsClosed verifies that a chunk with
+// empty value (tmpx-chunk.json marks value required, minLength 1) causes
+// the whole provider's chunks to drop, not just skip that chunk.
+func TestMergeSegments_TMPXEmptyValueFailsClosed(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+		Providers: []ProviderConfig{
+			{Name: "prov", TmpxSlots: []string{"primary", "secondary"}},
+		},
+		TmpxMacroMapping: map[string]map[string]string{
+			"prov": {"primary": "TMPX_1", "secondary": "TMPX_2"},
+		},
+	}}
+	results := []providerResult{{
+		Name: "prov",
+		Context: &tmproto.ContextMatchResponse{
+			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
+		},
+		Identity: &tmproto.ProviderIdentityMatchResponse{
+			EligiblePackageIDs: []string{"pkg-a"},
+			TmpxChunks: []tmproto.TmpxChunk{
+				{SlotID: "primary", Value: "v1"},
+				{SlotID: "secondary", Value: ""},
+			},
+		},
+	}}
+	out := m.mergeSegments(results)
+	for _, s := range out {
+		if strings.HasPrefix(s, "TMPX_") {
+			t.Errorf("expected TMPX chunks dropped when any value is empty; got %q", s)
+		}
+	}
+}
+
 // TestMergeSegments_TMPXProviderNotInMappingSkipped verifies a provider
 // absent from TmpxMacroMapping emits no TMPX targeting (the mapping is
 // per-surface; a newly onboarded provider not yet trafficked here is the
@@ -569,6 +708,9 @@ func TestMergeSegments_TMPXProviderNotInMappingSkipped(t *testing.T) {
 		PackageTargetingKey: "adcp_package_id",
 		MaxSegments:         64,
 		MaxSegmentValueLen:  256,
+		Providers: []ProviderConfig{
+			{Name: "prov", TmpxSlots: []string{"primary"}},
+		},
 	}}
 	results := []providerResult{{
 		Name: "prov",
