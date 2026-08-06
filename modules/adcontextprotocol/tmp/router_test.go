@@ -57,7 +57,7 @@ func newFixture(t *testing.T) *tmpFixture {
 				f.IdentHandler(w, r)
 				return
 			}
-			_ = json.NewEncoder(w).Encode(tmproto.IdentityMatchResponse{
+			_ = json.NewEncoder(w).Encode(tmproto.ProviderIdentityMatchResponse{
 				Type:               "identity_match_response",
 				RequestID:          "req",
 				EligiblePackageIDs: []string{"pkg-a"},
@@ -329,7 +329,7 @@ func TestFanOut_RandomizesContextIdentityOrder(t *testing.T) {
 	}
 	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
 		setFirst("identity")
-		_ = json.NewEncoder(w).Encode(tmproto.IdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
+		_ = json.NewEncoder(w).Encode(tmproto.ProviderIdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
 	}
 
 	const iterations = 40
@@ -381,7 +381,7 @@ func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
 	}
 	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(tmproto.IdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
+		_ = json.NewEncoder(w).Encode(tmproto.ProviderIdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
 	}
 
 	_ = f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
@@ -396,13 +396,16 @@ func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 // TestMergeSegments_TMPXAndOfferMacros verifies the four spec surfaces the
 // module surfaces onto prebid targeting: package IDs (comma-joined under
 // the configurable single key), per-offer creative macros, response-level
-// context signals, and identity TMPX macros — each with its raw key intact,
-// no provider-name prefix.
+// context signals, and identity TMPX chunks resolved through the
+// publisher-owned TmpxMacroMapping (provider→slot_id→ad-server macro).
 func TestMergeSegments_TMPXAndOfferMacros(t *testing.T) {
 	m := &Module{cfg: Config{
 		PackageTargetingKey: "adcp_package_id",
 		MaxSegments:         64,
 		MaxSegmentValueLen:  256,
+		TmpxMacroMapping: map[string]map[string]string{
+			"prov": {"primary": "TMPX_1"},
+		},
 	}}
 	results := []providerResult{{
 		Name: "prov",
@@ -413,10 +416,10 @@ func TestMergeSegments_TMPXAndOfferMacros(t *testing.T) {
 			},
 			Signals: map[string]any{"iab_cat": "sports"},
 		},
-		Identity: &tmproto.IdentityMatchResponse{
+		Identity: &tmproto.ProviderIdentityMatchResponse{
 			EligiblePackageIDs: []string{"pkg-a", "pkg-b"},
-			TmpxMacros: []tmproto.TmpxMacro{
-				{Name: "SCOPE3_TMPX_1", Value: "opaque-chunk-1"},
+			TmpxChunks: []tmproto.TmpxChunk{
+				{SlotID: "primary", Value: "opaque-chunk-1"},
 			},
 		},
 	}}
@@ -425,7 +428,7 @@ func TestMergeSegments_TMPXAndOfferMacros(t *testing.T) {
 	want := map[string]string{
 		"brand":           "Acme",
 		"iab_cat":         "sports",
-		"SCOPE3_TMPX_1":   "opaque-chunk-1",
+		"TMPX_1":          "opaque-chunk-1",
 		"adcp_package_id": "pkg-a,pkg-b",
 	}
 	for _, s := range out {
@@ -491,7 +494,7 @@ func TestMergeSegments_EmptyPackageKeyDisables(t *testing.T) {
 }
 
 // TestMergeSegments_FailClosedDropsTMPX confirms the fail-closed path also
-// suppresses TMPX macros. If the identity call errored the module has no
+// suppresses TMPX chunks. If the identity call errored the module has no
 // way to know if the token is authorized for the request, so the safe
 // answer is to drop it — otherwise a flaky identity endpoint could leak
 // a token onto an impression the eligibility gate would have blocked.
@@ -510,5 +513,79 @@ func TestMergeSegments_FailClosedDropsTMPX(t *testing.T) {
 	out := m.mergeSegments(results)
 	if len(out) != 0 {
 		t.Errorf("expected empty segments on identity-attempted-but-failed; got %v", out)
+	}
+}
+
+// TestMergeSegments_TMPXUnmappedSlotDropsProvider verifies the
+// publisher-tmpx-config.json fail-closed rule: a chunk whose (provider,
+// slot_id) is not present in TmpxMacroMapping causes the whole provider's
+// chunks to be dropped atomically. Package IDs and other targeting are
+// unaffected — the fail-closed scope is TMPX only.
+func TestMergeSegments_TMPXUnmappedSlotDropsProvider(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+		TmpxMacroMapping: map[string]map[string]string{
+			"prov": {"primary": "TMPX_1"},
+		},
+	}}
+	results := []providerResult{{
+		Name: "prov",
+		Context: &tmproto.ContextMatchResponse{
+			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
+		},
+		Identity: &tmproto.ProviderIdentityMatchResponse{
+			EligiblePackageIDs: []string{"pkg-a"},
+			TmpxChunks: []tmproto.TmpxChunk{
+				{SlotID: "primary", Value: "v1"},
+				{SlotID: "secondary", Value: "v2"},
+			},
+		},
+	}}
+	out := m.mergeSegments(results)
+	for _, s := range out {
+		if strings.HasPrefix(s, "TMPX_") {
+			t.Errorf("expected all TMPX chunks dropped when any slot is unmapped; got %q", s)
+		}
+	}
+	var pkgSeg string
+	for _, s := range out {
+		if strings.HasPrefix(s, "adcp_package_id=") {
+			pkgSeg = s
+		}
+	}
+	if pkgSeg == "" {
+		t.Errorf("package targeting should still emit; got %v", out)
+	}
+}
+
+// TestMergeSegments_TMPXProviderNotInMappingSkipped verifies a provider
+// absent from TmpxMacroMapping emits no TMPX targeting (the mapping is
+// per-surface; a newly onboarded provider not yet trafficked here is the
+// same case as an unmapped slot).
+func TestMergeSegments_TMPXProviderNotInMappingSkipped(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+	}}
+	results := []providerResult{{
+		Name: "prov",
+		Context: &tmproto.ContextMatchResponse{
+			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
+		},
+		Identity: &tmproto.ProviderIdentityMatchResponse{
+			EligiblePackageIDs: []string{"pkg-a"},
+			TmpxChunks: []tmproto.TmpxChunk{
+				{SlotID: "primary", Value: "v1"},
+			},
+		},
+	}}
+	out := m.mergeSegments(results)
+	for _, s := range out {
+		if strings.HasPrefix(s, "TMPX_") || strings.HasPrefix(s, "primary=") {
+			t.Errorf("provider with no mapping entry should emit no TMPX targeting; got %q", s)
+		}
 	}
 }
