@@ -34,7 +34,9 @@ func validConfig(t *testing.T) Config {
 			PrivateKeyPEM: genTestKey(t),
 		},
 		PropertyRegistry: PropertyRegistryConfig{
-			Endpoint: "https://agenticadvertising.org/api/properties/resolve",
+			Endpoint:   "https://agenticadvertising.org/api/registry/resolve",
+			Mode:       "resolve",
+			AuthBearer: "test-bearer",
 		},
 		Providers: []ProviderConfig{
 			{
@@ -62,6 +64,59 @@ func TestValidated_Defaults(t *testing.T) {
 	}
 	if cfg.PackageTargetingKey != "adcp_package_id" {
 		t.Errorf("PackageTargetingKey default = %q, want %q", cfg.PackageTargetingKey, "adcp_package_id")
+	}
+}
+
+func TestValidated_PropertyRegistryDefaults(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.PropertyRegistry.Endpoint = ""
+	cfg.PropertyRegistry.Mode = ""
+	cfg.PropertyRegistry.ProvenanceType = ""
+	if _, err := cfg.validated(); err != nil {
+		t.Fatalf("expected valid config, got %v", err)
+	}
+	if cfg.PropertyRegistry.Endpoint != "https://agenticadvertising.org/api/registry/resolve" {
+		t.Errorf("endpoint default = %q", cfg.PropertyRegistry.Endpoint)
+	}
+	if cfg.PropertyRegistry.Mode != "resolve" {
+		t.Errorf("mode default = %q, want resolve", cfg.PropertyRegistry.Mode)
+	}
+	if cfg.PropertyRegistry.ProvenanceType != "member_assertion" {
+		t.Errorf("provenance_type default = %q, want member_assertion", cfg.PropertyRegistry.ProvenanceType)
+	}
+}
+
+func TestValidated_PropertyRegistryRejectsBadMode(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.PropertyRegistry.Mode = "contribute"
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error on invalid mode")
+	}
+}
+
+func TestValidated_PropertyRegistryRejectsBadProvenance(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.PropertyRegistry.ProvenanceType = "crawl" // reserved for server-side pipelines
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error on reserved provenance type")
+	}
+}
+
+func TestValidated_PropertyRegistryResolveRequiresBearer(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.PropertyRegistry.Mode = "resolve"
+	cfg.PropertyRegistry.AuthBearer = ""
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when mode=resolve without bearer")
+	}
+}
+
+func TestValidated_PropertyRegistryLookupAllowsMissingBearer(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.PropertyRegistry.Mode = "lookup"
+	cfg.PropertyRegistry.AuthBearer = ""
+	if _, err := cfg.validated(); err != nil {
+		t.Fatalf("expected mode=lookup without bearer to be valid; got %v", err)
 	}
 }
 
