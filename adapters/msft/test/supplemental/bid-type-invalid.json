@@ -1,0 +1,126 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {},
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "displaymanagerver": "any-display-manager-version",
+        "ext": {
+          "bidder": {
+            "placement_id": 1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "app": {},
+          "ext": {
+            "appnexus": {
+              "hb_source": 5
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "displaymanagerver": "any-display-manager-version",
+              "ext": {
+                "appnexus": {
+                  "placement_id": 1
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "1",
+              "bid": [
+                {
+                  "id": "2",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adid": "3",
+                  "adm": "some-test-ad",
+                  "adomain": [
+                    "appnexus.com"
+                  ],
+                  "iurl": "http://nym1-ib.adnxs.com/cr?id=101",
+                  "cid": "4",
+                  "crid": "5",
+                  "h": 250,
+                  "w": 300,
+                  "ext": {
+                    "appnexus": {
+                      "brand_id": 1,
+                      "brand_category_id": 1,
+                      "auction_id": 123456789,
+                      "bid_ad_type": 2,
+                      "bidder_id": 2,
+                      "ranking_price": 0.000000,
+                      "deal_priority": 5
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "bidid": "any-bidid",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unrecognized bid_ad_type in response: 2",
+      "comparison": "literal"
+    }
+  ]
+}

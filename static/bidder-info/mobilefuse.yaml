@@ -12,6 +12,11 @@ capabilities:
       - banner
       - video
       - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
 endpointCompression: "GZIP"
 openrtb:
   version: 2.6

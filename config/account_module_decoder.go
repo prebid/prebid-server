@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 // AccountModulesHookFunc returns a mapstructure.DecodeHookFuncType that converts

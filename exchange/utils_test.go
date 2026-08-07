@@ -10,15 +10,15 @@ import (
 	gpplib "github.com/prebid/go-gpp"
 	"github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/firstpartydata"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/firstpartydata"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -2456,6 +2456,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 		gdprAllowedBidders     []openrtb_ext.BidderName
 		expectedBidders        []openrtb_ext.BidderName
 		expectedBlockedBidders []openrtb_ext.BidderName
+		expectedErrors         []error
 	}{
 		{
 			description:            "gdpr enforced, one request allowed and one request blocked",
@@ -2463,6 +2464,10 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 			expectedBlockedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderRubicon},
+			expectedErrors: []error{&errortypes.Warning{
+				Message:     `bidder "rubicon" blocked by privacy settings`,
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			}},
 		},
 		{
 			description:            "gdpr enforced, two requests allowed and no requests blocked",
@@ -2531,7 +2536,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			bidders = append(bidders, req.BidderName)
 		}
 
-		assert.Empty(t, errs, test.description)
+		assert.Equal(t, test.expectedErrors, errs, test.description)
 		assert.ElementsMatch(t, bidders, test.expectedBidders, test.description)
 
 		for _, blockedBidder := range test.expectedBlockedBidders {
@@ -3138,10 +3143,138 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 				User: &openrtb2.User{EIDs: test.expectedUserEids},
 			}
 
+			originalUser := reqWrapper.User
+
 			resultErr := removeUnpermissionedEids(&reqWrapper, bidder)
 			assert.NoError(t, resultErr, test.description)
 			assert.Equal(t, expectedRequest, reqWrapper.BidRequest)
+
+			eidsRemoved := len(test.userEids) > 0 && len(test.expectedUserEids) != len(test.userEids)
+			if eidsRemoved {
+				assert.NotSame(t, originalUser, reqWrapper.User, "User must be cloned when EIDs are removed to avoid corrupting shared state")
+			}
 		})
+	}
+}
+
+// TestCleanOpenRTBRequestsEidPermissionsRaceCondition is a regression test for issue #4792.
+//
+// cleanOpenRTBRequests splits a single request into per-bidder requests with a
+// shallow struct copy (bidRequestCopy := *req.BidRequest). Because User is a
+// pointer, every per-bidder copy used to share the same *openrtb2.User, and
+// removeUnpermissionedEids mutated User.EIDs in place. The result was that a
+// permitted bidder could intermittently lose its EID depending on Go map
+// iteration order (the order bidders are processed in the impsByBidder loop).
+//
+// This test runs cleanOpenRTBRequests many times so the map iteration order
+// varies, and asserts the permitted bidder ALWAYS retains the EID while
+// non-permitted bidders ALWAYS have it stripped.
+func TestCleanOpenRTBRequestsEidPermissionsRaceCondition(t *testing.T) {
+	const (
+		permittedBidder = "bidderA"
+		eidSource       = "source1"
+		iterations      = 10
+	)
+	permittedBidders := []string{permittedBidder}
+	deniedBidders := []string{"bidderB", "bidderC"}
+
+	buildAuctionRequest := func() AuctionRequest {
+		bidRequest := &openrtb2.BidRequest{
+			ID: "race-cond",
+			User: &openrtb2.User{
+				EIDs: []openrtb2.EID{
+					{Source: eidSource, UIDs: []openrtb2.UID{{ID: "shared-id", AType: 1}}},
+				},
+			},
+			Imp: []openrtb2.Imp{
+				{
+					ID:     "imp-1",
+					Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+					Ext: json.RawMessage(`{"prebid":{"bidder":{` +
+						`"bidderA":{"placementId":"1"},` +
+						`"bidderB":{"placementId":"2"},` +
+						`"bidderC":{"placementId":"3"}}}}`),
+				},
+			},
+		}
+
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
+		reqExt, err := reqWrapper.GetRequestExt()
+		require.NoError(t, err)
+		reqExt.SetPrebid(&openrtb_ext.ExtRequestPrebid{
+			Data: &openrtb_ext.ExtRequestPrebidData{
+				EidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
+					{Source: eidSource, Bidders: []string{permittedBidder}},
+				},
+			},
+		})
+		require.NoError(t, reqWrapper.RebuildRequest())
+
+		return AuctionRequest{
+			BidRequestWrapper: reqWrapper,
+			UserSyncs:         &emptyUsersync{},
+			TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}
+	}
+
+	gdprPermissionsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+		},
+	}.Builder
+
+	// Mark all bidders as ORTB 2.6 so their EIDs stay in user.eids instead of
+	// being down-converted into user.ext.eids, keeping the assertion simple.
+	bidderInfo := config.BidderInfos{
+		permittedBidder: {OpenRTB: &config.OpenRTBInfo{Version: "2.6"}},
+	}
+	for _, b := range deniedBidders {
+		bidderInfo[b] = config.BidderInfo{OpenRTB: &config.OpenRTBInfo{Version: "2.6"}}
+	}
+
+	eidSources := func(user *openrtb2.User) []string {
+		if user == nil {
+			return nil
+		}
+		sources := make([]string, 0, len(user.EIDs))
+		for _, eid := range user.EIDs {
+			sources = append(sources, eid.Source)
+		}
+		return sources
+	}
+
+	for i := 0; i < iterations; i++ {
+		reqSplitter := &requestSplitter{
+			bidderToSyncerKey: map[string]string{},
+			me:                &metrics.MetricsEngineMock{},
+			privacyConfig:     config.Privacy{},
+			gdprPermsBuilder:  gdprPermissionsBuilder,
+			hostSChainNode:    nil,
+			bidderInfo:        bidderInfo,
+		}
+
+		bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), buildAuctionRequest(), nil, map[string]float64{})
+		require.Empty(t, errs, "iteration %d returned errors", i)
+		require.Len(t, bidderRequests, len(permittedBidders)+len(deniedBidders), "iteration %d produced unexpected number of bidder requests", i)
+
+		seen := make(map[string]bool, len(bidderRequests))
+		for _, br := range bidderRequests {
+			bidder := string(br.BidderName)
+			seen[bidder] = true
+			sources := eidSources(br.BidRequest.User)
+			if bidder == permittedBidder {
+				assert.Contains(t, sources, eidSource,
+					"iteration %d: permitted bidder %q must retain EID %q (sources=%v)", i, bidder, eidSource, sources)
+			} else {
+				assert.NotContains(t, sources, eidSource,
+					"iteration %d: non-permitted bidder %q must not receive EID %q (sources=%v)", i, bidder, eidSource, sources)
+			}
+		}
+
+		assert.True(t, seen[permittedBidder], "iteration %d: permitted bidder %q missing from results", i, permittedBidder)
+		for _, b := range deniedBidders {
+			assert.True(t, seen[b], "iteration %d: bidder %q missing from results", i, b)
+		}
 	}
 }
 
@@ -5247,6 +5380,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 		expectedDevice    openrtb2.Device
 		expectedSource    openrtb2.Source
 		expectedImpExt    json.RawMessage
+		expectedErrors    []error
 	}{
 		{
 			name:              "fetch_bids_request_with_one_bidder_allowed",
@@ -5266,6 +5400,10 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			expectedUser:      expectedUserDefault,
 			expectedDevice:    expectedDeviceDefault,
 			expectedSource:    expectedSourceDefault,
+			expectedErrors: []error{&errortypes.Warning{
+				Message:     `bidder "appnexus" blocked by privacy settings`,
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			}},
 		},
 		{
 			name:              "transmit_ufpd_allowed",
@@ -5410,7 +5548,7 @@ func TestCleanOpenRTBRequestsActivities(t *testing.T) {
 			}
 
 			bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, map[string]float64{})
-			assert.Empty(t, errs)
+			assert.Equal(t, test.expectedErrors, errs)
 			assert.Len(t, bidderRequests, test.expectedReqNumber)
 
 			if test.expectedReqNumber == 1 {

@@ -13,20 +13,20 @@ import (
 	gppConstants "github.com/prebid/go-gpp/constants"
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/firstpartydata"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/privacy/ccpa"
-	"github.com/prebid/prebid-server/v3/privacy/lmt"
-	"github.com/prebid/prebid-server/v3/schain"
-	"github.com/prebid/prebid-server/v3/stored_responses"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/firstpartydata"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/privacy/ccpa"
+	"github.com/prebid/prebid-server/v4/privacy/lmt"
+	"github.com/prebid/prebid-server/v4/schain"
+	"github.com/prebid/prebid-server/v4/stored_responses"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 )
 
 var errInvalidRequestExt = errors.New("request.ext is invalid")
@@ -170,6 +170,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		reqWrapperCopy := req.CloneAndClearImpWrappers()
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
+
 		reqWrapperCopy.Imp = imps
 
 		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
@@ -203,6 +204,10 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 
 		// privacy blocking
 		if rs.isBidderBlockedByPrivacy(reqWrapperCopy, auctionReq.Activities, auctionPermissions, coreBidder, openrtb_ext.BidderName(bidder)) {
+			errs = append(errs, &errortypes.Warning{
+				Message:     fmt.Sprintf("bidder %q blocked by privacy settings", coreBidder),
+				WarningCode: errortypes.BidderBlockedByPrivacySettings,
+			})
 			continue
 		}
 
@@ -885,11 +890,14 @@ func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder str
 		return nil
 	}
 
+	// clone User before mutating EIDs to avoid corrupting the shared pointer
+	userCopy := *reqWrapper.User
 	if len(eidsAllowed) == 0 {
-		reqWrapper.User.EIDs = nil
+		userCopy.EIDs = nil
 	} else {
-		reqWrapper.User.EIDs = eidsAllowed
+		userCopy.EIDs = eidsAllowed
 	}
+	reqWrapper.User = &userCopy
 	return nil
 }
 

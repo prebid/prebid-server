@@ -7,18 +7,18 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 )
 
 func handleRawBidderResponseHook(
 	cfg config,
 	payload hookstage.RawBidderResponsePayload,
-	moduleCtx hookstage.ModuleContext,
+	moduleCtx *hookstage.ModuleContext,
 ) (result hookstage.HookResult[hookstage.RawBidderResponsePayload], err error) {
 	bidder := payload.Bidder
-	blockAttrsVal, ok := moduleCtx[bidder]
+	blockAttrsVal, ok := moduleCtx.Get(bidder)
 	if !ok {
 		// if there are no blocking attributes for this bidder just pass empty blockingAttributes for further processing
 		// other values from config must still be checked

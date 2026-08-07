@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Microsoft Adapter Params",
+  "description": "A schema which validates params accepted by the Microsoft adapter",
+  "type": "object",
+  "properties": {
+    "placement_id": {
+      "type": "integer",
+      "description": "Placement ID from Microsoft Monetize. You may use inv_code with member instead of a placement_id."
+    },
+    "member": {
+      "type": "integer",
+      "description": "Member ID from Microsoft Monetize. Must be used with inv_code."
+    },
+    "inv_code": {
+      "type": "string",
+      "description": "Inventory code from Microsoft Monetize. Must be used with member."
+    },
+    "allow_smaller_sizes": {
+      "type": "boolean",
+      "description": "If true, ads smaller than your ad unit's size array will be allowed to serve."
+    },
+    "use_pmt_rule": {
+      "type": "boolean",
+      "description": "If true, Microsoft Monetize will return net price after publisher payment rules are applied."
+    },
+    "keywords": {
+      "type": "string",
+      "description": "Comma-delimited key-value pairs (max 100). Must be enabled by a Microsoft Monetize account manager."
+    },
+    "traffic_source_code": {
+      "type": "string",
+      "description": "Specifies the third-party source of this impression."
+    },
+    "pubclick": {
+      "type": "string",
+      "description": "Specifies a publisher supplied url for third-party click tracking."
+    },
+    "ext_inv_code": {
+      "type": "string",
+      "description": "Specifies predefined value passed on the query string that can be used in reporting. The value must be entered into Microsoft Monetize before it is logged.."
+    },
+    "ext_imp_id": {
+      "type": "string",
+      "description": "Specifies the unique identifier of an externally generated auction."
+    },
+    "banner_frameworks": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description": "List of supported API frameworks for banner ads supported by the publisher."
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "placement_id"
+      ]
+    },
+    {
+      "required": [
+        "inv_code",
+        "member"
+      ]
+    }
+  ]
+}

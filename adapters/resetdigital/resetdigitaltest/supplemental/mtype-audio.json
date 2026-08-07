@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "audio": {
+          "mimes": ["audio/mp4"],
+          "protocols": [2, 3, 5, 6]
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": "test-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com?pid=test-placement",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "audio": {
+                "mimes": ["audio/mp4"],
+                "protocols": [2, 3, 5, 6]
+              },
+              "tagid": "test-placement",
+              "ext": {
+                "bidder": {
+                  "placement_id": "test-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1.8,
+                  "adm": "<VAST></VAST>",
+                  "crid": "test-creative-id",
+                  "mtype": 3
+                }
+              ],
+              "seat": "resetdigital"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 1.8,
+            "adm": "<VAST></VAST>",
+            "crid": "test-creative-id",
+            "mtype": 3
+          },
+          "type": "audio",
+          "seat": "resetdigital"
+        }
+      ]
+    }
+  ]
+}

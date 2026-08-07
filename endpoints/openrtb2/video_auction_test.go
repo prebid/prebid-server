@@ -11,21 +11,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v3/analytics/build"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	"github.com/prebid/prebid-server/v3/prebid_cache_client"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -1273,7 +1273,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		&mockAccountFetcher{data: mockVideoAccountData},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		metrics,
 		mockModule,
 		map[string]string{},
@@ -1324,7 +1324,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		&mockAccountFetcher{data: mockVideoAccountData},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
@@ -1349,7 +1349,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
@@ -1376,7 +1376,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
@@ -1547,4 +1547,38 @@ func TestVideoRequestValidationFailed(t *testing.T) {
 
 	assert.Equal(t, 500, recorder.Code, "Should catch error in request")
 	assert.Equal(t, "Critical error while running the video endpoint:  request.tmax must be nonnegative. Got -2", errorMessage, "Incorrect request validation message")
+}
+
+func TestVideoEndpointDisabled(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader("{}"))
+	recorder := httptest.NewRecorder()
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		ex,
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
+		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		&mockAccountFetcher{data: mockVideoAccountData},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: false}, MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		ex.cache,
+		regexp.MustCompile(`[<>]`),
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
+	}
+
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	assert.Equal(t, http.StatusNotImplemented, recorder.Code, "Expected 501 status code when video endpoint is disabled")
+	assert.Equal(t, "The video endpoint is deprecated and will be removed in 5.0. You may re-enable it via the host configuration setting video.enable_deprecated_endpoint", recorder.Body.String(), "Unexpected error message")
 }

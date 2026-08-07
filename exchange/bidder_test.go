@@ -21,24 +21,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/openrtb/v20/adcom1"
 	nativeRequests "github.com/prebid/openrtb/v20/native1/request"
 	nativeResponse "github.com/prebid/openrtb/v20/native1/response"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange/entities"
-	"github.com/prebid/prebid-server/v3/experiment/adscert"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
-	"github.com/prebid/prebid-server/v3/version"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
+	"github.com/prebid/prebid-server/v4/experiment/adscert"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -2213,7 +2213,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
 	} else {
-		bidder.doTimeoutNotification(tb, &adapters.RequestData{}, glog.Warningf)
+		bidder.doTimeoutNotification(tb, &adapters.RequestData{}, logger.Warnf)
 	}
 }
 
@@ -2268,7 +2268,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	}
 
 	var loggerBuffer bytes.Buffer
-	logger := func(msg string, args ...interface{}) {
+	logger := func(msg string, args ...any) {
 		loggerBuffer.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
 	}
 	tmaxAdjustments := &TmaxAdjustmentsPreprocessed{}
@@ -3389,7 +3389,7 @@ func TestDoRequestImplWithTmax(t *testing.T) {
 		me:     &metricsConfig.NilMetricsEngine{},
 		Client: server.Client(),
 	}
-	logger := func(msg string, args ...interface{}) {}
+	logger := func(msg string, args ...any) {}
 
 	tests := []struct {
 		ctxDeadline     time.Time
@@ -3464,7 +3464,7 @@ func TestDoRequestImplWithTmaxTimeout(t *testing.T) {
 		me:     metricsMock,
 		Client: server.Client(),
 	}
-	logger := func(msg string, args ...interface{}) {}
+	logger := func(msg string, args ...any) {}
 
 	tests := []struct {
 		ctxDeadline     time.Time

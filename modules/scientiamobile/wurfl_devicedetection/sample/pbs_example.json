@@ -1,0 +1,68 @@
+{
+  "adapters": [
+    {
+      "appnexus": {
+        "enabled": true
+      }
+    }
+  ],
+  "gdpr": {
+    "enabled": true,
+    "default_value": 0,
+    "timeouts_ms": {
+      "active_vendorlist_fetch": 900000
+    }
+  },
+  "hooks": {
+    "enabled": true,
+    "modules": {
+      "scientiamobile": {
+        "wurfl_devicedetection": {
+          "enabled": true,
+          "wurfl_file_path": "/path/to/wurfl.zip",
+          "wurfl_snapshot_url": "<wurfl_snapshot_url>",
+          "wurfl_cache_size": 200000,
+          "allowed_publisher_ids": [
+            "1",
+            "3"
+          ],
+          "ext_caps": true
+        }
+      }
+    },
+    "host_execution_plan": {
+      "endpoints": {
+        "/openrtb2/auction": {
+          "stages": {
+            "entrypoint": {
+              "groups": [
+                {
+                  "timeout": 10,
+                  "hook_sequence": [
+                    {
+                      "module_code": "scientiamobile.wurfl_devicedetection",
+                      "hook_impl_code": "scientiamobile-wurfl_devicedetection-entrypoint-hook"
+                    }
+                  ]
+                }
+              ]
+            },
+            "raw_auction_request": {
+              "groups": [
+                {
+                  "timeout": 10,
+                  "hook_sequence": [
+                    {
+                      "module_code": "scientiamobile.wurfl_devicedetection",
+                      "hook_impl_code": "scientiamobile-wurfl_devicedetection-raw-auction-request-hook"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

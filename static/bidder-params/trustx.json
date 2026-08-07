@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "TRUSTX Adapter Params",
+  "description": "A schema which validates params accepted by the TRUSTX adapter",
+  "type": "object",
+  "properties": {
+    "uid": {
+      "type": "integer",
+      "description": "The ad slot id"
+    },
+    "keywords": {
+      "type": "object",
+      "description": "Keywords"
+    }
+  }
+}

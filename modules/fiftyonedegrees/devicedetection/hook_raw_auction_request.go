@@ -3,11 +3,10 @@
 package devicedetection
 
 import (
-	"fmt"
 	"math"
 
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -37,7 +36,7 @@ func handleAuctionRequestHook(ctx hookstage.ModuleInvocationContext, deviceDetec
 
 			result, err := hydrateFields(deviceInfo, rawPayload)
 			if err != nil {
-				return rawPayload, hookexecution.NewFailure(fmt.Sprintf("error hydrating fields %s", err))
+				return rawPayload, hookexecution.NewFailure("error hydrating fields %s", err)
 			}
 
 			return result, nil
@@ -117,12 +116,22 @@ func setMissingFields(deviceObj map[string]any, fiftyOneDd *deviceInfo) map[stri
 			return val
 		},
 		"model": func() any {
+			if fiftyOneDd.HardwareNamePrefix != "" && fiftyOneDd.HardwareNamePrefix != ddUnknown {
+				return fiftyOneDd.HardwareNamePrefix
+			}
+			// Fallback: HardwareModel → HardwareName
 			newVal := fiftyOneDd.HardwareModel
 			if newVal == ddUnknown {
 				newVal = fiftyOneDd.HardwareName
 			}
 			if newVal != ddUnknown {
 				return newVal
+			}
+			return nil
+		},
+		"hwv": func() any {
+			if fiftyOneDd.HardwareNameVersion != "" && fiftyOneDd.HardwareNameVersion != ddUnknown {
+				return fiftyOneDd.HardwareNameVersion
 			}
 			return nil
 		},

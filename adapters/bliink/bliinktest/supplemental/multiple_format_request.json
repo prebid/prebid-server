@@ -117,7 +117,7 @@
       }
     }
   ],
-  "expectedBidResponses": [{"currency":"USD","bids":[]}],
+  "expectedBidResponses": [{"currency":"EUR","bids":[]}],
   "expectedMakeBidsErrors": [
     {
       "value": "unable to fetch mediaType in multi-format: some-impression-id",

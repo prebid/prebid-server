@@ -2,9 +2,9 @@ package rulesengine
 
 import (
 	"fmt"
-	hs "github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/rules"
+	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/rules"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

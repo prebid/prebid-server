@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/xeipuuv/gojsonschema"
 )
 

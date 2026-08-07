@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -35,9 +35,13 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{"accountId": "11233"}`,
 	`{"accountId": "11233", "zoneId": ""}`,
-	`{"accountId": "aaa", "zoneId": "us"}`,
-	`{"accountId": "aa", "accountId": "sin"}`,
+	`{"accountId": "11233", "zoneId": "host"}`,
+	`{"accountId": "aaa", "zoneId": "host.example.com"}`,
+	`{"accountId": "aa", "zoneId": "host-example.test"}`,
+	`{"accountId": "aaa", "zoneId": "Host.Example.com"}`,
+	`{"accountId": "aaa", "zoneId": "localhost"}`,
 }
 
 var invalidParams = []string{
@@ -50,4 +54,14 @@ var invalidParams = []string{
 	`{"accountId": null}`,
 	`{"zoneId": "aaa"}`,
 	`{"zoneId": null}`,
+	`{"accountId": "aaa", "zoneId": "/path"}`,
+	`{"accountId": "aaa", "zoneId": "//evil.com"}`,
+	`{"accountId": "aaa", "zoneId": "host/path"}`,
+	`{"accountId": "aaa", "zoneId": "host?query=1"}`,
+	`{"accountId": "aaa", "zoneId": "host#fragment"}`,
+	`{"accountId": "aaa", "zoneId": "user@host"}`,
+	`{"accountId": "aaa", "zoneId": "https://host.com"}`,
+	`{"accountId": "aaa", "zoneId": "host:notaport"}`,
+	`{"accountId": "aaa", "zoneId": "host:8080:extra"}`,
+	`{"accountId": "aaa", "zoneId": "host:8080"}`,
 }

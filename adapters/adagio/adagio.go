@@ -2,16 +2,15 @@ package adagio
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type adapter struct {
@@ -64,7 +63,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	if len(bidResponse.SeatBid) == 0 {
-		return nil, []error{errors.New("empty seatbid array")}
+		return nil, []error{&errortypes.BadServerResponse{Message: "empty seatbid array"}}
 	}
 
 	var errs []error
@@ -102,7 +101,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				Bid:      &bid,
 				BidMeta:  meta,
 				BidVideo: video,
-				Seat:     openrtb_ext.BidderName(seatBid.Seat),
 				BidType:  bidType,
 			}
 			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)

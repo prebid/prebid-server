@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

@@ -20,30 +20,30 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/currency"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/exchange/entities"
-	"github.com/prebid/prebid-server/v3/experiment/adscert"
-	"github.com/prebid/prebid-server/v3/gdpr"
-	"github.com/prebid/prebid-server/v3/hooks"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/hooks/hookstage"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
-	metricsConfig "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/ortb"
-	pbc "github.com/prebid/prebid-server/v3/prebid_cache_client"
-	"github.com/prebid/prebid-server/v3/privacy"
-	"github.com/prebid/prebid-server/v3/stored_requests"
-	"github.com/prebid/prebid-server/v3/stored_requests/backends/file_fetcher"
-	"github.com/prebid/prebid-server/v3/stored_responses"
-	"github.com/prebid/prebid-server/v3/usersync"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/currency"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
+	"github.com/prebid/prebid-server/v4/experiment/adscert"
+	"github.com/prebid/prebid-server/v4/gdpr"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConf "github.com/prebid/prebid-server/v4/metrics/config"
+	metricsConfig "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	pbc "github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/file_fetcher"
+	"github.com/prebid/prebid-server/v4/stored_responses"
+	"github.com/prebid/prebid-server/v4/usersync"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
@@ -73,7 +73,7 @@ func TestNewExchange(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
@@ -123,7 +123,7 @@ func TestCharacterEscape(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
@@ -1229,7 +1229,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
 	pbc := pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine)
@@ -1588,7 +1588,7 @@ func TestBidResponseCurrency(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
@@ -1744,7 +1744,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	e := NewExchange(adapters, nil, cfg, &mockRequestValidator{}, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}, macros.NewStringIndexBasedReplacer(), nil, nil).(*exchange)
@@ -1820,7 +1820,7 @@ func TestRaceIntegration(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
@@ -1928,7 +1928,7 @@ func TestPanicRecovery(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(&http.Client{}, cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
@@ -1994,7 +1994,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
@@ -4571,7 +4571,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 
 	adapters, _, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
-		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+		t.Fatalf("Error initializing adapters: %v", adaptersErr)
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
@@ -5996,7 +5996,7 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 		}, hookstage.MutationUpdate, "bidRequest", "site.domain",
 	)
 
-	mctx.ModuleContext = map[string]interface{}{"some-ctx": "some-ctx"}
+	mctx.ModuleContext.Set("some-ctx", "some-ctx")
 
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
 }

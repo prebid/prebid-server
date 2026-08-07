@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
-	metricsConf "github.com/prebid/prebid-server/v3/metrics/config"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConf "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
