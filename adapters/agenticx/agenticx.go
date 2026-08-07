@@ -52,12 +52,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, append(errs, fmt.Errorf("no valid impressions"))
 	}
 
-	request.Imp = validImps
+	// Copy to avoid mutating the shared *request seen by other bidders in this auction.
+	reqCopy := *request
+	reqCopy.Imp = validImps
+	// Intentional: any imp requesting test mode marks the whole outgoing request as test.
 	if setTestMode {
-		request.Test = 1
+		reqCopy.Test = 1
 	}
 
-	reqJSON, err := jsonutil.Marshal(request)
+	reqJSON, err := jsonutil.Marshal(reqCopy)
 	if err != nil {
 		return nil, append(errs, err)
 	}

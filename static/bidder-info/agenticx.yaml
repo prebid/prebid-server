@@ -14,6 +14,7 @@ capabilities:
       - video
       - audio
 userSync:
+  # ssp_site_id is a fixed ID Agenticx assigned to this PBS integration (not per-publisher).
   iframe:
     url: "https://ads.theagenticx.ai/sync?ssp_site_id=49964415&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&iframe_enabled=true&redir={{.RedirectURL}}"
     userMacro: "[UID]"
