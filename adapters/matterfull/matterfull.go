@@ -21,7 +21,7 @@ type adapter struct {
 }
 
 // MakeRequests prepares request information for prebid-server core
-func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	pub2impressions, impErrs := getImpressionsInfo(request.Imp)
@@ -32,7 +32,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 
 	result := make([]*adapters.RequestData, 0, len(pub2impressions))
 	for k, imps := range pub2impressions {
-		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
+		bidRequest, err := a.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -119,7 +119,7 @@ func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfull, error) {
 	return matterfullExt, nil
 }
 
-func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, imps)
 	reqJSON, err := jsonutil.Marshal(newBidRequest)
 	if err != nil {
@@ -131,7 +131,7 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.6")
 
-	url, err := adapter.buildEndpointURL(params)
+	url, err := a.buildEndpointURL(params)
 	if err != nil {
 		return nil, err
 	}
@@ -167,13 +167,13 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
-func (adapter *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfull) (string, error) {
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfull) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: url.QueryEscape(params.PublisherID)}
-	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
+	return macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 }
 
 // MakeBids translates Matterfull bid response to prebid-server specific format
-func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
