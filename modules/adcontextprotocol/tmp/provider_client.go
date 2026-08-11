@@ -14,10 +14,16 @@ import (
 
 // callContext signs and POSTs a ContextMatch request to the provider's context
 // endpoint. Signatures are computed per-provider-endpoint per the TMP spec.
+// When the module is configured with signing.disabled=true (m.signer==nil)
+// the request goes out unsigned — the doTMP path omits both signature
+// headers.
 func (m *Module) callContext(ctx context.Context, p ProviderConfig, req *tmproto.ContextMatchRequest) (*tmproto.ContextMatchResponse, error) {
-	epoch := tmproto.CurrentEpoch()
-	endpoint := tmproto.NormalizeProviderEndpointURL(p.ContextURL)
-	sig := m.signer.SignContextMatch(req, endpoint, epoch)
+	var sig string
+	if m.signer != nil {
+		epoch := tmproto.CurrentEpoch()
+		endpoint := tmproto.NormalizeProviderEndpointURL(p.ContextURL)
+		sig = m.signer.SignContextMatch(req, endpoint, epoch)
+	}
 
 	raw, err := jsonutil.Marshal(req)
 	if err != nil {
@@ -42,12 +48,19 @@ func (m *Module) callContext(ctx context.Context, p ProviderConfig, req *tmproto
 // The provider→router hop returns ProviderIdentityMatchResponse (eligibility
 // plus provider-local TMPX chunks). This module IS the router — publisher-
 // facing shape reassembly happens locally via the TmpxMacroMapping config.
+//
+// When m.signer==nil (signing.disabled=true) the request is sent unsigned;
+// doTMP omits the signature headers entirely.
 func (m *Module) callIdentity(ctx context.Context, p ProviderConfig, req *tmproto.IdentityMatchRequest) (*tmproto.ProviderIdentityMatchResponse, error) {
-	epoch := tmproto.CurrentEpoch()
-	endpoint := tmproto.NormalizeProviderEndpointURL(p.IdentityURL)
-	sig, err := m.signer.SignIdentityMatch(req, endpoint, epoch)
-	if err != nil {
-		return nil, fmt.Errorf("identity sign: %w", err)
+	var sig string
+	if m.signer != nil {
+		epoch := tmproto.CurrentEpoch()
+		endpoint := tmproto.NormalizeProviderEndpointURL(p.IdentityURL)
+		var err error
+		sig, err = m.signer.SignIdentityMatch(req, endpoint, epoch)
+		if err != nil {
+			return nil, fmt.Errorf("identity sign: %w", err)
+		}
 	}
 
 	raw, err := jsonutil.Marshal(req)
@@ -113,8 +126,10 @@ func (m *Module) doTMP(ctx context.Context, url string, body []byte, signature s
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set(tmproto.HeaderTMPSignature, signature)
-	httpReq.Header.Set(tmproto.HeaderTMPKeyID, m.signer.KeyID)
+	if m.signer != nil {
+		httpReq.Header.Set(tmproto.HeaderTMPSignature, signature)
+		httpReq.Header.Set(tmproto.HeaderTMPKeyID, m.signer.KeyID)
+	}
 
 	resp, err := m.http.Do(httpReq)
 	if err != nil {

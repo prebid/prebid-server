@@ -152,6 +152,22 @@ type SigningConfig struct {
 	// substitute this from the environment via yaml env expansion (e.g.
 	// ${ADCP_TMP_SIGNING_KEY_PEM}) — the module itself receives it as a string.
 	PrivateKeyPEM string `json:"private_key_pem"`
+
+	// Disabled, when true, skips signing every outbound context / identity
+	// request — the module omits both the X-AdCP-Signature and
+	// X-AdCP-Key-Id headers. Intended for pre-production and rollout
+	// scenarios where the verifier runs with TMP_ALLOW_UNSIGNED=true and
+	// the seller's adagents.json / registry authorization is still
+	// propagating. When Disabled=true, key_id and private_key_pem are
+	// optional; otherwise both are required.
+	//
+	// Setting this in production leaks the seller identity's signing
+	// guarantee — the verifier can no longer prove the request came from
+	// this deployment, so relay attackers and misconfigured peers become
+	// indistinguishable from legitimate traffic. Builder logs a loud WARN
+	// at every startup so an unintended flag is visible in ops logs.
+	// DO NOT use in production.
+	Disabled bool `json:"disabled"`
 }
 
 // PropertyRegistryConfig configures the domain → property_rid resolver.
@@ -283,15 +299,28 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 	if c.SellerAgentURL == "" {
 		return nil, errors.New("seller_agent_url is required")
 	}
-	if c.Signing.KeyID == "" {
-		return nil, errors.New("signing.key_id is required")
-	}
-	if c.Signing.PrivateKeyPEM == "" {
-		return nil, errors.New("signing.private_key_pem is required")
-	}
-	priv, err := tmproto.LoadEd25519PrivateKeyPEM([]byte(c.Signing.PrivateKeyPEM))
-	if err != nil {
-		return nil, fmt.Errorf("signing.private_key_pem: %w", err)
+	var priv ed25519.PrivateKey
+	if c.Signing.Disabled {
+		// Reject stale key material rather than silently ignore it. If an
+		// operator flips signing.disabled back to false in a later
+		// deployment, they should re-supply the key material at the same
+		// time, not rely on whatever was left behind in the YAML from a
+		// previous run.
+		if c.Signing.KeyID != "" || c.Signing.PrivateKeyPEM != "" {
+			return nil, errors.New("signing.disabled=true is incompatible with signing.key_id or signing.private_key_pem being set; clear both so a later re-enable is deliberate")
+		}
+	} else {
+		if c.Signing.KeyID == "" {
+			return nil, errors.New("signing.key_id is required (set signing.disabled=true to opt out, non-production only)")
+		}
+		if c.Signing.PrivateKeyPEM == "" {
+			return nil, errors.New("signing.private_key_pem is required (set signing.disabled=true to opt out, non-production only)")
+		}
+		var err error
+		priv, err = tmproto.LoadEd25519PrivateKeyPEM([]byte(c.Signing.PrivateKeyPEM))
+		if err != nil {
+			return nil, fmt.Errorf("signing.private_key_pem: %w", err)
+		}
 	}
 	if len(c.Providers) == 0 {
 		return nil, errors.New("at least one provider is required")

@@ -77,10 +77,10 @@ func deriveInputs(cfg *Config, req *openrtb2.BidRequest) tmpInputs {
 
 	if req.Device != nil && req.Device.Geo != nil {
 		out.Geo = coarseGeo(cfg, req.Device.Geo)
-		out.Country = req.Device.Geo.Country
+		out.Country = normalizeCountryToAlpha2(req.Device.Geo.Country)
 	} else if req.User != nil && req.User.Geo != nil {
 		out.Geo = coarseGeo(cfg, req.User.Geo)
-		out.Country = req.User.Geo.Country
+		out.Country = normalizeCountryToAlpha2(req.User.Geo.Country)
 	}
 
 	if req.User != nil {
@@ -129,8 +129,8 @@ func coarseGeo(cfg *Config, geo *openrtb2.Geo) map[string]any {
 	}
 
 	out := map[string]any{}
-	if geo.Country != "" {
-		out["country"] = geo.Country
+	if a2 := normalizeCountryToAlpha2(geo.Country); a2 != "" {
+		out["country"] = a2
 	}
 	if geo.Region != "" {
 		out["region"] = geo.Region
