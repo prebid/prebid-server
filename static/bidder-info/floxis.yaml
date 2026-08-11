@@ -1,7 +1,3 @@
-# {{.Host}} is the region/partner subdomain label (e.g. us-e, or acme-us-e for a named partner),
-# validated in the adapter as a single DNS host-label and prefixed onto the fixed .floxis.tech
-# domain below; request-supplied hostnames are never used. The seat query param is appended in
-# code (not a standard macro).
 endpoint: "https://{{.Host}}.floxis.tech/pbs"
 maintainer:
   email: prebid@floxis.tech
