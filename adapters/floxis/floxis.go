@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -29,6 +30,8 @@ const (
 var hostLabel = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
 
 func resolveBidHost(region, partner string) string {
+	region = strings.ToLower(region)
+	partner = strings.ToLower(partner)
 	if region == "" {
 		region = defaultRegion
 	}
@@ -159,6 +162,9 @@ func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpFloxis, error) {
 	var floxisExt openrtb_ext.ExtImpFloxis
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &floxisExt); err != nil {
 		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid imp.ext.bidder for imp %s: %s", imp.ID, err)}
+	}
+	if floxisExt.Seat == "" {
+		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("missing seat for imp %s", imp.ID)}
 	}
 	if floxisExt.Region != "" && !hostLabel.MatchString(floxisExt.Region) {
 		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid region %q for imp %s", floxisExt.Region, imp.ID)}
