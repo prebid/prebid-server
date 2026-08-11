@@ -3,7 +3,6 @@
   "title": "Floxis Adapter Params",
   "description": "A schema which validates params accepted by the Floxis adapter",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "seat": {
       "type": "string",

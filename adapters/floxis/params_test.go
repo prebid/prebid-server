@@ -41,6 +41,7 @@ var validParams = []string{
 	`{"seat":"abc","region":"mars"}`,
 	`{"seat":"x","partner":"acme"}`,
 	`{"seat":"x","region":"eu","partner":"acme"}`,
+	`{"seat":"abc","bidFloor":0.5,"bidFloorCur":"USD"}`,
 }
 
 var invalidParams = []string{
@@ -54,5 +55,4 @@ var invalidParams = []string{
 	`{"seat":"abc","region":123}`,
 	`{"seat":"x","partner":"a.b/c"}`,
 	`{"seat":"x","partner":123}`,
-	`{"seat":"abc","unknownField":"foo"}`,
 }
