@@ -46,49 +46,71 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return &adapter{endpoint: tmpl}, nil
 }
 
+type impGroup struct {
+	seat string
+	host string
+	imps []openrtb2.Imp
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	ext, err := parseImpExt(request.Imp[0])
-	if err != nil {
-		return nil, []error{err}
-	}
+	var errs []error
+	var order []string
+	groups := make(map[string]*impGroup)
 
-	resolvedHost := resolveBidHost(ext.Region, ext.Partner)
-	for i := 1; i < len(request.Imp); i++ {
-		impExt, err := parseImpExt(request.Imp[i])
+	for _, imp := range request.Imp {
+		impExt, err := parseImpExt(imp)
 		if err != nil {
-			return nil, []error{err}
+			errs = append(errs, err)
+			continue
 		}
-		impHost := resolveBidHost(impExt.Region, impExt.Partner)
-		if impExt.Seat != ext.Seat || impHost != resolvedHost {
-			return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf(
-				"imp %s seat/host (%q/%q) differs from imp %s (%q/%q); split into separate requests",
-				request.Imp[i].ID, impExt.Seat, impHost,
-				request.Imp[0].ID, ext.Seat, resolvedHost)}}
+		host := resolveBidHost(impExt.Region, impExt.Partner)
+		key := impExt.Seat + "|" + host
+		group, exists := groups[key]
+		if !exists {
+			group = &impGroup{seat: impExt.Seat, host: host}
+			groups[key] = group
+			order = append(order, key)
 		}
+		group.imps = append(group.imps, imp)
 	}
 
-	endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: resolvedHost})
-	if err != nil {
-		return nil, []error{err}
-	}
-	uri := fmt.Sprintf("%s?seat=%s", endpoint, url.QueryEscape(ext.Seat))
-
-	body, err := jsonutil.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
+	if len(order) == 0 {
+		return nil, errs
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     uri,
-		Body:    body,
-		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}}, nil
+	requests := make([]*adapters.RequestData, 0, len(order))
+	for _, key := range order {
+		group := groups[key]
+
+		endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: group.host})
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		requestCopy := *request
+		requestCopy.Imp = group.imps
+
+		body, err := jsonutil.Marshal(requestCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		requests = append(requests, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     fmt.Sprintf("%s?seat=%s", endpoint, url.QueryEscape(group.seat)),
+			Body:    body,
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(group.imps),
+		})
+	}
+
+	return requests, errs
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
