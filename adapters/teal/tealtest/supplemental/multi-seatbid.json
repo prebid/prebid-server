@@ -1,0 +1,194 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-banner",
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "account": "multi-acct",
+            "placement": "pb"
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "account": "multi-acct",
+            "placement": "pv"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "domain": "example.com",
+      "page": "https://example.com/demo",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-banner",
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "account": "multi-acct",
+                  "placement": "pb"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "pb"
+                  }
+                }
+              }
+            },
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "account": "multi-acct",
+                  "placement": "pv"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "pv"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "demo-site",
+            "domain": "example.com",
+            "page": "https://example.com/demo",
+            "publisher": {
+              "id": "multi-acct"
+            }
+          },
+          "ext": {
+            "bids": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": ["imp-banner", "imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-banner",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "s1",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "imp-banner",
+                  "price": 1.00,
+                  "adm": "<div>banner</div>",
+                  "w": 300,
+                  "h": 250,
+                  "crid": "c1"
+                },
+                {
+                  "id": "b2",
+                  "impid": "imp-video",
+                  "price": 2.00,
+                  "adm": "<VAST/>",
+                  "crid": "c2"
+                }
+              ]
+            },
+            {
+              "seat": "s2",
+              "bid": [
+                {
+                  "id": "b3",
+                  "impid": "imp-banner",
+                  "price": 1.50,
+                  "adm": "<div>banner2</div>",
+                  "w": 300,
+                  "h": 250,
+                  "crid": "c3"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "imp-banner",
+            "price": 1.00,
+            "adm": "<div>banner</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "c1"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "b2",
+            "impid": "imp-video",
+            "price": 2.00,
+            "adm": "<VAST/>",
+            "crid": "c2"
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "b3",
+            "impid": "imp-banner",
+            "price": 1.50,
+            "adm": "<div>banner2</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "c3"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
