@@ -8,7 +8,7 @@ endpoint: "https://adx.adform.net/adx/openrtb"
 geoscope:
   - global
 maintainer:
-  email: "scope.sspp@adform.com"
+  email: "team.frontline@adform.com"
 gvlVendorID: 50
 capabilities:
   app:
@@ -17,6 +17,11 @@ capabilities:
       - native
       - video
   site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+  dooh:
     mediaTypes:
       - banner
       - native
