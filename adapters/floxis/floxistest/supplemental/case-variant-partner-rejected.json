@@ -1,0 +1,20 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid partner \"evil.com/\" for imp imp-1",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "seat": "seat-eu", "PARTNER": "evil.com/" } }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" }
+  },
+  "httpCalls": []
+}

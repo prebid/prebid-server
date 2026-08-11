@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -23,6 +24,9 @@ const (
 	defaultRegion  = "us-e"
 	defaultPartner = "floxis"
 )
+
+// Schema keys are case-sensitive, JSON unmarshalling is not: "REGION" bypasses the schema pattern.
+var hostLabel = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
 
 func resolveBidHost(region, partner string) string {
 	if region == "" {
@@ -155,6 +159,12 @@ func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpFloxis, error) {
 	var floxisExt openrtb_ext.ExtImpFloxis
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &floxisExt); err != nil {
 		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid imp.ext.bidder for imp %s: %s", imp.ID, err)}
+	}
+	if floxisExt.Region != "" && !hostLabel.MatchString(floxisExt.Region) {
+		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid region %q for imp %s", floxisExt.Region, imp.ID)}
+	}
+	if floxisExt.Partner != "" && !hostLabel.MatchString(floxisExt.Partner) {
+		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid partner %q for imp %s", floxisExt.Partner, imp.ID)}
 	}
 	return floxisExt, nil
 }
