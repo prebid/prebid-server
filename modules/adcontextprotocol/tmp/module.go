@@ -16,6 +16,7 @@ import (
 
 	"github.com/adcontextprotocol/adcp-go/tmproto"
 	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/logger"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
@@ -32,9 +33,14 @@ func Builder(raw json.RawMessage, deps moduledeps.ModuleDeps) (any, error) {
 		return nil, fmt.Errorf("adcontextprotocol.tmp: invalid config: %w", err)
 	}
 
-	signer, err := tmproto.NewSigner(cfg.Signing.KeyID, privKey)
-	if err != nil {
-		return nil, fmt.Errorf("adcontextprotocol.tmp: signer: %w", err)
+	var signer *tmproto.Signer
+	if cfg.Signing.Disabled {
+		logger.Warnf("adcontextprotocol.tmp: signing.disabled=true — outbound TMP requests will be sent WITHOUT X-AdCP-Signature / X-AdCP-Key-Id headers. DO NOT USE IN PRODUCTION. Intended for pre-production rollout only, where the verifier accepts unsigned requests (TMP_ALLOW_UNSIGNED=true).")
+	} else {
+		signer, err = tmproto.NewSigner(cfg.Signing.KeyID, privKey)
+		if err != nil {
+			return nil, fmt.Errorf("adcontextprotocol.tmp: signer: %w", err)
+		}
 	}
 
 	// No client-level Timeout: per-call deadlines come from context so that
