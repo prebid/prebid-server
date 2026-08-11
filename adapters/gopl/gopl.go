@@ -1,4 +1,4 @@
-package sspBC
+package gopl
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	adapterVersion = "6.0"
+	adapterVersion = "7.0"
 )
 
 type (
@@ -33,11 +33,11 @@ type (
 )
 
 // ---------------ADAPTER INTERFACE------------------
-// Builder builds a new instance of the sspBC adapter
+// Builder builds a new instance of the Gopl adapter
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	endpoint, err := buildAdapterEndpoint(config.Endpoint, adapterVersion)
 	if err != nil {
-		return nil, fmt.Errorf("unable to build sspbc adapter endpoint: %w", err)
+		return nil, fmt.Errorf("unable to build gopl adapter endpoint: %w", err)
 	}
 
 	bidder := &adapter{
@@ -48,14 +48,14 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	sspBcRequest := &requestData{
+	goplRequest := &requestData{
 		Request: request,
 		RequestInfo: &requestInfo{
 			PbsEntryPoint: extraRequestInfo.PbsEntryPoint,
 		},
 	}
 
-	requestJSON, err := json.Marshal(sspBcRequest)
+	requestJSON, err := json.Marshal(goplRequest)
 	if err != nil {
 		return nil, []error{err}
 	}

@@ -11,14 +11,12 @@
                     }
                 },
                 "secure": 1,
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        }
-                    ]
-                },
+                "audio": {
+                    "mimes": ["audio/mp3"],
+                    "minduration": 5,
+                    "maxduration": 30,
+                    "protocols": [1, 2]
+                  },
                 "tagid": "ad-test1"
             }
         ],
@@ -42,21 +40,19 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "uri": "http://ssp.wp.test/bidder/?bdver=7.0",
                 "body": {
                     "bidRequest": {
                         "id": "test-request",
                         "imp": [
                             {
                                 "id": "slot",
-                                "banner": {
-                                    "format": [
-                                        {
-                                            "w": 300,
-                                            "h": 250
-                                        }
-                                    ]
-                                },
+                                "audio": {
+                                    "mimes": ["audio/mp3"],
+                                    "minduration": 5,
+                                    "maxduration": 30,
+                                    "protocols": [1, 2]
+                                  },
                                 "tagid": "ad-test1",
                                 "secure": 1,
                                 "ext": {
@@ -91,15 +87,41 @@
                 "impIDs":["slot"]
             },
             "mockResponse": {
-                "status": 400,
-                "body": {}
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "seat": "gopl-test",
+                            "bid": [{
+                                "adm": "test-audio-ad",
+                                "id": "response-005",
+                                "impid": "slot",
+                                "price": 20,
+                                "mtype": 3
+                              }]
+                        }
+                    ]
+                }
             }
         }
     ],
-    "expectedMakeBidsErrors": [
+    "expectedBidResponses": [
         {
-            "value": "unexpected status code: 400.",
-            "comparison": "literal"
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "adm": "test-audio-ad",
+                        "id": "response-005",
+                        "impid": "slot",
+                        "price": 20,
+                        "mtype": 3
+                    },
+                    "type": "audio"
+                }
+            ]
         }
     ]
 }
