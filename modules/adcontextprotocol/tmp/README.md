@@ -38,9 +38,15 @@ hooks:
           # resolved[0].property_rid.
           endpoint: https://agenticadvertising.org/api/registry/resolve
           # "resolve" (default) contributes the identifier to the catalog
-          # and requires auth_bearer. "lookup" is a pure read with no auth
-          # and returns null property_rid for unknown identifiers.
+          # and requires auth_bearer. "lookup" is a read-only variant that
+          # skips catalog contribution — but hosted registries typically
+          # reject unauthenticated POSTs with 403 CSRF, so a bearer is
+          # required in practice for both modes.
           mode: resolve
+          # Bearer for the property catalog. Required for `mode: resolve`;
+          # for `mode: lookup` supply one unless you know the target
+          # registry accepts unauthenticated traffic (agenticadvertising.org
+          # does not).
           auth_bearer: ${ADCP_REGISTRY_TOKEN}
           # FactProvenance.type — how the catalog attributes this request.
           # See adcp catalog-openapi.ts FactProvenance for the enum.
@@ -121,7 +127,7 @@ hooks:
     endpoints:
       /openrtb2/auction:
         stages:
-          auction_processed:
+          processed_auction_request:
             groups:
               - timeout: 500
                 hook_sequence:
@@ -142,11 +148,12 @@ hooks:
 | `seller_agent_url` | Publicly reachable URL identifying this Prebid Server deployment as a seller agent. Must appear as one of `authorized_agents[].url` in the publisher's `adagents.json` (compared under AdCP URL canonicalization). |
 | `signing.key_id` | Sent in `X-AdCP-Key-Id`. Verifiers use it to look up the matching Ed25519 public key. |
 | `signing.private_key_pem` | PEM-encoded PKCS#8 Ed25519 private key. |
+| `signing.disabled` | Optional. When `true`, outbound requests are sent WITHOUT `X-AdCP-Signature` / `X-AdCP-Key-Id` headers, and `key_id` / `private_key_pem` become optional. **Non-production only** — for pre-production rollout against verifiers running `TMP_ALLOW_UNSIGNED=true`. Builder logs a loud WARN at every startup so the flag is visible in ops logs. |
 | `property_registry.endpoint` | Resolves `site.domain` / `app.bundle` → `property_rid` via `POST /api/registry/resolve` (adcp `ResolveRequest`/`ResolveResponse`). Defaults to `https://agenticadvertising.org/api/registry/resolve` when omitted. |
-| `property_registry.mode` | `resolve` (default) contributes to the catalog and requires `auth_bearer`; `lookup` is an unauthenticated pure read. |
+| `property_registry.mode` | `resolve` (default) contributes to the catalog and requires `auth_bearer`; `lookup` is a read-only variant that skips catalog contribution. Both modes typically require `auth_bearer` in practice — hosted registries (including `agenticadvertising.org`) reject unauthenticated POSTs with `403 CSRF` regardless of mode. Only omit the bearer when pointing at a registry you know accepts unauthenticated traffic. |
 | `property_registry.provenance_type` | Enum from adcp `FactProvenance.type`. Default `member_assertion`. `crawl` is reserved for server-side pipelines and rejected. |
-| `providers[].name` | Stable provider identifier (adcp `provider_id`). Appears verbatim in logs, metrics, and as the outer key of `tmpx_macro_mapping`. Charset matches the adcp spec: `^[A-Za-z0-9_]{1,64}$`. |
-| `providers[].identity_url` or `providers[].context_url` | At least one is required per provider. |
+| `providers[].name` | Stable provider identifier (adcp `provider_id`). Appears verbatim in logs, metrics, and as the outer key of `tmpx_macro_mapping`. Charset is the adcp spec `^[A-Za-z0-9_]{1,64}$` — **underscores only, no hyphens or dots**. A name like `some-provider` is rejected at Builder startup. |
+| `providers[].identity_url` or `providers[].context_url` | At least one is required per provider. Full path is significant — the module signs the canonicalized endpoint (including path) via `tmproto.NormalizeProviderEndpointURL`, and the verifier signs the same, so a bare-origin `https://tmp.example.com` will 404. Always include `/identity` and `/context` explicitly. |
 | `providers[].tmpx_slots` | Optional. Ordered list of `slot_id`s the provider registered in adcp `provider-registration.json`. Required when the provider emits TMPX. The module drops any provider response whose emitted slot sequence is not a non-empty ordered prefix of this list. |
 | `tmpx_macro_mapping` | Optional. Publisher-owned map of `provider_id → slot_id → ad-server macro name` used to route each provider's TMPX chunks. Omit to disable TMPX targeting. Missing entries for a provider's registered slots produce a startup warning; unmapped slots seen at serve time fail closed. |
 
@@ -209,6 +216,30 @@ surfaces are covered per the adcp TMP spec:
 When `add_to_targeting: true`, each `key=value` pair is also mirrored into
 `ext.prebid.targeting` so downstream ad servers (e.g. Google Ad Manager) can
 consume them without a custom bridge.
+
+## Deployment
+
+### Secrets and env-var substitution
+
+The `${VAR}` shell-style expansions above (e.g. `${ADCP_TMP_SIGNING_KEY_PEM}`,
+`${ADCP_REGISTRY_TOKEN}`) are illustrative only — Prebid Server does not
+resolve env vars inside `hooks.modules.*`. Viper's `AutomaticEnv` binds
+top-level config keys but never traverses this subtree, so a literal
+`${ADCP_TMP_SIGNING_KEY_PEM}` will reach Builder unchanged and be rejected
+as an unparseable PEM.
+
+The supported pattern is to render `pbs.yaml` from a template at pod
+startup (init container, entrypoint script, or config-mount rewrite),
+with real values substituted before Prebid reads the file. Do not rely
+on Viper env-var overlay for module secrets.
+
+### OpenRTB `device.geo.country`
+
+OpenRTB defines `device.geo.country` as ISO 3166-1 alpha-3 (`"USA"`),
+while the TMP wire requires alpha-2 (`"US"`). The module converts alpha-3
+→ alpha-2 before signing via a bundled ISO 3166-1 lookup table; values
+that are already alpha-2 pass through, and unrecognized shapes are dropped
+so the receiver's validator sees a clean field.
 
 ## Privacy
 

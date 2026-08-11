@@ -149,6 +149,40 @@ func TestValidated_MissingSigningKey(t *testing.T) {
 	}
 }
 
+func TestValidated_SigningDisabledAllowsEmptyKey(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Signing.KeyID = ""
+	cfg.Signing.PrivateKeyPEM = ""
+	cfg.Signing.Disabled = true
+	priv, err := cfg.validated()
+	if err != nil {
+		t.Fatalf("expected valid config with signing disabled, got %v", err)
+	}
+	if priv != nil {
+		t.Errorf("expected nil private key when signing disabled; got %v", priv)
+	}
+}
+
+func TestValidated_SigningDisabledRejectsStaleKeyID(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Signing.Disabled = true
+	cfg.Signing.PrivateKeyPEM = ""
+	// KeyID left set from validConfig — stale material next to disabled=true.
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when signing.disabled=true but key_id is still populated")
+	}
+}
+
+func TestValidated_SigningDisabledRejectsStalePEM(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Signing.Disabled = true
+	cfg.Signing.KeyID = ""
+	// PrivateKeyPEM left set from validConfig — stale material next to disabled=true.
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when signing.disabled=true but private_key_pem is still populated")
+	}
+}
+
 func TestValidated_LatLongPrecisionCapped(t *testing.T) {
 	cfg := validConfig(t)
 	cfg.Masking.Enabled = true
