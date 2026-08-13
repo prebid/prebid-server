@@ -38,20 +38,20 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
-          "cur": "USD",
+          "cur": "EUR",
           "seatbid": [
             {
               "seat": "2722",
               "bid": [
                 {
-                  "id": "bid-unknown",
+                  "id": "bid-1",
                   "impid": "imp-banner",
-                  "price": 1.50,
+                  "price": 2.50,
                   "adm": "<div>ad markup</div>",
-                  "crid": "crid-unknown",
+                  "crid": "crid-001",
                   "w": 300,
                   "h": 250,
-                  "mtype": 5
+                  "mtype": 1
                 }
               ]
             }
@@ -62,14 +62,22 @@
   ],
   "expectedBidResponses": [
     {
-      "currency": "USD",
-      "bids": []
-    }
-  ],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "unsupported MType 5 for bid imp-banner",
-      "comparison": "literal"
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-banner",
+            "price": 2.50,
+            "adm": "<div>ad markup</div>",
+            "crid": "crid-001",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }

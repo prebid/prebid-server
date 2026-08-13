@@ -12,9 +12,7 @@
       {
         "id": "imp-invalid",
         "banner": { "w": 728, "h": 90 },
-        "ext": {
-          "bidder": { "publisherId": "" }
-        }
+        "ext": {}
       }
     ],
     "site": {
@@ -69,8 +67,8 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp.ext.bidder.publisherId is required for impression index 1",
-      "comparison": "literal"
+      "value": "invalid imp.ext.bidder for impression index 1.",
+      "comparison": "startswith"
     }
   ],
   "expectedBidResponses": [

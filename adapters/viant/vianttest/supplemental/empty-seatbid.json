@@ -3,7 +3,7 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "imp-banner",
         "banner": { "w": 300, "h": 250 },
         "ext": {
           "bidder": { "publisherId": "prebid-test-pub-001" }
@@ -23,7 +23,7 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "imp-banner",
               "banner": { "w": 300, "h": 250 }
             }
           ],
@@ -32,18 +32,22 @@
             "publisher": { "id": "prebid-test-pub-001" }
           }
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": ["imp-banner"]
       },
       "mockResponse": {
-        "status": 503,
-        "body": {}
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": []
+        }
       }
     }
   ],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": []
     }
   ]
 }

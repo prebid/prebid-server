@@ -29,6 +29,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	reqCopy := *request
 	cleanImps := make([]openrtb2.Imp, 0, len(request.Imp))
+	var publisherID string
 
 	for i := range request.Imp {
 		var impExt adapters.ExtImpBidder
@@ -47,11 +48,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		if bidderExt.PublisherID == "" {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("imp.ext.bidder.publisherId is required for impression index %d", i),
-			})
-			continue
+		if publisherID == "" {
+			publisherID = bidderExt.PublisherID
 		}
 
 		imp := request.Imp[i]
@@ -66,8 +64,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	reqCopy.Imp = cleanImps
+	stampPublisherID(&reqCopy, publisherID)
 
-	requestJSON, err := json.Marshal(reqCopy)
+	requestJSON, err := jsonutil.Marshal(reqCopy)
 	if err != nil {
 		return nil, append(errs, err)
 	}
@@ -87,8 +86,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 // stripBidderExt removes the "bidder" and "prebid" keys from imp.ext,
 // returning nil if nothing else remains. If imp.ext is not a JSON object
-// (and therefore can't be unmarshalled into a map), it is returned unchanged
-// so the original value is preserved rather than silently dropped.
+// (and therefore can't be unmarshalled into a map) or can't be re-marshalled,
+// the original value is returned unchanged so it is preserved rather than
+// silently dropped.
 func stripBidderExt(ext json.RawMessage) json.RawMessage {
 	if ext == nil {
 		return nil
@@ -106,35 +106,51 @@ func stripBidderExt(ext json.RawMessage) json.RawMessage {
 		return nil
 	}
 
-	cleaned, err := json.Marshal(extMap)
+	cleaned, err := jsonutil.Marshal(extMap)
 	if err != nil {
-		return nil
+		return ext
 	}
 	return cleaned
 }
 
+// stampPublisherID writes the Viant-assigned publisher ID onto site.publisher.id
+// or app.publisher.id so it reaches the endpoint. request.Site/App and their
+// nested Publisher are pointers shared with other bidders' requests, so they are
+// shallow-copied before mutation to avoid leaking the value into other bidders.
+func stampPublisherID(request *openrtb2.BidRequest, publisherID string) {
+	if request.Site != nil {
+		siteCopy := *request.Site
+		if siteCopy.Publisher != nil {
+			publisherCopy := *siteCopy.Publisher
+			siteCopy.Publisher = &publisherCopy
+		} else {
+			siteCopy.Publisher = &openrtb2.Publisher{}
+		}
+		siteCopy.Publisher.ID = publisherID
+		request.Site = &siteCopy
+	}
+
+	if request.App != nil {
+		appCopy := *request.App
+		if appCopy.Publisher != nil {
+			publisherCopy := *appCopy.Publisher
+			appCopy.Publisher = &publisherCopy
+		} else {
+			appCopy.Publisher = &openrtb2.Publisher{}
+		}
+		appCopy.Publisher.ID = publisherID
+		request.App = &appCopy
+	}
+}
+
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info.", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode == http.StatusServiceUnavailable {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("service unavailable: HTTP status %d", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info.", response.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	if len(response.Body) == 0 {
