@@ -1,4 +1,4 @@
-package matterfull
+package matterfullrtb
 
 import (
 	"encoding/json"
@@ -14,8 +14,8 @@ func TestValidParams(t *testing.T) {
 	require.NoError(t, err, "Failed to fetch the json-schemas")
 
 	for _, validParam := range validParams {
-		err := validator.Validate(openrtb_ext.BidderMatterfull, json.RawMessage(validParam))
-		assert.NoErrorf(t, err, "Schema rejected Matterfull params: %s", validParam)
+		err := validator.Validate(openrtb_ext.BidderMatterfullRTB, json.RawMessage(validParam))
+		assert.NoErrorf(t, err, "Schema rejected Matterfull RTB params: %s", validParam)
 	}
 }
 
@@ -24,7 +24,7 @@ func TestInvalidParams(t *testing.T) {
 	require.NoError(t, err, "Failed to fetch the json-schemas")
 
 	for _, invalidParam := range invalidParams {
-		err := validator.Validate(openrtb_ext.BidderMatterfull, json.RawMessage(invalidParam))
+		err := validator.Validate(openrtb_ext.BidderMatterfullRTB, json.RawMessage(invalidParam))
 		assert.Errorf(t, err, "Schema allowed unexpected params: %s", invalidParam)
 	}
 }

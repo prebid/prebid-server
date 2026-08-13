@@ -1,5 +1,5 @@
 package openrtb_ext
 
-type ExtImpMatterfull struct {
+type ExtImpMatterfullRTB struct {
 	PublisherID string `json:"pid"`
 }

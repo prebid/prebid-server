@@ -1,4 +1,4 @@
-package matterfull
+package matterfullrtb
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ import (
 )
 
 func TestMakeRequestsEmptyImps(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
@@ -29,7 +29,7 @@ func TestMakeRequestsEmptyImps(t *testing.T) {
 }
 
 func TestMakeRequestsAllImpsInvalid(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestMakeRequestsAllImpsInvalid(t *testing.T) {
 			ID: "1", Banner: &openrtb2.Banner{W: ptr(300), H: ptr(250)},
 			Ext: []byte(`{`),
 		}},
-		{"invalid ext: bidder not matterfull object", openrtb2.Imp{
+		{"invalid ext: bidder not matterfullrtb object", openrtb2.Imp{
 			ID: "1", Banner: &openrtb2.Banner{W: ptr(300), H: ptr(250)},
 			Ext: []byte(`{"bidder": 123}`),
 		}},
@@ -58,7 +58,7 @@ func TestMakeRequestsAllImpsInvalid(t *testing.T) {
 }
 
 func TestMakeBidsInvalidJSON(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
@@ -74,7 +74,7 @@ func TestMakeBidsInvalidJSON(t *testing.T) {
 }
 
 func TestMakeBidsResponseStatus(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestMakeBidsResponseStatus(t *testing.T) {
 }
 
 func TestMakeBidsSkipsInvalidBidTypes(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
@@ -146,7 +146,7 @@ func TestMakeBidsSkipsInvalidBidTypes(t *testing.T) {
 }
 
 func TestMakeRequestsBuildEndpointError(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{slice .PublisherID 100}}",
 	}, config.Server{})
 	require.NoError(t, err)
@@ -167,7 +167,7 @@ func TestMakeRequestsBuildEndpointError(t *testing.T) {
 }
 
 func TestMakeRequestsMarshalError(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
@@ -246,12 +246,12 @@ func TestCompatBannerImpression(t *testing.T) {
 }
 
 func TestBuildEndpointURLEscapesPublisherID(t *testing.T) {
-	bidder, err := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
-	endpoint, err := bidder.(*adapter).buildEndpointURL(&openrtb_ext.ExtImpMatterfull{
+	endpoint, err := bidder.(*adapter).buildEndpointURL(&openrtb_ext.ExtImpMatterfullRTB{
 		PublisherID: "publisher&id=other",
 	})
 
@@ -379,16 +379,16 @@ func bidderExt(publisherID string) []byte {
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	require.NoError(t, buildErr, "Builder returned unexpected error")
 
-	adapterstest.RunJSONBidderTest(t, "matterfulltest", bidder)
+	adapterstest.RunJSONBidderTest(t, "matterfullrtbtest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderMatterfull, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
 		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Error(t, buildErr, "Expected error due to malformed endpoint template")

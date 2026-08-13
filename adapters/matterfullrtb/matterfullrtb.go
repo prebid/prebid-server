@@ -1,4 +1,4 @@
-package matterfull
+package matterfullrtb
 
 import (
 	"fmt"
@@ -43,9 +43,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 // getImpressionsInfo checks each impression for validity and returns valid impressions grouped by ext params
-func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp, []error) {
+func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfullRTB][]openrtb2.Imp, []error) {
 	var errors []error
-	res := make(map[openrtb_ext.ExtImpMatterfull][]openrtb2.Imp)
+	res := make(map[openrtb_ext.ExtImpMatterfullRTB][]openrtb2.Imp)
 
 	for i := range imps {
 		imp := imps[i] // value copy so compatImpression does not mutate the original request
@@ -63,9 +63,9 @@ func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpMatterfull][
 	return res, errors
 }
 
-// Alter impression info to comply with Matterfull platform requirements
+// Alter impression info to comply with Matterfull RTB requirements
 func compatImpression(imp *openrtb2.Imp) error {
-	imp.Ext = nil // do not forward ext to Matterfull platform
+	imp.Ext = nil // do not forward ext to Matterfull RTB
 	if imp.Banner != nil {
 		return compatBannerImpression(imp)
 	}
@@ -102,16 +102,16 @@ func compatBannerImpression(imp *openrtb2.Imp) error {
 	return nil
 }
 
-func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfull, error) {
+func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfullRTB, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return openrtb_ext.ExtImpMatterfull{}, &errortypes.BadInput{
+		return openrtb_ext.ExtImpMatterfullRTB{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
-	var matterfullExt openrtb_ext.ExtImpMatterfull
+	var matterfullExt openrtb_ext.ExtImpMatterfullRTB
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &matterfullExt); err != nil {
-		return openrtb_ext.ExtImpMatterfull{}, &errortypes.BadInput{
+		return openrtb_ext.ExtImpMatterfullRTB{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -119,7 +119,7 @@ func getImpressionExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpMatterfull, error) {
 	return matterfullExt, nil
 }
 
-func (a *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfull, imps []openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ExtImpMatterfullRTB, imps []openrtb2.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, imps)
 	reqJSON, err := jsonutil.Marshal(newBidRequest)
 	if err != nil {
@@ -167,12 +167,12 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, imps []openrtb2.Imp
 }
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
-func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfull) (string, error) {
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpMatterfullRTB) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{PublisherID: url.QueryEscape(params.PublisherID)}
 	return macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 }
 
-// MakeBids translates Matterfull bid response to prebid-server specific format
+// MakeBids translates Matterfull RTB bid response to prebid-server specific format
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
@@ -280,7 +280,7 @@ func getMediaTypeForImp(imp *openrtb2.Imp) (openrtb_ext.BidType, bool, bool) {
 	return bidType, formatCount == 1, formatCount > 1
 }
 
-// Builder builds a new instance of the Matterfull adapter for the given bidder with the given config.
+// Builder builds a new instance of the Matterfull RTB adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	urlTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
