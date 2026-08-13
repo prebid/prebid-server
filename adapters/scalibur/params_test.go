@@ -38,8 +38,9 @@ var validParams = []string{
 	`{"placementId":"p123"}`,
 	`{"placementId":"p123", "bidfloor": 1.5}`,
 	`{"placementId":"p123", "bidfloor": 1.5, "bidfloorcur": "USD"}`,
-	`{"host":"eu.scalibur.io"}`,
-	`{"host":"host:8080"}`,
+	`{"host":"eu"}`,
+	`{"host":"dev101"}`,
+	`{"placementId":"p123", "host":"us-east-1"}`,
 	`{"bidfloor": 1.5}`,
 	`{"placementId":"p123", "customKey": "customValue"}`,
 }
@@ -53,4 +54,11 @@ var invalidParams = []string{
 	`{"placementId": 123}`,
 	`{"host":"evil.com/path?x=1"}`,
 	`{"host":"https://eu.scalibur.io"}`,
+	// The endpoint domain is fixed, so the host param may not carry a domain,
+	// a port, or anything else that could redirect the request off scalibur.io.
+	`{"host":"eu.scalibur.io"}`,
+	`{"host":"eu.evil.com"}`,
+	`{"host":"host:8080"}`,
+	`{"host":"EU"}`,
+	`{"host":""}`,
 }

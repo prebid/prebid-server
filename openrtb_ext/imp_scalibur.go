@@ -5,7 +5,8 @@ type ExtImpScalibur struct {
 	BidFloor    *float64 `json:"bidfloor,omitempty"`    // optional, used as fallback
 	BidFloorCur string   `json:"bidfloorcur,omitempty"` // optional, defaults to USD if empty
 
-	// Host optionally fills the {{.Host}} macro in the endpoint template; SSRF-validated.
+	// Host optionally fills the {{.Host}} macro in the endpoint template. A single
+	// DNS label only; the endpoint domain itself is fixed. Defaults to srv.
 	Host string `json:"host,omitempty"`
 }
 

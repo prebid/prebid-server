@@ -18,7 +18,7 @@
         "ext": {
           "bidder": {
             "placementId": "test-scl-placement",
-            "host": "eu.scalibur.io"
+            "host": "eu"
           }
         }
       }

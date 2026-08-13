@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -14,17 +15,20 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
-	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
-// defaultHost resolves the {{.Host}} macro when no host param is supplied.
-const defaultHost = "srv.scalibur.io"
+// defaultHostLabel resolves the {{.Host}} macro when no host param is supplied.
+const defaultHostLabel = "srv"
+
+// hostLabelPattern matches a single DNS label, mirroring the bidder-params schema.
+// The endpoint domain is fixed in the template, so only the subdomain varies.
+var hostLabelPattern = regexp.MustCompile(`^[a-z0-9-]{1,63}$`)
 
 type adapter struct {
 	endpoint *template.Template
 }
 
-// hostGroup collects the impressions that resolve to a single endpoint host.
+// hostGroup collects the impressions that resolve to a single endpoint subdomain.
 type hostGroup struct {
 	host string
 	imps []openrtb2.Imp
@@ -58,7 +62,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		host, err := resolveEndpointHost(imp.ID, scaliburExt)
+		host, err := resolveHostLabel(imp.ID, scaliburExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -355,14 +359,14 @@ func parseScaliburExt(impExt json.RawMessage) (*openrtb_ext.ExtImpScalibur, erro
 	return &scaliburExt, nil
 }
 
-// resolveEndpointHost returns the SSRF-validated endpoint host for one impression.
-func resolveEndpointHost(impID string, ext *openrtb_ext.ExtImpScalibur) (string, error) {
-	host := defaultHost
+// resolveHostLabel returns the endpoint subdomain label for one impression.
+func resolveHostLabel(impID string, ext *openrtb_ext.ExtImpScalibur) (string, error) {
+	host := defaultHostLabel
 	if ext.Host != "" {
 		host = ext.Host
 	}
 
-	if !urlutil.IsSafeHost(host) {
+	if !hostLabelPattern.MatchString(host) {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: invalid host %s", impID, host),
 		}

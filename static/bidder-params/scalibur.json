@@ -18,8 +18,8 @@
     },
     "host": {
       "type": "string",
-      "description": "Overrides the {{.Host}} macro in the endpoint. Bare host with an optional port only. Impressions naming different hosts are sent as separate requests, one per host.",
-      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
+      "description": "Subdomain label of the scalibur.io endpoint, for account or environment specific servers. A single DNS label only, no dots or port; the domain itself is fixed. Defaults to srv. Impressions naming different subdomains are sent as separate requests, one per subdomain.",
+      "pattern": "^[a-z0-9-]{1,63}$"
     }
   }
 }

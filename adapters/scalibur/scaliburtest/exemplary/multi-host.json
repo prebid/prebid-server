@@ -15,7 +15,7 @@
         "ext": {
           "bidder": {
             "placementId": "placement-eu",
-            "host": "eu.scalibur.io"
+            "host": "eu"
           }
         }
       },
@@ -32,7 +32,7 @@
         "ext": {
           "bidder": {
             "placementId": "placement-us",
-            "host": "us.scalibur.io"
+            "host": "us"
           }
         }
       }

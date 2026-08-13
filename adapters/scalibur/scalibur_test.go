@@ -18,7 +18,7 @@ import (
 func newTestAdapter() adapters.Bidder {
 	adapter, _ := Builder(
 		openrtb_ext.BidderScalibur,
-		config.Adapter{Endpoint: "https://{{.Host}}/adserver/ortb?type=prebid-server"},
+		config.Adapter{Endpoint: "https://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"},
 		config.Server{},
 	)
 	return adapter
@@ -125,7 +125,7 @@ func TestMakeRequests_NoFloorOmitsExtFloorFields(t *testing.T) {
 	assert.NotContains(t, outExt, "bidfloorcur")
 }
 
-// Imps naming different hosts fan out into one request per host, in first-seen order.
+// Imps naming different subdomains fan out into one request per subdomain, in first-seen order.
 func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
 	bidder := newTestAdapter()
 
@@ -143,9 +143,9 @@ func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		ID: "req-multi-host",
 		Imp: []openrtb2.Imp{
-			impWithHost("imp-eu", "eu.scalibur.io"),
-			impWithHost("imp-us", "us.scalibur.io"),
-			impWithHost("imp-eu-2", "eu.scalibur.io"),
+			impWithHost("imp-eu", "eu"),
+			impWithHost("imp-us", "us"),
+			impWithHost("imp-eu-2", "eu"),
 		},
 	}
 
