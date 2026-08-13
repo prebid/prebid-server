@@ -45,6 +45,7 @@ type BidServerResponse struct {
 	Height     int64                 `json:"height"`
 	CreativeID string                `json:"creativeId"`
 	DealID     string                `json:"dealId"`
+	TTL        int64                 `json:"ttl"`
 	Meta       BidServerResponseMeta `json:"meta"`
 }
 
@@ -294,6 +295,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		W:       missenaResponse.Width,
 		H:       missenaResponse.Height,
 		DealID:  missenaResponse.DealID,
+		Exp:     missenaResponse.TTL,
 		ADomain: missenaResponse.Meta.AdvertiserDomains,
 	}
 
