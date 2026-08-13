@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "prebid-test" } }
+      }
+    ],
+    "site": { "domain": "example.nl" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": { "format": [{ "w": 300, "h": 250 }] }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "publisher": { "id": "prebid-test" }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "unknown-imp",
+                  "price": 1.0,
+                  "crid": "cr-1",
+                  "ext": { "adswag": { "serve_url": "https://ads.adswag.ai/v1/ad?sc=c2ln&sig=YWJj" } }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid b1 references unknown imp unknown-imp",
+      "comparison": "literal"
+    }
+  ]
+}

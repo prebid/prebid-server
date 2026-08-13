@@ -1,0 +1,80 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "prebid-test" } }
+      }
+    ],
+    "site": { "domain": "example.nl" },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "ip": "213.34.56.78",
+      "devicetype": 2,
+      "geo": { "country": "NLD" }
+    },
+    "regs": {
+      "gdpr": 1,
+      "gpp": "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+      "gpp_sid": [2],
+      "ext": { "gdpr": 1 }
+    },
+    "user": {
+      "ext": { "consent": "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" },
+      "eids": [
+        {
+          "source": "adswag.ai",
+          "uids": [{ "id": "e6213b34-4a9c-4e2f-8b1a-d7c3f3a2b1c0", "atype": 1 }]
+        }
+      ]
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": { "format": [{ "w": 300, "h": 250 }] }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "publisher": { "id": "prebid-test" }
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "213.34.56.78",
+            "devicetype": 2,
+            "geo": { "country": "NLD" }
+          },
+          "regs": {
+            "gdpr": 1,
+            "gpp": "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+            "gpp_sid": [2],
+            "ext": { "gdpr": 1 }
+          },
+          "user": {
+            "ext": { "consent": "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" },
+            "eids": [
+              {
+                "source": "adswag.ai",
+                "uids": [{ "id": "e6213b34-4a9c-4e2f-8b1a-d7c3f3a2b1c0", "atype": 1 }]
+              }
+            ]
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

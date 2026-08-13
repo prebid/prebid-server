@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adswag Adapter Params",
+  "description": "A schema which validates params accepted by the Adswag adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Adswag publisher id (issued at onboarding)"
+    },
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Explicit placement override; omit to let Adswag discover the placement from GPID or the ad unit code"
+    }
+  },
+  "required": ["publisherId"]
+}
