@@ -1,4 +1,5 @@
 endpoint: "https://{{.Host}}.floxis.tech/pbs"
+endpointCompression: gzip
 maintainer:
   email: prebid@floxis.tech
 gvlVendorID: 1609
