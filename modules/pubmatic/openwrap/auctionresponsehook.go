@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/tracker"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/utils"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v3/util/ptrutil"
 )
 
 func (m OpenWrap) handleAuctionResponseHook(
@@ -217,8 +218,15 @@ func (m OpenWrap) handleAuctionResponseHook(
 				if impCtx.Video.Skip != nil {
 					bidExt.Video.Skip = impCtx.Video.Skip
 				}
-				if impCtx.Video.SkipAfter != 0 {
-					bidExt.Video.SkipAfter = impCtx.Video.SkipAfter
+				//OW SDK needs skipafter to be present in the response for skip=1
+				if sdkutils.IsSdkEndpoint(rctx.Endpoint) {
+					if impCtx.Video.Skip != nil && *impCtx.Video.Skip == 1 {
+						bidExt.Video.SkipAfter = ptrutil.ToPtr(impCtx.Video.SkipAfter)
+					}
+				} else {
+					if impCtx.Video.SkipAfter != 0 {
+						bidExt.Video.SkipAfter = ptrutil.ToPtr(impCtx.Video.SkipAfter)
+					}
 				}
 				if impCtx.Video.SkipMin != 0 {
 					bidExt.Video.SkipMin = impCtx.Video.SkipMin
