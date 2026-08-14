@@ -1,6 +1,7 @@
 endpoint: "http://{{.Host}}.bc-plugin.com/?c=o&m=rtb"
 maintainer:
   email: "support@bidscube.com"
+gvlVendorID: 1272
 modifyingVastXmlAllowed: true
 capabilities:
   app:
