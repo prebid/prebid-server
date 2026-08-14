@@ -18,6 +18,5 @@
   "required": [
     "AV_PUBLISHERID",
     "AV_CHANNELID"
-  ],
-  "additionalProperties": false
+  ]
 }
