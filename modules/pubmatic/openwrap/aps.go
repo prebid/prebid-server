@@ -53,6 +53,29 @@ func resolveApsSlotMapping(owCache cache.Cache, me metrics.MetricsEngine, publis
 	return adUnitName, profileID, nil
 }
 
+// setApsImpExtGpidFromSlotUUIDOnBody sets imp[0].ext.gpid to slotUUID when gpid is missing or empty.
+func setApsImpExtGpidFromSlotUUIDOnBody(body []byte, slotUUID string) ([]byte, error) {
+	if slotUUID == "" {
+		return body, nil
+	}
+
+	impExt, _, _, err := jsonparser.Get(body, "imp", "[0]", "ext")
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return nil, fmt.Errorf("aps: read imp[0].ext: %w", err)
+	}
+
+	gpid, err := jsonparser.GetString(impExt, "gpid")
+	if err == nil && gpid != "" {
+		return body, nil
+	}
+
+	out, err := jsonparser.Set(body, []byte(strconv.Quote(slotUUID)), "imp", "[0]", "ext", "gpid")
+	if err != nil {
+		return nil, fmt.Errorf("aps: set imp[0].ext.gpid: %w", err)
+	}
+	return out, nil
+}
+
 // enrichApsRequest replaces imp[0].tagid with the mapped OW ad unit name and sets
 // ext.prebid.bidderparams.pubmatic.wrapper.profileid from that mapping.
 // Only the first impression is modified; any additional imps are left unchanged.
@@ -77,7 +100,12 @@ func enrichApsRequest(body []byte, owCache cache.Cache, me metrics.MetricsEngine
 		return nil, err, nbr.APSSlotUUIDNotMapped
 	}
 
-	out, err := jsonparser.Set(body, []byte(strconv.Quote(adUnitName)), "imp", "[0]", "tagid")
+	out, err := setApsImpExtGpidFromSlotUUIDOnBody(body, slotUUID)
+	if err != nil {
+		return nil, err, openrtb3.NoBidInvalidRequest
+	}
+
+	out, err = jsonparser.Set(out, []byte(strconv.Quote(adUnitName)), "imp", "[0]", "tagid")
 	if err != nil {
 		return nil, fmt.Errorf("aps: set imp[0].tagid: %w", err), openrtb3.NoBidInvalidRequest
 	}

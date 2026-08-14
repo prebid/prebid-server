@@ -1,6 +1,9 @@
 package sdkutils
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v3/analytics"
@@ -225,6 +228,37 @@ func CopyIFV(source, target []byte) []byte {
 	return target
 }
 
+// SetIfKeysExists copies keys from source JSON into target when present in source.
+// Unlike CopyPath, numeric zero and other falsy values are preserved.
+func SetIfKeysExists(source []byte, target []byte, keys ...string) []byte {
+	newTarget := target
+	if len(keys) > 0 && len(newTarget) == 0 {
+		newTarget = []byte(`{}`)
+	}
+
+	for _, key := range keys {
+		field, dataType, _, err := jsonparser.Get(source, key)
+		if err != nil {
+			continue
+		}
+
+		if dataType == jsonparser.String {
+			quotedStr := strconv.Quote(string(field))
+			field = []byte(quotedStr)
+		}
+
+		newTarget, err = jsonparser.Set(newTarget, field, key)
+		if err != nil {
+			return target
+		}
+	}
+
+	if len(newTarget) == 2 {
+		return target
+	}
+	return newTarget
+}
+
 func IsSdkBiddingEndpoint(endpoint string) bool {
 	return endpoint == models.EndpointAppLovinMax || endpoint == models.EndpointUnityLevelPlay || endpoint == models.EndpointGoogleSDK || endpoint == models.EndpointAPS
 }
@@ -283,4 +317,8 @@ func IsGoogleSDKResponseRejected(rCtx *models.RequestCtx, ao analytics.AuctionOb
 		return false
 	}
 	return true
+}
+
+func IsIOSDevice(device *openrtb2.Device) bool {
+	return device != nil && strings.EqualFold(device.OS, "ios")
 }

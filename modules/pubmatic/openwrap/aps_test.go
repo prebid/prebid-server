@@ -39,7 +39,32 @@ func TestEnrichApsRequest(t *testing.T) {
 			wantNBR: 0,
 			checkOut: func(t *testing.T, out []byte) {
 				assert.Equal(t, "ow-ad-unit-name-1", apsTestJSONString(t, out, "imp", "[0]", "tagid"))
+				assert.Equal(t, uuid1, apsTestJSONString(t, out, "imp", "[0]", "ext", "gpid"))
 				assert.Equal(t, int64(10042), apsTestJSONInt64(t, out, "ext", "prebid", "bidderparams", "pubmatic", "wrapper", "profileid"))
+			},
+		},
+		{
+			name:        "success_preserves_existing_gpid",
+			body:        []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"` + uuid1 + `","ext":{"gpid":"existing-gpid"},"banner":{"w":300,"h":250}}],"app":{"publisher":{"id":"1"}}}`),
+			publisherID: "1",
+			setupMock: func(m *mock_cache.MockCache) {
+				m.EXPECT().GetApsOwMapping(uuid1).Return("ow-ad-unit-name-1", 10042, true)
+			},
+			wantNBR: 0,
+			checkOut: func(t *testing.T, out []byte) {
+				assert.Equal(t, "existing-gpid", apsTestJSONString(t, out, "imp", "[0]", "ext", "gpid"))
+			},
+		},
+		{
+			name:        "success_overwrites_empty_gpid",
+			body:        []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"` + uuid1 + `","ext":{"gpid":""},"banner":{"w":300,"h":250}}],"app":{"publisher":{"id":"1"}}}`),
+			publisherID: "1",
+			setupMock: func(m *mock_cache.MockCache) {
+				m.EXPECT().GetApsOwMapping(uuid1).Return("ow-ad-unit-name-1", 10042, true)
+			},
+			wantNBR: 0,
+			checkOut: func(t *testing.T, out []byte) {
+				assert.Equal(t, uuid1, apsTestJSONString(t, out, "imp", "[0]", "ext", "gpid"))
 			},
 		},
 		{

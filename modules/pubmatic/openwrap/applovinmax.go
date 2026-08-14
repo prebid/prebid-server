@@ -79,7 +79,7 @@ func updateImpression(signalImps []openrtb2.Imp, maxImps []openrtb2.Imp) {
 	// Update native
 	maxImps[0].Native = signalImps[0].Native
 
-	maxImps[0].Ext = setIfKeysExists(signalImp.Ext, maxImps[0].Ext, "reward", "skadn", "gpid", "owsdk")
+	maxImps[0].Ext = sdkutils.SetIfKeysExists(signalImp.Ext, maxImps[0].Ext, "reward", "skadn", "gpid", "owsdk")
 }
 
 func updateDevice(signalDevice *openrtb2.Device, maxRequest *openrtb2.BidRequest) {
@@ -89,7 +89,7 @@ func updateDevice(signalDevice *openrtb2.Device, maxRequest *openrtb2.BidRequest
 
 	maxRequest.Device = sdkutils.MergeDevice(maxRequest.Device, signalDevice)
 
-	maxRequest.Device.Ext = setIfKeysExists(signalDevice.Ext, maxRequest.Device.Ext, "atts", "ifv")
+	maxRequest.Device.Ext = sdkutils.SetIfKeysExists(signalDevice.Ext, maxRequest.Device.Ext, "atts", "ifv")
 }
 
 func updateApp(signalApp *openrtb2.App, maxRequest *openrtb2.BidRequest) {
@@ -130,7 +130,7 @@ func updateRegs(signalRegs *openrtb2.Regs, maxRequest *openrtb2.BidRequest) {
 	if signalRegs.COPPA != 0 {
 		maxRequest.Regs.COPPA = signalRegs.COPPA
 	}
-	maxRequest.Regs.Ext = setIfKeysExists(signalRegs.Ext, maxRequest.Regs.Ext, "gdpr", "gpp", "gpp_sid", "us_privacy", "dsa")
+	maxRequest.Regs.Ext = sdkutils.SetIfKeysExists(signalRegs.Ext, maxRequest.Regs.Ext, "gdpr", "gpp", "gpp_sid", "us_privacy", "dsa")
 }
 
 func updateSource(signalSource *openrtb2.Source, maxRequest *openrtb2.BidRequest) {
@@ -142,7 +142,7 @@ func updateSource(signalSource *openrtb2.Source, maxRequest *openrtb2.BidRequest
 		maxRequest.Source = &openrtb2.Source{}
 	}
 
-	maxRequest.Source.Ext = setIfKeysExists(signalSource.Ext, maxRequest.Source.Ext, "omidpn", "omidpv")
+	maxRequest.Source.Ext = sdkutils.SetIfKeysExists(signalSource.Ext, maxRequest.Source.Ext, "omidpn", "omidpv")
 }
 
 func updateUser(signalUser *openrtb2.User, maxRequest *openrtb2.BidRequest) {
@@ -174,36 +174,7 @@ func updateUser(signalUser *openrtb2.User, maxRequest *openrtb2.BidRequest) {
 		maxRequest.User.Ext = jsonparser.Delete(maxRequest.User.Ext, "impdepth")
 	}
 	// Pass user.ext from signal to the shared request for all bidders (ALMAX integration).
-	maxRequest.User.Ext = setIfKeysExists(signalUser.Ext, maxRequest.User.Ext, "consent", "eids", "sessionduration", "impdepth", "lastadomain")
-}
-
-func setIfKeysExists(source []byte, target []byte, keys ...string) []byte {
-	newTarget := target
-	if len(keys) > 0 && len(newTarget) == 0 {
-		newTarget = []byte(`{}`)
-	}
-
-	for _, key := range keys {
-		field, dataType, _, err := jsonparser.Get(source, key)
-		if err != nil {
-			continue
-		}
-
-		if dataType == jsonparser.String {
-			quotedStr := strconv.Quote(string(field))
-			field = []byte(quotedStr)
-		}
-
-		newTarget, err = jsonparser.Set(newTarget, field, key)
-		if err != nil {
-			return target
-		}
-	}
-
-	if len(newTarget) == 2 {
-		return target
-	}
-	return newTarget
+	maxRequest.User.Ext = sdkutils.SetIfKeysExists(signalUser.Ext, maxRequest.User.Ext, "consent", "eids", "sessionduration", "impdepth", "lastadomain")
 }
 
 func updateRequestWrapper(signalExt json.RawMessage, maxRequest *openrtb2.BidRequest) {
