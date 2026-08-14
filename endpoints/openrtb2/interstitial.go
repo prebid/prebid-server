@@ -11,8 +11,12 @@ import (
 )
 
 func processInterstitials(req *openrtb_ext.RequestWrapper) error {
-	unmarshalled := true
-	usePxRatioResolved := false
+	return processInterstitialsWithUsePxRatioResolver(req, usePxRatioForInterstitials)
+}
+
+func processInterstitialsWithUsePxRatioResolver(req *openrtb_ext.RequestWrapper, resolveUsePxRatio func(*openrtb_ext.RequestWrapper) bool) error {
+	var prebid *openrtb_ext.ExtDevicePrebid
+	resolved := false
 	usePxRatio := false
 
 	for _, imp := range req.GetImp() {
@@ -20,8 +24,10 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 			continue
 		}
 
-		var prebid *openrtb_ext.ExtDevicePrebid
-		if unmarshalled {
+		if !resolved {
+			if req.Device == nil {
+				return &errortypes.BadInput{Message: fmt.Sprintf("Unable to read max interstitial size for Imp id=%s (No Device and no Format objects)", imp.ID)}
+			}
 			if req.Device.Ext == nil {
 				// No special interstitial support requested, so bail as there is nothing to do
 				return nil
@@ -36,17 +42,10 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 				// No special interstitial support requested, so bail as there is nothing to do
 				return nil
 			}
+			usePxRatio = resolveUsePxRatio(req)
+			resolved = true
 		}
-		if !usePxRatioResolved {
-			var err error
-			usePxRatio, err = usePxRatioForInterstitials(req)
-			if err != nil {
-				return err
-			}
-			usePxRatioResolved = true
-		}
-		err := processInterstitialsForImp(imp, prebid, req.Device, usePxRatio)
-		if err != nil {
+		if err := processInterstitialsForImp(imp, prebid, req.Device, usePxRatio); err != nil {
 			return err
 		}
 	}
@@ -70,10 +69,10 @@ func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openr
 		}
 		maxWidth = device.W
 		maxHeight = device.H
-		if usePxRatio {
-			maxWidth = deviceSizeToDips(maxWidth, device.PxRatio)
-			maxHeight = deviceSizeToDips(maxHeight, device.PxRatio)
-		}
+	}
+	if usePxRatio && device != nil {
+		maxWidth = deviceSizeToDips(maxWidth, device.PxRatio)
+		maxHeight = deviceSizeToDips(maxHeight, device.PxRatio)
 	}
 	minWidth = (maxWidth * devExtPrebid.Interstitial.MinWidthPerc) / 100
 	minHeight = (maxHeight * devExtPrebid.Interstitial.MinHeightPerc) / 100
@@ -102,18 +101,18 @@ func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight int64) []ope
 	return formatList
 }
 
-func usePxRatioForInterstitials(req *openrtb_ext.RequestWrapper) (bool, error) {
+func usePxRatioForInterstitials(req *openrtb_ext.RequestWrapper) bool {
 	requestExt, err := req.GetRequestExt()
 	if err != nil {
-		return false, err
+		return false
 	}
 
 	requestPrebid := requestExt.GetPrebid()
-	return requestPrebid != nil && requestPrebid.Sdk != nil && requestPrebid.Sdk.UsePxRatio, nil
+	return requestPrebid != nil && requestPrebid.Sdk != nil && requestPrebid.Sdk.UsePxRatio
 }
 
 func deviceSizeToDips(size int64, pxRatio float64) int64 {
-	if pxRatio <= 0 {
+	if pxRatio <= 0 || math.IsNaN(pxRatio) {
 		return size
 	}
 

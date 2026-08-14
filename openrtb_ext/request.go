@@ -355,8 +355,8 @@ type ExtRequestPrebidDataEidPermission struct {
 }
 
 type ExtRequestSdk struct {
-	Renderers []ExtRequestSdkRenderer `json:"renderers,omitempty"`
-	UsePxRatio bool                   `json:"usepxratio,omitempty"`
+	Renderers  []ExtRequestSdkRenderer `json:"renderers,omitempty"`
+	UsePxRatio bool                    `json:"usepxratio,omitempty"`
 }
 
 type ExtRequestSdkRenderer struct {
