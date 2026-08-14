@@ -1,4 +1,5 @@
-endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}"
+endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}"
+endpointCompression: gzip
 openrtb:
   version: 2.6
 geoscope:

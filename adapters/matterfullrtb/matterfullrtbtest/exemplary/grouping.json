@@ -27,7 +27,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://prebid.matterfull.co/?uqhash=pub-abc-12345678901234",
+        "uri": "https://us.matterfull.co/?uqhash=pub-abc-12345678901234",
         "body": {
           "id": "req-id-123",
           "imp": [
@@ -42,7 +42,7 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://prebid.matterfull.co/?uqhash=pub-def-12345678901234",
+        "uri": "https://us.matterfull.co/?uqhash=pub-def-12345678901234",
         "body": {
           "id": "req-id-123",
           "imp": [

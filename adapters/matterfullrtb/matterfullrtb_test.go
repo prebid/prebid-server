@@ -18,7 +18,7 @@ import (
 
 func TestMakeRequestsEmptyImps(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
@@ -30,7 +30,7 @@ func TestMakeRequestsEmptyImps(t *testing.T) {
 
 func TestMakeRequestsAllImpsInvalid(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
@@ -59,12 +59,12 @@ func TestMakeRequestsAllImpsInvalid(t *testing.T) {
 
 func TestMakeBidsInvalidJSON(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
 	internalReq := &openrtb2.BidRequest{ID: "req", Imp: []openrtb2.Imp{{ID: "imp1"}}}
-	externalReq := &adapters.RequestData{Method: "POST", Uri: "https://prebid.matterfull.co/?uqhash=pub", Body: nil, ImpIDs: []string{"imp1"}}
+	externalReq := &adapters.RequestData{Method: "POST", Uri: "https://us.matterfull.co/?uqhash=pub", Body: nil, ImpIDs: []string{"imp1"}}
 	response := &adapters.ResponseData{StatusCode: 200, Body: []byte("not valid json")}
 
 	gotResp, gotErrs := bidder.MakeBids(internalReq, externalReq, response)
@@ -75,7 +75,7 @@ func TestMakeBidsInvalidJSON(t *testing.T) {
 
 func TestMakeBidsResponseStatus(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
@@ -117,7 +117,7 @@ func TestMakeBidsResponseStatus(t *testing.T) {
 
 func TestMakeBidsSkipsInvalidBidTypes(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
@@ -125,7 +125,7 @@ func TestMakeBidsSkipsInvalidBidTypes(t *testing.T) {
 		ID:     "imp1",
 		Banner: &openrtb2.Banner{},
 	}}}
-	externalReq := &adapters.RequestData{Method: "POST", Uri: "https://prebid.matterfull.co/?uqhash=pub", ImpIDs: []string{"imp1"}}
+	externalReq := &adapters.RequestData{Method: "POST", Uri: "https://us.matterfull.co/?uqhash=pub", ImpIDs: []string{"imp1"}}
 	response := &adapters.ResponseData{StatusCode: 200, Body: []byte(`{
 		"seatbid": [{
 			"bid": [
@@ -147,7 +147,7 @@ func TestMakeBidsSkipsInvalidBidTypes(t *testing.T) {
 
 func TestMakeRequestsBuildEndpointError(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{slice .PublisherID 100}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{slice .PublisherID 100}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
@@ -168,7 +168,7 @@ func TestMakeRequestsBuildEndpointError(t *testing.T) {
 
 func TestMakeRequestsMarshalError(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
@@ -247,7 +247,7 @@ func TestCompatBannerImpression(t *testing.T) {
 
 func TestBuildEndpointURLEscapesPublisherID(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}",
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}",
 	}, config.Server{})
 	require.NoError(t, err)
 
@@ -256,7 +256,7 @@ func TestBuildEndpointURLEscapesPublisherID(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "https://prebid.matterfull.co/?uqhash=publisher%26id%3Dother", endpoint)
+	assert.Equal(t, "https://us.matterfull.co/?uqhash=publisher%26id%3Dother", endpoint)
 }
 
 func TestCompatImpressionWithoutBanner(t *testing.T) {
@@ -380,7 +380,7 @@ func bidderExt(publisherID string) []byte {
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderMatterfullRTB, config.Adapter{
-		Endpoint: "https://prebid.matterfull.co/?uqhash={{.PublisherID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+		Endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	require.NoError(t, buildErr, "Builder returned unexpected error")
 
