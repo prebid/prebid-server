@@ -37,6 +37,8 @@ var validParams = []string{
 	`{"host":"ads.example.com","placementKey":"a4f21c9e7b"}`,
 	`{"host":"ads.example.com:8080","placementKey":"a4f21c9e7b"}`,
 	`{"host":"ads-eu.example.co.uk","placementKey":"a4f21c9e7b"}`,
+	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","channel":"sports-uk"}`,
+	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"section":"sport","tier":2,"premium":true}}`,
 }
 
 var invalidParams = []string{
@@ -57,4 +59,6 @@ var invalidParams = []string{
 	`{"host":"ads.example.com/collect","placementKey":"a4f21c9e7b"}`,
 	`{"host":"user@ads.example.com","placementKey":"a4f21c9e7b"}`,
 	`{"host":"ads.example.com?x=1","placementKey":"a4f21c9e7b"}`,
+	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"nested":{"a":1}}}`,
+	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":"not-an-object"}`,
 }

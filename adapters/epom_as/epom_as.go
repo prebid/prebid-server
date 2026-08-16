@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -60,6 +61,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		// the one the Prebid.js adapter sends, and the ad server has a single
 		// place to read it from.
 		imp.TagID = impExt.PlacementKey
+
+		if err := enrichImpExt(&imp, impExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
 		if _, seen := impsByHost[impExt.Host]; !seen {
 			hostOrder = append(hostOrder, impExt.Host)
@@ -142,6 +148,103 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	return result, errs
+}
+
+// Ingest limits, mirrored by the Prebid.js adapter and enforced again by the ad
+// server: oversized entries are dropped rather than truncated, so a publisher sees
+// the same set of parameters accepted on both transports.
+const (
+	customParamsMaxKeys        = 32
+	customParamsMaxKeyLength   = 128
+	customParamsMaxValueLength = 512
+)
+
+// enrichImpExt moves the Epom-specific params out of imp.ext.bidder and into the
+// shape the ad server reads: channel under our own namespace, custom parameters
+// merged into imp.ext.data, the standard first-party-data home, so that data
+// contributed by RTD modules lands in the same object.
+func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
+	if impExt.Channel == "" && len(impExt.CustomParams) == 0 {
+		return nil
+	}
+
+	ext := map[string]json.RawMessage{}
+	if len(imp.Ext) > 0 {
+		if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
+			return &errortypes.BadInput{Message: fmt.Sprintf("imp %s: malformed ext: %s", imp.ID, err.Error())}
+		}
+	}
+
+	if impExt.Channel != "" {
+		namespace, err := json.Marshal(map[string]string{"channel": impExt.Channel})
+		if err != nil {
+			return err
+		}
+		ext[string(openrtb_ext.BidderEpomAs)] = namespace
+	}
+
+	if merged := mergeCustomParams(ext["data"], impExt.CustomParams); merged != nil {
+		ext["data"] = merged
+	}
+
+	encoded, err := json.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	imp.Ext = encoded
+	return nil
+}
+
+// mergeCustomParams folds the scalar params that pass the ingest limits into any
+// existing imp.ext.data. Existing keys win — data already on the imp came from the
+// publisher's own first-party configuration.
+func mergeCustomParams(existing json.RawMessage, params map[string]interface{}) json.RawMessage {
+	out := map[string]interface{}{}
+	kept := 0
+	for key, value := range params {
+		if kept >= customParamsMaxKeys || len(key) > customParamsMaxKeyLength {
+			continue
+		}
+		asString, ok := scalarToString(value)
+		if !ok || len(asString) > customParamsMaxValueLength {
+			continue
+		}
+		out[key] = asString
+		kept++
+	}
+	if kept == 0 {
+		return nil
+	}
+
+	if len(existing) > 0 {
+		current := map[string]interface{}{}
+		if err := jsonutil.Unmarshal(existing, &current); err == nil {
+			for key, value := range current {
+				out[key] = value
+			}
+		}
+	}
+
+	encoded, err := json.Marshal(out)
+	if err != nil {
+		return nil
+	}
+	return encoded
+}
+
+func scalarToString(value interface{}) (string, bool) {
+	switch v := value.(type) {
+	case string:
+		return v, true
+	case bool:
+		return strconv.FormatBool(v), true
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64), true
+	case json.Number:
+		return v.String(), true
+	default:
+		return "", false
+	}
 }
 
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpEpomAs, error) {

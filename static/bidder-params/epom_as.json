@@ -13,6 +13,22 @@
       "type": "string",
       "description": "Placement identifier, from the placement's invocation-code tab in the Epom UI",
       "minLength": 1
+    },
+    "channel": {
+      "type": "string",
+      "description": "Epom channel: publisher traffic-slice label used for channel targeting, reporting and tracking-URL propagation. Sent as imp.ext.epom_as.channel.",
+      "maxLength": 128
+    },
+    "customParams": {
+      "type": "object",
+      "description": "Epom custom parameters for custom targeting and creative macros. Merged into imp.ext.data. Maximum 32 keys; keys up to 128 and values up to 512 characters.",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean"
+        ]
+      }
     }
   },
   "required": [

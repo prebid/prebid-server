@@ -6,4 +6,8 @@ type ExtImpEpomAs struct {
 	Host string `json:"host"`
 	// PlacementKey identifies the placement within that deployment.
 	PlacementKey string `json:"placementKey"`
+	// Channel is a traffic-slice label used for targeting and reporting.
+	Channel string `json:"channel,omitempty"`
+	// CustomParams feed custom targeting and creative macros.
+	CustomParams map[string]interface{} `json:"customParams,omitempty"`
 }
