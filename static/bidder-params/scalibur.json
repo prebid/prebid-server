@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Scalibur Adapter Params",
-  "description": "A valid BidderParams object for the Scalibur adapter",
+  "description": "A valid BidderParams object for the Scalibur adapter. Every impression must resolve a placement: either set placementId here, or set imp.tagid on the ad unit. An impression with neither is not served.",
   "type": "object",
   "properties": {
     "placementId": {
@@ -18,8 +18,8 @@
     },
     "host": {
       "type": "string",
-      "description": "Subdomain label of the scalibur.io endpoint, for account or environment specific servers. A single DNS label only, no dots or port; the domain itself is fixed. Defaults to srv. Impressions naming different subdomains are sent as separate requests, one per subdomain.",
-      "pattern": "^[a-z0-9-]{1,63}$"
+      "description": "Subdomain label of the scalibur.io endpoint, for account or environment specific servers. A single RFC 1123 DNS label only, no dots or port; the domain itself is fixed. Defaults to srv. Impressions naming different subdomains are sent as separate requests, one per subdomain.",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
     }
   }
 }

@@ -2,6 +2,8 @@ endpoint: "https://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"
 # Leave disabled: false → adapter enabled
 compression: gzip
 disabled: false
+geoscope:
+  - global
 maintainer:
   email: "support@scalibur.io"
 gvlVendorID: 1471

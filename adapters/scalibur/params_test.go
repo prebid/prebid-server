@@ -61,4 +61,7 @@ var invalidParams = []string{
 	`{"host":"host:8080"}`,
 	`{"host":"EU"}`,
 	`{"host":""}`,
+	// RFC 1123: a label may not start or end with a hyphen.
+	`{"host":"-foo"}`,
+	`{"host":"foo-"}`,
 }

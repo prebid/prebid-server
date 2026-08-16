@@ -20,9 +20,10 @@ import (
 // defaultHostLabel resolves the {{.Host}} macro when no host param is supplied.
 const defaultHostLabel = "srv"
 
-// hostLabelPattern matches a single DNS label, mirroring the bidder-params schema.
-// The endpoint domain is fixed in the template, so only the subdomain varies.
-var hostLabelPattern = regexp.MustCompile(`^[a-z0-9-]{1,63}$`)
+// hostLabelPattern matches a single RFC 1123 DNS label, mirroring the
+// bidder-params schema. The endpoint domain is fixed in the template, so only
+// the subdomain varies.
+var hostLabelPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
 
 type adapter struct {
 	endpoint *template.Template
@@ -286,23 +287,27 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		bidResponse.Currency = "USD"
 	}
 
-	// Process each seat bid
+	// Process each seat bid. A bid that cannot be resolved is reported and
+	// skipped so the rest of the response still yields bids.
+	var errs []error
 	for _, seatBid := range bidResp.SeatBid {
 		for _, bid := range seatBid.Bid {
 			// Find the corresponding imp
 			imp, found := impMap[bid.ImpID]
 			if !found {
-				return nil, []error{&errortypes.BadServerResponse{
+				errs = append(errs, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Invalid bid imp ID %s", bid.ImpID),
-				}}
+				})
+				continue
 			}
 
 			// Determine bid type based on imp
 			bidType, err := getBidMediaType(bid, imp)
 			if err != nil {
-				return nil, []error{&errortypes.BadServerResponse{
+				errs = append(errs, &errortypes.BadServerResponse{
 					Message: err.Error(),
-				}}
+				})
+				continue
 			}
 
 			bidCopy := bid
@@ -334,10 +339,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	if len(bidResponse.Bids) == 0 {
-		return nil, nil
+		return nil, errs
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 // parseScaliburExt extracts Scalibur-specific parameters from the impression extension.
