@@ -103,6 +103,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/emtv"
 	"github.com/prebid/prebid-server/v4/adapters/eplanning"
 	"github.com/prebid/prebid-server/v4/adapters/epom"
+	epom_as "github.com/prebid/prebid-server/v4/adapters/epom_as"
 	"github.com/prebid/prebid-server/v4/adapters/escalax"
 	"github.com/prebid/prebid-server/v4/adapters/eskimi"
 	"github.com/prebid/prebid-server/v4/adapters/exco"
@@ -381,6 +382,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEmxDigital:        cadentaperturemx.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
+		openrtb_ext.BidderEpomAs:            epom_as.Builder,
 		openrtb_ext.BidderEscalax:           escalax.Builder,
 		openrtb_ext.BidderEskimi:            eskimi.Builder,
 		openrtb_ext.BidderExco:              exco.Builder,

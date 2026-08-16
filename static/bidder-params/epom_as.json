@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Epom Ad Server Adapter Params",
+  "description": "A schema which validates params accepted by the Epom Ad Server adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Serving host of the publisher's Epom Ad Server deployment",
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
+    },
+    "placementKey": {
+      "type": "string",
+      "description": "Placement identifier, from the placement's invocation-code tab in the Epom UI",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "host",
+    "placementKey"
+  ]
+}

@@ -1,0 +1,11 @@
+endpoint: "https://{{.Host}}/hb/bid"
+maintainer:
+  email: "support@epom.com"
+gvlVendorID: 849
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
