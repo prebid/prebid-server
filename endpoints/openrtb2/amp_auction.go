@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/privacy/gpp"
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v4/stored_responses"
@@ -652,18 +653,27 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	}
 
 	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
-	if policyWriterErr != nil {
+	// A GPP warning means only gpp_sid was malformed; the GPP consent string is still valid and
+	// orthogonal to the SID, so the writer must be applied and the warning treated as non-fatal.
+	// For CCPA/TCF2 the warning means the consent string itself is invalid, so preserve the existing
+	// behavior of not writing it (see TestConsentWarnings).
+	_, isGPP := policyWriter.(gpp.ConsentWriter)
+	if policyWriterErr != nil && !isGPP {
 		return []error{policyWriterErr}
 	}
 	if err := policyWriter.Write(req); err != nil {
 		return []error{err}
 	}
 
+	var errors []error
+	if policyWriterErr != nil {
+		errors = append(errors, policyWriterErr)
+	}
+
 	if ampParams.Timeout != nil {
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
-	var errors []error
 	if warn := setTargeting(req, ampParams.Targeting); warn != nil {
 		errors = append(errors, warn)
 	}

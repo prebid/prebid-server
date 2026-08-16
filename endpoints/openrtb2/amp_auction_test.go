@@ -544,6 +544,66 @@ func TestOverrideWithParams(t *testing.T) {
 				errorMsgs: []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
 			},
 		},
+		{
+			desc: "amp.Params GPP with valid gpp_sid - expect regs.gpp and regs.gppsid set, no error",
+			given: testInput{
+				ampParams: amp.Params{
+					Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					ConsentType: amp.ConsentGPP,
+					GppSid:      "2,4",
+				},
+				bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}}},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+					Regs: &openrtb2.Regs{
+						GPP:    "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+						GPPSID: []int8{2, 4},
+					},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "amp.Params GPP with malformed gpp_sid - expect regs.gpp still set and a non-fatal warning (regression for C1)",
+			given: testInput{
+				ampParams: amp.Params{
+					Consent:     "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA",
+					ConsentType: amp.ConsentGPP,
+					GppSid:      "malformed",
+				},
+				bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}}},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+					Regs: &openrtb2.Regs{GPP: "DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"},
+				},
+				errorMsgs:         []string{"GPP SID 'malformed' is not a valid comma-separated list of integers."},
+				expectFatalErrors: false,
+			},
+		},
+		{
+			desc: "amp.Params GPP with only gpp_sid and no consent string - expect regs.gppsid set, regs.gpp empty (issue #3577)",
+			given: testInput{
+				ampParams: amp.Params{
+					ConsentType: amp.ConsentGPP,
+					GppSid:      "2,4",
+				},
+				bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}}},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+					Regs: &openrtb2.Regs{GPPSID: []int8{2, 4}},
+				},
+				errorMsgs: nil,
+			},
+		},
 	}
 
 	for _, test := range testCases {
