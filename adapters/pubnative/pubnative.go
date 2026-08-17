@@ -1,7 +1,6 @@
 package pubnative
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -62,7 +61,7 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		}
 
 		requestCopy.Imp = []openrtb2.Imp{imp}
-		reqJSON, err := json.Marshal(&requestCopy)
+		reqJSON, err := jsonutil.Marshal(&requestCopy)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs

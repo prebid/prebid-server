@@ -327,18 +327,17 @@ func convertAdMarkupTypeToMediaType(adMarkupType adMarkupType) (openrtb_ext.BidT
 
 func convertBidFloorCurrency(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
 	for i := range imps {
-		imp := &imps[i]
-		if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, "USD") {
+		if imps[i].BidFloor <= 0 || imps[i].BidFloorCur == "" || strings.EqualFold(imps[i].BidFloorCur, "USD") {
 			continue
 		}
 
-		convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		convertedValue, err := reqInfo.ConvertCurrency(imps[i].BidFloor, imps[i].BidFloorCur, "USD")
 		if err != nil {
 			return err
 		}
 
-		imp.BidFloor = convertedValue
-		imp.BidFloorCur = "USD"
+		imps[i].BidFloor = convertedValue
+		imps[i].BidFloorCur = "USD"
 	}
 	return nil
 }
