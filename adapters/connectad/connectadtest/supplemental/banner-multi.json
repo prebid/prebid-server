@@ -50,7 +50,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://bidder.connectad.io/API?src=pbs",
+        "uri": "https://bidder.connectad.io/API?src=pbs",
         "headers": {
           "Accept": [
             "application/json"

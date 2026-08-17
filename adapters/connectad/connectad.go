@@ -37,7 +37,7 @@ func (a *ConnectAdAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		})
 	}
 
-	data, err := json.Marshal(request)
+	data, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error in packaging request to JSON",
@@ -92,26 +92,15 @@ func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapter
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
+	impMediaTypes := buildImpMediaTypeLookup(bidReq.Imp)
 
-	// Map requested media types for fallback BidType resolution
-	impMediaTypeReq := map[string]openrtb_ext.BidType{}
-	for _, imp := range bidReq.Imp {
-		if imp.Banner != nil {
-			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeBanner
-		} else if imp.Video != nil {
-			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeVideo
-		} else if imp.Native != nil {
-			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeNative
-		} else if imp.Audio != nil {
-			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeAudio
-		}
-	}
-
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForBid(sb.Bid[i], impMediaTypeReq)
+			bidType, err := getMediaTypeForBid(sb.Bid[i], impMediaTypes)
 			if err != nil {
-				bidType = openrtb_ext.BidTypeBanner // Fallback
+				errs = append(errs, err)
+				continue
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -121,10 +110,43 @@ func (a *ConnectAdAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapter
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext.BidType) (openrtb_ext.BidType, error) {
+type impMediaTypeLookup struct {
+	singleFormat map[string]openrtb_ext.BidType
+	knownImps    map[string]struct{}
+}
+
+func buildImpMediaTypeLookup(imps []openrtb2.Imp) impMediaTypeLookup {
+	lookup := impMediaTypeLookup{
+		singleFormat: make(map[string]openrtb_ext.BidType, len(imps)),
+		knownImps:    make(map[string]struct{}, len(imps)),
+	}
+	for _, imp := range imps {
+		lookup.knownImps[imp.ID] = struct{}{}
+
+		var types []openrtb_ext.BidType
+		if imp.Banner != nil {
+			types = append(types, openrtb_ext.BidTypeBanner)
+		}
+		if imp.Video != nil {
+			types = append(types, openrtb_ext.BidTypeVideo)
+		}
+		if imp.Native != nil {
+			types = append(types, openrtb_ext.BidTypeNative)
+		}
+		if imp.Audio != nil {
+			types = append(types, openrtb_ext.BidTypeAudio)
+		}
+		if len(types) == 1 {
+			lookup.singleFormat[imp.ID] = types[0]
+		}
+	}
+	return lookup
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid, lookup impMediaTypeLookup) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -136,8 +158,11 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 		return openrtb_ext.BidTypeNative, nil
 	}
 
-	if bidType, ok := impMediaTypeReq[bid.ImpID]; ok {
+	if bidType, ok := lookup.singleFormat[bid.ImpID]; ok {
 		return bidType, nil
+	}
+	if _, known := lookup.knownImps[bid.ImpID]; known {
+		return "", fmt.Errorf("multi-format impression %s requires bid.mtype", bid.ImpID)
 	}
 
 	return "", fmt.Errorf("unmatched impression id: %s", bid.ImpID)
@@ -196,19 +221,27 @@ func addImpInfo(imp *openrtb2.Imp, secure *int8, cadExt *openrtb_ext.ExtImpConne
 		imp.BidFloorCur = "USD"
 	}
 
-	var extMap map[string]interface{}
+	var extMap map[string]json.RawMessage
 	if imp.Ext != nil {
 		if err := jsonutil.Unmarshal(imp.Ext, &extMap); err != nil {
 			return err
 		}
 	} else {
-		extMap = make(map[string]interface{})
+		extMap = make(map[string]json.RawMessage)
 	}
 
-	extMap["networkId"] = int(cadExt.NetworkID)
-	extMap["siteId"] = int(cadExt.SiteID)
+	networkID, err := jsonutil.Marshal(int(cadExt.NetworkID))
+	if err != nil {
+		return err
+	}
+	siteID, err := jsonutil.Marshal(int(cadExt.SiteID))
+	if err != nil {
+		return err
+	}
+	extMap["networkId"] = networkID
+	extMap["siteId"] = siteID
 
-	extBytes, err := json.Marshal(extMap)
+	extBytes, err := jsonutil.Marshal(extMap)
 	if err != nil {
 		return err
 	}

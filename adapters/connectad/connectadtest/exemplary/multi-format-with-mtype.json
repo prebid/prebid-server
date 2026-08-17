@@ -1,15 +1,21 @@
 {
   "mockBidRequest": {
-    "id": "test-audio-id",
+    "id": "test-multi-format-id",
     "imp": [
       {
-        "id": "test-audio-imp-id",
-        "audio": {
+        "id": "test-multi-format-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "video": {
           "mimes": [
-            "audio/mp3"
+            "video/mp4"
           ],
           "minduration": 5,
-          "maxduration": 30
+          "maxduration": 30,
+          "w": 640,
+          "h": 480
         },
         "ext": {
           "bidder": {
@@ -33,16 +39,22 @@
       "expectedRequest": {
         "uri": "https://bidder.connectad.io/API?src=pbs",
         "body": {
-          "id": "test-audio-id",
+          "id": "test-multi-format-id",
           "imp": [
             {
-              "id": "test-audio-imp-id",
-              "audio": {
+              "id": "test-multi-format-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "video": {
                 "mimes": [
-                  "audio/mp3"
+                  "video/mp4"
                 ],
                 "minduration": 5,
-                "maxduration": 30
+                "maxduration": 30,
+                "w": 640,
+                "h": 480
               },
               "ext": {
                 "bidder": {
@@ -66,24 +78,24 @@
           }
         },
         "impIDs": [
-          "test-audio-imp-id"
+          "test-multi-format-imp-id"
         ]
       },
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-audio-id",
+          "id": "test-multi-format-id",
           "seatbid": [
             {
               "seat": "connectad",
               "bid": [
                 {
-                  "id": "aud-1",
-                  "impid": "test-audio-imp-id",
-                  "price": 15.0,
-                  "adm": "<vast></vast>",
-                  "crid": "a1",
-                  "mtype": 3
+                  "id": "mf-video-1",
+                  "impid": "test-multi-format-imp-id",
+                  "price": 12.5,
+                  "adm": "<VAST></VAST>",
+                  "crid": "mfv1",
+                  "mtype": 2
                 }
               ]
             }
@@ -99,15 +111,15 @@
       "bids": [
         {
           "bid": {
-            "id": "aud-1",
-            "impid": "test-audio-imp-id",
-            "price": 15.0,
-            "adm": "<vast></vast>",
-            "crid": "a1",
-            "mtype": 3
+            "id": "mf-video-1",
+            "impid": "test-multi-format-imp-id",
+            "price": 12.5,
+            "adm": "<VAST></VAST>",
+            "crid": "mfv1",
+            "mtype": 2
           },
-          "type": "audio"
-         }
+          "type": "video"
+        }
       ]
     }
   ]
