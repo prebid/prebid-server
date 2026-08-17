@@ -454,7 +454,7 @@ func TestAccountRequestStatusMetric(t *testing.T) {
 		assertCounterVecValue(t, test.description, "accountRequestStatus", m.accountRequestStatus,
 			test.expectedCount,
 			prometheus.Labels{
-				accountLabel:       "knownPublisher",
+				accountLabel:       test.pubID,
 				requestStatusLabel: string(metrics.RequestStatusBadInput),
 			})
 	}
