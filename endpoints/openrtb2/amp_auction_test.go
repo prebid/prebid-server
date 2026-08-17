@@ -576,6 +576,34 @@ func TestOverrideWithParams(t *testing.T) {
 			},
 		},
 		{
+			desc: "amp.Params default consent_type with valid CCPA consent and gdpr_applies true - expect consent warning and remaining overrides applied",
+			given: testInput{
+				ampParams: amp.Params{
+					Consent:     "1YNN",
+					GdprApplies: &gdprApplies,
+					Targeting:   `{"foo":"bar"}`,
+					Timeout:     &timeout,
+					Trace:       "verbose",
+				},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{
+						Banner: &openrtb2.Banner{Format: []openrtb2.Format{}},
+						Ext:    json.RawMessage(`{"data":{"foo":"bar"}}`),
+					}},
+					Regs: &openrtb2.Regs{USPrivacy: "1YNN"},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+					TMax: 500,
+					Ext:  json.RawMessage(`{"prebid":{"trace":"verbose"}}`),
+				},
+				errorMsgs: []string{"AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string"},
+			},
+		},
+		{
 			desc: "amp.Params with invalid CCPA consent and gdpr_applies true - expect consent warning and remaining overrides skipped",
 			given: testInput{
 				ampParams: amp.Params{
