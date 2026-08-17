@@ -1,0 +1,162 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 625
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "protocols": [2, 3, 5, 6, 7, 8],
+          "plcmt": 1
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 999
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "271",
+      "domain": "display.eskimi-creatives.com",
+      "page": "https://display.eskimi-creatives.com/"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ittr.eskimi.com/prebidjs",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-banner",
+              "secure": 1,
+              "banner": {
+                "format": [
+                  { "w": 300, "h": 250 }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 625
+                }
+              }
+            },
+            {
+              "id": "imp-video",
+              "secure": 1,
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480,
+                "protocols": [2, 3, 5, 6, 7, 8],
+                "plcmt": 1
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 999
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "271",
+            "domain": "display.eskimi-creatives.com",
+            "page": "https://display.eskimi-creatives.com/",
+            "ext": {
+              "placementId": 625
+            }
+          }
+        },
+        "impIDs": ["imp-banner", "imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "eskimi",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "imp-banner",
+                  "price": 1.25,
+                  "adm": "<div>ad</div>",
+                  "crid": "creative-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                },
+                {
+                  "id": "2",
+                  "impid": "imp-video",
+                  "price": 4.5,
+                  "adm": "<VAST version=\"4.0\"><Ad><InLine><Creatives><Creative><Linear><Duration>00:00:15</Duration></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "crid": "video-creative-1",
+                  "w": 640,
+                  "h": 480,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "imp-banner",
+            "price": 1.25,
+            "adm": "<div>ad</div>",
+            "crid": "creative-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "2",
+            "impid": "imp-video",
+            "price": 4.5,
+            "adm": "<VAST version=\"4.0\"><Ad><InLine><Creatives><Creative><Linear><Duration>00:00:15</Duration></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "crid": "video-creative-1",
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
