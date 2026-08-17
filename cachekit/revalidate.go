@@ -38,6 +38,8 @@ func newRevalidator[K comparable](clk clock.Clock, backoff time.Duration) *reval
 func (r *revalidator[K]) begin(key K) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	now := r.clock.Now()
+	r.pruneExpiredFailures(now)
 	st := r.state[key]
 	if st.inFlight || (!st.failedAt.IsZero() && r.clock.Now().Before(st.failedAt.Add(r.backoff))) {
 		return false
@@ -45,6 +47,14 @@ func (r *revalidator[K]) begin(key K) bool {
 	st.inFlight = true
 	r.state[key] = st
 	return true
+}
+
+func (r *revalidator[K]) pruneExpiredFailures(now time.Time) {
+	for key, st := range r.state {
+		if !st.inFlight && !st.failedAt.IsZero() && !now.Before(st.failedAt.Add(r.backoff)) {
+			delete(r.state, key)
+		}
+	}
 }
 
 // finish releases the in-flight slot; on failure it records the time (for backoff),
@@ -67,14 +77,16 @@ func (f *Fetcher[K, V]) triggerRevalidate(key K) {
 	if !f.reval.begin(key) {
 		return
 	}
-	go f.revalidate(context.Background(), key)
+	ctx, cancel := context.WithTimeout(context.Background(), f.revalTimeout)
+	go f.revalidate(ctx, cancel, key)
 }
 
 // revalidate reloads a stale key in the background. It never worsens availability:
 // on success it replaces the value; if the key is gone upstream it is dropped (and
 // negative-cached); on any error (transient or a newly-malformed value) the last
 // good value keeps being served and a backoff is recorded.
-func (f *Fetcher[K, V]) revalidate(ctx context.Context, key K) {
+func (f *Fetcher[K, V]) revalidate(ctx context.Context, cancel context.CancelFunc, key K) {
+	defer cancel()
 	start := f.clock.Now()
 	found, err := f.source.Fetch(ctx, []K{key})
 	dur := f.clock.Now().Sub(start)

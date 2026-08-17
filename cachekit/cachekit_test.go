@@ -42,6 +42,28 @@ func (s *stubSource) Fetch(_ context.Context, keys []string) (map[string]json.Ra
 
 func (s *stubSource) callCount() int { return int(atomic.LoadInt32(&s.calls)) }
 
+type timeoutOnceSource struct {
+	calls int32
+	data  map[string]json.RawMessage
+}
+
+func (s *timeoutOnceSource) Fetch(ctx context.Context, keys []string) (map[string]json.RawMessage, error) {
+	call := atomic.AddInt32(&s.calls, 1)
+	if call == 2 {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
+	out := make(map[string]json.RawMessage, len(keys))
+	for _, k := range keys {
+		if v, ok := s.data[k]; ok {
+			out[k] = v
+		}
+	}
+	return out, nil
+}
+
+func (s *timeoutOnceSource) callCount() int { return int(atomic.LoadInt32(&s.calls)) }
+
 func identityTransform(_ string, raw json.RawMessage) (string, error) {
 	return string(raw), nil
 }
@@ -271,6 +293,61 @@ func TestGetServesStaleWhileBackendDown(t *testing.T) {
 	}
 	assert.Eventually(t, func() bool { return src.callCount() >= 2 }, time.Second, 5*time.Millisecond)
 	assert.LessOrEqual(t, src.callCount(), 2, "failed refreshes must back off, not storm the backend")
+}
+
+func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
+	clk := clock.NewMock()
+	src := &timeoutOnceSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
+	cache, err := NewLRUCache[string, string](100, clk)
+	require.NoError(t, err)
+	f := New(Params[string, string]{
+		Source:            src,
+		Transform:         identityTransform,
+		Cache:             cache,
+		TTL:               time.Hour,
+		ServeStale:        true,
+		RevalidateTimeout: 10 * time.Millisecond,
+		Clock:             clk,
+	})
+
+	v, err := f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", v)
+
+	clk.Add(2 * time.Hour)
+	src.data["a"] = json.RawMessage(`v2`)
+	v, err = f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", v)
+	assert.Eventually(t, func() bool { return src.callCount() == 2 }, time.Second, 5*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		f.reval.mu.Lock()
+		defer f.reval.mu.Unlock()
+		st := f.reval.state["a"]
+		return !st.inFlight && !st.failedAt.IsZero()
+	}, time.Second, 5*time.Millisecond)
+
+	clk.Add(revalidateBackoff + time.Second)
+	v, err = f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", v)
+	assert.Eventually(t, func() bool { return src.callCount() == 3 }, time.Second, 5*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		got, _ := f.Get(context.Background(), "a")
+		return got == "v2"
+	}, time.Second, 5*time.Millisecond)
+}
+
+func TestRevalidatorPrunesExpiredFailures(t *testing.T) {
+	clk := clock.NewMock()
+	r := newRevalidator[string](clk, revalidateBackoff)
+	r.finish("old", true)
+	require.Contains(t, r.state, "old")
+
+	clk.Add(revalidateBackoff + time.Second)
+	assert.True(t, r.begin("new"))
+	assert.NotContains(t, r.state, "old")
+	assert.True(t, r.state["new"].inFlight)
 }
 
 func TestGetNoCacheAlwaysFetches(t *testing.T) {

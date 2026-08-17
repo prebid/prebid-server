@@ -85,13 +85,15 @@ func NewCacheKitAccountFetcher(source stored_requests.AllFetcher, cfg config.Cac
 	// Freshness (refresh) axis: ttl (serve-stale + background revalidation), none
 	// (never revalidate / load-once), or preload (bulk warm at startup then ttl).
 	effectiveTTL := cfg.TTL()
+	serveStale := cfg.ServeStale
 	var preload cachekit.BulkSource[string]
 	switch cfg.Refresh {
 	case "", config.RefreshTTL:
-		// serve-stale via ttl; nothing to preload.
+		serveStale = true
 	case config.RefreshNone:
 		effectiveTTL = 0 // never revalidate
 	case config.RefreshPreload:
+		serveStale = true
 		bulk, ok := source.(stored_requests.AllAccountsFetcher)
 		if !ok {
 			return nil, fmt.Errorf("accounts.cache.refresh %q requires an account source that supports bulk loading (FetchAllAccounts)", cfg.Refresh)
@@ -106,16 +108,17 @@ func NewCacheKitAccountFetcher(source stored_requests.AllFetcher, cfg config.Cac
 	}
 
 	engine := cachekit.New(cachekit.Params[string, *config.Account]{
-		Source:     accountSource{fetcher: source},
-		Transform:  newAccountTransform(defaults),
-		Cache:      cache,
-		TTL:        effectiveTTL,
-		Negatives:  negatives,
-		Coalesce:   cfg.CoalesceRequests,
-		ServeStale: cfg.ServeStale,
-		Preload:    preload,
-		Clock:      clk,
-		Metrics:    recorder,
+		Source:            accountSource{fetcher: source},
+		Transform:         newAccountTransform(defaults),
+		Cache:             cache,
+		TTL:               effectiveTTL,
+		Negatives:         negatives,
+		Coalesce:          cfg.CoalesceRequests,
+		ServeStale:        serveStale,
+		RevalidateTimeout: cfg.RevalidateTimeout(),
+		Preload:           preload,
+		Clock:             clk,
+		Metrics:           recorder,
 	})
 	engine.Start(context.Background())
 

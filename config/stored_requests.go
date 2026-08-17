@@ -99,9 +99,12 @@ type CacheKitConfig struct {
 	CoalesceRequests bool `mapstructure:"coalesce_requests"`
 	// ServeStale opts into stale-while-revalidate: past ttl_seconds the cached value
 	// is served immediately and refreshed in the background (reads never block on the
-	// backend). Opt-in; defaults to off, which expires the entry and reloads it
-	// synchronously on the next read (classic TTL cache).
+	// backend). For refresh modes "ttl" and "preload", this behavior is enabled by
+	// default to match the mode contract.
 	ServeStale bool `mapstructure:"serve_stale"`
+	// RevalidateTimeoutSeconds is the maximum time allowed for background stale
+	// revalidation before the attempt is failed and retried after backoff.
+	RevalidateTimeoutSeconds int `mapstructure:"revalidate_timeout_seconds"`
 	// Negative configures the optional negative (definitive-verdict) cache.
 	Negative NegativeCacheConfig `mapstructure:"negative"`
 }
@@ -121,6 +124,11 @@ const (
 // TTL returns the positive-cache time-to-live.
 func (c CacheKitConfig) TTL() time.Duration {
 	return time.Duration(c.TTLSeconds) * time.Second
+}
+
+// RevalidateTimeout returns the background revalidation timeout.
+func (c CacheKitConfig) RevalidateTimeout() time.Duration {
+	return time.Duration(c.RevalidateTimeoutSeconds) * time.Second
 }
 
 // NegativeCacheConfig configures caching of definitive not-found verdicts.

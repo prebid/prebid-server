@@ -3,10 +3,10 @@
 //
 // It is intentionally higher-level than any single subsystem: a subsystem picks
 // a Source (where raw bytes come from), a Transform (raw bytes -> typed value),
-// and a Cache (retention policy), and cachekit wires them together. Reads never
-// block on the backend: a stale entry is served immediately and revalidated in the
-// background, and optional single-flight coalescing collapses concurrent misses for
-// the same key into one upstream call per pod.
+// and a Cache (retention policy), and cachekit wires them together. When serve-stale
+// is enabled, stale entries are served immediately and revalidated in the background;
+// optional single-flight coalescing collapses concurrent misses for the same key
+// into one upstream call per pod.
 //
 // The cache stores the composed typed value V, not raw JSON. Transform runs once
 // per key at insert time; a cache hit is a pure lookup with no unmarshal.
@@ -30,33 +30,37 @@ import (
 
 // Params configures a Fetcher. Source, Transform and Cache are required.
 type Params[K comparable, V any] struct {
-	Source     Source[K]
-	Transform  TransformFunc[K, V]
-	Cache      Cache[K, V]
-	TTL        time.Duration
-	Negatives  *NegativeStore[K] // nil disables negative caching
-	Coalesce   bool              // opt-in single-flight coalescing of concurrent misses (default off)
-	ServeStale bool              // opt-in: past TTL, serve the stale value and revalidate in the background (default off = expire + synchronous reload)
-	Preload    BulkSource[K]     // if set, the whole corpus is fetched once at Start to warm the cache
-	Clock      clock.Clock       // nil defaults to a real clock
-	Metrics    Recorder          // nil defaults to a no-op recorder
+	Source            Source[K]
+	Transform         TransformFunc[K, V]
+	Cache             Cache[K, V]
+	TTL               time.Duration
+	Negatives         *NegativeStore[K] // nil disables negative caching
+	Coalesce          bool              // opt-in single-flight coalescing of concurrent misses (default off)
+	ServeStale        bool              // opt-in: past TTL, serve the stale value and revalidate in the background (default off = expire + synchronous reload)
+	RevalidateTimeout time.Duration     // maximum duration for a background stale revalidation; <= 0 uses a safe default
+	Preload           BulkSource[K]     // if set, the whole corpus is fetched once at Start to warm the cache
+	Clock             clock.Clock       // nil defaults to a real clock
+	Metrics           Recorder          // nil defaults to a no-op recorder
 }
 
 // Fetcher is the generic read-through engine. Construct it with New.
 type Fetcher[K comparable, V any] struct {
-	source     Source[K]
-	transform  TransformFunc[K, V]
-	cache      Cache[K, V]
-	ttl        time.Duration
-	negatives  *NegativeStore[K]
-	coalesce   bool
-	serveStale bool
-	preload    BulkSource[K]
-	clock      clock.Clock
-	metrics    Recorder
-	group      singleflight.Group
-	reval      *revalidator[K]
+	source       Source[K]
+	transform    TransformFunc[K, V]
+	cache        Cache[K, V]
+	ttl          time.Duration
+	negatives    *NegativeStore[K]
+	coalesce     bool
+	serveStale   bool
+	preload      BulkSource[K]
+	clock        clock.Clock
+	metrics      Recorder
+	group        singleflight.Group
+	reval        *revalidator[K]
+	revalTimeout time.Duration
 }
+
+const defaultRevalidateTimeout = 10 * time.Second
 
 // New builds a Fetcher from the given params.
 func New[K comparable, V any](p Params[K, V]) *Fetcher[K, V] {
@@ -66,18 +70,22 @@ func New[K comparable, V any](p Params[K, V]) *Fetcher[K, V] {
 	if p.Metrics == nil {
 		p.Metrics = noopRecorder{}
 	}
+	if p.RevalidateTimeout <= 0 {
+		p.RevalidateTimeout = defaultRevalidateTimeout
+	}
 	return &Fetcher[K, V]{
-		source:     p.Source,
-		transform:  p.Transform,
-		cache:      p.Cache,
-		ttl:        p.TTL,
-		negatives:  p.Negatives,
-		coalesce:   p.Coalesce,
-		serveStale: p.ServeStale,
-		preload:    p.Preload,
-		clock:      p.Clock,
-		metrics:    p.Metrics,
-		reval:      newRevalidator[K](p.Clock, revalidateBackoff),
+		source:       p.Source,
+		transform:    p.Transform,
+		cache:        p.Cache,
+		ttl:          p.TTL,
+		negatives:    p.Negatives,
+		coalesce:     p.Coalesce,
+		serveStale:   p.ServeStale,
+		preload:      p.Preload,
+		clock:        p.Clock,
+		metrics:      p.Metrics,
+		reval:        newRevalidator[K](p.Clock, revalidateBackoff),
+		revalTimeout: p.RevalidateTimeout,
 	}
 }
 

@@ -220,6 +220,31 @@ func TestV2RefreshPreloadWarmsCache(t *testing.T) {
 	assert.Equal(t, 0, fetcher.accountCalls, "preloaded account should be served without a per-key fetch")
 }
 
+func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
+	clk := clock.NewMock()
+	fetcher := &mockAllFetcher{accounts: map[string]json.RawMessage{
+		"pub-1": json.RawMessage(`{"id":"pub-1","disabled":false}`),
+	}}
+	cfg := config.CacheKitConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 1, Refresh: "ttl"}
+	v2, err := NewCacheKitAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), clk, nil)
+	require.NoError(t, err)
+
+	account, errs := GetAccount(context.Background(), &config.Configuration{}, v2, "pub-1", nil)
+	require.Empty(t, errs)
+	require.NotNil(t, account)
+	assert.False(t, account.Disabled)
+	assert.Equal(t, 1, fetcher.accountCalls)
+
+	fetcher.accounts["pub-1"] = json.RawMessage(`{"id":"pub-1","disabled":true}`)
+	clk.Add(2 * time.Second)
+
+	account, errs = GetAccount(context.Background(), &config.Configuration{}, v2, "pub-1", nil)
+	require.Empty(t, errs)
+	require.NotNil(t, account)
+	assert.False(t, account.Disabled, "ttl mode should return stale data immediately and refresh in the background")
+	assert.Eventually(t, func() bool { return fetcher.accountCalls == 2 }, time.Second, 5*time.Millisecond)
+}
+
 func TestV2RefreshPreloadUnsupportedSourceErrors(t *testing.T) {
 	// A source that does not implement AllAccountsFetcher cannot preload.
 	var plain stored_requests.AllFetcher = notBulkFetcher{}
