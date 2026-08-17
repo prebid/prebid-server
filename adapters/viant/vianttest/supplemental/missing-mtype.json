@@ -5,18 +5,24 @@
       {
         "id": "imp-video",
         "video": {
-          "mimes": ["video/mp4"],
+          "mimes": [
+            "video/mp4"
+          ],
           "w": 640,
           "h": 480
         },
         "ext": {
-          "bidder": { "publisherId": "prebid-test-pub-001" }
+          "bidder": {
+            "publisherId": "prebid-test-pub-001"
+          }
         }
       }
     ],
     "site": {
       "page": "https://prebid.org/",
-      "publisher": { "id": "prebid-test-pub-001" }
+      "publisher": {
+        "id": "prebid-test-pub-001"
+      }
     }
   },
   "httpCalls": [
@@ -29,18 +35,29 @@
             {
               "id": "imp-video",
               "video": {
-                "mimes": ["video/mp4"],
+                "mimes": [
+                  "video/mp4"
+                ],
                 "w": 640,
                 "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "prebid-test-pub-001"
+                }
               }
             }
           ],
           "site": {
             "page": "https://prebid.org/",
-            "publisher": { "id": "prebid-test-pub-001" }
+            "publisher": {
+              "id": "prebid-test-pub-001"
+            }
           }
         },
-        "impIDs": ["imp-video"]
+        "impIDs": [
+          "imp-video"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -54,7 +71,7 @@
                 {
                   "id": "bid-no-mtype",
                   "impid": "imp-video",
-                  "price": 4.10,
+                  "price": 4.1,
                   "adm": "<VAST version=\"3.0\"></VAST>",
                   "crid": "video-crid-001",
                   "w": 640,

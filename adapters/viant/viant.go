@@ -84,11 +84,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}}, errs
 }
 
-// stripBidderExt removes the "bidder" and "prebid" keys from imp.ext,
-// returning nil if nothing else remains. If imp.ext is not a JSON object
-// (and therefore can't be unmarshalled into a map) or can't be re-marshalled,
-// the original value is returned unchanged so it is preserved rather than
-// silently dropped.
+// stripBidderExt re-marshals imp.ext as a JSON object, returning nil if it is
+// empty. If imp.ext is not a JSON object or can't be re-marshalled, the
+// original value is returned unchanged so it is preserved rather than silently
+// dropped. bidder/prebid keys are left in place so they reach the endpoint.
 func stripBidderExt(ext json.RawMessage) json.RawMessage {
 	if ext == nil {
 		return nil
@@ -98,9 +97,6 @@ func stripBidderExt(ext json.RawMessage) json.RawMessage {
 	if err := jsonutil.Unmarshal(ext, &extMap); err != nil {
 		return ext
 	}
-
-	delete(extMap, openrtb_ext.PrebidExtBidderKey)
-	delete(extMap, openrtb_ext.PrebidExtKey)
 
 	if len(extMap) == 0 {
 		return nil

@@ -2,7 +2,9 @@
   "mockBidRequest": {
     "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
     "at": 2,
-    "cur": ["USD"],
+    "cur": [
+      "USD"
+    ],
     "tmax": 500,
     "imp": [
       {
@@ -42,7 +44,6 @@
       "language": "en"
     }
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -50,7 +51,9 @@
         "body": {
           "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
           "at": 2,
-          "cur": ["USD"],
+          "cur": [
+            "USD"
+          ],
           "tmax": 500,
           "imp": [
             {
@@ -68,7 +71,12 @@
               "bidfloor": 0.5,
               "bidfloorcur": "USD",
               "exp": 120,
-              "secure": 1
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "publisherId": "prebid-test-pub-001"
+                }
+              }
             }
           ],
           "app": {
@@ -85,7 +93,9 @@
             "language": "en"
           }
         },
-        "impIDs": ["1"]
+        "impIDs": [
+          "1"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -100,7 +110,9 @@
                   "price": 2.89,
                   "adid": "69757-553138-2667435",
                   "adm": "<div>ad markup</div>",
-                  "adomain": ["viantinc.com"],
+                  "adomain": [
+                    "viantinc.com"
+                  ],
                   "crid": "24877748",
                   "w": 300,
                   "h": 250,
@@ -116,7 +128,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -128,7 +139,9 @@
             "price": 2.89,
             "adid": "69757-553138-2667435",
             "adm": "<div>ad markup</div>",
-            "adomain": ["viantinc.com"],
+            "adomain": [
+              "viantinc.com"
+            ],
             "crid": "24877748",
             "w": 300,
             "h": 250,

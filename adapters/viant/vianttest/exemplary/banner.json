@@ -2,7 +2,9 @@
   "mockBidRequest": {
     "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
     "at": 2,
-    "cur": ["USD"],
+    "cur": [
+      "USD"
+    ],
     "tmax": 500,
     "imp": [
       {
@@ -29,7 +31,9 @@
       }
     ],
     "site": {
-      "cat": ["190_viant_prebid_server"],
+      "cat": [
+        "190_viant_prebid_server"
+      ],
       "domain": "prebid.org",
       "page": "https://prebid.org/",
       "publisher": {
@@ -69,19 +73,24 @@
       }
     }
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
         "uri": "https://bidders-us.adelphic.net/rtb/v25/viant-prebid-server/bidder",
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "body": {
           "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
           "at": 2,
-          "cur": ["USD"],
+          "cur": [
+            "USD"
+          ],
           "tmax": 500,
           "imp": [
             {
@@ -99,11 +108,18 @@
               "bidfloor": 0.5,
               "bidfloorcur": "USD",
               "exp": 120,
-              "secure": 1
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "publisherId": "prebid-test-pub-001"
+                }
+              }
             }
           ],
           "site": {
-            "cat": ["190_viant_prebid_server"],
+            "cat": [
+              "190_viant_prebid_server"
+            ],
             "domain": "prebid.org",
             "page": "https://prebid.org/",
             "publisher": {
@@ -143,7 +159,9 @@
             }
           }
         },
-        "impIDs": ["1"]
+        "impIDs": [
+          "1"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -158,10 +176,14 @@
                   "price": 2.89,
                   "adid": "69757-553138-2667435",
                   "adm": "<div>ad markup</div>",
-                  "adomain": ["viantinc.com"],
+                  "adomain": [
+                    "viantinc.com"
+                  ],
                   "iurl": "https://media-cdn.ipredictive.com/image/69757/creative_300x250.gif",
                   "crid": "24877748",
-                  "cat": ["IAB10-2"],
+                  "cat": [
+                    "IAB10-2"
+                  ],
                   "w": 300,
                   "h": 250,
                   "mtype": 1
@@ -176,7 +198,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -188,10 +209,14 @@
             "price": 2.89,
             "adid": "69757-553138-2667435",
             "adm": "<div>ad markup</div>",
-            "adomain": ["viantinc.com"],
+            "adomain": [
+              "viantinc.com"
+            ],
             "iurl": "https://media-cdn.ipredictive.com/image/69757/creative_300x250.gif",
             "crid": "24877748",
-            "cat": ["IAB10-2"],
+            "cat": [
+              "IAB10-2"
+            ],
             "w": 300,
             "h": 250,
             "mtype": 1

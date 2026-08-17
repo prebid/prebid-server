@@ -2,14 +2,18 @@
   "mockBidRequest": {
     "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
     "at": 2,
-    "cur": ["USD"],
+    "cur": [
+      "USD"
+    ],
     "tmax": 500,
     "imp": [
       {
         "id": "4",
         "native": {
           "request": "{\"privacy\":1,\"plcmtcnt\":1,\"assets\":[{\"title\":{\"len\":100},\"id\":0,\"required\":1},{\"id\":3,\"img\":{\"hmin\":168,\"wmin\":319,\"type\":3},\"required\":1},{\"id\":4,\"data\":{\"len\":90,\"type\":1},\"required\":1}],\"context\":1,\"ver\":\"1.2\",\"plcmttype\":1}",
-          "api": [7]
+          "api": [
+            7
+          ]
         },
         "bidfloor": 0.1,
         "bidfloorcur": "USD",
@@ -25,7 +29,9 @@
       }
     ],
     "site": {
-      "cat": ["190_viant_prebid_server"],
+      "cat": [
+        "190_viant_prebid_server"
+      ],
       "domain": "prebid.org",
       "page": "https://prebid.org/",
       "publisher": {
@@ -65,7 +71,6 @@
       }
     }
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -73,24 +78,35 @@
         "body": {
           "id": "f8c3de3d-1fea-4d7c-a8b0-29f63c4c3454",
           "at": 2,
-          "cur": ["USD"],
+          "cur": [
+            "USD"
+          ],
           "tmax": 500,
           "imp": [
             {
               "id": "4",
               "native": {
                 "request": "{\"privacy\":1,\"plcmtcnt\":1,\"assets\":[{\"title\":{\"len\":100},\"id\":0,\"required\":1},{\"id\":3,\"img\":{\"hmin\":168,\"wmin\":319,\"type\":3},\"required\":1},{\"id\":4,\"data\":{\"len\":90,\"type\":1},\"required\":1}],\"context\":1,\"ver\":\"1.2\",\"plcmttype\":1}",
-                "api": [7]
+                "api": [
+                  7
+                ]
               },
               "bidfloor": 0.1,
               "bidfloorcur": "USD",
               "tagid": "nativo_1166345-RcB2FnjvX-Sp9-Kzy48V1Q-OPEN",
               "exp": 120,
-              "secure": 1
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "publisherId": "prebid-test-pub-001"
+                }
+              }
             }
           ],
           "site": {
-            "cat": ["190_viant_prebid_server"],
+            "cat": [
+              "190_viant_prebid_server"
+            ],
             "domain": "prebid.org",
             "page": "https://prebid.org/",
             "publisher": {
@@ -130,7 +146,9 @@
             }
           }
         },
-        "impIDs": ["4"]
+        "impIDs": [
+          "4"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -145,7 +163,9 @@
                   "price": 1.25,
                   "adid": "69757-native-001",
                   "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"title\":{\"text\":\"Viant Native Ad\"}},{\"id\":3,\"img\":{\"url\":\"https://media-cdn.ipredictive.com/image/native.jpg\",\"w\":319,\"h\":168}}]}}",
-                  "adomain": ["viantinc.com"],
+                  "adomain": [
+                    "viantinc.com"
+                  ],
                   "crid": "native-crid-001",
                   "mtype": 4
                 }
@@ -159,7 +179,6 @@
       }
     }
   ],
-
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -171,7 +190,9 @@
             "price": 1.25,
             "adid": "69757-native-001",
             "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":0,\"title\":{\"text\":\"Viant Native Ad\"}},{\"id\":3,\"img\":{\"url\":\"https://media-cdn.ipredictive.com/image/native.jpg\",\"w\":319,\"h\":168}}]}}",
-            "adomain": ["viantinc.com"],
+            "adomain": [
+              "viantinc.com"
+            ],
             "crid": "native-crid-001",
             "mtype": 4
           },

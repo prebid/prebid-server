@@ -4,20 +4,30 @@
     "imp": [
       {
         "id": "imp-valid",
-        "banner": { "w": 300, "h": 250 },
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
         "ext": {
-          "bidder": { "publisherId": "prebid-test-pub-001" }
+          "bidder": {
+            "publisherId": "prebid-test-pub-001"
+          }
         }
       },
       {
         "id": "imp-invalid",
-        "banner": { "w": 728, "h": 90 },
+        "banner": {
+          "w": 728,
+          "h": 90
+        },
         "ext": {}
       }
     ],
     "site": {
       "page": "https://prebid.org/",
-      "publisher": { "id": "prebid-test-pub-001" }
+      "publisher": {
+        "id": "prebid-test-pub-001"
+      }
     }
   },
   "httpCalls": [
@@ -29,15 +39,27 @@
           "imp": [
             {
               "id": "imp-valid",
-              "banner": { "w": 300, "h": 250 }
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "prebid-test-pub-001"
+                }
+              }
             }
           ],
           "site": {
             "page": "https://prebid.org/",
-            "publisher": { "id": "prebid-test-pub-001" }
+            "publisher": {
+              "id": "prebid-test-pub-001"
+            }
           }
         },
-        "impIDs": ["imp-valid"]
+        "impIDs": [
+          "imp-valid"
+        ]
       },
       "mockResponse": {
         "status": 200,
