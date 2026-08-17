@@ -1,0 +1,302 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>aniview: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/aniview/aniview.go (93.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package aniview
+
+import (
+        "bytes"
+        "fmt"
+        "net/http"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+type aniviewExt struct {
+        PBS int `json:"pbs"`
+}
+
+// Builder builds a new instance of the Aniview adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var requests []*adapters.RequestData
+        var errors []error
+
+        requestExt, err := buildRequestExt(request.Ext)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        // One outgoing request per imp and per media type, mirroring the Prebid.js adapter.
+        <span class="cov8" title="1">for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                impExt, err := extractImpExt(&amp;imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">imp.TagID = strings.TrimSpace(impExt.ChannelId)
+
+                for _, singleTypeImp := range splitImpByMediaType(imp) </span><span class="cov8" title="1">{
+                        requestCopy := *request
+                        requestCopy.Imp = []openrtb2.Imp{singleTypeImp}
+                        requestCopy.Ext = requestExt
+
+                        requestJSON, err := jsonutil.Marshal(&amp;requestCopy)
+                        if err != nil </span><span class="cov0" title="0">{
+                                errors = append(errors, fmt.Errorf("marshal bidRequest: %w", err))
+                                continue</span>
+                        }
+
+                        // Headers must be a fresh map per request: RequestData.Headers is
+                        // mutable and shared maps would leak mutations across requests.
+                        <span class="cov8" title="1">headers := http.Header{}
+                        headers.Add("Content-Type", "application/json;charset=utf-8")
+                        headers.Add("Accept", "application/json")
+
+                        requests = append(requests, &amp;adapters.RequestData{
+                                Method:  "POST",
+                                Uri:     a.endpoint,
+                                Body:    requestJSON,
+                                Headers: headers,
+                                ImpIDs:  []string{singleTypeImp.ID},
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return requests, errors</span>
+}
+
+// buildRequestExt merges ext.aniview into the existing request.ext, preserving
+// whatever PBS core has put there.
+func buildRequestExt(requestExt []byte) ([]byte, error) <span class="cov8" title="1">{
+        extMap := map[string]interface{}{}
+        if len(requestExt) &gt; 0 </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(requestExt, &amp;extMap); err != nil </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("unmarshal request.ext: %w", err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">extMap["aniview"] = aniviewExt{PBS: 1}
+
+        ext, err := jsonutil.Marshal(extMap)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("marshal request.ext: %w", err)
+        }</span>
+        <span class="cov8" title="1">return ext, nil</span>
+}
+
+// splitImpByMediaType returns one imp per media type, so each outgoing request
+// carries a single media type, as the Aniview endpoint expects.
+func splitImpByMediaType(imp openrtb2.Imp) []openrtb2.Imp <span class="cov8" title="1">{
+        if imp.Video == nil || imp.Banner == nil </span><span class="cov8" title="1">{
+                return []openrtb2.Imp{imp}
+        }</span>
+
+        <span class="cov8" title="1">videoImp := imp
+        videoImp.Banner = nil
+        bannerImp := imp
+        bannerImp.Video = nil
+        return []openrtb2.Imp{videoImp, bannerImp}</span>
+}
+
+func extractImpExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtAniview, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("unmarshal bidderExt: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">var impExt openrtb_ext.ImpExtAniview
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;impExt); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unmarshal ImpExtAniview: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if strings.TrimSpace(impExt.ChannelId) == "" </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("Missing AV_CHANNELID for imp: %s", imp.ID),
+                }
+        }</span>
+        <span class="cov8" title="1">return &amp;impExt, nil</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        var errs []error
+
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        // The exchange may answer a no-bid as 200 with an empty/whitespace body.
+        <span class="cov8" title="1">if len(bytes.TrimSpace(responseData.Body)) == 0 </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">var response openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("bad server response: %s", err),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid))
+
+        if response.Cur != "" </span><span class="cov8" title="1">{
+                bidResponse.Currency = response.Cur
+        }</span>
+
+        <span class="cov8" title="1">for _, seatBid := range response.SeatBid </span><span class="cov8" title="1">{
+                for i, bid := range seatBid.Bid </span><span class="cov8" title="1">{
+                        // Mirror the Prebid.js adapter: a bid without markup or a VAST url is unusable.
+                        if bid.AdM == "" &amp;&amp; bid.NURL == "" </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidType, err := getMediaTypeForBid(&amp;bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;seatBid.Bid[i],
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+
+// getMediaTypeForBid resolves the bid media type from bid.mtype, which the
+// exchange sets explicitly on every bid.
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        default:<span class="cov8" title="1">
+                return "", &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
+                }</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
