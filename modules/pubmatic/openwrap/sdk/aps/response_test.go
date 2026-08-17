@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
+	"strconv"
 	"testing"
 
 	jsoniter "github.com/json-iterator/go"
@@ -211,7 +212,7 @@ func TestApplyAPSResponse(t *testing.T) {
 					},
 				},
 			},
-			description: "Valid APS request should compress response and transform structure; bid Ext is preserved",
+			description: "Valid APS request should compress response and transform structure; bid Ext includes sdkbridge.placementId",
 		},
 	}
 
@@ -231,7 +232,7 @@ func TestApplyAPSResponse(t *testing.T) {
 				assert.Len(t, result.SeatBid[0].Bid, 1)
 				assert.Equal(t, tt.expected.SeatBid[0].Bid[0].ID, result.SeatBid[0].Bid[0].ID)
 				assert.NotEmpty(t, result.SeatBid[0].Bid[0].AdM, "AdM should contain compressed data")
-				assert.JSONEq(t, `{"custom": "data"}`, string(result.SeatBid[0].Bid[0].Ext))
+				assert.JSONEq(t, `{"custom":"data","sdkbridge":{"placementId":""}}`, string(result.SeatBid[0].Bid[0].Ext))
 			} else {
 				// For all other cases, the response should remain unchanged
 				assert.Equal(t, &originalResponse, result, tt.description)
@@ -244,13 +245,16 @@ func TestApplyAPSResponse(t *testing.T) {
 // jsoniter-marshaled BidResponse from before the in-place AdM mutation inside getBids.
 func TestApplyAPSResponse_AdmRoundTrip(t *testing.T) {
 	rctx := models.RequestCtx{
-		Endpoint: models.EndpointAPS,
-		APS:      models.APS{Reject: false},
+		Endpoint:     models.EndpointAPS,
+		APS:          models.APS{Reject: false},
+		PubIDStr:     "5890",
+		ProfileIDStr: "1234",
 	}
 	br := &openrtb2.BidResponse{
 		ID:    "resp-outer",
 		BidID: "legacy-bid-id",
 		Cur:   "EUR",
+		Ext:   json.RawMessage(`{"prebid":{"auctiontimestamp":123}}`),
 		SeatBid: []openrtb2.SeatBid{
 			{
 				Bid: []openrtb2.Bid{
@@ -265,6 +269,7 @@ func TestApplyAPSResponse_AdmRoundTrip(t *testing.T) {
 			},
 		},
 	}
+	require.NoError(t, setBidResponseExtForAdm(br, rctx.PubIDStr, rctx.ProfileIDStr))
 	wantJSON, err := jsoniter.Marshal(br)
 	require.NoError(t, err)
 
@@ -274,7 +279,7 @@ func TestApplyAPSResponse_AdmRoundTrip(t *testing.T) {
 	assert.Equal(t, "resp-outer", out.ID)
 	assert.Equal(t, "bid-inner", out.BidID)
 	assert.Equal(t, "EUR", out.Cur)
-	assert.JSONEq(t, `{"x":1}`, string(out.SeatBid[0].Bid[0].Ext))
+	assert.JSONEq(t, `{"x":1,"sdkbridge":{"placementId":""}}`, string(out.SeatBid[0].Bid[0].Ext))
 
 	adm := out.SeatBid[0].Bid[0].AdM
 	raw, err := base64.StdEncoding.DecodeString(adm)
@@ -286,9 +291,90 @@ func TestApplyAPSResponse_AdmRoundTrip(t *testing.T) {
 	require.NoError(t, zr.Close())
 
 	assert.Equal(t, string(wantJSON), string(decodedBytes))
+	assert.JSONEq(t, `{"prebid":{"auctiontimestamp":123},"publisherid":"5890","profileid":1234}`, extractBidResponseExt(t, decodedBytes))
+}
+
+func extractBidResponseExt(t *testing.T, decodedBytes []byte) string {
+	t.Helper()
+	var decoded openrtb2.BidResponse
+	require.NoError(t, json.Unmarshal(decodedBytes, &decoded))
+	return string(decoded.Ext)
+}
+
+func TestSetBidResponseExtForAdm(t *testing.T) {
+	tests := []struct {
+		name        string
+		bidResponse *openrtb2.BidResponse
+		publisherID string
+		profileID   string
+		expectedExt string
+		wantErr     bool
+		description string
+	}{
+		{
+			name: "sets publisherid as string and profileid as integer",
+			bidResponse: &openrtb2.BidResponse{
+				Ext: json.RawMessage(`{"prebid":{"auctiontimestamp":123}}`),
+			},
+			publisherID: "5890",
+			profileID:   "1234",
+			expectedExt: `{"prebid":{"auctiontimestamp":123},"publisherid":"5890","profileid":1234}`,
+			description: "profileid must be encoded as a JSON number",
+		},
+		{
+			name:        "initializes empty ext before setting fields",
+			bidResponse: &openrtb2.BidResponse{},
+			publisherID: "5890",
+			profileID:   "1234",
+			expectedExt: `{"publisherid":"5890","profileid":1234}`,
+			description: "empty ext should be initialized before fields are set",
+		},
+		{
+			name: "returns error when ext is not a json object",
+			bidResponse: &openrtb2.BidResponse{
+				Ext: json.RawMessage(`[]`),
+			},
+			publisherID: "5890",
+			profileID:   "1234",
+			wantErr:     true,
+			description: "non-object ext should return an error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := setBidResponseExtForAdm(tt.bidResponse, tt.publisherID, tt.profileID)
+			if tt.wantErr {
+				require.Error(t, err, tt.description)
+				return
+			}
+
+			require.NoError(t, err, tt.description)
+			assert.JSONEq(t, tt.expectedExt, string(tt.bidResponse.Ext), tt.description)
+
+			var ext map[string]any
+			require.NoError(t, json.Unmarshal(tt.bidResponse.Ext, &ext))
+
+			publisherID, ok := ext["publisherid"]
+			require.True(t, ok)
+			assert.IsType(t, "", publisherID, "publisherid must be a JSON string")
+			assert.Equal(t, tt.publisherID, publisherID)
+
+			profileID, ok := ext["profileid"]
+			require.True(t, ok)
+			assert.IsType(t, float64(0), profileID, "profileid must be a JSON number")
+			expectedProfileID, parseErr := strconv.Atoi(tt.profileID)
+			require.NoError(t, parseErr)
+			assert.Equal(t, float64(expectedProfileID), profileID)
+		})
+	}
 }
 
 func TestGetBids(t *testing.T) {
+	rctx := models.RequestCtx{
+		PubIDStr:     "5890",
+		ProfileIDStr: "1234",
+	}
 	tests := []struct {
 		name        string
 		bidResponse *openrtb2.BidResponse
@@ -363,13 +449,28 @@ func TestGetBids(t *testing.T) {
 				},
 			},
 			expectedLen: 1,
-			description: "Complex AdM should be compressed; bid Ext is preserved",
+			description: "Complex AdM should be compressed; bid Ext includes sdkbridge.placementId",
+		},
+		{
+			name: "Invalid ext should return nil",
+			bidResponse: &openrtb2.BidResponse{
+				Ext: json.RawMessage(`[]`),
+				SeatBid: []openrtb2.SeatBid{
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "bid-1", AdM: "<ad>test</ad>"},
+						},
+					},
+				},
+			},
+			expectedLen: 0,
+			description: "Non-object ext should fail setBidResponseExtForAdm and return nil",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getBids(tt.bidResponse)
+			result := getBids(rctx, tt.bidResponse)
 
 			if tt.expectedLen == 0 {
 				assert.Nil(t, result, tt.description)
@@ -378,7 +479,11 @@ func TestGetBids(t *testing.T) {
 				if len(result) > 0 {
 					assert.Equal(t, tt.bidResponse.SeatBid[0].Bid[0].ID, result[0].ID)
 					assert.NotEmpty(t, result[0].AdM, "AdM should contain compressed data")
-					assert.Equal(t, tt.bidResponse.SeatBid[0].Bid[0].Ext, result[0].Ext, "Ext should be preserved from source bid")
+					if len(tt.bidResponse.SeatBid[0].Bid[0].Ext) > 0 {
+						assert.JSONEq(t, `{"custom":"data","sdkbridge":{"placementId":""}}`, string(result[0].Ext))
+					} else {
+						assert.JSONEq(t, `{"sdkbridge":{"placementId":""}}`, string(result[0].Ext))
+					}
 				}
 			}
 		})

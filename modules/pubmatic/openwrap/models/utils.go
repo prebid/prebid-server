@@ -34,6 +34,29 @@ func IsCTVAPIRequest(api string) bool {
 	return api == "/video/json" || api == "/video/vast" || api == "/video/openrtb"
 }
 
+// EdsStatusFromRequest returns ext.wrapper.edsstatus when present on the bid request.
+func EdsStatusFromRequest(req *openrtb2.BidRequest) *int {
+	if req == nil || len(req.Ext) == 0 {
+		return nil
+	}
+
+	edsStatus, err := jsonparser.GetInt(req.Ext, "wrapper", "edsstatus")
+	if err != nil {
+		return nil
+	}
+
+	return ptrutil.ToPtr(int(edsStatus))
+}
+
+// ResolveEdsStatus returns edsstatus for logging. SDK bidding integrations use signal data only.
+func ResolveEdsStatus(fromSignalOnly bool, wrapper RequestExtWrapper, signal *openrtb2.BidRequest) *int {
+	if fromSignalOnly {
+		return EdsStatusFromRequest(signal)
+	}
+
+	return wrapper.EdsStatus
+}
+
 func GetRequestExtWrapper(request []byte, wrapperLocation ...string) (RequestExtWrapper, error) {
 	extWrapper := RequestExtWrapper{
 		SSAuctionFlag: -1,

@@ -110,6 +110,7 @@ type RequestExtWrapper struct {
 	Video                 ExtRequestWrapperVideo `json:"video,omitempty"`
 	PubId                 int                    `json:"-"`
 	SdkSubIntegrationPath *int                   `json:"sdksubintegration,omitempty"`
+	EdsStatus             *int                   `json:"edsstatus,omitempty"`
 }
 
 type ExtRequestWrapperVideo struct {

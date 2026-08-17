@@ -6352,6 +6352,70 @@ func TestGetBidPriceAfterCurrencyConversion(t *testing.T) {
 	}
 }
 
+func TestGetLogAuctionObjectAsURLForEdsStatus(t *testing.T) {
+	cfg := ow.cfg
+	defer func() {
+		ow.cfg = cfg
+	}()
+
+	ow.cfg.Endpoint = "http://10.172.141.11/wl"
+	ow.cfg.PublicEndpoint = "http://t.pubmatic.com/wl"
+
+	type args struct {
+		ao                  analytics.AuctionObject
+		rCtx                *models.RequestCtx
+		logInfo, forRespExt bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "edsstatus present on request ctx",
+			args: args{
+				ao: analytics.AuctionObject{
+					RequestWrapper: &openrtb_ext.RequestWrapper{
+						BidRequest: &openrtb2.BidRequest{},
+					},
+					Response: &openrtb2.BidResponse{},
+				},
+				rCtx: &models.RequestCtx{
+					PubID:     5890,
+					EdsStatus: ptrutil.ToPtr(1),
+				},
+				logInfo:    true,
+				forRespExt: true,
+			},
+			want: ow.cfg.PublicEndpoint + `?json={"pubid":5890,"pid":"0","pdvid":"0","sl":1,"dvc":{},"ft":0,"geo":{},"edss":1}&pubid=5890`,
+		},
+		{
+			name: "edsstatus absent from request ctx",
+			args: args{
+				ao: analytics.AuctionObject{
+					RequestWrapper: &openrtb_ext.RequestWrapper{
+						BidRequest: &openrtb2.BidRequest{},
+					},
+					Response: &openrtb2.BidResponse{},
+				},
+				rCtx: &models.RequestCtx{
+					PubID: 5890,
+				},
+				logInfo:    true,
+				forRespExt: true,
+			},
+			want: ow.cfg.PublicEndpoint + `?json={"pubid":5890,"pid":"0","pdvid":"0","sl":1,"dvc":{},"ft":0,"geo":{}}&pubid=5890`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, _ := GetLogAuctionObjectAsURL(tt.args.ao, tt.args.rCtx, tt.args.logInfo, tt.args.forRespExt)
+			logger, _ = url.QueryUnescape(logger)
+			assert.Equal(t, tt.want, logger, tt.name)
+		})
+	}
+}
+
 func TestGetLogAuctionObjectAsURLForVastUnwrap(t *testing.T) {
 	cfg := ow.cfg
 	defer func() {

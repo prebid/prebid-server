@@ -53,7 +53,7 @@ type ExtBidVideo struct {
 	MaxDuration    int64                      `json:"maxduration,omitempty"`    // Maximum video ad duration in seconds.
 	Skip           *int8                      `json:"skip,omitempty"`           // Indicates if the player will allow the video to be skipped,where 0 = no, 1 = yes.
 	SkipMin        int64                      `json:"skipmin,omitempty"`        // Videos of total duration greater than this number of seconds can be skippable; only applicable if the ad is skippable.
-	SkipAfter      int64                      `json:"skipafter,omitempty"`      // Number of seconds a video must play before skipping is enabled; only applicable if the ad is skippable.
+	SkipAfter      *int64                     `json:"skipafter,omitempty"`      // Number of seconds a video must play before skipping is enabled; only applicable if the ad is skippable.
 	BAttr          []adcom1.CreativeAttribute `json:"battr,omitempty"`          // Blocked creative attributes
 	PlaybackMethod []adcom1.PlaybackMethod    `json:"playbackmethod,omitempty"` // Allowed playback methods
 	ClientConfig   json.RawMessage            `json:"clientconfig,omitempty"`

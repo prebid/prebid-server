@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	mock_metrics "github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/metrics/mock"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models"
+	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/sdk/sdkutils"
 	"github.com/prebid/prebid-server/v3/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -88,7 +89,91 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 		{
 			name:             "valid_signal_merges_impression_app_and_device_from_signal",
 			requestBody:      []byte(fmt.Sprintf(`{"id":"base","imp":[{"id":"i1","tagid":"t1","ext":{}}],"app":{"publisher":{"id":"pubx"}},"device":{"ua":"orig"},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}},"user":{"buyeruid":%q}}`, validSig)),
+			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","tagid":"t1","secure":1,"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
+		},
+		{
+			name:             "interstitial_request_sets_instl_from_ad_format",
+			requestBody:      []byte(fmt.Sprintf(`{"id":"base","imp":[{"id":"i1","tagid":"t1","instl":1,"ext":{}}],"app":{"publisher":{"id":"pubx"}},"device":{"ua":"orig"},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}},"user":{"buyeruid":%q}}`, validSig)),
 			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","instl":1,"tagid":"t1","secure":1,"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
+		},
+		{
+			name:             "rewarded_request_sets_instl_from_ad_format",
+			requestBody:      []byte(fmt.Sprintf(`{"id":"base","imp":[{"id":"i1","tagid":"t1","rwdd":1,"video":{"ext":{"videotype":"rewarded"}},"ext":{}}],"app":{"publisher":{"id":"pubx"}},"device":{"ua":"orig"},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}},"user":{"buyeruid":%q}}`, validSig)),
+			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","instl":1,"tagid":"t1","secure":1,"rwdd":1,"video":{"ext":{"videotype":"rewarded"},"mimes":null},"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
+		},
+		{
+			name:             "banner_request_clears_instl_from_ad_format",
+			requestBody:      []byte(fmt.Sprintf(`{"id":"base","imp":[{"id":"i1","tagid":"t1","banner":{"w":728,"h":90},"ext":{}}],"app":{"publisher":{"id":"pubx"}},"device":{"ua":"orig"},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}},"user":{"buyeruid":%q}}`, validSig)),
+			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","tagid":"t1","secure":1,"banner":{"w":728,"h":90},"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
+		},
+		{
+			name:        "mrec_banner_only_applies_banner_fields_to_final_video",
+			requestBody: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":300,"h":250,"format":[{"w":300,"h":250}]}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`),
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:    "si1",
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4", "video/webm"}},
+				}},
+				Device: &openrtb2.Device{UA: "Mozilla"},
+				App:    &openrtb2.App{Name: "SignalApp"},
+			},
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":300,"h":250,"format":[{"w":300,"h":250}]},"video":{"mimes":["video/mp4","video/webm"],"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+		},
+		{
+			name:        "interstitial_banner_only_applies_banner_fields_to_final_video",
+			requestBody: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","instl":1,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`),
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:    "si1",
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+				}},
+				Device: &openrtb2.Device{UA: "Mozilla"},
+				App:    &openrtb2.App{Name: "SignalApp"},
+			},
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+		},
+		{
+			name:        "rewarded_banner_only_creates_video_from_aps_banner",
+			requestBody: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","rwdd":1,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`),
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:    "si1",
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4", "video/webm"}},
+				}},
+				Device: &openrtb2.Device{UA: "Mozilla"},
+				App:    &openrtb2.App{Name: "SignalApp"},
+			},
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","rwdd":1,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4","video/webm"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+		},
+		{
+			name:        "mrec_video_only_applies_video_fields_to_final_banner",
+			requestBody: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","video":{"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`),
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID: "si1",
+					Banner: &openrtb2.Banner{
+						MIMEs: []string{"image/jpeg", "image/png"},
+						API:   []adcom1.APIFramework{5, 6},
+					},
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4", "video/webm"}},
+				}},
+				Device: &openrtb2.Device{UA: "Mozilla"},
+				App:    &openrtb2.App{Name: "SignalApp"},
+			},
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":300,"h":250,"format":[{"w":300,"h":250}],"mimes":["image/jpeg","image/png"],"api":[5,6]},"video":{"mimes":["video/mp4","video/webm"],"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+		},
+		{
+			name:        "interstitial_video_only_applies_video_fields_to_final_banner",
+			requestBody: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","instl":1,"video":{"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`),
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:    "si1",
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+				}},
+				Device: &openrtb2.Device{UA: "Mozilla"},
+				App:    &openrtb2.App{Name: "SignalApp"},
+			},
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 		{
 			name:        "video_battr_preserved_when_signal_has_video",
@@ -102,7 +187,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 				Device: &openrtb2.Device{UA: "Mozilla"},
 				App:    &openrtb2.App{Name: "SignalApp"},
 			},
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","video":{"battr":[1,2],"mimes":["video/mp4","video/webm"]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","video":{"battr":[1,2],"mimes":["video/mp4","video/webm"]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 	}
 
@@ -143,7 +228,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 	}
 }
 
-func TestModifyBanner(t *testing.T) {
+func TestMergeBannerFromSignal(t *testing.T) {
 	tests := []struct {
 		name     string
 		request  *openrtb2.Banner
@@ -182,7 +267,7 @@ func TestModifyBanner(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			modifyBanner(tt.request, tt.signal)
+			sdkutils.MergeBanner(tt.request, tt.signal)
 			assert.Equal(t, tt.expected, tt.request)
 		})
 	}
@@ -211,7 +296,7 @@ func TestUpdateImpExtension(t *testing.T) {
 			name:             "merges_skadn_paths_and_owsdk_into_existing_ext",
 			reqExt:           []byte(`{"foo":1}`),
 			sigExt:           []byte(`{"skadn":{"skoverlay":true,"productpage":7},"owsdk":{"k":2}}`),
-			expectedResponse: `{"foo":1,"owsdk":{"k":2},"skadn":{"productpage":7,"skoverlay":true}}`,
+			expectedResponse: `{"foo":1,"owsdk":{"k":2},"skadn":{"productpage":7}}`,
 		},
 	}
 
@@ -683,14 +768,14 @@ func TestUpdateUser(t *testing.T) {
 				Yob:      2000,
 				Gender:   "M",
 				Keywords: "test,user",
-				Ext:      json.RawMessage(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}],"lastadomain":"example.com"}`),
+				Ext:      json.RawMessage(`{"sessionduration":300,"consent":"test","eids":[{"source":"test"}]}`),
 			},
 			expected: &openrtb2.BidRequest{User: &openrtb2.User{
 				Data:     []openrtb2.Data{{ID: "1"}},
 				Yob:      2000,
 				Gender:   "M",
 				Keywords: "test,user",
-				Ext:      json.RawMessage(`{"sessionduration":300,"impdepth":1,"consent":"test","eids":[{"source":"test"}],"lastadomain":"example.com"}`),
+				Ext:      json.RawMessage(`{"sessionduration":300,"consent":"test","eids":[{"source":"test"}]}`),
 			}},
 		},
 		{
@@ -811,13 +896,14 @@ func TestUpdateSource(t *testing.T) {
 	}
 }
 
-func TestUpdateImpression(t *testing.T) {
+func TestUpdateImpressionWithSignal(t *testing.T) {
 	reqImpExt := json.RawMessage(`{"prebid":1}`)
 	sigImpExt := json.RawMessage(`{"skadn":{"versions":["3.0"]},"owsdk":{"a":1}}`)
 	mergedImpExt := json.RawMessage(updateImpExtension(reqImpExt, sigImpExt))
 
 	tests := []struct {
 		name       string
+		adFormat   string
 		request    *openrtb2.BidRequest
 		signalImps []openrtb2.Imp
 		expected   *openrtb2.BidRequest
@@ -863,15 +949,67 @@ func TestUpdateImpression(t *testing.T) {
 			},
 		},
 		{
-			name: "copies_instl_from_signal_aps_always_assigns_imp[0].instl",
+			name:     "sets_instl_from_ad_format_interstitial",
+			adFormat: apsAdFormatInterstitial,
 			request: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{{ID: "1"}},
+			},
+			signalImps: []openrtb2.Imp{
+				{ID: "1", Instl: 0},
+			},
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Instl: 1}},
+			},
+		},
+		{
+			name:     "sets_instl_from_ad_format_rewarded",
+			adFormat: apsAdFormatRewarded,
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1"}},
+			},
+			signalImps: []openrtb2.Imp{
+				{ID: "1", Instl: 0},
+			},
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Instl: 1}},
+			},
+		},
+		{
+			name:     "clears_instl_for_banner_ad_format",
+			adFormat: apsAdFormatBanner,
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Instl: 1}},
 			},
 			signalImps: []openrtb2.Imp{
 				{ID: "1", Instl: 1},
 			},
 			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Instl: 0}},
+			},
+		},
+		{
+			name:     "clears_instl_for_mrec_ad_format",
+			adFormat: apsAdFormatMrec,
+			request: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{{ID: "1", Instl: 1}},
+			},
+			signalImps: []openrtb2.Imp{
+				{ID: "1", Instl: 1},
+			},
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Instl: 0}},
+			},
+		},
+		{
+			name: "leaves_instl_unchanged_when_ad_format_empty",
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Instl: 0}},
+			},
+			signalImps: []openrtb2.Imp{
+				{ID: "1", Instl: 1},
+			},
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Instl: 0}},
 			},
 		},
 		{
@@ -1010,7 +1148,7 @@ func TestUpdateImpression(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			updateImpression(tt.request, tt.signalImps)
+			updateImpressionWithSignal(tt.request, tt.signalImps, tt.adFormat, nil)
 
 			expectedJSON, err := json.Marshal(tt.expected)
 			require.NoError(t, err)
@@ -1028,4 +1166,956 @@ func mustMarshalSignalBidRequest(t *testing.T, br *openrtb2.BidRequest) string {
 	b, err := json.Marshal(br)
 	require.NoError(t, err)
 	return string(b)
+}
+
+func TestCreateBannerFromApsVideoIfMissing(t *testing.T) {
+	pos5 := ptrutil.ToPtr(adcom1.PlacementPosition(5))
+
+	tests := []struct {
+		name       string
+		adFormat   string
+		imp        openrtb2.Imp
+		apsVideo   *apsVideoFields
+		wantBanner *openrtb2.Banner
+	}{
+		{
+			name:     "mrec_creates_banner_from_video_aps_fields",
+			adFormat: apsAdFormatMrec,
+			imp: openrtb2.Imp{
+				Video: &openrtb2.Video{
+					W:   ptrutil.ToPtr[int64](300),
+					H:   ptrutil.ToPtr[int64](250),
+					Pos: pos5,
+					CompanionAd: []openrtb2.Banner{{
+						Format: []openrtb2.Format{{W: 300, H: 250}},
+					}},
+				},
+			},
+			apsVideo: &apsVideoFields{
+				W:   ptrutil.ToPtr[int64](300),
+				H:   ptrutil.ToPtr[int64](250),
+				Pos: pos5,
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				}},
+			},
+			wantBanner: &openrtb2.Banner{
+				W:      ptrutil.ToPtr[int64](300),
+				H:      ptrutil.ToPtr[int64](250),
+				Pos:    pos5,
+				Format: []openrtb2.Format{{W: 300, H: 250}},
+			},
+		},
+		{
+			name:     "mrec_banner_only_skips_banner_creation",
+			adFormat: apsAdFormatMrec,
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](300),
+					H:      ptrutil.ToPtr[int64](250),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				},
+			},
+			wantBanner: &openrtb2.Banner{
+				W:      ptrutil.ToPtr[int64](300),
+				H:      ptrutil.ToPtr[int64](250),
+				Pos:    pos5,
+				Format: []openrtb2.Format{{W: 300, H: 250}},
+			},
+		},
+		{
+			name:     "interstitial_creates_banner_from_video",
+			adFormat: apsAdFormatInterstitial,
+			imp: openrtb2.Imp{
+				Instl: 1,
+				Video: &openrtb2.Video{
+					W: ptrutil.ToPtr[int64](320),
+					H: ptrutil.ToPtr[int64](480),
+				},
+			},
+			apsVideo: &apsVideoFields{
+				W: ptrutil.ToPtr[int64](320),
+				H: ptrutil.ToPtr[int64](480),
+			},
+			wantBanner: &openrtb2.Banner{
+				W: ptrutil.ToPtr[int64](320),
+				H: ptrutil.ToPtr[int64](480),
+			},
+		},
+		{
+			name:     "banner_format_skips_object_creation",
+			adFormat: apsAdFormatBanner,
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{W: ptrutil.ToPtr[int64](728), H: ptrutil.ToPtr[int64](90)},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			imp := tt.imp
+			createBannerFromApsVideoIfMissing(&imp, tt.adFormat, tt.apsVideo)
+
+			if tt.wantBanner != nil {
+				require.NotNil(t, imp.Banner)
+				assertExpectedBanner(t, tt.wantBanner, imp.Banner)
+				if len(tt.wantBanner.Format) > 0 {
+					assert.Equal(t, tt.wantBanner.Format, imp.Banner.Format)
+				}
+				if tt.wantBanner.W != nil {
+					require.NotNil(t, imp.Banner.W)
+					assert.Equal(t, *tt.wantBanner.W, *imp.Banner.W)
+				}
+				if tt.wantBanner.H != nil {
+					require.NotNil(t, imp.Banner.H)
+					assert.Equal(t, *tt.wantBanner.H, *imp.Banner.H)
+				}
+			} else if tt.adFormat == apsAdFormatBanner {
+				assert.Nil(t, imp.Video)
+			}
+		})
+	}
+}
+
+func TestUpdateImpressionWithSignalAndApsMedia(t *testing.T) {
+	pos5 := ptrutil.ToPtr(adcom1.PlacementPosition(5))
+
+	tests := []struct {
+		name       string
+		adFormat   string
+		imp        openrtb2.Imp
+		apsMedia   apsImpMediaFields
+		signalImps []openrtb2.Imp
+		expected   openrtb2.Imp
+	}{
+		{
+			name:     "mrec_banner_only_creates_video_from_signal_with_aps_banner_sizing",
+			adFormat: apsAdFormatMrec,
+			imp: openrtb2.Imp{
+				ID: "i1",
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](300),
+					H:      ptrutil.ToPtr[int64](250),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				},
+			},
+			apsMedia: apsImpMediaFields{
+				videoMissing: true,
+				banner: &apsBannerFields{
+					W:      ptrutil.ToPtr[int64](300),
+					H:      ptrutil.ToPtr[int64](250),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				},
+			},
+			signalImps: []openrtb2.Imp{{
+				Video: &openrtb2.Video{
+					MIMEs: []string{"video/mp4", "video/webm"},
+				},
+			}},
+			expected: openrtb2.Imp{
+				ID:    "i1",
+				Instl: 0,
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](300),
+					H:      ptrutil.ToPtr[int64](250),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				},
+				Video: &openrtb2.Video{
+					MIMEs: []string{"video/mp4", "video/webm"},
+					W:     ptrutil.ToPtr[int64](300),
+					H:     ptrutil.ToPtr[int64](250),
+					CompanionAd: []openrtb2.Banner{{
+						Format: []openrtb2.Format{{W: 300, H: 250}},
+					}},
+				},
+			},
+		},
+		{
+			name:     "mrec_video_only_creates_banner_from_aps_video_before_signal_merge",
+			adFormat: apsAdFormatMrec,
+			imp: openrtb2.Imp{
+				ID: "i1",
+				Video: &openrtb2.Video{
+					W: ptrutil.ToPtr[int64](300),
+					H: ptrutil.ToPtr[int64](250),
+				},
+			},
+			apsMedia: apsImpMediaFields{
+				video: &apsVideoFields{
+					W: ptrutil.ToPtr[int64](300),
+					H: ptrutil.ToPtr[int64](250),
+				},
+			},
+			signalImps: []openrtb2.Imp{{
+				Banner: &openrtb2.Banner{MIMEs: []string{"image/jpeg"}, API: []adcom1.APIFramework{5}},
+				Video:  &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+			}},
+			expected: openrtb2.Imp{
+				ID:    "i1",
+				Instl: 0,
+				Banner: &openrtb2.Banner{
+					W:     ptrutil.ToPtr[int64](300),
+					H:     ptrutil.ToPtr[int64](250),
+					MIMEs: []string{"image/jpeg"},
+					API:   []adcom1.APIFramework{5},
+				},
+				Video: &openrtb2.Video{
+					MIMEs: []string{"video/mp4"},
+					W:     ptrutil.ToPtr[int64](300),
+					H:     ptrutil.ToPtr[int64](250),
+				},
+			},
+		},
+		{
+			name:     "rewarded_banner_only_creates_video_from_aps_banner",
+			adFormat: apsAdFormatRewarded,
+			imp: openrtb2.Imp{
+				ID:   "i1",
+				Rwdd: 1,
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](320),
+					H:      ptrutil.ToPtr[int64](480),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+				},
+			},
+			apsMedia: apsImpMediaFields{
+				videoMissing: true,
+				banner: &apsBannerFields{
+					W:      ptrutil.ToPtr[int64](320),
+					H:      ptrutil.ToPtr[int64](480),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+				},
+			},
+			signalImps: []openrtb2.Imp{{
+				Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+			}},
+			expected: openrtb2.Imp{
+				ID:    "i1",
+				Instl: 1,
+				Rwdd:  1,
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](320),
+					H:      ptrutil.ToPtr[int64](480),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+				},
+				Video: &openrtb2.Video{
+					MIMEs: []string{"video/mp4"},
+					W:     ptrutil.ToPtr[int64](320),
+					H:     ptrutil.ToPtr[int64](480),
+					Pos:   pos5,
+					CompanionAd: []openrtb2.Banner{{
+						Format: []openrtb2.Format{{W: 320, H: 480}},
+						Pos:    pos5,
+					}},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := &openrtb2.BidRequest{Imp: []openrtb2.Imp{tt.imp}}
+			updateImpressionWithSignalAndApsMedia(request, tt.signalImps, tt.adFormat, tt.apsMedia)
+
+			expectedJSON, err := json.Marshal(tt.expected)
+			require.NoError(t, err)
+
+			actualJSON, err := json.Marshal(request.Imp[0])
+			require.NoError(t, err)
+
+			assert.JSONEq(t, string(expectedJSON), string(actualJSON))
+		})
+	}
+}
+
+func TestApplyApsBannerFieldsToVideo(t *testing.T) {
+	pos5 := ptrutil.ToPtr(adcom1.PlacementPosition(5))
+
+	tests := []struct {
+		name      string
+		adFormat  string
+		imp       openrtb2.Imp
+		apsBanner *apsBannerFields
+		expected  *openrtb2.Video
+	}{
+		{
+			name:     "mrec_applies_aps_banner_fields_after_signal_video",
+			adFormat: apsAdFormatMrec,
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](300),
+					H:      ptrutil.ToPtr[int64](250),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				},
+				Video: &openrtb2.Video{
+					MIMEs: []string{"video/mp4"},
+					W:     ptrutil.ToPtr[int64](640),
+					H:     ptrutil.ToPtr[int64](360),
+				},
+			},
+			apsBanner: &apsBannerFields{
+				W:      ptrutil.ToPtr[int64](300),
+				H:      ptrutil.ToPtr[int64](250),
+				Pos:    pos5,
+				Format: []openrtb2.Format{{W: 300, H: 250}},
+			},
+			expected: &openrtb2.Video{
+				MIMEs: []string{"video/mp4"},
+				W:     ptrutil.ToPtr[int64](300),
+				H:     ptrutil.ToPtr[int64](250),
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				}},
+			},
+		},
+		{
+			name:     "interstitial_applies_aps_banner_fields_after_signal_video",
+			adFormat: apsAdFormatInterstitial,
+			imp: openrtb2.Imp{
+				Instl: 1,
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](320),
+					H:      ptrutil.ToPtr[int64](480),
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+				},
+				Video: &openrtb2.Video{
+					MIMEs: []string{"video/mp4"},
+					W:     ptrutil.ToPtr[int64](640),
+					H:     ptrutil.ToPtr[int64](360),
+				},
+			},
+			apsBanner: &apsBannerFields{
+				W:      ptrutil.ToPtr[int64](320),
+				H:      ptrutil.ToPtr[int64](480),
+				Format: []openrtb2.Format{{W: 320, H: 480}},
+			},
+			expected: &openrtb2.Video{
+				MIMEs: []string{"video/mp4"},
+				W:     ptrutil.ToPtr[int64](320),
+				H:     ptrutil.ToPtr[int64](480),
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+				}},
+			},
+		},
+		{
+			name:     "rewarded_creates_video_from_aps_banner_when_video_missing",
+			adFormat: apsAdFormatRewarded,
+			imp: openrtb2.Imp{
+				Rwdd: 1,
+				Banner: &openrtb2.Banner{
+					W:      ptrutil.ToPtr[int64](320),
+					H:      ptrutil.ToPtr[int64](480),
+					Pos:    pos5,
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+				},
+			},
+			apsBanner: &apsBannerFields{
+				W:      ptrutil.ToPtr[int64](320),
+				H:      ptrutil.ToPtr[int64](480),
+				Pos:    pos5,
+				Format: []openrtb2.Format{{W: 320, H: 480}},
+			},
+			expected: &openrtb2.Video{
+				W:   ptrutil.ToPtr[int64](320),
+				H:   ptrutil.ToPtr[int64](480),
+				Pos: pos5,
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+					Pos:    pos5,
+				}},
+			},
+		},
+		{
+			name:     "banner_format_skips_video_banner_overlay",
+			adFormat: apsAdFormatBanner,
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{W: ptrutil.ToPtr[int64](728), H: ptrutil.ToPtr[int64](90)},
+				Video:  &openrtb2.Video{W: ptrutil.ToPtr[int64](640), H: ptrutil.ToPtr[int64](360)},
+			},
+			apsBanner: &apsBannerFields{
+				W: ptrutil.ToPtr[int64](728),
+				H: ptrutil.ToPtr[int64](90),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			imp := tt.imp
+			applyApsBannerFieldsToVideo(&imp, tt.adFormat, tt.apsBanner)
+
+			if tt.expected == nil {
+				assert.Equal(t, tt.imp.Video.W, ptrutil.ToPtr[int64](640))
+				return
+			}
+
+			require.NotNil(t, imp.Video)
+			assert.Equal(t, tt.expected.MIMEs, imp.Video.MIMEs)
+			assertExpectedVideo(t, tt.expected, imp.Video)
+		})
+	}
+}
+
+func TestRestoreApsVideoFields(t *testing.T) {
+	pos5 := ptrutil.ToPtr(adcom1.PlacementPosition(5))
+
+	tests := []struct {
+		name     string
+		adFormat string
+		video    *openrtb2.Video
+		apsVideo *apsVideoFields
+		expected *openrtb2.Video
+	}{
+		{
+			name:     "mrec_skips_pos_on_video_and_companion",
+			adFormat: apsAdFormatMrec,
+			video: &openrtb2.Video{
+				MIMEs: []string{"video/mp4"},
+				W:     ptrutil.ToPtr[int64](640),
+				H:     ptrutil.ToPtr[int64](360),
+			},
+			apsVideo: &apsVideoFields{
+				W:   ptrutil.ToPtr[int64](300),
+				H:   ptrutil.ToPtr[int64](250),
+				Pos: pos5,
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+					Pos:    pos5,
+				}},
+			},
+			expected: &openrtb2.Video{
+				MIMEs: []string{"video/mp4"},
+				W:     ptrutil.ToPtr[int64](300),
+				H:     ptrutil.ToPtr[int64](250),
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				}},
+			},
+		},
+		{
+			name:     "interstitial_restores_pos_on_video_and_companion",
+			adFormat: apsAdFormatInterstitial,
+			video: &openrtb2.Video{
+				MIMEs: []string{"video/mp4"},
+				W:     ptrutil.ToPtr[int64](640),
+				H:     ptrutil.ToPtr[int64](360),
+			},
+			apsVideo: &apsVideoFields{
+				W:   ptrutil.ToPtr[int64](320),
+				H:   ptrutil.ToPtr[int64](480),
+				Pos: pos5,
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+					Pos:    pos5,
+				}},
+			},
+			expected: &openrtb2.Video{
+				MIMEs: []string{"video/mp4"},
+				W:     ptrutil.ToPtr[int64](320),
+				H:     ptrutil.ToPtr[int64](480),
+				Pos:   pos5,
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 320, H: 480}},
+					Pos:    pos5,
+				}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			video := tt.video
+			restoreApsVideoFields(video, tt.apsVideo, tt.adFormat)
+			assertExpectedVideo(t, tt.expected, video)
+		})
+	}
+}
+
+func TestDetermineAdFormat(t *testing.T) {
+	tests := []struct {
+		name string
+		imp  openrtb2.Imp
+		want string
+	}{
+		{
+			name: "rewarded_via_rwdd",
+			imp: openrtb2.Imp{
+				Rwdd:  1,
+				Video: &openrtb2.Video{},
+			},
+			want: apsAdFormatRewarded,
+		},
+		{
+			name: "rewarded_via_video_ext_videotype",
+			imp: openrtb2.Imp{
+				Video: &openrtb2.Video{Ext: json.RawMessage(`{"videotype":"rewarded"}`)},
+			},
+			want: apsAdFormatRewarded,
+		},
+		{
+			name: "interstitial",
+			imp: openrtb2.Imp{
+				Instl:  1,
+				Banner: &openrtb2.Banner{},
+				Video:  &openrtb2.Video{},
+			},
+			want: apsAdFormatInterstitial,
+		},
+		{
+			name: "mrec_via_banner_dimensions",
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{W: ptrutil.ToPtr[int64](300), H: ptrutil.ToPtr[int64](250)},
+			},
+			want: apsAdFormatMrec,
+		},
+		{
+			name: "mrec_via_banner_format",
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				},
+			},
+			want: apsAdFormatMrec,
+		},
+		{
+			name: "mrec_via_video_dimensions",
+			imp: openrtb2.Imp{
+				Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](300), H: ptrutil.ToPtr[int64](250)},
+			},
+			want: apsAdFormatMrec,
+		},
+		{
+			name: "banner_non_mrec_dimensions",
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{W: ptrutil.ToPtr[int64](728), H: ptrutil.ToPtr[int64](90)},
+			},
+			want: apsAdFormatBanner,
+		},
+		{
+			name: "banner_via_format_non_mrec_dimensions",
+			imp: openrtb2.Imp{
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{{W: 728, H: 90}},
+				},
+			},
+			want: apsAdFormatBanner,
+		},
+		{
+			name: "video_only_non_mrec_dimensions",
+			imp: openrtb2.Imp{
+				Video: &openrtb2.Video{W: ptrutil.ToPtr[int64](640), H: ptrutil.ToPtr[int64](360)},
+			},
+			want: "",
+		},
+		{
+			name: "video_only_without_dimensions",
+			imp: openrtb2.Imp{
+				Video: &openrtb2.Video{},
+			},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, determineAdFormat(&tt.imp))
+		})
+	}
+}
+
+func TestApplyAdFormatModifications(t *testing.T) {
+	tests := []struct {
+		name           string
+		adFormat       string
+		signalExt      []byte
+		request        *openrtb2.BidRequest
+		prepSignalImps []openrtb2.Imp
+		prepSignalUser *openrtb2.User
+		apsVideo       *apsVideoFields
+		expected       adFormatExpected
+	}{
+		{
+			name:     "banner_removes_video_and_sets_user_ext",
+			adFormat: apsAdFormatBanner,
+			signalExt: json.RawMessage(`{
+				"extendedsignal": {
+					"banner": {"impdepth": 2, "lastadomain": "banner.example.com"}
+				}
+			}`),
+			request: &openrtb2.BidRequest{
+				Imp:  []openrtb2.Imp{{ID: "1", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}}},
+				User: &openrtb2.User{},
+			},
+			expected: adFormatExpected{
+				Imp: expectedImp{
+					VideoIsNil: true,
+				},
+				User: expectedUser{
+					Ext: json.RawMessage(`{"impdepth":2,"lastadomain":"banner.example.com"}`),
+				},
+			},
+		},
+		{
+			name:     "mrec_applies_video_and_user_ext",
+			adFormat: apsAdFormatMrec,
+			signalExt: json.RawMessage(`{
+				"extendedsignal": {
+					"mrec": {
+						"videoplacement": 5,
+						"videoplcmt": 3,
+						"ctaoverlay": true,
+						"impdepth": 1,
+						"lastadomain": "mrec.example.com"
+					}
+				}
+			}`),
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:     "1",
+					Banner: &openrtb2.Banner{},
+					Video:  &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+				}},
+				User: &openrtb2.User{},
+			},
+			apsVideo: &apsVideoFields{
+				W: ptrutil.ToPtr[int64](320),
+				H: ptrutil.ToPtr[int64](250),
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				}},
+			},
+			expected: adFormatExpected{
+				Imp: expectedImp{
+					Video: &openrtb2.Video{
+						W:         ptrutil.ToPtr[int64](320),
+						H:         ptrutil.ToPtr[int64](250),
+						Placement: adcom1.VideoPlacementSubtype(5),
+						Plcmt:     adcom1.VideoPlcmtSubtype(3),
+						CompanionAd: []openrtb2.Banner{{
+							Format: []openrtb2.Format{{W: 300, H: 250}},
+						}},
+					},
+					Ext: json.RawMessage(`{"owsdk":{"ctaoverlay":true}}`),
+				},
+				User: expectedUser{
+					Ext: json.RawMessage(`{"impdepth":1,"lastadomain":"mrec.example.com"}`),
+				},
+			},
+		},
+		{
+			name:     "interstitial_sets_skoverlay_on_ios",
+			adFormat: apsAdFormatInterstitial,
+			signalExt: json.RawMessage(`{
+				"extendedsignal": {
+					"interstitial": {
+						"videoplacement": 5,
+						"videoplcmt": 3,
+						"companionapi": [5, 6],
+						"skoverlay": 1,
+						"ctaoverlay": true,
+						"impdepth": 0,
+						"lastadomain": "example.com"
+					}
+				}
+			}`),
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:     "1",
+					Banner: &openrtb2.Banner{},
+					Video:  &openrtb2.Video{},
+				}},
+				Device: &openrtb2.Device{OS: "iOS"},
+				User:   &openrtb2.User{},
+			},
+			apsVideo: &apsVideoFields{W: ptrutil.ToPtr[int64](320), H: ptrutil.ToPtr[int64](480)},
+			expected: adFormatExpected{
+				Imp: expectedImp{
+					Banner: &openrtb2.Banner{},
+					Video: &openrtb2.Video{
+						W:         ptrutil.ToPtr[int64](320),
+						H:         ptrutil.ToPtr[int64](480),
+						Placement: adcom1.VideoPlacementSubtype(5),
+						Plcmt:     adcom1.VideoPlcmtSubtype(3),
+						CompanionAd: []openrtb2.Banner{{
+							API: []adcom1.APIFramework{5, 6},
+						}},
+					},
+					Ext: json.RawMessage(`{"owsdk":{"ctaoverlay":true},"skadn":{"skoverlay":1}}`),
+				},
+				User: expectedUser{
+					Ext: json.RawMessage(`{"impdepth":0,"lastadomain":"example.com"}`),
+				},
+			},
+		},
+		{
+			name:     "interstitial_skips_skoverlay_on_android",
+			adFormat: apsAdFormatInterstitial,
+			signalExt: json.RawMessage(`{
+				"extendedsignal": {
+					"interstitial": {"skoverlay": 1, "ctaoverlay": true}
+				}
+			}`),
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:     "1",
+					Banner: &openrtb2.Banner{},
+					Video:  &openrtb2.Video{},
+				}},
+				Device: &openrtb2.Device{OS: "android"},
+				User:   &openrtb2.User{},
+			},
+			expected: adFormatExpected{
+				Imp: expectedImp{
+					Video: &openrtb2.Video{
+						CompanionAd: []openrtb2.Banner{{}},
+					},
+					Ext: json.RawMessage(`{"owsdk":{"ctaoverlay":true}}`),
+				},
+				User: expectedUser{ExtIsNil: true},
+			},
+		},
+		{
+			name:     "mrec_applies_extended_signal_over_prepopulated_signal_merge",
+			adFormat: apsAdFormatMrec,
+			signalExt: json.RawMessage(`{
+				"extendedsignal": {
+					"mrec": {
+						"videoplacement": 5,
+						"videoplcmt": 3,
+						"ctaoverlay": true,
+						"impdepth": 1,
+						"lastadomain": "mrec.example.com"
+					}
+				}
+			}`),
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:     "i1",
+					Banner: &openrtb2.Banner{W: ptrutil.ToPtr[int64](300), H: ptrutil.ToPtr[int64](250)},
+					Video: &openrtb2.Video{
+						W:     ptrutil.ToPtr[int64](320),
+						H:     ptrutil.ToPtr[int64](250),
+						BAttr: []adcom1.CreativeAttribute{1, 2},
+					},
+				}},
+				User: &openrtb2.User{},
+			},
+			prepSignalImps: []openrtb2.Imp{{
+				DisplayManager:    "signal-dm",
+				DisplayManagerVer: "2.0.0",
+				Banner: &openrtb2.Banner{
+					API: []adcom1.APIFramework{7},
+				},
+				Video: &openrtb2.Video{
+					MIMEs: []string{"video/mp4"},
+				},
+				Ext: json.RawMessage(`{"skadn":{"versions":["2.0"]},"owsdk":{"existing":1}}`),
+			}},
+			prepSignalUser: &openrtb2.User{
+				Ext: json.RawMessage(`{"sessionduration":300,"consent":"test"}`),
+			},
+			apsVideo: &apsVideoFields{
+				W:     ptrutil.ToPtr[int64](320),
+				H:     ptrutil.ToPtr[int64](250),
+				BAttr: []adcom1.CreativeAttribute{1, 2},
+				CompanionAd: []openrtb2.Banner{{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				}},
+			},
+			expected: adFormatExpected{
+				Imp: expectedImp{
+					DisplayManager:    "signal-dm",
+					DisplayManagerVer: "2.0.0",
+					Banner:            &openrtb2.Banner{API: []adcom1.APIFramework{7}},
+					Video: &openrtb2.Video{
+						W:         ptrutil.ToPtr[int64](320),
+						H:         ptrutil.ToPtr[int64](250),
+						Placement: adcom1.VideoPlacementSubtype(5),
+						Plcmt:     adcom1.VideoPlcmtSubtype(3),
+						MIMEs:     []string{"video/mp4"},
+						BAttr:     []adcom1.CreativeAttribute{1, 2},
+						CompanionAd: []openrtb2.Banner{{
+							Format: []openrtb2.Format{{W: 300, H: 250}},
+						}},
+					},
+					Ext: json.RawMessage(`{"skadn":{"versions":["2.0"]},"owsdk":{"existing":1,"ctaoverlay":true}}`),
+				},
+				User: expectedUser{
+					Ext: json.RawMessage(`{"sessionduration":300,"consent":"test","impdepth":1,"lastadomain":"mrec.example.com"}`),
+				},
+			},
+		},
+		{
+			name:     "rewarded_removes_banner",
+			adFormat: apsAdFormatRewarded,
+			signalExt: json.RawMessage(`{
+				"extendedsignal": {
+					"rewarded": {
+						"videoplacement": 5,
+						"videoplcmt": 3,
+						"impdepth": 3,
+						"lastadomain": "reward.example.com"
+					}
+				}
+			}`),
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:     "1",
+					Banner: &openrtb2.Banner{},
+					Video:  &openrtb2.Video{},
+				}},
+				User: &openrtb2.User{},
+			},
+			apsVideo: &apsVideoFields{W: ptrutil.ToPtr[int64](640), H: ptrutil.ToPtr[int64](360)},
+			expected: adFormatExpected{
+				Imp: expectedImp{
+					BannerIsNil: true,
+					Video: &openrtb2.Video{
+						W:           ptrutil.ToPtr[int64](640),
+						H:           ptrutil.ToPtr[int64](360),
+						Placement:   adcom1.VideoPlacementSubtype(5),
+						Plcmt:       adcom1.VideoPlcmtSubtype(3),
+						CompanionAd: []openrtb2.Banner{{}},
+					},
+				},
+				User: expectedUser{
+					Ext: json.RawMessage(`{"impdepth":3,"lastadomain":"reward.example.com"}`),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.prepSignalImps != nil {
+				updateImpressionWithSignal(tt.request, tt.prepSignalImps, tt.adFormat, tt.apsVideo)
+			} else if tt.apsVideo != nil && len(tt.request.Imp) > 0 && tt.request.Imp[0].Video != nil {
+				restoreApsVideoFields(tt.request.Imp[0].Video, tt.apsVideo, tt.adFormat)
+			}
+			if tt.prepSignalUser != nil {
+				updateUser(tt.request, tt.prepSignalUser)
+			}
+
+			applyAdFormatModifications(tt.request, tt.adFormat, tt.signalExt)
+			assertAdFormatExpected(t, tt.request, tt.expected)
+		})
+	}
+}
+
+type adFormatExpected struct {
+	Imp  expectedImp
+	User expectedUser
+}
+
+type expectedImp struct {
+	DisplayManager    string
+	DisplayManagerVer string
+	Banner            *openrtb2.Banner
+	BannerIsNil       bool
+	Video             *openrtb2.Video
+	VideoIsNil        bool
+	Ext               json.RawMessage
+}
+
+type expectedUser struct {
+	Ext      json.RawMessage
+	ExtIsNil bool
+}
+
+func assertAdFormatExpected(t *testing.T, request *openrtb2.BidRequest, expected adFormatExpected) {
+	t.Helper()
+
+	require.NotEmpty(t, request.Imp)
+	imp := request.Imp[0]
+
+	if expected.Imp.DisplayManager != "" {
+		assert.Equal(t, expected.Imp.DisplayManager, imp.DisplayManager)
+	}
+	if expected.Imp.DisplayManagerVer != "" {
+		assert.Equal(t, expected.Imp.DisplayManagerVer, imp.DisplayManagerVer)
+	}
+
+	if expected.Imp.BannerIsNil {
+		assert.Nil(t, imp.Banner)
+	} else if expected.Imp.Banner != nil {
+		require.NotNil(t, imp.Banner)
+		assertExpectedBanner(t, expected.Imp.Banner, imp.Banner)
+	}
+
+	if expected.Imp.VideoIsNil {
+		assert.Nil(t, imp.Video)
+	} else if expected.Imp.Video != nil {
+		require.NotNil(t, imp.Video)
+		assertExpectedVideo(t, expected.Imp.Video, imp.Video)
+	}
+
+	if len(expected.Imp.Ext) > 0 {
+		assert.JSONEq(t, string(expected.Imp.Ext), string(imp.Ext))
+	}
+
+	require.NotNil(t, request.User)
+	if expected.User.ExtIsNil {
+		assert.Nil(t, request.User.Ext)
+	} else if len(expected.User.Ext) > 0 {
+		assert.JSONEq(t, string(expected.User.Ext), string(request.User.Ext))
+	}
+}
+
+func assertExpectedBanner(t *testing.T, expected, actual *openrtb2.Banner) {
+	t.Helper()
+
+	if expected.Pos != nil {
+		require.NotNil(t, actual.Pos)
+		assert.Equal(t, *expected.Pos, *actual.Pos)
+	}
+}
+
+func assertExpectedVideo(t *testing.T, expected, actual *openrtb2.Video) {
+	t.Helper()
+
+	if expected.W != nil {
+		require.NotNil(t, actual.W)
+		assert.Equal(t, *expected.W, *actual.W)
+	}
+	if expected.H != nil {
+		require.NotNil(t, actual.H)
+		assert.Equal(t, *expected.H, *actual.H)
+	}
+	if expected.Pos != nil {
+		require.NotNil(t, actual.Pos)
+		assert.Equal(t, *expected.Pos, *actual.Pos)
+	}
+	if expected.Placement != 0 {
+		assert.Equal(t, expected.Placement, actual.Placement)
+	}
+	if expected.Plcmt != 0 {
+		assert.Equal(t, expected.Plcmt, actual.Plcmt)
+	}
+	if len(expected.MIMEs) > 0 {
+		assert.Equal(t, expected.MIMEs, actual.MIMEs)
+	}
+	if len(expected.BAttr) > 0 {
+		assert.Equal(t, expected.BAttr, actual.BAttr)
+	}
+	if len(expected.CompanionAd) > 0 {
+		require.NotEmpty(t, actual.CompanionAd)
+		assertExpectedBanner(t, &expected.CompanionAd[0], &actual.CompanionAd[0])
+		if len(expected.CompanionAd[0].Format) > 0 {
+			require.NotEmpty(t, actual.CompanionAd[0].Format)
+			assert.Equal(t, expected.CompanionAd[0].Format[0].W, actual.CompanionAd[0].Format[0].W)
+			assert.Equal(t, expected.CompanionAd[0].Format[0].H, actual.CompanionAd[0].Format[0].H)
+		}
+		if len(expected.CompanionAd[0].API) > 0 {
+			assert.Equal(t, expected.CompanionAd[0].API, actual.CompanionAd[0].API)
+		}
+	}
 }

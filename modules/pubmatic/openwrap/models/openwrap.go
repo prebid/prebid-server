@@ -126,6 +126,7 @@ type RequestCtx struct {
 	UnityLevelPlay                  UnityLevelPlay
 	APS                             APS
 	SignalRequest                   *openrtb2.BidRequest
+	EdsStatus                       *int
 	VastUnWrap                      VastUnWrap
 	PerformanceDSPs                 map[int]struct{}
 	InViewEnabledPublishers         map[int]struct{}

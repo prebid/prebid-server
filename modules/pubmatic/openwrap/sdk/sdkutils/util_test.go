@@ -445,6 +445,98 @@ func TestCopyPath(t *testing.T) {
 	}
 }
 
+func TestSetIfKeysExists(t *testing.T) {
+	type args struct {
+		source []byte
+		target []byte
+		keys   []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []byte
+	}{
+		{
+			name: "keys not found in source",
+			args: args{
+				source: nil,
+				target: nil,
+				keys:   []string{"key1", "key2"},
+			},
+			want: nil,
+		},
+		{
+			name: "int value key found out of all keys",
+			args: args{
+				source: []byte(`{"key1":23,"key40":"v40"}`),
+				target: nil,
+				keys:   []string{"key1", "key2"},
+			},
+			want: []byte(`{"key1":23}`),
+		},
+		{
+			name: "copies numeric zero",
+			args: args{
+				source: []byte(`{"impdepth":0,"lastadomain":"example.com"}`),
+				target: nil,
+				keys:   []string{"impdepth", "lastadomain"},
+			},
+			want: []byte(`{"impdepth":0,"lastadomain":"example.com"}`),
+		},
+		{
+			name: "string value key found out of all keys",
+			args: args{
+				source: []byte(`{"key1":23,"key40":"v40"}`),
+				target: nil,
+				keys:   []string{"key40", "key2"},
+			},
+			want: []byte(`{"key40":"v40"}`),
+		},
+		{
+			name: "overwrite string value key in target",
+			args: args{
+				source: []byte(`{"key1":55555,"key40":"v40"}`),
+				target: []byte(`{"key1":23,"key40":"will_overwrite"}`),
+				keys:   []string{"key40", "key2"},
+			},
+			want: []byte(`{"key1":23,"key40":"v40"}`),
+		},
+		{
+			name: "error while setting key, return oldTarget",
+			args: args{
+				source: []byte(`{"key1":555555,"key40":"v40"}`),
+				target: []byte(`"key1":23,"key40":"value40"}`),
+				keys:   []string{"key40", "key2"},
+			},
+			want: []byte(`"key1":23,"key40":"value40"}`),
+		},
+		{
+			name: "overwrite key in target with object",
+			args: args{
+				source: []byte(`{"key1":55555,"key40":{"user":{"id":"1kjh3429kjh295jkl","ext":{"consent":"CONSENT_STRING"}},"regs":{"ext":{"gdpr":1}}}}`),
+				target: []byte(`{"key1":23,"key40":[]}`),
+				keys:   []string{"key40", "key2"},
+			},
+			want: []byte(`{"key1":23,"key40":{"user":{"id":"1kjh3429kjh295jkl","ext":{"consent":"CONSENT_STRING"}},"regs":{"ext":{"gdpr":1}}}}`),
+		},
+		{
+			name: "set slice in key",
+			args: args{
+				source: []byte(`{"key1":555555,"key40":[1,2,3,4,5]}`),
+				target: []byte(`{"key1":23,"key40":"value40"}`),
+				keys:   []string{"key40", "key2"},
+			},
+			want: []byte(`{"key1":23,"key40":[1,2,3,4,5]}`),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SetIfKeysExists(tt.args.source, tt.args.target, tt.args.keys...)
+			assert.Equal(t, tt.want, got, tt.name)
+		})
+	}
+}
+
 func TestAddSize300x600ForInterstitialBanner(t *testing.T) {
 	tests := []struct {
 		name     string

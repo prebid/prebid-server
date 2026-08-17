@@ -171,6 +171,14 @@ func (wlog *WloggerRecord) logProfileMetaData(rctx *models.RequestCtx) {
 	}
 }
 
+func (wlog *WloggerRecord) logEdsStatus(rCtx *models.RequestCtx) {
+	if rCtx == nil || rCtx.EdsStatus == nil {
+		return
+	}
+
+	wlog.EdsStatus = rCtx.EdsStatus
+}
+
 func setWakandaObject(rCtx *models.RequestCtx, ao *analytics.AuctionObject, loggerURL string) {
 	if rCtx.WakandaDebug != nil && rCtx.WakandaDebug.IsEnable() {
 		setWakandaWinningBidFlag(rCtx.WakandaDebug, ao.Response)
