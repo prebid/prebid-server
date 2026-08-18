@@ -60,3 +60,34 @@ func TestExtraInfoMalformed(t *testing.T) {
 
 	assert.Error(t, buildErr)
 }
+
+func TestExtractNurlVideoCrid(t *testing.T) {
+	tests := []struct {
+		name     string
+		nurl     string
+		expected string
+	}{
+		{
+			name:     "valid nurl",
+			nurl:     "https://useast.bfmio.com/getBids?aid=bid:70b99087-1b92-4e81-bc42-05c940fd6014:bid-id",
+			expected: "70b99087-1b92-4e81-bc42-05c940fd6014",
+		},
+		{
+			name: "nurl with no colons",
+			nurl: "short-nurl",
+		},
+		{
+			name: "nurl with one colon",
+			nurl: "short:nurl",
+		},
+		{
+			name: "empty nurl",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, extractNurlVideoCrid(test.nurl))
+		})
+	}
+}
