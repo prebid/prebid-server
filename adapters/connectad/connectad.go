@@ -29,9 +29,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *ConnectAdAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	var errs []error
-
-	if errs := preprocess(request); len(errs) > 0 {
+	errs := preprocess(request)
+	if len(request.Imp) == 0 {
 		return nil, append(errs, &errortypes.BadInput{
 			Message: "Error in preprocess of Imp",
 		})
