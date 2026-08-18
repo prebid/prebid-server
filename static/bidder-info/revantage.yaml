@@ -1,0 +1,17 @@
+endpoint: "https://bid.revantage.io/bid"
+maintainer:
+  email: "prebid@revantage.io"
+gvlVendorID: 0
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://sync.revantage.io/pbs/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "$UID"
