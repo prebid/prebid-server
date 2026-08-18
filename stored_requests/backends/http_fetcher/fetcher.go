@@ -149,6 +149,16 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 			fmt.Errorf(`Error fetching accounts %v via http: error reading response: %v`, accountIDs, err),
 		}
 	}
+	if httpResp.StatusCode == http.StatusNotFound {
+		errs := make([]error, 0, len(accountIDs))
+		for _, accountID := range accountIDs {
+			errs = append(errs, stored_requests.NotFoundError{
+				ID:       accountID,
+				DataType: "Account",
+			})
+		}
+		return nil, errs
+	}
 	if httpResp.StatusCode != http.StatusOK {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: unexpected response status %d`, accountIDs, httpResp.StatusCode),
@@ -185,6 +195,15 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSO
 		return nil, []error{err}
 	}
 	return completeJSON, nil
+}
+
+// FetchAllAccounts is a no-op for the HTTP fetcher. Its endpoint contract is by-id
+// only (GET ?account-ids=[...]) with no way to enumerate every account, so it
+// contributes nothing to bulk cache preloading and reports no error. Accounts still
+// load lazily on demand via FetchAccount.
+func (fetcher *HttpFetcher) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
+	logger.Warnf("http_fetcher: bulk account preload is not supported by the by-id HTTP endpoint; accounts will load lazily on demand")
+	return map[string]json.RawMessage{}, nil
 }
 
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {

@@ -36,6 +36,11 @@ func (fetcher EmptyFetcher) FetchAccount(ctx context.Context, accountDefaultJSON
 	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
 }
 
+// FetchAllAccounts returns no accounts: the empty fetcher has no data to enumerate.
+func (fetcher EmptyFetcher) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
+	return map[string]json.RawMessage{}, nil
+}
+
 func (fetcher EmptyFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }

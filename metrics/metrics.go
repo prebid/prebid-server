@@ -340,6 +340,48 @@ func CacheResults() []CacheResult {
 	}
 }
 
+// CacheKitResult is the outcome of a Fetchers 2.0 (cachekit) cache lookup.
+type CacheKitResult string
+
+const (
+	// CacheKitResultHit is a value served from the positive cache without a backend call.
+	CacheKitResultHit CacheKitResult = "hit"
+	// CacheKitResultMiss is a lookup that had to go to the backend source.
+	CacheKitResultMiss CacheKitResult = "miss"
+	// CacheKitResultNegative is a not-found served from the negative cache without a backend call.
+	CacheKitResultNegative CacheKitResult = "negative"
+)
+
+// CacheKitResults returns the possible cachekit cache lookup outcomes.
+func CacheKitResults() []CacheKitResult {
+	return []CacheKitResult{
+		CacheKitResultHit,
+		CacheKitResultMiss,
+		CacheKitResultNegative,
+	}
+}
+
+// CacheKitBackendResult is the outcome of a cachekit upstream (source) fetch.
+type CacheKitBackendResult string
+
+const (
+	// CacheKitBackendOK is a successful backend fetch that returned a value.
+	CacheKitBackendOK CacheKitBackendResult = "ok"
+	// CacheKitBackendNotFound is a definitive per-key not-found from the backend.
+	CacheKitBackendNotFound CacheKitBackendResult = "notfound"
+	// CacheKitBackendError is a systemic backend failure (never cached).
+	CacheKitBackendError CacheKitBackendResult = "error"
+)
+
+// CacheKitBackendResults returns the possible cachekit backend fetch outcomes.
+func CacheKitBackendResults() []CacheKitBackendResult {
+	return []CacheKitBackendResult{
+		CacheKitBackendOK,
+		CacheKitBackendNotFound,
+		CacheKitBackendError,
+	}
+}
+
 // TCFVersionValue : The possible values for TCF versions
 type TCFVersionValue string
 
@@ -488,6 +530,8 @@ type MetricsEngine interface {
 	RecordAccountCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
 	RecordStoredDataError(labels StoredDataLabels)
+	RecordCacheKitResult(subsystem string, result CacheKitResult)
+	RecordCacheKitBackendFetch(subsystem string, result CacheKitBackendResult, length time.Duration)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)

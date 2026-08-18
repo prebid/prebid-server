@@ -136,6 +136,14 @@ func (me *MetricsEngineMock) RecordAccountCacheResult(cacheResult CacheResult, i
 	me.Called(cacheResult, inc)
 }
 
+func (me *MetricsEngineMock) RecordCacheKitResult(subsystem string, result CacheKitResult) {
+	me.Called(subsystem, result)
+}
+
+func (me *MetricsEngineMock) RecordCacheKitBackendFetch(subsystem string, result CacheKitBackendResult, length time.Duration) {
+	me.Called(subsystem, result, length)
+}
+
 // RecordPrebidCacheRequestTime mock
 func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 	me.Called(success, length)

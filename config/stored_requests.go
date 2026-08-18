@@ -71,6 +71,79 @@ type StoredRequests struct {
 	// HTTPEvents configures an instance of stored_requests/events/http/http.go.
 	// If non-nil, the server will use those endpoints to populate and update the cache.
 	HTTPEvents HTTPEventsConfig `mapstructure:"http_events"`
+	// V2Enabled opts this data type into the Fetchers 2.0 (cachekit) read path.
+	// Currently honoured for the accounts data type only. Defaults to false, which
+	// preserves the legacy fetch + byte-cache behaviour unchanged.
+	V2Enabled bool `mapstructure:"v2_enabled"`
+	// CacheV2 configures the Fetchers 2.0 typed cache. Only used when V2Enabled is true.
+	CacheV2 CacheKitConfig `mapstructure:"cache"`
+}
+
+// CacheKitConfig configures a Fetchers 2.0 typed cache (cachekit).
+type CacheKitConfig struct {
+	// Type selects the cache retention policy: "none" (always fetch from source) or
+	// "lru" (bounded read-through, the default).
+	Type string `mapstructure:"type"`
+	// MaxEntries bounds the number of cached values when Type is "lru".
+	MaxEntries int `mapstructure:"max_entries"`
+	// TTLSeconds is how long a cached value is served fresh before a background
+	// refresh is triggered. Past it the value is still served (stale) while it
+	// refreshes, so reads never block on the backend.
+	TTLSeconds int `mapstructure:"ttl_seconds"`
+	// Refresh selects the freshness mode: "ttl" (serve-stale + background refresh,
+	// the default), "none" (never refresh / load-once) or "preload" (bulk warm at
+	// startup then ttl).
+	Refresh RefreshMode `mapstructure:"refresh"`
+	// CoalesceRequests opts into single-flight coalescing so concurrent misses for
+	// the same key collapse into one upstream fetch. Opt-in; defaults to off.
+	CoalesceRequests bool `mapstructure:"coalesce_requests"`
+	// ServeStale opts into stale-while-revalidate: past ttl_seconds the cached value
+	// is served immediately and refreshed in the background (reads never block on the
+	// backend). For refresh modes "ttl" and "preload", this behavior is enabled by
+	// default to match the mode contract.
+	ServeStale bool `mapstructure:"serve_stale"`
+	// RevalidateTimeoutSeconds is the maximum time allowed for background stale
+	// revalidation before the attempt is failed and retried after backoff.
+	RevalidateTimeoutSeconds int `mapstructure:"revalidate_timeout_seconds"`
+	// Negative configures the optional negative (definitive-verdict) cache.
+	Negative NegativeCacheConfig `mapstructure:"negative"`
+}
+
+// RefreshMode selects a cachekit freshness mode.
+type RefreshMode string
+
+const (
+	// RefreshTTL serves stale values while refreshing them in the background.
+	RefreshTTL RefreshMode = "ttl"
+	// RefreshNone never refreshes cached values (load-once / mirror).
+	RefreshNone RefreshMode = "none"
+	// RefreshPreload bulk-warms the cache at startup, then behaves like ttl.
+	RefreshPreload RefreshMode = "preload"
+)
+
+// TTL returns the positive-cache time-to-live.
+func (c CacheKitConfig) TTL() time.Duration {
+	return time.Duration(c.TTLSeconds) * time.Second
+}
+
+// RevalidateTimeout returns the background revalidation timeout.
+func (c CacheKitConfig) RevalidateTimeout() time.Duration {
+	return time.Duration(c.RevalidateTimeoutSeconds) * time.Second
+}
+
+// NegativeCacheConfig configures caching of definitive not-found verdicts.
+type NegativeCacheConfig struct {
+	// Enabled turns negative caching on. Opt-in; defaults to off.
+	Enabled bool `mapstructure:"enabled"`
+	// MaxEntries bounds the negative store, kept separate from the positive cache.
+	MaxEntries int `mapstructure:"max_entries"`
+	// TTLSeconds is how long a not-found verdict is retained.
+	TTLSeconds int `mapstructure:"ttl_seconds"`
+}
+
+// TTL returns the negative-cache time-to-live.
+func (c NegativeCacheConfig) TTL() time.Duration {
+	return time.Duration(c.TTLSeconds) * time.Second
 }
 
 // HTTPEventsConfig configures stored_requests/events/http/http.go

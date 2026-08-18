@@ -62,6 +62,11 @@ type Metrics struct {
 	adsCertSignTimer             prometheus.Histogram
 	bidderServerResponseTimer    prometheus.Histogram
 
+	// Fetchers 2.0 (cachekit) Metrics
+	cacheKitResult            *prometheus.CounterVec
+	cacheKitBackendFetch      *prometheus.CounterVec
+	cacheKitBackendFetchTimer *prometheus.HistogramVec
+
 	// Adapter Metrics
 	adapterBids                           *prometheus.CounterVec
 	adapterErrors                         *prometheus.CounterVec
@@ -116,6 +121,7 @@ const (
 	adapterLabel         = "adapter"
 	bidTypeLabel         = "bid_type"
 	cacheResultLabel     = "cache_result"
+	cacheKitResultLabel  = "result"
 	connectionErrorLabel = "connection_error"
 	cookieLabel          = "cookie"
 	hasBidsLabel         = "has_bids"
@@ -133,6 +139,7 @@ const (
 	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
+	subsystemLabel       = "subsystem"
 	syncerLabel          = "syncer"
 	versionLabel         = "version"
 )
@@ -268,6 +275,22 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"stored_account_errors",
 		"Count of stored account errors by error type",
 		[]string{storedDataErrorLabel})
+
+	metrics.cacheKitResult = newCounter(cfg, reg,
+		"cachekit_cache_result",
+		"Count of Fetchers 2.0 cache lookups labeled by subsystem and result (hit, miss, negative).",
+		[]string{subsystemLabel, cacheKitResultLabel})
+
+	metrics.cacheKitBackendFetch = newCounter(cfg, reg,
+		"cachekit_backend_fetch",
+		"Count of Fetchers 2.0 backend fetches labeled by subsystem and result (ok, notfound, error).",
+		[]string{subsystemLabel, cacheKitResultLabel})
+
+	metrics.cacheKitBackendFetchTimer = newHistogramVec(cfg, reg,
+		"cachekit_backend_fetch_duration_seconds",
+		"Seconds to fetch a value from a Fetchers 2.0 backend source, labeled by subsystem.",
+		[]string{subsystemLabel},
+		standardTimeBuckets)
 
 	metrics.storedAMPFetchTimer = newHistogramVec(cfg, reg,
 		"stored_amp_fetch_time_seconds",
@@ -963,6 +986,23 @@ func (m *Metrics) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc 
 	m.accountCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
 	}).Add(float64(inc))
+}
+
+func (m *Metrics) RecordCacheKitResult(subsystem string, result metrics.CacheKitResult) {
+	m.cacheKitResult.With(prometheus.Labels{
+		subsystemLabel:      subsystem,
+		cacheKitResultLabel: string(result),
+	}).Inc()
+}
+
+func (m *Metrics) RecordCacheKitBackendFetch(subsystem string, result metrics.CacheKitBackendResult, length time.Duration) {
+	m.cacheKitBackendFetch.With(prometheus.Labels{
+		subsystemLabel:      subsystem,
+		cacheKitResultLabel: string(result),
+	}).Inc()
+	m.cacheKitBackendFetchTimer.With(prometheus.Labels{
+		subsystemLabel: subsystem,
+	}).Observe(length.Seconds())
 }
 
 func (m *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duration) {

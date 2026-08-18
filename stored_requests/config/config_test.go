@@ -4,17 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
+	accountservice "github.com/prebid/prebid-server/v4/account"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/metrics"
+	metricsconfig "github.com/prebid/prebid-server/v4/metrics/config"
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/stored_requests/backends/db_provider"
 	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
@@ -161,6 +165,47 @@ func TestNewHTTPEvents(t *testing.T) {
 	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
 	assertSliceLength(t, evProducers, 1)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
+}
+
+func TestNewStoredRequestsV2AccountsSkipsLegacyAccountCache(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"accounts":{"pub-1":{"id":"pub-1"}}}`)
+	}))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Accounts: config.StoredRequests{
+			HTTP: config.HTTPFetcherConfig{
+				Endpoint:               server.URL,
+				UseRfcCompliantBuilder: true,
+			},
+			InMemoryCache: config.InMemoryCache{
+				Type: "unbounded",
+			},
+			V2Enabled: true,
+			CacheV2: config.CacheKitConfig{
+				Type: "none",
+			},
+		},
+	}
+	cfg.Accounts.SetDataType(config.AccountDataType)
+	assert.NoError(t, cfg.MarshalAccountDefaults())
+
+	shutdown, _, _, accountsFetcher, _, _, _ := NewStoredRequests(cfg, &metricsconfig.NilMetricsEngine{}, server.Client(), httprouter.New())
+	defer shutdown()
+
+	account, errs := accountservice.GetAccount(context.Background(), cfg, accountsFetcher, "pub-1", &metricsconfig.NilMetricsEngine{})
+	assert.Empty(t, errs)
+	assert.Equal(t, "pub-1", account.ID)
+
+	account, errs = accountservice.GetAccount(context.Background(), cfg, accountsFetcher, "pub-1", &metricsconfig.NilMetricsEngine{})
+	assert.Empty(t, errs)
+	assert.Equal(t, "pub-1", account.ID)
+
+	assert.Equal(t, int32(2), atomic.LoadInt32(&calls), "v2 cache.type=none should reach the HTTP source every time, even if the legacy account cache is configured")
 }
 
 func TestNewEmptyCache(t *testing.T) {

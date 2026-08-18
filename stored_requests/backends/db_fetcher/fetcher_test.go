@@ -37,6 +37,43 @@ func TestEmptyQuery(t *testing.T) {
 	assertMapLength(t, 0, storedResponses)
 }
 
+func TestFetchAllAccountsNotConfigured(t *testing.T) {
+	provider, _, err := db_provider.NewDbProviderMock()
+	if err != nil {
+		t.Fatalf("Unexpected error stubbing DB: %v", err)
+	}
+	defer provider.Close()
+
+	fetcher := &dbFetcher{provider: provider}
+	accounts, errs := fetcher.FetchAllAccounts(context.Background())
+	assert.Nil(t, accounts)
+	assertErrorCount(t, 1, errs)
+}
+
+func TestFetchAllAccounts(t *testing.T) {
+	provider, mock, err := db_provider.NewDbProviderMock()
+	if err != nil {
+		t.Fatalf("Unexpected error stubbing DB: %v", err)
+	}
+	defer provider.Close()
+
+	query := "SELECT id, config, 'account' AS dataType FROM accounts"
+	rows := sqlmock.NewRows([]string{"id", "data", "dataType"}).
+		AddRow("acc-1", `{"id":"acc-1"}`, "account").
+		AddRow("acc-2", `{"id":"acc-2"}`, "account").
+		AddRow("acc-null", nil, "account") // null data is skipped
+	mock.ExpectQuery(fmt.Sprintf("^%s$", regexp.QuoteMeta(query))).WillReturnRows(rows)
+
+	fetcher := &dbFetcher{provider: provider, accountsQuery: query}
+	accounts, errs := fetcher.FetchAllAccounts(context.Background())
+
+	assertMockExpectations(t, mock)
+	assertErrorCount(t, 0, errs)
+	assertMapLength(t, 2, accounts)
+	assertHasData(t, accounts, "acc-1", `{"id":"acc-1"}`)
+	assertHasData(t, accounts, "acc-2", `{"id":"acc-2"}`)
+}
+
 // TestGoodResponse makes sure we interpret DB responses properly when all the stored requests are there.
 func TestGoodResponse(t *testing.T) {
 	mockQuery := "SELECT id, data, 'request' AS dataType FROM req_table WHERE id IN (?) UNION ALL SELECT id, data, 'imp' as dataType FROM imp_table WHERE id IN (?, ?)"

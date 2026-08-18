@@ -1224,6 +1224,44 @@ func TestAccountCacheResultMetric(t *testing.T) {
 		})
 }
 
+func TestCacheKitMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordCacheKitResult("account", metrics.CacheKitResultHit)
+	m.RecordCacheKitResult("account", metrics.CacheKitResultHit)
+	m.RecordCacheKitResult("account", metrics.CacheKitResultMiss)
+	m.RecordCacheKitResult("account", metrics.CacheKitResultNegative)
+
+	m.RecordCacheKitBackendFetch("account", metrics.CacheKitBackendOK, time.Millisecond)
+	m.RecordCacheKitBackendFetch("account", metrics.CacheKitBackendNotFound, time.Millisecond)
+
+	assertCounterVecValue(t, "", "cacheKitResult:hit", m.cacheKitResult, 2,
+		prometheus.Labels{
+			subsystemLabel:      "account",
+			cacheKitResultLabel: string(metrics.CacheKitResultHit),
+		})
+	assertCounterVecValue(t, "", "cacheKitResult:miss", m.cacheKitResult, 1,
+		prometheus.Labels{
+			subsystemLabel:      "account",
+			cacheKitResultLabel: string(metrics.CacheKitResultMiss),
+		})
+	assertCounterVecValue(t, "", "cacheKitResult:negative", m.cacheKitResult, 1,
+		prometheus.Labels{
+			subsystemLabel:      "account",
+			cacheKitResultLabel: string(metrics.CacheKitResultNegative),
+		})
+	assertCounterVecValue(t, "", "cacheKitBackendFetch:ok", m.cacheKitBackendFetch, 1,
+		prometheus.Labels{
+			subsystemLabel:      "account",
+			cacheKitResultLabel: string(metrics.CacheKitBackendOK),
+		})
+	assertCounterVecValue(t, "", "cacheKitBackendFetch:notfound", m.cacheKitBackendFetch, 1,
+		prometheus.Labels{
+			subsystemLabel:      "account",
+			cacheKitResultLabel: string(metrics.CacheKitBackendNotFound),
+		})
+}
+
 func TestCookieSyncMetric(t *testing.T) {
 	tests := []struct {
 		status metrics.CookieSyncStatus
