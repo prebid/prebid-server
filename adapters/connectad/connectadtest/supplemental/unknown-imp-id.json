@@ -26,7 +26,8 @@
     },
     "device": {
       "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
-      "ip": "111.111.111.111"
+      "ip": "111.111.111.111",
+      "dnt": 1
     }
   },
   "httpCalls": [
@@ -44,7 +45,7 @@
             "111.111.111.111"
           ],
           "Dnt": [
-            "0"
+            "1"
           ],
           "User-Agent": [
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
@@ -77,7 +78,8 @@
           },
           "device": {
             "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
-            "ip": "111.111.111.111"
+            "ip": "111.111.111.111",
+            "dnt": 1
           }
         },
         "impIDs": [
@@ -93,8 +95,8 @@
               "seat": "connectad",
               "bid": [
                 {
-                  "id": "ea50b7476f8014fc84fb052c7cac39bb8da4101d",
-                  "impid": "test-banner-imp-id",
+                  "id": "unknown-imp-bid",
+                  "impid": "unknown-imp-id",
                   "price": 20,
                   "adm": "test-adm",
                   "crid": "6645x",
@@ -112,20 +114,13 @@
   "expectedBidResponses": [
     {
       "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "ea50b7476f8014fc84fb052c7cac39bb8da4101d",
-            "impid": "test-banner-imp-id",
-            "price": 20,
-            "adm": "test-adm",
-            "crid": "6645x",
-            "w": 300,
-            "h": 250
-          },
-          "type": "banner"
-        }
-      ]
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unmatched impression id: unknown-imp-id",
+      "comparison": "literal"
     }
   ]
 }
