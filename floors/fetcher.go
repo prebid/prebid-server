@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/alitto/pond"
@@ -42,6 +43,7 @@ type FloorFetcher interface {
 
 type PriceFloorFetcher struct {
 	pool            WorkerPool            // Goroutines worker pool
+	mu              sync.Mutex            // Guards fetchQueue and fetchInProgress
 	fetchQueue      FetchQueue            // Priority Queue to fetch floor data
 	fetchInProgress map[string]bool       // Map of URL with fetch status
 	configReceiver  chan fetchInfo        // Channel which recieves URLs to be fetched
@@ -197,8 +199,24 @@ func (f *PriceFloorFetcher) submit(fetchConfig *fetchInfo) {
 		f.worker(*fetchConfig)
 	})
 	if !status {
+		f.mu.Lock()
 		heap.Push(&f.fetchQueue, fetchConfig)
+		f.mu.Unlock()
 	}
+}
+
+// queueLen returns the current length of fetchQueue in a data-race-safe way.
+func (f *PriceFloorFetcher) queueLen() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.fetchQueue)
+}
+
+// inProgressLen returns the current length of fetchInProgress in a data-race-safe way.
+func (f *PriceFloorFetcher) inProgressLen() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.fetchInProgress)
 }
 
 func (f *PriceFloorFetcher) Fetcher() {
@@ -209,17 +227,31 @@ func (f *PriceFloorFetcher) Fetcher() {
 		select {
 		case fetchConfig := <-f.configReceiver:
 			if fetchConfig.refetchRequest {
+				f.mu.Lock()
 				heap.Push(&f.fetchQueue, &fetchConfig)
+				f.mu.Unlock()
 			} else {
-				if _, ok := f.fetchInProgress[fetchConfig.URL]; !ok {
+				f.mu.Lock()
+				_, ok := f.fetchInProgress[fetchConfig.URL]
+				if !ok {
 					f.fetchInProgress[fetchConfig.URL] = true
+				}
+				f.mu.Unlock()
+				if !ok {
 					f.submit(&fetchConfig)
 				}
 			}
 		case <-ticker.C:
 			currentTime := f.time.Now().Unix()
-			for top := f.fetchQueue.Top(); top != nil && top.fetchTime <= currentTime; top = f.fetchQueue.Top() {
+			for {
+				f.mu.Lock()
+				top := f.fetchQueue.Top()
+				if top == nil || top.fetchTime > currentTime {
+					f.mu.Unlock()
+					break
+				}
 				nextFetch := heap.Pop(&f.fetchQueue)
+				f.mu.Unlock()
 				f.submit(nextFetch.(*fetchInfo))
 			}
 		case <-f.done:

@@ -1282,8 +1282,8 @@ func TestFetcherWhenRequestGetDifferentURLInrequest(t *testing.T) {
 		fetcherInstance.Fetch(fetchConfig)
 	}
 
-	assert.Never(t, func() bool { return len(fetcherInstance.fetchQueue) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
-	assert.Never(t, func() bool { return len(fetcherInstance.fetchInProgress) > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
+	assert.Never(t, func() bool { return fetcherInstance.queueLen() > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Queue Got more than one entry")
+	assert.Never(t, func() bool { return fetcherInstance.inProgressLen() > 10 }, time.Duration(2*time.Second), 100*time.Millisecond, "Map Got more than one entry")
 
 	expectedUniqueURLs := int32(len(uniqueURLs))
 	assert.Eventually(t, func() bool { return requestCount.Load() >= expectedUniqueURLs }, 5*time.Second, 100*time.Millisecond, "All unique URLs should be fetched")
