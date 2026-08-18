@@ -8,7 +8,12 @@ import (
 )
 
 var validParams = []string{
-	`{ "host": "ep1", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host.example.com", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host.example.com:8080", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host-example.test", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "Host.Example.com", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "localhost:3000", "sourceid": "partner", "accountid": "hash" }`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -34,8 +39,18 @@ var invalidParams = []string{
 	`{}`,
 	`{"adCode": "string", "seatCode": 5, "originalPublisherid": "string"}`,
 	`{ "host": "ep1", "sourceid": "partner" }`,
-	`{ "host": "ep1, "accountid": "hash" }`,
-	`{ "sourceid": "partner", "sourceid": "partner" }`,
+	`{ "host": "ep1", "accountid": "hash" }`,
+	`{ "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "", "sourceid": "", "accountid": "" }`,
+	`{ "host": "/path", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "//evil.com", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host/path", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host?query=1", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host#fragment", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "user@host", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "https://host.com", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host:notaport", "sourceid": "partner", "accountid": "hash" }`,
+	`{ "host": "host:8080:extra", "sourceid": "partner", "accountid": "hash" }`,
 }
 
 func TestInvalidParams(t *testing.T) {
