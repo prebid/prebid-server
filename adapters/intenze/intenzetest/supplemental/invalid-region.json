@@ -1,0 +1,36 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid region: unknown. Expected us-east, eu or apac",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "my-adcode",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "bidder": {
+            "region": "unknown",
+            "placementId": "123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": []
+}
