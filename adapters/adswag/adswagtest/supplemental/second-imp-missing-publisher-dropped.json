@@ -1,0 +1,49 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "missing publisherId for imp imp-2",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "prebid-test" } }
+      },
+      {
+        "id": "imp-2",
+        "banner": { "format": [{ "w": 728, "h": 90 }] },
+        "ext": { "bidder": {} }
+      }
+    ],
+    "site": { "domain": "example.nl" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "format": [{ "w": 300, "h": 250 }] }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "publisher": { "id": "prebid-test" }
+          }
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
