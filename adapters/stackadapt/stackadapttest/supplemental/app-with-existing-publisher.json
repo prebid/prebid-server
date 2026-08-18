@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "banner": {
+        "format": [{
+          "w": 320,
+          "h": 50
+        }]
+      },
+      "ext": {
+        "bidder": {
+          "publisherId": "app-pub-new",
+          "supplyId": "ssp-1"
+        }
+      }
+    }],
+    "app": {
+      "bundle": "com.example.app",
+      "name": "Example App",
+      "publisher": {
+        "id": "app-pub-old",
+        "name": "Existing App Publisher"
+      }
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://localhost/br?publisher_id=app-pub-new&supply_id=ssp-1",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "banner": {
+            "format": [{
+              "w": 320,
+              "h": 50
+            }]
+          },
+          "ext": {
+            "bidder": {
+              "publisherId": "app-pub-new",
+              "supplyId": "ssp-1"
+            }
+          }
+        }],
+        "app": {
+          "bundle": "com.example.app",
+          "name": "Example App",
+          "publisher": {
+            "id": "app-pub-new",
+            "name": "Existing App Publisher"
+          }
+        }
+      },
+      "impIDs": ["test-imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "cur": "USD",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 2.5,
+            "adm": "<div>app-ad</div>",
+            "crid": "creative-app-1",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "test-bid-id",
+        "impid": "test-imp-id",
+        "price": 2.5,
+        "adm": "<div>app-ad</div>",
+        "crid": "creative-app-1",
+        "w": 320,
+        "h": 50,
+        "mtype": 1
+      },
+      "type": "banner"
+    }]
+  }]
+}
