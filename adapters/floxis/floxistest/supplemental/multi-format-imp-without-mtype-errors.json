@@ -1,0 +1,61 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+        "ext": { "bidder": { "seat": "pub-seat-1" } }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-e.floxis.tech/pbs?seat=pub-seat-1",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+              "ext": { "bidder": { "seat": "pub-seat-1" } }
+            }
+          ],
+          "site": { "id": "271", "domain": "example.com" }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "floxis",
+              "bid": [
+                { "id": "ambiguous", "impid": "test-imp-id", "price": 2.0, "adm": "<div>?</div>", "crid": "c-1" }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid for multi-format imp test-imp-id requires bid.mtype to disambiguate",
+      "comparison": "literal"
+    }
+  ]
+}
