@@ -1,0 +1,43 @@
+{
+  "mockBidRequest": {
+    "id": "banner-request",
+    "test": 1,
+    "regs": {
+      "gdpr": 1
+    },
+    "user": {
+      "buyeruid": "gemius-user-id",
+      "consent": "BOQHk-4OSlWKFBoABBPLBd-AAAAgWAHAACAAsAPQBSACmgFTAOkA"
+    },
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "1.0.0.0"
+    },
+    "site": {
+      "page": "https://example.com/publisher_page"
+    },
+    "imp": [
+      {
+        "id": "banner-imp",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250},
+            {"w": 400, "h": 600}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "missing required AdOcean parameters: masterId and slaveId must be provided",
+      "comparison": "literal"
+    }
+  ]
+}
