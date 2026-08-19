@@ -38,6 +38,7 @@ func (n *Node[T1, T2]) matchChild(value string) (string, *Node[T1, T2]) {
 type Tree[T1 any, T2 any] struct {
 	Root             *Node[T1, T2]
 	DefaultFunctions []ResultFunction[T1, T2]
+	RulesetName      string
 	AnalyticsKey     string
 	ModelVersion     string
 }
@@ -54,6 +55,7 @@ func (t *Tree[T1, T2]) Run(payload *T1, result *T2) error {
 	currNode := t.Root
 
 	resFuncMeta := ResultFunctionMeta{
+		RulesetName:  t.RulesetName,
 		AnalyticsKey: t.AnalyticsKey,
 		ModelVersion: t.ModelVersion,
 	}

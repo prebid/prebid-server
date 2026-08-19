@@ -1,12 +1,14 @@
 package rulesengine
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 )
@@ -106,6 +108,36 @@ func TestBuilderWithWorkingDir(t *testing.T) {
 }
 
 var sampleJsonConfig json.RawMessage = json.RawMessage(`{"enabled": true, "ruleSets": []}`)
+
+// TestHandleProcessedAuctionHookNoConfig verifies that when the account has no rules engine
+// configuration, the hook short-circuits and returns an empty result with no warnings or errors,
+// without touching the cache or tree manager (so a zero-value Module is safe here).
+func TestHandleProcessedAuctionHookNoConfig(t *testing.T) {
+	tests := []struct {
+		name          string
+		accountConfig json.RawMessage
+	}{
+		{name: "nil_account_config", accountConfig: nil},
+		{name: "empty_account_config", accountConfig: json.RawMessage{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := Module{}
+
+			result, err := m.HandleProcessedAuctionHook(
+				context.Background(),
+				hs.ModuleInvocationContext{AccountID: "account-1", AccountConfig: tt.accountConfig},
+				hs.ProcessedAuctionRequestPayload{},
+			)
+
+			assert.NoError(t, err)
+			assert.Equal(t, hs.HookResult[hs.ProcessedAuctionRequestPayload]{}, result)
+			assert.Empty(t, result.Warnings)
+			assert.Empty(t, result.Errors)
+		})
+	}
+}
 
 func TestConfigChanged(t *testing.T) {
 
