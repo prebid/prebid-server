@@ -13,5 +13,5 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: "https://cs.ssp.cadent.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://pcs.ssp.cadent.com/um?ssp=pbs&if=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
