@@ -32,6 +32,7 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.11.0
+	github.com/searKing/golang/go v1.2.138
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.4
@@ -79,6 +80,7 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/term v0.43.0 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
