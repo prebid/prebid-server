@@ -1,0 +1,20 @@
+endpoint: "https://{{.Host}}/{{.PublisherID}}"
+maintainer:
+  email: arjit@z1media.com
+gvlVendorID: 1561
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://ortb.vdo.ai/sync-iframe?redir={{.RedirectURL}}&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}
+    userMacro: "{vdo_uid}"
