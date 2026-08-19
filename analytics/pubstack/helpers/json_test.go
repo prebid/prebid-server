@@ -2,15 +2,10 @@ package helpers
 
 import (
 	"net/http"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/analytics"
-	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,48 +16,6 @@ func TestJsonifyAuctionObject(t *testing.T) {
 
 	_, err := JsonifyAuctionObject(ao, "scopeId")
 	assert.NoError(t, err)
-}
-
-func TestJsonifyAuctionObjectIncludesRulesEngineWarningAnalytics(t *testing.T) {
-	ao := &analytics.AuctionObject{
-		Status: http.StatusOK,
-		HookExecutionOutcome: []hookexecution.StageOutcome{
-			{
-				Groups: []hookexecution.GroupOutcome{
-					{
-						InvocationResults: []hookexecution.HookOutcome{
-							{
-								HookID: hookexecution.HookID{
-									ModuleCode:   "prebid.rulesengine",
-									HookImplCode: "rulesengine",
-								},
-								AnalyticsTags: hookanalytics.Analytics{
-									Activities: []hookanalytics.Activity{{
-										Name:   "rules_engine_bidder_filtering",
-										Status: hookanalytics.ActivityStatusSuccess,
-										Results: []hookanalytics.Result{{
-											Status: hookanalytics.ResultStatusBlock,
-											Values: map[string]interface{}{
-												"code":   errortypes.RulesEngineBidderExcludedWarningCode,
-												"reason": "excluded_by_rule",
-											},
-										}},
-									}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	data, err := JsonifyAuctionObject(ao, "scopeId")
-
-	assert.NoError(t, err)
-	assert.True(t, strings.Contains(string(data), `"name":"rules_engine_bidder_filtering"`), string(data))
-	assert.True(t, strings.Contains(string(data), `"code":`+strconv.Itoa(errortypes.RulesEngineBidderExcludedWarningCode)), string(data))
-	assert.True(t, strings.Contains(string(data), `"reason":"excluded_by_rule"`), string(data))
 }
 
 func TestJsonifyVideoObject(t *testing.T) {

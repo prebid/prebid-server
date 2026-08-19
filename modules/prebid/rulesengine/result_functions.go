@@ -7,8 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/rules"
@@ -21,12 +19,6 @@ type ProcessedAuctionResultFunc = rules.ResultFunction[openrtb_ext.RequestWrappe
 const (
 	ExcludeBiddersName = "excludeBidders"
 	IncludeBiddersName = "includeBidders"
-)
-
-const (
-	rulesEngineBidderFilteringActivity = "rules_engine_bidder_filtering"
-	rulesEngineReasonExcludedByRule    = "excluded_by_rule"
-	rulesEngineReasonNotInIncludeList  = "not_in_include_list"
 )
 
 // NewProcessedAuctionRequestResultFunction is a factory function that creates a new result function based on the provided name and parameters.
@@ -86,13 +78,6 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *Processe
 		result.HookResult.Warnings = append(
 			result.HookResult.Warnings,
 			warning,
-		)
-		appendRulesEngineWarningAnalytics(
-			&result.HookResult.AnalyticsTags,
-			errortypes.RulesEngineBidderExcludedWarningCode,
-			rulesEngineReasonExcludedByRule,
-			removedBidders,
-			meta,
 		)
 	}
 	return nil
@@ -283,13 +268,6 @@ func appendInclusionWarnings(req *openrtb_ext.RequestWrapper, result *ProcessedA
 		result.HookResult.Warnings,
 		buildInclusionWarning(removed, result.IncludeContexts),
 	)
-	appendRulesEngineIncludeWarningAnalytics(
-		&result.HookResult.AnalyticsTags,
-		errortypes.RulesEngineBidderNotInIncludeListWarningCode,
-		rulesEngineReasonNotInIncludeList,
-		removed,
-		result.IncludeContexts,
-	)
 }
 
 // buildInclusionWarning builds a single human-readable warning line describing why a set of bidders
@@ -339,89 +317,4 @@ func describeIncludeContext(meta rules.ResultFunctionMeta) string {
 	default:
 		return ""
 	}
-}
-
-func appendRulesEngineWarningAnalytics(analytics *hookanalytics.Analytics, code int, reason string, bidders []string, meta rules.ResultFunctionMeta) {
-	if analytics == nil || len(bidders) == 0 {
-		return
-	}
-	results := make([]hookanalytics.Result, 0, len(bidders))
-	for _, bidder := range bidders {
-		results = append(results, hookanalytics.Result{
-			Status: hookanalytics.ResultStatusBlock,
-			AppliedTo: hookanalytics.AppliedTo{
-				Bidder:  bidder,
-				Request: true,
-			},
-			Values: rulesEngineWarningValues(code, reason, meta),
-		})
-	}
-	analytics.Activities = append(analytics.Activities, hookanalytics.Activity{
-		Name:    rulesEngineBidderFilteringActivity,
-		Status:  hookanalytics.ActivityStatusSuccess,
-		Results: results,
-	})
-}
-
-func appendRulesEngineIncludeWarningAnalytics(analytics *hookanalytics.Analytics, code int, reason string, bidders []string, contexts []rules.ResultFunctionMeta) {
-	if analytics == nil || len(bidders) == 0 {
-		return
-	}
-	values := map[string]interface{}{
-		"code":   code,
-		"reason": reason,
-	}
-	if len(contexts) > 0 {
-		values["contexts"] = rulesEngineWarningContexts(contexts)
-	}
-	results := make([]hookanalytics.Result, 0, len(bidders))
-	for _, bidder := range bidders {
-		results = append(results, hookanalytics.Result{
-			Status: hookanalytics.ResultStatusBlock,
-			AppliedTo: hookanalytics.AppliedTo{
-				Bidder:  bidder,
-				Request: true,
-			},
-			Values: values,
-		})
-	}
-	analytics.Activities = append(analytics.Activities, hookanalytics.Activity{
-		Name:    rulesEngineBidderFilteringActivity,
-		Status:  hookanalytics.ActivityStatusSuccess,
-		Results: results,
-	})
-}
-
-func rulesEngineWarningValues(code int, reason string, meta rules.ResultFunctionMeta) map[string]interface{} {
-	values := make(map[string]interface{})
-	if code != 0 {
-		values["code"] = code
-	}
-	if reason != "" {
-		values["reason"] = reason
-	}
-	if meta.RulesetName != "" {
-		values["ruleset"] = meta.RulesetName
-	}
-	if meta.AnalyticsKey != "" {
-		values["analytics_key"] = meta.AnalyticsKey
-	}
-	if meta.ModelVersion != "" {
-		values["model_version"] = meta.ModelVersion
-	}
-	if meta.RuleFired != "" {
-		values["rule_fired"] = meta.RuleFired
-	}
-	if len(meta.SchemaFunctionResults) > 0 {
-		values["schema_function_results"] = meta.SchemaFunctionResults
-	}
-	return values
-}
-
-func rulesEngineWarningContexts(contexts []rules.ResultFunctionMeta) []map[string]interface{} {
-	out := make([]map[string]interface{}, 0, len(contexts))
-	for _, meta := range contexts {
-		out = append(out, rulesEngineWarningValues(0, "", meta))
-	}
-	return out
 }

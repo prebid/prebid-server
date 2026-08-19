@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
 	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
@@ -219,19 +217,6 @@ func TestExcludeBiddersCallEmitsWarnings(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedWarnings, result.HookResult.Warnings)
-			if len(tt.expectedWarnings) == 0 {
-				assert.Empty(t, result.HookResult.AnalyticsTags.Activities)
-				return
-			}
-			assert.Len(t, result.HookResult.AnalyticsTags.Activities, 1)
-			activity := result.HookResult.AnalyticsTags.Activities[0]
-			assert.Equal(t, rulesEngineBidderFilteringActivity, activity.Name)
-			assert.Equal(t, hookanalytics.ActivityStatusSuccess, activity.Status)
-			assert.Len(t, activity.Results, 1)
-			assert.Equal(t, hookanalytics.ResultStatusBlock, activity.Results[0].Status)
-			assert.Equal(t, errortypes.RulesEngineBidderExcludedWarningCode, activity.Results[0].Values["code"])
-			assert.Equal(t, rulesEngineReasonExcludedByRule, activity.Results[0].Values["reason"])
-			assert.NotContains(t, activity.Results[0].Values, "warning", "human-readable warning belongs in debug output, not analytics tags")
 		})
 	}
 }
@@ -272,7 +257,7 @@ func TestExcludeBiddersCallMultipleExclusions(t *testing.T) {
 	}, result.HookResult.Warnings)
 }
 
-func TestExcludeBiddersCallMultipleBiddersEmitsOneAnalyticsResultPerBidder(t *testing.T) {
+func TestExcludeBiddersCallMultipleBiddersEmitsOneWarning(t *testing.T) {
 	req := mockRequestWrapperWithBidders(t, []string{"openx", "rubicon", "pubmatic", "appnexus"})
 	result := &ProcessedAuctionHookResult{
 		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
@@ -294,19 +279,6 @@ func TestExcludeBiddersCallMultipleBiddersEmitsOneAnalyticsResultPerBidder(t *te
 	assert.Equal(t, []string{
 		`Bidders [openx, rubicon, pubmatic] were removed from the request by the rules engine ruleset "geo-ruleset": deviceCountryIn rule evaluated to true`,
 	}, result.HookResult.Warnings)
-	assert.Len(t, result.HookResult.AnalyticsTags.Activities, 1)
-	activity := result.HookResult.AnalyticsTags.Activities[0]
-	assert.Equal(t, rulesEngineBidderFilteringActivity, activity.Name)
-	assert.Equal(t, hookanalytics.ActivityStatusSuccess, activity.Status)
-	assert.Len(t, activity.Results, 3)
-	for i, bidder := range []string{"openx", "rubicon", "pubmatic"} {
-		assert.Equal(t, hookanalytics.ResultStatusBlock, activity.Results[i].Status)
-		assert.Equal(t, bidder, activity.Results[i].AppliedTo.Bidder)
-		assert.Equal(t, true, activity.Results[i].AppliedTo.Request)
-		assert.Equal(t, errortypes.RulesEngineBidderExcludedWarningCode, activity.Results[i].Values["code"])
-		assert.Equal(t, rulesEngineReasonExcludedByRule, activity.Results[i].Values["reason"])
-		assert.Equal(t, "geo-ruleset", activity.Results[i].Values["ruleset"])
-	}
 }
 
 // TestBuildExclusionWarning asserts the warning-string builder directly across value/boolean/empty
@@ -646,42 +618,6 @@ func TestAppendInclusionWarnings(t *testing.T) {
 			assert.Equal(t, tt.expectedWarnings, result.HookResult.Warnings)
 		})
 	}
-}
-
-func TestAppendInclusionWarningsEmitsStructuredAnalytics(t *testing.T) {
-	req := mockRequestWrapperWithBidders(t, []string{"openx", "rubicon"})
-	result := &ProcessedAuctionHookResult{
-		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
-			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
-		},
-		AllowedBidders: map[string]struct{}{"rubicon": {}},
-		IncludeContexts: []rules.ResultFunctionMeta{
-			{
-				RulesetName: "include-ruleset",
-				SchemaFunctionResults: []rules.SchemaFunctionStep{
-					{FuncName: "deviceCountryIn", FuncResult: "true"},
-				},
-			},
-		},
-	}
-
-	appendInclusionWarnings(req, result)
-
-	assert.Equal(t, []string{
-		`Bidder [openx] was removed from the request by the rules engine because it was not in the include list applied by ruleset "include-ruleset" (deviceCountryIn rule evaluated to true)`,
-	}, result.HookResult.Warnings)
-	assert.Len(t, result.HookResult.AnalyticsTags.Activities, 1)
-	activity := result.HookResult.AnalyticsTags.Activities[0]
-	assert.Equal(t, rulesEngineBidderFilteringActivity, activity.Name)
-	assert.Equal(t, hookanalytics.ActivityStatusSuccess, activity.Status)
-	assert.Len(t, activity.Results, 1)
-	assert.Equal(t, hookanalytics.ResultStatusBlock, activity.Results[0].Status)
-	assert.Equal(t, "openx", activity.Results[0].AppliedTo.Bidder)
-	assert.Equal(t, true, activity.Results[0].AppliedTo.Request)
-	assert.Equal(t, errortypes.RulesEngineBidderNotInIncludeListWarningCode, activity.Results[0].Values["code"])
-	assert.Equal(t, rulesEngineReasonNotInIncludeList, activity.Results[0].Values["reason"])
-	assert.NotContains(t, activity.Results[0].Values, "warning", "human-readable warning belongs in debug output, not analytics tags")
-	assert.NotEmpty(t, activity.Results[0].Values["contexts"])
 }
 
 // TestBuildInclusionWarning asserts the warning-string builder directly across single/plural bidder

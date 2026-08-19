@@ -41,8 +41,6 @@ const (
 	TooLongTargetingPrefixWarningCode
 	TooShortTargetingPrefixWarningCode
 	BidderBlockedByPrivacySettings
-	RulesEngineBidderExcludedWarningCode
-	RulesEngineBidderNotInIncludeListWarningCode
 )
 
 // Coder provides an error or warning code with severity.
