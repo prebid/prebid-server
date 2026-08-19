@@ -29,6 +29,16 @@
           "boolean"
         ]
       }
+    },
+    "bidFloor": {
+      "type": "number",
+      "description": "CPM floor for this impression. Applied only when the Price Floors module has not already resolved imp.bidfloor.",
+      "minimum": 0
+    },
+    "bidFloorCur": {
+      "type": "string",
+      "description": "Currency of bidFloor as an ISO-4217 code. Defaults to USD.",
+      "pattern": "^[A-Z]{3}$"
     }
   },
   "required": [
