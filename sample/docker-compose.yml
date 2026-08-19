@@ -18,3 +18,33 @@ services:
       - ../sample/001_banner/pbjs.html:/usr/local/bin/static/pbjs.html
       - ../sample/001_banner/stored_request.json:/usr/local/bin/stored_requests/data/by_id/stored_imps/test-imp-id.json
       - ../sample/001_banner/stored_response.json:/usr/local/bin/stored_responses/data/by_id/stored_responses/test-bid-id.json
+  002_intentiq_identity:
+    platform: linux/amd64
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      args:
+        - TEST=false
+    image: pbs-sample
+    container_name: 002_intentiq_identity
+    privileged: true
+    # The identity module verifies L2 connectivity while building and fails startup when the
+    # backend is unreachable, so wait for valkey to answer PING before starting the server.
+    depends_on:
+      valkey:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+      - "6060:6060"
+      - "9090:9090"
+    volumes:
+      - ../sample/002_intentiq_identity/app.yaml:/usr/local/bin/pbs.yaml
+      - ../sample/002_intentiq_identity/stored_response.json:/usr/local/bin/stored_responses/data/by_id/stored_responses/test-bid-id.json
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: 002_valkey
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
