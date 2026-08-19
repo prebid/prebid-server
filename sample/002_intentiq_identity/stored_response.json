@@ -1,0 +1,34 @@
+{
+    "id": "iiq-identity-sample-auction",
+    "seatbid": [
+        {
+            "bid": [
+                {
+                    "id": "test-bid-id",
+                    "impid": "imp-1",
+                    "price": 1,
+                    "adm": "<img src =\"http://files.prebid.org/creatives/prebid300x250.png\" />",
+                    "adomain": [
+                        "www.addomain.com"
+                    ],
+                    "crid": "creative111",
+                    "w": 300,
+                    "h": 250,
+                    "mtype": 1,
+                    "ext": {
+                        "origbidcpm": 1,
+                        "origbidcur": "USD",
+                        "prebid": {
+                            "meta": {
+                                "adaptercode": "pubmatic"
+                            },
+                            "type": "banner"
+                        }
+                    }
+                }
+            ],
+            "seat": "pubmatic"
+        }
+    ],
+    "cur": "USD"
+}
