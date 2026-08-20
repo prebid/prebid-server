@@ -204,6 +204,7 @@ type ImpCtx struct {
 	BidFloorCur         string
 	IsRewardInventory   *int8
 	Instl               int8
+	Exp                 int64
 	IsCTAOverlayRequest bool
 	IsAppOpenAd         int8
 	IsBanner            bool

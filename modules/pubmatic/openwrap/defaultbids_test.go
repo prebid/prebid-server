@@ -1194,8 +1194,6 @@ func TestOpenWrap_applyDefaultBids(t *testing.T) {
 						"imp-2": {
 							NonMapped: map[string]struct{}{
 								"appnexus": {},
-								"rubicon":  {},
-								"openx":    {},
 							},
 						},
 					},
@@ -1214,12 +1212,6 @@ func TestOpenWrap_applyDefaultBids(t *testing.T) {
 						"imp-2": {
 							"appnexus": {
 								{ID: "def-an-2", ImpID: "imp-2", Price: 0},
-							},
-							"rubicon": {
-								{ID: "def-rb-2", ImpID: "imp-2", Price: 0},
-							},
-							"openx": {
-								{ID: "def-ox-2", ImpID: "imp-2", Price: 0},
 							},
 						},
 					},

@@ -41,6 +41,8 @@ func getBids(rctx models.RequestCtx, bidResponse *openrtb2.BidResponse) []openrt
 		return nil
 	}
 
+	applyAPSBidExpIfMissing(rctx, bidResponse)
+
 	if err := setBidResponseExtForAdm(bidResponse, rctx.PubIDStr, rctx.ProfileIDStr); err != nil {
 		return nil
 	}

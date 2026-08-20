@@ -666,42 +666,37 @@ func (m OpenWrap) handleBeforeValidationHook(
 			displaymanagerVer = imp.DisplayManagerVer
 		}
 		// cache the details for further processing
-		if _, ok := rCtx.ImpBidCtx[imp.ID]; !ok {
-			rCtx.ImpBidCtx[imp.ID] = models.ImpCtx{
-				ImpID:             imp.ID,
-				TagID:             imp.TagID,
-				Div:               div,
-				IsRewardInventory: reward,
-				BidFloor:          imp.BidFloor,
-				BidFloorCur:       imp.BidFloorCur,
-				Type:              slotType,
-				IsBanner:          imp.Banner != nil,
-				Banner:            ortb.DeepCopyImpBanner(imp.Banner),
-				Video:             imp.Video,
-				Native:            imp.Native,
-				IncomingSlots:     incomingSlots,
-				Bidders:           make(map[string]models.PartnerData),
-				BidCtx:            make(map[string]models.BidCtx),
-				NewExt:            json.RawMessage(newImpExt),
-				AdpodConfig:       adpodConfig,
-				SlotName:          slotName,
-				AdUnitName:        adUnitName,
-				AdserverURL:       adserverURL,
-				DisplayManager:    displaymanager,
-				DisplayManagerVer: displaymanagerVer,
-			}
+		rCtx.ImpBidCtx[imp.ID] = models.ImpCtx{
+			ImpID:               imp.ID,
+			TagID:               imp.TagID,
+			Div:                 div,
+			IsRewardInventory:   reward,
+			BidFloor:            imp.BidFloor,
+			BidFloorCur:         imp.BidFloorCur,
+			Type:                slotType,
+			IsBanner:            imp.Banner != nil,
+			Banner:              ortb.DeepCopyImpBanner(imp.Banner),
+			Video:               imp.Video,
+			Native:              imp.Native,
+			IncomingSlots:       incomingSlots,
+			Bidders:             bidderMeta,
+			NonMapped:           nonMapped,
+			BidCtx:              make(map[string]models.BidCtx),
+			NewExt:              json.RawMessage(newImpExt),
+			AdpodConfig:         adpodConfig,
+			SlotName:            slotName,
+			AdUnitName:          adUnitName,
+			AdserverURL:         adserverURL,
+			DisplayManager:      displaymanager,
+			DisplayManagerVer:   displaymanagerVer,
+			Instl:               imp.Instl,
+			Exp:                 imp.Exp,
+			IsAppOpenAd:         impExt.IsAppOpenAd,
+			IsCTAOverlayRequest: isCTAOverlayRequest,
+			VideoAdUnitCtx:      videoAdUnitCtx,
+			BannerAdUnitCtx:     bannerAdUnitCtx,
+			NativeAdUnitCtx:     nativeAdUnitCtx,
 		}
-
-		impCtx := rCtx.ImpBidCtx[imp.ID]
-		impCtx.Instl = imp.Instl
-		impCtx.IsAppOpenAd = impExt.IsAppOpenAd
-		impCtx.IsCTAOverlayRequest = isCTAOverlayRequest
-		impCtx.Bidders = bidderMeta
-		impCtx.NonMapped = nonMapped
-		impCtx.VideoAdUnitCtx = videoAdUnitCtx
-		impCtx.BannerAdUnitCtx = bannerAdUnitCtx
-		impCtx.NativeAdUnitCtx = nativeAdUnitCtx
-		rCtx.ImpBidCtx[imp.ID] = impCtx
 	} // for(imp
 
 	if disabledSlots == len(payload.BidRequest.Imp) {

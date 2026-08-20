@@ -294,6 +294,102 @@ func TestApplyAPSResponse_AdmRoundTrip(t *testing.T) {
 	assert.JSONEq(t, `{"prebid":{"auctiontimestamp":123},"publisherid":"5890","profileid":1234}`, extractBidResponseExt(t, decodedBytes))
 }
 
+func TestApplyAPSResponse_SetsBidExpWhenMissing(t *testing.T) {
+	tests := []struct {
+		name       string
+		impBidCtx  map[string]models.ImpCtx
+		bidExp     int64
+		wantBidExp int64
+	}{
+		{
+			name:       "sets_bid_exp_600_from_imp_ctx_when_missing",
+			impBidCtx:  map[string]models.ImpCtx{"imp-9": {Exp: 600}},
+			bidExp:     0,
+			wantBidExp: 600,
+		},
+		{
+			name:       "sets_bid_exp_3600_from_imp_ctx_when_missing",
+			impBidCtx:  map[string]models.ImpCtx{"imp-9": {Exp: 3600}},
+			bidExp:     0,
+			wantBidExp: 3600,
+		},
+		{
+			name:       "preserves_s2s_imp_exp_120_when_bid_exp_missing",
+			impBidCtx:  map[string]models.ImpCtx{"imp-9": {Exp: 120}},
+			bidExp:     0,
+			wantBidExp: 120,
+		},
+		{
+			name:       "preserves_existing_bid_exp",
+			impBidCtx:  map[string]models.ImpCtx{"imp-9": {Exp: 600}},
+			bidExp:     120,
+			wantBidExp: 120,
+		},
+		{
+			name:       "no_imp_ctx_exp_leaves_bid_exp_zero",
+			impBidCtx:  map[string]models.ImpCtx{"imp-9": {Exp: 0}},
+			bidExp:     0,
+			wantBidExp: 0,
+		},
+		{
+			name:       "unknown_imp_id_leaves_bid_exp_zero",
+			impBidCtx:  map[string]models.ImpCtx{"other-imp": {Exp: 600}},
+			bidExp:     0,
+			wantBidExp: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rctx := models.RequestCtx{
+				Endpoint:     models.EndpointAPS,
+				APS:          models.APS{Reject: false},
+				ImpBidCtx:    tt.impBidCtx,
+				PubIDStr:     "5890",
+				ProfileIDStr: "1234",
+			}
+			br := &openrtb2.BidResponse{
+				ID:    "resp-outer",
+				BidID: "legacy-bid-id",
+				Cur:   "EUR",
+				SeatBid: []openrtb2.SeatBid{{
+					Bid: []openrtb2.Bid{{
+						ID:    "bid-inner",
+						ImpID: "imp-9",
+						Exp:   tt.bidExp,
+						Price: 2.5,
+						AdM:   "<html>creative</html>",
+					}},
+				}},
+			}
+
+			out := ApplyAPSResponse(rctx, br)
+			require.Len(t, out.SeatBid, 1)
+			require.Len(t, out.SeatBid[0].Bid, 1)
+			assert.Equal(t, tt.wantBidExp, out.SeatBid[0].Bid[0].Exp)
+			assert.Equal(t, tt.wantBidExp, decodeBidExpFromAPSAdm(t, out.SeatBid[0].Bid[0].AdM))
+		})
+	}
+}
+
+func decodeBidExpFromAPSAdm(t *testing.T, adm string) int64 {
+	t.Helper()
+
+	raw, err := base64.StdEncoding.DecodeString(adm)
+	require.NoError(t, err)
+	zr, err := gzip.NewReader(bytes.NewReader(raw))
+	require.NoError(t, err)
+	decodedBytes, err := io.ReadAll(zr)
+	require.NoError(t, err)
+	require.NoError(t, zr.Close())
+
+	var decoded openrtb2.BidResponse
+	require.NoError(t, json.Unmarshal(decodedBytes, &decoded))
+	require.Len(t, decoded.SeatBid, 1)
+	require.Len(t, decoded.SeatBid[0].Bid, 1)
+	return decoded.SeatBid[0].Bid[0].Exp
+}
+
 func extractBidResponseExt(t *testing.T, decodedBytes []byte) string {
 	t.Helper()
 	var decoded openrtb2.BidResponse

@@ -68,7 +68,26 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 		{
 			name:             "reward_video_sets_rwdd_drops_banner_when_video.ext.videotype_is_rewarded",
 			requestBody:      []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":1,"h":1},"video":{"ext":{"videotype":"rewarded"}}}],"app":{"publisher":{"id":"pub"}}}`),
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","video":{"ext":{"videotype":"rewarded"},"mimes":null},"secure":1,"rwdd":1}],"app":{"publisher":{"id":"pub"}}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","exp":3600,"video":{"ext":{"videotype":"rewarded"},"mimes":null},"secure":1,"rwdd":1}],"app":{"publisher":{"id":"pub"}}}`),
+		},
+		{
+			name:             "s2s_request_exp_preserved_when_signal_has_no_exp",
+			requestBody:      []byte(fmt.Sprintf(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","exp":120,"banner":{"w":300,"h":250}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`, validSig)),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","tagid":"t1","exp":120,"banner":{"w":300,"h":250},"video":{"w":300,"h":250,"mimes":null,"companionad":[{}]},"secure":1,"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+		},
+		{
+			name: "s2s_banner_without_exp_sets_600_ignores_signal_exp",
+			requestBody: []byte(fmt.Sprintf(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":300,"h":250}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`, mustMarshalSignalBidRequest(t, &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 3600, Banner: &openrtb2.Banner{W: ptrutil.ToPtr[int64](300)}}},
+			}))),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","exp":600,"banner":{"w":300,"h":250},"video":{"w":300,"h":250,"mimes":null,"companionad":[{}]},"secure":1}],"app":{"publisher":{"id":"pub"}},"user":{}}`),
+		},
+		{
+			name: "s2s_banner_without_exp_sets_600_before_signal_adds_video",
+			requestBody: []byte(fmt.Sprintf(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":300,"h":250}}],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`, mustMarshalSignalBidRequest(t, &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}}}},
+			}))),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","exp":600,"banner":{"w":300,"h":250},"video":{"mimes":["video/mp4"],"w":300,"h":250,"companionad":[{}]},"secure":1}],"app":{"publisher":{"id":"pub"}},"user":{}}`),
 		},
 		{
 			name:        "missing_signal_records_metric",
@@ -99,12 +118,12 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 		{
 			name:             "rewarded_request_sets_instl_from_ad_format",
 			requestBody:      []byte(fmt.Sprintf(`{"id":"base","imp":[{"id":"i1","tagid":"t1","rwdd":1,"video":{"ext":{"videotype":"rewarded"}},"ext":{}}],"app":{"publisher":{"id":"pubx"}},"device":{"ua":"orig"},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}},"user":{"buyeruid":%q}}`, validSig)),
-			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","instl":1,"tagid":"t1","secure":1,"rwdd":1,"video":{"ext":{"videotype":"rewarded"},"mimes":null},"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
+			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","instl":1,"tagid":"t1","exp":3600,"secure":1,"rwdd":1,"video":{"ext":{"videotype":"rewarded"},"mimes":null},"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
 		},
 		{
 			name:             "banner_request_clears_instl_from_ad_format",
 			requestBody:      []byte(fmt.Sprintf(`{"id":"base","imp":[{"id":"i1","tagid":"t1","banner":{"w":728,"h":90},"ext":{}}],"app":{"publisher":{"id":"pubx"}},"device":{"ua":"orig"},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}},"user":{"buyeruid":%q}}`, validSig)),
-			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","tagid":"t1","secure":1,"banner":{"w":728,"h":90},"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
+			expectedResponse: []byte(`{"id":"base","imp":[{"id":"i1","displaymanager":"dm","displaymanagerver":"2.0.0","tagid":"t1","exp":600,"secure":1,"banner":{"w":728,"h":90},"ext":{"skadn":{"versions":["v1"]},"owsdk":{"x":1}}}],"app":{"name":"SignalApp","publisher":{"id":"pubx"}},"device":{"ua":"Mozilla"},"user":{},"ext":{"prebid":{"bidderparams":{"pubmatic":{"wrapper":{"profileid":100}}}}}}`),
 		},
 		{
 			name:        "mrec_banner_only_applies_banner_fields_to_final_video",
@@ -117,7 +136,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 				Device: &openrtb2.Device{UA: "Mozilla"},
 				App:    &openrtb2.App{Name: "SignalApp"},
 			},
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":300,"h":250,"format":[{"w":300,"h":250}]},"video":{"mimes":["video/mp4","video/webm"],"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","exp":600,"banner":{"w":300,"h":250,"format":[{"w":300,"h":250}]},"video":{"mimes":["video/mp4","video/webm"],"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 		{
 			name:        "interstitial_banner_only_applies_banner_fields_to_final_video",
@@ -130,7 +149,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 				Device: &openrtb2.Device{UA: "Mozilla"},
 				App:    &openrtb2.App{Name: "SignalApp"},
 			},
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","exp":600,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 		{
 			name:        "rewarded_banner_only_creates_video_from_aps_banner",
@@ -143,7 +162,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 				Device: &openrtb2.Device{UA: "Mozilla"},
 				App:    &openrtb2.App{Name: "SignalApp"},
 			},
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","rwdd":1,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4","video/webm"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","exp":600,"rwdd":1,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4","video/webm"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 		{
 			name:        "mrec_video_only_applies_video_fields_to_final_banner",
@@ -160,7 +179,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 				Device: &openrtb2.Device{UA: "Mozilla"},
 				App:    &openrtb2.App{Name: "SignalApp"},
 			},
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","banner":{"w":300,"h":250,"format":[{"w":300,"h":250}],"mimes":["image/jpeg","image/png"],"api":[5,6]},"video":{"mimes":["video/mp4","video/webm"],"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","exp":3600,"banner":{"w":300,"h":250,"format":[{"w":300,"h":250}],"mimes":["image/jpeg","image/png"],"api":[5,6]},"video":{"mimes":["video/mp4","video/webm"],"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 		{
 			name:        "interstitial_video_only_applies_video_fields_to_final_banner",
@@ -173,7 +192,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 				Device: &openrtb2.Device{UA: "Mozilla"},
 				App:    &openrtb2.App{Name: "SignalApp"},
 			},
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","instl":1,"tagid":"t1","exp":3600,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]},"video":{"mimes":["video/mp4"],"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 		{
 			name:        "video_battr_preserved_when_signal_has_video",
@@ -187,7 +206,7 @@ func TestModifyRequestWithAPSParams(t *testing.T) {
 				Device: &openrtb2.Device{UA: "Mozilla"},
 				App:    &openrtb2.App{Name: "SignalApp"},
 			},
-			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","video":{"battr":[1,2],"mimes":["video/mp4","video/webm"]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
+			expectedResponse: []byte(`{"id":"r1","imp":[{"id":"i1","tagid":"t1","exp":3600,"video":{"battr":[1,2],"mimes":["video/mp4","video/webm"]},"secure":1}],"app":{"name":"SignalApp","publisher":{"id":"pub"}},"device":{"ua":"Mozilla"},"user":{}}`),
 		},
 	}
 
@@ -1013,19 +1032,31 @@ func TestUpdateImpressionWithSignal(t *testing.T) {
 			},
 		},
 		{
-			name: "copies_exp_from_signal_when_positive",
+			name: "ignores_signal_exp_preserves_s2s_request_exp",
 			request: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{ID: "1", Exp: 0}},
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 120}},
 			},
 			signalImps: []openrtb2.Imp{
 				{ID: "1", Exp: 300},
 			},
 			expected: &openrtb2.BidRequest{
-				Imp: []openrtb2.Imp{{ID: "1", Exp: 300}},
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 120}},
 			},
 		},
 		{
-			name: "does_not_overwrite_request_exp_when_signal_exp_is_zero",
+			name: "ignores_signal_exp_when_s2s_request_exp_unset",
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 0}},
+			},
+			signalImps: []openrtb2.Imp{
+				{ID: "1", Exp: 3600},
+			},
+			expected: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "1", Exp: 0}},
+			},
+		},
+		{
+			name: "preserves_s2s_request_exp_when_signal_exp_is_zero",
 			request: &openrtb2.BidRequest{
 				Imp: []openrtb2.Imp{{ID: "1", Exp: 120}},
 			},
@@ -1157,6 +1188,99 @@ func TestUpdateImpressionWithSignal(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.JSONEq(t, string(expectedJSON), string(actualJSON))
+		})
+	}
+}
+
+// TestModifyRequestWithAPSParams_ImpExpBeforeSignalMerge_MrecInterstitial confirms imp.exp is
+// derived from the original S2S ad format before OWSDK signal merge. For MREC and interstitial,
+// signal merge can end up with both banner and video (UOE-13773 adds the missing format via
+// applyBannerFromApsVideo / applyVideoFromApsBanner); exp must stay based on the original S2S format.
+func TestModifyRequestWithAPSParams_ImpExpBeforeSignalMerge_MrecInterstitial(t *testing.T) {
+	tests := []struct {
+		name       string
+		s2sImp     string
+		signalBR   *openrtb2.BidRequest
+		wantExp    int64
+		wantBanner bool
+		wantVideo  bool
+	}{
+		{
+			name:   "interstitial_s2s_banner_signal_adds_video_imp_exp_stays_600",
+			s2sImp: `{"id":"i1","tagid":"t1","instl":1,"banner":{"w":320,"h":480,"format":[{"w":320,"h":480}]}}`,
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:    "si1",
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+				}},
+			},
+			wantExp:    600,
+			wantBanner: true,
+			wantVideo:  true,
+		},
+		{
+			name:   "mrec_s2s_banner_signal_adds_video_imp_exp_stays_600",
+			s2sImp: `{"id":"i1","tagid":"t1","banner":{"w":300,"h":250,"format":[{"w":300,"h":250}]}}`,
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:    "si1",
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+				}},
+			},
+			wantExp:    600,
+			wantBanner: true,
+			wantVideo:  true,
+		},
+		{
+			name:   "interstitial_s2s_video_imp_exp_stays_3600_when_signal_adds_video",
+			s2sImp: `{"id":"i1","tagid":"t1","instl":1,"video":{"w":320,"h":480,"companionad":[{"format":[{"w":320,"h":480}]}]}}`,
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:    "si1",
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+				}},
+			},
+			wantExp:    3600,
+			wantBanner: true, // banner from APS video fields is added in UOE-13773 (createBannerFromApsVideoIfMissing)
+			wantVideo:  true,
+		},
+		{
+			name:   "mrec_s2s_video_imp_exp_stays_3600_when_signal_adds_video",
+			s2sImp: `{"id":"i1","tagid":"t1","video":{"w":300,"h":250,"companionad":[{"format":[{"w":300,"h":250}]}]}}`,
+			signalBR: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID: "si1",
+					Banner: &openrtb2.Banner{
+						MIMEs: []string{"image/jpeg", "image/png"},
+						API:   []adcom1.APIFramework{5, 6},
+					},
+					Video: &openrtb2.Video{MIMEs: []string{"video/mp4"}},
+				}},
+			},
+			wantExp:    3600,
+			wantBanner: true, // banner from APS video fields is added in UOE-13773 (createBannerFromApsVideoIfMissing)
+			wantVideo:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sig := mustMarshalSignalBidRequest(t, tt.signalBR)
+			requestBody := []byte(fmt.Sprintf(
+				`{"id":"r1","imp":[%s],"app":{"publisher":{"id":"pub"}},"user":{"buyeruid":%q}}`,
+				tt.s2sImp, sig,
+			))
+
+			modified := NewAPS(nil).ModifyRequestWithAPSParams(requestBody, &models.RequestCtx{})
+
+			var br openrtb2.BidRequest
+			require.NoError(t, json.Unmarshal(modified, &br))
+			require.Len(t, br.Imp, 1)
+
+			imp := br.Imp[0]
+			assert.Equal(t, tt.wantExp, imp.Exp, "imp.exp must reflect original S2S format, not post-signal banner+video")
+			assert.Equal(t, tt.wantBanner, imp.Banner != nil)
+			assert.Equal(t, tt.wantVideo, imp.Video != nil)
 		})
 	}
 }

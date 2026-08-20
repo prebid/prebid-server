@@ -92,6 +92,11 @@ func (a *Aps) ModifyRequestWithAPSParams(requestBody []byte, rctx *models.Reques
 		a.profileId = string(profileID)
 	}
 
+	// Set imp.exp from S2S ad format before signal merge (signal can add banner/video for MREC and interstitial).
+	if len(request.Imp) > 0 && request.Imp[0].Exp == 0 {
+		setAPSImpExpIfMissing(&request.Imp[0])
+	}
+
 	// modify request with signal data
 	a.modifyRequestWithSignalData(request, rctx, adFormat, apsMedia)
 	modifiedRequest, err := jsoniterator.Marshal(request)
@@ -368,9 +373,7 @@ func updateImpressionWithSignal(request *openrtb2.BidRequest, signalImps []openr
 		request.Imp[0].Instl = 0
 	}
 
-	if signalImps[0].Exp > 0 {
-		request.Imp[0].Exp = signalImps[0].Exp
-	}
+	// imp.exp is not merged from OWSDK signal; S2S imp.exp is preserved or set before signal merge in ModifyRequestWithAPSParams.
 
 	if signalImps[0].DisplayManager != "" {
 		request.Imp[0].DisplayManager = signalImps[0].DisplayManager
