@@ -2660,7 +2660,7 @@ func TestOpenWrap_applyImpChanges(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			m := &OpenWrap{}
-			m.applyImpChanges(test.rCtx, test.inputImp)
+			m.applyImpChanges(test.rCtx, test.inputImp, "")
 			assert.Equal(t, test.expectedImp, test.inputImp)
 		})
 	}
