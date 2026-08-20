@@ -1,4 +1,12 @@
-endpoint: "https://prebid-adapter.media.net/rtb/pb/prebids2s"
+# Media.net supports the following regional endpoint domains.
+# Kindly set the endpoint below to match the datacenter region where this config is deployed:
+#   US East  → https://prebid-adapter-useast.media.net/rtb/pb/prebids2s
+#   US West  → https://prebid-adapter-uswest.media.net/rtb/pb/prebids2s
+#   Asia     → https://prebid-adapter-asia.media.net/rtb/pb/prebids2s
+#   Europe   → https://prebid-adapter-eu.media.net/rtb/pb/prebids2s
+#
+# Replace [REGION] in the endpoint URL with: useast | uswest | asia | eu
+endpoint: "https://prebid-adapter-[REGION].media.net/rtb/pb/prebids2s"
 extra_info: "https://medianet.golang.pbs.com"
 maintainer:
   email: "prebid-support@media.net"
