@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "w": 300, "h": 250 },
+        "ext": {
+          "bidder": { "publisherId": 12345 }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://prebid.org/"
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext.bidder for impression index 0.",
+      "comparison": "startswith"
+    },
+    {
+      "value": "no valid impressions in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}
