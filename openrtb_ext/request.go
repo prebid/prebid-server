@@ -125,6 +125,7 @@ type ORTB2 struct { // First party data
 	App    json.RawMessage `json:"app,omitempty"`
 	User   json.RawMessage `json:"user,omitempty"`
 	Device json.RawMessage `json:"device,omitempty"`
+	BCat   json.RawMessage `json:"bcat,omitempty"`
 }
 
 type ExtRequestCurrency struct {

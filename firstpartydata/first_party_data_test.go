@@ -526,7 +526,59 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 				} else {
 					assert.Nil(t, results[bidderName].Device, "device expected to be nil")
 				}
+
+				if expectedFPD.BCat != nil {
+					assert.JSONEq(t, string(expectedFPD.BCat), string(results[bidderName].BCat), "bcat is incorrect")
+				} else {
+					assert.Nil(t, results[bidderName].BCat, "bcat expected to be nil")
+				}
 			}
+		})
+	}
+}
+
+func TestResolveBCat(t *testing.T) {
+	tests := []struct {
+		description    string
+		fpdConfig      *openrtb_ext.ORTB2
+		bidRequestBCat []string
+		expectedBCat   []string
+		expectError    string
+	}{
+		{
+			description:    "request bcat is preserved when bidder config is not specified",
+			bidRequestBCat: []string{"IAB1"},
+			expectedBCat:   []string{"IAB1"},
+		},
+		{
+			description:    "bidder config bcat overrides request bcat",
+			fpdConfig:      &openrtb_ext.ORTB2{BCat: json.RawMessage(`["IAB2"]`)},
+			bidRequestBCat: []string{"IAB1"},
+			expectedBCat:   []string{"IAB2"},
+		},
+		{
+			description:    "empty bidder config bcat clears request bcat",
+			fpdConfig:      &openrtb_ext.ORTB2{BCat: json.RawMessage(`[]`)},
+			bidRequestBCat: []string{"IAB1"},
+			expectedBCat:   []string{},
+		},
+		{
+			description: "invalid bidder config bcat returns an error",
+			fpdConfig:   &openrtb_ext.ORTB2{BCat: json.RawMessage(`"IAB1"`)},
+			expectError: "invalid first party data ext",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			result, err := resolveBCat(test.fpdConfig, test.bidRequestBCat)
+
+			if test.expectError != "" {
+				assert.EqualError(t, err, test.expectError)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedBCat, result)
 		})
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -36,6 +37,7 @@ type ResolvedFirstPartyData struct {
 	App    *openrtb2.App
 	User   *openrtb2.User
 	Device *openrtb2.Device
+	BCat   []string
 }
 
 // ExtractGlobalFPD extracts request level FPD from the request and removes req.{site,app,user}.ext.data if exists
@@ -166,11 +168,29 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 		}
 		resolvedFpdConfig.Device = newDevice
 
+		newBCat, err := resolveBCat(fpdConfig, bidRequest.BCat)
+		if err != nil {
+			errL = append(errL, err)
+		}
+		resolvedFpdConfig.BCat = newBCat
+
 		if len(errL) == 0 {
 			resolvedFpd[openrtb_ext.BidderName(bidderName)] = resolvedFpdConfig
 		}
 	}
 	return resolvedFpd, errL
+}
+
+func resolveBCat(fpdConfig *openrtb_ext.ORTB2, bidRequestBCat []string) ([]string, error) {
+	newBCat := slices.Clone(bidRequestBCat)
+
+	if fpdConfig != nil && fpdConfig.BCat != nil {
+		if err := jsonutil.MergeClone(&newBCat, fpdConfig.BCat); err != nil {
+			return nil, formatMergeCloneError(err)
+		}
+	}
+
+	return newBCat, nil
 }
 
 // resolveDevice merges the device information from the FPD (First Party Data) configuration
@@ -441,6 +461,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 					fpdBidderData.App = bidderConfig.Config.ORTB2.App
 					fpdBidderData.User = bidderConfig.Config.ORTB2.User
 					fpdBidderData.Device = bidderConfig.Config.ORTB2.Device
+					fpdBidderData.BCat = bidderConfig.Config.ORTB2.BCat
 				}
 
 				fpd[bidderName] = fpdBidderData
