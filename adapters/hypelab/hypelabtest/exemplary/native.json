@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "test-native-request-id",
+    "imp": [
+      {
+        "id": "native-imp-id",
+        "native": {
+          "request": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"len\":90}}]}}"
+        },
+        "ext": {
+          "bidder": {
+            "property_slug": "test-property",
+            "placement_slug": "native-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example/native"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://api.hypelab.com/v1/rtb_requests",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "X-Openrtb-Version": ["2.6"]
+        },
+        "body": {
+          "id": "test-native-request-id",
+          "imp": [
+            {
+              "id": "native-imp-id",
+              "tagid": "native-placement",
+              "displaymanager": "HypeLab Prebid Server",
+              "displaymanagerver": "unknown",
+              "native": {
+                "request": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"len\":90}}]}}"
+              },
+              "ext": {
+                "bidder": {
+                  "property_slug": "test-property",
+                  "placement_slug": "native-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example/native"
+          },
+          "ext": {
+            "source": "prebid-server",
+            "provider_version": "prebid-server@unknown"
+          }
+        },
+        "impIDs": ["native-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-native-request-id",
+          "seatbid": [
+            {
+              "seat": "hypelab",
+              "bid": [
+                {
+                  "id": "native-bid-id",
+                  "impid": "native-imp-id",
+                  "price": 0.75,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Native Ad\"}}]}}",
+                  "adomain": ["advertiser.example"],
+                  "mtype": 4
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "seat": "hypelab",
+          "type": "native",
+          "bid": {
+            "id": "native-bid-id",
+            "impid": "native-imp-id",
+            "price": 0.75,
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Native Ad\"}}]}}",
+            "adomain": ["advertiser.example"],
+            "mtype": 4
+          }
+        }
+      ]
+    }
+  ]
+}
