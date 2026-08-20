@@ -62,6 +62,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		// place to read it from.
 		imp.TagID = impExt.PlacementKey
 
+		applyBidFloor(&imp, impExt)
+
 		if err := enrichImpExt(&imp, impExt); err != nil {
 			errs = append(errs, err)
 			continue
@@ -95,7 +97,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		hostRequest := *request
 		hostRequest.Imp = imps
 
-		body, err := json.Marshal(hostRequest)
+		body, err := jsonutil.Marshal(hostRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -123,7 +125,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var bidResponse openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(response.Body, &bidResponse); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
+	}
+
+	impsByID := make(map[string]*openrtb2.Imp, len(request.Imp))
+	for i := range request.Imp {
+		impsByID[request.Imp[i].ID] = &request.Imp[i]
 	}
 
 	result := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
@@ -134,14 +141,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errs []error
 	for _, seatBid := range bidResponse.SeatBid {
 		for i := range seatBid.Bid {
-			bid := seatBid.Bid[i]
-			bidType, err := getMediaTypeForBid(bid)
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i], impsByID)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			result.Bids = append(result.Bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
 			})
 		}
@@ -150,14 +156,20 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return result, errs
 }
 
-// Ingest limits, mirrored by the Prebid.js adapter and enforced again by the ad
-// server: oversized entries are dropped rather than truncated, so a publisher sees
-// the same set of parameters accepted on both transports.
-const (
-	customParamsMaxKeys        = 32
-	customParamsMaxKeyLength   = 128
-	customParamsMaxValueLength = 512
-)
+// applyBidFloor fills the floor from the bidder params only when the request
+// carries none of its own, so a floor already resolved by the Price Floors
+// module — or set by the publisher on the impression — always wins.
+func applyBidFloor(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) {
+	if imp.BidFloor != 0 || impExt.BidFloor <= 0 {
+		return
+	}
+	imp.BidFloor = impExt.BidFloor
+	if impExt.BidFloorCur != "" {
+		imp.BidFloorCur = impExt.BidFloorCur
+	} else {
+		imp.BidFloorCur = "USD"
+	}
+}
 
 // enrichImpExt moves the Epom-specific params out of imp.ext.bidder and into the
 // shape the ad server reads: channel under our own namespace, custom parameters
@@ -176,7 +188,7 @@ func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
 	}
 
 	if impExt.Channel != "" {
-		namespace, err := json.Marshal(map[string]string{"channel": impExt.Channel})
+		namespace, err := jsonutil.Marshal(map[string]string{"channel": impExt.Channel})
 		if err != nil {
 			return err
 		}
@@ -187,7 +199,7 @@ func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
 		ext["data"] = merged
 	}
 
-	encoded, err := json.Marshal(ext)
+	encoded, err := jsonutil.Marshal(ext)
 	if err != nil {
 		return err
 	}
@@ -195,24 +207,22 @@ func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
 	return nil
 }
 
-// mergeCustomParams folds the scalar params that pass the ingest limits into any
-// existing imp.ext.data. Existing keys win — data already on the imp came from the
-// publisher's own first-party configuration.
+// mergeCustomParams folds the custom params into any existing imp.ext.data.
+// Existing keys win — data already on the imp came from the publisher's own
+// first-party configuration. Values are stringified because the ad server reads
+// custom targeting as text; the schema already restricts them to scalars, so a
+// value this cannot stringify only reaches here through a host that skipped
+// param validation, and is skipped rather than written as a Go rendering of a
+// map. Nothing is dropped for size, which is what keeps the marshalled imp.ext
+// independent of Go's randomised map iteration order.
 func mergeCustomParams(existing json.RawMessage, params map[string]interface{}) json.RawMessage {
 	out := map[string]interface{}{}
-	kept := 0
 	for key, value := range params {
-		if kept >= customParamsMaxKeys || len(key) > customParamsMaxKeyLength {
-			continue
+		if asString, ok := scalarToString(value); ok {
+			out[key] = asString
 		}
-		asString, ok := scalarToString(value)
-		if !ok || len(asString) > customParamsMaxValueLength {
-			continue
-		}
-		out[key] = asString
-		kept++
 	}
-	if kept == 0 {
+	if len(out) == 0 {
 		return nil
 	}
 
@@ -225,7 +235,7 @@ func mergeCustomParams(existing json.RawMessage, params map[string]interface{}) 
 		}
 	}
 
-	encoded, err := json.Marshal(out)
+	encoded, err := jsonutil.Marshal(out)
 	if err != nil {
 		return nil
 	}
@@ -279,17 +289,24 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpEpomAs, error) {
 	return &impExt, nil
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+// getMediaTypeForBid resolves the bid's media type from mtype, falling back to
+// the impression the bid answers when the ad server omits it. Nothing is
+// assumed: a bid that matches no banner impression is a defect on the wire, and
+// rendering it as a banner would hide that.
+func getMediaTypeForBid(bid openrtb2.Bid, impsByID map[string]*openrtb2.Imp) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
 	case 0:
-		// The adapter only declares banner capability, so an omitted mtype can
-		// only mean banner. Older ad server builds do not populate the field.
-		return openrtb_ext.BidTypeBanner, nil
+		if imp, ok := impsByID[bid.ImpID]; ok && imp.Banner != nil {
+			return openrtb_ext.BidTypeBanner, nil
+		}
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unresolved mtype for bid %s: no banner imp %s", bid.ID, bid.ImpID),
+		}
 	default:
 		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unsupported mtype %d for bid %s", bid.MType, bid.ImpID),
+			Message: fmt.Sprintf("unsupported mtype %d for bid %s", bid.MType, bid.ID),
 		}
 	}
 }

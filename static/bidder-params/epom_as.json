@@ -6,7 +6,7 @@
   "properties": {
     "host": {
       "type": "string",
-      "description": "Serving host of the publisher's Epom Ad Server deployment",
+      "description": "Serving host of the publisher's Epom Ad Server deployment, as a bare hostname with an optional port",
       "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
     },
     "placementKey": {
@@ -16,12 +16,11 @@
     },
     "channel": {
       "type": "string",
-      "description": "Epom channel: publisher traffic-slice label used for channel targeting, reporting and tracking-URL propagation. Sent as imp.ext.epom_as.channel.",
-      "maxLength": 128
+      "description": "Epom channel: publisher traffic-slice label used for channel targeting, reporting and tracking-URL propagation. Sent as imp.ext.epom_as.channel. An empty value is ignored."
     },
     "customParams": {
       "type": "object",
-      "description": "Epom custom parameters for custom targeting and creative macros. Merged into imp.ext.data. Maximum 32 keys; keys up to 128 and values up to 512 characters.",
+      "description": "Epom custom parameters for custom targeting and creative macros. Merged into imp.ext.data, where keys already on the impression win.",
       "additionalProperties": {
         "type": [
           "string",
@@ -32,13 +31,12 @@
     },
     "bidFloor": {
       "type": "number",
-      "description": "CPM floor for this impression. Applied only when the Price Floors module has not already resolved imp.bidfloor.",
+      "description": "CPM floor for this impression, applied only when no floor has already been resolved on imp.bidfloor. 0 means no floor.",
       "minimum": 0
     },
     "bidFloorCur": {
       "type": "string",
-      "description": "Currency of bidFloor as an ISO-4217 code. Defaults to USD.",
-      "pattern": "^[A-Z]{3}$"
+      "description": "Currency of bidFloor as an ISO-4217 code. Defaults to USD."
     }
   },
   "required": [

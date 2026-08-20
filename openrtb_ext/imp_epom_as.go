@@ -10,4 +10,9 @@ type ExtImpEpomAs struct {
 	Channel string `json:"channel,omitempty"`
 	// CustomParams feed custom targeting and creative macros.
 	CustomParams map[string]interface{} `json:"customParams,omitempty"`
+	// BidFloor is a CPM floor applied only when the request carries no floor of
+	// its own, so a Price Floors module result always wins.
+	BidFloor float64 `json:"bidFloor,omitempty"`
+	// BidFloorCur is the currency of BidFloor, defaulting to USD.
+	BidFloorCur string `json:"bidFloorCur,omitempty"`
 }
