@@ -1,0 +1,177 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-eu",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-eu",
+            "host": "eu"
+          }
+        }
+      },
+      {
+        "id": "imp-us",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-us",
+            "host": "us"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://eu.scalibur.io/adserver/ortb?type=prebid-server",
+        "impIDs": [
+          "imp-eu"
+        ],
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-eu",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "bidfloorcur": "USD",
+              "ext": {},
+              "tagid": "placement-eu"
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-eu",
+                  "impid": "imp-eu",
+                  "price": 0.5,
+                  "adm": "<html>eu</html>",
+                  "crid": "creative-eu",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://us.scalibur.io/adserver/ortb?type=prebid-server",
+        "impIDs": [
+          "imp-us"
+        ],
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-us",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "bidfloorcur": "USD",
+              "ext": {},
+              "tagid": "placement-us"
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-us",
+                  "impid": "imp-us",
+                  "price": 1.5,
+                  "adm": "<html>us</html>",
+                  "crid": "creative-us",
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-eu",
+            "impid": "imp-eu",
+            "price": 0.5,
+            "adm": "<html>eu</html>",
+            "crid": "creative-eu",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-us",
+            "impid": "imp-us",
+            "price": 1.5,
+            "adm": "<html>us</html>",
+            "crid": "creative-us",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

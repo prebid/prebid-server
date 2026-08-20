@@ -14,7 +14,11 @@
         },
         "ext": {
           "bidder": {
-            "placementId": "test-scl-placement"
+            "placementId": "test-scl-placement",
+            "customKey": "customValue",
+            "nested": {
+              "a": 1
+            }
           }
         }
       }
@@ -41,53 +45,22 @@
                 ]
               },
               "bidfloorcur": "USD",
-              "ext": {},
+              "ext": {
+                "customKey": "customValue",
+                "nested": {
+                  "a": 1
+                }
+              },
               "tagid": "test-scl-placement"
             }
           ]
         }
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "test-bid-id",
-                  "impid": "test-imp-id",
-                  "price": 0.5,
-                  "adm": "<html>...</html>",
-                  "crid": "test-creative-id",
-                  "w": 300,
-                  "h": 250
-                }
-              ]
-            }
-          ],
-          "cur": "USD"
-        }
+        "status": 204,
+        "body": {}
       }
     }
   ],
-  "expectedBidResponses": [
-    {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "test-bid-id",
-            "impid": "test-imp-id",
-            "price": 0.5,
-            "adm": "<html>...</html>",
-            "crid": "test-creative-id",
-            "w": 300,
-            "h": 250
-          },
-          "type": "banner"
-        }
-      ]
-    }
-  ]
+  "expectedBidResponses": []
 }
