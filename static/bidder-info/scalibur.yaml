@@ -1,4 +1,4 @@
-endpoint: "https://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"
+endpoint: "http://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"
 # Leave disabled: false → adapter enabled
 endpointCompression: gzip
 disabled: false

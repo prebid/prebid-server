@@ -18,7 +18,7 @@ import (
 func newTestAdapter() adapters.Bidder {
 	adapter, _ := Builder(
 		openrtb_ext.BidderScalibur,
-		config.Adapter{Endpoint: "https://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"},
+		config.Adapter{Endpoint: "http://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"},
 		config.Server{},
 	)
 	return adapter
@@ -67,7 +67,7 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 	require.Len(t, requests, 1)
 
 	r := requests[0]
-	assert.Equal(t, "https://srv.scalibur.io/adserver/ortb?type=prebid-server", r.Uri)
+	assert.Equal(t, "http://srv.scalibur.io/adserver/ortb?type=prebid-server", r.Uri)
 	assert.Equal(t, "POST", r.Method)
 	assert.Contains(t, r.Headers.Get("Content-Type"), "application/json")
 
@@ -156,10 +156,10 @@ func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
 	require.Len(t, errs, 0)
 	require.Len(t, requests, 2)
 
-	assert.Equal(t, "https://eu.scalibur.io/adserver/ortb?type=prebid-server", requests[0].Uri)
+	assert.Equal(t, "http://eu.scalibur.io/adserver/ortb?type=prebid-server", requests[0].Uri)
 	assert.Equal(t, []string{"imp-eu", "imp-eu-2"}, requests[0].ImpIDs)
 
-	assert.Equal(t, "https://us.scalibur.io/adserver/ortb?type=prebid-server", requests[1].Uri)
+	assert.Equal(t, "http://us.scalibur.io/adserver/ortb?type=prebid-server", requests[1].Uri)
 	assert.Equal(t, []string{"imp-us"}, requests[1].ImpIDs)
 }
 

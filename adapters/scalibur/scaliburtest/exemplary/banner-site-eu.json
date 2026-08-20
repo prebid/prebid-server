@@ -27,7 +27,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://eu.scalibur.io/adserver/ortb?type=prebid-server",
+        "uri": "http://eu.scalibur.io/adserver/ortb?type=prebid-server",
         "impIDs": [
           "test-imp-id"
         ],
