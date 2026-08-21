@@ -1,0 +1,25 @@
+# Epom is white-label: every publisher network serves from its own domain, so the
+# host arrives per impression in imp.ext.bidder.host and is templated into the
+# endpoint rather than configured here.
+endpoint: "https://{{.Host}}/hb/bid"
+maintainer:
+  email: "support@epom.com"
+gvlVendorID: 849
+geoscope:
+  - global
+openrtb:
+  version: 2.6
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  # epom_as supports user syncing, but the sync endpoint lives on the publisher's own
+  # Epom deployment, so it requires configuration by the host. Contact this bidder
+  # directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - iframe

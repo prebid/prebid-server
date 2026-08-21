@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Epom Ad Server Adapter Params",
+  "description": "A schema which validates params accepted by the Epom Ad Server adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Serving host of the publisher's Epom Ad Server deployment, as a bare hostname with an optional port",
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
+    },
+    "placementKey": {
+      "type": "string",
+      "description": "Placement identifier, from the placement's invocation-code tab in the Epom UI",
+      "minLength": 1
+    },
+    "channel": {
+      "type": "string",
+      "description": "Epom channel: publisher traffic-slice label used for channel targeting, reporting and tracking-URL propagation. Sent as imp.ext.epom_as.channel. An empty value is ignored."
+    },
+    "customParams": {
+      "type": "object",
+      "description": "Epom custom parameters for custom targeting and creative macros. Merged into imp.ext.data, where keys already on the impression win.",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean"
+        ]
+      }
+    },
+    "bidFloor": {
+      "type": "number",
+      "description": "CPM floor for this impression, applied only when no floor has already been resolved on imp.bidfloor. 0 means no floor.",
+      "minimum": 0
+    },
+    "bidFloorCur": {
+      "type": "string",
+      "description": "Currency of bidFloor as an ISO-4217 code. Defaults to USD."
+    }
+  },
+  "required": [
+    "host",
+    "placementKey"
+  ]
+}

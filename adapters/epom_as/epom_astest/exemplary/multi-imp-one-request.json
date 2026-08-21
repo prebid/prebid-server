@@ -1,0 +1,126 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-leaderboard",
+        "banner": { "format": [{ "w": 728, "h": 90 }] },
+        "ext": { "bidder": { "host": "ads.example.com", "placementKey": "a4f21c9e7b" } }
+      },
+      {
+        "id": "imp-sidebar",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "host": "ads.example.com", "placementKey": "6d0e83b415" } }
+      },
+      {
+        "id": "imp-footer",
+        "banner": { "format": [{ "w": 970, "h": 250 }] },
+        "ext": { "bidder": { "host": "ads.example.com", "placementKey": "ff0011aa22" } }
+      }
+    ],
+    "site": { "page": "https://publisher.example.com/article" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.example.com/hb/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-leaderboard",
+              "tagid": "a4f21c9e7b",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "ext": { "bidder": { "host": "ads.example.com", "placementKey": "a4f21c9e7b" } }
+            },
+            {
+              "id": "imp-sidebar",
+              "tagid": "6d0e83b415",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": { "bidder": { "host": "ads.example.com", "placementKey": "6d0e83b415" } }
+            },
+            {
+              "id": "imp-footer",
+              "tagid": "ff0011aa22",
+              "banner": { "format": [{ "w": 970, "h": 250 }] },
+              "ext": { "bidder": { "host": "ads.example.com", "placementKey": "ff0011aa22" } }
+            }
+          ],
+          "site": { "page": "https://publisher.example.com/article" }
+        },
+        "impIDs": ["imp-leaderboard", "imp-sidebar", "imp-footer"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "epom",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-leaderboard",
+                  "price": 1.5,
+                  "adm": "<div>a</div>",
+                  "crid": "c1",
+                  "dealid": "epom-direct",
+                  "w": 728,
+                  "h": 90,
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-2",
+                  "impid": "imp-footer",
+                  "price": 4.0,
+                  "adm": "<div>b</div>",
+                  "crid": "c2",
+                  "dealid": "epom-direct",
+                  "w": 970,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-leaderboard",
+            "price": 1.5,
+            "adm": "<div>a</div>",
+            "crid": "c1",
+            "dealid": "epom-direct",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-footer",
+            "price": 4.0,
+            "adm": "<div>b</div>",
+            "crid": "c2",
+            "dealid": "epom-direct",
+            "w": 970,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
