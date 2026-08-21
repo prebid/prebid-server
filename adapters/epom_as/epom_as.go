@@ -83,6 +83,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},
 	}
+	// The ad server resolves geo, IP targeting and its consent country fallback from the address it
+	// sees, and a server-to-server call's socket peer is this host, never the reader. Forwarding the
+	// address the request already carries is what makes those decisions about the right person.
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IPv6)
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+	}
 
 	requests := make([]*adapters.RequestData, 0, len(impsByHost))
 	for _, host := range hostOrder {
@@ -154,6 +161,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	return result, errs
+}
+
+func addHeaderIfNonEmpty(headers http.Header, name, value string) {
+	if value != "" {
+		headers.Add(name, value)
+	}
 }
 
 // applyBidFloor fills the floor from the bidder params only when the request
