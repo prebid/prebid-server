@@ -48,6 +48,11 @@ func processImp(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
 		return fmt.Errorf("neither Banner nor Video object specified")
 	}
 	imp.TagID = tlext.InvCode
+
+	// parentId is optional; when present forward it as imp.ext.parentId
+	if err := setParentID(imp, tlext.ParentID); err != nil {
+		return err
+	}
 	// floor is optional
 	if tlext.Floor != nil {
 		imp.BidFloor = *tlext.Floor
@@ -75,6 +80,36 @@ func resolveBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestIn
 		imp.BidFloor = converted
 	}
 	imp.BidFloorCur = "USD"
+	return nil
+}
+
+// setParentID writes parentId into imp.ext, preserving all other imp.ext fields
+func setParentID(imp *openrtb2.Imp, parentID *string) error {
+	if parentID == nil || *parentID == "" {
+		return nil
+	}
+
+	var impExt map[string]json.RawMessage
+	if len(imp.Ext) > 0 {
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
+			return err
+		}
+	}
+	if impExt == nil {
+		impExt = make(map[string]json.RawMessage)
+	}
+
+	encoded, err := json.Marshal(*parentID)
+	if err != nil {
+		return err
+	}
+	impExt["parentId"] = encoded
+
+	ext, err := json.Marshal(impExt)
+	if err != nil {
+		return err
+	}
+	imp.Ext = ext
 	return nil
 }
 
