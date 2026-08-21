@@ -9,7 +9,12 @@
       "type": "string",
       "description": "TripleLift inventory code for this ad unit (provided to you by your partner manager)"
     },
-    "floor" :  {"description" : "the bid floor", "type": "number" }
+    "floor" :  {"description" : "the bid floor", "type": "number" },
+    "parentId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional TripleLift parent ID identifier, forwarded as imp.ext.parentId"
+    }
   },
   "required": ["inventoryCode"]
 }
