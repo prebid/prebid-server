@@ -1,0 +1,102 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-banner-1",
+    "site": {
+      "id": "site-luxury-fashion",
+      "page": "https://publisher.example/articles/handbags"
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "geo": { "country": "US" }
+    },
+    "imp": [
+      {
+        "id": "test-imp-banner",
+        "tagid": "rail-300x250",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "slot-pdp-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.realry.com/bid/openrtb",
+        "body": {
+          "id": "test-request-banner-1",
+          "site": {
+            "id": "site-luxury-fashion",
+            "page": "https://publisher.example/articles/handbags"
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "geo": { "country": "US" }
+          },
+          "imp": [
+            {
+              "id": "test-imp-banner",
+              "tagid": "rail-300x250",
+              "banner": {
+                "format": [{ "w": 300, "h": 250 }]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "slot-pdp-1"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-banner"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-banner-1",
+          "cur": "USD",
+          "bidid": "bid-xyz",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-xyz",
+                  "impid": "test-imp-banner",
+                  "price": 1.25,
+                  "adm": "<a href=\"https://bid.realry.com/click?bid_id=bid-xyz\"><img src=\"https://cdn.example.com/bag.jpg\" /></a>",
+                  "nurl": "https://bid.realry.com/imp?bid_id=bid-xyz",
+                  "cid": "camp-1",
+                  "crid": "prod-42"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-xyz",
+            "impid": "test-imp-banner",
+            "price": 1.25,
+            "adm": "<a href=\"https://bid.realry.com/click?bid_id=bid-xyz\"><img src=\"https://cdn.example.com/bag.jpg\" /></a>",
+            "nurl": "https://bid.realry.com/imp?bid_id=bid-xyz",
+            "cid": "camp-1",
+            "crid": "prod-42"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
