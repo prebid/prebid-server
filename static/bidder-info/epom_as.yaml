@@ -9,14 +9,21 @@ geoscope:
   - global
 openrtb:
   version: 2.6
-modifyingVastXmlAllowed: false
+# Prebid Server may rewrite our VAST when it caches it, which is how its own
+# impression events get injected. That is a second counter beside the ad server's
+# own beacon, and the two will not agree exactly.
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
       - banner
+      - video
+      - native
   site:
     mediaTypes:
       - banner
+      - video
+      - native
 userSync:
   # epom_as supports user syncing, but the sync endpoint lives on the publisher's own
   # Epom deployment, so it requires configuration by the host. Contact this bidder

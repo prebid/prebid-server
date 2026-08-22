@@ -1,0 +1,99 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "a4f21c9e7b"
+          }
+        },
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}}]}",
+          "ver": "1.2"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example.com/article"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.example.com/hb/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "a4f21c9e7b",
+              "ext": {
+                "bidder": {
+                  "host": "ads.example.com",
+                  "placementKey": "a4f21c9e7b"
+                }
+              },
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}}]}",
+                "ver": "1.2"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example.com/article"
+          },
+          "tmax": 500
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "epom",
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 2.75,
+                  "adm": "{\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Northwind Autumn Sale\"}},{\"id\":2,\"required\":1,\"img\":{\"url\":\"https://cdn.example.com/main.jpg\",\"w\":1200,\"h\":627}}],\"link\":{\"url\":\"https://ads.example.com/click\"},\"imptrackers\":[\"https://ads.example.com/imp\"]}",
+                  "crid": "creative-99",
+                  "dealid": "epom-direct",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 2.75,
+            "adm": "{\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Northwind Autumn Sale\"}},{\"id\":2,\"required\":1,\"img\":{\"url\":\"https://cdn.example.com/main.jpg\",\"w\":1200,\"h\":627}}],\"link\":{\"url\":\"https://ads.example.com/click\"},\"imptrackers\":[\"https://ads.example.com/imp\"]}",
+            "crid": "creative-99",
+            "dealid": "epom-direct",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

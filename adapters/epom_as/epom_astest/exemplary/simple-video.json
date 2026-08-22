@@ -4,25 +4,35 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ]
-        },
         "ext": {
           "bidder": {
             "host": "ads.example.com",
             "placementKey": "a4f21c9e7b"
           }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "startdelay": 0,
+          "linearity": 1,
+          "minduration": 5,
+          "maxduration": 60
         }
       }
     ],
     "site": {
       "page": "https://publisher.example.com/article"
-    }
+    },
+    "tmax": 500
   },
   "httpCalls": [
     {
@@ -34,25 +44,35 @@
             {
               "id": "test-imp-id",
               "tagid": "a4f21c9e7b",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
-              },
               "ext": {
                 "bidder": {
                   "host": "ads.example.com",
                   "placementKey": "a4f21c9e7b"
                 }
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "startdelay": 0,
+                "linearity": 1,
+                "minduration": 5,
+                "maxduration": 60
               }
             }
           ],
           "site": {
             "page": "https://publisher.example.com/article"
-          }
+          },
+          "tmax": 500
         },
         "impIDs": [
           "test-imp-id"
@@ -68,24 +88,15 @@
               "seat": "epom",
               "bid": [
                 {
-                  "id": "bid-banner",
+                  "id": "test-bid-id",
                   "impid": "test-imp-id",
-                  "price": 1.5,
-                  "adm": "<div>creative</div>",
-                  "crid": "c1",
-                  "w": 300,
-                  "h": 250,
-                  "mtype": 1
-                },
-                {
-                  "id": "bid-video",
-                  "impid": "test-imp-id",
-                  "price": 1.5,
-                  "adm": "<div>creative</div>",
-                  "crid": "c1",
-                  "w": 300,
-                  "h": 250,
-                  "mtype": 3
+                  "price": 2.75,
+                  "adm": "<VAST version=\"4.0\"><Ad><InLine/></Ad></VAST>",
+                  "crid": "creative-99",
+                  "dealid": "epom-direct",
+                  "mtype": 2,
+                  "w": 640,
+                  "h": 480
                 }
               ]
             }
@@ -100,24 +111,19 @@
       "bids": [
         {
           "bid": {
-            "id": "bid-banner",
+            "id": "test-bid-id",
             "impid": "test-imp-id",
-            "price": 1.5,
-            "adm": "<div>creative</div>",
-            "crid": "c1",
-            "w": 300,
-            "h": 250,
-            "mtype": 1
+            "price": 2.75,
+            "adm": "<VAST version=\"4.0\"><Ad><InLine/></Ad></VAST>",
+            "crid": "creative-99",
+            "dealid": "epom-direct",
+            "mtype": 2,
+            "w": 640,
+            "h": 480
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
-    }
-  ],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "unsupported mtype 3 for bid bid-video",
-      "comparison": "literal"
     }
   ]
 }

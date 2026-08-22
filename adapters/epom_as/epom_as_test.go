@@ -123,7 +123,7 @@ func TestMakeBidsErrorTypes(t *testing.T) {
 		{
 			name:     "unsupported mtype",
 			status:   http.StatusOK,
-			body:     `{"id":"test-request-id","cur":"USD","seatbid":[{"bid":[{"id":"b1","impid":"test-imp-id","price":1,"mtype":2}]}]}`,
+			body:     `{"id":"test-request-id","cur":"USD","seatbid":[{"bid":[{"id":"b1","impid":"test-imp-id","price":1,"mtype":3}]}]}`,
 			wantType: &errortypes.BadServerResponse{},
 		},
 		{
@@ -167,7 +167,11 @@ func TestCallerRequestNotMutated(t *testing.T) {
 func TestGetMediaTypeForBid(t *testing.T) {
 	bannerImp := &openrtb2.Imp{ID: "banner-imp", Banner: &openrtb2.Banner{}}
 	videoImp := &openrtb2.Imp{ID: "video-imp", Video: &openrtb2.Video{}}
-	imps := map[string]*openrtb2.Imp{bannerImp.ID: bannerImp, videoImp.ID: videoImp}
+	nativeImp := &openrtb2.Imp{ID: "native-imp", Native: &openrtb2.Native{}}
+	mixedImp := &openrtb2.Imp{ID: "mixed-imp", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}}
+	imps := map[string]*openrtb2.Imp{
+		bannerImp.ID: bannerImp, videoImp.ID: videoImp, nativeImp.ID: nativeImp, mixedImp.ID: mixedImp,
+	}
 
 	testCases := []struct {
 		name     string
@@ -186,24 +190,36 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			wantType: openrtb_ext.BidTypeBanner,
 		},
 		{
-			name:    "no mtype and the imp is not a banner",
-			bid:     openrtb2.Bid{ID: "b3", ImpID: "video-imp"},
-			wantErr: "unresolved mtype for bid b3: no banner imp video-imp",
+			name:     "no mtype resolves from a video imp",
+			bid:      openrtb2.Bid{ID: "b3", ImpID: "video-imp"},
+			wantType: openrtb_ext.BidTypeVideo,
 		},
 		{
 			name:    "no mtype and no matching imp",
 			bid:     openrtb2.Bid{ID: "b4", ImpID: "no-such-imp"},
-			wantErr: "unresolved mtype for bid b4: no banner imp no-such-imp",
+			wantErr: "unresolved mtype for bid b4: no imp no-such-imp",
 		},
 		{
-			name:    "video mtype on a banner-only adapter",
-			bid:     openrtb2.Bid{ID: "b5", ImpID: "banner-imp", MType: openrtb2.MarkupVideo},
-			wantErr: "unsupported mtype 2 for bid b5",
+			name:     "mtype video",
+			bid:      openrtb2.Bid{ID: "b5", ImpID: "video-imp", MType: openrtb2.MarkupVideo},
+			wantType: openrtb_ext.BidTypeVideo,
 		},
 		{
-			name:    "native mtype on a banner-only adapter",
-			bid:     openrtb2.Bid{ID: "b6", ImpID: "banner-imp", MType: openrtb2.MarkupNative},
-			wantErr: "unsupported mtype 4 for bid b6",
+			name:     "mtype native",
+			bid:      openrtb2.Bid{ID: "b6", ImpID: "native-imp", MType: openrtb2.MarkupNative},
+			wantType: openrtb_ext.BidTypeNative,
+		},
+		{
+			name:    "mtype audio, which this ad server does not serve",
+			bid:     openrtb2.Bid{ID: "b7", ImpID: "banner-imp", MType: openrtb2.MarkupAudio},
+			wantErr: "unsupported mtype 3 for bid b7",
+		},
+		{
+			// An imp offering two formats says nothing about which one a bid without
+			// mtype filled, and guessing renders the wrong creative into the slot.
+			name:    "no mtype on an imp offering two formats",
+			bid:     openrtb2.Bid{ID: "b8", ImpID: "mixed-imp"},
+			wantErr: "unresolved mtype for bid b8: imp mixed-imp offers 2 formats",
 		},
 	}
 

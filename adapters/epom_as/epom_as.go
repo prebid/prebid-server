@@ -304,22 +304,50 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpEpomAs, error) {
 
 // getMediaTypeForBid resolves the bid's media type from mtype, falling back to
 // the impression the bid answers when the ad server omits it. Nothing is
-// assumed: a bid that matches no banner impression is a defect on the wire, and
-// rendering it as a banner would hide that.
+// assumed: the fallback resolves only when the impression offered exactly one
+// format, because an impression offering two says nothing about which of them a
+// bid without mtype filled, and guessing renders the wrong creative.
 func getMediaTypeForBid(bid openrtb2.Bid, impsByID map[string]*openrtb2.Imp) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	case 0:
-		if imp, ok := impsByID[bid.ImpID]; ok && imp.Banner != nil {
-			return openrtb_ext.BidTypeBanner, nil
+		imp, ok := impsByID[bid.ImpID]
+		if !ok {
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("unresolved mtype for bid %s: no imp %s", bid.ID, bid.ImpID),
+			}
 		}
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unresolved mtype for bid %s: no banner imp %s", bid.ID, bid.ImpID),
-		}
+		return singleFormatOf(imp, bid)
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unsupported mtype %d for bid %s", bid.MType, bid.ID),
 		}
+	}
+}
+
+// singleFormatOf names the impression's format when it offered only one, and
+// refuses when it offered several.
+func singleFormatOf(imp *openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	var found openrtb_ext.BidType
+	count := 0
+	if imp.Banner != nil {
+		found, count = openrtb_ext.BidTypeBanner, count+1
+	}
+	if imp.Video != nil {
+		found, count = openrtb_ext.BidTypeVideo, count+1
+	}
+	if imp.Native != nil {
+		found, count = openrtb_ext.BidTypeNative, count+1
+	}
+	if count == 1 {
+		return found, nil
+	}
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("unresolved mtype for bid %s: imp %s offers %d formats", bid.ID, bid.ImpID, count),
 	}
 }

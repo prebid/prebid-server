@@ -91,7 +91,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unresolved mtype for bid bid-orphan: no banner imp no-such-imp",
+      "value": "unresolved mtype for bid bid-orphan: no imp no-such-imp",
       "comparison": "literal"
     }
   ]
