@@ -62,10 +62,10 @@ type Metrics struct {
 	adsCertSignTimer             prometheus.Histogram
 	bidderServerResponseTimer    prometheus.Histogram
 
-	// Fetchers 2.0 (cachekit) Metrics
-	cacheKitResult            *prometheus.CounterVec
-	cacheKitBackendFetch      *prometheus.CounterVec
-	cacheKitBackendFetchTimer *prometheus.HistogramVec
+	// Fetchers 2.0 (fetcher) Metrics
+	FetcherResult            *prometheus.CounterVec
+	fetcherBackendFetch      *prometheus.CounterVec
+	fetcherBackendFetchTimer *prometheus.HistogramVec
 
 	// Adapter Metrics
 	adapterBids                           *prometheus.CounterVec
@@ -121,7 +121,7 @@ const (
 	adapterLabel         = "adapter"
 	bidTypeLabel         = "bid_type"
 	cacheResultLabel     = "cache_result"
-	cacheKitResultLabel  = "result"
+	FetcherResultLabel   = "result"
 	connectionErrorLabel = "connection_error"
 	cookieLabel          = "cookie"
 	hasBidsLabel         = "has_bids"
@@ -276,18 +276,18 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of stored account errors by error type",
 		[]string{storedDataErrorLabel})
 
-	metrics.cacheKitResult = newCounter(cfg, reg,
-		"cachekit_cache_result",
+	metrics.FetcherResult = newCounter(cfg, reg,
+		"fetcher_cache_result",
 		"Count of Fetchers 2.0 cache lookups labeled by subsystem and result (hit, miss, negative).",
-		[]string{subsystemLabel, cacheKitResultLabel})
+		[]string{subsystemLabel, FetcherResultLabel})
 
-	metrics.cacheKitBackendFetch = newCounter(cfg, reg,
-		"cachekit_backend_fetch",
+	metrics.fetcherBackendFetch = newCounter(cfg, reg,
+		"fetcher_backend_fetch",
 		"Count of Fetchers 2.0 backend fetches labeled by subsystem and result (ok, notfound, error).",
-		[]string{subsystemLabel, cacheKitResultLabel})
+		[]string{subsystemLabel, FetcherResultLabel})
 
-	metrics.cacheKitBackendFetchTimer = newHistogramVec(cfg, reg,
-		"cachekit_backend_fetch_duration_seconds",
+	metrics.fetcherBackendFetchTimer = newHistogramVec(cfg, reg,
+		"fetcher_backend_fetch_duration_seconds",
 		"Seconds to fetch a value from a Fetchers 2.0 backend source, labeled by subsystem.",
 		[]string{subsystemLabel},
 		standardTimeBuckets)
@@ -988,19 +988,19 @@ func (m *Metrics) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc 
 	}).Add(float64(inc))
 }
 
-func (m *Metrics) RecordCacheKitResult(subsystem string, result metrics.CacheKitResult) {
-	m.cacheKitResult.With(prometheus.Labels{
-		subsystemLabel:      subsystem,
-		cacheKitResultLabel: string(result),
+func (m *Metrics) RecordFetcherResult(subsystem string, result metrics.FetcherResult) {
+	m.FetcherResult.With(prometheus.Labels{
+		subsystemLabel:     subsystem,
+		FetcherResultLabel: string(result),
 	}).Inc()
 }
 
-func (m *Metrics) RecordCacheKitBackendFetch(subsystem string, result metrics.CacheKitBackendResult, length time.Duration) {
-	m.cacheKitBackendFetch.With(prometheus.Labels{
-		subsystemLabel:      subsystem,
-		cacheKitResultLabel: string(result),
+func (m *Metrics) RecordFetcherBackendFetch(subsystem string, result metrics.FetcherBackendResult, length time.Duration) {
+	m.fetcherBackendFetch.With(prometheus.Labels{
+		subsystemLabel:     subsystem,
+		FetcherResultLabel: string(result),
 	}).Inc()
-	m.cacheKitBackendFetchTimer.With(prometheus.Labels{
+	m.fetcherBackendFetchTimer.With(prometheus.Labels{
 		subsystemLabel: subsystem,
 	}).Observe(length.Seconds())
 }

@@ -1,10 +1,11 @@
-package cachekit
+package fetcher
 
 import (
+	"errors"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 // negativeEntry is a cached definitive verdict: the error to re-serve and its
@@ -21,22 +22,22 @@ type negativeEntry struct {
 // permanent verdicts belong here; transient failures are never stored. Safe for
 // concurrent use.
 type NegativeStore[K comparable] struct {
-	lru   *lru.Cache[K, negativeEntry]
-	ttl   time.Duration
-	clock clock.Clock
+	lru  *lru.Cache[K, negativeEntry]
+	ttl  time.Duration
+	time timeutil.Time
 }
 
 // NewNegativeStore builds a negative store holding up to maxEntries verdicts, each
 // retained for ttl.
-func NewNegativeStore[K comparable](maxEntries int, ttl time.Duration, clk clock.Clock) (*NegativeStore[K], error) {
-	if clk == nil {
-		clk = clock.New()
+func NewNegativeStore[K comparable](maxEntries int, ttl time.Duration, t timeutil.Time) (*NegativeStore[K], error) {
+	if t == nil {
+		return nil, errors.New("time is required")
 	}
-	l, err := lru.New[K, negativeEntry](maxEntries)
+	lruCache, err := lru.New[K, negativeEntry](maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	return &NegativeStore[K]{lru: l, ttl: ttl, clock: clk}, nil
+	return &NegativeStore[K]{lru: lruCache, ttl: ttl, time: t}, nil
 }
 
 // isCached reports whether key has a live negative verdict, returning the verdict
@@ -46,7 +47,7 @@ func (n *NegativeStore[K]) isCached(key K) (error, bool) {
 	if !ok {
 		return nil, false
 	}
-	if n.clock.Now().After(e.expires) {
+	if n.time.Now().After(e.expires) {
 		n.lru.Remove(key)
 		return nil, false
 	}
@@ -55,5 +56,5 @@ func (n *NegativeStore[K]) isCached(key K) (error, bool) {
 
 // mark records a definitive verdict error for key, retained for the store TTL.
 func (n *NegativeStore[K]) mark(key K, err error) {
-	n.lru.Add(key, negativeEntry{err: err, expires: n.clock.Now().Add(n.ttl)})
+	n.lru.Add(key, negativeEntry{err: err, expires: n.time.Now().Add(n.ttl)})
 }

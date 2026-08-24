@@ -7,35 +7,35 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	"github.com/prebid/prebid-server/v4/cachekit"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/fetcher"
+	fetchercache "github.com/prebid/prebid-server/v4/fetcher/cache"
 	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
-// cacheKitSubsystem is the metrics subsystem label for the account cache.
-const cacheKitSubsystem = "account"
+// fetcherSubsystem is the metrics subsystem label for the account cache.
+const fetcherSubsystem = "account"
 
-// CacheKitAccountFetcher is the Fetchers 2.0 account fetcher. It embeds the
+// FetcherAccountFetcher is the Fetchers 2.0 account fetcher. It embeds the
 // underlying source fetcher (file / db / http / multi) so it continues to satisfy
-// stored_requests.AllFetcher, and adds FetchAccountTyped which serves fully-derived,
-// immutable *config.Account values from a cachekit engine.
-type CacheKitAccountFetcher struct {
+// stored_requests.AllFetcher, and adds Fetch which serves fully-derived,
+// immutable *config.Account values from a fetcher engine.
+type FetcherAccountFetcher struct {
 	stored_requests.AllFetcher
-	engine *cachekit.Fetcher[string, *config.Account]
+	engine *fetcher.Fetcher[string, *config.Account]
 }
 
-// FetchAccountTyped implements account.TypedAccountFetcher.
-func (f *CacheKitAccountFetcher) FetchAccountTyped(ctx context.Context, accountID string) (*config.Account, []error) {
+// Fetch implements account.Fetcher[*config.Account].
+func (f *FetcherAccountFetcher) Fetch(ctx context.Context, accountID string) (*config.Account, []error) {
 	account, err := f.engine.Get(ctx, accountID)
 	if err != nil {
-		if errors.Is(err, cachekit.ErrNotFound) {
+		if errors.Is(err, fetcher.ErrNotFound) {
 			return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
 		}
 		return nil, []error{err}
@@ -43,50 +43,54 @@ func (f *CacheKitAccountFetcher) FetchAccountTyped(ctx context.Context, accountI
 	return account, nil
 }
 
-// NewCacheKitAccountFetcher wires a cachekit engine in front of an existing account
+// NewFetcherAccountFetcher wires a fetcher engine in front of an existing account
 // source. The sources emit raw, unmerged account rows and the shared transform applies
 // the account defaults once (at cache insert); this fetcher adds the typed cache,
-// single-flight coalescing and optional negative caching. clk may be nil (a real clock
-// is used). metricsEngine may be nil (metrics are not recorded).
-func NewCacheKitAccountFetcher(source stored_requests.AllFetcher, cfg config.CacheKitConfig, defaults json.RawMessage, clk clock.Clock, metricsEngine metrics.MetricsEngine) (*CacheKitAccountFetcher, error) {
-	var cache cachekit.Cache[string, *config.Account]
+// single-flight coalescing and optional negative caching. metricsEngine may be nil
+// (metrics are not recorded).
+func NewFetcherAccountFetcher(source stored_requests.AllFetcher, cfg config.FetcherConfig, defaults json.RawMessage, t timeutil.Time, metricsEngine metrics.MetricsEngine) (*FetcherAccountFetcher, error) {
+	if t == nil {
+		t = &timeutil.RealTime{}
+	}
+	var cache fetcher.Cache[string, *config.Account]
 	switch cfg.Type {
 	case "none":
-		cache = cachekit.NoCache[string, *config.Account]{}
+		cache = fetchercache.NilCache[string, *config.Account]{}
+	case "unbounded":
+		unbounded, err := fetchercache.NewUnboundedCache[string, *config.Account](cfg.TTL(), t)
+		if err != nil {
+			return nil, err
+		}
+		cache = unbounded
 	case "", "lru":
-		lru, err := cachekit.NewLRUCache[string, *config.Account](cfg.MaxEntries, clk)
+		lru, err := fetchercache.NewLRUCache[string, *config.Account](cfg.MaxEntries, cfg.TTL(), t)
 		if err != nil {
 			return nil, err
 		}
 		cache = lru
 	default:
-		return nil, fmt.Errorf("accounts.cache.type %q is not supported (expected none or lru)", cfg.Type)
+		return nil, fmt.Errorf("accounts.cache.type %q is not supported (expected none, unbounded or lru)", cfg.Type)
 	}
 
-	var negatives *cachekit.NegativeStore[string]
+	var negatives *fetcher.NegativeStore[string]
 	if cfg.Negative.Enabled {
-		n, err := cachekit.NewNegativeStore[string](cfg.Negative.MaxEntries, cfg.Negative.TTL(), clk)
+		n, err := fetcher.NewNegativeStore[string](cfg.Negative.MaxEntries, cfg.Negative.TTL(), t)
 		if err != nil {
-			// Negative caching is an optimization, not a correctness requirement. If it
-			// can't be built (e.g. a bad accounts.cache.negative.max_entries), warn and
-			// continue without it rather than aborting account fetcher startup; not-found
-			// lookups will just fall through to the backend each time.
-			logger.Warnf("account cachekit: negative caching disabled, failed to initialize: %v", err)
-		} else {
-			negatives = n
+			return nil, fmt.Errorf("accounts.cache.negative: %w", err)
 		}
+		negatives = n
 	}
 
-	var recorder cachekit.Recorder
+	var recorder fetcher.Recorder
 	if metricsEngine != nil {
-		recorder = metricsRecorder{engine: metricsEngine, subsystem: cacheKitSubsystem}
+		recorder = metricsRecorder{engine: metricsEngine, subsystem: fetcherSubsystem}
 	}
 
 	// Freshness (refresh) axis: ttl (serve-stale + background revalidation), none
 	// (never revalidate / load-once), or preload (bulk warm at startup then ttl).
 	effectiveTTL := cfg.TTL()
 	serveStale := cfg.ServeStale
-	var preload cachekit.BulkSource[string]
+	var preload fetcher.BulkSource[string]
 	switch cfg.Refresh {
 	case "", config.RefreshTTL:
 		serveStale = true
@@ -107,7 +111,7 @@ func NewCacheKitAccountFetcher(source stored_requests.AllFetcher, cfg config.Cac
 		return nil, fmt.Errorf("accounts.cache.refresh %q is not supported (expected ttl, none or preload)", cfg.Refresh)
 	}
 
-	engine := cachekit.New(cachekit.Params[string, *config.Account]{
+	engine := fetcher.New(fetcher.Params[string, *config.Account]{
 		Source:            accountSource{fetcher: source},
 		Transform:         newAccountTransform(defaults),
 		Cache:             cache,
@@ -117,48 +121,48 @@ func NewCacheKitAccountFetcher(source stored_requests.AllFetcher, cfg config.Cac
 		ServeStale:        serveStale,
 		RevalidateTimeout: cfg.RevalidateTimeout(),
 		Preload:           preload,
-		Clock:             clk,
+		Time:              t,
 		Metrics:           recorder,
 	})
 	engine.Start(context.Background())
 
-	return &CacheKitAccountFetcher{AllFetcher: source, engine: engine}, nil
+	return &FetcherAccountFetcher{AllFetcher: source, engine: engine}, nil
 }
 
-// metricsRecorder adapts a metrics.MetricsEngine to the cachekit.Recorder interface,
-// emitting the dedicated cachekit_* metrics under the given subsystem label.
+// metricsRecorder adapts a metrics.MetricsEngine to the fetcher.Recorder interface,
+// emitting the dedicated fetcher_* metrics under the given subsystem label.
 type metricsRecorder struct {
 	engine    metrics.MetricsEngine
 	subsystem string
 }
 
 func (r metricsRecorder) CacheHit() {
-	r.engine.RecordCacheKitResult(r.subsystem, metrics.CacheKitResultHit)
+	r.engine.RecordFetcherResult(r.subsystem, metrics.FetcherResultHit)
 }
 func (r metricsRecorder) CacheMiss() {
-	r.engine.RecordCacheKitResult(r.subsystem, metrics.CacheKitResultMiss)
+	r.engine.RecordFetcherResult(r.subsystem, metrics.FetcherResultMiss)
 }
 func (r metricsRecorder) CacheNegative() {
-	r.engine.RecordCacheKitResult(r.subsystem, metrics.CacheKitResultNegative)
+	r.engine.RecordFetcherResult(r.subsystem, metrics.FetcherResultNegative)
 }
 
 func (r metricsRecorder) BackendFetch(result string, d time.Duration) {
-	var mapped metrics.CacheKitBackendResult
+	var mapped metrics.FetcherBackendResult
 	switch result {
 	case "ok":
-		mapped = metrics.CacheKitBackendOK
+		mapped = metrics.FetcherBackendOK
 	case "notfound":
-		mapped = metrics.CacheKitBackendNotFound
+		mapped = metrics.FetcherBackendNotFound
 	default:
-		mapped = metrics.CacheKitBackendError
+		mapped = metrics.FetcherBackendError
 	}
-	r.engine.RecordCacheKitBackendFetch(r.subsystem, mapped, d)
+	r.engine.RecordFetcherBackendFetch(r.subsystem, mapped, d)
 }
 
 // accountSource adapts an existing stored_requests account fetcher into a
-// cachekit.Source. It requests the raw, unmerged account row (defaults are applied
+// fetcher.Source. It requests the raw, unmerged account row (defaults are applied
 // once, downstream, by the shared transform) and reuses the backend's not-found
-// classification: a NotFoundError becomes an absent map key (cachekit's "not found"
+// classification: a NotFoundError becomes an absent map key (fetcher's "not found"
 // convention); any other error is a systemic failure and is not cached.
 type accountSource struct {
 	fetcher stored_requests.AccountFetcher
@@ -190,7 +194,7 @@ func isNotFoundErr(errs []error) bool {
 	return false
 }
 
-// accountBulkSource adapts a stored_requests.AllAccountsFetcher into a cachekit.BulkSource.
+// accountBulkSource adapts a stored_requests.AllAccountsFetcher into a fetcher.BulkSource.
 // It returns the raw, unmerged account rows as-is; the shared transform applies defaults
 // downstream, so this path and the single-key path merge in exactly one place.
 type accountBulkSource struct {
@@ -211,7 +215,7 @@ func (s accountBulkSource) FetchAll(ctx context.Context) (map[string]json.RawMes
 // the per-request read path does no merge, unmarshal, DSA unpack, derive or IP masking.
 // Both the single-key and bulk sources feed it raw, unmerged rows, so the defaults-merge
 // lives here in exactly one place.
-func newAccountTransform(defaults json.RawMessage) cachekit.TransformFunc[string, *config.Account] {
+func newAccountTransform(defaults json.RawMessage) fetcher.TransformFunc[string, *config.Account] {
 	return func(accountID string, raw json.RawMessage) (*config.Account, error) {
 		merged := raw
 		if defaults != nil {

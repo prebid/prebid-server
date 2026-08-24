@@ -136,11 +136,11 @@ func (me *MetricsEngineMock) RecordAccountCacheResult(cacheResult CacheResult, i
 	me.Called(cacheResult, inc)
 }
 
-func (me *MetricsEngineMock) RecordCacheKitResult(subsystem string, result CacheKitResult) {
+func (me *MetricsEngineMock) RecordFetcherResult(subsystem string, result FetcherResult) {
 	me.Called(subsystem, result)
 }
 
-func (me *MetricsEngineMock) RecordCacheKitBackendFetch(subsystem string, result CacheKitBackendResult, length time.Duration) {
+func (me *MetricsEngineMock) RecordFetcherBackendFetch(subsystem string, result FetcherBackendResult, length time.Duration) {
 	me.Called(subsystem, result, length)
 }
 

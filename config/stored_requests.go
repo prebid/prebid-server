@@ -71,20 +71,22 @@ type StoredRequests struct {
 	// HTTPEvents configures an instance of stored_requests/events/http/http.go.
 	// If non-nil, the server will use those endpoints to populate and update the cache.
 	HTTPEvents HTTPEventsConfig `mapstructure:"http_events"`
-	// V2Enabled opts this data type into the Fetchers 2.0 (cachekit) read path.
+	// V2Enabled opts this data type into the Fetchers 2.0 (fetcher) read path.
 	// Currently honoured for the accounts data type only. Defaults to false, which
 	// preserves the legacy fetch + byte-cache behaviour unchanged.
 	V2Enabled bool `mapstructure:"v2_enabled"`
 	// CacheV2 configures the Fetchers 2.0 typed cache. Only used when V2Enabled is true.
-	CacheV2 CacheKitConfig `mapstructure:"cache"`
+	CacheV2 FetcherConfig `mapstructure:"cache"`
 }
 
-// CacheKitConfig configures a Fetchers 2.0 typed cache (cachekit).
-type CacheKitConfig struct {
-	// Type selects the cache retention policy: "none" (always fetch from source) or
-	// "lru" (bounded read-through, the default).
+// FetcherConfig configures a Fetchers 2.0 typed cache (fetcher).
+type FetcherConfig struct {
+	// Type selects the cache retention policy: "none" (always fetch from source),
+	// "unbounded" (cache every value until invalidated) or "lru" (bounded
+	// read-through, the default).
 	Type string `mapstructure:"type"`
 	// MaxEntries bounds the number of cached values when Type is "lru".
+	// Unlike the legacy memory cache, this is an item limit rather than a byte limit.
 	MaxEntries int `mapstructure:"max_entries"`
 	// TTLSeconds is how long a cached value is served fresh before a background
 	// refresh is triggered. Past it the value is still served (stale) while it
@@ -109,7 +111,7 @@ type CacheKitConfig struct {
 	Negative NegativeCacheConfig `mapstructure:"negative"`
 }
 
-// RefreshMode selects a cachekit freshness mode.
+// RefreshMode selects a fetcher freshness mode.
 type RefreshMode string
 
 const (
@@ -122,12 +124,12 @@ const (
 )
 
 // TTL returns the positive-cache time-to-live.
-func (c CacheKitConfig) TTL() time.Duration {
+func (c FetcherConfig) TTL() time.Duration {
 	return time.Duration(c.TTLSeconds) * time.Second
 }
 
 // RevalidateTimeout returns the background revalidation timeout.
-func (c CacheKitConfig) RevalidateTimeout() time.Duration {
+func (c FetcherConfig) RevalidateTimeout() time.Duration {
 	return time.Duration(c.RevalidateTimeoutSeconds) * time.Second
 }
 

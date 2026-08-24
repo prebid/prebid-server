@@ -1,30 +1,12 @@
-// Package cachekit is a small, generic read-through fetching engine shared by
-// Prebid Server subsystems (accounts today; GVL / stored data / currency later).
-//
-// It is intentionally higher-level than any single subsystem: a subsystem picks
-// a Source (where raw bytes come from), a Transform (raw bytes -> typed value),
-// and a Cache (retention policy), and cachekit wires them together. When serve-stale
-// is enabled, stale entries are served immediately and revalidated in the background;
-// optional single-flight coalescing collapses concurrent misses for the same key
-// into one upstream call per pod.
-//
-// The cache stores the composed typed value V, not raw JSON. Transform runs once
-// per key at insert time; a cache hit is a pure lookup with no unmarshal.
-//
-// The package is split by concern:
-//   - cachekit.go   — the engine (Params, Fetcher, Get, load, preload).
-//   - contracts.go  — the interfaces a consumer implements (Source, Cache, ...).
-//   - revalidate.go — the background serve-stale revalidation mechanism.
-//   - cache.go      — the LRU / no-op positive cache implementations.
-//   - negative.go   — the negative (definitive-verdict) store.
-package cachekit
+// Package fetcher provides a generic read-through fetching engine.
+package fetcher
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -39,7 +21,7 @@ type Params[K comparable, V any] struct {
 	ServeStale        bool              // opt-in: past TTL, serve the stale value and revalidate in the background (default off = expire + synchronous reload)
 	RevalidateTimeout time.Duration     // maximum duration for a background stale revalidation; <= 0 uses a safe default
 	Preload           BulkSource[K]     // if set, the whole corpus is fetched once at Start to warm the cache
-	Clock             clock.Clock       // nil defaults to a real clock
+	Time              timeutil.Time     // nil defaults to real time
 	Metrics           Recorder          // nil defaults to a no-op recorder
 }
 
@@ -53,7 +35,7 @@ type Fetcher[K comparable, V any] struct {
 	coalesce     bool
 	serveStale   bool
 	preload      BulkSource[K]
-	clock        clock.Clock
+	time         timeutil.Time
 	metrics      Recorder
 	group        singleflight.Group
 	reval        *revalidator[K]
@@ -64,8 +46,8 @@ const defaultRevalidateTimeout = 10 * time.Second
 
 // New builds a Fetcher from the given params.
 func New[K comparable, V any](p Params[K, V]) *Fetcher[K, V] {
-	if p.Clock == nil {
-		p.Clock = clock.New()
+	if p.Time == nil {
+		p.Time = &timeutil.RealTime{}
 	}
 	if p.Metrics == nil {
 		p.Metrics = noopRecorder{}
@@ -82,9 +64,9 @@ func New[K comparable, V any](p Params[K, V]) *Fetcher[K, V] {
 		coalesce:     p.Coalesce,
 		serveStale:   p.ServeStale,
 		preload:      p.Preload,
-		clock:        p.Clock,
+		time:         p.Time,
 		metrics:      p.Metrics,
-		reval:        newRevalidator[K](p.Clock, revalidateBackoff),
+		reval:        newRevalidator[K](p.Time, revalidateBackoff),
 		revalTimeout: p.RevalidateTimeout,
 	}
 }
@@ -97,19 +79,19 @@ func (f *Fetcher[K, V]) Start(ctx context.Context) {
 	if f.preload == nil {
 		return
 	}
-	start := f.clock.Now()
+	start := f.time.Now()
 	raw, err := f.preload.FetchAll(ctx)
 	if err != nil {
-		f.metrics.BackendFetch("error", f.clock.Now().Sub(start))
+		f.metrics.BackendFetch("error", f.time.Now().Sub(start))
 		return
 	}
-	f.metrics.BackendFetch("ok", f.clock.Now().Sub(start))
+	f.metrics.BackendFetch("ok", f.time.Now().Sub(start))
 	for key, bytes := range raw {
 		v, err := f.transform(key, bytes)
 		if err != nil {
 			continue // skip malformed entries; they surface on demand
 		}
-		f.cache.Save(key, v, f.ttl)
+		f.cache.Save(key, v)
 	}
 }
 
@@ -176,9 +158,9 @@ func (f *Fetcher[K, V]) fetch(ctx context.Context, key K) (V, error) {
 func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 	var zero V
 
-	start := f.clock.Now()
+	start := f.time.Now()
 	found, err := f.source.Fetch(ctx, []K{key})
-	dur := f.clock.Now().Sub(start)
+	dur := f.time.Now().Sub(start)
 
 	if err != nil {
 		// Systemic/transient failure: never cache, never negative-cache.
@@ -207,7 +189,7 @@ func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 		return zero, err
 	}
 
-	f.cache.Save(key, v, f.ttl)
+	f.cache.Save(key, v)
 	f.metrics.BackendFetch("ok", dur)
 	return v, nil
 }

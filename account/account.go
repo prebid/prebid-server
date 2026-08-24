@@ -15,13 +15,11 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-// TypedAccountFetcher is an optional interface that a fetcher may implement to
-// return a fully-derived, immutable *config.Account directly, skipping the
-// per-request JSON unmarshal + defaults-merge + derive done on the legacy path.
-// The Fetchers 2.0 (cachekit) account fetcher implements this; when present,
-// GetAccount uses it. Legacy fetchers do not, and take the JSON path unchanged.
-type TypedAccountFetcher interface {
-	FetchAccountTyped(ctx context.Context, accountID string) (*config.Account, []error)
+// Fetcher is an optional generic interface that a fetcher may implement to return
+// fully-derived, immutable typed values directly. Legacy account fetchers do not
+// implement it and take the JSON path unchanged.
+type Fetcher[T any] interface {
+	Fetch(ctx context.Context, id string) (T, []error)
 }
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
@@ -32,7 +30,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		}}
 	}
 
-	if typed, ok := fetcher.(TypedAccountFetcher); ok {
+	if typed, ok := fetcher.(Fetcher[*config.Account]); ok {
 		return getAccountTyped(ctx, cfg, typed, accountID)
 	}
 	return getAccountJSON(ctx, cfg, fetcher, accountID)
@@ -97,8 +95,8 @@ func getAccountJSON(ctx context.Context, cfg *config.Configuration, fetcher stor
 // a fully-derived, immutable *config.Account (unmarshal + DSA + derive + IP masking
 // were done once, at cache insert). This path only applies the not-found fallback
 // and the per-request access gating.
-func getAccountTyped(ctx context.Context, cfg *config.Configuration, fetcher TypedAccountFetcher, accountID string) (account *config.Account, errs []error) {
-	fetched, accErrs := fetcher.FetchAccountTyped(ctx, accountID)
+func getAccountTyped(ctx context.Context, cfg *config.Configuration, fetcher Fetcher[*config.Account], accountID string) (account *config.Account, errs []error) {
+	fetched, accErrs := fetcher.Fetch(ctx, accountID)
 	if len(accErrs) > 0 {
 		// A malformed account is a hard error, mirroring the legacy path where the
 		// unmarshal/DSA failure returns immediately rather than falling back to defaults.

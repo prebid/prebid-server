@@ -3,10 +3,10 @@ package account
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -17,6 +17,22 @@ import (
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/stored_requests/caches/memory"
 )
+
+type fakeTime struct {
+	now time.Time
+}
+
+func newFakeTime() *fakeTime {
+	return &fakeTime{now: time.Unix(1000, 0)}
+}
+
+func (f *fakeTime) Now() time.Time {
+	return f.now
+}
+
+func (f *fakeTime) Add(d time.Duration) {
+	f.now = f.now.Add(d)
+}
 
 // mockAllFetcher is a minimal stored_requests.AllFetcher for the v2 account tests.
 // Only FetchAccount is exercised; the other methods satisfy the interface.
@@ -53,10 +69,10 @@ func (m *mockAllFetcher) FetchAllAccounts(_ context.Context) (map[string]json.Ra
 	return m.accounts, nil
 }
 
-func newV2Fetcher(t *testing.T, fetcher stored_requests.AllFetcher) *CacheKitAccountFetcher {
+func newV2Fetcher(t *testing.T, fetcher stored_requests.AllFetcher) *FetcherAccountFetcher {
 	t.Helper()
-	cfg := config.CacheKitConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600}
-	v2, err := NewCacheKitAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), clock.NewMock(), nil)
+	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600}
+	v2, err := NewFetcherAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
 	require.NoError(t, err)
 	return v2
 }
@@ -103,11 +119,11 @@ func TestV2GetAccountAppliesDefaultsAndDerivedConfigOnce(t *testing.T) {
 	fetcher := &mockAllFetcher{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1"}`),
 	}}
-	v2, err := NewCacheKitAccountFetcher(fetcher, config.CacheKitConfig{
+	v2, err := NewFetcherAccountFetcher(fetcher, config.FetcherConfig{
 		Type:       "lru",
 		MaxEntries: 100,
 		TTLSeconds: 3600,
-	}, defaults, clock.NewMock(), nil)
+	}, defaults, newFakeTime(), nil)
 	require.NoError(t, err)
 
 	account, errs := GetAccount(context.Background(), &config.Configuration{}, v2, "pub-1", nil)
@@ -133,14 +149,14 @@ func TestV2GetAccountAppliesDefaultsAndDerivedConfigOnce(t *testing.T) {
 }
 
 func TestV2WrappingLegacyCacheCanMaskBackendChangesAfterTTL(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	source := &mockAllFetcher{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1","disabled":false}`),
 	}}
 	legacyCachedFetcher := stored_requests.WithCache(source, stored_requests.Cache{
 		Accounts: memory.NewCache(0, 0, "Accounts"),
 	}, &metricsconfig.NilMetricsEngine{})
-	v2, err := NewCacheKitAccountFetcher(legacyCachedFetcher, config.CacheKitConfig{
+	v2, err := NewFetcherAccountFetcher(legacyCachedFetcher, config.FetcherConfig{
 		Type:       "lru",
 		MaxEntries: 100,
 		TTLSeconds: 1,
@@ -209,8 +225,8 @@ func TestV2RefreshPreloadWarmsCache(t *testing.T) {
 	fetcher := &mockAllFetcher{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1"}`),
 	}}
-	cfg := config.CacheKitConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "preload"}
-	v2, err := NewCacheKitAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), clock.NewMock(), nil)
+	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "preload"}
+	v2, err := NewFetcherAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
 	require.NoError(t, err)
 	assert.Equal(t, 1, fetcher.bulkCalls, "preload should perform a single bulk fetch at startup")
 
@@ -221,12 +237,12 @@ func TestV2RefreshPreloadWarmsCache(t *testing.T) {
 }
 
 func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	fetcher := &mockAllFetcher{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1","disabled":false}`),
 	}}
-	cfg := config.CacheKitConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 1, Refresh: "ttl"}
-	v2, err := NewCacheKitAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), clk, nil)
+	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 1, Refresh: "ttl"}
+	v2, err := NewFetcherAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), clk, nil)
 	require.NoError(t, err)
 
 	account, errs := GetAccount(context.Background(), &config.Configuration{}, v2, "pub-1", nil)
@@ -245,19 +261,66 @@ func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
 	assert.Eventually(t, func() bool { return fetcher.accountCalls == 2 }, time.Second, 5*time.Millisecond)
 }
 
+func TestV2UnboundedCacheDoesNotEvictByEntryCount(t *testing.T) {
+	fetcher := &mockAllFetcher{accounts: map[string]json.RawMessage{}}
+	for i := 0; i < 1000; i++ {
+		id := fmt.Sprintf("pub-%d", i)
+		fetcher.accounts[id] = json.RawMessage(fmt.Sprintf(`{"id":%q}`, id))
+	}
+	cfg := config.FetcherConfig{Type: "unbounded", TTLSeconds: 3600}
+	v2, err := NewFetcherAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
+	require.NoError(t, err)
+
+	for i := 0; i < 1000; i++ {
+		id := fmt.Sprintf("pub-%d", i)
+		account, errs := GetAccount(context.Background(), &config.Configuration{}, v2, id, nil)
+		require.Empty(t, errs)
+		require.NotNil(t, account)
+		assert.Equal(t, id, account.ID)
+	}
+	assert.Equal(t, 1000, fetcher.accountCalls)
+
+	for i := 0; i < 1000; i++ {
+		id := fmt.Sprintf("pub-%d", i)
+		account, errs := GetAccount(context.Background(), &config.Configuration{}, v2, id, nil)
+		require.Empty(t, errs)
+		require.NotNil(t, account)
+		assert.Equal(t, id, account.ID)
+	}
+	assert.Equal(t, 1000, fetcher.accountCalls, "unbounded cache should retain every fetched account")
+}
+
 func TestV2RefreshPreloadUnsupportedSourceErrors(t *testing.T) {
 	// A source that does not implement AllAccountsFetcher cannot preload.
 	var plain stored_requests.AllFetcher = notBulkFetcher{}
-	cfg := config.CacheKitConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "preload"}
-	_, err := NewCacheKitAccountFetcher(plain, cfg, json.RawMessage(`{}`), clock.NewMock(), nil)
+	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "preload"}
+	_, err := NewFetcherAccountFetcher(plain, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
 	require.Error(t, err)
 }
 
 func TestV2RefreshUnknownModeErrors(t *testing.T) {
 	fetcher := &mockAllFetcher{accounts: map[string]json.RawMessage{}}
-	cfg := config.CacheKitConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "bogus"}
-	_, err := NewCacheKitAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), clock.NewMock(), nil)
+	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "bogus"}
+	_, err := NewFetcherAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
 	require.Error(t, err)
+}
+
+func TestV2NegativeCacheInvalidConfigErrors(t *testing.T) {
+	fetcher := &mockAllFetcher{accounts: map[string]json.RawMessage{}}
+	cfg := config.FetcherConfig{
+		Type:       "lru",
+		MaxEntries: 100,
+		Negative: config.NegativeCacheConfig{
+			Enabled:    true,
+			MaxEntries: 0,
+			TTLSeconds: 60,
+		},
+	}
+
+	_, err := NewFetcherAccountFetcher(fetcher, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "accounts.cache.negative")
 }
 
 // notBulkFetcher is an AllFetcher that does NOT implement AllAccountsFetcher.

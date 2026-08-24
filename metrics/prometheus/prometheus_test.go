@@ -1224,41 +1224,41 @@ func TestAccountCacheResultMetric(t *testing.T) {
 		})
 }
 
-func TestCacheKitMetrics(t *testing.T) {
+func TestFetcherMetrics(t *testing.T) {
 	m := createMetricsForTesting()
 
-	m.RecordCacheKitResult("account", metrics.CacheKitResultHit)
-	m.RecordCacheKitResult("account", metrics.CacheKitResultHit)
-	m.RecordCacheKitResult("account", metrics.CacheKitResultMiss)
-	m.RecordCacheKitResult("account", metrics.CacheKitResultNegative)
+	m.RecordFetcherResult("account", metrics.FetcherResultHit)
+	m.RecordFetcherResult("account", metrics.FetcherResultHit)
+	m.RecordFetcherResult("account", metrics.FetcherResultMiss)
+	m.RecordFetcherResult("account", metrics.FetcherResultNegative)
 
-	m.RecordCacheKitBackendFetch("account", metrics.CacheKitBackendOK, time.Millisecond)
-	m.RecordCacheKitBackendFetch("account", metrics.CacheKitBackendNotFound, time.Millisecond)
+	m.RecordFetcherBackendFetch("account", metrics.FetcherBackendOK, time.Millisecond)
+	m.RecordFetcherBackendFetch("account", metrics.FetcherBackendNotFound, time.Millisecond)
 
-	assertCounterVecValue(t, "", "cacheKitResult:hit", m.cacheKitResult, 2,
+	assertCounterVecValue(t, "", "fetcherResult:hit", m.FetcherResult, 2,
 		prometheus.Labels{
-			subsystemLabel:      "account",
-			cacheKitResultLabel: string(metrics.CacheKitResultHit),
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherResultHit),
 		})
-	assertCounterVecValue(t, "", "cacheKitResult:miss", m.cacheKitResult, 1,
+	assertCounterVecValue(t, "", "fetcherResult:miss", m.FetcherResult, 1,
 		prometheus.Labels{
-			subsystemLabel:      "account",
-			cacheKitResultLabel: string(metrics.CacheKitResultMiss),
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherResultMiss),
 		})
-	assertCounterVecValue(t, "", "cacheKitResult:negative", m.cacheKitResult, 1,
+	assertCounterVecValue(t, "", "fetcherResult:negative", m.FetcherResult, 1,
 		prometheus.Labels{
-			subsystemLabel:      "account",
-			cacheKitResultLabel: string(metrics.CacheKitResultNegative),
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherResultNegative),
 		})
-	assertCounterVecValue(t, "", "cacheKitBackendFetch:ok", m.cacheKitBackendFetch, 1,
+	assertCounterVecValue(t, "", "fetcherBackendFetch:ok", m.fetcherBackendFetch, 1,
 		prometheus.Labels{
-			subsystemLabel:      "account",
-			cacheKitResultLabel: string(metrics.CacheKitBackendOK),
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherBackendOK),
 		})
-	assertCounterVecValue(t, "", "cacheKitBackendFetch:notfound", m.cacheKitBackendFetch, 1,
+	assertCounterVecValue(t, "", "fetcherBackendFetch:notfound", m.fetcherBackendFetch, 1,
 		prometheus.Labels{
-			subsystemLabel:      "account",
-			cacheKitResultLabel: string(metrics.CacheKitBackendNotFound),
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherBackendNotFound),
 		})
 }
 

@@ -186,7 +186,7 @@ func TestNewStoredRequestsV2AccountsSkipsLegacyAccountCache(t *testing.T) {
 				Type: "unbounded",
 			},
 			V2Enabled: true,
-			CacheV2: config.CacheKitConfig{
+			CacheV2: config.FetcherConfig{
 				Type: "none",
 			},
 		},

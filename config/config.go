@@ -1148,7 +1148,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("accounts.http_events.endpoint", "")
 	v.SetDefault("accounts.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("accounts.http_events.timeout_ms", 0)
-	// Fetchers 2.0 (cachekit) account cache. Opt-in via accounts.v2_enabled; the
+	// Fetchers 2.0 (fetcher) account cache. Opt-in via accounts.v2_enabled; the
 	// defaults below only take effect when it is turned on.
 	v.SetDefault("accounts.v2_enabled", false)
 	v.SetDefault("accounts.cache.type", "lru")

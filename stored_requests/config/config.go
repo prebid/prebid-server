@@ -23,6 +23,7 @@ import (
 	databaseEvents "github.com/prebid/prebid-server/v4/stored_requests/events/database"
 	httpEvents "github.com/prebid/prebid-server/v4/stored_requests/events/http"
 	"github.com/prebid/prebid-server/v4/util/task"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 // CreateStoredRequests returns three things:
@@ -155,10 +156,10 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	storedRespFetcher = fetcher6.(stored_requests.Fetcher)
 
 	// Fetchers 2.0: when enabled, wrap the raw account source with the typed
-	// cachekit fetcher. With v2_enabled=false the legacy byte-cache path is used
+	// account fetcher. With v2_enabled=false the legacy byte-cache path is used
 	// unchanged.
 	if cfg.Accounts.V2Enabled {
-		v2Accounts, err := account.NewCacheKitAccountFetcher(fetcher5, cfg.Accounts.CacheV2, cfg.AccountDefaultsJSON(), nil, metricsEngine)
+		v2Accounts, err := account.NewFetcherAccountFetcher(fetcher5, cfg.Accounts.CacheV2, cfg.AccountDefaultsJSON(), &timeutil.RealTime{}, metricsEngine)
 		if err != nil {
 			logger.Fatalf("Failed to initialize Fetchers 2.0 account fetcher: %v", err)
 		}

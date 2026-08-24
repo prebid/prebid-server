@@ -937,12 +937,12 @@ func (me *Metrics) RecordAccountCacheResult(cacheResult CacheResult, inc int) {
 	me.AccountCacheMeter[cacheResult].Mark(int64(inc))
 }
 
-// RecordCacheKitResult is not tracked by the influx/go-metrics engine.
-func (me *Metrics) RecordCacheKitResult(subsystem string, result CacheKitResult) {
+// RecordFetcherResult is not tracked by the influx/go-metrics engine.
+func (me *Metrics) RecordFetcherResult(subsystem string, result FetcherResult) {
 }
 
-// RecordCacheKitBackendFetch is not tracked by the influx/go-metrics engine.
-func (me *Metrics) RecordCacheKitBackendFetch(subsystem string, result CacheKitBackendResult, length time.Duration) {
+// RecordFetcherBackendFetch is not tracked by the influx/go-metrics engine.
+func (me *Metrics) RecordFetcherBackendFetch(subsystem string, result FetcherBackendResult, length time.Duration) {
 }
 
 // RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the

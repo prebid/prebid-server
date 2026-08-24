@@ -238,17 +238,17 @@ func (me *MultiMetricsEngine) RecordAccountCacheResult(cacheResult metrics.Cache
 	}
 }
 
-// RecordCacheKitResult across all engines
-func (me *MultiMetricsEngine) RecordCacheKitResult(subsystem string, result metrics.CacheKitResult) {
+// RecordFetcherResult across all engines
+func (me *MultiMetricsEngine) RecordFetcherResult(subsystem string, result metrics.FetcherResult) {
 	for _, thisME := range *me {
-		thisME.RecordCacheKitResult(subsystem, result)
+		thisME.RecordFetcherResult(subsystem, result)
 	}
 }
 
-// RecordCacheKitBackendFetch across all engines
-func (me *MultiMetricsEngine) RecordCacheKitBackendFetch(subsystem string, result metrics.CacheKitBackendResult, length time.Duration) {
+// RecordFetcherBackendFetch across all engines
+func (me *MultiMetricsEngine) RecordFetcherBackendFetch(subsystem string, result metrics.FetcherBackendResult, length time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordCacheKitBackendFetch(subsystem, result, length)
+		thisME.RecordFetcherBackendFetch(subsystem, result, length)
 	}
 }
 
@@ -520,12 +520,12 @@ func (me *NilMetricsEngine) RecordStoredImpCacheResult(cacheResult metrics.Cache
 func (me *NilMetricsEngine) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
 }
 
-// RecordCacheKitResult as a noop
-func (me *NilMetricsEngine) RecordCacheKitResult(subsystem string, result metrics.CacheKitResult) {
+// RecordFetcherResult as a noop
+func (me *NilMetricsEngine) RecordFetcherResult(subsystem string, result metrics.FetcherResult) {
 }
 
-// RecordCacheKitBackendFetch as a noop
-func (me *NilMetricsEngine) RecordCacheKitBackendFetch(subsystem string, result metrics.CacheKitBackendResult, length time.Duration) {
+// RecordFetcherBackendFetch as a noop
+func (me *NilMetricsEngine) RecordFetcherBackendFetch(subsystem string, result metrics.FetcherBackendResult, length time.Duration) {
 }
 
 // RecordPrebidCacheRequestTime as a noop

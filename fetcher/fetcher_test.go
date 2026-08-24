@@ -1,4 +1,4 @@
-package cachekit
+package fetcher
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	fetchercache "github.com/prebid/prebid-server/v4/fetcher/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,6 +21,22 @@ type stubSource struct {
 	data  map[string]json.RawMessage
 	err   error
 	block chan struct{}
+}
+
+type fakeTime struct {
+	now time.Time
+}
+
+func newFakeTime() *fakeTime {
+	return &fakeTime{now: time.Unix(1000, 0)}
+}
+
+func (f *fakeTime) Now() time.Time {
+	return f.now
+}
+
+func (f *fakeTime) Add(d time.Duration) {
+	f.now = f.now.Add(d)
 }
 
 func (s *stubSource) Fetch(_ context.Context, keys []string) (map[string]json.RawMessage, error) {
@@ -79,8 +95,8 @@ func (b bulkStub) FetchAll(_ context.Context) (map[string]json.RawMessage, error
 }
 
 func TestPreloadSeedsCache(t *testing.T) {
-	clk := clock.NewMock()
-	cache, err := NewLRUCache[string, string](100, clk)
+	clk := newFakeTime()
+	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
 	require.NoError(t, err)
 	readSrc := &stubSource{data: map[string]json.RawMessage{}} // read path source is empty
 	f := New(Params[string, string]{
@@ -89,7 +105,7 @@ func TestPreloadSeedsCache(t *testing.T) {
 		Cache:     cache,
 		TTL:       time.Hour,
 		Preload:   bulkStub{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}},
-		Clock:     clk,
+		Time:      clk,
 	})
 
 	f.Start(context.Background())
@@ -100,9 +116,9 @@ func TestPreloadSeedsCache(t *testing.T) {
 	assert.Equal(t, 0, readSrc.callCount(), "preloaded key should be served without hitting the read source")
 }
 
-func newLRUFetcher(t *testing.T, src Source[string], clk clock.Clock, ttl time.Duration, negatives *NegativeStore[string]) *Fetcher[string, string] {
+func newLRUFetcher(t *testing.T, src Source[string], clk *fakeTime, ttl time.Duration, negatives *NegativeStore[string]) *Fetcher[string, string] {
 	t.Helper()
-	cache, err := NewLRUCache[string, string](100, clk)
+	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
 	require.NoError(t, err)
 	return New(Params[string, string]{
 		Source:    src,
@@ -110,13 +126,13 @@ func newLRUFetcher(t *testing.T, src Source[string], clk clock.Clock, ttl time.D
 		Cache:     cache,
 		TTL:       ttl,
 		Negatives: negatives,
-		Clock:     clk,
+		Time:      clk,
 	})
 }
 
-func newServeStaleFetcher(t *testing.T, src Source[string], clk clock.Clock, ttl time.Duration) *Fetcher[string, string] {
+func newServeStaleFetcher(t *testing.T, src Source[string], clk *fakeTime, ttl time.Duration) *Fetcher[string, string] {
 	t.Helper()
-	cache, err := NewLRUCache[string, string](100, clk)
+	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
 	require.NoError(t, err)
 	return New(Params[string, string]{
 		Source:     src,
@@ -124,14 +140,14 @@ func newServeStaleFetcher(t *testing.T, src Source[string], clk clock.Clock, ttl
 		Cache:      cache,
 		TTL:        ttl,
 		ServeStale: true,
-		Clock:      clk,
+		Time:       clk,
 	})
 }
 
 // TestGetExpiresAndReloadsByDefault verifies the default (serve-stale off): past
 // TTL the entry is treated as expired and reloaded synchronously on the next read.
 func TestGetExpiresAndReloadsByDefault(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	f := newLRUFetcher(t, src, clk, time.Hour, nil)
 
@@ -156,7 +172,7 @@ func TestGetExpiresAndReloadsByDefault(t *testing.T) {
 
 func TestGetHitAfterMiss(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
-	f := newLRUFetcher(t, src, clock.NewMock(), time.Hour, nil)
+	f := newLRUFetcher(t, src, newFakeTime(), time.Hour, nil)
 
 	v, err := f.Get(context.Background(), "a")
 	require.NoError(t, err)
@@ -170,7 +186,7 @@ func TestGetHitAfterMiss(t *testing.T) {
 }
 
 func TestGetNotFoundWithNegativeCache(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	neg, err := NewNegativeStore[string](10, time.Minute, clk)
 	require.NoError(t, err)
 	src := &stubSource{data: map[string]json.RawMessage{}}
@@ -187,7 +203,7 @@ func TestGetNotFoundWithNegativeCache(t *testing.T) {
 
 func TestGetNotFoundWithoutNegativeCache(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{}}
-	f := newLRUFetcher(t, src, clock.NewMock(), time.Hour, nil)
+	f := newLRUFetcher(t, src, newFakeTime(), time.Hour, nil)
 
 	_, err := f.Get(context.Background(), "missing")
 	assert.ErrorIs(t, err, ErrNotFound)
@@ -202,7 +218,7 @@ func TestGetCoalescesConcurrentMisses(t *testing.T) {
 		data:  map[string]json.RawMessage{"a": json.RawMessage(`v1`)},
 		block: make(chan struct{}),
 	}
-	cache, err := NewLRUCache[string, string](100, clock.NewMock())
+	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, newFakeTime())
 	require.NoError(t, err)
 	f := New(Params[string, string]{
 		Source:    src,
@@ -237,7 +253,7 @@ func TestGetCoalescesConcurrentMisses(t *testing.T) {
 }
 
 func TestGetServesStaleAndRefreshesInBackground(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	f := newServeStaleFetcher(t, src, clk, time.Hour)
 
@@ -271,7 +287,7 @@ func TestGetServesStaleAndRefreshesInBackground(t *testing.T) {
 }
 
 func TestGetServesStaleWhileBackendDown(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	f := newServeStaleFetcher(t, src, clk, time.Hour)
 
@@ -296,9 +312,9 @@ func TestGetServesStaleWhileBackendDown(t *testing.T) {
 }
 
 func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	src := &timeoutOnceSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
-	cache, err := NewLRUCache[string, string](100, clk)
+	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
 	require.NoError(t, err)
 	f := New(Params[string, string]{
 		Source:            src,
@@ -307,7 +323,7 @@ func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
 		TTL:               time.Hour,
 		ServeStale:        true,
 		RevalidateTimeout: 10 * time.Millisecond,
-		Clock:             clk,
+		Time:              clk,
 	})
 
 	v, err := f.Get(context.Background(), "a")
@@ -339,7 +355,7 @@ func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
 }
 
 func TestRevalidatorPrunesExpiredFailures(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	r := newRevalidator[string](clk, revalidateBackoff)
 	r.finish("old", true)
 	require.Contains(t, r.state, "old")
@@ -350,12 +366,12 @@ func TestRevalidatorPrunesExpiredFailures(t *testing.T) {
 	assert.True(t, r.state["new"].inFlight)
 }
 
-func TestGetNoCacheAlwaysFetches(t *testing.T) {
+func TestGetNilCacheAlwaysFetches(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	f := New(Params[string, string]{
 		Source:    src,
 		Transform: identityTransform,
-		Cache:     NoCache[string, string]{},
+		Cache:     fetchercache.NilCache[string, string]{},
 		TTL:       time.Hour,
 	})
 
@@ -370,7 +386,7 @@ func TestGetNoCacheAlwaysFetches(t *testing.T) {
 func TestGetSourceErrorNotCached(t *testing.T) {
 	boom := errors.New("boom")
 	src := &stubSource{err: boom}
-	f := newLRUFetcher(t, src, clock.NewMock(), time.Hour, nil)
+	f := newLRUFetcher(t, src, newFakeTime(), time.Hour, nil)
 
 	_, err := f.Get(context.Background(), "a")
 	assert.ErrorIs(t, err, boom)
@@ -383,7 +399,7 @@ func TestGetSourceErrorNotCached(t *testing.T) {
 
 func TestGetTransformErrorNotCached(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
-	cache, err := NewLRUCache[string, string](100, clock.NewMock())
+	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, newFakeTime())
 	require.NoError(t, err)
 	transformErr := errors.New("bad value")
 	f := New(Params[string, string]{
@@ -416,10 +432,10 @@ func (r *countingRecorder) CacheNegative()                              { r.nega
 func (r *countingRecorder) BackendFetch(result string, _ time.Duration) { r.backend[result]++ }
 
 func TestRecorderSignals(t *testing.T) {
-	clk := clock.NewMock()
+	clk := newFakeTime()
 	neg, err := NewNegativeStore[string](10, time.Minute, clk)
 	require.NoError(t, err)
-	cache, err := NewLRUCache[string, string](100, clk)
+	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
 	require.NoError(t, err)
 	rec := newCountingRecorder()
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
@@ -429,7 +445,7 @@ func TestRecorderSignals(t *testing.T) {
 		Cache:     cache,
 		TTL:       time.Hour,
 		Negatives: neg,
-		Clock:     clk,
+		Time:      clk,
 		Metrics:   rec,
 	})
 

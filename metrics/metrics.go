@@ -340,45 +340,45 @@ func CacheResults() []CacheResult {
 	}
 }
 
-// CacheKitResult is the outcome of a Fetchers 2.0 (cachekit) cache lookup.
-type CacheKitResult string
+// FetcherResult is the outcome of a Fetchers 2.0 (fetcher) cache lookup.
+type FetcherResult string
 
 const (
-	// CacheKitResultHit is a value served from the positive cache without a backend call.
-	CacheKitResultHit CacheKitResult = "hit"
-	// CacheKitResultMiss is a lookup that had to go to the backend source.
-	CacheKitResultMiss CacheKitResult = "miss"
-	// CacheKitResultNegative is a not-found served from the negative cache without a backend call.
-	CacheKitResultNegative CacheKitResult = "negative"
+	// FetcherResultHit is a value served from the positive cache without a backend call.
+	FetcherResultHit FetcherResult = "hit"
+	// FetcherResultMiss is a lookup that had to go to the backend source.
+	FetcherResultMiss FetcherResult = "miss"
+	// FetcherResultNegative is a not-found served from the negative cache without a backend call.
+	FetcherResultNegative FetcherResult = "negative"
 )
 
-// CacheKitResults returns the possible cachekit cache lookup outcomes.
-func CacheKitResults() []CacheKitResult {
-	return []CacheKitResult{
-		CacheKitResultHit,
-		CacheKitResultMiss,
-		CacheKitResultNegative,
+// FetcherResults returns the possible fetcher cache lookup outcomes.
+func FetcherResults() []FetcherResult {
+	return []FetcherResult{
+		FetcherResultHit,
+		FetcherResultMiss,
+		FetcherResultNegative,
 	}
 }
 
-// CacheKitBackendResult is the outcome of a cachekit upstream (source) fetch.
-type CacheKitBackendResult string
+// FetcherBackendResult is the outcome of a fetcher upstream (source) fetch.
+type FetcherBackendResult string
 
 const (
-	// CacheKitBackendOK is a successful backend fetch that returned a value.
-	CacheKitBackendOK CacheKitBackendResult = "ok"
-	// CacheKitBackendNotFound is a definitive per-key not-found from the backend.
-	CacheKitBackendNotFound CacheKitBackendResult = "notfound"
-	// CacheKitBackendError is a systemic backend failure (never cached).
-	CacheKitBackendError CacheKitBackendResult = "error"
+	// FetcherBackendOK is a successful backend fetch that returned a value.
+	FetcherBackendOK FetcherBackendResult = "ok"
+	// FetcherBackendNotFound is a definitive per-key not-found from the backend.
+	FetcherBackendNotFound FetcherBackendResult = "notfound"
+	// FetcherBackendError is a systemic backend failure (never cached).
+	FetcherBackendError FetcherBackendResult = "error"
 )
 
-// CacheKitBackendResults returns the possible cachekit backend fetch outcomes.
-func CacheKitBackendResults() []CacheKitBackendResult {
-	return []CacheKitBackendResult{
-		CacheKitBackendOK,
-		CacheKitBackendNotFound,
-		CacheKitBackendError,
+// FetcherBackendResults returns the possible fetcher backend fetch outcomes.
+func FetcherBackendResults() []FetcherBackendResult {
+	return []FetcherBackendResult{
+		FetcherBackendOK,
+		FetcherBackendNotFound,
+		FetcherBackendError,
 	}
 }
 
@@ -530,8 +530,8 @@ type MetricsEngine interface {
 	RecordAccountCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
 	RecordStoredDataError(labels StoredDataLabels)
-	RecordCacheKitResult(subsystem string, result CacheKitResult)
-	RecordCacheKitBackendFetch(subsystem string, result CacheKitBackendResult, length time.Duration)
+	RecordFetcherResult(subsystem string, result FetcherResult)
+	RecordFetcherBackendFetch(subsystem string, result FetcherBackendResult, length time.Duration)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)

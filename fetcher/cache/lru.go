@@ -1,10 +1,11 @@
-package cachekit
+package cache
 
 import (
+	"errors"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 // entry is the positive-store value: the composed typed value plus the time after
@@ -21,20 +22,21 @@ type entry[V any] struct {
 // backend, and the engine refreshes them in the background. LRU capacity is the
 // only eviction. It is safe for concurrent use.
 type LRUCache[K comparable, V any] struct {
-	lru   *lru.Cache[K, entry[V]]
-	clock clock.Clock
+	lru  *lru.Cache[K, entry[V]]
+	ttl  time.Duration
+	time timeutil.Time
 }
 
 // NewLRUCache builds an LRU cache holding up to maxEntries values.
-func NewLRUCache[K comparable, V any](maxEntries int, clk clock.Clock) (*LRUCache[K, V], error) {
-	if clk == nil {
-		clk = clock.New()
+func NewLRUCache[K comparable, V any](maxEntries int, ttl time.Duration, t timeutil.Time) (*LRUCache[K, V], error) {
+	if t == nil {
+		return nil, errors.New("time is required")
 	}
-	l, err := lru.New[K, entry[V]](maxEntries)
+	lruCache, err := lru.New[K, entry[V]](maxEntries)
 	if err != nil {
 		return nil, err
 	}
-	return &LRUCache[K, V]{lru: l, clock: clk}, nil
+	return &LRUCache[K, V]{lru: lruCache, ttl: ttl, time: t}, nil
 }
 
 // Get returns the value if present, and whether it is stale (past its refresh
@@ -46,15 +48,15 @@ func (c *LRUCache[K, V]) Get(key K) (V, bool, bool) {
 		var zero V
 		return zero, false, false
 	}
-	stale := !e.refreshAfter.IsZero() && c.clock.Now().After(e.refreshAfter)
+	stale := !e.refreshAfter.IsZero() && c.time.Now().After(e.refreshAfter)
 	return e.v, true, stale
 }
 
-// Save stores v under key. ttl <= 0 means the entry never goes stale.
-func (c *LRUCache[K, V]) Save(key K, v V, ttl time.Duration) {
+// Save stores v under key. A cache ttl <= 0 means the entry never goes stale.
+func (c *LRUCache[K, V]) Save(key K, v V) {
 	var refreshAfter time.Time
-	if ttl > 0 {
-		refreshAfter = c.clock.Now().Add(ttl)
+	if c.ttl > 0 {
+		refreshAfter = c.time.Now().Add(c.ttl)
 	}
 	c.lru.Add(key, entry[V]{v: v, refreshAfter: refreshAfter})
 }
@@ -63,12 +65,3 @@ func (c *LRUCache[K, V]) Save(key K, v V, ttl time.Duration) {
 func (c *LRUCache[K, V]) Invalidate(key K) {
 	c.lru.Remove(key)
 }
-
-// NoCache is a pass-through cache: every Get is a miss and Save is a no-op. Paired
-// with the engine's single-flight coalescing it yields "always fetch, still
-// deduplicate" behaviour for direct-source / live tenants.
-type NoCache[K comparable, V any] struct{}
-
-func (NoCache[K, V]) Get(K) (V, bool, bool)    { var zero V; return zero, false, false }
-func (NoCache[K, V]) Save(K, V, time.Duration) {}
-func (NoCache[K, V]) Invalidate(K)             {}

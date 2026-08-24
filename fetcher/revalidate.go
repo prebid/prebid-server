@@ -1,11 +1,11 @@
-package cachekit
+package fetcher
 
 import (
 	"context"
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 // revalidateBackoff is how long a key waits after a failed background revalidation
@@ -25,11 +25,11 @@ type revalidator[K comparable] struct {
 	mu      sync.Mutex
 	state   map[K]revalState
 	backoff time.Duration
-	clock   clock.Clock
+	time    timeutil.Time
 }
 
-func newRevalidator[K comparable](clk clock.Clock, backoff time.Duration) *revalidator[K] {
-	return &revalidator[K]{state: make(map[K]revalState), backoff: backoff, clock: clk}
+func newRevalidator[K comparable](t timeutil.Time, backoff time.Duration) *revalidator[K] {
+	return &revalidator[K]{state: make(map[K]revalState), backoff: backoff, time: t}
 }
 
 // begin reports whether the caller may start a revalidation for key now, and claims
@@ -38,10 +38,10 @@ func newRevalidator[K comparable](clk clock.Clock, backoff time.Duration) *reval
 func (r *revalidator[K]) begin(key K) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	now := r.clock.Now()
+	now := r.time.Now()
 	r.pruneExpiredFailures(now)
 	st := r.state[key]
-	if st.inFlight || (!st.failedAt.IsZero() && r.clock.Now().Before(st.failedAt.Add(r.backoff))) {
+	if st.inFlight || (!st.failedAt.IsZero() && r.time.Now().Before(st.failedAt.Add(r.backoff))) {
 		return false
 	}
 	st.inFlight = true
@@ -63,7 +63,7 @@ func (r *revalidator[K]) finish(key K, failed bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if failed {
-		r.state[key] = revalState{failedAt: r.clock.Now()}
+		r.state[key] = revalState{failedAt: r.time.Now()}
 	} else {
 		delete(r.state, key)
 	}
@@ -87,9 +87,9 @@ func (f *Fetcher[K, V]) triggerRevalidate(key K) {
 // good value keeps being served and a backoff is recorded.
 func (f *Fetcher[K, V]) revalidate(ctx context.Context, cancel context.CancelFunc, key K) {
 	defer cancel()
-	start := f.clock.Now()
+	start := f.time.Now()
 	found, err := f.source.Fetch(ctx, []K{key})
-	dur := f.clock.Now().Sub(start)
+	dur := f.time.Now().Sub(start)
 
 	if err != nil {
 		f.metrics.BackendFetch("error", dur)
@@ -114,7 +114,7 @@ func (f *Fetcher[K, V]) revalidate(ctx context.Context, cancel context.CancelFun
 		f.reval.finish(key, true)
 		return
 	}
-	f.cache.Save(key, v, f.ttl)
+	f.cache.Save(key, v)
 	f.metrics.BackendFetch("ok", dur)
 	f.reval.finish(key, false)
 }

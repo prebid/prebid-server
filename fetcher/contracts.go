@@ -1,4 +1,4 @@
-package cachekit
+package fetcher
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 // ErrNotFound is returned by Get when the key does not exist at the source.
 // It is a definitive, per-key verdict (as opposed to a systemic/backend error).
-var ErrNotFound = errors.New("cachekit: not found")
+var ErrNotFound = errors.New("fetcher: not found")
 
 // Source pulls raw, undecoded bytes for a batch of keys. A single-key lookup is
 // a one-element slice. By convention, a key that is absent from the returned map
@@ -38,7 +38,7 @@ type Cache[K comparable, V any] interface {
 	// time). Stale values are still returned so the read path never blocks on the
 	// backend; the engine revalidates them in the background.
 	Get(key K) (v V, ok bool, stale bool)
-	Save(key K, v V, ttl time.Duration)
+	Save(key K, v V)
 	// Invalidate drops a key so the next Get is a miss. Used when a background
 	// revalidation finds the key was deleted upstream.
 	Invalidate(key K)
