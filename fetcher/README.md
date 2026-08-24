@@ -26,7 +26,9 @@ When serve-stale mode is enabled, stale entries are returned immediately and ref
 Files:
 
 - `fetcher.go`: engine setup and lookup flow.
-- `contracts.go`: interfaces implemented by callers.
+- `config.go`: generic cache, refresh and negative-cache configuration.
+- `source/`: source interfaces implemented by callers.
+- `cache.go`: cache interface.
 - `cache/`: positive cache implementations.
-- `negative.go`: negative cache store.
-- `revalidate.go`: background stale revalidation.
+- `negative.go`: negative cache wrapper.
+- `revalidate.go`: background refresh coordination.
