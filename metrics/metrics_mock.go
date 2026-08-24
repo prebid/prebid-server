@@ -140,8 +140,8 @@ func (me *MetricsEngineMock) RecordFetcherResult(subsystem string, result Fetche
 	me.Called(subsystem, result)
 }
 
-func (me *MetricsEngineMock) RecordFetcherBackendFetch(subsystem string, result FetcherBackendResult, length time.Duration) {
-	me.Called(subsystem, result, length)
+func (me *MetricsEngineMock) RecordFetcherBackendFetch(subsystem string, operation FetcherOperation, result FetcherBackendResult, length time.Duration) {
+	me.Called(subsystem, operation, result, length)
 }
 
 // RecordPrebidCacheRequestTime mock

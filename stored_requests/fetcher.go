@@ -3,7 +3,6 @@ package stored_requests
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/prebid/prebid-server/v4/metrics"
@@ -30,15 +29,6 @@ type Fetcher interface {
 type AccountFetcher interface {
 	// FetchAccount fetches the host account configuration for a publisher
 	FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (json.RawMessage, []error)
-}
-
-// AllAccountsFetcher is an optional capability a fetcher may implement to return
-// every account in a single call, enabling bulk cache preloading. Sources that
-// cannot enumerate all accounts (e.g. a by-id HTTP endpoint) do not implement it,
-// or return an error indicating the capability is unavailable. The returned bytes
-// are raw account JSON (not defaults-merged); callers merge defaults as needed.
-type AllAccountsFetcher interface {
-	FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error)
 }
 
 type CategoryFetcher interface {
@@ -240,14 +230,6 @@ func (f *fetcherWithCache) FetchCategories(ctx context.Context, primaryAdServer,
 	return "", nil
 }
 
-// FetchAllAccounts delegates to the wrapped fetcher when it supports bulk account
-// enumeration; otherwise it reports the capability as unavailable.
-func (f *fetcherWithCache) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
-	if bulk, ok := f.fetcher.(AllAccountsFetcher); ok {
-		return bulk.FetchAllAccounts(ctx)
-	}
-	return nil, []error{errors.New("stored_requests: underlying account fetcher does not support bulk loading")}
-}
 func findLeftovers(ids []string, data map[string]json.RawMessage) (leftovers []string) {
 	leftovers = make([]string, 0, len(ids)-len(data))
 	for _, id := range ids {

@@ -104,9 +104,12 @@ type FetcherConfig struct {
 	// backend). For refresh modes "ttl" and "preload", this behavior is enabled by
 	// default to match the mode contract.
 	ServeStale bool `mapstructure:"serve_stale"`
-	// RevalidateTimeoutSeconds is the maximum time allowed for background stale
-	// revalidation before the attempt is failed and retried after backoff.
-	RevalidateTimeoutSeconds int `mapstructure:"revalidate_timeout_seconds"`
+	// BackgroundRefreshTimeoutSeconds is the maximum time allowed for one
+	// background refresh attempt before it is cancelled.
+	BackgroundRefreshTimeoutSeconds int `mapstructure:"background_refresh_timeout_seconds"`
+	// BackgroundRefreshBackoffSeconds is how long a key waits after a failed
+	// background refresh before another is attempted.
+	BackgroundRefreshBackoffSeconds int `mapstructure:"background_refresh_backoff_seconds"`
 	// Negative configures the optional negative (definitive-verdict) cache.
 	Negative NegativeCacheConfig `mapstructure:"negative"`
 }
@@ -128,18 +131,26 @@ func (c FetcherConfig) TTL() time.Duration {
 	return time.Duration(c.TTLSeconds) * time.Second
 }
 
-// RevalidateTimeout returns the background revalidation timeout.
-func (c FetcherConfig) RevalidateTimeout() time.Duration {
-	return time.Duration(c.RevalidateTimeoutSeconds) * time.Second
+// BackgroundRefreshTimeout returns the timeout for one background refresh attempt.
+func (c FetcherConfig) BackgroundRefreshTimeout() time.Duration {
+	return time.Duration(c.BackgroundRefreshTimeoutSeconds) * time.Second
+}
+
+// BackgroundRefreshBackoff returns the failure backoff for background refresh.
+func (c FetcherConfig) BackgroundRefreshBackoff() time.Duration {
+	return time.Duration(c.BackgroundRefreshBackoffSeconds) * time.Second
 }
 
 // NegativeCacheConfig configures caching of definitive not-found verdicts.
 type NegativeCacheConfig struct {
 	// Enabled turns negative caching on. Opt-in; defaults to off.
 	Enabled bool `mapstructure:"enabled"`
-	// MaxEntries bounds the negative store, kept separate from the positive cache.
+	// Type selects the negative-cache retention policy: "lru" (bounded, the
+	// default) or "unbounded" (cache every verdict until invalidated).
+	Type string `mapstructure:"type"`
+	// MaxEntries bounds the negative store when Type is "lru".
 	MaxEntries int `mapstructure:"max_entries"`
-	// TTLSeconds is how long a not-found verdict is retained.
+	// TTLSeconds is how long a negative verdict is retained.
 	TTLSeconds int `mapstructure:"ttl_seconds"`
 }
 

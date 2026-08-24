@@ -3,96 +3,109 @@ package fetcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 	"golang.org/x/sync/singleflight"
 )
 
-// Params configures a Fetcher. Source, Transform and Cache are required.
+// Params configures a Fetcher. Source and Transform are required.
 type Params[K comparable, V any] struct {
-	Source            Source[K]
-	Transform         TransformFunc[K, V]
-	Cache             Cache[K, V]
-	TTL               time.Duration
-	Negatives         *NegativeStore[K] // nil disables negative caching
-	Coalesce          bool              // opt-in single-flight coalescing of concurrent misses (default off)
-	ServeStale        bool              // opt-in: past TTL, serve the stale value and revalidate in the background (default off = expire + synchronous reload)
-	RevalidateTimeout time.Duration     // maximum duration for a background stale revalidation; <= 0 uses a safe default
-	Preload           BulkSource[K]     // if set, the whole corpus is fetched once at Start to warm the cache
-	Time              timeutil.Time     // nil defaults to real time
-	Metrics           Recorder          // nil defaults to a no-op recorder
+	Source    fetchersource.Source[K]
+	Transform TransformFunc[K, V]
+	Config    Config
+	Time      timeutil.Time
+	Metrics   Recorder
 }
 
 // Fetcher is the generic read-through engine. Construct it with New.
 type Fetcher[K comparable, V any] struct {
-	source       Source[K]
-	transform    TransformFunc[K, V]
-	cache        Cache[K, V]
-	ttl          time.Duration
-	negatives    *NegativeStore[K]
-	coalesce     bool
-	serveStale   bool
-	preload      BulkSource[K]
-	time         timeutil.Time
-	metrics      Recorder
-	group        singleflight.Group
-	reval        *revalidator[K]
-	revalTimeout time.Duration
+	source              fetchersource.Source[K]
+	transform           TransformFunc[K, V]
+	cache               Cache[K, V]
+	negatives           *NegativeStore[K]
+	coalesceRequests    bool
+	refreshInBackground bool
+	preload             fetchersource.BulkSource[K]
+	time                timeutil.Time
+	metrics             Recorder
+	requestCoalescer    singleflight.Group
+	backgroundRefresh   *backgroundRefreshCoordinator[K]
+	refreshTimeout      time.Duration
 }
 
-const defaultRevalidateTimeout = 10 * time.Second
+const defaultBackgroundRefreshTimeout = 10 * time.Second
+const defaultBackgroundRefreshBackoff = 5 * time.Second
 
 // New builds a Fetcher from the given params.
-func New[K comparable, V any](p Params[K, V]) *Fetcher[K, V] {
+func New[K comparable, V any](p Params[K, V]) (*Fetcher[K, V], error) {
 	if p.Time == nil {
-		p.Time = &timeutil.RealTime{}
+		return nil, errors.New("time is required")
 	}
 	if p.Metrics == nil {
-		p.Metrics = noopRecorder{}
+		return nil, errors.New("metrics recorder is required")
 	}
-	if p.RevalidateTimeout <= 0 {
-		p.RevalidateTimeout = defaultRevalidateTimeout
+	cache, err := buildCache[K, V](effectiveCacheConfig(p.Config), p.Time)
+	if err != nil {
+		return nil, err
 	}
+	negatives, err := buildNegativeStore[K](p.Config.Negative, p.Time)
+	if err != nil {
+		return nil, err
+	}
+	refreshInBackground, preload, err := applyRefreshConfig(p.Config.Refresh, p.Source)
+	if err != nil {
+		return nil, err
+	}
+	if p.Config.Refresh.BackgroundRefreshTimeout <= 0 {
+		p.Config.Refresh.BackgroundRefreshTimeout = defaultBackgroundRefreshTimeout
+	}
+	if p.Config.Refresh.BackgroundRefreshBackoff <= 0 {
+		p.Config.Refresh.BackgroundRefreshBackoff = defaultBackgroundRefreshBackoff
+	}
+
 	return &Fetcher[K, V]{
-		source:       p.Source,
-		transform:    p.Transform,
-		cache:        p.Cache,
-		ttl:          p.TTL,
-		negatives:    p.Negatives,
-		coalesce:     p.Coalesce,
-		serveStale:   p.ServeStale,
-		preload:      p.Preload,
-		time:         p.Time,
-		metrics:      p.Metrics,
-		reval:        newRevalidator[K](p.Time, revalidateBackoff),
-		revalTimeout: p.RevalidateTimeout,
-	}
+		source:              p.Source,
+		transform:           p.Transform,
+		cache:               cache,
+		negatives:           negatives,
+		coalesceRequests:    p.Config.CoalesceRequests,
+		refreshInBackground: refreshInBackground,
+		preload:             preload,
+		time:                p.Time,
+		metrics:             p.Metrics,
+		backgroundRefresh:   newBackgroundRefreshCoordinator[K](p.Time, p.Config.Refresh.BackgroundRefreshBackoff),
+		refreshTimeout:      p.Config.Refresh.BackgroundRefreshTimeout,
+	}, nil
 }
 
-// Start warms the cache when a Preload source is configured: it fetches the whole
-// corpus once and seeds it. It is a no-op otherwise. Preload is best-effort — if the
-// bulk fetch fails, the cache is left cold and fills lazily via the read path.
-// Callers should invoke it once after construction.
-func (f *Fetcher[K, V]) Start(ctx context.Context) {
+// Start warms the cache when a Preload source is configured: it fetches the
+// whole corpus once and seeds it. It is a no-op otherwise. A preload fetch or
+// transform error is returned so startup can surface bad source data immediately.
+func (f *Fetcher[K, V]) Start(ctx context.Context) error {
 	if f.preload == nil {
-		return
+		return nil
 	}
 	start := f.time.Now()
 	raw, err := f.preload.FetchAll(ctx)
 	if err != nil {
-		f.metrics.BackendFetch("error", f.time.Now().Sub(start))
-		return
+		f.metrics.BackendFetch("start", "error", f.time.Now().Sub(start))
+		return err
 	}
-	f.metrics.BackendFetch("ok", f.time.Now().Sub(start))
+	f.metrics.BackendFetch("start", "ok", f.time.Now().Sub(start))
+	var errs []error
 	for key, bytes := range raw {
 		v, err := f.transform(key, bytes)
 		if err != nil {
-			continue // skip malformed entries; they surface on demand
+			errs = append(errs, fmt.Errorf("preload transform failed for key %v: %w", key, err))
+			continue
 		}
 		f.cache.Save(key, v)
 	}
+	return errors.Join(errs...)
 }
 
 // Close is a no-op; background revalidations are fire-and-forget goroutines.
@@ -105,13 +118,13 @@ func (f *Fetcher[K, V]) Close() {}
 // disabled (default), a stale entry is treated as expired and reloaded
 // synchronously. On a miss it fetches from the source; when coalescing is enabled,
 // concurrent callers for the same key collapse into a single upstream fetch. It
-// returns ErrNotFound when the key does not exist, and re-serves a cached verdict
-// error (not-found or malformed) when negative caching is enabled.
+// returns a NotFoundError when the key does not exist, and re-serves a cached
+// verdict error (not-found or malformed) when negative caching is enabled.
 func (f *Fetcher[K, V]) Get(ctx context.Context, key K) (V, error) {
 	var zero V
 
 	if v, ok, stale := f.cache.Get(key); ok {
-		if !stale || f.serveStale {
+		if !stale || f.refreshInBackground {
 			f.metrics.CacheHit()
 			if stale {
 				f.triggerRevalidate(key)
@@ -135,11 +148,11 @@ func (f *Fetcher[K, V]) Get(ctx context.Context, key K) (V, error) {
 // fetch loads the key from the source, applying single-flight coalescing when it is
 // enabled so concurrent callers collapse into one upstream call.
 func (f *Fetcher[K, V]) fetch(ctx context.Context, key K) (V, error) {
-	if !f.coalesce {
+	if !f.coalesceRequests {
 		return f.load(ctx, key)
 	}
 	var zero V
-	res, err, _ := f.group.Do(fmt.Sprint(key), func() (interface{}, error) {
+	res, err, _ := f.requestCoalescer.Do(fmt.Sprint(key), func() (interface{}, error) {
 		// Another goroutine may have filled the cache (fresh) while we waited.
 		if v, ok, stale := f.cache.Get(key); ok && !stale {
 			return v, nil
@@ -159,22 +172,22 @@ func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 	var zero V
 
 	start := f.time.Now()
-	found, err := f.source.Fetch(ctx, []K{key})
+	raw, found, err := f.source.Fetch(ctx, key)
 	dur := f.time.Now().Sub(start)
 
 	if err != nil {
 		// Systemic/transient failure: never cache, never negative-cache.
-		f.metrics.BackendFetch("error", dur)
+		f.metrics.BackendFetch("get", "error", dur)
 		return zero, err
 	}
-	raw, ok := found[key]
-	if !ok {
+	if !found {
 		// Definitive per-key not-found.
-		f.metrics.BackendFetch("notfound", dur)
+		err := NotFoundError{Key: key}
+		f.metrics.BackendFetch("get", "notfound", dur)
 		if f.negatives != nil {
-			f.negatives.mark(key, ErrNotFound)
+			f.negatives.mark(key, err)
 		}
-		return zero, ErrNotFound
+		return zero, err
 	}
 
 	v, err := f.transform(key, raw)
@@ -182,7 +195,7 @@ func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 		// Malformed value: a permanent verdict. Surface the error and, when negative
 		// caching is on, remember it (error-preserving) so we re-serve the same
 		// malformed error without re-hitting the backend for a short window.
-		f.metrics.BackendFetch("error", dur)
+		f.metrics.BackendFetch("get", "error", dur)
 		if f.negatives != nil {
 			f.negatives.mark(key, err)
 		}
@@ -190,6 +203,6 @@ func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 	}
 
 	f.cache.Save(key, v)
-	f.metrics.BackendFetch("ok", dur)
+	f.metrics.BackendFetch("get", "ok", dur)
 	return v, nil
 }

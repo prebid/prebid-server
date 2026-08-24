@@ -1,60 +1,39 @@
 package fetcher
 
-import (
-	"errors"
-	"time"
+import "errors"
 
-	lru "github.com/hashicorp/golang-lru/v2"
-	"github.com/prebid/prebid-server/v4/util/timeutil"
-)
-
-// negativeEntry is a cached definitive verdict: the error to re-serve and its
-// expiry. The error is preserved (rather than collapsed to a generic marker) so
-// callers see the real verdict — e.g. ErrNotFound vs a malformed-value error.
-type negativeEntry struct {
-	err     error
-	expires time.Time
-}
-
-// NegativeStore is a small, bounded store of definitive verdicts (not-found or
-// permanent malformed). It is kept separate from the positive cache with its own
-// capacity and short TTL so an unknown-key flood can never evict real data. Only
-// permanent verdicts belong here; transient failures are never stored. Safe for
-// concurrent use.
+// NegativeStore wraps a cache of definitive verdicts (not-found or permanent
+// malformed). It is kept separate from the positive cache so an unknown-key
+// flood can never evict real data. Only permanent verdicts belong here;
+// transient failures are never stored. Safe for concurrent use when the wrapped
+// cache is safe for concurrent use.
 type NegativeStore[K comparable] struct {
-	lru  *lru.Cache[K, negativeEntry]
-	ttl  time.Duration
-	time timeutil.Time
+	cache Cache[K, error]
 }
 
-// NewNegativeStore builds a negative store holding up to maxEntries verdicts, each
-// retained for ttl.
-func NewNegativeStore[K comparable](maxEntries int, ttl time.Duration, t timeutil.Time) (*NegativeStore[K], error) {
-	if t == nil {
-		return nil, errors.New("time is required")
+// NewNegativeStore builds a negative store around the supplied cache.
+func NewNegativeStore[K comparable](cache Cache[K, error]) (*NegativeStore[K], error) {
+	if cache == nil {
+		return nil, errors.New("negative cache is required")
 	}
-	lruCache, err := lru.New[K, negativeEntry](maxEntries)
-	if err != nil {
-		return nil, err
-	}
-	return &NegativeStore[K]{lru: lruCache, ttl: ttl, time: t}, nil
+	return &NegativeStore[K]{cache: cache}, nil
 }
 
 // isCached reports whether key has a live negative verdict, returning the verdict
-// error to re-serve (e.g. ErrNotFound or a malformed-value error).
+// error to re-serve (e.g. NotFoundError with key or a malformed-value error).
 func (n *NegativeStore[K]) isCached(key K) (error, bool) {
-	e, ok := n.lru.Get(key)
+	err, ok, stale := n.cache.Get(key)
 	if !ok {
 		return nil, false
 	}
-	if n.time.Now().After(e.expires) {
-		n.lru.Remove(key)
+	if stale {
+		n.cache.Invalidate(key)
 		return nil, false
 	}
-	return e.err, true
+	return err, true
 }
 
-// mark records a definitive verdict error for key, retained for the store TTL.
+// mark records a definitive verdict error for key.
 func (n *NegativeStore[K]) mark(key K, err error) {
-	n.lru.Add(key, negativeEntry{err: err, expires: n.time.Now().Add(n.ttl)})
+	n.cache.Save(key, err)
 }

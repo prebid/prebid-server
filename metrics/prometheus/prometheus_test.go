@@ -1232,8 +1232,8 @@ func TestFetcherMetrics(t *testing.T) {
 	m.RecordFetcherResult("account", metrics.FetcherResultMiss)
 	m.RecordFetcherResult("account", metrics.FetcherResultNegative)
 
-	m.RecordFetcherBackendFetch("account", metrics.FetcherBackendOK, time.Millisecond)
-	m.RecordFetcherBackendFetch("account", metrics.FetcherBackendNotFound, time.Millisecond)
+	m.RecordFetcherBackendFetch("account", metrics.FetcherOperationGet, metrics.FetcherBackendOK, time.Millisecond)
+	m.RecordFetcherBackendFetch("account", metrics.FetcherOperationStart, metrics.FetcherBackendNotFound, time.Millisecond)
 
 	assertCounterVecValue(t, "", "fetcherResult:hit", m.FetcherResult, 2,
 		prometheus.Labels{
@@ -1253,11 +1253,13 @@ func TestFetcherMetrics(t *testing.T) {
 	assertCounterVecValue(t, "", "fetcherBackendFetch:ok", m.fetcherBackendFetch, 1,
 		prometheus.Labels{
 			subsystemLabel:     "account",
+			operationLabel:     string(metrics.FetcherOperationGet),
 			FetcherResultLabel: string(metrics.FetcherBackendOK),
 		})
 	assertCounterVecValue(t, "", "fetcherBackendFetch:notfound", m.fetcherBackendFetch, 1,
 		prometheus.Labels{
 			subsystemLabel:     "account",
+			operationLabel:     string(metrics.FetcherOperationStart),
 			FetcherResultLabel: string(metrics.FetcherBackendNotFound),
 		})
 }

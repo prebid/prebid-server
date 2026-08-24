@@ -141,8 +141,9 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, provider)
 	var fetcher5 stored_requests.AllFetcher
 	var shutdown5 func()
+	var accountSource account.Source
 	if cfg.Accounts.V2Enabled {
-		fetcher5, shutdown5 = createRawStoredRequests(&cfg.Accounts, client, provider)
+		accountSource, shutdown5 = createAccountSource(&cfg.Accounts, client, provider)
 	} else {
 		fetcher5, shutdown5 = CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, provider)
 	}
@@ -152,14 +153,15 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	ampFetcher = fetcher2.(stored_requests.Fetcher)
 	categoriesFetcher = fetcher3.(stored_requests.CategoryFetcher)
 	videoFetcher = fetcher4.(stored_requests.Fetcher)
-	accountsFetcher = fetcher5.(stored_requests.AccountFetcher)
+	if !cfg.Accounts.V2Enabled {
+		accountsFetcher = fetcher5.(stored_requests.AccountFetcher)
+	}
 	storedRespFetcher = fetcher6.(stored_requests.Fetcher)
 
-	// Fetchers 2.0: when enabled, wrap the raw account source with the typed
-	// account fetcher. With v2_enabled=false the legacy byte-cache path is used
-	// unchanged.
+	// Fetchers 2.0: when enabled, use the new typed account source/fetcher path.
+	// With v2_enabled=false the legacy byte-cache path is used unchanged.
 	if cfg.Accounts.V2Enabled {
-		v2Accounts, err := account.NewFetcherAccountFetcher(fetcher5, cfg.Accounts.CacheV2, cfg.AccountDefaultsJSON(), &timeutil.RealTime{}, metricsEngine)
+		v2Accounts, err := account.NewFetcherAccountFetcher(accountSource, cfg.Accounts.CacheV2, cfg.AccountDefaultsJSON(), &timeutil.RealTime{}, metricsEngine)
 		if err != nil {
 			logger.Fatalf("Failed to initialize Fetchers 2.0 account fetcher: %v", err)
 		}
@@ -175,6 +177,20 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 		shutdown6()
 	}
 
+	return
+}
+
+func createAccountSource(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider) (source account.Source, shutdown func()) {
+	provider = prepareStoredRequestsProvider(cfg, provider)
+	source = newAccountSource(cfg, client)
+	shutdown = func() {
+		if provider == nil {
+			return
+		}
+		if err := provider.Close(); err != nil {
+			logger.Errorf("Error closing DB connection: %v", err)
+		}
+	}
 	return
 }
 
@@ -203,9 +219,7 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 	}
 	if cfg.Database.FetcherQueries.QueryTemplate != "" {
 		logger.Infof("Loading Stored %s data via Database.\nQuery: %s", cfg.DataType(), cfg.Database.FetcherQueries.QueryTemplate)
-		idList = append(idList, db_fetcher.NewFetcherWithAccountsQuery(provider,
-			cfg.Database.FetcherQueries.QueryTemplate, cfg.Database.FetcherQueries.QueryTemplate,
-			cfg.Database.CacheInitialization.Query))
+		idList = append(idList, db_fetcher.NewFetcher(provider, cfg.Database.FetcherQueries.QueryTemplate, cfg.Database.FetcherQueries.QueryTemplate))
 	} else if cfg.Database.CacheInitialization.Query != "" && cfg.Database.PollUpdates.Query != "" {
 		//in this case data will be loaded to cache via poll for updates event
 		idList = append(idList, empty_fetcher.EmptyFetcher{})
@@ -217,6 +231,36 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 
 	fetcher = consolidate(cfg.DataType(), idList)
 	return
+}
+
+func newAccountSource(cfg *config.StoredRequests, client *http.Client) account.Source {
+	var source account.Source
+	if cfg.Files.Enabled {
+		logger.Infof("Loading Fetchers 2.0 Account data from filesystem at path %s", cfg.Files.Path)
+		fileSource, err := account.NewFileSource(cfg.Files.Path)
+		if err != nil {
+			logger.Fatalf("Failed to create a Fetchers 2.0 Account FileSource: %v", err)
+		}
+		source = fileSource
+	}
+	if cfg.Database.ConnectionInfo.Database != "" {
+		logger.Fatalf("Fetchers 2.0 account database source is not supported. Use accounts.filesystem or accounts.http.")
+	}
+	if cfg.HTTP.Endpoint != "" {
+		if source != nil {
+			logger.Fatalf("Fetchers 2.0 account source supports exactly one backend. Configure either accounts.filesystem or accounts.http, not both.")
+		}
+		httpSource, err := account.NewHTTPSource(client, cfg.HTTP.Endpoint, cfg.HTTP.UseRfcCompliantBuilder)
+		if err != nil {
+			logger.Fatalf("Failed to create a Fetchers 2.0 Account HTTPSource: %v", err)
+		}
+		source = httpSource
+	}
+	if source == nil {
+		logger.Warnf("No Stored %s support configured. If you need this, check your app config", cfg.DataType())
+		return account.EmptySource{}
+	}
+	return source
 }
 
 func newCache(cfg *config.StoredRequests) stored_requests.Cache {

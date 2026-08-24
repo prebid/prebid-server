@@ -7,12 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	jsonpatch "gopkg.in/evanphx/json-patch.v5"
-
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/fetcher"
-	fetchercache "github.com/prebid/prebid-server/v4/fetcher/cache"
 	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
@@ -23,11 +20,8 @@ import (
 const fetcherSubsystem = "account"
 
 // FetcherAccountFetcher is the Fetchers 2.0 account fetcher. It embeds the
-// underlying source fetcher (file / db / http / multi) so it continues to satisfy
-// stored_requests.AllFetcher, and adds Fetch which serves fully-derived,
-// immutable *config.Account values from a fetcher engine.
+// typed fetcher engine and serves fully-derived, immutable *config.Account values.
 type FetcherAccountFetcher struct {
-	stored_requests.AllFetcher
 	engine *fetcher.Fetcher[string, *config.Account]
 }
 
@@ -43,90 +37,89 @@ func (f *FetcherAccountFetcher) Fetch(ctx context.Context, accountID string) (*c
 	return account, nil
 }
 
-// NewFetcherAccountFetcher wires a fetcher engine in front of an existing account
-// source. The sources emit raw, unmerged account rows and the shared transform applies
-// the account defaults once (at cache insert); this fetcher adds the typed cache,
-// single-flight coalescing and optional negative caching. metricsEngine may be nil
-// (metrics are not recorded).
-func NewFetcherAccountFetcher(source stored_requests.AllFetcher, cfg config.FetcherConfig, defaults json.RawMessage, t timeutil.Time, metricsEngine metrics.MetricsEngine) (*FetcherAccountFetcher, error) {
+// FetchAccount keeps FetcherAccountFetcher compatible with the current account
+// lookup wiring. GetAccount uses Fetch first, so this method is only a bridge for
+// call sites still typed as stored_requests.AccountFetcher.
+func (f *FetcherAccountFetcher) FetchAccount(ctx context.Context, _ json.RawMessage, accountID string) (json.RawMessage, []error) {
+	account, errs := f.Fetch(ctx, accountID)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+	raw, err := json.Marshal(account)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return raw, nil
+}
+
+// NewFetcherAccountFetcher wires the generic fetcher engine to a Fetchers 2.0
+// account source. The source emits raw, unmerged account rows and the shared
+// transform applies account defaults once at cache insert; this fetcher adds the
+// typed cache, request coalescing and optional negative caching. metricsEngine
+// may be nil (metrics are not recorded).
+func NewFetcherAccountFetcher(source Source, cfg config.FetcherConfig, defaults json.RawMessage, t timeutil.Time, metricsEngine metrics.MetricsEngine) (*FetcherAccountFetcher, error) {
 	if t == nil {
 		t = &timeutil.RealTime{}
 	}
-	var cache fetcher.Cache[string, *config.Account]
-	switch cfg.Type {
-	case "none":
-		cache = fetchercache.NilCache[string, *config.Account]{}
-	case "unbounded":
-		unbounded, err := fetchercache.NewUnboundedCache[string, *config.Account](cfg.TTL(), t)
-		if err != nil {
-			return nil, err
-		}
-		cache = unbounded
-	case "", "lru":
-		lru, err := fetchercache.NewLRUCache[string, *config.Account](cfg.MaxEntries, cfg.TTL(), t)
-		if err != nil {
-			return nil, err
-		}
-		cache = lru
-	default:
-		return nil, fmt.Errorf("accounts.cache.type %q is not supported (expected none, unbounded or lru)", cfg.Type)
-	}
 
-	var negatives *fetcher.NegativeStore[string]
-	if cfg.Negative.Enabled {
-		n, err := fetcher.NewNegativeStore[string](cfg.Negative.MaxEntries, cfg.Negative.TTL(), t)
-		if err != nil {
-			return nil, fmt.Errorf("accounts.cache.negative: %w", err)
-		}
-		negatives = n
-	}
-
-	var recorder fetcher.Recorder
+	var recorder fetcher.Recorder = fetcher.NoopRecorder{}
 	if metricsEngine != nil {
 		recorder = metricsRecorder{engine: metricsEngine, subsystem: fetcherSubsystem}
 	}
 
-	// Freshness (refresh) axis: ttl (serve-stale + background revalidation), none
-	// (never revalidate / load-once), or preload (bulk warm at startup then ttl).
-	effectiveTTL := cfg.TTL()
-	serveStale := cfg.ServeStale
-	var preload fetcher.BulkSource[string]
-	switch cfg.Refresh {
-	case "", config.RefreshTTL:
-		serveStale = true
-	case config.RefreshNone:
-		effectiveTTL = 0 // never revalidate
-	case config.RefreshPreload:
-		serveStale = true
-		bulk, ok := source.(stored_requests.AllAccountsFetcher)
-		if !ok {
-			return nil, fmt.Errorf("accounts.cache.refresh %q requires an account source that supports bulk loading (FetchAllAccounts)", cfg.Refresh)
-		}
-		preload = accountBulkSource{fetcher: bulk}
-	// NOTE: "delta-poll" (event-driven Save/Invalidation, mirroring v1's http_events /
-	// cache-events producers) is intentionally not implemented: no known deployment
-	// pushes live account updates, so it would be untested, unused code. It can be added
-	// later as a background mechanism without touching Source/Transform/Cache.
-	default:
-		return nil, fmt.Errorf("accounts.cache.refresh %q is not supported (expected ttl, none or preload)", cfg.Refresh)
+	engine, err := fetcher.New(fetcher.Params[string, *config.Account]{
+		Source:    newAccountFetcherSource(source),
+		Transform: newAccountTransform(defaults),
+		Config:    newFetcherConfig(cfg),
+		Time:      t,
+		Metrics:   recorder,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("accounts.cache: %w", err)
+	}
+	if err := engine.Start(context.Background()); err != nil {
+		return nil, fmt.Errorf("accounts.cache.preload: %w", err)
 	}
 
-	engine := fetcher.New(fetcher.Params[string, *config.Account]{
-		Source:            accountSource{fetcher: source},
-		Transform:         newAccountTransform(defaults),
-		Cache:             cache,
-		TTL:               effectiveTTL,
-		Negatives:         negatives,
-		Coalesce:          cfg.CoalesceRequests,
-		ServeStale:        serveStale,
-		RevalidateTimeout: cfg.RevalidateTimeout(),
-		Preload:           preload,
-		Time:              t,
-		Metrics:           recorder,
-	})
-	engine.Start(context.Background())
+	return &FetcherAccountFetcher{engine: engine}, nil
+}
 
-	return &FetcherAccountFetcher{AllFetcher: source, engine: engine}, nil
+func newAccountFetcherSource(source Source) fetcherSource {
+	if bulk, ok := source.(BulkSource); ok {
+		return accountBulkSource{source: bulk}
+	}
+	return accountSource{source: source}
+}
+
+type fetcherSource interface {
+	Fetch(ctx context.Context, key string) (json.RawMessage, bool, error)
+}
+
+func newFetcherConfig(cfg config.FetcherConfig) fetcher.Config {
+	refreshMode := string(cfg.Refresh)
+	if refreshMode == "" {
+		refreshMode = string(config.RefreshTTL)
+	}
+	return fetcher.Config{
+		Cache: fetcher.CacheConfig{
+			Type:       cfg.Type,
+			MaxEntries: cfg.MaxEntries,
+			TTL:        cfg.TTL(),
+		},
+		Refresh: fetcher.RefreshConfig{
+			Mode:                     refreshMode,
+			ServeStale:               cfg.ServeStale,
+			BackgroundRefreshTimeout: cfg.BackgroundRefreshTimeout(),
+			BackgroundRefreshBackoff: cfg.BackgroundRefreshBackoff(),
+		},
+		Negative: fetcher.NegativeConfig{
+			Enabled:    cfg.Negative.Enabled,
+			Type:       cfg.Negative.Type,
+			MaxEntries: cfg.Negative.MaxEntries,
+			TTL:        cfg.Negative.TTL(),
+		},
+		CoalesceRequests: cfg.CoalesceRequests,
+	}
 }
 
 // metricsRecorder adapts a metrics.MetricsEngine to the fetcher.Recorder interface,
@@ -146,7 +139,16 @@ func (r metricsRecorder) CacheNegative() {
 	r.engine.RecordFetcherResult(r.subsystem, metrics.FetcherResultNegative)
 }
 
-func (r metricsRecorder) BackendFetch(result string, d time.Duration) {
+func (r metricsRecorder) BackendFetch(operation string, result string, d time.Duration) {
+	var mappedOperation metrics.FetcherOperation
+	switch operation {
+	case "start":
+		mappedOperation = metrics.FetcherOperationStart
+	case "background_refresh":
+		mappedOperation = metrics.FetcherOperationBackgroundRefresh
+	default:
+		mappedOperation = metrics.FetcherOperationGet
+	}
 	var mapped metrics.FetcherBackendResult
 	switch result {
 	case "ok":
@@ -156,79 +158,59 @@ func (r metricsRecorder) BackendFetch(result string, d time.Duration) {
 	default:
 		mapped = metrics.FetcherBackendError
 	}
-	r.engine.RecordFetcherBackendFetch(r.subsystem, mapped, d)
+	r.engine.RecordFetcherBackendFetch(r.subsystem, mappedOperation, mapped, d)
 }
 
-// accountSource adapts an existing stored_requests account fetcher into a
-// fetcher.Source. It requests the raw, unmerged account row (defaults are applied
-// once, downstream, by the shared transform) and reuses the backend's not-found
-// classification: a NotFoundError becomes an absent map key (fetcher's "not found"
-// convention); any other error is a systemic failure and is not cached.
+// accountSource is the account-specific raw source stage used by the generic
+// fetcher engine. A source-level not-found becomes found=false; systemic errors
+// are returned so they are not cached as definitive misses.
 type accountSource struct {
-	fetcher stored_requests.AccountFetcher
+	source Source
 }
 
-func (s accountSource) Fetch(ctx context.Context, keys []string) (map[string]json.RawMessage, error) {
-	out := make(map[string]json.RawMessage, len(keys))
-	for _, id := range keys {
-		// nil defaults => the backend returns the raw row without merging. The shared
-		// transform applies defaults, so the single-key and bulk paths merge in one place.
-		raw, errs := s.fetcher.FetchAccount(ctx, nil, id)
-		if len(errs) > 0 {
-			if isNotFoundErr(errs) {
-				continue // absent key => definitive not-found for this id
-			}
-			return nil, errors.Join(errs...)
+func (s accountSource) Fetch(ctx context.Context, key string) (json.RawMessage, bool, error) {
+	raw, err := s.source.Fetch(ctx, key)
+	if err != nil {
+		if errors.Is(err, errAccountNotFound) {
+			return nil, false, nil
 		}
-		out[id] = raw
+		return nil, false, err
 	}
-	return out, nil
+	return raw, true, nil
 }
 
-func isNotFoundErr(errs []error) bool {
-	for _, e := range errs {
-		if _, ok := e.(stored_requests.NotFoundError); ok {
-			return true
-		}
-	}
-	return false
-}
-
-// accountBulkSource adapts a stored_requests.AllAccountsFetcher into a fetcher.BulkSource.
+// accountBulkSource adapts an account BulkSource into a fetcher.BulkSource.
 // It returns the raw, unmerged account rows as-is; the shared transform applies defaults
 // downstream, so this path and the single-key path merge in exactly one place.
 type accountBulkSource struct {
-	fetcher stored_requests.AllAccountsFetcher
+	source BulkSource
+}
+
+func (s accountBulkSource) Fetch(ctx context.Context, key string) (json.RawMessage, bool, error) {
+	return accountSource{source: s.source}.Fetch(ctx, key)
 }
 
 func (s accountBulkSource) FetchAll(ctx context.Context) (map[string]json.RawMessage, error) {
-	data, errs := s.fetcher.FetchAllAccounts(ctx)
-	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
-	}
-	return data, nil
+	return s.source.FetchAll(ctx)
 }
 
-// newAccountTransform returns the single normalization step for accounts. It merges the
-// account defaults into the raw row, then unmarshals, unpacks DSA defaults, fills the ID,
-// and computes the derived + IP-masking config. It runs once per id at cache insert, so
-// the per-request read path does no merge, unmarshal, DSA unpack, derive or IP masking.
-// Both the single-key and bulk sources feed it raw, unmerged rows, so the defaults-merge
-// lives here in exactly one place.
+// newAccountTransform returns the single normalization step for accounts. It
+// unmarshals account defaults, overlays the raw row, unpacks DSA defaults, fills
+// the ID, and computes the derived + IP-masking config. It runs once per id at
+// cache insert, so the per-request read path does no unmarshal, derive or IP
+// masking. Both the single-key and bulk sources feed it raw, unmerged rows, so
+// defaults are applied here in exactly one place.
 func newAccountTransform(defaults json.RawMessage) fetcher.TransformFunc[string, *config.Account] {
 	return func(accountID string, raw json.RawMessage) (*config.Account, error) {
-		merged := raw
+		account := &config.Account{}
 		if defaults != nil {
-			m, err := jsonpatch.MergePatch(defaults, raw)
-			if err != nil {
+			if err := jsonutil.MergeClone(account, defaults); err != nil {
 				return nil, &errortypes.MalformedAcct{
 					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 				}
 			}
-			merged = m
 		}
-		account := &config.Account{}
-		if err := jsonutil.UnmarshalValid(merged, account); err != nil {
+		if err := jsonutil.MergeClone(account, raw); err != nil {
 			return nil, &errortypes.MalformedAcct{
 				Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
 			}

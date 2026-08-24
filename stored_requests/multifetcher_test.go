@@ -177,8 +177,6 @@ func TestMultiFetcherAccountNotFound(t *testing.T) {
 	assert.EqualError(t, errs[0], NotFoundError{"MISSING", "Account"}.Error())
 }
 
-// noAccountsFetcher implements AllFetcher but not AllAccountsFetcher, so MultiFetcher
-// should skip it during bulk enumeration.
 type noAccountsFetcher struct{}
 
 func (noAccountsFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
@@ -192,46 +190,4 @@ func (noAccountsFetcher) FetchAccount(ctx context.Context, def json.RawMessage, 
 }
 func (noAccountsFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
-}
-
-// bulkAccountsFetcher additionally supports bulk account enumeration.
-type bulkAccountsFetcher struct {
-	noAccountsFetcher
-	accounts map[string]json.RawMessage
-	errs     []error
-}
-
-func (b bulkAccountsFetcher) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
-	return b.accounts, b.errs
-}
-
-func TestMultiFetcherFetchAllAccounts(t *testing.T) {
-	first := bulkAccountsFetcher{accounts: map[string]json.RawMessage{
-		"a": json.RawMessage(`{"src":"first"}`),
-		"b": json.RawMessage(`{"src":"first"}`),
-	}}
-	second := bulkAccountsFetcher{accounts: map[string]json.RawMessage{
-		"b": json.RawMessage(`{"src":"second"}`), // conflicts with first; first wins
-		"c": json.RawMessage(`{"src":"second"}`),
-	}}
-	fetcher := &MultiFetcher{first, noAccountsFetcher{}, second}
-
-	accounts, errs := fetcher.FetchAllAccounts(context.Background())
-
-	assert.Empty(t, errs)
-	assert.Len(t, accounts, 3, "should merge accounts from all bulk-capable fetchers")
-	assert.JSONEq(t, `{"src":"first"}`, string(accounts["a"]))
-	assert.JSONEq(t, `{"src":"first"}`, string(accounts["b"]), "earlier fetcher wins on ID conflict")
-	assert.JSONEq(t, `{"src":"second"}`, string(accounts["c"]))
-}
-
-func TestMultiFetcherFetchAllAccountsPropagatesErrors(t *testing.T) {
-	failing := bulkAccountsFetcher{errs: []error{errors.New("db down")}}
-	ok := bulkAccountsFetcher{accounts: map[string]json.RawMessage{"a": json.RawMessage(`{}`)}}
-	fetcher := &MultiFetcher{failing, ok}
-
-	accounts, errs := fetcher.FetchAllAccounts(context.Background())
-
-	assert.Len(t, errs, 1, "a failing fetcher's error should be surfaced")
-	assert.Contains(t, accounts, "a", "healthy fetchers still contribute their accounts")
 }

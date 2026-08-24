@@ -373,6 +373,18 @@ const (
 	FetcherBackendError FetcherBackendResult = "error"
 )
 
+// FetcherOperation is the fetcher operation that caused an upstream source call.
+type FetcherOperation string
+
+const (
+	// FetcherOperationGet is an on-demand read for one key.
+	FetcherOperationGet FetcherOperation = "get"
+	// FetcherOperationStart is the startup preload operation.
+	FetcherOperationStart FetcherOperation = "start"
+	// FetcherOperationBackgroundRefresh is an async refresh of a stale key.
+	FetcherOperationBackgroundRefresh FetcherOperation = "background_refresh"
+)
+
 // FetcherBackendResults returns the possible fetcher backend fetch outcomes.
 func FetcherBackendResults() []FetcherBackendResult {
 	return []FetcherBackendResult{
@@ -531,7 +543,7 @@ type MetricsEngine interface {
 	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
 	RecordStoredDataError(labels StoredDataLabels)
 	RecordFetcherResult(subsystem string, result FetcherResult)
-	RecordFetcherBackendFetch(subsystem string, result FetcherBackendResult, length time.Duration)
+	RecordFetcherBackendFetch(subsystem string, operation FetcherOperation, result FetcherBackendResult, length time.Duration)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)

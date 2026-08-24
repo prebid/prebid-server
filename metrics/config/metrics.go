@@ -246,9 +246,9 @@ func (me *MultiMetricsEngine) RecordFetcherResult(subsystem string, result metri
 }
 
 // RecordFetcherBackendFetch across all engines
-func (me *MultiMetricsEngine) RecordFetcherBackendFetch(subsystem string, result metrics.FetcherBackendResult, length time.Duration) {
+func (me *MultiMetricsEngine) RecordFetcherBackendFetch(subsystem string, operation metrics.FetcherOperation, result metrics.FetcherBackendResult, length time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordFetcherBackendFetch(subsystem, result, length)
+		thisME.RecordFetcherBackendFetch(subsystem, operation, result, length)
 	}
 }
 
@@ -525,7 +525,7 @@ func (me *NilMetricsEngine) RecordFetcherResult(subsystem string, result metrics
 }
 
 // RecordFetcherBackendFetch as a noop
-func (me *NilMetricsEngine) RecordFetcherBackendFetch(subsystem string, result metrics.FetcherBackendResult, length time.Duration) {
+func (me *NilMetricsEngine) RecordFetcherBackendFetch(subsystem string, operation metrics.FetcherOperation, result metrics.FetcherBackendResult, length time.Duration) {
 }
 
 // RecordPrebidCacheRequestTime as a noop

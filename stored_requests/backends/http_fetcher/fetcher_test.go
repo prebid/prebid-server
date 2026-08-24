@@ -144,15 +144,6 @@ func TestFetchAccountsRfcCompliant(t *testing.T) {
 	assertMapKeys(t, accData, "acc-1", "acc-2")
 }
 
-func TestFetchAllAccountsNoop(t *testing.T) {
-	fetcher, close := newTestAccountFetcher(t, nil, false)
-	defer close()
-
-	accounts, errs := fetcher.FetchAllAccounts(context.Background())
-	assert.Empty(t, errs, "HTTP fetcher bulk load should be a no-op, not an error")
-	assert.Empty(t, accounts, "HTTP fetcher contributes no accounts to bulk preload")
-}
-
 func TestFetchAccounts(t *testing.T) {
 	fetcher, close := newTestAccountFetcher(t, []string{"acc-1", "acc-2"}, false)
 	defer close()

@@ -70,32 +70,6 @@ func (mf MultiFetcher) FetchCategories(ctx context.Context, primaryAdServer, pub
 	return "", NotFoundError{errtype, "Category"}
 }
 
-// FetchAllAccounts merges the bulk account sets from every sub-fetcher that
-// supports enumeration. Earlier fetchers win on ID conflicts (first-wins,
-// mirroring FetchAccount). Sub-fetchers that do not support bulk loading are
-// skipped. If no sub-fetcher supports it, an empty map is returned.
-func (mf MultiFetcher) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
-	out := make(map[string]json.RawMessage)
-	var errs []error
-	for _, f := range mf {
-		bulk, ok := f.(AllAccountsFetcher)
-		if !ok {
-			continue
-		}
-		accounts, ferrs := bulk.FetchAllAccounts(ctx)
-		if len(ferrs) > 0 {
-			errs = append(errs, ferrs...)
-			continue
-		}
-		for id, raw := range accounts {
-			if _, exists := out[id]; !exists {
-				out[id] = raw
-			}
-		}
-	}
-	return out, errs
-}
-
 func addAll(base map[string]json.RawMessage, toAdd map[string]json.RawMessage) {
 	for k, v := range toAdd {
 		base[k] = v

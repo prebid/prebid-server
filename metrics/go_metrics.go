@@ -942,7 +942,7 @@ func (me *Metrics) RecordFetcherResult(subsystem string, result FetcherResult) {
 }
 
 // RecordFetcherBackendFetch is not tracked by the influx/go-metrics engine.
-func (me *Metrics) RecordFetcherBackendFetch(subsystem string, result FetcherBackendResult, length time.Duration) {
+func (me *Metrics) RecordFetcherBackendFetch(subsystem string, operation FetcherOperation, result FetcherBackendResult, length time.Duration) {
 }
 
 // RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the

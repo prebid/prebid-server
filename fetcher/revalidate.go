@@ -8,34 +8,32 @@ import (
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
-// revalidateBackoff is how long a key waits after a failed background revalidation
-// before another is attempted, so a struggling backend is not hammered.
-const revalidateBackoff = 5 * time.Second
-
-// revalState is a key's background-revalidation state: whether one is in flight
+// backgroundRefreshState is a key's background-refresh state: whether one is running
 // and, if the last one failed, when (so the next attempt can back off).
-type revalState struct {
+type backgroundRefreshState struct {
 	inFlight bool
 	failedAt time.Time
 }
 
-// revalidator serialises background revalidations per key — at most one in flight,
-// with a backoff after a failure. It owns its own lock so callers never touch it.
-type revalidator[K comparable] struct {
+// backgroundRefreshCoordinator coordinates background refreshes per key. For a given key, it
+// allows only one refresh goroutine to run at a time. If that refresh fails, the
+// same key waits for the configured backoff before another refresh can start.
+// It owns its own lock so callers never touch the state map directly.
+type backgroundRefreshCoordinator[K comparable] struct {
 	mu      sync.Mutex
-	state   map[K]revalState
+	state   map[K]backgroundRefreshState
 	backoff time.Duration
 	time    timeutil.Time
 }
 
-func newRevalidator[K comparable](t timeutil.Time, backoff time.Duration) *revalidator[K] {
-	return &revalidator[K]{state: make(map[K]revalState), backoff: backoff, time: t}
+func newBackgroundRefreshCoordinator[K comparable](t timeutil.Time, backoff time.Duration) *backgroundRefreshCoordinator[K] {
+	return &backgroundRefreshCoordinator[K]{state: make(map[K]backgroundRefreshState), backoff: backoff, time: t}
 }
 
-// begin reports whether the caller may start a revalidation for key now, and claims
-// the in-flight slot if so. It returns false when one is already running or the last
-// attempt failed within the backoff window.
-func (r *revalidator[K]) begin(key K) bool {
+// begin reports whether a background refresh may start for key now. It returns
+// true only if no refresh is already running for that key and the key is not
+// waiting after a recent failed refresh.
+func (r *backgroundRefreshCoordinator[K]) begin(key K) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	now := r.time.Now()
@@ -49,7 +47,7 @@ func (r *revalidator[K]) begin(key K) bool {
 	return true
 }
 
-func (r *revalidator[K]) pruneExpiredFailures(now time.Time) {
+func (r *backgroundRefreshCoordinator[K]) pruneExpiredFailures(now time.Time) {
 	for key, st := range r.state {
 		if !st.inFlight && !st.failedAt.IsZero() && !now.Before(st.failedAt.Add(r.backoff)) {
 			delete(r.state, key)
@@ -57,27 +55,28 @@ func (r *revalidator[K]) pruneExpiredFailures(now time.Time) {
 	}
 }
 
-// finish releases the in-flight slot; on failure it records the time (for backoff),
-// on success it forgets the key entirely.
-func (r *revalidator[K]) finish(key K, failed bool) {
+// finish records the result of a background refresh for key. On failure it keeps
+// the failure time so the key backs off before retrying; on success it removes
+// the key from the revalidation state.
+func (r *backgroundRefreshCoordinator[K]) finish(key K, failed bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if failed {
-		r.state[key] = revalState{failedAt: r.time.Now()}
+		r.state[key] = backgroundRefreshState{failedAt: r.time.Now()}
 	} else {
 		delete(r.state, key)
 	}
 }
 
-// triggerRevalidate starts one background revalidation for a stale key. It never
-// blocks the caller: the revalidator admits at most one per key at a time and backs
+// triggerRevalidate starts one background refresh for a stale key. It never
+// blocks the caller: the coordinator admits at most one per key at a time and backs
 // off after failures, so a struggling backend is not hammered and stale values keep
 // being served.
 func (f *Fetcher[K, V]) triggerRevalidate(key K) {
-	if !f.reval.begin(key) {
+	if !f.backgroundRefresh.begin(key) {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), f.revalTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), f.refreshTimeout)
 	go f.revalidate(ctx, cancel, key)
 }
 
@@ -88,33 +87,33 @@ func (f *Fetcher[K, V]) triggerRevalidate(key K) {
 func (f *Fetcher[K, V]) revalidate(ctx context.Context, cancel context.CancelFunc, key K) {
 	defer cancel()
 	start := f.time.Now()
-	found, err := f.source.Fetch(ctx, []K{key})
+	raw, found, err := f.source.Fetch(ctx, key)
 	dur := f.time.Now().Sub(start)
 
 	if err != nil {
-		f.metrics.BackendFetch("error", dur)
-		f.reval.finish(key, true)
+		f.metrics.BackendFetch("background_refresh", "error", dur)
+		f.backgroundRefresh.finish(key, true)
 		return
 	}
-	raw, ok := found[key]
-	if !ok {
+	if !found {
 		// Deleted upstream: drop it so the next read reflects the deletion.
-		f.metrics.BackendFetch("notfound", dur)
+		err := NotFoundError{Key: key}
+		f.metrics.BackendFetch("background_refresh", "notfound", dur)
 		f.cache.Invalidate(key)
 		if f.negatives != nil {
-			f.negatives.mark(key, ErrNotFound)
+			f.negatives.mark(key, err)
 		}
-		f.reval.finish(key, false)
+		f.backgroundRefresh.finish(key, false)
 		return
 	}
 	v, err := f.transform(key, raw)
 	if err != nil {
 		// Newly-malformed upstream value: keep serving the last good value.
-		f.metrics.BackendFetch("error", dur)
-		f.reval.finish(key, true)
+		f.metrics.BackendFetch("background_refresh", "error", dur)
+		f.backgroundRefresh.finish(key, true)
 		return
 	}
 	f.cache.Save(key, v)
-	f.metrics.BackendFetch("ok", dur)
-	f.reval.finish(key, false)
+	f.metrics.BackendFetch("background_refresh", "ok", dur)
+	f.backgroundRefresh.finish(key, false)
 }

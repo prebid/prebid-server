@@ -70,20 +70,6 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJS
 	return completeJSON, nil
 }
 
-// FetchAllAccounts returns every account held in memory, keyed by account ID. The
-// bytes are raw (not defaults-merged); callers merge account defaults as needed.
-func (fetcher *eagerFetcher) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
-	accountsDir, found := fetcher.FileSystem.Directories["accounts"]
-	if !found {
-		return map[string]json.RawMessage{}, nil
-	}
-	out := make(map[string]json.RawMessage, len(accountsDir.Files))
-	for id, raw := range accountsDir.Files {
-		out[id] = raw
-	}
-	return out, nil
-}
-
 func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	fileName := primaryAdServer
 

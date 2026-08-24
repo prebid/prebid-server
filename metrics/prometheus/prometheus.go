@@ -128,6 +128,7 @@ const (
 	isAudioLabel         = "audio"
 	isBannerLabel        = "banner"
 	isNativeLabel        = "native"
+	operationLabel       = "operation"
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
 	optOutLabel          = "opt_out"
@@ -283,13 +284,13 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics.fetcherBackendFetch = newCounter(cfg, reg,
 		"fetcher_backend_fetch",
-		"Count of Fetchers 2.0 backend fetches labeled by subsystem and result (ok, notfound, error).",
-		[]string{subsystemLabel, FetcherResultLabel})
+		"Count of Fetchers 2.0 backend fetches labeled by subsystem, operation and result (ok, notfound, error).",
+		[]string{subsystemLabel, operationLabel, FetcherResultLabel})
 
 	metrics.fetcherBackendFetchTimer = newHistogramVec(cfg, reg,
 		"fetcher_backend_fetch_duration_seconds",
-		"Seconds to fetch a value from a Fetchers 2.0 backend source, labeled by subsystem.",
-		[]string{subsystemLabel},
+		"Seconds to fetch a value from a Fetchers 2.0 backend source, labeled by subsystem and operation.",
+		[]string{subsystemLabel, operationLabel},
 		standardTimeBuckets)
 
 	metrics.storedAMPFetchTimer = newHistogramVec(cfg, reg,
@@ -995,13 +996,15 @@ func (m *Metrics) RecordFetcherResult(subsystem string, result metrics.FetcherRe
 	}).Inc()
 }
 
-func (m *Metrics) RecordFetcherBackendFetch(subsystem string, result metrics.FetcherBackendResult, length time.Duration) {
+func (m *Metrics) RecordFetcherBackendFetch(subsystem string, operation metrics.FetcherOperation, result metrics.FetcherBackendResult, length time.Duration) {
 	m.fetcherBackendFetch.With(prometheus.Labels{
 		subsystemLabel:     subsystem,
+		operationLabel:     string(operation),
 		FetcherResultLabel: string(result),
 	}).Inc()
 	m.fetcherBackendFetchTimer.With(prometheus.Labels{
 		subsystemLabel: subsystem,
+		operationLabel: string(operation),
 	}).Observe(length.Seconds())
 }
 

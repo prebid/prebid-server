@@ -1157,7 +1157,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("accounts.cache.refresh", "ttl")
 	v.SetDefault("accounts.cache.coalesce_requests", false)
 	v.SetDefault("accounts.cache.serve_stale", false)
+	v.SetDefault("accounts.cache.background_refresh_timeout_seconds", 10)
+	v.SetDefault("accounts.cache.background_refresh_backoff_seconds", 5)
 	v.SetDefault("accounts.cache.negative.enabled", false)
+	v.SetDefault("accounts.cache.negative.type", "lru")
 	v.SetDefault("accounts.cache.negative.max_entries", 10000)
 	v.SetDefault("accounts.cache.negative.ttl_seconds", 60)
 

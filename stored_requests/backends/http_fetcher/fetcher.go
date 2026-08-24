@@ -197,15 +197,6 @@ func (fetcher *HttpFetcher) FetchAccount(ctx context.Context, accountDefaultsJSO
 	return completeJSON, nil
 }
 
-// FetchAllAccounts is a no-op for the HTTP fetcher. Its endpoint contract is by-id
-// only (GET ?account-ids=[...]) with no way to enumerate every account, so it
-// contributes nothing to bulk cache preloading and reports no error. Accounts still
-// load lazily on demand via FetchAccount.
-func (fetcher *HttpFetcher) FetchAllAccounts(ctx context.Context) (map[string]json.RawMessage, []error) {
-	logger.Warnf("http_fetcher: bulk account preload is not supported by the by-id HTTP endpoint; accounts will load lazily on demand")
-	return map[string]json.RawMessage{}, nil
-}
-
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	if fetcher.Categories == nil {
 		fetcher.Categories = make(map[string]map[string]stored_requests.Category)

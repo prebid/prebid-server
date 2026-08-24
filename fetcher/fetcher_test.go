@@ -10,6 +10,7 @@ import (
 	"time"
 
 	fetchercache "github.com/prebid/prebid-server/v4/fetcher/cache"
+	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,21 +40,19 @@ func (f *fakeTime) Add(d time.Duration) {
 	f.now = f.now.Add(d)
 }
 
-func (s *stubSource) Fetch(_ context.Context, keys []string) (map[string]json.RawMessage, error) {
+func (s *stubSource) Fetch(_ context.Context, key string) (json.RawMessage, bool, error) {
 	atomic.AddInt32(&s.calls, 1)
 	if s.block != nil {
 		<-s.block
 	}
 	if s.err != nil {
-		return nil, s.err
+		return nil, false, s.err
 	}
-	out := make(map[string]json.RawMessage, len(keys))
-	for _, k := range keys {
-		if v, ok := s.data[k]; ok {
-			out[k] = v
-		}
+	v, ok := s.data[key]
+	if !ok {
+		return nil, false, nil
 	}
-	return out, nil
+	return v, true, nil
 }
 
 func (s *stubSource) callCount() int { return int(atomic.LoadInt32(&s.calls)) }
@@ -63,19 +62,17 @@ type timeoutOnceSource struct {
 	data  map[string]json.RawMessage
 }
 
-func (s *timeoutOnceSource) Fetch(ctx context.Context, keys []string) (map[string]json.RawMessage, error) {
+func (s *timeoutOnceSource) Fetch(ctx context.Context, key string) (json.RawMessage, bool, error) {
 	call := atomic.AddInt32(&s.calls, 1)
 	if call == 2 {
 		<-ctx.Done()
-		return nil, ctx.Err()
+		return nil, false, ctx.Err()
 	}
-	out := make(map[string]json.RawMessage, len(keys))
-	for _, k := range keys {
-		if v, ok := s.data[k]; ok {
-			out[k] = v
-		}
+	v, ok := s.data[key]
+	if !ok {
+		return nil, false, nil
 	}
-	return out, nil
+	return v, true, nil
 }
 
 func (s *timeoutOnceSource) callCount() int { return int(atomic.LoadInt32(&s.calls)) }
@@ -94,54 +91,112 @@ func (b bulkStub) FetchAll(_ context.Context) (map[string]json.RawMessage, error
 	return b.data, b.err
 }
 
+func (b bulkStub) Fetch(_ context.Context, key string) (json.RawMessage, bool, error) {
+	if b.err != nil {
+		return nil, false, b.err
+	}
+	raw, ok := b.data[key]
+	return raw, ok, nil
+}
+
 func TestPreloadSeedsCache(t *testing.T) {
 	clk := newFakeTime()
-	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
-	require.NoError(t, err)
-	readSrc := &stubSource{data: map[string]json.RawMessage{}} // read path source is empty
-	f := New(Params[string, string]{
-		Source:    readSrc,
+	src := bulkStub{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
+	f, err := New(Params[string, string]{
+		Source:    src,
 		Transform: identityTransform,
-		Cache:     cache,
-		TTL:       time.Hour,
-		Preload:   bulkStub{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}},
-		Time:      clk,
+		Config: Config{
+			Cache:   CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour},
+			Refresh: RefreshConfig{Mode: "preload"},
+		},
+		Time:    clk,
+		Metrics: NoopRecorder{},
 	})
+	require.NoError(t, err)
 
-	f.Start(context.Background())
+	require.NoError(t, f.Start(context.Background()))
 
 	v, err := f.Get(context.Background(), "a")
 	require.NoError(t, err)
 	assert.Equal(t, "v1", v)
-	assert.Equal(t, 0, readSrc.callCount(), "preloaded key should be served without hitting the read source")
 }
 
-func newLRUFetcher(t *testing.T, src Source[string], clk *fakeTime, ttl time.Duration, negatives *NegativeStore[string]) *Fetcher[string, string] {
-	t.Helper()
-	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
+func TestPreloadTransformErrorSurfaces(t *testing.T) {
+	src := bulkStub{data: map[string]json.RawMessage{"bad": json.RawMessage(`v1`)}}
+	transformErr := errors.New("bad value")
+	f, err := New(Params[string, string]{
+		Source:    src,
+		Transform: func(string, json.RawMessage) (string, error) { return "", transformErr },
+		Config: Config{
+			Cache:   CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour},
+			Refresh: RefreshConfig{Mode: "preload"},
+		},
+		Time:    newFakeTime(),
+		Metrics: NoopRecorder{},
+	})
 	require.NoError(t, err)
-	return New(Params[string, string]{
+
+	err = f.Start(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "preload transform failed for key bad")
+	assert.ErrorIs(t, err, transformErr)
+}
+
+func TestNewRequiresTimeAndMetrics(t *testing.T) {
+	src := &stubSource{data: map[string]json.RawMessage{}}
+	params := Params[string, string]{
 		Source:    src,
 		Transform: identityTransform,
-		Cache:     cache,
-		TTL:       ttl,
-		Negatives: negatives,
-		Time:      clk,
-	})
+		Config:    Config{Cache: CacheConfig{Type: "none"}},
+		Metrics:   NoopRecorder{},
+	}
+
+	_, err := New(params)
+	require.EqualError(t, err, "time is required")
+
+	params.Time = newFakeTime()
+	params.Metrics = nil
+	_, err = New(params)
+	require.EqualError(t, err, "metrics recorder is required")
 }
 
-func newServeStaleFetcher(t *testing.T, src Source[string], clk *fakeTime, ttl time.Duration) *Fetcher[string, string] {
+func newLRUFetcher(t *testing.T, src fetchersource.Source[string], clk *fakeTime, ttl time.Duration, negatives *NegativeStore[string]) *Fetcher[string, string] {
 	t.Helper()
-	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
-	require.NoError(t, err)
-	return New(Params[string, string]{
-		Source:     src,
-		Transform:  identityTransform,
-		Cache:      cache,
-		TTL:        ttl,
-		ServeStale: true,
-		Time:       clk,
+	cfg := Config{
+		Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: ttl},
+	}
+	if negatives != nil {
+		cfg.Negative.Enabled = true
+		cfg.Negative.Type = "lru"
+		cfg.Negative.MaxEntries = 10
+		cfg.Negative.TTL = time.Minute
+	}
+	f, err := New(Params[string, string]{
+		Source:    src,
+		Transform: identityTransform,
+		Config:    cfg,
+		Time:      clk,
+		Metrics:   NoopRecorder{},
 	})
+	require.NoError(t, err)
+	if negatives != nil {
+		f.negatives = negatives
+	}
+	return f
+}
+
+func newServeStaleFetcher(t *testing.T, src fetchersource.Source[string], clk *fakeTime, ttl time.Duration) *Fetcher[string, string] {
+	t.Helper()
+	f, err := New(Params[string, string]{
+		Source:    src,
+		Transform: identityTransform,
+		Config:    Config{Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: ttl}, Refresh: RefreshConfig{ServeStale: true}},
+		Time:      clk,
+		Metrics:   NoopRecorder{},
+	})
+	require.NoError(t, err)
+	return f
 }
 
 // TestGetExpiresAndReloadsByDefault verifies the default (serve-stale off): past
@@ -187,16 +242,20 @@ func TestGetHitAfterMiss(t *testing.T) {
 
 func TestGetNotFoundWithNegativeCache(t *testing.T) {
 	clk := newFakeTime()
-	neg, err := NewNegativeStore[string](10, time.Minute, clk)
+	negativeCache, err := fetchercache.NewLRUCache[string, error](10, time.Minute, clk)
+	require.NoError(t, err)
+	neg, err := NewNegativeStore[string](negativeCache)
 	require.NoError(t, err)
 	src := &stubSource{data: map[string]json.RawMessage{}}
 	f := newLRUFetcher(t, src, clk, time.Hour, neg)
 
 	_, err = f.Get(context.Background(), "missing")
 	assert.ErrorIs(t, err, ErrNotFound)
+	assert.EqualError(t, err, "fetcher: key missing not found")
 
 	_, err = f.Get(context.Background(), "missing")
 	assert.ErrorIs(t, err, ErrNotFound)
+	assert.EqualError(t, err, "fetcher: key missing not found")
 
 	assert.Equal(t, 1, src.callCount(), "negative cache should prevent a second backend call")
 }
@@ -207,8 +266,10 @@ func TestGetNotFoundWithoutNegativeCache(t *testing.T) {
 
 	_, err := f.Get(context.Background(), "missing")
 	assert.ErrorIs(t, err, ErrNotFound)
+	assert.EqualError(t, err, "fetcher: key missing not found")
 	_, err = f.Get(context.Background(), "missing")
 	assert.ErrorIs(t, err, ErrNotFound)
+	assert.EqualError(t, err, "fetcher: key missing not found")
 
 	assert.Equal(t, 2, src.callCount(), "without negative cache each miss hits the backend")
 }
@@ -218,15 +279,14 @@ func TestGetCoalescesConcurrentMisses(t *testing.T) {
 		data:  map[string]json.RawMessage{"a": json.RawMessage(`v1`)},
 		block: make(chan struct{}),
 	}
-	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, newFakeTime())
-	require.NoError(t, err)
-	f := New(Params[string, string]{
+	f, err := New(Params[string, string]{
 		Source:    src,
 		Transform: identityTransform,
-		Cache:     cache,
-		TTL:       time.Hour,
-		Coalesce:  true,
+		Config:    Config{Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour}, CoalesceRequests: true},
+		Time:      newFakeTime(),
+		Metrics:   NoopRecorder{},
 	})
+	require.NoError(t, err)
 
 	const n = 8
 	var wg sync.WaitGroup
@@ -314,17 +374,17 @@ func TestGetServesStaleWhileBackendDown(t *testing.T) {
 func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
 	clk := newFakeTime()
 	src := &timeoutOnceSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
-	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
-	require.NoError(t, err)
-	f := New(Params[string, string]{
-		Source:            src,
-		Transform:         identityTransform,
-		Cache:             cache,
-		TTL:               time.Hour,
-		ServeStale:        true,
-		RevalidateTimeout: 10 * time.Millisecond,
-		Time:              clk,
+	f, err := New(Params[string, string]{
+		Source:    src,
+		Transform: identityTransform,
+		Config: Config{
+			Cache:   CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour},
+			Refresh: RefreshConfig{ServeStale: true, BackgroundRefreshTimeout: 10 * time.Millisecond},
+		},
+		Time:    clk,
+		Metrics: NoopRecorder{},
 	})
+	require.NoError(t, err)
 
 	v, err := f.Get(context.Background(), "a")
 	require.NoError(t, err)
@@ -337,13 +397,13 @@ func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
 	assert.Equal(t, "v1", v)
 	assert.Eventually(t, func() bool { return src.callCount() == 2 }, time.Second, 5*time.Millisecond)
 	assert.Eventually(t, func() bool {
-		f.reval.mu.Lock()
-		defer f.reval.mu.Unlock()
-		st := f.reval.state["a"]
+		f.backgroundRefresh.mu.Lock()
+		defer f.backgroundRefresh.mu.Unlock()
+		st := f.backgroundRefresh.state["a"]
 		return !st.inFlight && !st.failedAt.IsZero()
 	}, time.Second, 5*time.Millisecond)
 
-	clk.Add(revalidateBackoff + time.Second)
+	clk.Add(defaultBackgroundRefreshBackoff + time.Second)
 	v, err = f.Get(context.Background(), "a")
 	require.NoError(t, err)
 	assert.Equal(t, "v1", v)
@@ -354,13 +414,13 @@ func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
 	}, time.Second, 5*time.Millisecond)
 }
 
-func TestRevalidatorPrunesExpiredFailures(t *testing.T) {
+func TestBackgroundRefreshCoordinatorPrunesExpiredFailures(t *testing.T) {
 	clk := newFakeTime()
-	r := newRevalidator[string](clk, revalidateBackoff)
+	r := newBackgroundRefreshCoordinator[string](clk, defaultBackgroundRefreshBackoff)
 	r.finish("old", true)
 	require.Contains(t, r.state, "old")
 
-	clk.Add(revalidateBackoff + time.Second)
+	clk.Add(defaultBackgroundRefreshBackoff + time.Second)
 	assert.True(t, r.begin("new"))
 	assert.NotContains(t, r.state, "old")
 	assert.True(t, r.state["new"].inFlight)
@@ -368,12 +428,14 @@ func TestRevalidatorPrunesExpiredFailures(t *testing.T) {
 
 func TestGetNilCacheAlwaysFetches(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
-	f := New(Params[string, string]{
+	f, err := New(Params[string, string]{
 		Source:    src,
 		Transform: identityTransform,
-		Cache:     fetchercache.NilCache[string, string]{},
-		TTL:       time.Hour,
+		Config:    Config{Cache: CacheConfig{Type: "none", TTL: time.Hour}},
+		Time:      newFakeTime(),
+		Metrics:   NoopRecorder{},
 	})
+	require.NoError(t, err)
 
 	for i := 0; i < 3; i++ {
 		v, err := f.Get(context.Background(), "a")
@@ -399,15 +461,15 @@ func TestGetSourceErrorNotCached(t *testing.T) {
 
 func TestGetTransformErrorNotCached(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
-	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, newFakeTime())
-	require.NoError(t, err)
 	transformErr := errors.New("bad value")
-	f := New(Params[string, string]{
+	f, err := New(Params[string, string]{
 		Source:    src,
 		Transform: func(string, json.RawMessage) (string, error) { return "", transformErr },
-		Cache:     cache,
-		TTL:       time.Hour,
+		Config:    Config{Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour}},
+		Time:      newFakeTime(),
+		Metrics:   NoopRecorder{},
 	})
+	require.NoError(t, err)
 
 	_, err = f.Get(context.Background(), "a")
 	assert.ErrorIs(t, err, transformErr)
@@ -426,28 +488,30 @@ func newCountingRecorder() *countingRecorder {
 	return &countingRecorder{backend: map[string]int{}}
 }
 
-func (r *countingRecorder) CacheHit()                                   { r.hits++ }
-func (r *countingRecorder) CacheMiss()                                  { r.misses++ }
-func (r *countingRecorder) CacheNegative()                              { r.negatives++ }
-func (r *countingRecorder) BackendFetch(result string, _ time.Duration) { r.backend[result]++ }
+func (r *countingRecorder) CacheHit()      { r.hits++ }
+func (r *countingRecorder) CacheMiss()     { r.misses++ }
+func (r *countingRecorder) CacheNegative() { r.negatives++ }
+func (r *countingRecorder) BackendFetch(operation string, result string, _ time.Duration) {
+	r.backend[operation+":"+result]++
+}
 
 func TestRecorderSignals(t *testing.T) {
 	clk := newFakeTime()
-	neg, err := NewNegativeStore[string](10, time.Minute, clk)
+	negativeCache, err := fetchercache.NewLRUCache[string, error](10, time.Minute, clk)
 	require.NoError(t, err)
-	cache, err := fetchercache.NewLRUCache[string, string](100, time.Hour, clk)
+	neg, err := NewNegativeStore[string](negativeCache)
 	require.NoError(t, err)
 	rec := newCountingRecorder()
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
-	f := New(Params[string, string]{
+	f, err := New(Params[string, string]{
 		Source:    src,
 		Transform: identityTransform,
-		Cache:     cache,
-		TTL:       time.Hour,
-		Negatives: neg,
+		Config:    Config{Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour}},
 		Time:      clk,
 		Metrics:   rec,
 	})
+	require.NoError(t, err)
+	f.negatives = neg
 
 	// miss -> ok, then hit.
 	_, _ = f.Get(context.Background(), "a")
@@ -459,6 +523,6 @@ func TestRecorderSignals(t *testing.T) {
 	assert.Equal(t, 1, rec.hits)
 	assert.Equal(t, 2, rec.misses)
 	assert.Equal(t, 1, rec.negatives)
-	assert.Equal(t, 1, rec.backend["ok"])
-	assert.Equal(t, 1, rec.backend["notfound"])
+	assert.Equal(t, 1, rec.backend["get:ok"])
+	assert.Equal(t, 1, rec.backend["get:notfound"])
 }
