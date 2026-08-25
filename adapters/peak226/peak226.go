@@ -42,18 +42,19 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-// peak226ImpCtx pairs a processed impression with the publisher ID declared on it, so that
-// each region group can resolve its own effective publisher ID independently of the others.
-type peak226ImpCtx struct {
-	imp         openrtb2.Imp
+// regionPublisher groups impressions by both region and publisher ID, since each is a
+// distinct request-level value (endpoint region, site/app.publisher.id) and impressions
+// with different publisherId values must not be merged into the same outgoing request.
+type regionPublisher struct {
+	region      string
 	publisherID string
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	impsByRegion := make(map[string][]peak226ImpCtx)
-	var regionOrder []string
+	impGroups := make(map[regionPublisher][]openrtb2.Imp)
+	var groupOrder []regionPublisher
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -96,40 +97,29 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			region = defaultRegion
 		}
 
-		if _, ok := impsByRegion[region]; !ok {
-			regionOrder = append(regionOrder, region)
+		key := regionPublisher{region: region, publisherID: peak226Ext.PublisherID}
+		if _, ok := impGroups[key]; !ok {
+			groupOrder = append(groupOrder, key)
 		}
-		impsByRegion[region] = append(impsByRegion[region], peak226ImpCtx{
-			imp:         imp,
-			publisherID: peak226Ext.PublisherID,
-		})
+		impGroups[key] = append(impGroups[key], imp)
 	}
 
-	if len(regionOrder) == 0 {
+	if len(groupOrder) == 0 {
 		return nil, errs
 	}
 
 	device := sanitizeDevice(request.Device)
-	requests := make([]*adapters.RequestData, 0, len(regionOrder))
+	requests := make([]*adapters.RequestData, 0, len(groupOrder))
 
-	for _, region := range regionOrder {
-		group := impsByRegion[region]
-
-		imps := make([]openrtb2.Imp, 0, len(group))
-		var publisherID string
-		for _, ctx := range group {
-			imps = append(imps, ctx.imp)
-			if publisherID == "" && ctx.publisherID != "" {
-				publisherID = ctx.publisherID
-			}
-		}
+	for _, key := range groupOrder {
+		imps := impGroups[key]
 
 		requestCopy := *request
 		requestCopy.Imp = imps
 		requestCopy.Device = device
-		setPublisherID(&requestCopy, publisherID)
+		setPublisherID(&requestCopy, key.publisherID)
 
-		endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Region: region})
+		endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Region: key.region})
 		if err != nil {
 			errs = append(errs, err)
 			continue
