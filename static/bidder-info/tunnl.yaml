@@ -13,7 +13,8 @@
 # deployment config with the matching line above, rather than editing this file.
 #
 # Leave {{.MediaType}} as-is. The adapter replaces it with ban, vid or nat per
-# impression, because each endpoint serves a single media type.
+# impression, and relies on it to attribute a bid back to a media type, so an
+# endpoint that does not vary by it is rejected at startup.
 endpoint: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlus{{.MediaType}}"
 endpointCompression: gzip
 gvlVendorID: 540

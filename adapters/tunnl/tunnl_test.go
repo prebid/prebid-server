@@ -134,7 +134,7 @@ func TestMakeBidsUndeterminableMediaType(t *testing.T) {
 
 	_, errs := bidder.MakeBids(
 		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{ID: "imp-1"}}},
-		&adapters.RequestData{Uri: "https://us1.rapidtag.net/api/v1/bid"},
+		&adapters.RequestData{Uri: "https://us1.rapidtag.net/api/v1/bid?sid=urban"},
 		&adapters.ResponseData{
 			StatusCode: 200,
 			Body:       []byte(`{"id":"req-1","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1}]}]}`),
@@ -239,20 +239,70 @@ func TestMakeRequestsSplitsAllFormats(t *testing.T) {
 	}, uris)
 }
 
-func TestFormatFromRequestURI(t *testing.T) {
+// The media type of a bid is recovered from the URI the adapter itself built,
+// so it must survive an endpoint whose shape the adapter knows nothing about.
+// Anything not emitted by this adapter must not be attributed to a format.
+func TestURIFormatMapping(t *testing.T) {
 	testCases := []struct {
-		uri      string
-		expected string
+		name     string
+		endpoint string
+		expected map[string]string
 	}{
-		{"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban", formatBanner},
-		{"https://eu1.rapidtag.net/api/v1/bid?sid=tunnleuvid", formatVideo},
-		{"https://ap1.rapidtag.net/api/v1/bid?sid=tunnlapnat", formatNative},
-		{"https://us1.rapidtag.net/api/v1/bid", ""},
-		{"https://us1.rapidtag.net/api/v1/bid?sid=unknown", ""},
-		{"://malformed", ""},
+		{
+			name:     "default sid based endpoint",
+			endpoint: testEndpoint,
+			expected: map[string]string{
+				"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban": formatBanner,
+				"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusvid": formatVideo,
+				"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusnat": formatNative,
+			},
+		},
+		{
+			name:     "host proxy that carries no sid at all",
+			endpoint: "https://proxy.internal/tunnl?fmt={{.MediaType}}",
+			expected: map[string]string{
+				"https://proxy.internal/tunnl?fmt=ban": formatBanner,
+				"https://proxy.internal/tunnl?fmt=vid": formatVideo,
+				"https://proxy.internal/tunnl?fmt=nat": formatNative,
+			},
+		},
+		{
+			name:     "media type in the path rather than the query",
+			endpoint: "https://proxy.internal/tunnl/{{.MediaType}}/bid",
+			expected: map[string]string{
+				"https://proxy.internal/tunnl/ban/bid": formatBanner,
+				"https://proxy.internal/tunnl/vid/bid": formatVideo,
+				"https://proxy.internal/tunnl/nat/bid": formatNative,
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		assert.Equal(t, test.expected, formatFromRequestURI(test.uri), test.uri)
+		t.Run(test.name, func(t *testing.T) {
+			bidder, buildErr := Builder(openrtb_ext.BidderTunnl,
+				config.Adapter{Endpoint: test.endpoint},
+				config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+			if buildErr != nil {
+				t.Fatalf("Builder returned unexpected error %v", buildErr)
+			}
+
+			assert.Equal(t, test.expected, bidder.(*adapter).uriFormats)
+
+			// A URI this adapter never emits stays unattributed, so a bid arriving
+			// against it is rejected rather than guessed.
+			assert.Empty(t, bidder.(*adapter).uriFormats["https://proxy.internal/bid?sid=urban"])
+		})
 	}
+}
+
+// An endpoint that does not vary by media type would send every format to the
+// same URI and make responses unattributable, so it is rejected at build time
+// rather than silently dropping every bid at auction time.
+func TestBuilderRejectsFormatInvariantEndpoint(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderTunnl,
+		config.Adapter{Endpoint: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlus"},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+
+	assert.Error(t, buildErr)
+	assert.Contains(t, buildErr.Error(), "must vary by media type")
 }

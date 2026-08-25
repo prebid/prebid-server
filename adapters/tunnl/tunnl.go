@@ -3,8 +3,6 @@ package tunnl
 import (
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -25,8 +23,20 @@ const (
 	formatNative = "nat"
 )
 
+// supportedFormats is the full set of media types Tunnl serves, in the order the
+// adapter splits impressions.
+var supportedFormats = []string{formatBanner, formatVideo, formatNative}
+
 type adapter struct {
 	endpoint *template.Template
+
+	// uriFormats maps each endpoint URI this adapter can emit back to the media
+	// type it was built for. The mapping is derived from the configured endpoint
+	// at build time rather than re-parsed out of the URI later, so recovering the
+	// format in MakeBids does not depend on the endpoint carrying any particular
+	// query parameter. A host may point tunnl at a proxy or a future Tunnl URL
+	// scheme and the media type of a bid stays recoverable.
+	uriFormats map[string]string
 }
 
 func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
@@ -34,7 +44,33 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &adapter{endpoint: endpoint}, nil
+
+	bidder := &adapter{
+		endpoint:   endpoint,
+		uriFormats: make(map[string]string, len(supportedFormats)),
+	}
+
+	// Resolving every format up front both builds the reverse mapping and fails
+	// fast on an endpoint that cannot be resolved at all, rather than at auction
+	// time on every request.
+	for _, format := range supportedFormats {
+		uri, err := bidder.buildEndpointURL(format)
+		if err != nil {
+			return nil, fmt.Errorf("unable to resolve endpoint url for media type %s: %v", format, err)
+		}
+		bidder.uriFormats[uri] = format
+	}
+
+	// A configured endpoint that ignores {{.MediaType}} collapses all three
+	// formats onto one URI. Tunnl serves a single media type per endpoint, so
+	// such a configuration would send every format to the same place and make
+	// responses unattributable. Reject it here instead of silently dropping
+	// bids later.
+	if len(bidder.uriFormats) != len(supportedFormats) {
+		return nil, fmt.Errorf("endpoint url must vary by media type, add the {{.MediaType}} macro: %s", cfg.Endpoint)
+	}
+
+	return bidder, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -157,7 +193,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	// This response came from a format specific endpoint, so the format the
 	// request was built for is a reliable fallback when the bid omits mtype.
-	requestFormat := formatFromRequestURI(requestData.Uri)
+	requestFormat := a.uriFormats[requestData.Uri]
 
 	var errs []error
 	for _, seatBid := range response.SeatBid {
@@ -175,24 +211,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	return bidResponse, errs
-}
-
-// formatFromRequestURI recovers the media type from the sid query parameter of
-// the outgoing request, which always ends with the format suffix. Returns an
-// empty string if it cannot be determined.
-func formatFromRequestURI(uri string) string {
-	parsed, err := url.Parse(uri)
-	if err != nil {
-		return ""
-	}
-
-	sid := parsed.Query().Get("sid")
-	for _, format := range []string{formatBanner, formatVideo, formatNative} {
-		if strings.HasSuffix(sid, format) {
-			return format
-		}
-	}
-	return ""
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid, requestFormat string) (openrtb_ext.BidType, error) {
