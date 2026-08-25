@@ -145,6 +145,65 @@ func TestMakeBidsUndeterminableMediaType(t *testing.T) {
 	assert.True(t, errors.As(errs[0], &badServerResponse), "expected BadServerResponse, got %T", errs[0])
 }
 
+// Tunnl reads device signals off the HTTP headers for geo and device detection,
+// which is the only source available for app traffic.
+func TestMakeRequestsForwardsDeviceHeaders(t *testing.T) {
+	testCases := []struct {
+		name     string
+		device   *openrtb2.Device
+		expected map[string][]string
+	}{
+		{
+			name:     "no device",
+			device:   nil,
+			expected: map[string][]string{},
+		},
+		{
+			name:   "ua and ipv4",
+			device: &openrtb2.Device{UA: "test-agent", IP: "1.2.3.4"},
+			expected: map[string][]string{
+				"User-Agent":      {"test-agent"},
+				"X-Forwarded-For": {"1.2.3.4"},
+			},
+		},
+		{
+			name:   "ipv6 and ipv4 are both forwarded",
+			device: &openrtb2.Device{IPv6: "2001:db8::1", IP: "1.2.3.4"},
+			expected: map[string][]string{
+				"X-Forwarded-For": {"2001:db8::1", "1.2.3.4"},
+			},
+		},
+		{
+			name:     "empty device fields are omitted",
+			device:   &openrtb2.Device{UA: "", IP: ""},
+			expected: map[string][]string{},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			bidder := buildTestBidder(t)
+
+			requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
+				ID:     "req-1",
+				Device: test.device,
+				Imp:    []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
+			}, &adapters.ExtraRequestInfo{})
+
+			assert.Empty(t, errs)
+			assert.Len(t, requests, 1)
+
+			// The static headers are always present regardless of device.
+			assert.Equal(t, "application/json;charset=utf-8", requests[0].Headers.Get("Content-Type"))
+			assert.Equal(t, "2.6", requests[0].Headers.Get("X-OpenRTB-Version"))
+
+			for _, header := range []string{"User-Agent", "X-Forwarded-For"} {
+				assert.Equal(t, test.expected[header], requests[0].Headers.Values(header), header)
+			}
+		})
+	}
+}
+
 // An audio bid can never match a Tunnl request, since audio imps are dropped in
 // MakeRequests. It must be rejected rather than relabelled as the format the
 // sub-request happened to be built for.

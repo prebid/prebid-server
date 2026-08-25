@@ -77,7 +77,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	var requests []*adapters.RequestData
 	var errs []error
 
-	headers := makeHeaders()
+	headers := makeHeaders(request)
 
 	for _, imp := range request.Imp {
 		splitImps, err := splitImpByMediaType(imp)
@@ -244,10 +244,26 @@ func getMediaTypeForBid(bid openrtb2.Bid, requestFormat string) (openrtb_ext.Bid
 	}
 }
 
-func makeHeaders() http.Header {
+// makeHeaders forwards the device signals Tunnl uses for geo lookup and device
+// detection. They matter most for app traffic, where the ad server has no
+// browser request of its own to read them from.
+func makeHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("X-OpenRTB-Version", "2.6")
+
+	if request.Device != nil {
+		if request.Device.UA != "" {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+		if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+	}
+
 	return headers
 }
