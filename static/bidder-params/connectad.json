@@ -1,7 +1,6 @@
-
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "ConnectAd S2S dapter Params",
+  "title": "ConnectAd S2S Adapter Params",
   "description": "A schema which validates params accepted by the ConnectAd Adapter",
 
   "type": "object",
@@ -22,9 +21,12 @@
     },
     "bidfloor": {
       "type": "number",
-      "description": "Requests Floorprice"
+      "description": "Requested Floorprice"
+    },
+    "endpointUrl": {
+      "type": "string",
+      "description": "Client-side only (Prebid.js): override the bid endpoint URL for testing or a custom datacenter. Prebid Server always uses its configured endpoint and does not route based on this value; if present it may still be forwarded inside imp.ext.bidder."
     }
   },
   "required": ["networkId", "siteId"]
 }
-  
