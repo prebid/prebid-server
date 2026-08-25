@@ -214,10 +214,18 @@ type PropertyRegistryConfig struct {
 
 // signingBase returns the provider's registered base URL — what the TMP
 // signing preimage binds to. Derived by stripping the /identity or
-// /context suffix from whichever dispatch URL is set (validated() has
-// already asserted both derive to the same base when both are set) and
-// applying adcp URL canonicalization via
-// tmproto.NormalizeProviderEndpointURL.
+// /context suffix from whichever dispatch URL is set. validated() has
+// already enforced two invariants at startup:
+//
+//   - IdentityURL, when set, ends in "/identity" (after trailing-slash
+//     normalization); same for ContextURL and "/context". Any other
+//     shape is a startup error, because TrimSuffix on a non-matching
+//     path would silently return the full dispatch URL and produce
+//     signatures a spec-compliant verifier rejects.
+//   - When both dispatch URLs are set, they derive to the same base.
+//
+// So this helper's derivation is unambiguous: the URL, canonicalized
+// via tmproto.NormalizeProviderEndpointURL, minus its known suffix.
 //
 // Aligned with adcp provider-registration.json: providers register a
 // single `endpoint` base URL; the router appends /identity and /context
@@ -372,12 +380,31 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 		if p.IdentityURL == "" && p.ContextURL == "" {
 			return nil, fmt.Errorf("providers[%d] (%s): at least one of identity_url or context_url is required", i, p.Name)
 		}
+		// The TMP signing preimage binds to the provider's registered
+		// base URL — `endpoint` in provider-registration.json, verified
+		// by adcp-go tmproto/own_endpoint_test.go. The module derives
+		// that base by stripping the /identity or /context suffix from
+		// the dispatch URL, so each URL MUST end in the corresponding
+		// literal path segment (after trailing-slash normalization).
+		// A URL that doesn't (e.g. a versioned `/api/context-match`)
+		// would fall through to signing the full dispatch URL, which
+		// silently reproduces the exact bug this validation exists to
+		// prevent. Reject at startup so the misconfiguration surfaces
+		// there instead of as an opaque 401 at runtime.
+		if p.IdentityURL != "" {
+			if !strings.HasSuffix(tmproto.NormalizeProviderEndpointURL(p.IdentityURL), "/identity") {
+				return nil, fmt.Errorf("providers[%d] (%s): identity_url %q must end in /identity — the module derives the signing base URL by stripping that suffix", i, p.Name, p.IdentityURL)
+			}
+		}
+		if p.ContextURL != "" {
+			if !strings.HasSuffix(tmproto.NormalizeProviderEndpointURL(p.ContextURL), "/context") {
+				return nil, fmt.Errorf("providers[%d] (%s): context_url %q must end in /context — the module derives the signing base URL by stripping that suffix", i, p.Name, p.ContextURL)
+			}
+		}
 		// Both dispatch URLs, when set, must resolve to the same base
-		// URL — the TMP signing preimage binds to that single base (per
-		// adcp provider-registration.json `endpoint`, verified by
-		// adcp-go tmproto/own_endpoint_test.go). A mismatch would make
-		// context signatures verify but identity signatures fail (or
-		// vice versa) at the same provider, so reject at startup.
+		// URL — a mismatch would make context signatures verify but
+		// identity signatures fail (or vice versa) at the same
+		// provider.
 		if p.IdentityURL != "" && p.ContextURL != "" {
 			idBase := (ProviderConfig{IdentityURL: p.IdentityURL}).signingBase()
 			ctxBase := (ProviderConfig{ContextURL: p.ContextURL}).signingBase()

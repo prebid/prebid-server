@@ -139,6 +139,10 @@ func TestValidated_ProviderAcceptsSameBaseURLs(t *testing.T) {
 }
 
 func TestProviderSigningBase(t *testing.T) {
+	// signingBase's callers must only ever see URLs validated() has
+	// already accepted — i.e. URLs whose path ends in /identity or
+	// /context after trailing-slash normalization. This table covers
+	// what the helper does with those valid shapes.
 	cases := []struct {
 		name        string
 		identityURL string
@@ -149,7 +153,7 @@ func TestProviderSigningBase(t *testing.T) {
 		{"context-only", "", "https://tmp.example.com/context", "https://tmp.example.com"},
 		{"both-match", "https://tmp.example.com/identity", "https://tmp.example.com/context", "https://tmp.example.com"},
 		{"trailing-slash-normalized", "https://tmp.example.com/identity/", "", "https://tmp.example.com"},
-		{"url-without-suffix-passes-through", "https://tmp.example.com/", "", "https://tmp.example.com"},
+		{"nested-path-preserved", "https://tmp.example.com/v1/identity", "", "https://tmp.example.com/v1"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -161,6 +165,33 @@ func TestProviderSigningBase(t *testing.T) {
 				t.Errorf("signingBase() = %q; want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestValidated_ProviderRejectsIdentityURLWithoutSuffix(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].IdentityURL = "https://tmp.example.com/api/identity-match"
+	cfg.Providers[0].ContextURL = ""
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when identity_url does not end in /identity")
+	}
+}
+
+func TestValidated_ProviderRejectsContextURLWithoutSuffix(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].IdentityURL = ""
+	cfg.Providers[0].ContextURL = "https://tmp.example.com/api/context-match"
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when context_url does not end in /context")
+	}
+}
+
+func TestValidated_ProviderRejectsCaseWrongSuffix(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].IdentityURL = "https://tmp.example.com/IDENTITY"
+	cfg.Providers[0].ContextURL = ""
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when identity_url suffix is not literal /identity (case-sensitive)")
 	}
 }
 
