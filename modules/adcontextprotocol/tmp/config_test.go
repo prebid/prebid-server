@@ -120,6 +120,50 @@ func TestValidated_PropertyRegistryLookupAllowsMissingBearer(t *testing.T) {
 	}
 }
 
+func TestValidated_ProviderRejectsMismatchedBaseURLs(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].IdentityURL = "https://a.example.com/identity"
+	cfg.Providers[0].ContextURL = "https://b.example.com/context"
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when identity_url and context_url derive to different base URLs")
+	}
+}
+
+func TestValidated_ProviderAcceptsSameBaseURLs(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.Providers[0].IdentityURL = "https://tmp.example.com/identity"
+	cfg.Providers[0].ContextURL = "https://tmp.example.com/context"
+	if _, err := cfg.validated(); err != nil {
+		t.Fatalf("expected valid config; got %v", err)
+	}
+}
+
+func TestProviderSigningBase(t *testing.T) {
+	cases := []struct {
+		name        string
+		identityURL string
+		contextURL  string
+		want        string
+	}{
+		{"identity-only", "https://tmp.example.com/identity", "", "https://tmp.example.com"},
+		{"context-only", "", "https://tmp.example.com/context", "https://tmp.example.com"},
+		{"both-match", "https://tmp.example.com/identity", "https://tmp.example.com/context", "https://tmp.example.com"},
+		{"trailing-slash-normalized", "https://tmp.example.com/identity/", "", "https://tmp.example.com"},
+		{"url-without-suffix-passes-through", "https://tmp.example.com/", "", "https://tmp.example.com"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := ProviderConfig{
+				IdentityURL: tc.identityURL,
+				ContextURL:  tc.contextURL,
+			}
+			if got := p.signingBase(); got != tc.want {
+				t.Errorf("signingBase() = %q; want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestValidated_ProviderNeedsAtLeastOneURL(t *testing.T) {
 	cfg := validConfig(t)
 	cfg.Providers[0].IdentityURL = ""

@@ -8,7 +8,7 @@ require (
 	github.com/IABTechLab/adscert v0.34.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/WURFL/golang-wurfl v1.30.3
-	github.com/adcontextprotocol/adcp-go/tmproto v0.1.0
+	github.com/adcontextprotocol/adcp-go/tmproto v0.1.1
 	github.com/alitto/pond v1.8.3
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/benbjohnson/clock v1.3.0

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/adcontextprotocol/adcp-go/tmproto"
 	"github.com/prebid/prebid-server/v4/logger"
@@ -211,20 +212,50 @@ type PropertyRegistryConfig struct {
 	TimeoutMs int `json:"timeout_ms"`
 }
 
+// signingBase returns the provider's registered base URL — what the TMP
+// signing preimage binds to. Derived by stripping the /identity or
+// /context suffix from whichever dispatch URL is set (validated() has
+// already asserted both derive to the same base when both are set) and
+// applying adcp URL canonicalization via
+// tmproto.NormalizeProviderEndpointURL.
+//
+// Aligned with adcp provider-registration.json: providers register a
+// single `endpoint` base URL; the router appends /identity and /context
+// only when dispatching. See adcp-go tmproto/own_endpoint_test.go for
+// the regression that pinned this convention.
+func (p ProviderConfig) signingBase() string {
+	switch {
+	case p.IdentityURL != "":
+		return tmproto.NormalizeProviderEndpointURL(strings.TrimSuffix(tmproto.NormalizeProviderEndpointURL(p.IdentityURL), "/identity"))
+	case p.ContextURL != "":
+		return tmproto.NormalizeProviderEndpointURL(strings.TrimSuffix(tmproto.NormalizeProviderEndpointURL(p.ContextURL), "/context"))
+	}
+	return ""
+}
+
 // ProviderConfig describes a single downstream TMP provider (identity agent,
 // context agent, or both). At least one of IdentityURL or ContextURL MUST
 // be set — the two fields are independently optional but not both empty;
-// validated() rejects an all-empty pair.
+// validated() rejects an all-empty pair. Both must resolve to the same
+// registered base URL under adcp URL canonicalization, since the TMP
+// signing preimage binds to the provider's single `endpoint` from
+// provider-registration.json — validated() rejects mismatched bases.
 type ProviderConfig struct {
 	Name string `json:"name"`
 	// IdentityURL is the provider's /identity endpoint. Empty means this
 	// provider does not serve identity — the router skips its identity
 	// call and any offers pass through the eligibility gate unfiltered.
+	// Full path is significant: the module POSTs here verbatim, but signs
+	// against the derived base URL (this value minus the /identity
+	// suffix, or itself when it doesn't end in /identity).
 	IdentityURL string `json:"identity_url"`
 	// ContextURL is the provider's /context endpoint. Empty means this
 	// provider does not serve context — the router does not fetch offers
 	// from it, and its identity eligibility (if configured) contributes
-	// nothing on its own.
+	// nothing on its own. Full path is significant: the module POSTs
+	// here verbatim, but signs against the derived base URL (this value
+	// minus the /context suffix, or itself when it doesn't end in
+	// /context).
 	ContextURL string `json:"context_url"`
 	// TimeoutMs overrides the module-level timeout for this provider. Optional.
 	TimeoutMs int `json:"timeout_ms"`
@@ -340,6 +371,19 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 		seenNames[p.Name] = true
 		if p.IdentityURL == "" && p.ContextURL == "" {
 			return nil, fmt.Errorf("providers[%d] (%s): at least one of identity_url or context_url is required", i, p.Name)
+		}
+		// Both dispatch URLs, when set, must resolve to the same base
+		// URL — the TMP signing preimage binds to that single base (per
+		// adcp provider-registration.json `endpoint`, verified by
+		// adcp-go tmproto/own_endpoint_test.go). A mismatch would make
+		// context signatures verify but identity signatures fail (or
+		// vice versa) at the same provider, so reject at startup.
+		if p.IdentityURL != "" && p.ContextURL != "" {
+			idBase := (ProviderConfig{IdentityURL: p.IdentityURL}).signingBase()
+			ctxBase := (ProviderConfig{ContextURL: p.ContextURL}).signingBase()
+			if idBase != ctxBase {
+				return nil, fmt.Errorf("providers[%d] (%s): identity_url and context_url must share a base URL (got %q and %q) — signing binds to the provider's registered endpoint", i, p.Name, idBase, ctxBase)
+			}
 		}
 		if len(p.TmpxSlots) > tmpxMaxSlots {
 			return nil, fmt.Errorf("providers[%d] (%s): tmpx_slots holds %d entries; adcp v1 caps registered slots at %d", i, p.Name, len(p.TmpxSlots), tmpxMaxSlots)
