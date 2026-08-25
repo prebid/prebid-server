@@ -106,6 +106,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/escalax"
 	"github.com/prebid/prebid-server/v4/adapters/eskimi"
 	"github.com/prebid/prebid-server/v4/adapters/exco"
+	"github.com/prebid/prebid-server/v4/adapters/ezoic"
 	"github.com/prebid/prebid-server/v4/adapters/feedad"
 	"github.com/prebid/prebid-server/v4/adapters/flatads"
 	"github.com/prebid/prebid-server/v4/adapters/flipp"
@@ -184,7 +185,9 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/ownadx"
 	"github.com/prebid/prebid-server/v4/adapters/pangle"
 	"github.com/prebid/prebid-server/v4/adapters/pgamssp"
+	"github.com/prebid/prebid-server/v4/adapters/pixfuture"
 	"github.com/prebid/prebid-server/v4/adapters/playdigo"
+	"github.com/prebid/prebid-server/v4/adapters/proxistore"
 	"github.com/prebid/prebid-server/v4/adapters/pubmatic"
 	"github.com/prebid/prebid-server/v4/adapters/pubnative"
 	"github.com/prebid/prebid-server/v4/adapters/pubrise"
@@ -224,6 +227,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/sovrnXsp"
 	"github.com/prebid/prebid-server/v4/adapters/sparteo"
 	"github.com/prebid/prebid-server/v4/adapters/sspBC"
+	"github.com/prebid/prebid-server/v4/adapters/stackadapt"
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
@@ -382,6 +386,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEskimi:            eskimi.Builder,
 		openrtb_ext.BidderExco:              exco.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
+		openrtb_ext.BidderEzoic:             ezoic.Builder,
 		openrtb_ext.BidderFeedAd:            feedad.Builder,
 		openrtb_ext.BidderFlatads:           flatads.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
@@ -462,7 +467,9 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOwnAdx:            ownadx.Builder,
 		openrtb_ext.BidderPangle:            pangle.Builder,
 		openrtb_ext.BidderPGAMSsp:           pgamssp.Builder,
+		openrtb_ext.BidderPixfuture:         pixfuture.Builder,
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,
+		openrtb_ext.BidderProxistore:        proxistore.Builder,
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPubrise:           pubrise.Builder,
@@ -502,6 +509,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSovrnXsp:          sovrnXsp.Builder,
 		openrtb_ext.BidderSparteo:           sparteo.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
+		openrtb_ext.BidderStackAdapt:        stackadapt.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderSynapseHX:         synapseHX.Builder,
