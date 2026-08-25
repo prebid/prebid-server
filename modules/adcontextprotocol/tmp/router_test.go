@@ -2,7 +2,6 @@ package tmp
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -421,18 +420,32 @@ func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 
 // TestFanOut_SignsAgainstProviderBaseURL is the correctness regression
 // for the adcp-go base-URL signing convention (adcp-go
-// tmproto/own_endpoint_test.go): signatures MUST bind to the provider's
-// registered BASE URL, not the full /identity or /context dispatch URL.
-// A verifier that verifies against the base URL rejects any signature
-// bound to the dispatch URL, so this pin catches any drift back to the
-// old behavior locally.
+// tmproto/own_endpoint_test.go). Reconstructs the exact signing input
+// the module would have used and cryptographically verifies the header
+// two ways:
+//
+//   - VerifyContextMatch against the BASE URL succeeds.
+//   - VerifyContextMatch against the /context DISPATCH URL fails with
+//     ErrSignatureInvalid.
+//
+// Any regression back to signing the dispatch URL would flip both
+// assertions and fail the test loudly.
 func TestFanOut_SignsAgainstProviderBaseURL(t *testing.T) {
 	f := newFixture(t)
 	defer f.Close()
 
-	var sig string
+	var capturedSig, capturedKid, capturedRequestID string
+	capturedReq := &tmproto.ContextMatchRequest{}
 	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
-		sig = r.Header.Get(tmproto.HeaderTMPSignature)
+		capturedSig = r.Header.Get(tmproto.HeaderTMPSignature)
+		capturedKid = r.Header.Get(tmproto.HeaderTMPKeyID)
+		// Decode the request body so we can hand it to VerifyContextMatch
+		// (verification is body-dependent: request_id, seller_agent_url,
+		// property_rid, placement_id are all in the signing preimage).
+		if err := json.NewDecoder(r.Body).Decode(capturedReq); err != nil {
+			t.Errorf("decode outbound context request: %v", err)
+		}
+		capturedRequestID = capturedReq.RequestID
 		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
 	}
 	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
@@ -440,23 +453,29 @@ func TestFanOut_SignsAgainstProviderBaseURL(t *testing.T) {
 	}
 
 	_ = f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
-	if sig == "" {
+	if capturedSig == "" {
 		t.Fatal("expected outbound signature header")
 	}
+	if capturedRequestID == "" {
+		t.Fatal("expected outbound request_id")
+	}
 
-	// The fixture pins IdentityURL = ContextURL = f.Provider.URL + "/{identity,context}".
-	// The registered BASE URL — what the receiving agent's KeyStore expects
-	// on the signing preimage — is f.Provider.URL.
 	prov := f.Module.cfg.Providers[0]
 	base := prov.signingBase()
-	if base != tmproto.NormalizeProviderEndpointURL(f.Provider.URL) {
-		t.Fatalf("signingBase() = %q; want %q (fixture base URL)", base, f.Provider.URL)
+	dispatch := tmproto.NormalizeProviderEndpointURL(prov.ContextURL)
+	if base == dispatch {
+		t.Fatalf("fixture invariant violated: base %q must differ from dispatch %q for the two-way check to be meaningful", base, dispatch)
 	}
-	// Rebuild the exact input the module would have signed to prove the
-	// header decodes against the base URL — a dispatch-URL bind would
-	// verify against %q + "/context" and NOT against %q.
-	if _, err := base64.RawURLEncoding.DecodeString(sig); err != nil {
-		t.Fatalf("signature is not base64url raw: %v", err)
+
+	// Publish the module's Ed25519 pubkey through a StaticKeyStore so
+	// Verify* can look it up by KeyID.
+	ks := tmproto.NewStaticKeyStore([]tmproto.SigningKey{f.Module.signer.PublicJWK()})
+
+	if err := tmproto.VerifyContextMatch(capturedReq, base, capturedSig, capturedKid, ks, time.Now()); err != nil {
+		t.Fatalf("VerifyContextMatch against base URL %q failed: %v — signature is NOT bound to the provider's registered endpoint", base, err)
+	}
+	if err := tmproto.VerifyContextMatch(capturedReq, dispatch, capturedSig, capturedKid, ks, time.Now()); err == nil {
+		t.Fatalf("VerifyContextMatch against dispatch URL %q unexpectedly succeeded — module regressed to signing the dispatch URL", dispatch)
 	}
 }
 
