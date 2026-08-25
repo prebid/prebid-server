@@ -145,6 +145,28 @@ func TestMakeBidsUndeterminableMediaType(t *testing.T) {
 	assert.True(t, errors.As(errs[0], &badServerResponse), "expected BadServerResponse, got %T", errs[0])
 }
 
+// An audio bid can never match a Tunnl request, since audio imps are dropped in
+// MakeRequests. It must be rejected rather than relabelled as the format the
+// sub-request happened to be built for.
+func TestMakeBidsRejectsAudioBid(t *testing.T) {
+	bidder := buildTestBidder(t)
+
+	response, errs := bidder.MakeBids(
+		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{ID: "imp-1"}}},
+		&adapters.RequestData{Uri: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban"},
+		&adapters.ResponseData{
+			StatusCode: 200,
+			Body:       []byte(`{"id":"req-1","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1,"mtype":3}]}]}`),
+		})
+
+	assert.Empty(t, response.Bids)
+	assert.Len(t, errs, 1)
+
+	var badServerResponse *errortypes.BadServerResponse
+	assert.True(t, errors.As(errs[0], &badServerResponse), "expected BadServerResponse, got %T", errs[0])
+	assert.Contains(t, errs[0].Error(), "audio")
+}
+
 // The region lives entirely in the host configured endpoint. A host serving
 // another datacenter overrides it, and both the host and the sid must follow.
 func TestHostRegionOverride(t *testing.T) {

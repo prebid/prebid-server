@@ -221,6 +221,13 @@ func getMediaTypeForBid(bid openrtb2.Bid, requestFormat string) (openrtb_ext.Bid
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupAudio:
+		// Audio impressions are never sent, so an audio bid cannot be matched to
+		// anything that was requested. Reject it rather than letting it fall
+		// through to the request format and reach the publisher mislabelled.
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported media type audio for bid %q in imp %q, Tunnl supports banner, video and native", bid.ID, bid.ImpID),
+		}
 	}
 
 	switch requestFormat {
