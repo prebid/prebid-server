@@ -63,8 +63,8 @@ github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMo
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/WURFL/golang-wurfl v1.30.3 h1:a/ZR+/mwMrA9cEVa88ig47zkVJNl3HM5OTCpPvoSYmE=
 github.com/WURFL/golang-wurfl v1.30.3/go.mod h1:cKXIyA0oIrbZ7YTOhBPX29ELt6XAM1/S7qyFIrTKkS0=
-github.com/adcontextprotocol/adcp-go/tmproto v0.1.0 h1:7yuDHgCINlWsOXIqdzv1JYl0nlL3GswzNHi9R4ddJxQ=
-github.com/adcontextprotocol/adcp-go/tmproto v0.1.0/go.mod h1:IB7hhgE9PT9bVGcJEtTo7Z5bBpYXXEoVkt8x375KaC8=
+github.com/adcontextprotocol/adcp-go/tmproto v0.1.1 h1:ZJR18AtXTZjfByT4ModdYx5ysVcdA0zlevc95D0ar6Y=
+github.com/adcontextprotocol/adcp-go/tmproto v0.1.1/go.mod h1:IB7hhgE9PT9bVGcJEtTo7Z5bBpYXXEoVkt8x375KaC8=
 github.com/adcontextprotocol/adcp-go/urlcanon v0.1.0 h1:zmLYfwIQBr3dPq+fDXtIgUr7LNHu56LZhaZp3uVCzFo=
 github.com/adcontextprotocol/adcp-go/urlcanon v0.1.0/go.mod h1:cWWYEAyTy6EAB/4nses21g3UNqzcxYEFRG8Hm7l1xiM=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=

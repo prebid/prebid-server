@@ -21,8 +21,11 @@ func (m *Module) callContext(ctx context.Context, p ProviderConfig, req *tmproto
 	var sig string
 	if m.signer != nil {
 		epoch := tmproto.CurrentEpoch()
-		endpoint := tmproto.NormalizeProviderEndpointURL(p.ContextURL)
-		sig = m.signer.SignContextMatch(req, endpoint, epoch)
+		// Bind the signature to the provider's registered BASE URL —
+		// its `endpoint` per provider-registration.json — not the full
+		// /context dispatch URL. Pinned by adcp-go
+		// tmproto/own_endpoint_test.go.
+		sig = m.signer.SignContextMatch(req, p.signingBase(), epoch)
 	}
 
 	raw, err := jsonutil.Marshal(req)
@@ -55,9 +58,12 @@ func (m *Module) callIdentity(ctx context.Context, p ProviderConfig, req *tmprot
 	var sig string
 	if m.signer != nil {
 		epoch := tmproto.CurrentEpoch()
-		endpoint := tmproto.NormalizeProviderEndpointURL(p.IdentityURL)
+		// Bind the signature to the provider's registered BASE URL —
+		// its `endpoint` per provider-registration.json — not the full
+		// /identity dispatch URL. Pinned by adcp-go
+		// tmproto/own_endpoint_test.go.
 		var err error
-		sig, err = m.signer.SignIdentityMatch(req, endpoint, epoch)
+		sig, err = m.signer.SignIdentityMatch(req, p.signingBase(), epoch)
 		if err != nil {
 			return nil, fmt.Errorf("identity sign: %w", err)
 		}

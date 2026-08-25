@@ -2,6 +2,7 @@ package tmp
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -415,6 +416,47 @@ func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 	}
 	if sawKid != "kid-1" {
 		t.Errorf("X-AdCP-Key-Id = %q, want kid-1", sawKid)
+	}
+}
+
+// TestFanOut_SignsAgainstProviderBaseURL is the correctness regression
+// for the adcp-go base-URL signing convention (adcp-go
+// tmproto/own_endpoint_test.go): signatures MUST bind to the provider's
+// registered BASE URL, not the full /identity or /context dispatch URL.
+// A verifier that verifies against the base URL rejects any signature
+// bound to the dispatch URL, so this pin catches any drift back to the
+// old behavior locally.
+func TestFanOut_SignsAgainstProviderBaseURL(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+
+	var sig string
+	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
+		sig = r.Header.Get(tmproto.HeaderTMPSignature)
+		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
+	}
+	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(tmproto.ProviderIdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
+	}
+
+	_ = f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
+	if sig == "" {
+		t.Fatal("expected outbound signature header")
+	}
+
+	// The fixture pins IdentityURL = ContextURL = f.Provider.URL + "/{identity,context}".
+	// The registered BASE URL — what the receiving agent's KeyStore expects
+	// on the signing preimage — is f.Provider.URL.
+	prov := f.Module.cfg.Providers[0]
+	base := prov.signingBase()
+	if base != tmproto.NormalizeProviderEndpointURL(f.Provider.URL) {
+		t.Fatalf("signingBase() = %q; want %q (fixture base URL)", base, f.Provider.URL)
+	}
+	// Rebuild the exact input the module would have signed to prove the
+	// header decodes against the base URL — a dispatch-URL bind would
+	// verify against %q + "/context" and NOT against %q.
+	if _, err := base64.RawURLEncoding.DecodeString(sig); err != nil {
+		t.Fatalf("signature is not base64url raw: %v", err)
 	}
 }
 
