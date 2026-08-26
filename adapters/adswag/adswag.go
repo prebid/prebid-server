@@ -127,7 +127,8 @@ func parseImpExt(imp *openrtb2.Imp) (openrtb_ext.ExtImpAdswag, error) {
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &adswagExt); err != nil {
 		return openrtb_ext.ExtImpAdswag{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid imp.ext.bidder for imp %s: %s", imp.ID, err)}
 	}
-	if strings.TrimSpace(adswagExt.PublisherID) == "" {
+	adswagExt.PublisherID = strings.TrimSpace(adswagExt.PublisherID)
+	if adswagExt.PublisherID == "" {
 		return openrtb_ext.ExtImpAdswag{}, &errortypes.BadInput{Message: fmt.Sprintf("missing publisherId for imp %s", imp.ID)}
 	}
 
@@ -228,7 +229,9 @@ type bidExt struct {
 var vastMarkup = regexp.MustCompile(`(?i)<\s*VAST[\s/>]`)
 
 // makeTypedBid resolves the bid's media type and materializes markup for
-// display bids served by URL. The bid is modified in place (adapter-owned).
+// bids served by URL: an iframe tag for display, a VAST wrapper for video
+// and audio. The bid is modified in place (adapter-owned); bid.nurl is
+// never written — it keeps its OpenRTB win-notice meaning.
 //
 // Type resolution mirrors the Prebid.js adapter and the endpoint's per-imp
 // channel precedence (banner > audio > video): VAST markup on an imp that
@@ -268,9 +271,7 @@ func makeTypedBid(imps []openrtb2.Imp, bid *openrtb2.Bid) (*adapters.TypedBid, e
 		bid.MType = openrtb2.MarkupBanner
 	case openrtb_ext.BidTypeVideo:
 		if bid.AdM == "" {
-			// VAST by URL: nurl is the conventional PBS carrier (cached /
-			// rendered as vastUrl downstream).
-			bid.NURL = serveURL
+			bid.AdM = vastWrapper(serveURL)
 		}
 		if bid.W == 0 && bid.H == 0 && imp.Video != nil && imp.Video.W != nil && imp.Video.H != nil {
 			bid.W, bid.H = *imp.Video.W, *imp.Video.H
@@ -278,7 +279,7 @@ func makeTypedBid(imps []openrtb2.Imp, bid *openrtb2.Bid) (*adapters.TypedBid, e
 		bid.MType = openrtb2.MarkupVideo
 	case openrtb_ext.BidTypeAudio:
 		if bid.AdM == "" {
-			bid.NURL = serveURL
+			bid.AdM = vastWrapper(serveURL)
 		}
 		bid.MType = openrtb2.MarkupAudio
 	}
@@ -300,6 +301,12 @@ func resolveBidType(imp *openrtb2.Imp, bid *openrtb2.Bid) (openrtb_ext.BidType, 
 		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("unsupported bid.mtype %d for impression %s", bid.MType, bid.ImpID)}
 	}
 
+	// Audio is deliberately checked before video: the endpoint classifies
+	// every imp into exactly ONE channel with precedence banner > audio >
+	// video, so on a multi-format imp declaring both audio and video it
+	// serves an AUDIO ad (audio uses VAST too — VAST 4.x absorbed DAAST).
+	// The markup alone cannot distinguish the two; this ordering mirrors
+	// the server's channel selection so the label matches what was served.
 	isVast := vastMarkup.MatchString(bid.AdM)
 	switch {
 	case imp.Audio != nil && (isVast || imp.Banner == nil):
@@ -332,6 +339,20 @@ func bannerSize(imp *openrtb2.Imp) (int64, int64) {
 		return *imp.Banner.W, *imp.Banner.H
 	}
 	return 0, 0
+}
+
+// vastWrapper wraps a VAST serve URL in a wrapper envelope — the same shape
+// PBS core produces when it caches a video bid served by nurl
+// (exchange.makeVAST). Synthesizing it here instead of writing bid.nurl
+// keeps AUDIO bids renderable (core's nurl wrapping guards on BidTypeVideo
+// only, so an audio bid served by URL would reach players with empty adm)
+// and leaves bid.nurl to its OpenRTB meaning: the win-notice URL.
+func vastWrapper(serveURL string) string {
+	return `<VAST version="3.0"><Ad><Wrapper>` +
+		`<AdSystem>adswag</AdSystem>` +
+		`<VASTAdTagURI><![CDATA[` + serveURL + `]]></VASTAdTagURI>` +
+		`<Impression></Impression><Creatives></Creatives>` +
+		`</Wrapper></Ad></VAST>`
 }
 
 // iframeMarkup wraps a serve URL in an iframe tag; fetching the iframe src at
