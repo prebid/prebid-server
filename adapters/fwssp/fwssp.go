@@ -16,6 +16,14 @@ type adapter struct {
 	endpoint string
 }
 
+type fwsspImpExt struct {
+	CustomSiteSectionId string `json:"custom_site_section_id,omitempty"`
+	NetworkId           string `json:"network_id,omitempty"`
+	ProfileId           string `json:"profile_id,omitempty"`
+	TID                 string `json:"tid,omitempty"`
+	TIDT                int    `json:"tidt,omitempty"`
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
@@ -26,15 +34,28 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			}}
 		}
 
-		var impExt openrtb_ext.ImpExtFWSSP
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+		var fwsspParams openrtb_ext.ImpExtFWSSP
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &fwsspParams); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
 			}}
 		}
 
+		var tidFields struct {
+			TID  string `json:"tid,omitempty"`
+			TIDT int    `json:"tidt,omitempty"`
+		}
+		// imp.Ext was already validated above; this unmarshal on the same bytes cannot fail given valid JSON
+		_ = jsonutil.Unmarshal(imp.Ext, &tidFields)
+
 		var err error
-		if imp.Ext, err = jsonutil.Marshal(impExt); err != nil {
+		if imp.Ext, err = jsonutil.Marshal(fwsspImpExt{
+			CustomSiteSectionId: fwsspParams.CustomSiteSectionId,
+			NetworkId:           fwsspParams.NetworkId,
+			ProfileId:           fwsspParams.ProfileId,
+			TID:                 tidFields.TID,
+			TIDT:                tidFields.TIDT,
+		}); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to transfer requestImpExt to Json fomat, %s", err.Error()),
 			}}
