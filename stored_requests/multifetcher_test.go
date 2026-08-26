@@ -176,3 +176,18 @@ func TestMultiFetcherAccountNotFound(t *testing.T) {
 	assert.Nil(t, account)
 	assert.EqualError(t, errs[0], NotFoundError{"MISSING", "Account"}.Error())
 }
+
+type noAccountsFetcher struct{}
+
+func (noAccountsFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+	return nil, nil, nil
+}
+func (noAccountsFetcher) FetchResponses(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
+	return nil, nil
+}
+func (noAccountsFetcher) FetchAccount(ctx context.Context, def json.RawMessage, id string) (json.RawMessage, []error) {
+	return nil, []error{NotFoundError{id, "Account"}}
+}
+func (noAccountsFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
+}

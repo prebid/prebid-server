@@ -15,6 +15,13 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
+// Fetcher is an optional generic interface that a fetcher may implement to return
+// fully-derived, immutable typed values directly. Legacy account fetchers do not
+// implement it and take the JSON path unchanged.
+type Fetcher[T any] interface {
+	Fetch(ctx context.Context, id string) (T, []error)
+}
+
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
 func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string, me metrics.MetricsEngine) (account *config.Account, errs []error) {
 	if cfg.AccountRequired && accountID == metrics.PublisherUnknown {
@@ -23,6 +30,16 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		}}
 	}
 
+	if typed, ok := fetcher.(Fetcher[*config.Account]); ok {
+		return getAccountTyped(ctx, cfg, typed, accountID)
+	}
+	return getAccountJSON(ctx, cfg, fetcher, accountID)
+}
+
+// getAccountJSON is the legacy account resolution path: it fetches raw
+// (defaults-merged) JSON, unmarshals it, unpacks DSA defaults and computes the
+// derived config on every call.
+func getAccountJSON(ctx context.Context, cfg *config.Configuration, fetcher stored_requests.AccountFetcher, accountID string) (account *config.Account, errs []error) {
 	if accountJSON, accErrs := fetcher.FetchAccount(ctx, cfg.AccountDefaultsJSON(), accountID); len(accErrs) > 0 || accountJSON == nil {
 		// accountID does not reference a valid account
 		for _, e := range accErrs {
@@ -70,6 +87,59 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		return nil, errs
 	}
 
+	applyIPMaskingDefaults(account)
+	return account, nil
+}
+
+// getAccountTyped is the Fetchers 2.0 account resolution path. The fetcher returns
+// a fully-derived, immutable *config.Account (unmarshal + DSA + derive + IP masking
+// were done once, at cache insert). This path only applies the not-found fallback
+// and the per-request access gating.
+func getAccountTyped(ctx context.Context, cfg *config.Configuration, fetcher Fetcher[*config.Account], accountID string) (account *config.Account, errs []error) {
+	fetched, accErrs := fetcher.Fetch(ctx, accountID)
+	if len(accErrs) > 0 {
+		// A malformed account is a hard error, mirroring the legacy path where the
+		// unmarshal/DSA failure returns immediately rather than falling back to defaults.
+		for _, e := range accErrs {
+			if _, ok := e.(*errortypes.MalformedAcct); ok {
+				return nil, accErrs
+			}
+		}
+		// Otherwise (not-found, or a swallowed backend error) fall through to the
+		// AccountDefaults fallback, matching the legacy not-found branch.
+		fetched = nil
+	}
+	if fetched == nil {
+		if cfg.AccountRequired && cfg.AccountDefaults.Disabled {
+			return nil, []error{&errortypes.AcctRequired{
+				Message: "Prebid-server could not verify the Account ID. Please reach out to the prebid server host.",
+			}}
+		}
+		// Make a copy of AccountDefaults instead of taking a reference,
+		// to preserve original accountID in case is needed to check NonStandardPublisherMap
+		pubAccount := cfg.AccountDefaults
+		pubAccount.ID = accountID
+		account = &pubAccount
+	} else {
+		// Fully-derived, immutable account returned straight from the cache.
+		account = fetched
+	}
+	if account.Disabled {
+		errs = append(errs, &errortypes.AccountDisabled{
+			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", accountID),
+		})
+		return nil, errs
+	}
+
+	// No-op for the cached (already-masked) account; corrects the defaults copy.
+	applyIPMaskingDefaults(account)
+	return account, nil
+}
+
+// applyIPMaskingDefaults falls back to the default IPv4/IPv6 masking bit sizes when
+// the configured values are invalid. Re-running it on an already-valid account is a
+// read-only no-op.
+func applyIPMaskingDefaults(account *config.Account) {
 	if ipV6Err := account.Privacy.IPv6Config.Validate(nil); len(ipV6Err) > 0 {
 		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6DefaultMaskingBitSize
 	}
@@ -77,8 +147,6 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	if ipV4Err := account.Privacy.IPv4Config.Validate(nil); len(ipV4Err) > 0 {
 		account.Privacy.IPv4Config.AnonKeepBits = iputil.IPv4DefaultMaskingBitSize
 	}
-
-	return account, nil
 }
 
 // TCF2Enforcements maps enforcement algo string values to their integer representation and is
