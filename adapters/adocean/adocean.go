@@ -10,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -60,6 +61,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Message: "No impression in the bid request",
 		}}
 	}
+
 	requests := make([]*adapters.RequestData, 0, len(request.Imp))
 	var errs []error
 
@@ -69,6 +71,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
+
 		params, err := parseImpExt(imp)
 		if err != nil {
 			errs = append(errs, err)
@@ -80,6 +83,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
+
 		requests = append(requests, requestData)
 	}
 
@@ -150,8 +154,9 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp *openrtb2.Imp, p
 	if err != nil {
 		return nil, err
 	}
+
 	requestURL.RawQuery = strings.ReplaceAll(query.Encode(), "+", "%20")
-	if len(requestURL.String()) >= maxUriLength {
+	if len(requestURL.String()) > maxUriLength {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("AdOcean request URL exceeds maximum length of %d characters", maxUriLength),
 		}
@@ -166,13 +171,18 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp *openrtb2.Imp, p
 }
 
 func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb_ext.ExtImpAdOcean) (url.Values, error) {
-	query := url.Values{}
-	query.Set("pbsrv_v", adapterVersion)
 	if params.MasterID == "" || params.SlaveID == "" {
 		return nil, &errortypes.BadInput{
 			Message: "missing required AdOcean parameters: masterId and slaveId must be provided",
 		}
 	}
+
+	query := url.Values{}
+	for key, value := range params.EmitterRequestParams {
+		query.Set(key, fmt.Sprint(value))
+	}
+
+	query.Set("pbsrv_v", adapterVersion)
 	query.Set("id", params.MasterID)
 	query.Set("slaves", shortSlaveID(params.SlaveID))
 
@@ -186,10 +196,6 @@ func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb
 		if request.User.BuyerUID != "" {
 			query.Set("aouserid", request.User.BuyerUID)
 		}
-	}
-
-	for key, value := range params.EmitterRequestParams {
-		query.Add(key, fmt.Sprint(value))
 	}
 
 	if imp.Video != nil {
@@ -287,17 +293,13 @@ func (a *adapter) MakeBids(
 		if adUnit.Error == "true" {
 			continue
 		}
-		impID, found := findImpID(internalRequest, adUnit.ID)
-		if !found {
-			continue
-		}
 
-		typedBid, currency, err := makeBid(adUnit, impID)
+		typedBid, currency, err := makeBid(adUnit, externalRequest.ImpIDs[0])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+
 		if lastCurrency == nil {
 			lastCurrency = &currency
 		} else if *lastCurrency != currency {
@@ -306,6 +308,8 @@ func (a *adapter) MakeBids(
 			})
 			continue
 		}
+
+		bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		bidderResponse.Currency = currency
 	}
 
@@ -314,18 +318,6 @@ func (a *adapter) MakeBids(
 	}
 
 	return bidderResponse, errs
-}
-
-func findImpID(internalRequest *openrtb2.BidRequest, placementID string) (string, bool) {
-	for index := range internalRequest.Imp {
-		imp := &internalRequest.Imp[index]
-
-		params, err := parseImpExt(imp)
-		if err == nil && params.SlaveID == placementID {
-			return imp.ID, true
-		}
-	}
-	return "", false
 }
 
 func makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, error) {
@@ -366,9 +358,18 @@ func makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, e
 		aDomain = []string{}
 	}
 
+	genereatedUuid, err := uuid.NewV4()
+	if err != nil {
+		return nil, "", fmt.Errorf(
+			"failed to generate bid ID for AdOcean placement %q: %w",
+			adUnit.ID,
+			err,
+		)
+	}
+
 	return &adapters.TypedBid{
 		Bid: &openrtb2.Bid{
-			ID:      adUnit.ID,
+			ID:      genereatedUuid.String(),
 			ImpID:   impID,
 			Price:   price,
 			AdM:     adMarkup,
