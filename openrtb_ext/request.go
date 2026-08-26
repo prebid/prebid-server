@@ -85,6 +85,9 @@ type ExtRequestPrebid struct {
 	// either rejected, nobid, input error
 	ReturnAllBidStatus bool `json:"returnallbidstatus,omitempty"`
 
+	// ReturnBidFilterStatus if true populates bidresponse.ext.prebid.seatnonbid with bidders filtered by Prebid rules.
+	ReturnBidFilterStatus bool `json:"returnbidfilterstatus,omitempty"`
+
 	// Trace controls the level of detail in the output information returned from executing hooks.
 	// There are two options:
 	// - verbose: sets maximum level of output information

@@ -241,6 +241,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	if err != nil {
 		return nil, err
 	}
+	filteredSeatNonBidBuilder := SeatNonBidBuilder{}
+	filteredSeatNonBidBuilder.appendSeatNonBids(seatNonBidFromHookOutcomes(r.HookExecutor))
 
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
 	if err != nil {
@@ -538,16 +540,47 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	bidResponse := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs, &seatNonBidBuilder)
 	bidResponse = adservertargeting.Apply(r.BidRequestWrapper, r.ResolvedBidRequest, bidResponse, r.QueryParams, bidResponseExt, r.Account.TruncateTargetAttribute)
 
+	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBidForResponse(requestExtPrebid, seatNonBidBuilder, filteredSeatNonBidBuilder))
+
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 	if err != nil {
 		return nil, err
 	}
-	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBidBuilder)
-
 	return &AuctionResponse{
 		BidResponse:    bidResponse,
 		ExtBidResponse: bidResponseExt,
 	}, nil
+}
+
+type hookOutcomeReader interface {
+	GetOutcomes() []hookexecution.StageOutcome
+}
+
+func seatNonBidFromHookOutcomes(executor hookexecution.StageExecutor) []openrtb_ext.SeatNonBid {
+	reader, ok := executor.(hookOutcomeReader)
+	if !ok {
+		return nil
+	}
+	var seatNonBids []openrtb_ext.SeatNonBid
+	for _, stage := range reader.GetOutcomes() {
+		for _, group := range stage.Groups {
+			for _, outcome := range group.InvocationResults {
+				seatNonBids = append(seatNonBids, outcome.SeatNonBid...)
+			}
+		}
+	}
+	return seatNonBids
+}
+
+func seatNonBidForResponse(prebid *openrtb_ext.ExtRequestPrebid, all SeatNonBidBuilder, filtered SeatNonBidBuilder) SeatNonBidBuilder {
+	if prebid == nil || !prebid.ReturnBidFilterStatus {
+		return all
+	}
+	if !prebid.ReturnAllBidStatus {
+		return filtered
+	}
+	all.append(filtered)
+	return all
 }
 
 // getBidderPreferredMediaType reads the preferred media type from the request and account and returns a map of bidder to preferred media type. Preference given to the request over account.

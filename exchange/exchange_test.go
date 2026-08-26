@@ -6115,6 +6115,22 @@ func TestSetSeatNonBid(t *testing.T) {
 	}
 }
 
+func TestSeatNonBidForResponse(t *testing.T) {
+	newAll := func() SeatNonBidBuilder {
+		return SeatNonBidBuilder{"regular": {{ImpId: "imp-regular", StatusCode: int(ErrorGeneral)}}}
+	}
+	filtered := SeatNonBidBuilder{"filtered": {{ImpId: "imp-filtered", StatusCode: int(RequestBlockedGeneral)}}}
+
+	assert.Equal(t, newAll(), seatNonBidForResponse(nil, newAll(), filtered))
+	assert.Equal(t, newAll(), seatNonBidForResponse(&openrtb_ext.ExtRequestPrebid{}, newAll(), filtered))
+	assert.Equal(t, filtered, seatNonBidForResponse(&openrtb_ext.ExtRequestPrebid{ReturnBidFilterStatus: true}, newAll(), filtered))
+	assert.Equal(t, newAll(), seatNonBidForResponse(&openrtb_ext.ExtRequestPrebid{ReturnAllBidStatus: true}, newAll(), filtered))
+
+	allAndFiltered := seatNonBidForResponse(&openrtb_ext.ExtRequestPrebid{ReturnAllBidStatus: true, ReturnBidFilterStatus: true}, newAll(), filtered)
+	assert.ElementsMatch(t, []openrtb_ext.NonBid{{ImpId: "imp-regular", StatusCode: int(ErrorGeneral)}}, allAndFiltered["regular"])
+	assert.ElementsMatch(t, []openrtb_ext.NonBid{{ImpId: "imp-filtered", StatusCode: int(RequestBlockedGeneral)}}, allAndFiltered["filtered"])
+}
+
 func TestBuildMultiBidMap(t *testing.T) {
 	type testCase struct {
 		desc     string

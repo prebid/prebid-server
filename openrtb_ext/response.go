@@ -123,7 +123,8 @@ type NonBidObject struct {
 
 // ExtResponseNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
 type ExtResponseNonBidPrebid struct {
-	Bid NonBidObject `json:"bid"`
+	Bid  NonBidObject `json:"bid"`
+	Type string       `json:"type,omitempty"`
 }
 
 type NonBidExt struct {

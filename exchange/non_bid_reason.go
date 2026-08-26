@@ -17,6 +17,7 @@ const (
 	ErrorGeneral                           NonBidReason = 100 // Error - General
 	ErrorTimeout                           NonBidReason = 101 // Error - Timeout
 	ErrorBidderUnreachable                 NonBidReason = 103 // Error - Bidder Unreachable
+	RequestBlockedGeneral                  NonBidReason = 200 // Request Blocked - General
 	ResponseRejectedGeneral                NonBidReason = 300
 	ResponseRejectedBelowFloor             NonBidReason = 301 // Response Rejected - Below Floor
 	ResponseRejectedCategoryMappingInvalid NonBidReason = 303 // Response Rejected - Category Mapping Invalid

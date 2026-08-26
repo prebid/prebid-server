@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // HookResult represents the result of execution the concrete hook instance.
@@ -18,6 +19,7 @@ type HookResult[T any] struct {
 	Warnings      []string
 	DebugMessages []string
 	AnalyticsTags hookanalytics.Analytics
+	SeatNonBid    []openrtb_ext.SeatNonBid
 	ModuleContext *ModuleContext // holds values that the module wants to pass to itself at later stages
 }
 

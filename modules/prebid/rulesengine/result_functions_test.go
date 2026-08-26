@@ -128,6 +128,32 @@ func TestExcludeBiddersCall(t *testing.T) {
 	}
 }
 
+func TestExcludeBiddersAddsFilteredSeatNonBid(t *testing.T) {
+	eb := &ExcludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder1", "not-present"}}}
+	result := &ProcessedAuctionHookResult{
+		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
+		},
+		AllowedBidders: make(map[string]struct{}),
+	}
+
+	err := eb.Call(mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"}), result, rules.ResultFunctionMeta{
+		SchemaFunctionResults: []rules.SchemaFunctionStep{{FuncName: rules.DeviceCountryIn, FuncResult: "true"}},
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, []openrtb_ext.SeatNonBid{{
+		Seat: "bidder1",
+		NonBid: []openrtb_ext.NonBid{{
+			ImpId:      "imp1",
+			StatusCode: 200,
+			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+				Type: "geo",
+			}},
+		}},
+	}}, result.HookResult.SeatNonBid)
+}
+
 func TestIncludeBiddersName(t *testing.T) {
 	ib := &IncludeBidders{}
 	actualName := ib.Name()
@@ -188,6 +214,34 @@ func TestIncludeBiddersCall(t *testing.T) {
 			assert.Len(t, result.AllowedBidders, len(tt.argBidders))
 		})
 	}
+}
+
+func TestIncludeBiddersAddsFilteredSeatNonBid(t *testing.T) {
+	ib := &IncludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder1"}}}
+	result := &ProcessedAuctionHookResult{
+		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
+		},
+		AllowedBidders: make(map[string]struct{}),
+	}
+	req := mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"})
+
+	err := ib.Call(req, result, rules.ResultFunctionMeta{
+		SchemaFunctionResults: []rules.SchemaFunctionStep{{FuncName: rules.DataCenterIn, FuncResult: "true"}},
+	})
+	appendInclusionWarnings(req, result)
+
+	assert.NoError(t, err)
+	assert.Equal(t, []openrtb_ext.SeatNonBid{{
+		Seat: "bidder2",
+		NonBid: []openrtb_ext.NonBid{{
+			ImpId:      "imp1",
+			StatusCode: 200,
+			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+				Type: "datacenter",
+			}},
+		}},
+	}}, result.HookResult.SeatNonBid)
 }
 
 // Helper function to mock RequestWrapper with bidders
