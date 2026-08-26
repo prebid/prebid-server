@@ -24,37 +24,29 @@ type fwsspImpExt struct {
 	TIDT                int    `json:"tidt,omitempty"`
 }
 
+type fwsspRequestImpExt struct {
+	Bidder openrtb_ext.ImpExtFWSSP `json:"bidder"`
+	TID    string                  `json:"tid,omitempty"`
+	TIDT   int                     `json:"tidt,omitempty"`
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		var params fwsspRequestImpExt
+		if err := jsonutil.Unmarshal(imp.Ext, &params); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
 			}}
 		}
-
-		var fwsspParams openrtb_ext.ImpExtFWSSP
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &fwsspParams); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
-			}}
-		}
-
-		var tidFields struct {
-			TID  string `json:"tid,omitempty"`
-			TIDT int    `json:"tidt,omitempty"`
-		}
-		// imp.Ext was already validated above; this unmarshal on the same bytes cannot fail given valid JSON
-		_ = jsonutil.Unmarshal(imp.Ext, &tidFields)
 
 		var err error
-		if imp.Ext, err = jsonutil.Marshal(fwsspImpExt{
-			CustomSiteSectionId: fwsspParams.CustomSiteSectionId,
-			NetworkId:           fwsspParams.NetworkId,
-			ProfileId:           fwsspParams.ProfileId,
-			TID:                 tidFields.TID,
-			TIDT:                tidFields.TIDT,
+		if imp.Ext, err = jsonutil.Marshal(&fwsspImpExt{
+			CustomSiteSectionId: params.Bidder.CustomSiteSectionId,
+			NetworkId:           params.Bidder.NetworkId,
+			ProfileId:           params.Bidder.ProfileId,
+			TID:                 params.TID,
+			TIDT:                params.TIDT,
 		}); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to transfer requestImpExt to Json fomat, %s", err.Error()),
