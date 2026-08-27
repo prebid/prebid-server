@@ -241,6 +241,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	if err != nil {
 		return nil, err
 	}
+	// Processed-auction hooks can filter bidders before adapter fanout and return status for reporting.
 	filteredSeatNonBidBuilder := SeatNonBidBuilder{}
 	filteredSeatNonBidBuilder.appendSeatNonBids(seatNonBidFromHookOutcomes(r.HookExecutor))
 
@@ -540,12 +541,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	bidResponse := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs, &seatNonBidBuilder)
 	bidResponse = adservertargeting.Apply(r.BidRequestWrapper, r.ResolvedBidRequest, bidResponse, r.QueryParams, bidResponseExt, r.Account.TruncateTargetAttribute)
 
-	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBidForResponse(requestExtPrebid, seatNonBidBuilder, filteredSeatNonBidBuilder))
+	// Encode only the seatnonbid entries requested for this response. The endpoint layer
+	// still handles the existing returnallbidstatus path for non-filtered statuses.
+	bidResponseExt = setSeatNonBid(bidResponseExt, buildResponseSeatNonBid(requestExtPrebid, seatNonBidBuilder, filteredSeatNonBidBuilder))
 
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 	if err != nil {
 		return nil, err
 	}
+	// Preserve the existing non-filtered statuses on AuctionResponse for endpoint-level handling.
+	bidResponseExt = setSeatNonBid(bidResponseExt, seatNonBidBuilder)
 	return &AuctionResponse{
 		BidResponse:    bidResponse,
 		ExtBidResponse: bidResponseExt,
@@ -572,15 +577,20 @@ func seatNonBidFromHookOutcomes(executor hookexecution.StageExecutor) []openrtb_
 	return seatNonBids
 }
 
-func seatNonBidForResponse(prebid *openrtb_ext.ExtRequestPrebid, all SeatNonBidBuilder, filtered SeatNonBidBuilder) SeatNonBidBuilder {
+func buildResponseSeatNonBid(prebid *openrtb_ext.ExtRequestPrebid, all SeatNonBidBuilder, filtered SeatNonBidBuilder) SeatNonBidBuilder {
 	if prebid == nil || !prebid.ReturnBidFilterStatus {
-		return all
+		return nil
 	}
 	if !prebid.ReturnAllBidStatus {
 		return filtered
 	}
-	all.append(filtered)
-	return all
+	return joinedSeatNonBids(all, filtered)
+}
+
+func joinedSeatNonBids(builders ...SeatNonBidBuilder) SeatNonBidBuilder {
+	joined := SeatNonBidBuilder{}
+	joined.append(builders...)
+	return joined
 }
 
 // getBidderPreferredMediaType reads the preferred media type from the request and account and returns a map of bidder to preferred media type. Preference given to the request over account.

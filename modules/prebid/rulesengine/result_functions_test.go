@@ -145,7 +145,35 @@ func TestExcludeBiddersAddsFilteredSeatNonBid(t *testing.T) {
 	assert.Equal(t, []openrtb_ext.SeatNonBid{{
 		Seat: "bidder1",
 		NonBid: []openrtb_ext.NonBid{{
-			ImpId:      "imp1",
+			StatusCode: 200,
+			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{
+				Type: "geo",
+			}},
+		}},
+	}}, result.HookResult.SeatNonBid)
+}
+
+func TestExcludeBiddersAddsUniqueFilteredSeatNonBid(t *testing.T) {
+	result := &ProcessedAuctionHookResult{
+		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
+			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
+		},
+		AllowedBidders: make(map[string]struct{}),
+	}
+	req := mockRequestWrapperWithBidders(t, []string{"bidder1"})
+
+	geoExclude := &ExcludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder1"}}}
+	datacenterExclude := &ExcludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder1"}}}
+	assert.NoError(t, geoExclude.Call(req, result, rules.ResultFunctionMeta{
+		SchemaFunctionResults: []rules.SchemaFunctionStep{{FuncName: rules.DeviceCountryIn, FuncResult: "true"}},
+	}))
+	assert.NoError(t, datacenterExclude.Call(req, result, rules.ResultFunctionMeta{
+		SchemaFunctionResults: []rules.SchemaFunctionStep{{FuncName: rules.DataCenterIn, FuncResult: "true"}},
+	}))
+
+	assert.Equal(t, []openrtb_ext.SeatNonBid{{
+		Seat: "bidder1",
+		NonBid: []openrtb_ext.NonBid{{
 			StatusCode: 200,
 			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{
 				Type: "geo",
@@ -235,7 +263,6 @@ func TestIncludeBiddersAddsFilteredSeatNonBid(t *testing.T) {
 	assert.Equal(t, []openrtb_ext.SeatNonBid{{
 		Seat: "bidder2",
 		NonBid: []openrtb_ext.NonBid{{
-			ImpId:      "imp1",
 			StatusCode: 200,
 			Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{
 				Type: "datacenter",

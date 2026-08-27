@@ -81,7 +81,7 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *Processe
 	}
 
 	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(excludedBidders)
-	result.HookResult.SeatNonBid = append(result.HookResult.SeatNonBid, filteredSeatNonBids(req, eb.Args.Bidders, filterTypeFromMeta(meta))...)
+	result.HookResult.SeatNonBid = appendUniqueFilteredSeatNonBids(result.HookResult.SeatNonBid, filteredSeatNonBids(req, eb.Args.Bidders, filterTypeFromMeta(meta)))
 	return nil
 }
 
@@ -140,16 +140,52 @@ func appendInclusionWarnings(req *openrtb_ext.RequestWrapper, result *ProcessedA
 	meta := result.IncludeContexts[len(result.IncludeContexts)-1]
 	warning := fmt.Sprintf("Bidders [%s] were removed from the request by the rules engine include list [%s]", strings.Join(removedBidders, ", "), strings.Join(allowed, ", "))
 	result.HookResult.Warnings = append(result.HookResult.Warnings, warning)
-	result.HookResult.SeatNonBid = append(result.HookResult.SeatNonBid, filteredSeatNonBids(req, removedBidders, filterTypeFromMeta(meta))...)
+	result.HookResult.SeatNonBid = appendUniqueFilteredSeatNonBids(result.HookResult.SeatNonBid, filteredSeatNonBids(req, removedBidders, filterTypeFromMeta(meta)))
 }
 
+// Keep filtered statuses to one entry per bidder even if multiple rules remove the same bidder.
+func appendUniqueFilteredSeatNonBids(existing []openrtb_ext.SeatNonBid, additions []openrtb_ext.SeatNonBid) []openrtb_ext.SeatNonBid {
+	seen := make(map[string]struct{}, len(existing)+len(additions))
+	for _, seatNonBid := range existing {
+		for _, nonBid := range seatNonBid.NonBid {
+			if nonBid.ImpId != "" || nonBid.StatusCode != 200 || nonBid.Ext == nil {
+				continue
+			}
+			seen[filteredSeatNonBidKey(seatNonBid.Seat)] = struct{}{}
+		}
+	}
+	for _, seatNonBid := range additions {
+		if len(seatNonBid.NonBid) == 0 {
+			continue
+		}
+		nonBid := seatNonBid.NonBid[0]
+		if nonBid.Ext == nil {
+			existing = append(existing, seatNonBid)
+			continue
+		}
+		key := filteredSeatNonBidKey(seatNonBid.Seat)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		existing = append(existing, seatNonBid)
+	}
+	return existing
+}
+
+func filteredSeatNonBidKey(seat string) string {
+	return seat
+}
+
+// Rules filtering is bidder/request scoped today, so emit one status per filtered bidder
+// without impid instead of repeating the same reason for every impression.
 func filteredSeatNonBids(req *openrtb_ext.RequestWrapper, bidders []string, filterType FilterType) []openrtb_ext.SeatNonBid {
 	bidderSet := make(map[string]struct{}, len(bidders))
 	for _, bidder := range bidders {
 		bidderSet[bidder] = struct{}{}
 	}
 
-	seatNonBidsBySeat := make(map[string][]openrtb_ext.NonBid)
+	filteredSeats := make(map[string]struct{}, len(bidders))
 	if req == nil {
 		return nil
 	}
@@ -166,21 +202,20 @@ func filteredSeatNonBids(req *openrtb_ext.RequestWrapper, bidders []string, filt
 			if _, ok := bidderSet[bidder]; !ok {
 				continue
 			}
-			seatNonBidsBySeat[bidder] = append(seatNonBidsBySeat[bidder], openrtb_ext.NonBid{
-				ImpId:      impWrapper.ID,
+			filteredSeats[bidder] = struct{}{}
+		}
+	}
+
+	seatNonBids := make([]openrtb_ext.SeatNonBid, 0, len(filteredSeats))
+	for seat := range filteredSeats {
+		seatNonBids = append(seatNonBids, openrtb_ext.SeatNonBid{
+			Seat: seat,
+			NonBid: []openrtb_ext.NonBid{{
 				StatusCode: 200,
 				Ext: &openrtb_ext.NonBidExt{Prebid: openrtb_ext.ExtResponseNonBidPrebid{
 					Type: string(filterType),
 				}},
-			})
-		}
-	}
-
-	seatNonBids := make([]openrtb_ext.SeatNonBid, 0, len(seatNonBidsBySeat))
-	for seat, nonBids := range seatNonBidsBySeat {
-		seatNonBids = append(seatNonBids, openrtb_ext.SeatNonBid{
-			Seat:   seat,
-			NonBid: nonBids,
+			}},
 		})
 	}
 	return seatNonBids
