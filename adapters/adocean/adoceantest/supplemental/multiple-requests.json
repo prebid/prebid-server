@@ -162,7 +162,7 @@
       "bids": [
         {
           "bid": {
-            "id": "adoceanmyaozpniqismex",
+            "id": "30470a14-2949-4110-abce-b62d57304ad5",
             "impid": "banner-imp-one",
             "price": 0.019,
             "adm": "<!-- Banner one -->",
@@ -181,7 +181,7 @@
       "bids": [
         {
           "bid": {
-            "id": "adoceanmyaowafpdwlrks",
+            "id": "30470a14-2949-4110-abce-b62d57304ad5",
             "impid": "banner-imp-two",
             "price": 0.02,
             "adm": "<!-- Banner two -->",
@@ -200,7 +200,7 @@
       "bids": [
         {
           "bid": {
-            "id": "adoceanmyaolifgmvmpfj",
+            "id": "30470a14-2949-4110-abce-b62d57304ad5",
             "impid": "video-imp",
             "price": 0.021,
             "adm": "<!-- Video -->",

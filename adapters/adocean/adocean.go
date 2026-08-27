@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/uuidutil"
 )
 
 const (
@@ -42,6 +43,7 @@ type responseAdUnit struct {
 
 type adapter struct {
 	endpointTemplate *template.Template
+	uuidGenerator    uuidutil.UUIDGenerator
 }
 
 // Builder builds a new instance of the AdOcean adapter for the given bidder with the given config.
@@ -51,7 +53,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, errors.New("unable to parse endpoint template")
 	}
 
-	return &adapter{endpointTemplate: endpointTemplate}, nil
+	return &adapter{
+		endpointTemplate: endpointTemplate,
+		uuidGenerator:    uuidutil.UUIDRandomGenerator{},
+	}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -60,6 +65,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			Message: "No impression in the bid request",
 		}}
 	}
+
 	requests := make([]*adapters.RequestData, 0, len(request.Imp))
 	var errs []error
 
@@ -69,6 +75,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
+
 		params, err := parseImpExt(imp)
 		if err != nil {
 			errs = append(errs, err)
@@ -80,6 +87,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
+
 		requests = append(requests, requestData)
 	}
 
@@ -92,14 +100,19 @@ func validateImp(imp *openrtb2.Imp) error {
 			Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only banner and instream video", imp.ID),
 		}
 	}
-	if imp.Video != nil && (imp.Video.Plcmt == adcom1.VideoPlcmtAccompanyingContent ||
-		imp.Video.Plcmt == adcom1.VideoPlcmtNoContent ||
-		imp.Video.Placement == adcom1.VideoPlacementInBanner) {
+	if imp.Video != nil && !isInstreamVideo(imp.Video) {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s: AdOcean doesn't support outstream video", imp.ID),
+			Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only instream video", imp.ID),
 		}
 	}
 	return nil
+}
+
+func isInstreamVideo(video *openrtb2.Video) bool {
+	if video.Plcmt != 0 {
+		return video.Plcmt == adcom1.VideoPlcmtInstream
+	}
+	return video.Placement == adcom1.VideoPlacementInStream
 }
 
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdOcean, error) {
@@ -150,8 +163,9 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp *openrtb2.Imp, p
 	if err != nil {
 		return nil, err
 	}
+
 	requestURL.RawQuery = strings.ReplaceAll(query.Encode(), "+", "%20")
-	if len(requestURL.String()) >= maxUriLength {
+	if len(requestURL.String()) > maxUriLength {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("AdOcean request URL exceeds maximum length of %d characters", maxUriLength),
 		}
@@ -166,13 +180,18 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp *openrtb2.Imp, p
 }
 
 func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb_ext.ExtImpAdOcean) (url.Values, error) {
-	query := url.Values{}
-	query.Set("pbsrv_v", adapterVersion)
 	if params.MasterID == "" || params.SlaveID == "" {
 		return nil, &errortypes.BadInput{
 			Message: "missing required AdOcean parameters: masterId and slaveId must be provided",
 		}
 	}
+
+	query := url.Values{}
+	for key, value := range params.EmitterRequestParams {
+		query.Set(key, fmt.Sprint(value))
+	}
+
+	query.Set("pbsrv_v", adapterVersion)
 	query.Set("id", params.MasterID)
 	query.Set("slaves", shortSlaveID(params.SlaveID))
 
@@ -186,10 +205,6 @@ func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb
 		if request.User.BuyerUID != "" {
 			query.Set("aouserid", request.User.BuyerUID)
 		}
-	}
-
-	for key, value := range params.EmitterRequestParams {
-		query.Add(key, fmt.Sprint(value))
 	}
 
 	if imp.Video != nil {
@@ -287,17 +302,13 @@ func (a *adapter) MakeBids(
 		if adUnit.Error == "true" {
 			continue
 		}
-		impID, found := findImpID(internalRequest, adUnit.ID)
-		if !found {
-			continue
-		}
 
-		typedBid, currency, err := makeBid(adUnit, impID)
+		typedBid, currency, err := a.makeBid(adUnit, externalRequest.ImpIDs[0])
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+
 		if lastCurrency == nil {
 			lastCurrency = &currency
 		} else if *lastCurrency != currency {
@@ -306,6 +317,8 @@ func (a *adapter) MakeBids(
 			})
 			continue
 		}
+
+		bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		bidderResponse.Currency = currency
 	}
 
@@ -316,19 +329,7 @@ func (a *adapter) MakeBids(
 	return bidderResponse, errs
 }
 
-func findImpID(internalRequest *openrtb2.BidRequest, placementID string) (string, bool) {
-	for index := range internalRequest.Imp {
-		imp := &internalRequest.Imp[index]
-
-		params, err := parseImpExt(imp)
-		if err == nil && params.SlaveID == placementID {
-			return imp.ID, true
-		}
-	}
-	return "", false
-}
-
-func makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, error) {
+func (a *adapter) makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, error) {
 	if adUnit.Code == "" || adUnit.Height == "" || adUnit.Width == "" || adUnit.Price == "" {
 		return nil, "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("incomplete bid for AdOcean placement %q", adUnit.ID),
@@ -366,9 +367,18 @@ func makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, e
 		aDomain = []string{}
 	}
 
+	bidID, err := a.uuidGenerator.Generate()
+	if err != nil {
+		return nil, "", fmt.Errorf(
+			"failed to generate bid ID for AdOcean placement %q: %w",
+			adUnit.ID,
+			err,
+		)
+	}
+
 	return &adapters.TypedBid{
 		Bid: &openrtb2.Bid{
-			ID:      adUnit.ID,
+			ID:      bidID,
 			ImpID:   impID,
 			Price:   price,
 			AdM:     adMarkup,

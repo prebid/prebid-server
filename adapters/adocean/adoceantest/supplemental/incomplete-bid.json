@@ -55,6 +55,18 @@
         "status": 200,
         "body": [
           {
+            "id": "valid-placement",
+            "price": "0.019000",
+            "ttl": "360",
+            "crid": "valid-creative",
+            "currency": "EUR",
+            "width": "300",
+            "height": "250",
+            "isVideo": false,
+            "code": "%3C!--%20Valid%20creative%20--%3E",
+            "adomain": ["adocean.pl"]
+          },
+          {
             "id": "adoceanmyaozpniqismex",
             "ttl": "360",
             "crid": "veeinoriep",
@@ -73,6 +85,27 @@
     {
       "value": "incomplete bid for AdOcean placement \"adoceanmyaozpniqismex\"",
       "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "30470a14-2949-4110-abce-b62d57304ad5",
+            "impid": "banner-imp",
+            "price": 0.019,
+            "adm": "<!-- Valid creative -->",
+            "crid": "valid-creative",
+            "adomain": ["adocean.pl"],
+            "w": 300,
+            "h": 250,
+            "exp": 360
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }

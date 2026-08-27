@@ -12,7 +12,8 @@
         "video": {
           "mimes": ["video/mp4"],
           "minduration": 10,
-          "maxduration": 60
+          "maxduration": 60,
+          "plcmt": 1
         },
         "ext": {
           "bidder": {
@@ -60,7 +61,7 @@
       "bids": [
         {
           "bid": {
-            "id": "adoceanmyaolifgmvmpfj",
+            "id": "30470a14-2949-4110-abce-b62d57304ad5",
             "impid": "video-imp",
             "price": 0.019,
             "adm": "<!-- Video Creative -->",
