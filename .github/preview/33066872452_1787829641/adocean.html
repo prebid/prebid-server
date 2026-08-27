@@ -1,0 +1,505 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>adocean: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/adocean/adocean.go (95.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package adocean
+
+import (
+        "errors"
+        "fmt"
+        "math/rand"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+        "text/template"
+
+        "github.com/prebid/openrtb/v20/adcom1"
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/macros"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+        "github.com/prebid/prebid-server/v4/util/uuidutil"
+)
+
+const (
+        adapterVersion = "2.0.0"
+        maxUriLength   = 8000
+        slaveIDLength  = 10
+)
+
+type responseAdUnit struct {
+        ID       string   `json:"id"`
+        CrID     string   `json:"crid"`
+        Currency string   `json:"currency"`
+        Price    string   `json:"price"`
+        TTL      string   `json:"ttl"`
+        Width    string   `json:"width"`
+        Height   string   `json:"height"`
+        IsVideo  bool     `json:"isVideo"`
+        Code     string   `json:"code"`
+        ADomain  []string `json:"adomain"`
+        Error    string   `json:"error"`
+}
+
+type adapter struct {
+        endpointTemplate *template.Template
+        uuidGenerator    uuidutil.UUIDGenerator
+}
+
+// Builder builds a new instance of the AdOcean adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errors.New("unable to parse endpoint template")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;adapter{
+                endpointTemplate: endpointTemplate,
+                uuidGenerator:    uuidutil.UUIDRandomGenerator{},
+        }, nil</span>
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "No impression in the bid request",
+                }}
+        }</span>
+
+        <span class="cov8" title="1">requests := make([]*adapters.RequestData, 0, len(request.Imp))
+        var errs []error
+
+        for index := range request.Imp </span><span class="cov8" title="1">{
+                imp := &amp;request.Imp[index]
+                if err := validateImp(imp); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">params, err := parseImpExt(imp)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">requestData, err := a.makeRequest(request, imp, params)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">requests = append(requests, requestData)</span>
+        }
+
+        <span class="cov8" title="1">return requests, errs</span>
+}
+
+func validateImp(imp *openrtb2.Imp) error <span class="cov8" title="1">{
+        if imp.Banner == nil &amp;&amp; imp.Video == nil </span><span class="cov8" title="1">{
+                return &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only banner and instream video", imp.ID),
+                }
+        }</span>
+        <span class="cov8" title="1">if imp.Video != nil &amp;&amp; !isInstreamVideo(imp.Video) </span><span class="cov8" title="1">{
+                return &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only instream video", imp.ID),
+                }
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+func isInstreamVideo(video *openrtb2.Video) bool <span class="cov8" title="1">{
+        if video.Plcmt != 0 </span><span class="cov8" title="1">{
+                return video.Plcmt == adcom1.VideoPlcmtInstream
+        }</span>
+        <span class="cov8" title="1">return video.Placement == adcom1.VideoPlacementInStream</span>
+}
+
+func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdOcean, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s: failed to parse ext.bidder: %v", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var params openrtb_ext.ExtImpAdOcean
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;params); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("ignoring imp id=%s: failed to parse AdOcean parameters: %v", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return &amp;params, nil</span>
+}
+
+func (a *adapter) resolveEndpointTemplate(emitterPrefix string) (string, error) <span class="cov8" title="1">{
+        endpoint, err := macros.ResolveMacros(a.endpointTemplate, macros.EndpointTemplateParams{Host: emitterPrefix})
+        if err != nil </span><span class="cov0" title="0">{
+                return "", &amp;errortypes.BadInput{Message: "unable to resolve endpoint template: " + err.Error()}
+        }</span>
+        <span class="cov8" title="1">return endpoint, nil</span>
+}
+
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb_ext.ExtImpAdOcean) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        endpoint, err := a.resolveEndpointTemplate(params.EmitterPrefix)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">requestURL, err := url.Parse(endpoint)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{Message: "malformed endpoint URL: " + err.Error()}
+        }</span>
+
+        <span class="cov8" title="1">randomizedPart := rand.Intn(90000000) + 10000000
+        if request.Test == 1 </span><span class="cov8" title="1">{
+                randomizedPart = 10000000
+        }</span>
+        <span class="cov8" title="1">requestURL.Path = "/_" + strconv.Itoa(randomizedPart) + "/ad.json"
+        // RFC 3986 requires that spaces in query parameters be encoded as %20,
+        // but the Go standard library encodes them as +
+        query, err := buildQuery(request, imp, params)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">requestURL.RawQuery = strings.ReplaceAll(query.Encode(), "+", "%20")
+        if len(requestURL.String()) &gt; maxUriLength </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("AdOcean request URL exceeds maximum length of %d characters", maxUriLength),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return &amp;adapters.RequestData{
+                Method:  http.MethodGet,
+                Uri:     requestURL.String(),
+                Headers: buildHeaders(request),
+                ImpIDs:  []string{imp.ID},
+        }, nil</span>
+}
+
+func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb_ext.ExtImpAdOcean) (url.Values, error) <span class="cov8" title="1">{
+        if params.MasterID == "" || params.SlaveID == "" </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: "missing required AdOcean parameters: masterId and slaveId must be provided",
+                }
+        }</span>
+
+        <span class="cov8" title="1">query := url.Values{}
+        for key, value := range params.EmitterRequestParams </span><span class="cov8" title="1">{
+                query.Set(key, fmt.Sprint(value))
+        }</span>
+
+        <span class="cov8" title="1">query.Set("pbsrv_v", adapterVersion)
+        query.Set("id", params.MasterID)
+        query.Set("slaves", shortSlaveID(params.SlaveID))
+
+        if request.Regs != nil &amp;&amp; request.Regs.GDPR != nil </span><span class="cov8" title="1">{
+                query.Set("gdpr", strconv.Itoa(int(*request.Regs.GDPR)))
+        }</span>
+        <span class="cov8" title="1">if request.User != nil </span><span class="cov8" title="1">{
+                if request.User.Consent != "" </span><span class="cov8" title="1">{
+                        query.Set("gdpr_consent", request.User.Consent)
+                }</span>
+                <span class="cov8" title="1">if request.User.BuyerUID != "" </span><span class="cov8" title="1">{
+                        query.Set("aouserid", request.User.BuyerUID)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if imp.Video != nil </span><span class="cov8" title="1">{
+                query.Set("spots", "1")
+                if imp.Video.MaxDuration &gt; 0 </span><span class="cov8" title="1">{
+                        maxDuration := strconv.FormatInt(imp.Video.MaxDuration, 10)
+                        query.Set("dur", maxDuration)
+                        query.Set("maxdur", maxDuration)
+                }</span>
+                <span class="cov8" title="1">if imp.Video.MinDuration &gt; 0 </span><span class="cov8" title="1">{
+                        query.Set("mindur", strconv.FormatInt(imp.Video.MinDuration, 10))
+                }</span>
+        } else<span class="cov8" title="1"> if imp.Banner != nil </span><span class="cov8" title="1">{
+                if sizes := getBannerSizes(imp.Banner); len(sizes) &gt; 0 </span><span class="cov8" title="1">{
+                        query.Set("aosize", strings.Join(sizes, ","))
+                }</span>
+        }
+
+        <span class="cov8" title="1">return query, nil</span>
+}
+
+func shortSlaveID(slaveID string) string <span class="cov8" title="1">{
+        if len(slaveID) &lt;= slaveIDLength </span><span class="cov8" title="1">{
+                return slaveID
+        }</span>
+        <span class="cov8" title="1">return slaveID[len(slaveID)-slaveIDLength:]</span>
+}
+
+func getBannerSizes(banner *openrtb2.Banner) []string <span class="cov8" title="1">{
+        if len(banner.Format) &gt; 0 </span><span class="cov8" title="1">{
+                sizes := make([]string, 0, len(banner.Format))
+                for _, format := range banner.Format </span><span class="cov8" title="1">{
+                        sizes = append(sizes, strconv.FormatInt(format.W, 10)+"x"+strconv.FormatInt(format.H, 10))
+                }</span>
+                <span class="cov8" title="1">return sizes</span>
+        }
+
+        <span class="cov8" title="1">if banner.W != nil &amp;&amp; banner.H != nil </span><span class="cov8" title="1">{
+                return []string{strconv.FormatInt(*banner.W, 10) + "x" + strconv.FormatInt(*banner.H, 10)}
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+func buildHeaders(request *openrtb2.BidRequest) http.Header <span class="cov8" title="1">{
+        headers := http.Header{
+                "Accept":       []string{"application/json"},
+                "Content-Type": []string{"application/json;charset=utf-8"},
+        }
+        if request.Device != nil </span><span class="cov8" title="1">{
+                if request.Device.UA != "" </span><span class="cov8" title="1">{
+                        headers.Set("User-Agent", request.Device.UA)
+                }</span>
+                <span class="cov8" title="1">if request.Device.IP != "" </span><span class="cov8" title="1">{
+                        headers.Set("X-Forwarded-For", request.Device.IP)
+                }</span> else<span class="cov8" title="1"> if request.Device.IPv6 != "" </span><span class="cov8" title="1">{
+                        headers.Set("X-Forwarded-For", request.Device.IPv6)
+                }</span>
+        }
+        <span class="cov8" title="1">if request.Site != nil &amp;&amp; request.Site.Page != "" </span><span class="cov8" title="1">{
+                headers.Set("Referer", request.Site.Page)
+        }</span>
+        <span class="cov8" title="1">return headers</span>
+}
+
+func (a *adapter) MakeBids(
+        internalRequest *openrtb2.BidRequest,
+        externalRequest *adapters.RequestData,
+        response *adapters.ResponseData,
+) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "unexpected status code: 400",
+                }}
+        }</span>
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("unexpected status code: %d", response.StatusCode),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">var adUnits []responseAdUnit
+        if err := jsonutil.Unmarshal(response.Body, &amp;adUnits); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{
+                        Message: "failed to decode AdOcean response: " + err.Error(),
+                }}
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(adUnits))
+        var lastCurrency *string = nil
+        var errs []error
+        for _, adUnit := range adUnits </span><span class="cov8" title="1">{
+                if adUnit.Error == "true" </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">typedBid, currency, err := a.makeBid(adUnit, externalRequest.ImpIDs[0])
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if lastCurrency == nil </span><span class="cov8" title="1">{
+                        lastCurrency = &amp;currency
+                }</span> else<span class="cov8" title="1"> if *lastCurrency != currency </span><span class="cov8" title="1">{
+                        errs = append(errs, &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("inconsistent currencies in AdOcean response: %s and %s", *lastCurrency, currency),
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+                bidderResponse.Currency = currency</span>
+        }
+
+        <span class="cov8" title="1">if len(bidderResponse.Bids) == 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">return bidderResponse, errs</span>
+}
+
+func (a *adapter) makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, error) <span class="cov8" title="1">{
+        if adUnit.Code == "" || adUnit.Height == "" || adUnit.Width == "" || adUnit.Price == "" </span><span class="cov8" title="1">{
+                return nil, "", &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("incomplete bid for AdOcean placement %q", adUnit.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">price, err := strconv.ParseFloat(adUnit.Price, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", invalidBidField(adUnit.ID, "price", err)
+        }</span>
+        <span class="cov8" title="1">width, err := strconv.ParseInt(adUnit.Width, 10, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", invalidBidField(adUnit.ID, "width", err)
+        }</span>
+        <span class="cov8" title="1">height, err := strconv.ParseInt(adUnit.Height, 10, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", invalidBidField(adUnit.ID, "height", err)
+        }</span>
+        <span class="cov8" title="1">ttl, err := strconv.ParseInt(adUnit.TTL, 10, 64)
+        if err != nil &amp;&amp; adUnit.TTL != "" </span><span class="cov8" title="1">{
+                return nil, "", invalidBidField(adUnit.ID, "ttl", err)
+        }</span>
+        <span class="cov8" title="1">adMarkup, err := url.PathUnescape(adUnit.Code)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", invalidBidField(adUnit.ID, "code", err)
+        }</span>
+
+        <span class="cov8" title="1">bidType := openrtb_ext.BidTypeBanner
+        if adUnit.IsVideo </span><span class="cov8" title="1">{
+                bidType = openrtb_ext.BidTypeVideo
+        }</span>
+
+        <span class="cov8" title="1">aDomain := adUnit.ADomain
+        if aDomain == nil </span><span class="cov8" title="1">{
+                aDomain = []string{}
+        }</span>
+
+        <span class="cov8" title="1">bidID, err := a.uuidGenerator.Generate()
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf(
+                        "failed to generate bid ID for AdOcean placement %q: %w",
+                        adUnit.ID,
+                        err,
+                )
+        }</span>
+
+        <span class="cov8" title="1">return &amp;adapters.TypedBid{
+                Bid: &amp;openrtb2.Bid{
+                        ID:      bidID,
+                        ImpID:   impID,
+                        Price:   price,
+                        AdM:     adMarkup,
+                        CrID:    adUnit.CrID,
+                        ADomain: aDomain,
+                        W:       width,
+                        H:       height,
+                        Exp:     ttl,
+                },
+                BidMeta: &amp;openrtb_ext.ExtBidPrebidMeta{
+                        AdvertiserDomains: aDomain,
+                },
+                BidType: bidType,
+        }, adUnit.Currency, nil</span>
+}
+
+func invalidBidField(placementID string, field string, err error) error <span class="cov8" title="1">{
+        return &amp;errortypes.BadServerResponse{
+                Message: fmt.Sprintf("invalid %s in bid for AdOcean placement %q: %v", field, placementID, err),
+        }
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
