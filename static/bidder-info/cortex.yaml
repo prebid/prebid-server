@@ -1,0 +1,24 @@
+aliasOf: "teqblaze"
+# We have the following regional endpoint domains:  'eu' - for EU, 'us-east' - for US_EAST, 'apac' - for APAC
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: "https://REGION.targetadserver.com/pserver"
+maintainer:
+  email: "dev@cortextech.it"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+userSync:
+  redirect:
+    url: "https://sync.targetadserver.com/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://sync.targetadserver.com/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"

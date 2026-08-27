@@ -18,14 +18,6 @@ type MobileFuseAdapter struct {
 	Endpoint string
 }
 
-type ExtMf struct {
-	MediaType string `json:"media_type"`
-}
-
-type BidExt struct {
-	Mf ExtMf `json:"mf"`
-}
-
 type ExtSkadn struct {
 	Skadn json.RawMessage `json:"skadn"`
 }
@@ -74,10 +66,15 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 	}
 
 	outgoingBidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-
+	var errors []error
 	for _, seatbid := range incomingBidResponse.SeatBid {
 		for i := range seatbid.Bid {
-			bidType := getBidType(seatbid.Bid[i])
+			bidType, err := getBidType(seatbid.Bid[i])
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
 			seatbid.Bid[i].Ext = nil
 
 			outgoingBidResponse.Bids = append(outgoingBidResponse.Bids, &adapters.TypedBid{
@@ -87,7 +84,7 @@ func (adapter *MobileFuseAdapter) MakeBids(incomingRequest *openrtb2.BidRequest,
 		}
 	}
 
-	return outgoingBidResponse, nil
+	return outgoingBidResponse, errors
 }
 
 func (adapter *MobileFuseAdapter) makeRequest(bidRequest *openrtb2.BidRequest) (*adapters.RequestData, []error) {
@@ -200,18 +197,17 @@ func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobile
 	return validImps, nil
 }
 
-func getBidType(bid openrtb2.Bid) openrtb_ext.BidType {
-	if bid.Ext != nil {
-		var bidExt BidExt
-		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
-		if err == nil {
-			if bidExt.Mf.MediaType == "video" {
-				return openrtb_ext.BidTypeVideo
-			} else if bidExt.Mf.MediaType == "native" {
-				return openrtb_ext.BidTypeNative
-			}
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType \"%d\" for impression ID \"%s\"", bid.MType, bid.ImpID),
 		}
 	}
-
-	return openrtb_ext.BidTypeBanner
 }

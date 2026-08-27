@@ -7,7 +7,7 @@
 endpoint: "https://mp-REGION.4dex.io/pbserver"
 userSync:
   iframe:
-    url: "https://u-REGION.4dex.io/pbserver/usync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    url: "https://u-REGION.4dex.io/pbserver/usync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
     userMacro: "{UID}"
 disabled: true
 

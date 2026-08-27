@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-bad-region",
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-bad-region",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://publisher.xx-adx-admixer.rtb-stack.com/prebid?client=abc&endpoint=1&ssp=2",
+            "tagId": "test-tag"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "unable to extract valid region from route URL hostname",
+      "comparison": "literal"
+    }
+  ]
+}
