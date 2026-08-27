@@ -20,7 +20,7 @@ type HookResult[T any] struct {
 	DebugMessages []string
 	AnalyticsTags hookanalytics.Analytics
 	SeatNonBid    []openrtb_ext.SeatNonBid // SeatNonBid carries hook-produced bidder status that may be surfaced in the auction response.
-	ModuleContext *ModuleContext // holds values that the module wants to pass to itself at later stages
+	ModuleContext *ModuleContext           // holds values that the module wants to pass to itself at later stages
 }
 
 // ModuleInvocationContext holds data passed to the module hook during invocation.
