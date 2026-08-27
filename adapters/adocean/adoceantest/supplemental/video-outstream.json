@@ -27,7 +27,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "ignoring imp id=video-imp: AdOcean doesn't support outstream video",
+      "value": "ignoring imp id=video-imp: AdOcean supports only instream video",
       "comparison": "literal"
     }
   ]

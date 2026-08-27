@@ -10,7 +10,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/gofrs/uuid"
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -19,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/uuidutil"
 )
 
 const (
@@ -43,6 +43,7 @@ type responseAdUnit struct {
 
 type adapter struct {
 	endpointTemplate *template.Template
+	uuidGenerator    uuidutil.UUIDGenerator
 }
 
 // Builder builds a new instance of the AdOcean adapter for the given bidder with the given config.
@@ -52,7 +53,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		return nil, errors.New("unable to parse endpoint template")
 	}
 
-	return &adapter{endpointTemplate: endpointTemplate}, nil
+	return &adapter{
+		endpointTemplate: endpointTemplate,
+		uuidGenerator:    uuidutil.UUIDRandomGenerator{},
+	}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -96,14 +100,19 @@ func validateImp(imp *openrtb2.Imp) error {
 			Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only banner and instream video", imp.ID),
 		}
 	}
-	if imp.Video != nil && (imp.Video.Plcmt == adcom1.VideoPlcmtAccompanyingContent ||
-		imp.Video.Plcmt == adcom1.VideoPlcmtNoContent ||
-		imp.Video.Placement == adcom1.VideoPlacementInBanner) {
+	if imp.Video != nil && !isInstreamVideo(imp.Video) {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s: AdOcean doesn't support outstream video", imp.ID),
+			Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only instream video", imp.ID),
 		}
 	}
 	return nil
+}
+
+func isInstreamVideo(video *openrtb2.Video) bool {
+	if video.Plcmt != 0 {
+		return video.Plcmt == adcom1.VideoPlcmtInstream
+	}
+	return video.Placement == adcom1.VideoPlacementInStream
 }
 
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdOcean, error) {
@@ -294,7 +303,7 @@ func (a *adapter) MakeBids(
 			continue
 		}
 
-		typedBid, currency, err := makeBid(adUnit, externalRequest.ImpIDs[0])
+		typedBid, currency, err := a.makeBid(adUnit, externalRequest.ImpIDs[0])
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -320,7 +329,7 @@ func (a *adapter) MakeBids(
 	return bidderResponse, errs
 }
 
-func makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, error) {
+func (a *adapter) makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, error) {
 	if adUnit.Code == "" || adUnit.Height == "" || adUnit.Width == "" || adUnit.Price == "" {
 		return nil, "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("incomplete bid for AdOcean placement %q", adUnit.ID),
@@ -358,7 +367,7 @@ func makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, e
 		aDomain = []string{}
 	}
 
-	genereatedUuid, err := uuid.NewV4()
+	bidID, err := a.uuidGenerator.Generate()
 	if err != nil {
 		return nil, "", fmt.Errorf(
 			"failed to generate bid ID for AdOcean placement %q: %w",
@@ -369,7 +378,7 @@ func makeBid(adUnit responseAdUnit, impID string) (*adapters.TypedBid, string, e
 
 	return &adapters.TypedBid{
 		Bid: &openrtb2.Bid{
-			ID:      genereatedUuid.String(),
+			ID:      bidID,
 			ImpID:   impID,
 			Price:   price,
 			AdM:     adMarkup,
