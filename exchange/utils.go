@@ -729,6 +729,7 @@ func mergeImpFPD(imp *openrtb2.Imp, fpd json.RawMessage, index int) error {
 var allowedImpExtPrebidFields = map[string]interface{}{
 	openrtb_ext.IsRewardedInventoryKey: struct{}{},
 	openrtb_ext.OptionsKey:             struct{}{},
+	openrtb_ext.AdUnitCodeKey:          struct{}{},
 }
 
 var deniedImpExtFields = map[string]interface{}{
