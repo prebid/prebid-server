@@ -8,7 +8,12 @@ import (
 )
 
 var validParams = []string{
-	`{ "host": "ep1", "accountid": "hash" }`,
+	`{ "host": "host", "accountid": "hash" }`,
+	`{ "host": "host.example.com", "accountid": "hash" }`,
+	`{ "host": "host.example.com:8080", "accountid": "hash" }`,
+	`{ "host": "host-example.test", "accountid": "hash" }`,
+	`{ "host": "Host.Example.com", "accountid": "hash" }`,
+	`{ "host": "localhost:3000", "accountid": "hash" }`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -35,6 +40,15 @@ var invalidParams = []string{
 	`{"adCode": "string", "seatCode": 5, "originalPublisherid": "string"}`,
 	`{ "accountid": "hash" }`,
 	`{ "host": "", "accountid": "" }`,
+	`{ "host": "/path", "accountid": "hash" }`,
+	`{ "host": "//evil.com", "accountid": "hash" }`,
+	`{ "host": "host/path", "accountid": "hash" }`,
+	`{ "host": "host?query=1", "accountid": "hash" }`,
+	`{ "host": "host#fragment", "accountid": "hash" }`,
+	`{ "host": "user@host", "accountid": "hash" }`,
+	`{ "host": "https://host.com", "accountid": "hash" }`,
+	`{ "host": "host:notaport", "accountid": "hash" }`,
+	`{ "host": "host:8080:extra", "accountid": "hash" }`,
 }
 
 func TestInvalidParams(t *testing.T) {

@@ -2,6 +2,8 @@ endpoint: "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS"
 maintainer:
   email: "prebid-tech-team@yahooinc.com"
 gvlVendorID: 25
+openrtb:
+  version: "2.6"
 capabilities:
   app:
     mediaTypes:
