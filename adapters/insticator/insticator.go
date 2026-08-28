@@ -240,9 +240,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			b := &adapters.TypedBid{
 				Bid:      &seatBid.Bid[i],
 				BidType:  bidType,
-				BidMeta:  getBidMeta(bid, bidType),
+				BidMeta:  getBidMeta(bid, bidType, seatBid.Seat),
 				BidVideo: getBidVideo(bid, bidType),
-				Seat:     openrtb_ext.BidderName(seatBid.Seat),
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
@@ -251,9 +250,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 // getBidMeta extracts metadata from the bid for brand safety and reporting
-func getBidMeta(bid *openrtb2.Bid, bidType openrtb_ext.BidType) *openrtb_ext.ExtBidPrebidMeta {
+func getBidMeta(bid *openrtb2.Bid, bidType openrtb_ext.BidType, seat string) *openrtb_ext.ExtBidPrebidMeta {
 	meta := &openrtb_ext.ExtBidPrebidMeta{
 		MediaType: string(bidType),
+		Seat:      seat,
 	}
 
 	if len(bid.ADomain) > 0 {

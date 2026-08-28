@@ -160,8 +160,7 @@
               }
             }
           },
-          "type": "video",
-          "seat": "insticator"
+          "type": "video"
         }
       ]
     }

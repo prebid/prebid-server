@@ -308,8 +308,7 @@
               }
             }
           },
-          "type": "banner",
-          "seat": "insticator"
+          "type": "banner"
         },
         {
           "bid": {
@@ -326,8 +325,7 @@
               }
             }
           },
-          "type": "banner",
-          "seat": "insticator"
+          "type": "banner"
         },
         {
           "bid": {
@@ -344,8 +342,7 @@
               }
             }
           },
-          "type": "banner",
-          "seat": "insticator"
+          "type": "banner"
         }
       ]
     },
@@ -367,8 +364,7 @@
               }
             }
           },
-          "type": "banner",
-          "seat": "insticator"
+          "type": "banner"
         }
       ]
     }

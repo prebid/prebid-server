@@ -343,8 +343,9 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				},
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
-				ModuleContext: map[string]interface{}{
-					bidder: blockingAttributes{
+				ModuleContext: func() *hookstage.ModuleContext {
+					mctx := hookstage.NewModuleContext()
+					mctx.Set(bidder, blockingAttributes{
 						bAdv: []string{bAdvA, bAdvB},
 						bApp: []string{bApp3},
 						bCat: []string{bCat1, bCat2, bCat3, bCat4},
@@ -357,8 +358,9 @@ func TestHandleBidderRequestHook(t *testing.T) {
 							"ImpID2": toInt([]adcom1.CreativeAttribute{bAttr1, bAttr8, bAttr9, bAttr10}),
 						},
 						catTax: catTax,
-					},
-				},
+					})
+					return mctx
+				}(),
 				Warnings: []string{
 					// multiple warnings may be added (per condition)
 					"More than one condition matches request. Bidder: appnexus, request media types: audio, banner, native, video",
@@ -389,12 +391,14 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				},
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
-				ModuleContext: map[string]interface{}{
-					bidder: blockingAttributes{
+				ModuleContext: func() *hookstage.ModuleContext {
+					mctx := hookstage.NewModuleContext()
+					mctx.Set(bidder, blockingAttributes{
 						bAdv:  []string{bAdvA, bAdvB, bAdvC},
 						bAttr: map[string][]int{},
-					},
-				},
+					})
+					return mctx
+				}(),
 			},
 			expectedError: nil,
 		},
@@ -439,9 +443,13 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				},
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
-				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
-					bAttr: map[string][]int{},
-				}},
+				ModuleContext: func() *hookstage.ModuleContext {
+					mctx := hookstage.NewModuleContext()
+					mctx.Set(bidder, blockingAttributes{
+						bAttr: map[string][]int{},
+					})
+					return mctx
+				}(),
 			},
 			expectedError: nil,
 		},
@@ -459,9 +467,13 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				Imp:  []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}},
 			},
 			expectedHookResult: hookstage.HookResult[hookstage.BidderRequestPayload]{
-				ModuleContext: map[string]interface{}{bidder: blockingAttributes{
-					bAttr: map[string][]int{},
-				}},
+				ModuleContext: func() *hookstage.ModuleContext {
+					mctx := hookstage.NewModuleContext()
+					mctx.Set(bidder, blockingAttributes{
+						bAttr: map[string][]int{},
+					})
+					return mctx
+				}(),
 			},
 			expectedError: nil,
 		},
@@ -579,7 +591,7 @@ func TestHandleBidderRequestHook(t *testing.T) {
 				hookstage.ModuleInvocationContext{
 					AccountConfig: test.config,
 					Endpoint:      hookexecution.EndpointAuction,
-					ModuleContext: map[string]interface{}{},
+					ModuleContext: hookstage.NewModuleContext(),
 				},
 				payload,
 			)
@@ -605,7 +617,7 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 		description        string
 		payload            hookstage.RawBidderResponsePayload
 		config             json.RawMessage
-		moduleCtx          hookstage.ModuleContext
+		moduleCtx          *hookstage.ModuleContext
 		expectedBids       []*adapters.TypedBid
 		expectedHookResult hookstage.HookResult[hookstage.RawBidderResponsePayload]
 		expectedError      error
@@ -655,7 +667,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ADomain: []string{"foo"}, ImpID: impID1},
 				},
 			},
-			moduleCtx:     map[string]interface{}{bidder: "boo"},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, "boo")
+				return mctx
+			}(),
 			expectedError: hookexecution.NewFailure("could not cast blocking attributes for bidder `appnexus`, module context has incorrect data"),
 		},
 		{
@@ -676,7 +692,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bAdv: []string{"forbidden_domain"}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{bAdv: []string{"forbidden_domain"}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -724,7 +744,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{"other-bidder": blockingAttributes{bAdv: []string{"forbidden_domain"}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set("other-bidder", blockingAttributes{bAdv: []string{"forbidden_domain"}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -767,7 +791,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bAdv: []string{"forbidden_domain"}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{bAdv: []string{"forbidden_domain"}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -810,7 +838,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bAdv: []string{"forbidden_domain"}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{bAdv: []string{"forbidden_domain"}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -850,7 +882,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -898,7 +934,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -941,7 +981,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", ADomain: []string{"good_domain"}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bAdv: []string{"forbidden_domain"}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{bAdv: []string{"forbidden_domain"}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -1062,7 +1106,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", Cat: []string{"moto"}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bCat: []string{"fishing"}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{bCat: []string{"fishing"}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -1188,7 +1236,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", CatTax: 2, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{catTax: 2}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{catTax: 2})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -1277,7 +1329,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", Bundle: "allowed_bundle", ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bApp: []string{"forbidden_bundle"}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{bApp: []string{"forbidden_bundle"}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -1376,7 +1432,11 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					Bid: &openrtb2.Bid{ID: "2", Attr: []adcom1.CreativeAttribute{2}, ImpID: impID2},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{bAttr: map[string][]int{impID1: {1}}}},
+			moduleCtx: func() *hookstage.ModuleContext {
+				mctx := hookstage.NewModuleContext()
+				mctx.Set(bidder, blockingAttributes{bAttr: map[string][]int{impID1: {1}}})
+				return mctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
@@ -1499,13 +1559,17 @@ func TestHandleRawBidderResponseHook(t *testing.T) {
 					},
 				},
 			},
-			moduleCtx: map[string]interface{}{bidder: blockingAttributes{
-				bAdv:   []string{"forbidden_domain"},
-				bCat:   []string{"fishing"},
-				catTax: 2,
-				bApp:   []string{"forbidden_bundle"},
-				bAttr:  map[string][]int{impID1: {1}}},
-			},
+			moduleCtx: func() *hookstage.ModuleContext {
+				ctx := hookstage.NewModuleContext()
+				ctx.Set(bidder, blockingAttributes{
+					bAdv:   []string{"forbidden_domain"},
+					bCat:   []string{"fishing"},
+					catTax: 2,
+					bApp:   []string{"forbidden_bundle"},
+					bAttr:  map[string][]int{impID1: {1}},
+				})
+				return ctx
+			}(),
 			expectedHookResult: hookstage.HookResult[hookstage.RawBidderResponsePayload]{
 				AnalyticsTags: hookanalytics.Analytics{
 					Activities: []hookanalytics.Activity{
