@@ -1092,7 +1092,10 @@ func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 }
 
 func updateBidExtWithMeta(bid rubiconBid, buyer int, seat string) json.RawMessage {
-	if buyer <= 0 && seat == "" {
+	advertiserID := resolveAdvertiserID(bid.Ext)
+	advertiserDomains := bid.ADomain
+
+	if buyer <= 0 && seat == "" && advertiserID == 0 && len(advertiserDomains) == 0 {
 		return nil
 	}
 	var bidExt *extPrebid
@@ -1107,14 +1110,16 @@ func updateBidExtWithMeta(bid rubiconBid, buyer int, seat string) json.RawMessag
 			if bidExt.Prebid.Meta != nil {
 				bidExt.Prebid.Meta.NetworkID = buyer
 				bidExt.Prebid.Meta.Seat = seat
+				bidExt.Prebid.Meta.AdvertiserID = advertiserID
+				bidExt.Prebid.Meta.AdvertiserDomains = advertiserDomains
 			} else {
-				bidExt.Prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat}
+				bidExt.Prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat, AdvertiserID: advertiserID, AdvertiserDomains: advertiserDomains}
 			}
 		} else {
-			bidExt.Prebid = &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat}}
+			bidExt.Prebid = &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat, AdvertiserID: advertiserID, AdvertiserDomains: advertiserDomains}}
 		}
 	} else {
-		bidExt = &extPrebid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat}}}
+		bidExt = &extPrebid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat, AdvertiserID: advertiserID, AdvertiserDomains: advertiserDomains}}}
 	}
 
 	marshalledExt, err := json.Marshal(&bidExt)
@@ -1122,4 +1127,21 @@ func updateBidExtWithMeta(bid rubiconBid, buyer int, seat string) json.RawMessag
 		return marshalledExt
 	}
 	return nil
+}
+
+// resolveAdvertiserID reads bid.ext.rp.advid, the advertiser ID rubicon includes in its own
+// response namespace, coercing either a numeric or string JSON representation to an int.
+func resolveAdvertiserID(bidExtRaw json.RawMessage) int {
+	if len(bidExtRaw) == 0 {
+		return 0
+	}
+	var rpExt struct {
+		RP struct {
+			AdvID jsonutil.StringInt `json:"advid"`
+		} `json:"rp"`
+	}
+	if err := jsonutil.Unmarshal(bidExtRaw, &rpExt); err != nil {
+		return 0
+	}
+	return int(rpExt.RP.AdvID)
 }
