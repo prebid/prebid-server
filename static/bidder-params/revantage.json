@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Revantage Adapter Params",
+  "description": "A schema which validates params accepted by the Revantage adapter",
+  "type": "object",
+  "properties": {
+    "feedId": {
+      "type": "string",
+      "description": "Revantage feed identifier (required)",
+      "minLength": 1
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Optional placement identifier"
+    },
+    "publisherId": {
+      "type": "string",
+      "description": "Optional publisher identifier"
+    }
+  },
+  "required": ["feedId"]
+}
