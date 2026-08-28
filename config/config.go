@@ -633,6 +633,14 @@ type PrometheusMetrics struct {
 	Namespace        string `mapstructure:"namespace"`
 	Subsystem        string `mapstructure:"subsystem"`
 	TimeoutMillisRaw int    `mapstructure:"timeout_ms"`
+	// DisableGoMetricsPrefix, when true, registers the standard Prometheus Go runtime
+	// metrics (go_goroutines, go_gc_duration_seconds, etc.) without the namespace/subsystem
+	// prefix applied to Prebid Server's own custom metrics. Prometheus client_golang
+	// recommends against prefixing these, since it breaks dashboards and alerts that expect
+	// the standard go_* names and prevents horizontal comparison across services. Defaults
+	// to false to preserve existing behavior for deployments that already rely on the
+	// prefixed names.
+	DisableGoMetricsPrefix bool `mapstructure:"disable_go_metrics_prefix"`
 }
 
 func (cfg *PrometheusMetrics) validate(errs []error) []error {
@@ -1020,6 +1028,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
+	v.SetDefault("metrics.prometheus.disable_go_metrics_prefix", false)
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
