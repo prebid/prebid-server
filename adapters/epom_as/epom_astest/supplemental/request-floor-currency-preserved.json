@@ -12,14 +12,19 @@
             }
           ]
         },
+        "bidfloorcur": "EUR",
         "ext": {
           "bidder": {
             "host": "ads.example.com",
-            "placementKey": "a4f21c9e7b"
+            "placementKey": "a4f21c9e7b",
+            "bidFloor": 1.5
           }
         }
       }
-    ]
+    ],
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
   },
   "httpCalls": [
     {
@@ -38,9 +43,14 @@
                     "h": 250
                   }
                 ]
-              }
+              },
+              "bidfloor": 1.5,
+              "bidfloorcur": "EUR"
             }
-          ]
+          ],
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
         },
         "impIDs": [
           "test-imp-id"

@@ -4,16 +4,33 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": { "format": [{ "w": 320, "h": 50 }] },
-        "ext": { "bidder": { "host": "ads.example.com", "placementKey": "a4f21c9e7b" } }
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "a4f21c9e7b"
+          }
+        }
       }
     ],
     "app": {
       "bundle": "com.publisher.reader",
       "name": "Publisher Reader",
-      "publisher": { "id": "pub-1" }
+      "publisher": {
+        "id": "pub-1"
+      }
     },
-    "device": { "ua": "test-ua", "ifa": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0" }
+    "device": {
+      "ua": "test-ua",
+      "ifa": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0"
+    }
   },
   "httpCalls": [
     {
@@ -25,18 +42,31 @@
             {
               "id": "test-imp-id",
               "tagid": "a4f21c9e7b",
-              "banner": { "format": [{ "w": 320, "h": 50 }] },
-              "ext": { "bidder": { "host": "ads.example.com", "placementKey": "a4f21c9e7b" } }
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              }
             }
           ],
           "app": {
             "bundle": "com.publisher.reader",
             "name": "Publisher Reader",
-            "publisher": { "id": "pub-1" }
+            "publisher": {
+              "id": "pub-1"
+            }
           },
-          "device": { "ua": "test-ua", "ifa": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0" }
+          "device": {
+            "ua": "test-ua",
+            "ifa": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0"
+          }
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -53,7 +83,9 @@
                   "price": 0.9,
                   "adm": "<div>creative</div>",
                   "crid": "c1",
-                  "adomain": ["advertiser.example"],
+                  "adomain": [
+                    "advertiser.example"
+                  ],
                   "w": 320,
                   "h": 50,
                   "mtype": 1
@@ -76,7 +108,9 @@
             "price": 0.9,
             "adm": "<div>creative</div>",
             "crid": "c1",
-            "adomain": ["advertiser.example"],
+            "adomain": [
+              "advertiser.example"
+            ],
             "w": 320,
             "h": 50,
             "mtype": 1

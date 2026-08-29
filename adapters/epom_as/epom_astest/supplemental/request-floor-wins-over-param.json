@@ -47,14 +47,6 @@
                     "h": 250
                   }
                 ]
-              },
-              "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "a4f21c9e7b",
-                  "bidFloor": 3.5,
-                  "bidFloorCur": "EUR"
-                }
               }
             }
           ],

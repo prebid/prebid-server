@@ -4,18 +4,31 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
         "ext": {
           "bidder": {
             "host": "ads.example.com",
             "placementKey": "a4f21c9e7b",
             "channel": "sports-uk",
-            "customParams": { "section": "sport", "tier": 2, "premium": true }
+            "customParams": {
+              "section": "sport",
+              "tier": 2,
+              "premium": true
+            }
           }
         }
       }
     ],
-    "site": { "page": "https://publisher.example.com/article" }
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
   },
   "httpCalls": [
     {
@@ -27,22 +40,33 @@
             {
               "id": "test-imp-id",
               "tagid": "a4f21c9e7b",
-              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
               "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "a4f21c9e7b",
-                  "channel": "sports-uk",
-                  "customParams": { "section": "sport", "tier": 2, "premium": true }
+                "epom_as": {
+                  "channel": "sports-uk"
                 },
-                "epom_as": { "channel": "sports-uk" },
-                "data": { "section": "sport", "tier": "2", "premium": "true" }
+                "data": {
+                  "section": "sport",
+                  "tier": "2",
+                  "premium": "true"
+                }
               }
             }
           ],
-          "site": { "page": "https://publisher.example.com/article" }
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,

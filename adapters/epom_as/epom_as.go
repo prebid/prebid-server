@@ -179,7 +179,9 @@ func applyBidFloor(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) {
 	imp.BidFloor = impExt.BidFloor
 	if impExt.BidFloorCur != "" {
 		imp.BidFloorCur = impExt.BidFloorCur
-	} else {
+	} else if imp.BidFloorCur == "" {
+		// A publisher may declare a currency context without a numeric floor, which is
+		// valid OpenRTB. Defaulting over it would resolve our floor in the wrong currency.
 		imp.BidFloorCur = "USD"
 	}
 }
@@ -189,7 +191,7 @@ func applyBidFloor(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) {
 // merged into imp.ext.data, the standard first-party-data home, so that data
 // contributed by RTD modules lands in the same object.
 func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
-	if impExt.Channel == "" && len(impExt.CustomParams) == 0 {
+	if len(imp.Ext) == 0 && impExt.Channel == "" && len(impExt.CustomParams) == 0 {
 		return nil
 	}
 
@@ -208,8 +210,22 @@ func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
 		ext[string(openrtb_ext.BidderEpomAs)] = namespace
 	}
 
-	if merged := mergeCustomParams(ext["data"], impExt.CustomParams); merged != nil {
+	merged, err := mergeCustomParams(ext["data"], impExt.CustomParams)
+	if err != nil {
+		return &errortypes.BadInput{Message: fmt.Sprintf("imp %s: %s", imp.ID, err.Error())}
+	}
+	if merged != nil {
 		ext["data"] = merged
+	}
+
+	// Everything this bidder needs from imp.ext.bidder has been moved to where the ad
+	// server reads it: placementKey to imp.tagid, host into the endpoint, channel and
+	// custom params to their own namespaces. Leaving it would send the same values
+	// twice, in two different shapes.
+	delete(ext, "bidder")
+	if len(ext) == 0 {
+		imp.Ext = nil
+		return nil
 	}
 
 	encoded, err := jsonutil.Marshal(ext)
@@ -225,18 +241,21 @@ func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
 // first-party configuration. Values are stringified because the ad server reads
 // custom targeting as text; the schema already restricts them to scalars, so a
 // value this cannot stringify only reaches here through a host that skipped
-// param validation, and is skipped rather than written as a Go rendering of a
-// map. Nothing is dropped for size, which is what keeps the marshalled imp.ext
-// independent of Go's randomised map iteration order.
-func mergeCustomParams(existing json.RawMessage, params map[string]interface{}) json.RawMessage {
+// param validation, and is rejected rather than dropped -- targeting silently
+// absent from the bid request is worse than a request that says why. Nothing is
+// dropped for size, which is what keeps the marshalled imp.ext independent of
+// Go's randomised map iteration order.
+func mergeCustomParams(existing json.RawMessage, params map[string]interface{}) (json.RawMessage, error) {
 	out := map[string]interface{}{}
 	for key, value := range params {
-		if asString, ok := scalarToString(value); ok {
-			out[key] = asString
+		asString, ok := scalarToString(value)
+		if !ok {
+			return nil, fmt.Errorf("customParams.%s must be a string, number or boolean", key)
 		}
+		out[key] = asString
 	}
 	if len(out) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	if len(existing) > 0 {
@@ -250,9 +269,9 @@ func mergeCustomParams(existing json.RawMessage, params map[string]interface{}) 
 
 	encoded, err := jsonutil.Marshal(out)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return encoded
+	return encoded, nil
 }
 
 func scalarToString(value interface{}) (string, bool) {

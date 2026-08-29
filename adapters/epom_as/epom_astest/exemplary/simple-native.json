@@ -31,12 +31,6 @@
             {
               "id": "test-imp-id",
               "tagid": "a4f21c9e7b",
-              "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "a4f21c9e7b"
-                }
-              },
               "native": {
                 "request": "{\"ver\":\"1.2\",\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}}]}",
                 "ver": "1.2"

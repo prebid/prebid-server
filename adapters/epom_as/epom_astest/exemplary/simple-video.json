@@ -44,12 +44,6 @@
             {
               "id": "test-imp-id",
               "tagid": "a4f21c9e7b",
-              "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "a4f21c9e7b"
-                }
-              },
               "video": {
                 "mimes": [
                   "video/mp4"

@@ -4,7 +4,14 @@
     "imp": [
       {
         "id": "imp-floor-with-currency",
-        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
         "ext": {
           "bidder": {
             "host": "ads.example.com",
@@ -16,7 +23,14 @@
       },
       {
         "id": "imp-floor-defaults-to-usd",
-        "banner": { "format": [{ "w": 728, "h": 90 }] },
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
         "ext": {
           "bidder": {
             "host": "ads.example.com",
@@ -27,7 +41,14 @@
       },
       {
         "id": "imp-zero-floor-is-no-floor",
-        "banner": { "format": [{ "w": 970, "h": 250 }] },
+        "banner": {
+          "format": [
+            {
+              "w": 970,
+              "h": 250
+            }
+          ]
+        },
         "ext": {
           "bidder": {
             "host": "ads.example.com",
@@ -38,7 +59,9 @@
         }
       }
     ],
-    "site": { "page": "https://publisher.example.com/article" }
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
   },
   "httpCalls": [
     {
@@ -52,14 +75,13 @@
               "tagid": "a4f21c9e7b",
               "bidfloor": 1.75,
               "bidfloorcur": "EUR",
-              "banner": { "format": [{ "w": 300, "h": 250 }] },
-              "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "a4f21c9e7b",
-                  "bidFloor": 1.75,
-                  "bidFloorCur": "EUR"
-                }
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
               }
             },
             {
@@ -67,32 +89,37 @@
               "tagid": "6d0e83b415",
               "bidfloor": 0.5,
               "bidfloorcur": "USD",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
-              "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "6d0e83b415",
-                  "bidFloor": 0.5
-                }
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
               }
             },
             {
               "id": "imp-zero-floor-is-no-floor",
               "tagid": "ff0011aa22",
-              "banner": { "format": [{ "w": 970, "h": 250 }] },
-              "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "ff0011aa22",
-                  "bidFloor": 0,
-                  "bidFloorCur": "EUR"
-                }
+              "banner": {
+                "format": [
+                  {
+                    "w": 970,
+                    "h": 250
+                  }
+                ]
               }
             }
           ],
-          "site": { "page": "https://publisher.example.com/article" }
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
         },
-        "impIDs": ["imp-floor-with-currency", "imp-floor-defaults-to-usd", "imp-zero-floor-is-no-floor"]
+        "impIDs": [
+          "imp-floor-with-currency",
+          "imp-floor-defaults-to-usd",
+          "imp-zero-floor-is-no-floor"
+        ]
       },
       "mockResponse": {
         "status": 200,

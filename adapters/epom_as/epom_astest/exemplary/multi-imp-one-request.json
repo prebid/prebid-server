@@ -4,21 +4,59 @@
     "imp": [
       {
         "id": "imp-leaderboard",
-        "banner": { "format": [{ "w": 728, "h": 90 }] },
-        "ext": { "bidder": { "host": "ads.example.com", "placementKey": "a4f21c9e7b" } }
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "a4f21c9e7b"
+          }
+        }
       },
       {
         "id": "imp-sidebar",
-        "banner": { "format": [{ "w": 300, "h": 250 }] },
-        "ext": { "bidder": { "host": "ads.example.com", "placementKey": "6d0e83b415" } }
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "6d0e83b415"
+          }
+        }
       },
       {
         "id": "imp-footer",
-        "banner": { "format": [{ "w": 970, "h": 250 }] },
-        "ext": { "bidder": { "host": "ads.example.com", "placementKey": "ff0011aa22" } }
+        "banner": {
+          "format": [
+            {
+              "w": 970,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "ff0011aa22"
+          }
+        }
       }
     ],
-    "site": { "page": "https://publisher.example.com/article" }
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
   },
   "httpCalls": [
     {
@@ -30,25 +68,49 @@
             {
               "id": "imp-leaderboard",
               "tagid": "a4f21c9e7b",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
-              "ext": { "bidder": { "host": "ads.example.com", "placementKey": "a4f21c9e7b" } }
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              }
             },
             {
               "id": "imp-sidebar",
               "tagid": "6d0e83b415",
-              "banner": { "format": [{ "w": 300, "h": 250 }] },
-              "ext": { "bidder": { "host": "ads.example.com", "placementKey": "6d0e83b415" } }
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
             },
             {
               "id": "imp-footer",
               "tagid": "ff0011aa22",
-              "banner": { "format": [{ "w": 970, "h": 250 }] },
-              "ext": { "bidder": { "host": "ads.example.com", "placementKey": "ff0011aa22" } }
+              "banner": {
+                "format": [
+                  {
+                    "w": 970,
+                    "h": 250
+                  }
+                ]
+              }
             }
           ],
-          "site": { "page": "https://publisher.example.com/article" }
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
         },
-        "impIDs": ["imp-leaderboard", "imp-sidebar", "imp-footer"]
+        "impIDs": [
+          "imp-leaderboard",
+          "imp-sidebar",
+          "imp-footer"
+        ]
       },
       "mockResponse": {
         "status": 200,

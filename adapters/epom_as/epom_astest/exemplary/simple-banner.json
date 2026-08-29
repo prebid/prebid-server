@@ -6,8 +6,14 @@
         "id": "test-imp-id",
         "banner": {
           "format": [
-            { "w": 300, "h": 250 },
-            { "w": 300, "h": 600 }
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
           ]
         },
         "ext": {
@@ -35,15 +41,15 @@
               "tagid": "a4f21c9e7b",
               "banner": {
                 "format": [
-                  { "w": 300, "h": 250 },
-                  { "w": 300, "h": 600 }
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
                 ]
-              },
-              "ext": {
-                "bidder": {
-                  "host": "ads.example.com",
-                  "placementKey": "a4f21c9e7b"
-                }
               }
             }
           ],
@@ -52,7 +58,9 @@
           },
           "tmax": 500
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,

@@ -4,16 +4,42 @@
     "imp": [
       {
         "id": "imp-network-one",
-        "banner": { "format": [{ "w": 728, "h": 90 }] },
-        "ext": { "bidder": { "host": "ads.network-one.com", "placementKey": "a4f21c9e7b" } }
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.network-one.com",
+            "placementKey": "a4f21c9e7b"
+          }
+        }
       },
       {
         "id": "imp-network-two",
-        "banner": { "format": [{ "w": 300, "h": 250 }] },
-        "ext": { "bidder": { "host": "ads.network-two.com", "placementKey": "6d0e83b415" } }
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.network-two.com",
+            "placementKey": "6d0e83b415"
+          }
+        }
       }
     ],
-    "site": { "page": "https://publisher.example.com/article" }
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
   },
   "httpCalls": [
     {
@@ -25,13 +51,23 @@
             {
               "id": "imp-network-one",
               "tagid": "a4f21c9e7b",
-              "banner": { "format": [{ "w": 728, "h": 90 }] },
-              "ext": { "bidder": { "host": "ads.network-one.com", "placementKey": "a4f21c9e7b" } }
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              }
             }
           ],
-          "site": { "page": "https://publisher.example.com/article" }
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
         },
-        "impIDs": ["imp-network-one"]
+        "impIDs": [
+          "imp-network-one"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -67,13 +103,23 @@
             {
               "id": "imp-network-two",
               "tagid": "6d0e83b415",
-              "banner": { "format": [{ "w": 300, "h": 250 }] },
-              "ext": { "bidder": { "host": "ads.network-two.com", "placementKey": "6d0e83b415" } }
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
             }
           ],
-          "site": { "page": "https://publisher.example.com/article" }
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
         },
-        "impIDs": ["imp-network-two"]
+        "impIDs": [
+          "imp-network-two"
+        ]
       },
       "mockResponse": {
         "status": 200,

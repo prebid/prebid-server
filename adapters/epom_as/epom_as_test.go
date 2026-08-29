@@ -249,11 +249,14 @@ func TestCustomParamsMergeIsDeterministic(t *testing.T) {
 		params[fmt.Sprintf("key%02d", i)] = fmt.Sprintf("value-%02d", i)
 	}
 
-	first := mergeCustomParams(nil, params)
+	first, err := mergeCustomParams(nil, params)
+	require.NoError(t, err)
 	require.NotNil(t, first)
 
 	for i := 0; i < 50; i++ {
-		assert.Equal(t, string(first), string(mergeCustomParams(nil, params)))
+		again, err := mergeCustomParams(nil, params)
+		require.NoError(t, err)
+		assert.Equal(t, string(first), string(again))
 	}
 
 	var decoded map[string]string
