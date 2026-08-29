@@ -10,14 +10,11 @@
         "id":"/19968336/header-bid-tag-0",
         "banner": {},
         "ext": {
-          "bidder": [
-
-          {
+          "bidder": {
             "accountId": 1001,
             "siteId":113932,
             "zoneId":535510
           }
-            ]
         }
       }
     ]
@@ -25,7 +22,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "cannot unmarshal rubicon.rubiconExtImpBidder.Bidder: expect { or n, but found [",
+      "value": "magnite imps must have at least one imp.format element",
       "comparison": "literal"
     }
   ]

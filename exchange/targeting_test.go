@@ -36,7 +36,7 @@ var mockBids = map[openrtb_ext.BidderName][]*openrtb2.Bid{
 		Price: 0.7,
 		CrID:  "2",
 	}},
-	openrtb_ext.BidderRubicon: {{
+	openrtb_ext.BidderMagnite: {{
 		ID:    "contending-bid",
 		ImpID: "some-imp",
 		Price: 0.6,
@@ -53,7 +53,7 @@ func TestTargetingCache(t *testing.T) {
 	assertKeyExists(t, bids["winning-bid"], openrtb_ext.CacheKey.BidderKey(DefaultKeyPrefix, openrtb_ext.BidderAppnexus, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["contending-bid"], DefaultKeyPrefix+string(openrtb_ext.CacheKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.CacheKey.BidderKey(DefaultKeyPrefix, openrtb_ext.BidderRubicon, MaxKeyLength), true)
+	assertKeyExists(t, bids["contending-bid"], openrtb_ext.CacheKey.BidderKey(DefaultKeyPrefix, openrtb_ext.BidderMagnite, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["losing-bid"], DefaultKeyPrefix+string(openrtb_ext.CacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.CacheKey.BidderKey(DefaultKeyPrefix, openrtb_ext.BidderAppnexus, MaxKeyLength), false)
@@ -76,7 +76,7 @@ func TestTargetingCacheRequestPrefix(t *testing.T) {
 	assertKeyExists(t, bids["winning-bid"], openrtb_ext.CacheKey.BidderKey(reqPrefix, openrtb_ext.BidderAppnexus, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["contending-bid"], reqPrefix+string(openrtb_ext.CacheKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.CacheKey.BidderKey(reqPrefix, openrtb_ext.BidderRubicon, MaxKeyLength), true)
+	assertKeyExists(t, bids["contending-bid"], openrtb_ext.CacheKey.BidderKey(reqPrefix, openrtb_ext.BidderMagnite, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["losing-bid"], reqPrefix+string(openrtb_ext.CacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.CacheKey.BidderKey(reqPrefix, openrtb_ext.BidderAppnexus, MaxKeyLength), false)
@@ -99,7 +99,7 @@ func TestTargetingCacheAccountPrefix(t *testing.T) {
 	assertKeyExists(t, bids["winning-bid"], openrtb_ext.CacheKey.BidderKey(accPrefix, openrtb_ext.BidderAppnexus, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["contending-bid"], accPrefix+string(openrtb_ext.CacheKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.CacheKey.BidderKey(accPrefix, openrtb_ext.BidderRubicon, MaxKeyLength), true)
+	assertKeyExists(t, bids["contending-bid"], openrtb_ext.CacheKey.BidderKey(accPrefix, openrtb_ext.BidderMagnite, MaxKeyLength), true)
 
 	assertKeyExists(t, bids["losing-bid"], accPrefix+string(openrtb_ext.CacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.CacheKey.BidderKey(accPrefix, openrtb_ext.BidderAppnexus, MaxKeyLength), false)
@@ -397,7 +397,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -414,7 +414,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: nil,
@@ -433,7 +433,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -450,7 +450,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder_rubicon": "rubicon",
@@ -476,7 +476,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid111,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid175,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -498,7 +498,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder_rubicon": "rubicon",
@@ -527,7 +527,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -548,7 +548,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder_rubicon": "rubicon",
@@ -577,7 +577,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid111,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -601,7 +601,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder_rubicon":    "rubicon",
@@ -633,7 +633,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid111,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -657,7 +657,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"prefix_bidder_rubico": "rubicon",
@@ -718,7 +718,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -735,7 +735,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder_": "rubicon",
@@ -761,7 +761,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -778,7 +778,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder_rubicon": "rubicon",
@@ -804,7 +804,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -821,7 +821,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder_rubicon": "rubicon",
@@ -847,7 +847,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -864,7 +864,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValue5,
@@ -883,7 +883,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -900,7 +900,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValue25,
@@ -919,7 +919,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						Bid:     bid123,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
-					openrtb_ext.BidderRubicon: {{
+					openrtb_ext.BidderMagnite: {{
 						Bid:     bid084,
 						BidType: openrtb_ext.BidTypeBanner,
 					}},
@@ -936,7 +936,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 						},
 					},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{},
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{},
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValueNegative,
@@ -967,7 +967,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 							BidType: openrtb_ext.BidTypeBanner,
 						},
 					},
-					openrtb_ext.BidderRubicon: {
+					openrtb_ext.BidderMagnite: {
 						{
 							Bid:     bid123,
 							BidType: openrtb_ext.BidTypeBanner,
@@ -1018,7 +1018,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 					{},
 					{},
 				},
-				openrtb_ext.BidderRubicon: []ExpectedPbsBid{
+				openrtb_ext.BidderMagnite: []ExpectedPbsBid{
 					{
 						BidTargets: map[string]string{
 							"hb_bidder":         "rubicon",

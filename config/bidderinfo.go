@@ -41,7 +41,7 @@ type BidderInfo struct {
 
 	Experiment BidderInfoExperiment `yaml:"experiment" mapstructure:"experiment"`
 
-	// needed for Rubicon
+	// needed for Magnite/Rubicon
 	XAPI AdapterXAPI `yaml:"xapi" mapstructure:"xapi"`
 
 	// needed for Facebook

@@ -1,4 +1,4 @@
-package rubicon
+package magnite
 
 import (
 	"encoding/json"
@@ -25,26 +25,26 @@ const badvLimitSize = 50
 
 var bannerExtContent = []byte(`{"rp":{"mime":"text/html"}}`)
 
-type RubiconAdapter struct {
+type adapter struct {
 	URI          string
 	externalURI  string
 	XAPIUsername string
 	XAPIPassword string
 }
 
-type rubiconData struct {
-	AdServer rubiconAdServer `json:"adserver"`
+type magniteData struct {
+	AdServer magniteAdServer `json:"adserver"`
 	PbAdSlot string          `json:"pbadslot"`
 }
 
-type rubiconAdServer struct {
+type magniteAdServer struct {
 	Name   string `json:"name"`
 	AdSlot string `json:"adslot"`
 }
 
-type rubiconExtImpBidder struct {
+type magniteExtImpBidder struct {
 	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid"`
-	Bidder openrtb_ext.ExtImpRubicon `json:"bidder"`
+	Bidder openrtb_ext.ExtImpMagnite `json:"bidder"`
 	Gpid   string                    `json:"gpid"`
 	Skadn  json.RawMessage           `json:"skadn,omitempty"`
 	Tid    string                    `json:"tid"`
@@ -61,108 +61,110 @@ type bidRequestExtPrebid struct {
 }
 
 type bidRequestExtPrebidBidders struct {
-	Rubicon prebidBiddersRubicon `json:"rubicon,omitempty"`
+	// Keeping legacy rubicon object for backwards compatibility. magnite takes precedence
+	Magnite prebidBiddersMagnite `json:"magnite,omitempty"`
+	Rubicon prebidBiddersMagnite `json:"rubicon,omitempty"`
 }
 
-type prebidBiddersRubicon struct {
-	Debug prebidBiddersRubiconDebug `json:"debug,omitempty"`
+type prebidBiddersMagnite struct {
+	Debug prebidBiddersMagniteDebug `json:"debug,omitempty"`
 }
 
-type prebidBiddersRubiconDebug struct {
+type prebidBiddersMagniteDebug struct {
 	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }
 
-type rubiconImpExtRPTrack struct {
+type magniteImpExtRPTrack struct {
 	Mint        string `json:"mint"`
 	MintVersion string `json:"mint_version"`
 }
 
-type rubiconImpExt struct {
-	RP      rubiconImpExtRP `json:"rp,omitempty"`
+type magniteImpExt struct {
+	RP      magniteImpExtRP `json:"rp,omitempty"`
 	GPID    string          `json:"gpid,omitempty"`
 	Skadn   json.RawMessage `json:"skadn,omitempty"`
 	Tid     string          `json:"tid,omitempty"`
 	MaxBids *int            `json:"maxbids,omitempty"`
 }
 
-type rubiconImpExtRP struct {
+type magniteImpExtRP struct {
 	ZoneID int                  `json:"zone_id"`
 	Target json.RawMessage      `json:"target,omitempty"`
-	Track  rubiconImpExtRPTrack `json:"track"`
+	Track  magniteImpExtRPTrack `json:"track"`
 }
 
-type rubiconUserExtRP struct {
+type magniteUserExtRP struct {
 	Target json.RawMessage `json:"target,omitempty"`
 }
 
-type rubiconDataExt struct {
+type magniteDataExt struct {
 	SegTax int `json:"segtax"`
 }
 
-type rubiconUserExt struct {
+type magniteUserExt struct {
 	Eids    []openrtb2.EID   `json:"eids,omitempty"`
-	RP      rubiconUserExtRP `json:"rp"`
+	RP      magniteUserExtRP `json:"rp"`
 	Data    json.RawMessage  `json:"data,omitempty"`
 	Consent string           `json:"consent,omitempty"`
 }
 
-type rubiconSiteExtRP struct {
+type magniteSiteExtRP struct {
 	SiteID int             `json:"site_id"`
 	Target json.RawMessage `json:"target,omitempty"`
 }
 
-type rubiconSiteExt struct {
-	RP rubiconSiteExtRP `json:"rp"`
+type magniteSiteExt struct {
+	RP magniteSiteExtRP `json:"rp"`
 }
 
-type rubiconPubExtRP struct {
+type magnitePubExtRP struct {
 	AccountID int `json:"account_id"`
 }
 
-type rubiconPubExt struct {
-	RP rubiconPubExtRP `json:"rp"`
+type magnitePubExt struct {
+	RP magnitePubExtRP `json:"rp"`
 }
 
-type rubiconBannerExtRP struct {
+type magniteBannerExtRP struct {
 	MIME string `json:"mime"`
 }
 
-type rubiconBannerExt struct {
-	RP rubiconBannerExtRP `json:"rp"`
+type magniteBannerExt struct {
+	RP magniteBannerExtRP `json:"rp"`
 }
 
 // ***** Video Extension *****
-type rubiconVideoExt struct {
+type magniteVideoExt struct {
 	Skip      int               `json:"skip,omitempty"`
 	SkipDelay int               `json:"skipdelay,omitempty"`
 	VideoType string            `json:"videotype,omitempty"`
-	RP        rubiconVideoExtRP `json:"rp"`
+	RP        magniteVideoExtRP `json:"rp"`
 }
 
-type rubiconVideoExtRP struct {
+type magniteVideoExtRP struct {
 	SizeID int `json:"size_id,omitempty"`
 }
 
-type rubiconDeviceExtRP struct {
+type magniteDeviceExtRP struct {
 	PixelRatio float64 `json:"pixelratio"`
 }
 
-type rubiconDeviceExt struct {
-	RP rubiconDeviceExtRP `json:"rp"`
+type magniteDeviceExt struct {
+	RP magniteDeviceExtRP `json:"rp"`
 }
 
-type rubiconBidResponse struct {
+type magniteBidResponse struct {
 	openrtb2.BidResponse
-	SeatBid []rubiconSeatBid `json:"seatbid,omitempty"`
+	SeatBid []magniteSeatBid `json:"seatbid,omitempty"`
 }
 
-type rubiconSeatBid struct {
+type magniteSeatBid struct {
 	openrtb2.SeatBid
 	Buyer string       `json:"buyer,omitempty"`
-	Bid   []rubiconBid `json:"bid"`
+	Bid   []magniteBid `json:"bid"`
 }
 
-type rubiconBid struct {
+type magniteBid struct {
 	openrtb2.Bid
 	AdmNative json.RawMessage `json:"adm_native,omitempty"`
 }
@@ -187,11 +189,11 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 	return
 }
 
-// Builder builds a new instance of the Rubicon adapter for the given bidder with the given config.
+// Builder builds a new instance of the Magnite adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	uri := appendTrackerToUrl(config.Endpoint, config.XAPI.Tracker)
 
-	bidder := &RubiconAdapter{
+	bidder := &adapter{
 		URI:          uri,
 		externalURI:  server.ExternalUrl,
 		XAPIUsername: config.XAPI.Username,
@@ -225,7 +227,7 @@ func updateRequestTo26(r *openrtb2.BidRequest) error {
 	return requestWrapper.RebuildRequest()
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	err := updateRequestTo26(request)
 
@@ -245,32 +247,32 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 	maxBids := getMaxBids(request)
 
-	rubiconRequest := *request
+	magniteRequest := *request
 	for imp, bidderExt := range impsToExtMap {
-		rubiconExt := bidderExt.Bidder
-		target, err := a.updateImpRpTarget(bidderExt, rubiconExt, *imp, request.Site, request.App)
+		magniteExt := bidderExt.Bidder
+		target, err := a.updateImpRpTarget(bidderExt, magniteExt, *imp, request.Site, request.App)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		siteId, err := rubiconExt.SiteId.Int64()
+		siteId, err := magniteExt.SiteId.Int64()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		zoneId, err := rubiconExt.ZoneId.Int64()
+		zoneId, err := magniteExt.ZoneId.Int64()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		impExt := rubiconImpExt{
-			RP: rubiconImpExtRP{
+		impExt := magniteImpExt{
+			RP: magniteImpExtRP{
 				ZoneID: int(zoneId),
 				Target: target,
-				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
+				Track:  magniteImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 			GPID:    bidderExt.Gpid,
 			Skadn:   bidderExt.Skadn,
@@ -305,13 +307,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 		if request.User != nil {
 			userCopy := *request.User
-			target, err := updateUserRpTargetWithFpdAttributes(rubiconExt.Visitor, userCopy)
+			target, err := updateUserRpTargetWithFpdAttributes(magniteExt.Visitor, userCopy)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 
-			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
+			userExtRP := magniteUserExt{RP: magniteUserExtRP{Target: target}}
 
 			if len(userCopy.EIDs) > 0 {
 				userExtRP.Eids = userCopy.EIDs
@@ -332,14 +334,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userCopy.Gender = ""
 			userCopy.EIDs = nil
 
-			rubiconRequest.User = &userCopy
+			magniteRequest.User = &userCopy
 		}
 
 		if request.Device != nil {
 			deviceCopy := *request.Device
-			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
+			deviceExt := magniteDeviceExt{RP: magniteDeviceExtRP{PixelRatio: request.Device.PxRatio}}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
-			rubiconRequest.Device = &deviceCopy
+			magniteRequest.Device = &deviceCopy
 		}
 
 		isVideo := isVideo(*imp)
@@ -354,11 +356,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				videoType = "rewarded"
 				imp.Rwdd = 0
 			}
-			videoExt := rubiconVideoExt{
-				Skip:      rubiconExt.Video.Skip,
-				SkipDelay: rubiconExt.Video.SkipDelay,
+			videoExt := magniteVideoExt{
+				Skip:      magniteExt.Video.Skip,
+				SkipDelay: magniteExt.Video.SkipDelay,
 				VideoType: videoType,
-				RP:        rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID},
+				RP:        magniteVideoExtRP{SizeID: magniteExt.Video.VideoSizeID},
 			}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			imp.Video = &videoCopy
@@ -368,7 +370,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			bannerCopy := *imp.Banner
 			if len(bannerCopy.Format) < 1 && (bannerCopy.W == nil || *bannerCopy.W == 0 && bannerCopy.H == nil || *bannerCopy.H == 0) {
 				errs = append(errs, &errortypes.BadInput{
-					Message: "rubicon imps must have at least one imp.format element",
+					Message: "magnite imps must have at least one imp.format element",
 				})
 				continue
 			}
@@ -392,17 +394,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			impType = openrtb_ext.BidTypeNative
 		}
 
-		accountId, err := rubiconExt.AccountId.Int64()
+		accountId, err := magniteExt.AccountId.Int64()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: int(accountId)}}
+		pubExt := magnitePubExt{RP: magnitePubExtRP{AccountID: int(accountId)}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}}
+			siteExtRP := magniteSiteExt{RP: magniteSiteExtRP{SiteID: int(siteId)}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
 				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
@@ -424,10 +426,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 			siteCopy.Publisher = &openrtb2.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			rubiconRequest.Site = &siteCopy
+			magniteRequest.Site = &siteCopy
 		} else {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
+			appCopy.Ext, err = json.Marshal(magniteSiteExt{RP: magniteSiteExtRP{SiteID: int(siteId)}})
 			if err != nil {
 				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 			}
@@ -436,7 +438,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			if err != nil {
 				errs = append(errs, &errortypes.BadInput{Message: err.Error()})
 			}
-			rubiconRequest.App = &appCopy
+			magniteRequest.App = &appCopy
 		}
 
 		if request.Source != nil && request.Source.SChain != nil {
@@ -461,7 +463,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				continue
 			}
 
-			rubiconRequest.Source = &sourceCopy
+			magniteRequest.Source = &sourceCopy
 		}
 
 		if request.Regs != nil && (request.Regs.GDPR != nil || request.Regs.USPrivacy != "") {
@@ -492,21 +494,21 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			regsCopy.GDPR = nil
 			regsCopy.USPrivacy = ""
 
-			rubiconRequest.Regs = &regsCopy
+			magniteRequest.Regs = &regsCopy
 		}
 
 		reqBadv := request.BAdv
 		if reqBadv != nil {
 			if len(reqBadv) > badvLimitSize {
-				rubiconRequest.BAdv = reqBadv[:badvLimitSize]
+				magniteRequest.BAdv = reqBadv[:badvLimitSize]
 			}
 		}
 
-		rubiconRequest.Imp = []openrtb2.Imp{*imp}
-		rubiconRequest.Cur = nil
-		rubiconRequest.Ext = nil
+		magniteRequest.Imp = []openrtb2.Imp{*imp}
+		magniteRequest.Cur = nil
+		magniteRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(rubiconRequest)
+		reqJSON, err := json.Marshal(magniteRequest)
 		if impType == openrtb_ext.BidTypeNative && len(requestNative) > 0 {
 			reqJSON, err = setImpNative(reqJSON, requestNative)
 		}
@@ -521,7 +523,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
-			ImpIDs:  openrtb_ext.GetImpIDs(rubiconRequest.Imp),
+			ImpIDs:  openrtb_ext.GetImpIDs(magniteRequest.Imp),
 		}
 		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 		requestData = append(requestData, reqData)
@@ -549,13 +551,13 @@ func getMaxBids(bidRequest *openrtb2.BidRequest) *int {
 	return multiBid.MaxBids
 }
 
-func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBidder, []error) {
-	impsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
+func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]magniteExtImpBidder, []error) {
+	impsToExtMap := make(map[*openrtb2.Imp]magniteExtImpBidder)
 	errs := make([]error, 0)
 	var err error
 	for _, imp := range imps {
 		impCopy := imp
-		var bidderExt rubiconExtImpBidder
+		var bidderExt magniteExtImpBidder
 		if err = jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
@@ -568,8 +570,8 @@ func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBid
 	return impsToExtMap, errs
 }
 
-func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map[*openrtb2.Imp]rubiconExtImpBidder {
-	preparedImpsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
+func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]magniteExtImpBidder) map[*openrtb2.Imp]magniteExtImpBidder {
+	preparedImpsToExtMap := make(map[*openrtb2.Imp]magniteExtImpBidder)
 	for imp, bidderExt := range impsToExtMap {
 		if bidderExt.Bidder.BidOnMultiformat == false { //nolint: gosimple,staticcheck
 			impCopy := imp
@@ -632,7 +634,7 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 	return bidFloor, nil
 }
 
-func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon,
+func (a *adapter) updateImpRpTarget(extImp magniteExtImpBidder, extImpMagnite openrtb_ext.ExtImpMagnite,
 	imp openrtb2.Imp, site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
 
 	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
@@ -643,7 +645,7 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 	if err != nil {
 		return nil, err
 	}
-	err = populateFirstPartyDataAttributes(extImpRubicon.Inventory, target)
+	err = populateFirstPartyDataAttributes(extImpMagnite.Inventory, target)
 	if err != nil {
 		return nil, err
 	}
@@ -678,7 +680,7 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		return nil, err
 	}
 
-	var data rubiconData
+	var data magniteData
 	if len(extImp.Data) > 0 {
 		err := jsonutil.Unmarshal(extImp.Data, &data)
 		if err != nil {
@@ -695,8 +697,8 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 		}
 	}
 
-	if len(extImpRubicon.Keywords) > 0 {
-		addStringArrayAttribute(extImpRubicon.Keywords, target, "keywords")
+	if len(extImpMagnite.Keywords) > 0 {
+		addStringArrayAttribute(extImpMagnite.Keywords, target, "keywords")
 	}
 
 	target["pbs_login"] = a.XAPIUsername
@@ -710,7 +712,7 @@ func (a *RubiconAdapter) updateImpRpTarget(extImp rubiconExtImpBidder, extImpRub
 	return updatedTarget, nil
 }
 
-func extractDfpAdUnitCode(data rubiconData) string {
+func extractDfpAdUnitCode(data magniteData) string {
 	if data.AdServer.Name == "gam" && len(data.AdServer.AdSlot) != 0 {
 		return data.AdServer.AdSlot
 	}
@@ -850,7 +852,7 @@ func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
 
 	for _, dataRecord := range data {
 		if dataRecord.Ext != nil {
-			var dataExtObject rubiconDataExt
+			var dataExtObject magniteDataExt
 			err := jsonutil.Unmarshal(dataRecord.Ext, &dataExtObject)
 			if err != nil {
 				continue
@@ -949,7 +951,7 @@ func setImpNative(jsonData []byte, requestNative map[string]interface{}) ([]byte
 	}
 }
 
-func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -966,7 +968,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 		}}
 	}
 
-	var bidResp rubiconBidResponse
+	var bidResp magniteBidResponse
 	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -1014,7 +1016,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 			}
 
 			if bid.Price != 0 {
-				// Since Rubicon XAPI returns only one bid per response
+				// Since Magnite XAPI returns only one bid per response
 				// copy response.bidid to openrtb_response.seatbid.bid.bidid
 				if bid.ID == "0" {
 					bid.ID = bidResp.BidID
@@ -1027,9 +1029,9 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 				var ortbBid openrtb2.Bid // `targetStruct` can be anything of your choice
 
-				rubiconBidAsBytes, _ := json.Marshal(bid)
-				if len(rubiconBidAsBytes) > 0 {
-					err = jsonutil.Unmarshal(rubiconBidAsBytes, &ortbBid)
+				magniteBidAsBytes, _ := json.Marshal(bid)
+				if len(magniteBidAsBytes) > 0 {
+					err = jsonutil.Unmarshal(magniteBidAsBytes, &ortbBid)
 					if err != nil {
 						return nil, []error{err}
 					}
@@ -1057,17 +1059,17 @@ func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 			continue
 		}
 
-		var rubiconExt openrtb_ext.ExtImpRubicon
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+		var magniteExt openrtb_ext.ExtImpMagnite
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &magniteExt); err != nil {
 			continue
 		}
 
-		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
+		impIdToCmpOverride[imp.ID] = magniteExt.Debug.CpmOverride
 	}
 	return impIdToCmpOverride
 }
 
-func resolveAdm(bid rubiconBid) string {
+func resolveAdm(bid magniteBid) string {
 	var bidAdm = bid.AdM
 	if len(bidAdm) > 0 {
 		return bidAdm
@@ -1088,10 +1090,15 @@ func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 		return 0
 	}
 
+	magniteCpmOverride := bidRequestExt.Prebid.Bidders.Magnite.Debug.CpmOverride
+	if magniteCpmOverride > 0 {
+		return magniteCpmOverride
+	}
+
 	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
 }
 
-func updateBidExtWithMeta(bid rubiconBid, buyer int, seat string) json.RawMessage {
+func updateBidExtWithMeta(bid magniteBid, buyer int, seat string) json.RawMessage {
 	if buyer <= 0 && seat == "" {
 		return nil
 	}

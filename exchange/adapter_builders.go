@@ -152,6 +152,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/mabidder"
 	"github.com/prebid/prebid-server/v4/adapters/madsense"
 	"github.com/prebid/prebid-server/v4/adapters/madvertise"
+	"github.com/prebid/prebid-server/v4/adapters/magnite"
 	"github.com/prebid/prebid-server/v4/adapters/marsmedia"
 	"github.com/prebid/prebid-server/v4/adapters/mediago"
 	"github.com/prebid/prebid-server/v4/adapters/medianet"
@@ -204,7 +205,6 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/roulax"
 	"github.com/prebid/prebid-server/v4/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/v4/adapters/rtbstack"
-	"github.com/prebid/prebid-server/v4/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/v4/adapters/sa_lunamedia"
 	"github.com/prebid/prebid-server/v4/adapters/scalibur"
 	"github.com/prebid/prebid-server/v4/adapters/seedingAlliance"
@@ -437,6 +437,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMediaGo:           mediago.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMediasquare:       mediasquare.Builder,
+		openrtb_ext.BidderMagnite:           magnite.Builder,
 		openrtb_ext.BidderMeloZen:           melozen.Builder,
 		openrtb_ext.BidderMetaX:             metax.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
@@ -485,7 +486,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRoulax:            roulax.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRTBStack:          rtbstack.Builder,
-		openrtb_ext.BidderRubicon:           rubicon.Builder,
 		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
 		openrtb_ext.BidderSeedtag:           seedtag.Builder,
 		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,

@@ -2463,7 +2463,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			gdprEnforced:           true,
 			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
-			expectedBlockedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderRubicon},
+			expectedBlockedBidders: []openrtb_ext.BidderName{openrtb_ext.BidderMagnite},
 			expectedErrors: []error{&errortypes.Warning{
 				Message:     `bidder "rubicon" blocked by privacy settings`,
 				WarningCode: errortypes.BidderBlockedByPrivacySettings,
@@ -2472,15 +2472,15 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 		{
 			description:            "gdpr enforced, two requests allowed and no requests blocked",
 			gdprEnforced:           true,
-			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
-			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
+			gdprAllowedBidders:     []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderMagnite},
+			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderMagnite},
 			expectedBlockedBidders: []openrtb_ext.BidderName{},
 		},
 		{
 			description:            "gdpr not enforced, two requests allowed and no requests blocked",
 			gdprEnforced:           false,
 			gdprAllowedBidders:     []openrtb_ext.BidderName{},
-			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon},
+			expectedBidders:        []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderMagnite},
 			expectedBlockedBidders: []openrtb_ext.BidderName{},
 		},
 	}
@@ -4907,7 +4907,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
-						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderMagnite)},
 						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
@@ -4922,7 +4922,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 		{
 			name: "adapter defined in multi-bid config as a entry of Bidders list along with other bidders",
 			args: args{
-				adapter: string(openrtb_ext.BidderRubicon),
+				adapter: string(openrtb_ext.BidderMagnite),
 				reqMultiBid: []*openrtb_ext.ExtMultiBid{
 					{
 						Bidder:  string(openrtb_ext.BidderAppnexus),
@@ -4933,14 +4933,14 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
-						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderMagnite)},
 						MaxBids: ptrutil.ToPtr(4),
 					},
 				},
 			},
 			want: []*openrtb_ext.ExtMultiBid{
 				{
-					Bidders: []string{string(openrtb_ext.BidderRubicon)},
+					Bidders: []string{string(openrtb_ext.BidderMagnite)},
 					MaxBids: ptrutil.ToPtr(4),
 				},
 			},
@@ -4959,7 +4959,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
-						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderMagnite)},
 						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
@@ -5033,7 +5033,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 						MaxBids: ptrutil.ToPtr(2),
 					},
 					{
-						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderRubicon)},
+						Bidders: []string{string(openrtb_ext.Bidder33Across), string(openrtb_ext.BidderMagnite)},
 						MaxBids: ptrutil.ToPtr(2),
 					},
 				},
@@ -5059,7 +5059,7 @@ func Test_buildRequestExtMultiBid(t *testing.T) {
 					MaxBids: ptrutil.ToPtr(2),
 				},
 				{
-					Bidders: []string{string(openrtb_ext.BidderRubicon)},
+					Bidders: []string{string(openrtb_ext.BidderMagnite)},
 					MaxBids: ptrutil.ToPtr(2),
 				},
 			},

@@ -13,7 +13,7 @@ func TestPurposeConfigBasicEnforcementVendor(t *testing.T) {
 		appnexus = string(openrtb_ext.BidderAppnexus)
 		ix       = string(openrtb_ext.BidderIx)
 		pubmatic = string(openrtb_ext.BidderPubmatic)
-		rubicon  = string(openrtb_ext.BidderRubicon)
+		magnite  = string(openrtb_ext.BidderMagnite)
 	)
 
 	tests := []struct {
@@ -55,7 +55,7 @@ func TestPurposeConfigBasicEnforcementVendor(t *testing.T) {
 			giveBasicVendors: map[string]struct{}{
 				ix:       {},
 				pubmatic: {},
-				rubicon:  {},
+				magnite:  {},
 			},
 			giveBidder: appnexus,
 			wantFound:  false,
@@ -66,7 +66,7 @@ func TestPurposeConfigBasicEnforcementVendor(t *testing.T) {
 				ix:       {},
 				pubmatic: {},
 				appnexus: {},
-				rubicon:  {},
+				magnite:  {},
 			},
 			giveBidder: appnexus,
 			wantFound:  true,
@@ -88,7 +88,7 @@ func TestPurposeConfigVendorException(t *testing.T) {
 		appnexus = string(openrtb_ext.BidderAppnexus)
 		ix       = string(openrtb_ext.BidderIx)
 		pubmatic = string(openrtb_ext.BidderPubmatic)
-		rubicon  = string(openrtb_ext.BidderRubicon)
+		rubicon  = string(openrtb_ext.BidderMagnite)
 	)
 
 	tests := []struct {

@@ -146,7 +146,7 @@ func TestNewPurposeEnforcerBuilderCaching(t *testing.T) {
 	bidder2Enforcers := make([]PurposeEnforcer, 11)
 	bidder3 := string(openrtb_ext.BidderPubmatic)
 	bidder3Enforcers := make([]PurposeEnforcer, 11)
-	bidder4 := string(openrtb_ext.BidderRubicon)
+	bidder4 := string(openrtb_ext.BidderMagnite)
 	bidder4Enforcers := make([]PurposeEnforcer, 11)
 
 	cfg := fakeTCF2ConfigReader{

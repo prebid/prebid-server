@@ -214,7 +214,7 @@ func TestMalformedConsent(t *testing.T) {
 func TestAllowActivities(t *testing.T) {
 	bidderAllowedByConsent := openrtb_ext.BidderAppnexus
 	aliasedBidderAllowedByConsent := openrtb_ext.BidderName("appnexus1")
-	bidderBlockedByConsent := openrtb_ext.BidderRubicon
+	bidderBlockedByConsent := openrtb_ext.BidderMagnite
 	vendor2AndPurpose2Consent := "CPGWbY_PGWbY_GYAAAENABCAAEAAAAAAAAAAACEAAAAA"
 
 	tests := []struct {
@@ -550,7 +550,7 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus:        2,
 			openrtb_ext.BidderPubmatic:        6,
-			openrtb_ext.BidderRubicon:         8,
+			openrtb_ext.BidderMagnite:         8,
 			openrtb_ext.BidderOpenx:           20,
 			openrtb_ext.BidderAudienceNetwork: 55,
 		},
@@ -625,8 +625,8 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		},
 		{
 			description:     "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
-			bidder:          openrtb_ext.BidderRubicon,
-			bidderCoreName:  openrtb_ext.BidderRubicon,
+			bidder:          openrtb_ext.BidderMagnite,
+			bidderCoreName:  openrtb_ext.BidderMagnite,
 			consent:         "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			allowBidRequest: true,
 			passGeo:         false,
@@ -678,7 +678,7 @@ func TestAllowActivitiesWhitelist(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 6,
-			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderMagnite:  8,
 		},
 		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
 			2: {
@@ -708,7 +708,7 @@ func TestAllowActivitiesPubRestrict(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 32,
-			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderMagnite:  8,
 		},
 		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
 			2: {
@@ -751,8 +751,8 @@ func TestAllowActivitiesPubRestrict(t *testing.T) {
 		},
 		{
 			description:    "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
-			bidder:         openrtb_ext.BidderRubicon,
-			bidderCoreName: openrtb_ext.BidderRubicon,
+			bidder:         openrtb_ext.BidderMagnite,
+			bidderCoreName: openrtb_ext.BidderMagnite,
 			consent:        "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
 			passGeo:        false,
 			passID:         true,
@@ -782,7 +782,7 @@ func TestAllowSync(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 6,
-			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderMagnite:  8,
 		},
 		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
 			2: {
@@ -798,7 +798,7 @@ func TestAllowSync(t *testing.T) {
 	assert.NoErrorf(t, err, "Error processing HostCookiesAllowed")
 	assert.EqualValuesf(t, true, allowSync, "HostCookiesAllowed failure")
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon)
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderMagnite)
 	assert.NoErrorf(t, err, "Error processing BidderSyncAllowed")
 	assert.EqualValuesf(t, true, allowSync, "BidderSyncAllowed failure")
 }
@@ -818,7 +818,7 @@ func TestProhibitedPurposeSync(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 6,
-			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderMagnite:  8,
 		},
 		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
 			2: {
@@ -834,7 +834,7 @@ func TestProhibitedPurposeSync(t *testing.T) {
 	assert.NoErrorf(t, err, "Error processing HostCookiesAllowed")
 	assert.EqualValuesf(t, false, allowSync, "HostCookiesAllowed failure")
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderRubicon)
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderMagnite)
 	assert.NoErrorf(t, err, "Error processing BidderSyncAllowed")
 	assert.EqualValuesf(t, false, allowSync, "BidderSyncAllowed failure")
 }
@@ -851,7 +851,7 @@ func TestProhibitedVendorSync(t *testing.T) {
 		vendorIDs: map[openrtb_ext.BidderName]uint16{
 			openrtb_ext.BidderAppnexus: 2,
 			openrtb_ext.BidderPubmatic: 6,
-			openrtb_ext.BidderRubicon:  8,
+			openrtb_ext.BidderMagnite:  8,
 			openrtb_ext.BidderOpenx:    10,
 		},
 		fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
@@ -1036,8 +1036,8 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			description:            "Bid blocked - p2 enabled, user consents to p2 LI but not vendor, vendor consents to p2",
 			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
-			bidder:                 openrtb_ext.BidderRubicon,
-			bidderCoreName:         openrtb_ext.BidderRubicon,
+			bidder:                 openrtb_ext.BidderMagnite,
+			bidderCoreName:         openrtb_ext.BidderMagnite,
 			consent:                purpose2LIWithoutVendorLI,
 			allowBidRequest:        false,
 			passGeo:                false,
@@ -1047,8 +1047,8 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			description:            "Bid allowed - p2 enabled, user consents to p2 LI and vendor, vendor consents to p2",
 			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
-			bidder:                 openrtb_ext.BidderRubicon,
-			bidderCoreName:         openrtb_ext.BidderRubicon,
+			bidder:                 openrtb_ext.BidderMagnite,
+			bidderCoreName:         openrtb_ext.BidderMagnite,
 			consent:                purpose2AndVendorLI,
 			allowBidRequest:        true,
 			passGeo:                false,
@@ -1074,7 +1074,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			hostVendorID: 2,
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
 				openrtb_ext.BidderPubmatic: 6,
-				openrtb_ext.BidderRubicon:  8,
+				openrtb_ext.BidderMagnite:  8,
 			},
 			fetchVendorList: listFetcher(map[uint16]map[uint16]vendorlist.VendorList{
 				2: {

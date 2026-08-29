@@ -8,7 +8,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/adapters/appnexus"
-	"github.com/prebid/prebid-server/v4/adapters/rubicon"
+	"github.com/prebid/prebid-server/v4/adapters/magnite"
 	"github.com/prebid/prebid-server/v4/config"
 	metrics "github.com/prebid/prebid-server/v4/metrics/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
@@ -38,10 +38,10 @@ func TestBuildAdapters(t *testing.T) {
 	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil, "")
 	appnexusValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
 
-	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{}, config.Server{})
-	rubiconBidderWithInfo := adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled)
-	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil, "")
-	rubiconBidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
+	magniteBidder, _ := magnite.Builder(openrtb_ext.BidderMagnite, config.Adapter{}, config.Server{})
+	magniteBidderWithInfo := adapters.BuildInfoAwareBidder(magniteBidder, infoEnabled)
+	magniteBidderAdapted := AdaptBidder(magniteBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderMagnite, nil, "")
+	magniteBidderValidated := addValidatedBidderMiddleware(magniteBidderAdapted)
 
 	testCases := []struct {
 		description                 string
@@ -69,7 +69,7 @@ func TestBuildAdapters(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled, "rubicon": infoEnabled},
 			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
-				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
+				openrtb_ext.BidderMagnite:  magniteBidderValidated,
 			},
 			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{},
 		},
@@ -86,11 +86,11 @@ func TestBuildAdapters(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{"appnexus": multiformatDisabled, "rubicon": multiformatDisabled},
 			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
-				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
+				openrtb_ext.BidderMagnite:  magniteBidderValidated,
 			},
 			expectedSingleFormatBidders: map[openrtb_ext.BidderName]struct{}{
 				openrtb_ext.BidderAppnexus: {},
-				openrtb_ext.BidderRubicon:  {},
+				openrtb_ext.BidderMagnite:  {},
 			},
 		},
 	}
@@ -163,26 +163,26 @@ func TestBuildBidders(t *testing.T) {
 		{
 			description: "Success - Many",
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled, "rubicon": infoEnabled},
-			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderMagnite: rubiconBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
 				openrtb_ext.BidderAppnexus: adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled),
-				openrtb_ext.BidderRubicon:  adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
+				openrtb_ext.BidderMagnite:  adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
 			},
 		},
 		{
 			description: "Success - Ignores Disabled",
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "rubicon": infoEnabled},
-			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderMagnite: rubiconBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
-				openrtb_ext.BidderRubicon: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
+				openrtb_ext.BidderMagnite: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
 			},
 		},
 		{
 			description: "Success - Ignores WhiteLabelOnly",
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoWhiteLabelOnly, "rubicon": infoEnabled},
-			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderMagnite: rubiconBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
-				openrtb_ext.BidderRubicon: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
+				openrtb_ext.BidderMagnite: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
 			},
 		},
 	}
@@ -203,7 +203,7 @@ func TestBuildBidders(t *testing.T) {
 func TestSetAliasBuilder(t *testing.T) {
 	rubiconBidder := fakeBidder{"b"}
 	ixBidder := fakeBidder{"ix"}
-	rubiconBuilder := fakeBuilder{rubiconBidder, nil}.Builder
+	magniteBuilder := fakeBuilder{rubiconBidder, nil}.Builder
 	ixBuilder := fakeBuilder{ixBidder, nil}.Builder
 
 	testCases := []struct {
@@ -216,17 +216,17 @@ func TestSetAliasBuilder(t *testing.T) {
 	}{
 		{
 			description:      "Success - Alias builder",
-			bidderInfo:       config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderInfo:       config.BidderInfo{Disabled: false, AliasOf: "magnite"},
 			bidderName:       openrtb_ext.BidderName("appnexus"),
-			builders:         map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder},
-			expectedBuilders: map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderRubicon: rubiconBuilder, openrtb_ext.BidderAppnexus: rubiconBuilder},
+			builders:         map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderMagnite: magniteBuilder},
+			expectedBuilders: map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderMagnite: magniteBuilder, openrtb_ext.BidderAppnexus: magniteBuilder},
 		},
 		{
 			description:   "Failure - Invalid parent bidder builder",
-			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "rubicon"},
+			bidderInfo:    config.BidderInfo{Disabled: false, AliasOf: "magnite"},
 			bidderName:    openrtb_ext.BidderName("appnexus"),
 			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderIx: ixBuilder},
-			expectedError: errors.New("rubicon: parent builder not registered"),
+			expectedError: errors.New("magnite: parent builder not registered"),
 		},
 		{
 			description:   "Failure - Invalid parent for alias",

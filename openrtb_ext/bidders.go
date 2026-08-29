@@ -169,6 +169,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMabidder,
 	BidderMadSense,
 	BidderMadvertise,
+	BidderMagnite,
 	BidderMarsmedia,
 	BidderMediafuse,
 	BidderMediaGo,
@@ -222,7 +223,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRoulax,
 	BidderRTBHouse,
 	BidderRTBStack,
-	BidderRubicon,
 	BidderSeedingAlliance,
 	BidderSeedtag,
 	BidderSaLunaMedia,
@@ -554,6 +554,7 @@ const (
 	BidderMabidder          BidderName = "mabidder"
 	BidderMadSense          BidderName = "madsense"
 	BidderMadvertise        BidderName = "madvertise"
+	BidderMagnite           BidderName = "magnite"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMediaGo           BidderName = "mediago"
@@ -607,7 +608,6 @@ const (
 	BidderRoulax            BidderName = "roulax"
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRTBStack          BidderName = "rtbstack"
-	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
 	BidderSeedtag           BidderName = "seedtag"
 	BidderSaLunaMedia       BidderName = "sa_lunamedia"
