@@ -14,6 +14,8 @@ import (
 	"github.com/prebid/prebid-server/v4/privacy"
 	"github.com/prebid/prebid-server/v4/privacy/ccpa"
 	"github.com/prebid/prebid-server/v4/privacy/gdpr"
+	"github.com/prebid/prebid-server/v4/privacy/gpp"
+	"github.com/prebid/prebid-server/v4/util/stringutil"
 )
 
 // Params defines the parameters of an AMP request.
@@ -25,6 +27,7 @@ type Params struct {
 	ConsentType       int64
 	Debug             bool
 	GdprApplies       *bool
+	GppSid            string
 	Origin            string
 	Size              Size
 	Slot              string
@@ -49,12 +52,21 @@ const (
 	ConsentTCF1      = 1
 	ConsentTCF2      = 2
 	ConsentUSPrivacy = 3
+	ConsentGPP       = 4
 )
 
 // ReadPolicy returns a privacy writer in accordance to the query values consent, consent_type and gdpr_applies.
-// Returned policy writer could either be GDPR, CCPA or NilPolicy. The second return value is a warning.
+// Returned policy writer could either be GDPR, CCPA, GPP or NilPolicy. The second return value is a
+// non-fatal warning whose meaning depends on the consent type: for GPP an invalid gpp_sid does not
+// invalidate the (still valid) GPP consent string, so the caller applies the writer and only collects the
+// warning; for CCPA/TCF2 a warning about the consent string itself means the caller drops the writer. See
+// overrideWithParams in endpoints/openrtb2/amp_auction.go for how the caller makes that split.
 func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
-	if len(ampParams.Consent) == 0 {
+	// GPP is the one consent type where a signal can arrive without a consent string: per issue #3577
+	// gpp_sid must be written to regs.gppsid independently of consent_string. So don't short-circuit the
+	// GPP case when only gpp_sid is present (matches the PBS-Java AMP behavior).
+	isGPPWithSid := ampParams.ConsentType == ConsentGPP && len(ampParams.GppSid) > 0
+	if len(ampParams.Consent) == 0 && !isGPPWithSid {
 		return privacy.NilPolicyWriter{}, nil
 	}
 
@@ -83,6 +95,15 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 			// Log warning if CCPA string is invalid
 			warningMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
 		}
+	case ConsentGPP:
+		// Parse gpp_sid once here and pass the typed slice to the writer. AMP intentionally degrades
+		// gracefully: an invalid gpp_sid only produces a warning and the GPP consent string is still
+		// written (unlike endpoints/setuid.go, which rejects a malformed gpp_sid with a 400).
+		gppSID, err := stringutil.StrToInt8Slice(ampParams.GppSid)
+		if err != nil {
+			warningMsg = fmt.Sprintf("GPP SID '%s' is not a valid comma-separated list of integers.", ampParams.GppSid)
+		}
+		rv = gpp.ConsentWriter{Consent: ampParams.Consent, GppSid: gppSID}
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
@@ -162,6 +183,7 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Consent:           chooseConsent(query.Get("consent_string"), query.Get("gdpr_consent")),
 		ConsentType:       parseInt(query.Get("consent_type")),
 		Debug:             query.Get("debug") == "1",
+		GppSid:            query.Get("gpp_sid"),
 		Origin:            query.Get("__amp_source_origin"),
 		Size: Size{
 			Height:         parseInt(query.Get("h")),
