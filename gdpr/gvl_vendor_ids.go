@@ -59,16 +59,24 @@ func NewGVLVendorIDTickerTask(interval time.Duration, client *http.Client, urlMa
 	})
 }
 
-// gvlVendorListContract is a lightweight contract for parsing only vendor IDs from GVL JSON
+// gvlVendorListContract is a lightweight contract for parsing only vendor IDs from GVL JSON.
+//
+// DeletedDate is present (as an ISO 8601 date string) only for a vendor that has been deleted
+// from the GVL. Per the IAB TCF spec, a deleted vendor is NOT removed from the "vendors" map --
+// it is left in place, marked with this field, so that historical GVL versions referencing it
+// remain interpretable. Any code that treats mere presence in this map as "valid" must check
+// this field and exclude deleted vendors, or it will treat deleted vendors as still valid.
 type gvlVendorListContract struct {
 	Vendors map[string]struct {
-		ID uint16 `json:"id"`
+		ID          uint16 `json:"id"`
+		DeletedDate string `json:"deletedDate,omitempty"`
 	} `json:"vendors"`
 }
 
 // FetchLatestGVLVendorIDs fetches the most recent Global Vendor List and returns a set of all
-// vendor IDs present in it. The returned map has vendor IDs as keys and empty structs as values.
-// If the fetch or parse fails, an empty map is returned.
+// non-deleted vendor IDs present in it (vendors marked with a "deletedDate" are excluded). The
+// returned map has vendor IDs as keys and empty structs as values. If the fetch or parse fails,
+// an empty map is returned.
 func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker func(uint16, uint16) string, me metrics.MetricsEngine) map[uint16]struct{} {
 	vendorIDs := make(map[uint16]struct{})
 
@@ -111,6 +119,11 @@ func FetchLatestGVLVendorIDs(ctx context.Context, client *http.Client, urlMaker 
 	}
 
 	for _, v := range contract.Vendors {
+		// Skip vendors marked as deleted -- they must be treated the same as if they never
+		// existed, not as still-valid entries just because they remain present in the list.
+		if v.DeletedDate != "" {
+			continue
+		}
 		vendorIDs[v.ID] = struct{}{}
 	}
 
