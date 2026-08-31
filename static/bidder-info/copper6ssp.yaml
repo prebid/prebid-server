@@ -1,5 +1,5 @@
 aliasOf: "vidazoo"
-endpoint: "https://exchange.copper6.com/openrtb/"
+endpoint: "https://bidder.copper6.com/openrtb/"
 maintainer:
   email: "operations@copper6.com"
 userSync:
