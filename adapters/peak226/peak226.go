@@ -92,6 +92,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			imp.BidFloorCur = currencyUSD
 		}
 
+		if imp.BidFloor > 0 && imp.BidFloorCur == "" {
+			imp.BidFloorCur = currencyUSD
+		}
+
 		region := peak226Ext.Region
 		if region == "" {
 			region = defaultRegion
@@ -195,12 +199,11 @@ func setPublisherID(request *openrtb2.BidRequest, publisherID string) {
 		return
 	}
 
-	var siteCopy openrtb2.Site
 	if request.Site != nil {
-		siteCopy = *request.Site
+		siteCopy := *request.Site
+		siteCopy.Publisher = clonePublisher(siteCopy.Publisher, publisherID)
+		request.Site = &siteCopy
 	}
-	siteCopy.Publisher = clonePublisher(siteCopy.Publisher, publisherID)
-	request.Site = &siteCopy
 }
 
 // sanitizeDevice clears device.ifa when it's the all-zero sentinel value reported by the
@@ -242,16 +245,21 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}}
 	}
 
-	if len(bidResp.SeatBid) == 0 {
-		return adapters.NewBidderResponse(), nil
+	totalBids := 0
+	for _, seatBid := range bidResp.SeatBid {
+		totalBids += len(seatBid.Bid)
 	}
 
-	var errs []error
-	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(totalBids)
 	if bidResp.Cur != "" {
 		bidderResponse.Currency = bidResp.Cur
 	}
 
+	if len(bidResp.SeatBid) == 0 {
+		return bidderResponse, nil
+	}
+
+	var errs []error
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
 			bid := seatBid.Bid[i]
@@ -274,10 +282,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidderResponse, errs
 }
 
-// resolveMacros substitutes the OpenRTB ${AUCTION_PRICE} macro in adm and nurl with the
-// bid price. peak226 always returns the macro in adm and relies on the demand-side adapter
-// to expand it, so leaving it unresolved would render the literal macro text in the creative
-// and report the wrong price on the win notice.
+// resolveMacros substitutes the OpenRTB ${AUCTION_PRICE} macro in adm, nurl and burl with
+// the bid price. peak226 always returns the macro in adm and relies on the demand-side
+// adapter to expand it, so leaving it unresolved would render the literal macro text in the
+// creative and report the wrong price on the win and billing notices.
 func resolveMacros(bid *openrtb2.Bid) {
 	if bid == nil {
 		return
@@ -285,6 +293,7 @@ func resolveMacros(bid *openrtb2.Bid) {
 	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
 	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+	bid.BURL = strings.Replace(bid.BURL, "${AUCTION_PRICE}", price, -1)
 }
 
 func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {

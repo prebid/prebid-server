@@ -7,6 +7,7 @@
     "imp": [
       {
         "id": "imp-1",
+        "bidfloor": 1.5,
         "banner": {
           "format": [{"w": 300, "h": 250}]
         },
@@ -35,6 +36,8 @@
             {
               "id": "imp-1",
               "tagid": "plc-test",
+              "bidfloor": 1.5,
+              "bidfloorcur": "USD",
               "banner": {
                 "format": [{"w": 300, "h": 250}]
               }
@@ -55,10 +58,8 @@
                 {
                   "id": "bid-1",
                   "impid": "imp-1",
-                  "price": 3.25,
-                  "adm": "<div>ad</div><img src=\"https://count.viddea.com/win?p=${AUCTION_PRICE}\">",
-                  "nurl": "https://count.viddea.com/nurl?p=${AUCTION_PRICE}",
-                  "burl": "https://count.viddea.com/burl?p=${AUCTION_PRICE}",
+                  "price": 2.0,
+                  "adm": "<div>ad</div>",
                   "crid": "cr-1",
                   "w": 300,
                   "h": 250,
@@ -79,10 +80,8 @@
           "bid": {
             "id": "bid-1",
             "impid": "imp-1",
-            "price": 3.25,
-            "adm": "<div>ad</div><img src=\"https://count.viddea.com/win?p=3.25\">",
-            "nurl": "https://count.viddea.com/nurl?p=3.25",
-            "burl": "https://count.viddea.com/burl?p=3.25",
+            "price": 2.0,
+            "adm": "<div>ad</div>",
             "crid": "cr-1",
             "w": 300,
             "h": 250,

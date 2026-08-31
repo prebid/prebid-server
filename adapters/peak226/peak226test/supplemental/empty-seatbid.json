@@ -47,7 +47,7 @@
         "status": 200,
         "body": {
           "id": "resp-1",
-          "cur": "USD",
+          "cur": "EUR",
           "seatbid": []
         }
       }
@@ -55,6 +55,7 @@
   ],
   "expectedBidResponses": [
     {
+      "currency": "EUR",
       "bids": []
     }
   ]
