@@ -1,0 +1,17 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": []
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "no impressions in request",
+      "comparison": "literal"
+    }
+  ]
+}
