@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models"
 	"github.com/prebid/prebid-server/v3/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestApplyUnityLevelPlayResponse(t *testing.T) {
@@ -317,4 +318,35 @@ func TestUpdateBidWithTestPrice(t *testing.T) {
 			assert.Equal(t, tt.expectedBidResponses, tt.args.bidderResponses)
 		})
 	}
+}
+
+func TestApplyUnityLevelPlayResponse_PreservesTrackersInEmbeddedBid(t *testing.T) {
+	trackersExt := json.RawMessage(`{"trackers":[{"event":"ad_attribute","url":"https://t.pubmatic.com?bidid=789&ad_attribute={ADATTRIBUTE}"}]}`)
+	br := &openrtb2.BidResponse{
+		ID:  "resp-outer",
+		Cur: "USD",
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
+				ID:    "bid-inner",
+				ImpID: "imp-9",
+				Price: 2.5,
+				AdM:   "<html>creative</html>",
+				Ext:   trackersExt,
+			}},
+		}},
+	}
+	rctx := models.RequestCtx{
+		Endpoint:        models.EndpointUnityLevelPlay,
+		UnityLevelPlay:  models.UnityLevelPlay{Reject: false},
+	}
+
+	out := ApplyUnityLevelPlayResponse(rctx, br)
+	require.Len(t, out.SeatBid, 1)
+	require.Len(t, out.SeatBid[0].Bid, 1)
+
+	var decoded openrtb2.BidResponse
+	require.NoError(t, json.Unmarshal([]byte(out.SeatBid[0].Bid[0].AdM), &decoded))
+	require.Len(t, decoded.SeatBid, 1)
+	require.Len(t, decoded.SeatBid[0].Bid, 1)
+	assert.JSONEq(t, string(trackersExt), string(decoded.SeatBid[0].Bid[0].Ext))
 }

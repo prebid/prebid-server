@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models"
 	"github.com/prebid/prebid-server/v3/modules/pubmatic/openwrap/models/nbr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetGoogleSDKResponseReject(t *testing.T) {
@@ -615,4 +616,39 @@ func TestCustomizeBid(t *testing.T) {
 			assert.Equal(t, tt.want.wantOK, ok)
 		})
 	}
+}
+
+func TestApplyGoogleSDKResponse_PreservesTrackersInRenderingData(t *testing.T) {
+	trackersExt := json.RawMessage(`{"trackers":[{"event":"ad_attribute","url":"https://t.pubmatic.com?bidid=789&ad_attribute={ADATTRIBUTE}"}]}`)
+	br := &openrtb2.BidResponse{
+		ID:  "test-customok",
+		Cur: "USD",
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
+				ID:  "bid1",
+				AdM: `<html><body><a href="http://example.com/click">Click here</a></body></html>`,
+				Ext: trackersExt,
+			}},
+		}},
+	}
+	rctx := models.RequestCtx{
+		Endpoint: models.EndpointGoogleSDK,
+		Trackers: map[string]models.OWTracker{
+			"bid1": {BidType: models.Banner},
+		},
+	}
+
+	out := ApplyGoogleSDKResponse(rctx, br)
+	require.Len(t, out.SeatBid, 1)
+	require.Len(t, out.SeatBid[0].Bid, 1)
+
+	var bidExt models.GoogleSDKBidExt
+	require.NoError(t, json.Unmarshal(out.SeatBid[0].Bid[0].Ext, &bidExt))
+	require.NotEmpty(t, bidExt.SDKRenderedAd.RenderingData)
+
+	var embedded openrtb2.BidResponse
+	require.NoError(t, json.Unmarshal([]byte(bidExt.SDKRenderedAd.RenderingData), &embedded))
+	require.Len(t, embedded.SeatBid, 1)
+	require.Len(t, embedded.SeatBid[0].Bid, 1)
+	assert.JSONEq(t, string(trackersExt), string(embedded.SeatBid[0].Bid[0].Ext))
 }

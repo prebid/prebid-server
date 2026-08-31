@@ -31,6 +31,7 @@ type BidExt struct {
 	MultiBidMultiFloorValue float64               `json:"-"`
 	InBannerVideo           bool                  `json:"ibv,omitempty"`
 	ClickTrackers           []string              `json:"clicktrackers,omitempty"`
+	Trackers                []ExtBidTracker       `json:"trackers,omitempty"`
 	OWSDK                   map[string]any        `json:"owsdk,omitempty"`
 	Act                     int                   `json:"act,omitempty"`
 	// BidExpEnf is partner bid.ext.bidexp_enf (parsed into BidCtx for impression tracker bexpef; not echoed on OW bid.ext).
@@ -62,6 +63,12 @@ type ExtBidVideo struct {
 // ExtBidBanner defines the contract for bidresponse.seatbid.bid[i].ext.banner
 type ExtBidBanner struct {
 	ClientConfig json.RawMessage `json:"clientconfig,omitempty"`
+}
+
+// ExtBidTracker defines the contract for bidresponse.seatbid.bid[i].ext.trackers
+type ExtBidTracker struct {
+	Event string `json:"event,omitempty"`
+	URL   string `json:"url,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache

@@ -372,6 +372,47 @@ func TestApplyAPSResponse_SetsBidExpWhenMissing(t *testing.T) {
 	}
 }
 
+func TestApplyAPSResponse_PreservesTrackersInEmbeddedBid(t *testing.T) {
+	rctx := models.RequestCtx{
+		Endpoint:     models.EndpointAPS,
+		APS:          models.APS{Reject: false},
+		PubIDStr:     "5890",
+		ProfileIDStr: "1234",
+	}
+	trackersExt := json.RawMessage(`{"trackers":[{"event":"ad_attribute","url":"https://t.pubmatic.com?bidid=789&ad_attribute={ADATTRIBUTE}"}]}`)
+	br := &openrtb2.BidResponse{
+		ID:  "resp-outer",
+		Cur: "USD",
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
+				ID:    "bid-inner",
+				ImpID: "imp-9",
+				Price: 2.5,
+				AdM:   "<html>creative</html>",
+				Ext:   trackersExt,
+			}},
+		}},
+	}
+
+	out := ApplyAPSResponse(rctx, br)
+	require.Len(t, out.SeatBid, 1)
+	require.Len(t, out.SeatBid[0].Bid, 1)
+
+	raw, err := base64.StdEncoding.DecodeString(out.SeatBid[0].Bid[0].AdM)
+	require.NoError(t, err)
+	zr, err := gzip.NewReader(bytes.NewReader(raw))
+	require.NoError(t, err)
+	decodedBytes, err := io.ReadAll(zr)
+	require.NoError(t, err)
+	require.NoError(t, zr.Close())
+
+	var decoded openrtb2.BidResponse
+	require.NoError(t, json.Unmarshal(decodedBytes, &decoded))
+	require.Len(t, decoded.SeatBid, 1)
+	require.Len(t, decoded.SeatBid[0].Bid, 1)
+	assert.JSONEq(t, string(trackersExt), string(decoded.SeatBid[0].Bid[0].Ext))
+}
+
 func decodeBidExpFromAPSAdm(t *testing.T, adm string) int64 {
 	t.Helper()
 

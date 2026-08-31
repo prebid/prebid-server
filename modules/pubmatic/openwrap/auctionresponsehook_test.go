@@ -1724,6 +1724,72 @@ func TestApplyBidExpAndBidExtFromCtx(t *testing.T) {
 			wantExp: 300,
 			wantExt: wantExt,
 		},
+		{
+			name: "preserves_ad_attribute_trackers_in_bid_ext",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint: models.EndpointV25,
+					ImpBidCtx: map[string]models.ImpCtx{
+						impID: {
+							BidCtx: map[string]models.BidCtx{
+								bidID: {
+									BidExt: models.BidExt{
+										CreativeType: "video",
+										Trackers: []models.ExtBidTracker{
+											{
+												Event: "ad_attribute",
+												URL:   "https://t.pubmatic.com?bidid=789&ad_attribute={ADATTRIBUTE}",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				bidResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Seat: "pubmatic",
+						Bid: []openrtb2.Bid{{
+							ID:    bidID,
+							ImpID: impID,
+						}},
+					}},
+				},
+			},
+			wantExp: 0,
+			wantExt: json.RawMessage(`{"crtype":"video","trackers":[{"event":"ad_attribute","url":"https://t.pubmatic.com?bidid=789&ad_attribute={ADATTRIBUTE}"}]}`),
+		},
+		{
+			name: "omits_trackers_when_absent_in_bid_ctx",
+			args: args{
+				rctx: models.RequestCtx{
+					Endpoint: models.EndpointV25,
+					ImpBidCtx: map[string]models.ImpCtx{
+						impID: {
+							BidCtx: map[string]models.BidCtx{
+								bidID: {
+									BidExt: models.BidExt{
+										CreativeType: "banner",
+									},
+								},
+							},
+						},
+					},
+				},
+				bidResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Seat: "pubmatic",
+						Bid: []openrtb2.Bid{{
+							ID:    bidID,
+							ImpID: impID,
+						}},
+					}},
+				},
+			},
+			wantExp: 0,
+			wantExt: json.RawMessage(`{"crtype":"banner"}`),
+		},
 	}
 
 	for _, tt := range tests {
