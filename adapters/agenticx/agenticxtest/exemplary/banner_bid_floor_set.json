@@ -5,14 +5,14 @@
       {
         "id": "1",
         "banner": { "w": 300, "h": 250 },
-        "ext": { "bidder": { "bidfloor": 1.23, "sspId": "ssp-123" } }
+        "ext": { "bidder": { "bidFloor": 1.23, "sspId": "ssp-123" } }
       }
     ]
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server?site_id=49964415&ssp_id=ssp-123",
         "body": {
           "id": "test-bid-floor-set",
           "imp": [
@@ -20,7 +20,7 @@
               "id": "1",
               "banner": { "w": 300, "h": 250 },
               "bidfloor": 1.23,
-              "ext": { "bidder": { "bidfloor": 1.23, "sspId": "ssp-123" } }
+              "ext": { "bidder": { "bidFloor": 1.23, "sspId": "ssp-123" } }
             }
           ]
         },

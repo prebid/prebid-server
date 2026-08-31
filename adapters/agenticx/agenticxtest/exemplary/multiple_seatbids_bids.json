@@ -12,7 +12,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server?site_id=49964415&ssp_id=630141",
         "body": {
           "id": "multi-seat-request",
           "imp": [

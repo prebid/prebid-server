@@ -3,6 +3,7 @@ package agenticx
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -10,6 +11,12 @@ import (
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+// Used for user sync attribution when a publisher doesn't supply their own sspId/siteId.
+const (
+	defaultSspID  = "630141"
+	defaultSiteID = "49964415"
 )
 
 type adapter struct {
@@ -24,6 +31,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var errs []error
 	validImps := make([]openrtb2.Imp, 0, len(request.Imp))
 	var setTestMode bool
+	var sspID, siteID string
 
 	for _, imp := range request.Imp {
 		impExt, err := parseImpExt(imp.Ext)
@@ -45,7 +53,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			setTestMode = true
 		}
 
+		// First imp to supply sspId/siteId wins; the whole batch shares one outgoing request.
+		if sspID == "" && impExt.SspID != "" {
+			sspID = impExt.SspID
+		}
+		if siteID == "" && impExt.SspSiteID != "" {
+			siteID = impExt.SspSiteID
+		}
+
 		validImps = append(validImps, imp)
+	}
+
+	if sspID == "" {
+		sspID = defaultSspID
+	}
+	if siteID == "" {
+		siteID = defaultSiteID
 	}
 
 	if len(validImps) == 0 {
@@ -69,10 +92,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	headers.Set("Content-Type", "application/json;charset=utf-8")
 	headers.Set("Accept", "application/json")
 
+	endpoint, err := url.Parse(a.endpoint)
+	if err != nil {
+		return nil, append(errs, err)
+	}
+	q := endpoint.Query()
+	q.Set("ssp_id", sspID)
+	q.Set("site_id", siteID)
+	endpoint.RawQuery = q.Encode()
+
 	return []*adapters.RequestData{
 		{
 			Method:  "POST",
-			Uri:     a.endpoint,
+			Uri:     endpoint.String(),
 			Body:    reqJSON,
 			Headers: headers,
 			ImpIDs:  openrtb_ext.GetImpIDs(validImps),

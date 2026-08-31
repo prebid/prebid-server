@@ -4,7 +4,7 @@
     "imp": [
       {
         "id": "1",
-        "ext": { "bidder": { "bidfloor": 0.5 } }
+        "ext": { "bidder": { "bidFloor": 0.5 } }
       }
     ]
   },
