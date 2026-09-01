@@ -1,0 +1,13 @@
+endpoint: "https://req.adx.ws/rtb"
+maintainer:
+  email: "technical@sevio.com"
+gvlVendorID: 1393
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native
