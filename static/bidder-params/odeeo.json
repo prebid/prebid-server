@@ -12,7 +12,7 @@
     "tk": {
       "type": "string",
       "minLength": 1,
-      "description": "Odeeo-issued verification code"
+      "description": "Odeeo-issued verification token"
     }
   },
   "required": ["sp", "tk"]
