@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
-const clientVersion = "prebid_server_1.2"
+const clientVersion = "prebid_server_1.3"
 
 type adMarkupType string
 
@@ -80,6 +80,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request."}}
+	}
+
+	if err := convertBidFloorCurrency(request.Imp, reqInfo); err != nil {
+		return nil, []error{err}
 	}
 
 	// set data in request that is common for all requests
@@ -319,6 +323,23 @@ func convertAdMarkupTypeToMediaType(adMarkupType adMarkupType) (openrtb_ext.BidT
 			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
 		}
 	}
+}
+
+func convertBidFloorCurrency(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	for i := range imps {
+		if imps[i].BidFloor <= 0 || imps[i].BidFloorCur == "" || strings.EqualFold(imps[i].BidFloorCur, "USD") {
+			continue
+		}
+
+		convertedValue, err := reqInfo.ConvertCurrency(imps[i].BidFloor, imps[i].BidFloorCur, "USD")
+		if err != nil {
+			return err
+		}
+
+		imps[i].BidFloor = convertedValue
+		imps[i].BidFloorCur = "USD"
+	}
+	return nil
 }
 
 func prepareCommonRequest(request *openrtb2.BidRequest) error {
