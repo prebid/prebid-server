@@ -33,6 +33,7 @@
         },
         "ext": {
           "bidder": {
+            "region": "apac",
             "accountId": "accountId"
           }
         }
@@ -59,7 +60,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "https://lb-east.intenze.co/?pass=accountId",
+        "uri": "https://lb-apac.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
