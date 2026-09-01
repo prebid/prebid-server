@@ -172,7 +172,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, "", errList, &SeatNonBidBuilder{})
+	bidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, true, nil, "", errList, &SeatNonBidBuilder{})
 
 	// 	5) Assert we have no errors and one '&' character as we are supposed to
 	if len(errList) > 0 {
@@ -1003,11 +1003,15 @@ func TestFloorsSignalling(t *testing.T) {
 func TestReturnCreativeEndToEnd(t *testing.T) {
 	sampleAd := "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST ...></VAST>"
 
-	// Define test cases
+	// Define test cases. Each case returns one banner bid and one video bid for the same
+	// impression, so the outcome for each media type can be asserted independently -
+	// ext.prebid.cache.bids.returnCreative must only affect the banner bid and
+	// ext.prebid.cache.vastXml.returnCreative must only affect the video bid.
 	type aTest struct {
-		desc   string
-		inExt  json.RawMessage
-		outAdM string
+		desc         string
+		inExt        json.RawMessage
+		outBannerAdM string
+		outVideoAdM  string
 	}
 	testGroups := []struct {
 		groupDesc   string
@@ -1015,81 +1019,93 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 		expectError bool
 	}{
 		{
-			groupDesc: "Valid bidRequest Ext but no returnCreative value specified, default to returning creative",
+			groupDesc: "Valid bidRequest Ext but no returnCreative value specified, default to returning creative for every media type",
 			testCases: []aTest{
 				{
 					"Nil ext in bidRequest",
 					nil,
+					sampleAd,
 					sampleAd,
 				},
 				{
 					"empty ext",
 					json.RawMessage(``),
 					sampleAd,
+					sampleAd,
 				},
 				{
 					"bids doesn't come with returnCreative value",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{}}}}`),
+					sampleAd,
 					sampleAd,
 				},
 				{
 					"vast doesn't come with returnCreative value",
 					json.RawMessage(`{"prebid":{"cache":{"vastXml":{}}}}`),
 					sampleAd,
+					sampleAd,
 				},
 			},
 		},
 		{
-			groupDesc: "Bids field comes with returnCreative value",
+			groupDesc: "Bids field comes with returnCreative value: only the banner bid is affected, the video bid keeps its default",
 			testCases: []aTest{
 				{
-					"Bids returnCreative set to true, return ad markup in response",
+					"Bids returnCreative set to true, banner keeps ad markup, video keeps its default (true)",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true}}}}`),
 					sampleAd,
+					sampleAd,
 				},
 				{
-					"Bids returnCreative set to false, don't return ad markup in response",
+					"Bids returnCreative set to false, banner ad markup stripped, video keeps its default (true)",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false}}}}`),
 					"",
+					sampleAd,
 				},
 			},
 		},
 		{
-			groupDesc: "Vast field comes with returnCreative value",
+			groupDesc: "Vast field comes with returnCreative value: only the video bid is affected, the banner bid keeps its default",
 			testCases: []aTest{
 				{
-					"Vast returnCreative set to true, return ad markup in response",
+					"Vast returnCreative set to true, video keeps ad markup, banner keeps its default (true)",
 					json.RawMessage(`{"prebid":{"cache":{"vastXml":{"returnCreative":true}}}}`),
 					sampleAd,
+					sampleAd,
 				},
 				{
-					"Vast returnCreative set to false, don't return ad markup in response",
+					"Vast returnCreative set to false, video ad markup stripped, banner keeps its default (true)",
 					json.RawMessage(`{"prebid":{"cache":{"vastXml":{"returnCreative":false}}}}`),
+					sampleAd,
 					"",
 				},
 			},
 		},
 		{
-			groupDesc: "Both Bids and Vast come with their own returnCreative value",
+			groupDesc: "Both Bids and Vast come with their own returnCreative value, applied independently per media type",
 			testCases: []aTest{
 				{
-					"Both false, expect empty AdM",
+					"Both false, expect empty ad markup for both media types",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false},"vastXml":{"returnCreative":false}}}}`),
+					"",
 					"",
 				},
 				{
-					"Bids returnCreative is true, expect valid AdM",
+					"Bids returnCreative true, Vast returnCreative false: banner keeps ad markup, video is stripped",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true},"vastXml":{"returnCreative":false}}}}`),
 					sampleAd,
+					"",
 				},
 				{
-					"Vast returnCreative is true, expect valid AdM",
+					"Bids returnCreative false, Vast returnCreative true: banner is stripped, video keeps ad markup",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false},"vastXml":{"returnCreative":true}}}}`),
+					"",
 					sampleAd,
 				},
 				{
-					"Both field's returnCreative set to true, expect valid AdM",
+					"Both field's returnCreative set to true, expect valid ad markup for both media types",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":true},"vastXml":{"returnCreative":true}}}}`),
+					sampleAd,
 					sampleAd,
 				},
 			},
@@ -1116,7 +1132,12 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 		bidResponse: &adapters.BidderResponse{
 			Bids: []*adapters.TypedBid{
 				{
-					Bid: &openrtb2.Bid{AdM: sampleAd},
+					BidType: openrtb_ext.BidTypeBanner,
+					Bid:     &openrtb2.Bid{ID: "banner-bid", ImpID: "some-impression-id", AdM: sampleAd},
+				},
+				{
+					BidType: openrtb_ext.BidTypeVideo,
+					Bid:     &openrtb2.Bid{ID: "video-bid", ImpID: "some-impression-id", AdM: sampleAd},
 				},
 			},
 		},
@@ -1185,10 +1206,15 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			if !assert.NotEmpty(t, outBidResponse.SeatBid, "%s: %s. outBidResponse.SeatBid is empty \n", testGroup.groupDesc, test.desc) {
 				return
 			}
-			if !assert.NotEmpty(t, outBidResponse.SeatBid[0].Bid, "%s: %s. outBidResponse.SeatBid[0].Bid is empty \n", testGroup.groupDesc, test.desc) {
+			if !assert.Len(t, outBidResponse.SeatBid[0].Bid, 2, "%s: %s. expected exactly one banner and one video bid \n", testGroup.groupDesc, test.desc) {
 				return
 			}
-			assert.Equal(t, test.outAdM, outBidResponse.SeatBid[0].Bid[0].AdM, "Ad markup string doesn't match in: %s - %s \n", testGroup.groupDesc, test.desc)
+			adMByBidID := make(map[string]string, len(outBidResponse.SeatBid[0].Bid))
+			for _, bid := range outBidResponse.SeatBid[0].Bid {
+				adMByBidID[bid.ID] = bid.AdM
+			}
+			assert.Equal(t, test.outBannerAdM, adMByBidID["banner-bid"], "Banner ad markup string doesn't match in: %s - %s \n", testGroup.groupDesc, test.desc)
+			assert.Equal(t, test.outVideoAdM, adMByBidID["video-bid"], "Video ad markup string doesn't match in: %s - %s \n", testGroup.groupDesc, test.desc)
 		}
 	}
 }
@@ -1346,7 +1372,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bid_resp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, "", errList, &SeatNonBidBuilder{})
+	bid_resp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, true, nil, "", errList, &SeatNonBidBuilder{})
 
 	expectedBidResponse := &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{
@@ -1436,7 +1462,7 @@ func TestBidReturnsCreative(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, nil, &openrtb_ext.RequestWrapper{}, nil, "", "", &SeatNonBidBuilder{})
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, test.inReturnCreative, nil, &openrtb_ext.RequestWrapper{}, nil, "", "", &SeatNonBidBuilder{})
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
@@ -1721,7 +1747,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 	// Run tests
 	for i := range testCases {
-		actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, "", errList, &SeatNonBidBuilder{})
+		actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, true, nil, "", errList, &SeatNonBidBuilder{})
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
 }
@@ -1789,7 +1815,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"meta":{"adaptercode":"appnexus"},"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
-	actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, "", errList, &SeatNonBidBuilder{})
+	actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, true, impExtInfo, "", errList, &SeatNonBidBuilder{})
 
 	resBidExt := string(actualBidResp.SeatBid[0].Bid[0].Ext)
 	assert.Equalf(t, expectedBidResponseExt, resBidExt, "Expected bid response extension is incorrect")
@@ -4930,7 +4956,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			e.bidValidationEnforcement = test.givenValidations
 			sampleBids := test.givenBids
 			nonBids := &SeatNonBidBuilder{}
-			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidRequest, bidExtResponse, test.givenSeat, "", nonBids)
+			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, true, ImpExtInfoMap, bidRequest, bidExtResponse, test.givenSeat, "", nonBids)
 
 			assert.Equal(t, 0, len(resultingErrs))
 			assert.Equal(t, test.expectedNumOfBids, len(resultingBids))
