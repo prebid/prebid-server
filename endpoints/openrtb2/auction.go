@@ -300,7 +300,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		logger.Errorf("Error setting seat non-bid: %v", err)
 	}
-	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao, false)
 }
 
 // setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
@@ -347,7 +347,9 @@ func rejectAuctionRequest(
 	ao.Response = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao)
+	// Exit-point stage must NOT be triggered on rejection paths (4xx/5xx errors).
+	// Pass hasErrors=true so sendAuctionResponse skips ExecuteExitpointStage.
+	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao, true)
 }
 
 func sendAuctionResponse(
@@ -358,6 +360,7 @@ func sendAuctionResponse(
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
+	hasErrors bool,
 ) (metrics.Labels, analytics.AuctionObject) {
 	hookExecutor.ExecuteAuctionResponseStage(response)
 
@@ -385,8 +388,11 @@ func sendAuctionResponse(
 
 	w.Header().Set("Content-Type", "application/json")
 
-	// Exitpoint will modify the response and set response headers according to hook implementation.
-	finalResponse := hookExecutor.ExecuteExitpointStage(response, w)
+	// Exitpoint modifies the response and sets response headers according to hook implementation.
+	var finalResponse interface{} = response
+	if !hasErrors {
+		finalResponse = hookExecutor.ExecuteExitpointStage(response, w)
+	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
@@ -420,44 +426,31 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	errs = nil
 	var err error
 	var errL []error
-	var r io.ReadCloser = httpRequest.Body
-	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
-	if reqContentEncoding != "" {
-		if !deps.cfg.Compression.Request.IsSupported(reqContentEncoding) {
-			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEncoding)}
-			return
-		} else {
-			r, err = getCompressionEnabledReader(httpRequest.Body, reqContentEncoding)
-			if err != nil {
-				errs = []error{err}
-				return
-			}
-		}
-	}
-	defer r.Close()
-	limitedReqReader := &io.LimitedReader{
-		R: r,
-		N: deps.cfg.MaxRequestSize,
-	}
 
-	requestJson, err := io.ReadAll(limitedReqReader)
-	if err != nil {
-		errs = []error{err}
+	var requestJson []byte
+
+	switch httpRequest.Method {
+	case http.MethodGet:
+		// GET requests carry the bid request in query parameters; the JSON is
+		// constructed in-process, so compression negotiation and body size
+		// limits do not apply.
+		requestJson, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
+		if err != nil {
+			errs = []error{err}
+			return
+		}
+	case http.MethodPost:
+		requestJson, err = readRequestBody(httpRequest, deps.cfg)
+		if err != nil {
+			errs = []error{err}
+			return
+		}
+	default:
+		errs = []error{fmt.Errorf("unsupported HTTP method: %s", httpRequest.Method)}
 		return
 	}
-	labels.RequestSize = len(requestJson)
 
-	if limitedReqReader.N <= 0 {
-		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
-		// This is because it only reads up to N bytes. To check if the request was too large,
-		//  we need to look at the next byte of its underlying reader, limitedReader.R.
-		if _, err := limitedReqReader.R.Read(make([]byte, 1)); err != io.EOF {
-			// Discard the rest of the request body so that the connection can be reused.
-			io.Copy(io.Discard, httpRequest.Body)
-			errs = []error{fmt.Errorf("request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
-			return
-		}
-	}
+	labels.RequestSize = len(requestJson)
 
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
@@ -539,6 +532,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	// The GET interface assumes a single impression per request. Enforced after stored
+	// requests are merged, since that is where extra imps can appear.
+	if httpRequest.Method == http.MethodGet {
+		enforceSingleImp(httpRequest, req.BidRequest, accountId)
 	}
 
 	// normalize to openrtb 2.6
