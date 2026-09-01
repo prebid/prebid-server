@@ -5225,6 +5225,25 @@ func TestSetSeatNonBidRaw(t *testing.T) {
 	}
 }
 
+func TestSetSeatNonBidRawPreservesExistingSeatNonBid(t *testing.T) {
+	request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid": { "returnallbidstatus" : true, "returnbidfilterstatus": true }}`)}}
+	auctionResponse := &exchange.AuctionResponse{
+		ExtBidResponse: &openrtb_ext.ExtBidResponse{Prebid: &openrtb_ext.ExtResponsePrebid{SeatNonBid: []openrtb_ext.SeatNonBid{{
+			Seat: "regular",
+			NonBid: []openrtb_ext.NonBid{{
+				ImpId:      "imp1",
+				StatusCode: 101,
+			}},
+		}}}},
+		BidResponse: &openrtb2.BidResponse{Ext: []byte(`{"prebid":{"seatnonbid":[{"seat":"filtered","nonbid":[{"impid":"imp1","statuscode":200,"ext":{"prebid":{"type":"geo"}}}]}]}}`)},
+	}
+
+	err := setSeatNonBidRaw(request, auctionResponse)
+
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{"prebid":{"seatnonbid":[{"seat":"filtered","nonbid":[{"impid":"imp1","statuscode":200,"ext":{"prebid":{"bid":{},"type":"geo"}}}]}]}}`, string(auctionResponse.BidResponse.Ext))
+}
+
 func TestValidateAliases(t *testing.T) {
 	// This test runs against a real list of bidders, so we must use real bidder names for core bidders,
 	// but can use test values for the alias names.
