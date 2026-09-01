@@ -67,18 +67,25 @@ type StructuredLogger interface {
 // logging. It is separated from StructuredLogger so that structured-logging
 // consumers need not depend on process-control behavior.
 //
-// Termination contract: implementations must, before exiting, (1) flush any
-// buffered log sinks so the fatal record and prior buffered output are not lost,
-// and (2) dump the stacks of all running goroutines to aid post-mortem
-// debugging — matching the behavior of FormattedLogger.Fatalf.
+// Termination contract: implementations must (1) run the registered exit hooks
+// via RunExitHooks, (2) flush their own buffered sinks so the fatal record and
+// prior output are not lost, and (3) dump the stacks of all running goroutines
+// to aid post-mortem debugging, before exiting — matching the behavior of
+// FormattedLogger.Fatalf. GlogLogger gets (2) and (3) from glog itself.
 //
-// Because termination is performed via os.Exit, it bypasses deferred functions,
-// os/signal handlers, and runtime finalizers — Go has no global shutdown-hook
-// registry equivalent to Java's Runtime.addShutdownHook. Fatal is therefore for
-// unrecoverable errors (typically at startup) where no graceful cleanup is
-// possible. For the normal lifecycle, drive shutdown from signal.NotifyContext
-// (SIGINT/SIGTERM) and run cleanup explicitly; do not rely on Fatal to release
-// resources.
+// Termination is performed via os.Exit, which bypasses deferred functions,
+// os/signal handlers, and runtime finalizers; Go has no shutdown-hook registry
+// of its own (no equivalent of Java's Runtime.addShutdownHook). The exit-hook
+// registry in this package fills that gap: cleanup that must survive a fatal
+// error — flushing a telemetry exporter, closing an analytics module — should be
+// registered with RegisterExitHook rather than deferred, because a defer will
+// simply not run.
+//
+// The hooks are best-effort and bounded by a cleanup budget, so Fatal remains
+// what it was: the response to an unrecoverable error, typically at startup. For
+// the normal lifecycle, keep driving shutdown from signal handling and explicit
+// teardown; RunExitHooks can be called from there too, and the hooks run at most
+// once per process either way.
 type Exiter interface {
 	// Fatal logs at fatal level, then terminates the program execution.
 	Fatal(msg string, args ...any)
