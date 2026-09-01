@@ -1,0 +1,93 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "w": 640,
+                    "h": 480,
+                    "mimes": ["video/mp4"]
+                },
+                "ext": {
+                    "bidder": {
+                        "auId": "123"
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://whatever.url?format=prebidServer&tzo=0",
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "123",
+                            "targetId": "123-test-imp-id:video",
+                            "adType": "VAST",
+                            "nativeRequest": {}
+                        }
+                    ],
+                    "context": "prebid.org",
+                    "metaData": {}
+                },
+                "impIDs": ["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "0000000000000123",
+                            "targetId": "123-test-imp-id:video",
+                            "matchedAdCount": 1,
+                            "vastXml": "<VAST version=\"4.0\"></VAST>",
+                            "responseId": "adn-rsp-900646517",
+                            "ads": [
+                                {
+                                    "bid": {
+                                        "amount": 15.0,
+                                        "currency": "USD"
+                                    },
+                                    "adId": "adn-video-id",
+                                    "creativeWidth": "640",
+                                    "creativeHeight": "480",
+                                    "creativeId": "video-creative-id",
+                                    "lineItemId": "video-line-item-id"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "adn-video-id",
+                        "impid": "test-imp-id",
+                        "price": 15000,
+                        "adm": "<VAST version=\"4.0\"></VAST>",
+                        "adid": "adn-video-id",
+                        "cid": "video-line-item-id",
+                        "crid": "video-creative-id",
+                        "mtype": 2,
+                        "w": 640,
+                        "h": 480
+                    },
+                    "type": "video"
+                }
+            ],
+            "currency": "USD"
+        }
+    ]
+}
