@@ -22,7 +22,7 @@
         },
         "ext": {
           "bidder": {
-            "bidfloor": 0.5,
+            "bidFloor": 0.5,
             "sspId": "ssp-123"
           }
         }
@@ -32,7 +32,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server?site_id=49964415&ssp_id=ssp-123",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -49,7 +49,7 @@
               "bidfloor": 0.5,
               "ext": {
                 "bidder": {
-                  "bidfloor": 0.5,
+                  "bidFloor": 0.5,
                   "sspId": "ssp-123"
                 }
               }

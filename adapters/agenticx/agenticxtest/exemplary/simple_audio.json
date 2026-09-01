@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "bidfloor": 1.0
+            "bidFloor": 1.0
           }
         }
       }
@@ -27,7 +27,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server?site_id=49964415&ssp_id=630141",
         "body": {
           "id": "test-audio-request",
           "imp": [
@@ -41,7 +41,7 @@
               "bidfloor": 1.0,
               "ext": {
                 "bidder": {
-                  "bidfloor": 1.0
+                  "bidFloor": 1.0
                 }
               }
             }

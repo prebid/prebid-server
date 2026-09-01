@@ -19,7 +19,7 @@
         },
         "ext": {
           "bidder": {
-            "bidfloor": 1.0,
+            "bidFloor": 1.0,
             "siteId": "site-456"
           }
         }
@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server",
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server?site_id=site-456&ssp_id=630141",
         "body": {
           "id": "test-video-request",
           "imp": [
@@ -44,7 +44,7 @@
               "bidfloor": 1.0,
               "ext": {
                 "bidder": {
-                  "bidfloor": 1.0,
+                  "bidFloor": 1.0,
                   "siteId": "site-456"
                 }
               }

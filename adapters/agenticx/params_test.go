@@ -17,12 +17,13 @@ func TestValidParams(t *testing.T) {
 		name  string
 		input string
 	}{
-		{"Valid bidfloor only", `{"bidfloor": 0.01}`},
-		{"Valid bidfloor with testMode", `{"bidfloor": 2.5, "testMode": 1}`},
+		{"Valid bidFloor only", `{"bidFloor": 0.01}`},
+		{"Valid bidFloor with testMode", `{"bidFloor": 2.5, "testMode": 1}`},
 		{"Valid sspId only", `{"sspId": "ssp-123"}`},
 		{"Valid siteId only", `{"siteId": "site-456"}`},
-		{"Valid all params", `{"bidfloor": 1.0, "testMode": 0, "sspId": "ssp-123", "siteId": "site-456"}`},
+		{"Valid all params", `{"bidFloor": 1.0, "testMode": 0, "sspId": "ssp-123", "siteId": "site-456"}`},
 		{"Empty object", `{}`},
+		{"Unknown property is allowed", `{"unknownParam": "value"}`},
 	}
 
 	for _, tt := range tests {
@@ -40,15 +41,14 @@ func TestInvalidParams(t *testing.T) {
 		name  string
 		input string
 	}{
-		{"Invalid bidfloor type", `{"bidfloor": "1.2"}`},
+		{"Invalid bidFloor type", `{"bidFloor": "1.2"}`},
 		{"Invalid testMode type", `{"testMode": "yes"}`},
-		{"Negative bidfloor", `{"bidfloor": -5}`},
+		{"Negative bidFloor", `{"bidFloor": -5}`},
 		{"Invalid testMode value", `{"testMode": 9999}`},
 		{"Invalid sspId type", `{"sspId": 123}`},
 		{"Invalid siteId type", `{"siteId": 456}`},
 		{"Empty sspId", `{"sspId": ""}`},
 		{"Empty siteId", `{"siteId": ""}`},
-		{"Unknown property", `{"unknownParam": "value"}`},
 	}
 
 	for _, tt := range tests {

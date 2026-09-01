@@ -37,7 +37,7 @@ func TestParseImpExt(t *testing.T) {
 		ext     jsonutil.RawMessage
 		wantErr bool
 	}{
-		{"Valid ext", jsonutil.RawMessage(`{"bidder":{"bidfloor":0.5}}`), false},
+		{"Valid ext", jsonutil.RawMessage(`{"bidder":{"bidFloor":0.5}}`), false},
 		{"Valid ext with sspId", jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-123","siteId":"site-456"}}`), false},
 		{"Invalid JSON", jsonutil.RawMessage(`not-json`), true},
 		{"Not an object", jsonutil.RawMessage(`"string"`), true},
@@ -91,7 +91,7 @@ func TestMakeRequestsErrors(t *testing.T) {
 	}{
 		{"Invalid ext", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`not-json`)}}, "impID 1:"},
 		{"No valid imps", []openrtb2.Imp{}, "no valid impressions"},
-		{"No banner or video or audio", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"bidfloor": 0.5}}`)}}, "no banner, video, or audio object specified"},
+		{"No banner or video or audio", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"bidFloor": 0.5}}`)}}, "no banner, video, or audio object specified"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -108,6 +108,60 @@ func TestMakeRequestsErrors(t *testing.T) {
 			assert.True(t, found, "expected error containing %q, got %v", tt.wantErr, errs)
 		})
 	}
+}
+
+func TestMakeRequestsSspSiteIdResolution(t *testing.T) {
+	a := &adapter{endpoint: "http://test-endpoint"}
+	banner := &openrtb2.Banner{W: ptrInt64(300), H: ptrInt64(250)}
+	tests := []struct {
+		name       string
+		imps       []openrtb2.Imp
+		wantSspID  string
+		wantSiteID string
+	}{
+		{
+			name:       "Neither supplied falls back to defaults",
+			imps:       []openrtb2.Imp{{ID: "1", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{}}`)}},
+			wantSspID:  defaultSspID,
+			wantSiteID: defaultSiteID,
+		},
+		{
+			name:       "Only sspId supplied, siteId falls back",
+			imps:       []openrtb2.Imp{{ID: "1", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-123"}}`)}},
+			wantSspID:  "ssp-123",
+			wantSiteID: defaultSiteID,
+		},
+		{
+			name:       "Only siteId supplied, sspId falls back",
+			imps:       []openrtb2.Imp{{ID: "1", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{"siteId":"site-456"}}`)}},
+			wantSspID:  defaultSspID,
+			wantSiteID: "site-456",
+		},
+		{
+			name: "First imp's values win across multiple imps",
+			imps: []openrtb2.Imp{
+				{ID: "1", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-first","siteId":"site-first"}}`)},
+				{ID: "2", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-second","siteId":"site-second"}}`)},
+			},
+			wantSspID:  "ssp-first",
+			wantSiteID: "site-first",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := &openrtb2.BidRequest{Imp: tt.imps}
+			reqData, errs := a.MakeRequests(req, nil)
+			require.Empty(t, errs)
+			require.Len(t, reqData, 1)
+			assert.Contains(t, reqData[0].Uri, "ssp_id="+tt.wantSspID)
+			assert.Contains(t, reqData[0].Uri, "site_id="+tt.wantSiteID)
+		})
+	}
+}
+
+func ptrInt64(v int64) *int64 {
+	return &v
 }
 
 func TestMakeBidsErrors(t *testing.T) {
