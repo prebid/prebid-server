@@ -1,0 +1,63 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-400",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "abc123def456"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.5/bid?key=abc123def456&source=prebid-server",
+        "impIDs": ["test-imp-id"],
+        "body": {
+          "id": "test-request-400",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {"w": 300, "h": 250}
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "propertyKey": "abc123def456"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

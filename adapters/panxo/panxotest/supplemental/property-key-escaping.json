@@ -1,0 +1,57 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-escaping",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "abc&source=evil 123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.5/bid?key=abc%26source%3Devil+123&source=prebid-server",
+        "impIDs": ["test-imp-id"],
+        "body": {
+          "id": "test-request-escaping",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {"w": 300, "h": 250}
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "propertyKey": "abc&source=evil 123"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
