@@ -219,7 +219,19 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		// down convert
-		info, ok := rs.bidderInfo[bidder]
+		//
+		// For a request alias (declared in req.ext.prebid.aliases, as opposed to a
+		// YAML-declared static alias), rs.bidderInfo has no entry keyed by the alias
+		// name at all -- only real/YAML-aliased bidder names are loaded into it at
+		// startup -- so looking it up by "bidder" always misses and silently downgrades
+		// every request-alias bidder request to OpenRTB 2.5, regardless of the core
+		// bidder's actual declared version. Look it up by the resolved core bidder name
+		// instead in that case; the non-alias lookup key is left unchanged.
+		bidderInfoKey := bidder
+		if isRequestAlias {
+			bidderInfoKey = string(coreBidder)
+		}
+		info, ok := rs.bidderInfo[bidderInfoKey]
 		if !ok || info.OpenRTB == nil || info.OpenRTB.Version != "2.6" {
 			reqWrapperCopy.Regs = ortb.CloneRegs(reqWrapperCopy.Regs)
 			if err := openrtb_ext.ConvertDownTo25(reqWrapperCopy); err != nil {
