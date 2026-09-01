@@ -115,7 +115,7 @@
     "expectedBidResponses": [{"currency":"USD","bids":[]}],
     "expectedMakeBidsErrors": [
         {
-          "value": "Failed to find impression test-imp-id1 ",
+          "value": "Unsupported MType 0 for bid test-imp-id1",
           "comparison": "literal"
         }
       ]
