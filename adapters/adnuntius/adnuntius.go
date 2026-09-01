@@ -143,7 +143,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			}
 		}
 
-		adnJson, err := json.Marshal(adnuntiusRequest)
+		adnJson, err := jsonutil.Marshal(adnuntiusRequest)
 		if err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Error unmarshalling adnuntius request: %s", err.Error()),
