@@ -1,0 +1,170 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-floor-with-currency",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "a4f21c9e7b",
+            "bidFloor": 1.75,
+            "bidFloorCur": "EUR"
+          }
+        }
+      },
+      {
+        "id": "imp-floor-defaults-to-usd",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "6d0e83b415",
+            "bidFloor": 0.5
+          }
+        }
+      },
+      {
+        "id": "imp-zero-floor-is-no-floor",
+        "banner": {
+          "format": [
+            {
+              "w": 970,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "ff0011aa22",
+            "bidFloor": 0,
+            "bidFloorCur": "EUR"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.example.com/hb/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-floor-with-currency",
+              "tagid": "a4f21c9e7b",
+              "bidfloor": 1.75,
+              "bidfloorcur": "EUR",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            },
+            {
+              "id": "imp-floor-defaults-to-usd",
+              "tagid": "6d0e83b415",
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              }
+            },
+            {
+              "id": "imp-zero-floor-is-no-floor",
+              "tagid": "ff0011aa22",
+              "banner": {
+                "format": [
+                  {
+                    "w": 970,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
+        },
+        "impIDs": [
+          "imp-floor-with-currency",
+          "imp-floor-defaults-to-usd",
+          "imp-zero-floor-is-no-floor"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "epom",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-floor-with-currency",
+                  "price": 2.1,
+                  "adm": "<div>creative</div>",
+                  "crid": "c1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-floor-with-currency",
+            "price": 2.1,
+            "adm": "<div>creative</div>",
+            "crid": "c1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
