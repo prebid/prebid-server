@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
@@ -590,7 +591,7 @@ func TestResolveFPD(t *testing.T) {
 			}
 
 			// run test
-			resultFPD, errL := ResolveFPD(request, testFile.BidderConfigFPD, reqExtFPD, reqFPD, testFile.BiddersWithGlobalFPD)
+			resultFPD, errL := ResolveFPD(request, testFile.BidderConfigFPD, reqExtFPD, reqFPD, testFile.BiddersWithGlobalFPD, config.ArrayMergeModeReplace)
 
 			if len(errL) == 0 {
 				assert.Equal(t, request, originalRequest, "Original request should not be modified")
@@ -667,7 +668,7 @@ func TestExtractFPDForBidders(t *testing.T) {
 			err = jsonutil.UnmarshalValid(testFile.InputRequestData, resultRequest.BidRequest)
 			assert.NoError(t, err, "Error should be nil")
 
-			resultFPD, errL := ExtractFPDForBidders(resultRequest)
+			resultFPD, errL := ExtractFPDForBidders(resultRequest, config.ArrayMergeModeReplace)
 
 			if len(testFile.ValidationErrors) > 0 {
 				assert.Equal(t, len(testFile.ValidationErrors), len(errL), "Incorrect number of errors was returned")
@@ -859,7 +860,7 @@ func TestResolveUser(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			resultUser, err := resolveUser(test.fpdConfig, test.bidRequestUser, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
+			resultUser, err := resolveUser(test.fpdConfig, test.bidRequestUser, test.globalFPD, test.openRtbGlobalFPD, "bidderA", config.ArrayMergeModeReplace)
 
 			if len(test.expectError) > 0 {
 				assert.EqualError(t, err, test.expectError)
@@ -1055,7 +1056,7 @@ func TestResolveSite(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			resultSite, err := resolveSite(test.fpdConfig, test.bidRequestSite, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
+			resultSite, err := resolveSite(test.fpdConfig, test.bidRequestSite, test.globalFPD, test.openRtbGlobalFPD, "bidderA", config.ArrayMergeModeReplace)
 
 			if len(test.expectError) > 0 {
 				assert.EqualError(t, err, test.expectError)
@@ -1215,7 +1216,7 @@ func TestResolveApp(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			resultApp, err := resolveApp(test.fpdConfig, test.bidRequestApp, test.globalFPD, test.openRtbGlobalFPD, "bidderA")
+			resultApp, err := resolveApp(test.fpdConfig, test.bidRequestApp, test.globalFPD, test.openRtbGlobalFPD, "bidderA", config.ArrayMergeModeReplace)
 
 			if len(test.expectError) > 0 {
 				assert.EqualError(t, err, test.expectError)
@@ -1379,6 +1380,351 @@ func TestBuildExtData(t *testing.T) {
 	for _, test := range testCases {
 		actualRes := buildExtData(test.input)
 		assert.JSONEq(t, test.expectedRes, string(actualRes), "Incorrect result data")
+	}
+}
+
+func TestResolveUserConcatMode(t *testing.T) {
+	testCases := []struct {
+		description      string
+		fpdConfig        *openrtb_ext.ORTB2
+		bidRequestUser   *openrtb2.User
+		openRtbGlobalFPD map[string][]openrtb2.Data
+		expectedUser     *openrtb2.User
+		expectError      string
+	}{
+		{
+			description: "concat mode: user.data arrays are concatenated",
+			fpdConfig: &openrtb_ext.ORTB2{
+				User: json.RawMessage(`{"data":[{"id":"bidder-seg","name":"Bidder Seg"}]}`),
+			},
+			bidRequestUser: &openrtb2.User{
+				ID: "user1",
+				Data: []openrtb2.Data{
+					{ID: "base-seg", Name: "Base Seg"},
+				},
+			},
+			expectedUser: &openrtb2.User{
+				ID: "user1",
+				Data: []openrtb2.Data{
+					{ID: "base-seg", Name: "Base Seg"},
+					{ID: "bidder-seg", Name: "Bidder Seg"},
+				},
+			},
+		},
+		{
+			description: "concat mode: user.eids arrays are concatenated",
+			fpdConfig: &openrtb_ext.ORTB2{
+				User: json.RawMessage(`{"eids":[{"source":"bidder.com","uids":[{"id":"bidder-uid"}]}]}`),
+			},
+			bidRequestUser: &openrtb2.User{
+				ID: "user1",
+				EIDs: []openrtb2.EID{
+					{Source: "base.com", UIDs: []openrtb2.UID{{ID: "base-uid"}}},
+				},
+			},
+			expectedUser: &openrtb2.User{
+				ID: "user1",
+				EIDs: []openrtb2.EID{
+					{Source: "base.com", UIDs: []openrtb2.UID{{ID: "base-uid"}}},
+					{Source: "bidder.com", UIDs: []openrtb2.UID{{ID: "bidder-uid"}}},
+				},
+			},
+		},
+		{
+			description: "concat mode: both user.data and user.eids are concatenated simultaneously",
+			fpdConfig: &openrtb_ext.ORTB2{
+				User: json.RawMessage(`{
+				"data":[{"id":"bidder-data","name":"Bidder Data"}],
+				"eids":[{"source":"bidder.com","uids":[{"id":"bidder-uid"}]}]
+			}`),
+			},
+			bidRequestUser: &openrtb2.User{
+				ID: "user1",
+				Data: []openrtb2.Data{
+					{ID: "base-data", Name: "Base Data"},
+				},
+				EIDs: []openrtb2.EID{
+					{Source: "base.com", UIDs: []openrtb2.UID{{ID: "base-uid"}}},
+				},
+			},
+			expectedUser: &openrtb2.User{
+				ID: "user1",
+				Data: []openrtb2.Data{
+					{ID: "base-data", Name: "Base Data"},
+					{ID: "bidder-data", Name: "Bidder Data"},
+				},
+				EIDs: []openrtb2.EID{
+					{Source: "base.com", UIDs: []openrtb2.UID{{ID: "base-uid"}}},
+					{Source: "bidder.com", UIDs: []openrtb2.UID{{ID: "bidder-uid"}}},
+				},
+			},
+		},
+		{
+			description: "concat mode: nil base arrays result in bidder config arrays only",
+			fpdConfig: &openrtb_ext.ORTB2{
+				User: json.RawMessage(`{"eids":[{"source":"bidder.com","uids":[{"id":"bidder-uid"}]}]}`),
+			},
+			bidRequestUser: &openrtb2.User{ID: "user1"},
+			expectedUser: &openrtb2.User{
+				ID: "user1",
+				EIDs: []openrtb2.EID{
+					{Source: "bidder.com", UIDs: []openrtb2.UID{{ID: "bidder-uid"}}},
+				},
+			},
+		},
+		{
+			description: "concat mode: bidder config has no arrays, base arrays are preserved unchanged",
+			fpdConfig: &openrtb_ext.ORTB2{
+				User: json.RawMessage(`{"id":"overridden-id"}`),
+			},
+			bidRequestUser: &openrtb2.User{
+				ID: "original-id",
+				EIDs: []openrtb2.EID{
+					{Source: "base.com", UIDs: []openrtb2.UID{{ID: "base-uid"}}},
+				},
+			},
+			expectedUser: &openrtb2.User{
+				ID: "overridden-id",
+				EIDs: []openrtb2.EID{
+					{Source: "base.com", UIDs: []openrtb2.UID{{ID: "base-uid"}}},
+				},
+			},
+		},
+		{
+			description: "concat mode: global FPD user.data followed by bidder config user.data are concatenated",
+			fpdConfig: &openrtb_ext.ORTB2{
+				User: json.RawMessage(`{"data":[{"id":"bidder-seg","name":"Bidder Seg"}]}`),
+			},
+			bidRequestUser: &openrtb2.User{ID: "user1"},
+			openRtbGlobalFPD: map[string][]openrtb2.Data{
+				userDataKey: {
+					{ID: "global-seg", Name: "Global Seg"},
+				},
+			},
+			expectedUser: &openrtb2.User{
+				ID: "user1",
+				Data: []openrtb2.Data{
+					{ID: "global-seg", Name: "Global Seg"},
+					{ID: "bidder-seg", Name: "Bidder Seg"},
+				},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			resultUser, err := resolveUser(test.fpdConfig, test.bidRequestUser, nil, test.openRtbGlobalFPD, "bidderA", config.ArrayMergeModeConcat)
+			if len(test.expectError) > 0 {
+				assert.EqualError(t, err, test.expectError)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.expectedUser, resultUser)
+			}
+		})
+	}
+}
+
+func TestResolveSiteConcatMode(t *testing.T) {
+	testCases := []struct {
+		description    string
+		fpdConfig      *openrtb_ext.ORTB2
+		bidRequestSite *openrtb2.Site
+		expectedSite   *openrtb2.Site
+	}{
+		{
+			description: "concat mode: site.content.data arrays are concatenated",
+			fpdConfig: &openrtb_ext.ORTB2{
+				Site: json.RawMessage(`{"content":{"data":[{"id":"bidder-cd","name":"Bidder CD"}]}}`),
+			},
+			bidRequestSite: &openrtb2.Site{
+				ID: "site1",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-cd", Name: "Base CD"},
+					},
+				},
+			},
+			expectedSite: &openrtb2.Site{
+				ID: "site1",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-cd", Name: "Base CD"},
+						{ID: "bidder-cd", Name: "Bidder CD"},
+					},
+				},
+			},
+		},
+		{
+			description: "concat mode: nil base content.data, bidder config data is used directly",
+			fpdConfig: &openrtb_ext.ORTB2{
+				Site: json.RawMessage(`{"content":{"data":[{"id":"bidder-cd","name":"Bidder CD"}]}}`),
+			},
+			bidRequestSite: &openrtb2.Site{
+				ID:   "site1",
+				Page: "http://example.com",
+			},
+			expectedSite: &openrtb2.Site{
+				ID:   "site1",
+				Page: "http://example.com",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "bidder-cd", Name: "Bidder CD"},
+					},
+				},
+			},
+		},
+		{
+			description: "concat mode: bidder config has no content.data, base data is preserved",
+			fpdConfig: &openrtb_ext.ORTB2{
+				Site: json.RawMessage(`{"id":"site2"}`),
+			},
+			bidRequestSite: &openrtb2.Site{
+				ID:   "site1",
+				Page: "http://example.com",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-cd", Name: "Base CD"},
+					},
+				},
+			},
+			expectedSite: &openrtb2.Site{
+				ID:   "site2",
+				Page: "http://example.com",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-cd", Name: "Base CD"},
+					},
+				},
+			},
+		},
+		{
+			description: "concat mode: original request site.content.data is not mutated",
+			fpdConfig: &openrtb_ext.ORTB2{
+				Site: json.RawMessage(`{"content":{"data":[{"id":"bidder-cd","name":"Bidder CD"}]}}`),
+			},
+			bidRequestSite: &openrtb2.Site{
+				ID:   "site1",
+				Page: "http://example.com",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-cd", Name: "Base CD"},
+					},
+				},
+			},
+			expectedSite: &openrtb2.Site{
+				ID:   "site1",
+				Page: "http://example.com",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-cd", Name: "Base CD"},
+						{ID: "bidder-cd", Name: "Bidder CD"},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			var originalContentData []openrtb2.Data
+			if test.bidRequestSite.Content != nil {
+				originalContentData = make([]openrtb2.Data, len(test.bidRequestSite.Content.Data))
+				copy(originalContentData, test.bidRequestSite.Content.Data)
+			}
+
+			resultSite, err := resolveSite(test.fpdConfig, test.bidRequestSite, nil, nil, "bidderA", config.ArrayMergeModeConcat)
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedSite, resultSite)
+			// Verify original was not mutated
+			if test.bidRequestSite.Content != nil {
+				assert.Equal(t, originalContentData, test.bidRequestSite.Content.Data, "original site.content.data must not be mutated")
+			}
+		})
+	}
+}
+
+func TestResolveAppConcatMode(t *testing.T) {
+	testCases := []struct {
+		description   string
+		fpdConfig     *openrtb_ext.ORTB2
+		bidRequestApp *openrtb2.App
+		expectedApp   *openrtb2.App
+	}{
+		{
+			description: "concat mode: app.content.data arrays are concatenated",
+			fpdConfig: &openrtb_ext.ORTB2{
+				App: json.RawMessage(`{"content":{"data":[{"id":"bidder-acd","name":"Bidder ACD"}]}}`),
+			},
+			bidRequestApp: &openrtb2.App{
+				ID: "app1",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-acd", Name: "Base ACD"},
+					},
+				},
+			},
+			expectedApp: &openrtb2.App{
+				ID: "app1",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-acd", Name: "Base ACD"},
+						{ID: "bidder-acd", Name: "Bidder ACD"},
+					},
+				},
+			},
+		},
+		{
+			description: "concat mode: nil base app.content.data, bidder config data is used directly",
+			fpdConfig: &openrtb_ext.ORTB2{
+				App: json.RawMessage(`{"content":{"data":[{"id":"bidder-acd","name":"Bidder ACD"}]}}`),
+			},
+			bidRequestApp: &openrtb2.App{ID: "app1"},
+			expectedApp: &openrtb2.App{
+				ID: "app1",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "bidder-acd", Name: "Bidder ACD"},
+					},
+				},
+			},
+		},
+		{
+			description: "concat mode: original request app.content.data is not mutated",
+			fpdConfig: &openrtb_ext.ORTB2{
+				App: json.RawMessage(`{"content":{"data":[{"id":"bidder-acd","name":"Bidder ACD"}]}}`),
+			},
+			bidRequestApp: &openrtb2.App{
+				ID: "app1",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-acd", Name: "Base ACD"},
+					},
+				},
+			},
+			expectedApp: &openrtb2.App{
+				ID: "app1",
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{
+						{ID: "base-acd", Name: "Base ACD"},
+						{ID: "bidder-acd", Name: "Bidder ACD"},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			var originalContentData []openrtb2.Data
+			if test.bidRequestApp.Content != nil {
+				originalContentData = make([]openrtb2.Data, len(test.bidRequestApp.Content.Data))
+				copy(originalContentData, test.bidRequestApp.Content.Data)
+			}
+
+			resultApp, err := resolveApp(test.fpdConfig, test.bidRequestApp, nil, nil, "bidderA", config.ArrayMergeModeConcat)
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedApp, resultApp)
+			if test.bidRequestApp.Content != nil {
+				assert.Equal(t, originalContentData, test.bidRequestApp.Content.Data, "original app.content.data must not be mutated")
+			}
+		})
 	}
 }
 
