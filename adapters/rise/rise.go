@@ -80,14 +80,37 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 				continue
 			}
 
+			bidMeta, err := getBidMeta(bid)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to parse bid metadata for imp %s: %w", bid.ImpID, err))
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
+				BidMeta: bidMeta,
 			})
 		}
 	}
 
 	return bidResponse, errs
+}
+
+func getBidMeta(bid openrtb2.Bid) (*openrtb_ext.ExtBidPrebidMeta, error) {
+	if len(bid.Ext) == 0 {
+		return nil, nil
+	}
+
+	var bidExt openrtb_ext.ExtBid
+	if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err != nil {
+		return nil, err
+	}
+
+	if bidExt.Prebid == nil {
+		return nil, nil
+	}
+
+	return bidExt.Prebid.Meta, nil
 }
 
 func extractOrg(openRTBRequest *openrtb2.BidRequest) (string, error) {
