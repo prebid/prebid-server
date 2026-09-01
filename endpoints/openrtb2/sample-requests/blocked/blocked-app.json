@@ -82,6 +82,6 @@
       }
     }
   },
-  "expectedReturnCode": 503,
+  "expectedReturnCode": 403,
   "expectedErrorMessage": "Invalid request: Prebid-server does not process requests from App ID: spam_app\n"
 }
