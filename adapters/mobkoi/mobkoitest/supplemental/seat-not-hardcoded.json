@@ -21,7 +21,7 @@
     "imp": [
       {
         "id": "some-impression-id1",
-        "tagid": "originalTagId",
+        "tagid": "",
         "banner": {
           "w": 320,
           "h": 50
@@ -105,13 +105,11 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50,
-                  "lurl": "mobkoi/loss",
-                  "nurl": "mobkoi/win"
+                  "h": 50
                 }
               ],
               "type": "banner",
-              "seat": "mobkoi"
+              "seat": "mobkoi-request-alias"
             }
           ],
           "cur": "USD"
@@ -133,9 +131,7 @@
               "awesome.com"
             ],
             "w": 320,
-            "h": 50,
-            "lurl": "mobkoi/loss",
-            "nurl": "mobkoi/win"
+            "h": 50
           },
           "type": "banner"
         }
