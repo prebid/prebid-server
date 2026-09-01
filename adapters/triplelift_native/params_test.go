@@ -37,6 +37,9 @@ var validParams = []string{
 	`{"inventoryCode":"1"}`,
 	`{"inventoryCode":"test"}`,
 	`{"inventoryCode":"test", "floor":10}`,
+	`{"inventoryCode":"test","parentId":"123"}`,
+	`{"inventoryCode":"test","publisherId":"456"}`,
+	`{"inventoryCode":"test","parentId":"123", "publisherId":"456"}`,
 }
 
 var invalidParams = []string{
@@ -50,4 +53,8 @@ var invalidParams = []string{
 	`{"inventoryCode":1}`,
 	`{"inventoryCode":""}`,
 	`{"inventoryCode":"1", "floor": "10"}`,
+	`{"inventoryCode":"test","parentId":1}`,
+	`{"inventoryCode":"test","parentId":""}`,
+	`{"inventoryCode":"test","publisherId":456}`,
+	`{"inventoryCode":"test","publisherId":""}`,
 }
