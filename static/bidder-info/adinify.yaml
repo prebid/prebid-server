@@ -1,2 +1,2 @@
-endpoint: "https://adinify-prebid.attekmi.com/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+endpoint: "https://adinify-prebid.attekmi.co/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
 aliasOf: "smarthub"

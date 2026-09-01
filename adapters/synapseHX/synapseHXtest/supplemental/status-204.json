@@ -1,0 +1,127 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "ext": {
+          "bidder": {
+            "tenantId": "a",
+            "adUnitId": "b"
+          }
+        },
+        "banner": {
+          "w": 320,
+          "h": 480,
+          "pos": 7,
+          "mimes": [
+            "image/jpg",
+            "image/gif",
+            "text/html"
+          ],
+          "format": [
+            {
+              "w": 320,
+              "h": 480
+            }
+          ],
+          "api": [
+            5,
+            7
+          ],
+          "vcm": 1,
+          "id": "1"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisher-id"
+      },
+      "id": "site-id"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?pid=a",
+        "body": {
+          "id": "auction-req-id",
+          "imp": [
+            {
+              "id": "imp-id",
+              "ext": {
+                "bidder": {
+                  "tenantId": "a",
+                  "adUnitId": "b"
+                }
+              },
+              "banner": {
+                "w": 320,
+                "h": 480,
+                "pos": 7,
+                "mimes": [
+                  "image/jpg",
+                  "image/gif",
+                  "text/html"
+                ],
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 480
+                  }
+                ],
+                "api": [
+                  5,
+                  7
+                ],
+                "vcm": 1,
+                "id": "1"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisher-id"
+            },
+            "id": "site-id"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
