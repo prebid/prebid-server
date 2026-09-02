@@ -48,6 +48,6 @@ func (ar *AsyncRequest) fetchScope3SegmentsAsync(request *openrtb2.BidRequest) {
 			}
 			close(ar.Done)
 		}()
-		ar.Segments, ar.Err = ar.Module.fetchScope3Segments(ar.Context, request)
+		ar.Segments, ar.Err = ar.fetchScope3Segments(ar.Context, request)
 	}()
 }

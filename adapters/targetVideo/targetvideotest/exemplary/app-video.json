@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id-video",
+    "app": {
+      "id": "appID",
+      "publisher": {
+        "id": "uniq_pub_id"
+      }
+    },
+    "cur": ["EUR"],
+    "imp": [
+      {
+        "id": "test-imp-id-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "77777"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-user-agent"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"]
+        },
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "test-request-id-video",
+          "app": {
+            "id": "appID",
+            "publisher": {
+              "id": "uniq_pub_id"
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id-video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 360
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "77777"
+                  }
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "test-user-agent"
+          },
+          "cur": ["EUR"]
+        },
+        "impIDs":["test-imp-id-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-video",
+          "seatbid": [
+            {
+              "seat": "targetVideo",
+              "bid": [
+                {
+                  "id": "randomID",
+                  "impid": "test-imp-id-video",
+                  "price": 5.5,
+                  "adid": "12345678",
+                  "adm": "test-imp-id-video",
+                  "cid": "789",
+                  "crid": "12345678",
+                  "h": 360,
+                  "w": 640
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids" : [{
+        "bid": {
+          "id": "randomID",
+          "adid": "12345678",
+          "impid": "test-imp-id-video",
+          "price": 5.5,
+          "adm": "test-imp-id-video",
+          "crid": "12345678",
+          "cid": "789",
+          "h": 360,
+          "w": 640
+        },
+        "type": "video"
+      }]
+    }
+  ]
+}

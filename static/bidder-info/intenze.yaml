@@ -1,4 +1,14 @@
-aliasOf: "gothamads"
 endpoint: "http://lb-east.intenze.co/?pass={{.AccountID}}"
 maintainer:
   email: "connect@intenze.co"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

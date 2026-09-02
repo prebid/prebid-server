@@ -13,9 +13,9 @@
       "type": "string",
       "description": "Placement Type (Sticky, Header, ...)"
     },
-    "test": {
+    "sample": {
       "type": "string",
-      "description": "Test Mode"
+      "description": "Sample"
     },
     "formats": {
       "type": "array",

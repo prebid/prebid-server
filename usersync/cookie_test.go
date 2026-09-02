@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -531,6 +531,23 @@ func TestPrepareCookieForWrite(t *testing.T) {
 			}
 		})
 	}
+}
+
+type failingEncoder struct{}
+
+func (failingEncoder) Encode(*Cookie) (string, error) {
+	return "", errors.New("encode failed")
+}
+
+func TestPrepareCookieForWriteEncoderError(t *testing.T) {
+	cookie := &Cookie{
+		uids: map[string]UIDEntry{
+			"adnxs": newTempId("UID", 1),
+		},
+	}
+
+	_, err := cookie.PrepareCookieForWrite(&config.HostCookie{}, failingEncoder{}, nil)
+	assert.Error(t, err)
 }
 
 func TestSyncHostCookie(t *testing.T) {

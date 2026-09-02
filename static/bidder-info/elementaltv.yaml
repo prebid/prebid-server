@@ -1,0 +1,17 @@
+endpoint: "https://pbs.elementaltv.io/ads/processHeaderBid/{{.AdUnit}}"
+endpointCompression: gzip
+openrtb:
+  version: 2.6
+maintainer:
+  email: support@elementaltv.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/adapters/adapterstest"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,6 +54,51 @@ func TestJsonSamples(t *testing.T) {
 	}
 
 	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", bidder)
+}
+
+func TestResolveImpTypePriority(t *testing.T) {
+	tests := []struct {
+		name     string
+		imp      openrtb2.Imp
+		expected openrtb_ext.BidType
+	}{
+		{
+			name:     "video over banner",
+			imp:      openrtb2.Imp{Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}},
+			expected: openrtb_ext.BidTypeVideo,
+		},
+		{
+			name:     "native over banner",
+			imp:      openrtb2.Imp{Banner: &openrtb2.Banner{}, Native: &openrtb2.Native{}},
+			expected: openrtb_ext.BidTypeNative,
+		},
+		{
+			name:     "video over native and banner",
+			imp:      openrtb2.Imp{Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}, Native: &openrtb2.Native{}},
+			expected: openrtb_ext.BidTypeVideo,
+		},
+		{
+			name:     "interstitial banner over unsupported native",
+			imp:      openrtb2.Imp{Banner: &openrtb2.Banner{}, Native: &openrtb2.Native{}, Instl: 1},
+			expected: openrtb_ext.BidTypeBanner,
+		},
+		{
+			name:     "interstitial video over native",
+			imp:      openrtb2.Imp{Video: &openrtb2.Video{}, Native: &openrtb2.Native{}, Instl: 1},
+			expected: openrtb_ext.BidTypeVideo,
+		},
+		{
+			name:     "banner over unsupported audio",
+			imp:      openrtb2.Imp{Banner: &openrtb2.Banner{}, Audio: &openrtb2.Audio{}},
+			expected: openrtb_ext.BidTypeBanner,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, resolveImpType(&test.imp))
+		})
+	}
 }
 
 func TestMakeTimeoutNoticeApp(t *testing.T) {

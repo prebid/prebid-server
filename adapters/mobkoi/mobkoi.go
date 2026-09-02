@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type adapter struct {
@@ -37,13 +37,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	if request.Imp[0].TagID == "" {
-		if ext.Bidder.PlacementID != "" {
-			request.Imp[0].TagID = ext.Bidder.PlacementID
-		} else {
-			return nil, []error{
-				errors.New("invalid because it comes with neither request.imp[0].tagId nor req.imp[0].ext.Bidder.placementId"),
-			}
+	if ext.Bidder.PlacementID != "" {
+		request.Imp[0].TagID = ext.Bidder.PlacementID
+	} else if request.Imp[0].TagID == "" {
+		return nil, []error{
+			errors.New("invalid because it comes with neither request.imp[0].tagId nor req.imp[0].ext.Bidder.placementId"),
 		}
 	}
 

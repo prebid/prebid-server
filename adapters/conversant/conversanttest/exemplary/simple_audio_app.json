@@ -42,7 +42,6 @@
               "secure": 1,
               "bidfloor": 0.01,
               "displaymanager": "prebid-s2s",
-              "displaymanagerver": "2.0.0",
               "audio": {
                 "mimes": [ "audio/vnd.wav", "audio/mpeg", "audio/mp4" ],
                 "protocols": [3,6,7,8]

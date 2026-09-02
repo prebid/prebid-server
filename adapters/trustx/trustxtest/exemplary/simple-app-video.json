@@ -1,0 +1,141 @@
+{
+  "mockBidRequest": {
+    "id": "test-request",
+    "imp": [
+      {
+        "id": "test-imp",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 1920,
+          "h": 1080
+        },
+        "ext": {
+          "bidder": {
+            "uid": 1234
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "app-bundle"
+    },
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "ua"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "uri": "https://test.localhost.com",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ],
+          "User-Agent": [
+            "ua"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "body": {
+          "id": "test-request",
+          "imp": [
+            {
+              "id": "test-imp",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 1920,
+                "h": 1080
+              },
+              "ext": {
+                "bidder": {
+                  "uid": 1234
+                }
+              }
+            }
+          ],
+          "app": {
+            "bundle": "app-bundle"
+          },
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "ua"
+          }
+        },
+        "impIDs": [
+          "test-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "2315f4a3-f2c4-8cac-69de-985272e1d706",
+                  "crid": "4235d4b1-e2a6-9bbb-a34c-766714c2d221",
+                  "impid": "test-imp",
+                  "price": 10,
+                  "adm": "test-ad",
+                  "w": 1920,
+                  "h": 1080,
+                  "mtype": 2,
+                  "dur": 15,
+                  "cat": [
+                    "IAB3-8"
+                  ]
+                }
+              ],
+              "seat": "trustx"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "2315f4a3-f2c4-8cac-69de-985272e1d706",
+            "crid": "4235d4b1-e2a6-9bbb-a34c-766714c2d221",
+            "impid": "test-imp",
+            "price": 10,
+            "adm": "test-ad",
+            "w": 1920,
+            "h": 1080,
+            "mtype": 2,
+            "dur": 15,
+            "cat": [
+              "IAB3-8"
+            ]
+          },
+          "type": "video",
+          "video": {
+            "duration": 15,
+            "primary_category": "IAB3-8"
+          }
+        }
+      ]
+    }
+  ]
+}
+

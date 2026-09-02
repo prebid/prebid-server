@@ -10,12 +10,12 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/errortypes"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
-	"github.com/prebid/prebid-server/v3/util/timeutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
 const defaultNetwork = "default"
@@ -101,8 +101,15 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		}
 
 	}
+	var extUser openrtb_ext.ExtUser
+	if ortbRequest.User != nil && ortbRequest.User.Ext != nil {
+		if err := jsonutil.Unmarshal(ortbRequest.User.Ext, &extUser); err != nil {
+			return nil, []error{fmt.Errorf("failed to parse Ext User: %w", err)}
+		}
+	}
 
-	endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies)
+	endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies, extUser)
+
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("failed to parse URL: %s", err),
@@ -119,26 +126,12 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		return nil, []error{fmt.Errorf("failed to parse site Ext: %v", err)}
 	}
 
-	var extUser openrtb_ext.ExtUser
-	if ortbRequest.User != nil && ortbRequest.User.Ext != nil {
-		if err := jsonutil.Unmarshal(ortbRequest.User.Ext, &extUser); err != nil {
-			return nil, []error{fmt.Errorf("failed to parse Ext User: %v", err)}
-		}
-	}
-
 	for _, networkAdunits := range networkAdunitMap {
 
 		adnuntiusRequest := adnRequest{
 			AdUnits:   networkAdunits,
 			Context:   site,
 			KeyValues: extSite.Data,
-		}
-
-		// Will change when our adserver can accept multiple user IDS
-		if extUser.Eids != nil && len(extUser.Eids) > 0 {
-			if len(extUser.Eids[0].UIDs) > 0 {
-				adnuntiusRequest.MetaData.Usi = extUser.Eids[0].UIDs[0].ID
-			}
 		}
 
 		ortbUser := ortbRequest.User
