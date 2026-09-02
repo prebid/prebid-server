@@ -1,7 +1,9 @@
-endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid-server"
+endpoint: "http://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"
 # Leave disabled: false → adapter enabled
 endpointCompression: gzip
 disabled: false
+geoscope:
+  - global
 maintainer:
   email: "support@scalibur.io"
 gvlVendorID: 1471
@@ -19,7 +21,7 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: "https://srv.scalibur.io/adserver/sync?type=iframe&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://srv.scalibur.io/adserver/sync?type=iframe&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
     userMacro: "[PBS_UID]"
   supports:
     - iframe
