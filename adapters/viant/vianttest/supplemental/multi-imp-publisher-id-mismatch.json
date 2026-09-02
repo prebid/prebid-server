@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-a",
+        "banner": { "w": 300, "h": 250 },
+        "ext": {
+          "bidder": { "publisherId": "PUB-AAA" }
+        }
+      },
+      {
+        "id": "imp-b",
+        "banner": { "w": 728, "h": 90 },
+        "ext": {
+          "bidder": { "publisherId": "PUB-BBB" }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://prebid.org/",
+      "publisher": { "id": "280" }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidders-us.adelphic.net/rtb/v25/viant-prebid-server/bidder",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-a",
+              "banner": { "w": 300, "h": 250 },
+              "ext": {
+                "bidder": { "publisherId": "PUB-AAA" }
+              }
+            },
+            {
+              "id": "imp-b",
+              "banner": { "w": 728, "h": 90 },
+              "ext": {
+                "bidder": { "publisherId": "PUB-BBB" }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://prebid.org/",
+            "publisher": { "id": "PUB-AAA" }
+          }
+        },
+        "impIDs": ["imp-a", "imp-b"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "2722",
+              "bid": [
+                {
+                  "id": "bid-a",
+                  "impid": "imp-a",
+                  "price": 2.50,
+                  "adm": "<div>ad markup</div>",
+                  "crid": "crid-a",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-a",
+            "impid": "imp-a",
+            "price": 2.50,
+            "adm": "<div>ad markup</div>",
+            "crid": "crid-a",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
