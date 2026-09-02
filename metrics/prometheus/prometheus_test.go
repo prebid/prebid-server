@@ -416,6 +416,50 @@ func TestAccountMetric(t *testing.T) {
 	}
 }
 
+func TestAccountRequestStatusMetric(t *testing.T) {
+	testCases := []struct {
+		description   string
+		enabled       bool
+		pubID         string
+		expectedCount float64
+	}{
+		{
+			description:   "Enabled For Known Account",
+			enabled:       true,
+			pubID:         "knownPublisher",
+			expectedCount: 1,
+		},
+		{
+			description:   "Disabled For Known Account",
+			pubID:         "knownPublisher",
+			expectedCount: 0,
+		},
+		{
+			description:   "Enabled For Unknown Account",
+			enabled:       true,
+			pubID:         metrics.PublisherUnknown,
+			expectedCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.accountRequestStatusEnabled = test.enabled
+		m.RecordRequest(metrics.Labels{
+			RType:         metrics.ReqTypeORTB2Web,
+			RequestStatus: metrics.RequestStatusBadInput,
+			PubID:         test.pubID,
+		})
+
+		assertCounterVecValue(t, test.description, "accountRequestStatus", m.accountRequestStatus,
+			test.expectedCount,
+			prometheus.Labels{
+				accountLabel:       test.pubID,
+				requestStatusLabel: string(metrics.RequestStatusBadInput),
+			})
+	}
+}
+
 func TestImpressionsMetric(t *testing.T) {
 	performTest := func(m *Metrics, isBanner, isVideo, isAudio, isNative bool) {
 		m.RecordImps(metrics.ImpLabels{
