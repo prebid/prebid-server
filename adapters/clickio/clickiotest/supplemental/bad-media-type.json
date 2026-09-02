@@ -1,0 +1,73 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "ext": {
+          "bidder": {
+            "said": "123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ssp.clickio.example/openrtb2/auction",
+        "body": {
+          "id": "request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "ext": {
+                "bidder": {
+                  "said": "123"
+                },
+                "params": {
+                  "said": "123"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.23,
+                  "adm": "<div>ad</div>",
+                  "crid": "creative-1"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Failed to resolve media type for impression \"imp-1\"",
+      "comparison": "literal"
+    }
+  ]
+}
