@@ -209,7 +209,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		for _, er := range errL {
 			errCode := errortypes.ReadCode(er)
 			if errCode == errortypes.BlockedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
-				httpStatus = http.StatusServiceUnavailable
+				httpStatus = http.StatusForbidden
 				metricsStatus = metrics.RequestStatusBlockedApp
 				break
 			}
