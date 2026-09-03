@@ -1,0 +1,52 @@
+{
+  "mockBidRequest": {
+    "id": "auction-mixed-publishers",
+    "site": {},
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-1",
+            "adUnitId": "plc-1",
+            "tenantId": "tenant-1"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-2",
+            "adUnitId": "plc-2",
+            "tenantId": "tenant-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-2 has publisherId \"pub-2\", expected \"pub-1\"",
+      "comparison": "literal"
+    }
+  ]
+}
