@@ -13,7 +13,7 @@
         },
         "ext": {
           "bidder": {
-            "sid": "tunnl_x_use_g"
+            "sid": "tunnl_x_g"
           }
         }
       }
@@ -22,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g",
+        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_g",
         "body": {
           "id": "test-request-id",
           "site": {
@@ -37,7 +37,7 @@
               },
               "ext": {
                 "bidder": {
-                  "sid": "tunnl_x_use_g"
+                  "sid": "tunnl_x_g"
                 }
               }
             }

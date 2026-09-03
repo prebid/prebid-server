@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sort"
-	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -17,28 +15,8 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-// Tunnl issues one sid per publisher and region. The sid carries its region,
-// and the configured endpoint's host carries it a second time as a subdomain,
-// so the two have to agree: a request sent to us1 with an eu sid would bid
-// against the wrong region and be attributed to the wrong place.
-//
-// endpointRegions maps each endpoint host prefix to the sid region segments it
-// accepts. The US east and west sids share a single host.
-var endpointRegions = map[string][]string{
-	"us1": {"use", "usw"},
-	"eu1": {"eu"},
-	"ap1": {"ap"},
-}
-
 type adapter struct {
 	endpoint *template.Template
-
-	// sidRegions is the set of sid region segments the configured endpoint
-	// accepts, derived from its host at build time. Empty when the host is not
-	// one of Tunnl's own, in which case the region check is skipped: a host may
-	// point the adapter at a proxy, and rejecting every sid there would be worse
-	// than not checking.
-	sidRegions map[string]struct{}
 }
 
 func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
@@ -47,86 +25,46 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &adapter{
-		endpoint:   endpoint,
-		sidRegions: sidRegionsForEndpoint(cfg.Endpoint),
-	}
-
-	return bidder, nil
-}
-
-// sidRegionsForEndpoint resolves the sid regions the endpoint's host serves.
-// The endpoint is inspected as configured, before macro resolution, because the
-// host is fixed by the host company's config and never varies per request.
-func sidRegionsForEndpoint(endpoint string) map[string]struct{} {
-	parsed, err := url.Parse(endpoint)
-	if err != nil {
-		return nil
-	}
-
-	host := parsed.Hostname()
-	prefix, _, found := strings.Cut(host, ".")
-	if !found {
-		return nil
-	}
-
-	regions, ok := endpointRegions[prefix]
-	if !ok {
-		return nil
-	}
-
-	set := make(map[string]struct{}, len(regions))
-	for _, region := range regions {
-		set[region] = struct{}{}
-	}
-	return set
+	return &adapter{endpoint: endpoint}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
+	var sid string
 
-	// The sid travels in the endpoint URL, so impressions can only share a
-	// request when they share a sid. Grouping keeps the common case, where a
-	// publisher configures one sid across its ad units, down to a single call.
-	sidOrder := make([]string, 0, len(request.Imp))
-	impsBySid := make(map[string][]openrtb2.Imp, len(request.Imp))
-
+	// A publisher has one sid, so every impression carries the same one and the
+	// whole request goes out in a single call under the first sid seen. Each
+	// impression is still validated, so a missing or malformed sid is reported
+	// against the impression it came from rather than silently passed on.
+	imps := make([]openrtb2.Imp, 0, len(request.Imp))
 	for _, imp := range request.Imp {
 		if err := validateImpMediaType(imp); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		sid, err := parseSid(imp)
+		impSid, err := parseSid(imp)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		if err := a.validateSidRegion(sid, imp.ID); err != nil {
-			errs = append(errs, err)
-			continue
+		if sid == "" {
+			sid = impSid
 		}
-
-		if _, seen := impsBySid[sid]; !seen {
-			sidOrder = append(sidOrder, sid)
-		}
-		impsBySid[sid] = append(impsBySid[sid], imp)
+		imps = append(imps, imp)
 	}
 
-	requests := make([]*adapters.RequestData, 0, len(sidOrder))
-	headers := makeHeaders(request)
-
-	for _, sid := range sidOrder {
-		requestData, err := a.makeRequest(request, impsBySid[sid], sid, headers)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		requests = append(requests, requestData)
+	if len(imps) == 0 {
+		return nil, errs
 	}
 
-	return requests, errs
+	requestData, err := a.makeRequest(request, imps, sid, makeHeaders(request))
+	if err != nil {
+		return nil, append(errs, err)
+	}
+
+	return []*adapters.RequestData{requestData}, errs
 }
 
 // validateImpMediaType drops an impression Tunnl cannot serve. Audio is not a
@@ -170,48 +108,6 @@ func parseSid(imp openrtb2.Imp) (string, error) {
 	return impExt.SID, nil
 }
 
-// validateSidRegion rejects a sid whose region does not match the region the
-// configured endpoint serves. Without this the mismatch is silent: the bid
-// request reaches the wrong regional endpoint and its revenue is attributed to
-// a region the traffic never came from.
-func (a *adapter) validateSidRegion(sid, impID string) error {
-	if len(a.sidRegions) == 0 {
-		return nil
-	}
-
-	region, ok := sidRegion(sid)
-	if !ok {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: sid %q is malformed, expected the form tunnl_<partner>_<region>_g", impID, sid),
-		}
-	}
-
-	if _, ok := a.sidRegions[region]; !ok {
-		accepted := make([]string, 0, len(a.sidRegions))
-		for r := range a.sidRegions {
-			accepted = append(accepted, r)
-		}
-		sort.Strings(accepted)
-
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: sid %q targets region %q but this endpoint serves %s", impID, sid, region, strings.Join(accepted, ", ")),
-		}
-	}
-
-	return nil
-}
-
-// sidRegion extracts the region from an underscore separated sid, where it is
-// the second to last segment. It is read from the end because the segments
-// before it may themselves contain underscores.
-func sidRegion(sid string) (string, bool) {
-	segments := strings.Split(sid, "_")
-	if len(segments) < 4 {
-		return "", false
-	}
-	return segments[len(segments)-2], true
-}
-
 func (a *adapter) makeRequest(request *openrtb2.BidRequest, imps []openrtb2.Imp, sid string, headers http.Header) (*adapters.RequestData, error) {
 	endpoint, err := a.buildEndpointURL(sid)
 	if err != nil {
@@ -237,9 +133,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imps []openrtb2.Imp,
 	}, nil
 }
 
-// buildEndpointURL resolves the sid into the host configured endpoint. The
-// region is part of the sid and of the endpoint host, not something the adapter
-// chooses.
+// buildEndpointURL resolves the sid into the host configured endpoint.
 func (a *adapter) buildEndpointURL(sid string) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		SourceId: url.QueryEscape(sid),

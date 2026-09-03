@@ -7,7 +7,7 @@
   "properties": {
     "sid": {
       "type": "string",
-      "description": "The sid issued by Tunnl for this publisher and region.",
+      "description": "The sid issued by Tunnl for this publisher.",
       "minLength": 1
     }
   },

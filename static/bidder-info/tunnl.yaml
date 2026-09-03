@@ -1,8 +1,6 @@
-# The sid comes from the publisher, per ad unit. It carries its own region and
-# the endpoint host carries one too, so the two must agree: the adapter rejects
-# an impression whose sid region is not the host's. Hosts outside the US should
-# override adapters.tunnl.endpoint in their own deployment config with the
-# matching line, rather than editing this file.
+# The sid comes from the publisher, per ad unit, and Tunnl issues it. Hosts
+# serving another region should override adapters.tunnl.endpoint in their own
+# deployment config with the matching line, rather than editing this file.
 #
 #   US    "https://us1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"
 #   EU    "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"

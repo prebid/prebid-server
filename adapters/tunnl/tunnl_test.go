@@ -16,9 +16,9 @@ import (
 
 const (
 	testEndpoint = "https://us1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"
-	testSid      = "tunnl_x_use_g"
-	testImpExt   = `{"bidder":{"sid":"tunnl_x_use_g"}}`
-	testURI      = "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g"
+	testSid      = "tunnl_x_g"
+	testImpExt   = `{"bidder":{"sid":"tunnl_x_g"}}`
+	testURI      = "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_g"
 )
 
 func buildTestBidder(t *testing.T) adapters.Bidder {
@@ -95,111 +95,47 @@ func TestMakeRequestsRejectsMissingSid(t *testing.T) {
 	}
 }
 
-// The sid carries the region and the endpoint host carries it again, so a
-// mismatch would bid against the wrong region and be attributed to the wrong
-// place. It is rejected instead.
-func TestMakeRequestsValidatesSidRegion(t *testing.T) {
-	testCases := []struct {
-		name        string
-		endpoint    string
-		sid         string
-		expectError bool
-	}{
-		{name: "us east on the us host", endpoint: testEndpoint, sid: "tunnl_x_use_g"},
-		{name: "us west on the us host", endpoint: testEndpoint, sid: "tunnl_x_usw_g"},
-		{
-			name:     "eu on the eu host",
-			endpoint: "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
-			sid:      "tunnl_x_eu_g",
-		},
-		{
-			name:     "ap on the ap host",
-			endpoint: "https://ap1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
-			sid:      "tunnl_x_ap_g",
-		},
-		{
-			name:     "partner name containing underscores",
-			endpoint: testEndpoint,
-			sid:      "tunnl_big_partner_co_use_g",
-		},
-		{name: "eu sid on the us host", endpoint: testEndpoint, sid: "tunnl_x_eu_g", expectError: true},
-		{
-			name:        "us sid on the eu host",
-			endpoint:    "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
-			sid:         "tunnl_x_use_g",
-			expectError: true,
-		},
-		{name: "unknown region", endpoint: testEndpoint, sid: "tunnl_x_zz_g", expectError: true},
-		{name: "too few segments to carry a region", endpoint: testEndpoint, sid: "tunnl_use", expectError: true},
-		{
-			name:     "unrecognised host skips the check",
-			endpoint: "https://proxy.internal/tunnl?sid={{.SourceId}}",
-			sid:      "anything-at-all",
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			bidder, buildErr := Builder(openrtb_ext.BidderTunnl,
-				config.Adapter{Endpoint: test.endpoint},
-				config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-			if buildErr != nil {
-				t.Fatalf("Builder returned unexpected error %v", buildErr)
-			}
-
-			requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
-				ID: "req-1",
-				Imp: []openrtb2.Imp{{
-					ID:     "imp-1",
-					Banner: &openrtb2.Banner{},
-					Ext:    []byte(`{"bidder":{"sid":"` + test.sid + `"}}`),
-				}},
-			}, &adapters.ExtraRequestInfo{})
-
-			if test.expectError {
-				assert.Empty(t, requests)
-				assert.Len(t, errs, 1)
-
-				var badInput *errortypes.BadInput
-				assert.True(t, errors.As(errs[0], &badInput), "expected BadInput, got %T", errs[0])
-				return
-			}
-
-			assert.Empty(t, errs)
-			assert.Len(t, requests, 1)
-		})
-	}
-}
-
-// The sid travels in the URL, so imps can only share a request when they share
-// a sid. The common case, one sid across every ad unit, stays a single call.
-func TestMakeRequestsGroupsImpsBySid(t *testing.T) {
+// A publisher has one sid, so a multi impression request goes out as a single
+// call carrying every impression.
+func TestMakeRequestsSendsOneCall(t *testing.T) {
 	bidder := buildTestBidder(t)
 
 	requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
 		ID: "req-1",
 		Imp: []openrtb2.Imp{
-			{ID: "imp-1", Banner: &openrtb2.Banner{}, Ext: []byte(`{"bidder":{"sid":"tunnl_x_use_g"}}`)},
-			{ID: "imp-2", Video: &openrtb2.Video{}, Ext: []byte(`{"bidder":{"sid":"tunnl_x_usw_g"}}`)},
-			{ID: "imp-3", Native: &openrtb2.Native{}, Ext: []byte(`{"bidder":{"sid":"tunnl_x_use_g"}}`)},
+			{ID: "imp-1", Banner: &openrtb2.Banner{}, Ext: []byte(testImpExt)},
+			{ID: "imp-2", Video: &openrtb2.Video{}, Ext: []byte(testImpExt)},
+			{ID: "imp-3", Native: &openrtb2.Native{}, Ext: []byte(testImpExt)},
 		},
 	}, &adapters.ExtraRequestInfo{})
 
 	assert.Empty(t, errs)
-	assert.Len(t, requests, 2, "one request per distinct sid")
+	assert.Len(t, requests, 1)
+	assert.Equal(t, testURI, requests[0].Uri)
+	assert.Equal(t, []string{"imp-1", "imp-2", "imp-3"}, requests[0].ImpIDs)
 
-	// Grouping preserves the order the sids first appeared in, so the mapping
-	// from request to sid is stable.
-	assert.Equal(t, "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g", requests[0].Uri)
-	assert.Equal(t, []string{"imp-1", "imp-3"}, requests[0].ImpIDs)
-
-	assert.Equal(t, "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_usw_g", requests[1].Uri)
-	assert.Equal(t, []string{"imp-2"}, requests[1].ImpIDs)
-
-	// Every imp in a group must reach the endpoint in one body.
 	var body openrtb2.BidRequest
 	assert.NoError(t, jsonutil.Unmarshal(requests[0].Body, &body))
-	assert.Len(t, body.Imp, 2)
+	assert.Len(t, body.Imp, 3)
+}
+
+// The sid is read from the first impression, so a request that mixes sids is
+// sent under that one rather than split.
+func TestMakeRequestsUsesFirstImpSid(t *testing.T) {
+	bidder := buildTestBidder(t)
+
+	requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
+		ID: "req-1",
+		Imp: []openrtb2.Imp{
+			{ID: "imp-1", Banner: &openrtb2.Banner{}, Ext: []byte(`{"bidder":{"sid":"tunnl_x_g"}}`)},
+			{ID: "imp-2", Video: &openrtb2.Video{}, Ext: []byte(`{"bidder":{"sid":"tunnl_y_g"}}`)},
+		},
+	}, &adapters.ExtraRequestInfo{})
+
+	assert.Empty(t, errs)
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_g", requests[0].Uri)
+	assert.Equal(t, []string{"imp-1", "imp-2"}, requests[0].ImpIDs)
 }
 
 // One bad imp must not prevent the remaining imps from being dispatched.
@@ -438,8 +374,8 @@ func TestMakeBidsRejectsAudioBid(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "audio")
 }
 
-// The region lives in the host configured endpoint. A host serving another
-// datacenter overrides it, and the sid its publishers use must follow.
+// A host serving another datacenter overrides the endpoint, and the same sid
+// works against any of them.
 func TestHostRegionOverride(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -448,22 +384,16 @@ func TestHostRegionOverride(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "us is the open source default",
-			endpoint: testEndpoint,
-			sid:      "tunnl_x_use_g",
-			expected: "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g",
-		},
-		{
 			name:     "eu",
 			endpoint: "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
-			sid:      "tunnl_x_eu_g",
-			expected: "https://eu1.rapidtag.net/api/v1/bid?sid=tunnl_x_eu_g",
+			sid:      "tunnl_x_g",
+			expected: "https://eu1.rapidtag.net/api/v1/bid?sid=tunnl_x_g",
 		},
 		{
 			name:     "ap",
 			endpoint: "https://ap1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
-			sid:      "tunnl_x_ap_g",
-			expected: "https://ap1.rapidtag.net/api/v1/bid?sid=tunnl_x_ap_g",
+			sid:      "tunnl_x_g",
+			expected: "https://ap1.rapidtag.net/api/v1/bid?sid=tunnl_x_g",
 		},
 	}
 
@@ -492,8 +422,8 @@ func TestHostRegionOverride(t *testing.T) {
 	}
 }
 
-// A sid is opaque apart from its region, so anything a URL would otherwise
-// reinterpret has to survive into the endpoint intact.
+// A sid is opaque to the adapter, so anything a URL would otherwise reinterpret
+// has to survive into the endpoint intact.
 func TestMakeRequestsEscapesSid(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderTunnl,
 		config.Adapter{Endpoint: "https://proxy.internal/tunnl?sid={{.SourceId}}"},
@@ -507,11 +437,11 @@ func TestMakeRequestsEscapesSid(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "imp-1",
 			Banner: &openrtb2.Banner{},
-			Ext:    []byte(`{"bidder":{"sid":"tunnl_x&evil=1_use_g"}}`),
+			Ext:    []byte(`{"bidder":{"sid":"tunnl_x&evil=1_g"}}`),
 		}},
 	}, &adapters.ExtraRequestInfo{})
 
 	assert.Empty(t, errs)
 	assert.Len(t, requests, 1)
-	assert.Equal(t, "https://proxy.internal/tunnl?sid=tunnl_x%26evil%3D1_use_g", requests[0].Uri)
+	assert.Equal(t, "https://proxy.internal/tunnl?sid=tunnl_x%26evil%3D1_g", requests[0].Uri)
 }
