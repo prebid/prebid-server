@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "audio": {
+          "mimes": [
+            "audio/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": "tunnl_x_g"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp test-imp-id: unsupported media type, Tunnl supports banner, video and native",
+      "comparison": "literal"
+    }
+  ]
+}

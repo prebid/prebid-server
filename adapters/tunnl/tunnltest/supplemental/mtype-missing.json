@@ -1,0 +1,89 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": { "sid": "tunnl_x_g" } }
+      },
+      {
+        "id": "imp-video",
+        "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+        "ext": { "bidder": { "sid": "tunnl_x_g" } }
+      },
+      {
+        "id": "imp-native",
+        "native": { "request": "{\"ver\":\"1.2\",\"assets\":[]}" },
+        "ext": { "bidder": { "sid": "tunnl_x_g" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_g",
+        "impIDs": ["imp-banner", "imp-video", "imp-native"],
+        "body": {
+          "id": "test-request-id",
+          "site": { "page": "https://publisher.example.com/article" },
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": { "w": 300, "h": 250 },
+              "ext": { "bidder": { "sid": "tunnl_x_g" } }
+            },
+            {
+              "id": "imp-video",
+              "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+              "ext": { "bidder": { "sid": "tunnl_x_g" } }
+            },
+            {
+              "id": "imp-native",
+              "native": { "request": "{\"ver\":\"1.2\",\"assets\":[]}" },
+              "ext": { "bidder": { "sid": "tunnl_x_g" } }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                { "id": "bid-1", "impid": "imp-banner", "price": 1.1, "adm": "<div>banner</div>" },
+                { "id": "bid-2", "impid": "imp-video", "price": 2.2, "adm": "<VAST/>" },
+                { "id": "bid-3", "impid": "imp-native", "price": 3.3, "adm": "{\"native\":{}}" }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": { "id": "bid-1", "impid": "imp-banner", "price": 1.1, "adm": "<div>banner</div>" },
+          "type": "banner"
+        },
+        {
+          "bid": { "id": "bid-2", "impid": "imp-video", "price": 2.2, "adm": "<VAST/>" },
+          "type": "video"
+        },
+        {
+          "bid": { "id": "bid-3", "impid": "imp-native", "price": 3.3, "adm": "{\"native\":{}}" },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

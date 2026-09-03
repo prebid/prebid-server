@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Tunnl Adapter Params",
+  "description": "A schema which validates params accepted by the Tunnl adapter",
+  "type": "object",
+
+  "properties": {
+    "sid": {
+      "type": "string",
+      "description": "The sid issued by Tunnl for this publisher.",
+      "minLength": 1
+    }
+  },
+
+  "required": ["sid"]
+}
