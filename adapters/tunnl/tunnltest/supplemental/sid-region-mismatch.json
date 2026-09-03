@@ -1,0 +1,19 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": { "sid": "tunnl_x_eu_g" } }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp test-imp-id: sid \"tunnl_x_eu_g\" targets region \"eu\" but this endpoint serves use, usw",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -6,17 +6,17 @@
     },
     "imp": [
       {
-        "id": "imp-banner",
+        "id": "imp-east",
         "banner": { "w": 300, "h": 250 },
         "ext": { "bidder": { "sid": "tunnl_x_use_g" } }
       },
       {
-        "id": "imp-video",
+        "id": "imp-west",
         "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
-        "ext": { "bidder": { "sid": "tunnl_x_use_g" } }
+        "ext": { "bidder": { "sid": "tunnl_x_usw_g" } }
       },
       {
-        "id": "imp-native",
+        "id": "imp-east-2",
         "native": { "request": "{\"ver\":\"1.2\",\"assets\":[]}" },
         "ext": { "bidder": { "sid": "tunnl_x_use_g" } }
       }
@@ -26,23 +26,18 @@
     {
       "expectedRequest": {
         "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g",
-        "impIDs": ["imp-banner", "imp-video", "imp-native"],
+        "impIDs": ["imp-east", "imp-east-2"],
         "body": {
           "id": "test-request-id",
           "site": { "page": "https://publisher.example.com/article" },
           "imp": [
             {
-              "id": "imp-banner",
+              "id": "imp-east",
               "banner": { "w": 300, "h": 250 },
               "ext": { "bidder": { "sid": "tunnl_x_use_g" } }
             },
             {
-              "id": "imp-video",
-              "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
-              "ext": { "bidder": { "sid": "tunnl_x_use_g" } }
-            },
-            {
-              "id": "imp-native",
+              "id": "imp-east-2",
               "native": { "request": "{\"ver\":\"1.2\",\"assets\":[]}" },
               "ext": { "bidder": { "sid": "tunnl_x_use_g" } }
             }
@@ -57,9 +52,38 @@
           "seatbid": [
             {
               "bid": [
-                { "id": "bid-1", "impid": "imp-banner", "price": 1.1, "adm": "<div>banner</div>" },
-                { "id": "bid-2", "impid": "imp-video", "price": 2.2, "adm": "<VAST/>" },
-                { "id": "bid-3", "impid": "imp-native", "price": 3.3, "adm": "{\"native\":{}}" }
+                { "id": "bid-east", "impid": "imp-east", "price": 1.5, "adm": "<div>banner</div>", "mtype": 1 }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_usw_g",
+        "impIDs": ["imp-west"],
+        "body": {
+          "id": "test-request-id",
+          "site": { "page": "https://publisher.example.com/article" },
+          "imp": [
+            {
+              "id": "imp-west",
+              "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+              "ext": { "bidder": { "sid": "tunnl_x_usw_g" } }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                { "id": "bid-west", "impid": "imp-west", "price": 3.0, "adm": "<VAST/>", "mtype": 2 }
               ]
             }
           ]
@@ -72,16 +96,17 @@
       "currency": "USD",
       "bids": [
         {
-          "bid": { "id": "bid-1", "impid": "imp-banner", "price": 1.1, "adm": "<div>banner</div>" },
+          "bid": { "id": "bid-east", "impid": "imp-east", "price": 1.5, "adm": "<div>banner</div>", "mtype": 1 },
           "type": "banner"
-        },
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
         {
-          "bid": { "id": "bid-2", "impid": "imp-video", "price": 2.2, "adm": "<VAST/>" },
+          "bid": { "id": "bid-west", "impid": "imp-west", "price": 3.0, "adm": "<VAST/>", "mtype": 2 },
           "type": "video"
-        },
-        {
-          "bid": { "id": "bid-3", "impid": "imp-native", "price": 3.3, "adm": "{\"native\":{}}" },
-          "type": "native"
         }
       ]
     }

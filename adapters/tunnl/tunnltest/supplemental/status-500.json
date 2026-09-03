@@ -5,12 +5,16 @@
       {
         "id": "test-imp-id",
         "video": {
-          "mimes": ["video/mp4"],
+          "mimes": [
+            "video/mp4"
+          ],
           "w": 640,
           "h": 480
         },
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "sid": "tunnl_x_use_g"
+          }
         }
       }
     ]
@@ -18,24 +22,30 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusvid",
+        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "test-imp-id",
               "video": {
-                "mimes": ["video/mp4"],
+                "mimes": [
+                  "video/mp4"
+                ],
                 "w": 640,
                 "h": 480
               },
               "ext": {
-                "bidder": {}
+                "bidder": {
+                  "sid": "tunnl_x_use_g"
+                }
               }
             }
           ]
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 500,

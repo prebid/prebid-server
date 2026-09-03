@@ -14,7 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testEndpoint = "https://us1.rapidtag.net/api/v1/bid?sid=tunnlus{{.MediaType}}"
+const (
+	testEndpoint = "https://us1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"
+	testSid      = "tunnl_x_use_g"
+	testImpExt   = `{"bidder":{"sid":"tunnl_x_use_g"}}`
+	testURI      = "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g"
+)
 
 func buildTestBidder(t *testing.T) adapters.Bidder {
 	t.Helper()
@@ -41,9 +46,8 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 	assert.Error(t, buildErr)
 }
 
-// Tunnl takes no publisher parameters, so imp.ext is never read: an imp with no
-// ext at all still produces a request against the host configured endpoint.
-func TestMakeRequestsIgnoresImpExt(t *testing.T) {
+// The sid is the one publisher parameter, and it ends up in the endpoint URL.
+func TestMakeRequestsPlacesSidInEndpoint(t *testing.T) {
 	bidder := buildTestBidder(t)
 
 	requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
@@ -51,32 +55,151 @@ func TestMakeRequestsIgnoresImpExt(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "imp-1",
 			Banner: &openrtb2.Banner{},
+			Ext:    []byte(testImpExt),
 		}},
 	}, &adapters.ExtraRequestInfo{})
 
 	assert.Empty(t, errs)
 	assert.Len(t, requests, 1)
-	assert.Equal(t, "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban", requests[0].Uri)
+	assert.Equal(t, testURI, requests[0].Uri)
 }
 
-// The only MakeRequests failure left is an imp with no supported media type,
-// since there are no parameters to reject.
-func TestMakeRequestsUnsupportedMediaType(t *testing.T) {
+// A missing or unusable sid is a publisher misconfiguration, so the imp is
+// rejected as bad input rather than sent without identification.
+func TestMakeRequestsRejectsMissingSid(t *testing.T) {
+	testCases := []struct {
+		name string
+		ext  []byte
+	}{
+		{name: "no sid field", ext: []byte(`{"bidder":{}}`)},
+		{name: "empty sid", ext: []byte(`{"bidder":{"sid":""}}`)},
+		{name: "sid of the wrong type", ext: []byte(`{"bidder":{"sid":123}}`)},
+		{name: "malformed imp ext", ext: []byte(`{"bidder":`)},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			bidder := buildTestBidder(t)
+
+			requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
+				ID:  "req-1",
+				Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}, Ext: test.ext}},
+			}, &adapters.ExtraRequestInfo{})
+
+			assert.Empty(t, requests)
+			assert.Len(t, errs, 1)
+
+			var badInput *errortypes.BadInput
+			assert.True(t, errors.As(errs[0], &badInput), "expected BadInput, got %T", errs[0])
+		})
+	}
+}
+
+// The sid carries the region and the endpoint host carries it again, so a
+// mismatch would bid against the wrong region and be attributed to the wrong
+// place. It is rejected instead.
+func TestMakeRequestsValidatesSidRegion(t *testing.T) {
+	testCases := []struct {
+		name        string
+		endpoint    string
+		sid         string
+		expectError bool
+	}{
+		{name: "us east on the us host", endpoint: testEndpoint, sid: "tunnl_x_use_g"},
+		{name: "us west on the us host", endpoint: testEndpoint, sid: "tunnl_x_usw_g"},
+		{
+			name:     "eu on the eu host",
+			endpoint: "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
+			sid:      "tunnl_x_eu_g",
+		},
+		{
+			name:     "ap on the ap host",
+			endpoint: "https://ap1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
+			sid:      "tunnl_x_ap_g",
+		},
+		{
+			name:     "partner name containing underscores",
+			endpoint: testEndpoint,
+			sid:      "tunnl_big_partner_co_use_g",
+		},
+		{name: "eu sid on the us host", endpoint: testEndpoint, sid: "tunnl_x_eu_g", expectError: true},
+		{
+			name:        "us sid on the eu host",
+			endpoint:    "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
+			sid:         "tunnl_x_use_g",
+			expectError: true,
+		},
+		{name: "unknown region", endpoint: testEndpoint, sid: "tunnl_x_zz_g", expectError: true},
+		{name: "too few segments to carry a region", endpoint: testEndpoint, sid: "tunnl_use", expectError: true},
+		{
+			name:     "unrecognised host skips the check",
+			endpoint: "https://proxy.internal/tunnl?sid={{.SourceId}}",
+			sid:      "anything-at-all",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			bidder, buildErr := Builder(openrtb_ext.BidderTunnl,
+				config.Adapter{Endpoint: test.endpoint},
+				config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+			if buildErr != nil {
+				t.Fatalf("Builder returned unexpected error %v", buildErr)
+			}
+
+			requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
+				ID: "req-1",
+				Imp: []openrtb2.Imp{{
+					ID:     "imp-1",
+					Banner: &openrtb2.Banner{},
+					Ext:    []byte(`{"bidder":{"sid":"` + test.sid + `"}}`),
+				}},
+			}, &adapters.ExtraRequestInfo{})
+
+			if test.expectError {
+				assert.Empty(t, requests)
+				assert.Len(t, errs, 1)
+
+				var badInput *errortypes.BadInput
+				assert.True(t, errors.As(errs[0], &badInput), "expected BadInput, got %T", errs[0])
+				return
+			}
+
+			assert.Empty(t, errs)
+			assert.Len(t, requests, 1)
+		})
+	}
+}
+
+// The sid travels in the URL, so imps can only share a request when they share
+// a sid. The common case, one sid across every ad unit, stays a single call.
+func TestMakeRequestsGroupsImpsBySid(t *testing.T) {
 	bidder := buildTestBidder(t)
 
 	requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
 		ID: "req-1",
-		Imp: []openrtb2.Imp{{
-			ID:  "imp-1",
-			Ext: []byte(`{"bidder":{}}`),
-		}},
+		Imp: []openrtb2.Imp{
+			{ID: "imp-1", Banner: &openrtb2.Banner{}, Ext: []byte(`{"bidder":{"sid":"tunnl_x_use_g"}}`)},
+			{ID: "imp-2", Video: &openrtb2.Video{}, Ext: []byte(`{"bidder":{"sid":"tunnl_x_usw_g"}}`)},
+			{ID: "imp-3", Native: &openrtb2.Native{}, Ext: []byte(`{"bidder":{"sid":"tunnl_x_use_g"}}`)},
+		},
 	}, &adapters.ExtraRequestInfo{})
 
-	assert.Empty(t, requests)
-	assert.Len(t, errs, 1)
+	assert.Empty(t, errs)
+	assert.Len(t, requests, 2, "one request per distinct sid")
 
-	var badInput *errortypes.BadInput
-	assert.True(t, errors.As(errs[0], &badInput), "expected BadInput, got %T", errs[0])
+	// Grouping preserves the order the sids first appeared in, so the mapping
+	// from request to sid is stable.
+	assert.Equal(t, "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g", requests[0].Uri)
+	assert.Equal(t, []string{"imp-1", "imp-3"}, requests[0].ImpIDs)
+
+	assert.Equal(t, "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_usw_g", requests[1].Uri)
+	assert.Equal(t, []string{"imp-2"}, requests[1].ImpIDs)
+
+	// Every imp in a group must reach the endpoint in one body.
+	var body openrtb2.BidRequest
+	assert.NoError(t, jsonutil.Unmarshal(requests[0].Body, &body))
+	assert.Len(t, body.Imp, 2)
 }
 
 // One bad imp must not prevent the remaining imps from being dispatched.
@@ -86,8 +209,8 @@ func TestMakeRequestsPartialFailure(t *testing.T) {
 	requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
 		ID: "req-1",
 		Imp: []openrtb2.Imp{
-			{ID: "good", Banner: &openrtb2.Banner{}, Ext: []byte(`{"bidder":{}}`)},
-			{ID: "bad", Ext: []byte(`{"bidder":{}}`)},
+			{ID: "good", Banner: &openrtb2.Banner{}, Ext: []byte(testImpExt)},
+			{ID: "bad", Banner: &openrtb2.Banner{}, Ext: []byte(`{"bidder":{}}`)},
 		},
 	}, &adapters.ExtraRequestInfo{})
 
@@ -101,7 +224,7 @@ func TestMakeRequestsPartialFailure(t *testing.T) {
 func TestMakeBidsErrorTypes(t *testing.T) {
 	bidder := buildTestBidder(t)
 	request := &openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{ID: "imp-1"}}}
-	requestData := &adapters.RequestData{Uri: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban"}
+	requestData := &adapters.RequestData{Uri: testURI}
 
 	t.Run("400 is bad input", func(t *testing.T) {
 		_, errs := bidder.MakeBids(request, requestData, &adapters.ResponseData{StatusCode: 400})
@@ -127,17 +250,107 @@ func TestMakeBidsErrorTypes(t *testing.T) {
 	})
 }
 
-// When the bid omits mtype and the request URI cannot be attributed to a format,
-// the bid must be rejected rather than guessed.
-func TestMakeBidsUndeterminableMediaType(t *testing.T) {
+// mtype only exists from ORTB 2.6, so a 2.5 response omits it and the media
+// type has to come from the impression the bid was made against.
+func TestMakeBidsFallsBackToImpMediaType(t *testing.T) {
+	testCases := []struct {
+		name     string
+		imp      openrtb2.Imp
+		expected openrtb_ext.BidType
+	}{
+		{
+			name:     "banner only imp",
+			imp:      openrtb2.Imp{ID: "imp-1", Banner: &openrtb2.Banner{}},
+			expected: openrtb_ext.BidTypeBanner,
+		},
+		{
+			name:     "video only imp",
+			imp:      openrtb2.Imp{ID: "imp-1", Video: &openrtb2.Video{}},
+			expected: openrtb_ext.BidTypeVideo,
+		},
+		{
+			name:     "native only imp",
+			imp:      openrtb2.Imp{ID: "imp-1", Native: &openrtb2.Native{}},
+			expected: openrtb_ext.BidTypeNative,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			bidder := buildTestBidder(t)
+
+			response, errs := bidder.MakeBids(
+				&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{test.imp}},
+				&adapters.RequestData{Uri: testURI},
+				&adapters.ResponseData{
+					StatusCode: 200,
+					Body:       []byte(`{"id":"req-1","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1}]}]}`),
+				})
+
+			assert.Empty(t, errs)
+			assert.Len(t, response.Bids, 1)
+			assert.Equal(t, test.expected, response.Bids[0].BidType)
+		})
+	}
+}
+
+// mtype takes precedence over the impression, so a multi format imp is still
+// attributed correctly when the response says what it bid on.
+func TestMakeBidsPrefersMtype(t *testing.T) {
 	bidder := buildTestBidder(t)
 
-	_, errs := bidder.MakeBids(
-		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{ID: "imp-1"}}},
-		&adapters.RequestData{Uri: "https://us1.rapidtag.net/api/v1/bid?sid=urban"},
+	response, errs := bidder.MakeBids(
+		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{
+			ID:     "imp-1",
+			Banner: &openrtb2.Banner{},
+			Video:  &openrtb2.Video{},
+		}}},
+		&adapters.RequestData{Uri: testURI},
+		&adapters.ResponseData{
+			StatusCode: 200,
+			Body:       []byte(`{"id":"req-1","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1,"mtype":2}]}]}`),
+		})
+
+	assert.Empty(t, errs)
+	assert.Len(t, response.Bids, 1)
+	assert.Equal(t, openrtb_ext.BidTypeVideo, response.Bids[0].BidType)
+}
+
+// A multi format imp gives no single answer without mtype, so guessing would
+// mislabel the creative. Such a bid is rejected.
+func TestMakeBidsRejectsAmbiguousMediaType(t *testing.T) {
+	bidder := buildTestBidder(t)
+
+	response, errs := bidder.MakeBids(
+		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{
+			ID:     "imp-1",
+			Banner: &openrtb2.Banner{},
+			Video:  &openrtb2.Video{},
+		}}},
+		&adapters.RequestData{Uri: testURI},
 		&adapters.ResponseData{
 			StatusCode: 200,
 			Body:       []byte(`{"id":"req-1","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1}]}]}`),
+		})
+
+	assert.Empty(t, response.Bids)
+	assert.Len(t, errs, 1)
+
+	var badServerResponse *errortypes.BadServerResponse
+	assert.True(t, errors.As(errs[0], &badServerResponse), "expected BadServerResponse, got %T", errs[0])
+	assert.Contains(t, errs[0].Error(), "mtype")
+}
+
+// A bid against an imp that was never sent cannot be attributed at all.
+func TestMakeBidsRejectsUnknownImp(t *testing.T) {
+	bidder := buildTestBidder(t)
+
+	_, errs := bidder.MakeBids(
+		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}}},
+		&adapters.RequestData{Uri: testURI},
+		&adapters.ResponseData{
+			StatusCode: 200,
+			Body:       []byte(`{"id":"req-1","seatbid":[{"bid":[{"id":"b1","impid":"nonexistent","price":1}]}]}`),
 		})
 
 	assert.Len(t, errs, 1)
@@ -170,7 +383,7 @@ func TestMakeRequestsForwardsDeviceHeaders(t *testing.T) {
 			name:   "ipv6 and ipv4 are both forwarded",
 			device: &openrtb2.Device{IPv6: "2001:db8::1", IP: "1.2.3.4"},
 			expected: map[string][]string{
-				"X-Forwarded-For": {"2001:db8::1", "1.2.3.4"},
+				"X-Forwarded-For": {"1.2.3.4", "2001:db8::1"},
 			},
 		},
 		{
@@ -187,7 +400,7 @@ func TestMakeRequestsForwardsDeviceHeaders(t *testing.T) {
 			requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
 				ID:     "req-1",
 				Device: test.device,
-				Imp:    []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
+				Imp:    []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}, Ext: []byte(testImpExt)}},
 			}, &adapters.ExtraRequestInfo{})
 
 			assert.Empty(t, errs)
@@ -204,15 +417,14 @@ func TestMakeRequestsForwardsDeviceHeaders(t *testing.T) {
 	}
 }
 
-// An audio bid can never match a Tunnl request, since audio imps are dropped in
-// MakeRequests. It must be rejected rather than relabelled as the format the
-// sub-request happened to be built for.
+// Audio is not a declared capability, so an audio bid can never match what was
+// requested. It must be rejected rather than relabelled.
 func TestMakeBidsRejectsAudioBid(t *testing.T) {
 	bidder := buildTestBidder(t)
 
 	response, errs := bidder.MakeBids(
-		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{ID: "imp-1"}}},
-		&adapters.RequestData{Uri: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban"},
+		&openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}}},
+		&adapters.RequestData{Uri: testURI},
 		&adapters.ResponseData{
 			StatusCode: 200,
 			Body:       []byte(`{"id":"req-1","seatbid":[{"bid":[{"id":"b1","impid":"imp-1","price":1,"mtype":3}]}]}`),
@@ -226,28 +438,32 @@ func TestMakeBidsRejectsAudioBid(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "audio")
 }
 
-// The region lives entirely in the host configured endpoint. A host serving
-// another datacenter overrides it, and both the host and the sid must follow.
+// The region lives in the host configured endpoint. A host serving another
+// datacenter overrides it, and the sid its publishers use must follow.
 func TestHostRegionOverride(t *testing.T) {
 	testCases := []struct {
 		name     string
 		endpoint string
+		sid      string
 		expected string
 	}{
 		{
 			name:     "us is the open source default",
 			endpoint: testEndpoint,
-			expected: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusvid",
+			sid:      "tunnl_x_use_g",
+			expected: "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g",
 		},
 		{
 			name:     "eu",
-			endpoint: "https://eu1.rapidtag.net/api/v1/bid?sid=tunnleu{{.MediaType}}",
-			expected: "https://eu1.rapidtag.net/api/v1/bid?sid=tunnleuvid",
+			endpoint: "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
+			sid:      "tunnl_x_eu_g",
+			expected: "https://eu1.rapidtag.net/api/v1/bid?sid=tunnl_x_eu_g",
 		},
 		{
 			name:     "ap",
-			endpoint: "https://ap1.rapidtag.net/api/v1/bid?sid=tunnlap{{.MediaType}}",
-			expected: "https://ap1.rapidtag.net/api/v1/bid?sid=tunnlapvid",
+			endpoint: "https://ap1.rapidtag.net/api/v1/bid?sid={{.SourceId}}",
+			sid:      "tunnl_x_ap_g",
+			expected: "https://ap1.rapidtag.net/api/v1/bid?sid=tunnl_x_ap_g",
 		},
 	}
 
@@ -261,8 +477,12 @@ func TestHostRegionOverride(t *testing.T) {
 			}
 
 			requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
-				ID:  "req-1",
-				Imp: []openrtb2.Imp{{ID: "imp-1", Video: &openrtb2.Video{}}},
+				ID: "req-1",
+				Imp: []openrtb2.Imp{{
+					ID:    "imp-1",
+					Video: &openrtb2.Video{},
+					Ext:   []byte(`{"bidder":{"sid":"` + test.sid + `"}}`),
+				}},
 			}, &adapters.ExtraRequestInfo{})
 
 			assert.Empty(t, errs)
@@ -272,118 +492,26 @@ func TestHostRegionOverride(t *testing.T) {
 	}
 }
 
-// An imp that declares every supported media type must be split into one
-// single-format request each, with no other media type object left behind.
-func TestMakeRequestsSplitsAllFormats(t *testing.T) {
-	bidder := buildTestBidder(t)
+// A sid is opaque apart from its region, so anything a URL would otherwise
+// reinterpret has to survive into the endpoint intact.
+func TestMakeRequestsEscapesSid(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderTunnl,
+		config.Adapter{Endpoint: "https://proxy.internal/tunnl?sid={{.SourceId}}"},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
 
 	requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
 		ID: "req-1",
 		Imp: []openrtb2.Imp{{
 			ID:     "imp-1",
 			Banner: &openrtb2.Banner{},
-			Video:  &openrtb2.Video{},
-			Native: &openrtb2.Native{},
-			Audio:  &openrtb2.Audio{MIMEs: []string{"audio/mp4"}},
+			Ext:    []byte(`{"bidder":{"sid":"tunnl_x&evil=1_use_g"}}`),
 		}},
 	}, &adapters.ExtraRequestInfo{})
 
 	assert.Empty(t, errs)
-	assert.Len(t, requests, 3)
-
-	uris := make([]string, 0, len(requests))
-	for _, request := range requests {
-		uris = append(uris, request.Uri)
-
-		var body openrtb2.BidRequest
-		assert.NoError(t, jsonutil.Unmarshal(request.Body, &body))
-		assert.Len(t, body.Imp, 1)
-
-		// Audio is not a declared capability and must never be forwarded.
-		assert.Nil(t, body.Imp[0].Audio)
-
-		declared := 0
-		for _, present := range []bool{
-			body.Imp[0].Banner != nil, body.Imp[0].Video != nil, body.Imp[0].Native != nil,
-		} {
-			if present {
-				declared++
-			}
-		}
-		assert.Equal(t, 1, declared, "each split request carries exactly one media type")
-	}
-
-	assert.ElementsMatch(t, []string{
-		"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban",
-		"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusvid",
-		"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusnat",
-	}, uris)
-}
-
-// The media type of a bid is recovered from the URI the adapter itself built,
-// so it must survive an endpoint whose shape the adapter knows nothing about.
-// Anything not emitted by this adapter must not be attributed to a format.
-func TestURIFormatMapping(t *testing.T) {
-	testCases := []struct {
-		name     string
-		endpoint string
-		expected map[string]string
-	}{
-		{
-			name:     "default sid based endpoint",
-			endpoint: testEndpoint,
-			expected: map[string]string{
-				"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban": formatBanner,
-				"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusvid": formatVideo,
-				"https://us1.rapidtag.net/api/v1/bid?sid=tunnlusnat": formatNative,
-			},
-		},
-		{
-			name:     "host proxy that carries no sid at all",
-			endpoint: "https://proxy.internal/tunnl?fmt={{.MediaType}}",
-			expected: map[string]string{
-				"https://proxy.internal/tunnl?fmt=ban": formatBanner,
-				"https://proxy.internal/tunnl?fmt=vid": formatVideo,
-				"https://proxy.internal/tunnl?fmt=nat": formatNative,
-			},
-		},
-		{
-			name:     "media type in the path rather than the query",
-			endpoint: "https://proxy.internal/tunnl/{{.MediaType}}/bid",
-			expected: map[string]string{
-				"https://proxy.internal/tunnl/ban/bid": formatBanner,
-				"https://proxy.internal/tunnl/vid/bid": formatVideo,
-				"https://proxy.internal/tunnl/nat/bid": formatNative,
-			},
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			bidder, buildErr := Builder(openrtb_ext.BidderTunnl,
-				config.Adapter{Endpoint: test.endpoint},
-				config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-			if buildErr != nil {
-				t.Fatalf("Builder returned unexpected error %v", buildErr)
-			}
-
-			assert.Equal(t, test.expected, bidder.(*adapter).uriFormats)
-
-			// A URI this adapter never emits stays unattributed, so a bid arriving
-			// against it is rejected rather than guessed.
-			assert.Empty(t, bidder.(*adapter).uriFormats["https://proxy.internal/bid?sid=urban"])
-		})
-	}
-}
-
-// An endpoint that does not vary by media type would send every format to the
-// same URI and make responses unattributable, so it is rejected at build time
-// rather than silently dropping every bid at auction time.
-func TestBuilderRejectsFormatInvariantEndpoint(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderTunnl,
-		config.Adapter{Endpoint: "https://us1.rapidtag.net/api/v1/bid?sid=tunnlus"},
-		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-
-	assert.Error(t, buildErr)
-	assert.Contains(t, buildErr.Error(), "must vary by media type")
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "https://proxy.internal/tunnl?sid=tunnl_x%26evil%3D1_use_g", requests[0].Uri)
 }

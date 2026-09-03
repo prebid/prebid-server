@@ -5,10 +5,14 @@
       {
         "id": "test-imp-id",
         "audio": {
-          "mimes": ["audio/mp4"]
+          "mimes": [
+            "audio/mp4"
+          ]
         },
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "sid": "tunnl_x_use_g"
+          }
         }
       }
     ]

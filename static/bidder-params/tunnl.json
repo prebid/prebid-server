@@ -4,5 +4,13 @@
   "description": "A schema which validates params accepted by the Tunnl adapter",
   "type": "object",
 
-  "properties": {}
+  "properties": {
+    "sid": {
+      "type": "string",
+      "description": "The sid issued by Tunnl for this publisher and region.",
+      "minLength": 1
+    }
+  },
+
+  "required": ["sid"]
 }

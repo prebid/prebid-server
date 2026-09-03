@@ -24,7 +24,9 @@
         "bidfloor": 0.5,
         "bidfloorcur": "USD",
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "sid": "tunnl_x_use_g"
+          }
         }
       }
     ],
@@ -33,11 +35,17 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusban",
+        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g",
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"],
-          "X-Openrtb-Version": ["2.6"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
         },
         "body": {
           "id": "test-request-id",
@@ -64,13 +72,17 @@
               "bidfloor": 0.5,
               "bidfloorcur": "USD",
               "ext": {
-                "bidder": {}
+                "bidder": {
+                  "sid": "tunnl_x_use_g"
+                }
               }
             }
           ],
           "tmax": 1000
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,

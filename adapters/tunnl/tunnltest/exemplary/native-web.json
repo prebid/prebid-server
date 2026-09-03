@@ -12,7 +12,9 @@
           "ver": "1.2"
         },
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "sid": "tunnl_x_use_g"
+          }
         }
       }
     ]
@@ -20,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnlusnat",
+        "uri": "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_use_g",
         "body": {
           "id": "test-request-id",
           "site": {
@@ -34,12 +36,16 @@
                 "ver": "1.2"
               },
               "ext": {
-                "bidder": {}
+                "bidder": {
+                  "sid": "tunnl_x_use_g"
+                }
               }
             }
           ]
         },
-        "impIDs": ["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
