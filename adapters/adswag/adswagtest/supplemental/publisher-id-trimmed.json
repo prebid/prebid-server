@@ -1,0 +1,87 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "  prebid-test  " } }
+      },
+      {
+        "id": "imp-2",
+        "banner": { "format": [{ "w": 728, "h": 90 }] },
+        "ext": { "bidder": { "publisherId": "prebid-test" } }
+      }
+    ],
+    "site": { "domain": "example.nl" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "format": [{ "w": 300, "h": 250 }] }
+            },
+            {
+              "id": "imp-2",
+              "banner": { "format": [{ "w": 728, "h": 90 }] }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "publisher": { "id": "prebid-test" }
+          }
+        },
+        "impIDs": ["imp-1", "imp-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "imp-1",
+                  "price": 1.2,
+                  "crid": "cr-1",
+                  "adm": "<script src=\"https://cdn.adswag.nl/loader.js\"></script>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "imp-1",
+            "price": 1.2,
+            "crid": "cr-1",
+            "adm": "<script src=\"https://cdn.adswag.nl/loader.js\"></script>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

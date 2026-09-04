@@ -1,0 +1,151 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "prebid-test",
+            "placementId": "prebid-test-display"
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "prebid-test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.nl",
+      "page": "https://example.nl/"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {
+                "format": [{ "w": 300, "h": 250 }]
+              },
+              "ext": {
+                "adswag": { "placement_id": "prebid-test-display" }
+              }
+            },
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 360
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "page": "https://example.nl/",
+            "publisher": { "id": "prebid-test" }
+          }
+        },
+        "impIDs": ["imp-banner", "imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "req-abc-1",
+                  "impid": "imp-banner",
+                  "price": 2.5,
+                  "crid": "cr-1",
+                  "ext": {
+                    "adswag": {
+                      "serve_url": "https://ads.adswag.ai/v1/ad?sc=c2ln&sig=YWJj"
+                    }
+                  }
+                },
+                {
+                  "id": "req-abc-2",
+                  "impid": "imp-video",
+                  "price": 3.0,
+                  "crid": "cr-2",
+                  "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"4.2\"><Ad id=\"req-abc\"><Wrapper><AdSystem>Adswag</AdSystem><VASTAdTagURI><![CDATA[https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj]]></VASTAdTagURI></Wrapper></Ad></VAST>",
+                  "ext": {
+                    "adswag": {
+                      "serve_url": "https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "req-abc-1",
+            "impid": "imp-banner",
+            "price": 2.5,
+            "crid": "cr-1",
+            "adm": "<iframe src=\"https://ads.adswag.ai/v1/ad?sc=c2ln&amp;sig=YWJj\" width=\"300\" height=\"250\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" style=\"border:0\" title=\"Advertisement\"></iframe>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1,
+            "ext": {
+              "adswag": {
+                "serve_url": "https://ads.adswag.ai/v1/ad?sc=c2ln&sig=YWJj"
+              }
+            }
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "req-abc-2",
+            "impid": "imp-video",
+            "price": 3.0,
+            "crid": "cr-2",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"4.2\"><Ad id=\"req-abc\"><Wrapper><AdSystem>Adswag</AdSystem><VASTAdTagURI><![CDATA[https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj]]></VASTAdTagURI></Wrapper></Ad></VAST>",
+            "w": 640,
+            "h": 360,
+            "mtype": 2,
+            "ext": {
+              "adswag": {
+                "serve_url": "https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
