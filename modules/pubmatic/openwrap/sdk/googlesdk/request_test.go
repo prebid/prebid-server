@@ -1505,12 +1505,35 @@ func TestModifyUser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "signal_impdepth_zero_is_copied",
+			request: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: []byte(`{"existingKey":"existingValue"}`),
+				},
+			},
+			signalUser: &openrtb2.User{
+				Ext: []byte(`{"impdepth":0,"sessionduration":3600}`),
+			},
+			expectedResult: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: []byte(`{"existingKey":"existingValue","sessionduration":3600,"impdepth":0}`),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			modifyUser(tt.request, tt.signalUser)
-			assert.Equal(t, tt.expectedResult, tt.request, "Unexpected result for test: %s", tt.name)
+
+			expectedJSON, err := jsoniterator.Marshal(tt.expectedResult)
+			assert.NoError(t, err)
+
+			actualJSON, err := jsoniterator.Marshal(tt.request)
+			assert.NoError(t, err)
+
+			assert.JSONEq(t, string(expectedJSON), string(actualJSON), "Unexpected result for test: %s", tt.name)
 		})
 	}
 }

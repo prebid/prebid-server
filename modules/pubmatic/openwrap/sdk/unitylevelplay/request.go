@@ -302,10 +302,10 @@ func modifyUser(request *openrtb2.BidRequest, signalUser *openrtb2.User) {
 	}
 
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "sessionduration")
-	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "impdepth")
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "consent")
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "eids")
 	request.User.Ext, _ = sdkutils.CopyPath(signalUser.Ext, request.User.Ext, "lastadomain")
+	request.User.Ext = sdkutils.SetIfKeysExists(signalUser.Ext, request.User.Ext, "impdepth")
 }
 
 func modifySource(request *openrtb2.BidRequest, signalSource *openrtb2.Source) {

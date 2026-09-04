@@ -2067,6 +2067,17 @@ func TestUpdateUserExtWithValidValues(t *testing.T) {
 			},
 		},
 		{
+			name: "test_valid_user_ext_impdepth_zero",
+			args: args{
+				user: &openrtb2.User{
+					Ext: json.RawMessage(`{"impdepth":0}`),
+				},
+			},
+			want: &openrtb2.User{
+				Ext: json.RawMessage(`{"impdepth":0}`),
+			},
+		},
+		{
 			name: "test_valid_user_ext_lastadomain",
 			args: args{
 				user: &openrtb2.User{

@@ -1109,6 +1109,18 @@ func TestModifyUser(t *testing.T) {
 				Ext:      []byte(`{"sessionduration":300}`),
 			}},
 		},
+		{
+			name: "signal_impdepth_zero_is_copied",
+			request: &openrtb2.BidRequest{User: &openrtb2.User{
+				Ext: []byte(`{"existingKey":"existingValue"}`),
+			}},
+			signal: &openrtb2.User{
+				Ext: []byte(`{"impdepth":0,"sessionduration":300}`),
+			},
+			expected: &openrtb2.BidRequest{User: &openrtb2.User{
+				Ext: []byte(`{"existingKey":"existingValue","sessionduration":300,"impdepth":0}`),
+			}},
+		},
 	}
 
 	for _, tt := range tests {

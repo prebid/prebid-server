@@ -556,9 +556,9 @@ func UpdateUserExtWithValidValues(user *openrtb2.User) {
 			userExt.SessionDuration = 0
 		}
 
-		if userExt.ImpDepth < 0 {
-			glog.Warningf("Invalid impdepth value: %v. Only positive values are allowed.", userExt.ImpDepth)
-			userExt.ImpDepth = 0
+		if userExt.ImpDepth != nil && *userExt.ImpDepth < 0 {
+			glog.Warningf("Invalid impdepth value: %d. Only non-negative values are allowed.", *userExt.ImpDepth)
+			userExt.ImpDepth = nil
 		}
 		eids := ValidateEIDs(userExt.Eids)
 		userExt.Eids = nil
