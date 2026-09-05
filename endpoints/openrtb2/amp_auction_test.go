@@ -1104,6 +1104,37 @@ func addAmpBadRequests(mapBadRequests map[string]testCase, mockAmpStoredReq map[
 	mockAmpStoredReq["203"] = json.RawMessage(`{"imp":[{},{}]}`)
 }
 
+func TestAmpStoredAuctionResponseErrorsAreReturned(t *testing.T) {
+	storedReq := map[string]json.RawMessage{
+		"sar-missing-id": json.RawMessage(`{"imp":[{"ext":{"prebid":{"storedauctionresponse":{}}}}]}`),
+	}
+
+	endpoint, err := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		&mockAmpExchange{},
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, newParamsValidator(t)),
+		&mockAmpStoredReqFetcher{data: storedReq},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+	)
+	require.NoError(t, err)
+
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?account=test_pub&tag_id=sar-missing-id", nil)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), `storedauctionresponse specified, but "id" field is missing`)
+}
+
 // TestAmpDebug makes sure we get debug information back when requested
 func TestAmpDebug(t *testing.T) {
 	requests := map[string]json.RawMessage{
