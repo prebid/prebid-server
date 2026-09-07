@@ -2,6 +2,7 @@ package currency
 
 import (
 	"errors"
+	"sort"
 
 	"golang.org/x/text/currency"
 )
@@ -23,8 +24,20 @@ func NewRates(conversions map[string]map[string]float64) *Rates {
 // FindIntermediateConversionRate returns the conversion rate between two currencies
 // if a valid conversion exists in the provided rates container.
 // Otherwise, it returns a ConversionNotFoundError.
+//
+// When more than one base/bridge currency in r.Conversions can bridge from and to, the
+// candidates are considered in sorted (lexicographic) key order so the chosen bridge - and
+// therefore the returned rate - is deterministic for a given Rates value, rather than
+// depending on Go's runtime-randomized map iteration order.
 func FindIntermediateConversionRate(r *Rates, from, to currency.Unit) (float64, error) {
-	for _, conversions := range r.Conversions {
+	baseCurrencies := make([]string, 0, len(r.Conversions))
+	for base := range r.Conversions {
+		baseCurrencies = append(baseCurrencies, base)
+	}
+	sort.Strings(baseCurrencies)
+
+	for _, base := range baseCurrencies {
+		conversions := r.Conversions[base]
 		toRate, hasToRate := conversions[to.String()]
 		fromRate, hasFromRate := conversions[from.String()]
 
