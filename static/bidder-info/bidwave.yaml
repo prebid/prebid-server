@@ -1,0 +1,15 @@
+endpoint: "https://rtb.bidwave.net/rtb/v1/bid"
+maintainer:
+  email: "prebid@bidwave.net"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+openrtb:
+  version: 2.6
+  gpp-supported: true
