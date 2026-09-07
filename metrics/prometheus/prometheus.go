@@ -167,14 +167,24 @@ const (
 	storedDataErrorLabel     = "stored_data_error"
 )
 
+// bucketsOrDefault returns configured if the operator supplied an override via
+// config.PrometheusMetricsBuckets, otherwise it returns defaultBuckets - this package's
+// existing hardcoded boundaries - so leaving the override unset changes no behavior.
+func bucketsOrDefault(configured []float64, defaultBuckets []float64) []float64 {
+	if len(configured) > 0 {
+		return configured
+	}
+	return defaultBuckets
+}
+
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
 func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
-	standardTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
-	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
-	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
-	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
-	overheadTimeBuckets := []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
-	requestSizeBuckets := []float64{100, 500, 750, 1000, 2000, 4000, 7000, 10000, 15000, 20000, 50000, 75000}
+	standardTimeBuckets := bucketsOrDefault(cfg.Buckets.StandardTimeBuckets, []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1})
+	cacheWriteTimeBuckets := bucketsOrDefault(cfg.Buckets.CacheWriteTimeBuckets, []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1})
+	priceBuckets := bucketsOrDefault(cfg.Buckets.PriceBuckets, []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000})
+	queuedRequestTimeBuckets := bucketsOrDefault(cfg.Buckets.QueuedRequestTimeBuckets, []float64{0, 1, 5, 30, 60, 120, 180, 240, 300})
+	overheadTimeBuckets := bucketsOrDefault(cfg.Buckets.OverheadTimeBuckets, []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1})
+	requestSizeBuckets := bucketsOrDefault(cfg.Buckets.RequestSizeBuckets, []float64{100, 500, 750, 1000, 2000, 4000, 7000, 10000, 15000, 20000, 50000, 75000})
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
