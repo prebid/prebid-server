@@ -9,12 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/config/util"
 	"github.com/prebid/prebid-server/v4/logger"
-	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // getMultiImpLogSampleRate is the fraction of discarded-impression events written to the
@@ -55,10 +54,16 @@ func enforceSingleImp(httpRequest *http.Request, req *openrtb2.BidRequest, accou
 //
 // Standard transport headers (User-Agent, X-Forwarded-For, …) sit below query
 // params in the precedence order: they are only used when neither an X-Device-*
-// header nor a query param set the field.  See applyGETHeaderParams.
+// header nor a query param set the field.
+//
+// Imp-level params (video/audio/banner dimensions, slot, sarid, displaymanager) are
+// stored in ext.prebid.getImpOverride and applied to each imp AFTER processStoredRequests
+// via applyGETImpOverrideJSON. This preserves stored imp fields (id, ext, mimes) that
+// would otherwise be lost when the imp array is replaced during JSON Merge Patch.
+//
+// Request-level params are built as a sparse map so that explicit zero values (e.g.
+// coppa=0) survive JSON marshalling and correctly override stored request values.
 func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) {
-	// Query strings are length limited by clients and intermediaries. Enforcing an explicit
-	// cap here guards against malicious resource exhaustion attacks.
 	if maxInitialLineLength > 0 {
 		if lineLength := len(r.Method) + 1 + len(r.URL.RequestURI()) + 1 + len(r.Proto); lineLength > maxInitialLineLength {
 			return nil, fmt.Errorf("request line exceeded max size of %d bytes", maxInitialLineLength)
@@ -67,565 +72,233 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) 
 
 	q := r.URL.Query()
 
-	// srid is required — without a stored request we cannot construct a valid auction request.
 	srid := qFirst(q, "srid")
 	if srid == "" {
 		return nil, fmt.Errorf("GET /openrtb2/auction requires 'srid' (stored request ID) query parameter")
 	}
 
-	req := &openrtb2.BidRequest{}
+	reqMap := map[string]interface{}{}
 
-	// Build ext.prebid skeleton
-	prebid := openrtb_ext.ExtRequestPrebid{}
-	prebid.StoredRequest = &openrtb_ext.ExtStoredRequest{ID: srid}
-
-	// Output format / module (for exit-point modules)
+	// ext.prebid skeleton
+	prebidMap := map[string]interface{}{
+		"storedrequest": map[string]interface{}{"id": srid},
+		"server":        map[string]interface{}{"http_method": "GET"},
+	}
 	if of := qFirst(q, "of"); of != "" {
-		prebid.OutputFormat = of
+		prebidMap["of"] = of
 	}
 	if om := qFirst(q, "om"); om != "" {
-		prebid.OutputModule = om
+		prebidMap["om"] = om
 	}
-
-	// debug
 	if d := qFirst(q, "debug"); d == "1" || d == "true" {
-		prebid.Debug = true
-	}
-
-	// Mark request method so exit-point modules can detect GET channel.
-	prebid.Server = &openrtb_ext.ExtRequestPrebidServer{
-		HTTPMethod: http.MethodGet,
+		prebidMap["debug"] = true
 	}
 
 	// tmax
 	if tmaxStr := qFirst(q, "tmax"); tmaxStr != "" {
 		if tmax, err := strconv.ParseInt(tmaxStr, 10, 64); err == nil && tmax >= 100 {
-			req.TMax = tmax
+			reqMap["tmax"] = tmax
 		}
 	}
 
-	// Privacy params
-	applyGETPrivacyParams(q, req)
-
-	// Build imp[0]
-	imp, err := buildImpFromGET(q)
-	if err != nil {
-		return nil, err
-	}
-	req.Imp = []openrtb2.Imp{imp}
+	// Privacy params (sparse — coppa=0 is preserved)
+	applyGETPrivacyParamsToMap(q, reqMap)
 
 	// Publisher ID
 	if pubid := qFirst(q, "pubid"); pubid != "" {
-		if req.Site == nil {
-			req.Site = &openrtb2.Site{}
+		site, _ := reqMap["site"].(map[string]interface{})
+		if site == nil {
+			site = map[string]interface{}{}
+			reqMap["site"] = site
 		}
-		if req.Site.Publisher == nil {
-			req.Site.Publisher = &openrtb2.Publisher{}
+		pub, _ := site["publisher"].(map[string]interface{})
+		if pub == nil {
+			pub = map[string]interface{}{}
+			site["publisher"] = pub
 		}
-		req.Site.Publisher.ID = pubid
+		pub["id"] = pubid
 	}
 
-	// Content params (site.content / app.content)
-	applyGETContentParams(q, req)
-
-	// HTTP header overrides.
-	//
-	// Run AFTER all query-param mapping: per the Tech Response (§3.1 rule 4),
-	// HTTP headers take precedence over conflicting query string values. GET
-	// query strings can be truncated or rewritten by intermediate proxies,
-	// whereas headers are set by the player/device closest to the user, so the
-	// header value is considered the more trustworthy source.
-	applyGETHeaderParams(r.Header, req)
+	// Content params
+	applyGETContentParamsToMap(q, reqMap)
 
 	// Blocking
 	if bcat := qCSV(q, "bcat"); len(bcat) > 0 {
-		req.BCat = bcat
+		reqMap["bcat"] = bcat
 	}
 	if badv := qCSV(q, "badv"); len(badv) > 0 {
-		req.BAdv = badv
+		reqMap["badv"] = badv
 	}
 
-	// Attach ext
-	extWrapper := openrtb_ext.ExtRequest{Prebid: prebid}
-	extBytes, err := json.Marshal(extWrapper)
+	// Imp override — not placed directly in imp array to avoid RFC 7396 array replacement.
+	// Applied to each imp after processStoredRequests by applyGETImpOverrideJSON.
+	impOverride, err := buildImpOverrideFromGET(r.Header, q)
 	if err != nil {
-		return nil, fmt.Errorf("GET request: failed to marshal ext: %w", err)
+		return nil, err
 	}
-	req.Ext = extBytes
+	if len(impOverride) > 0 {
+		prebidMap["getImpOverride"] = json.RawMessage(impOverride)
+	}
 
-	reqBytes, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("GET request: failed to marshal BidRequest: %w", err)
-	}
-	return reqBytes, nil
+	// Header params (device fields; X-Device-Player goes into imp override above)
+	applyGETHeaderParamsToMap(r.Header, reqMap)
+
+	reqMap["ext"] = map[string]interface{}{"prebid": prebidMap}
+
+	return json.Marshal(reqMap)
 }
 
-// buildImpFromGET creates the single impression object from GET query params.
-// GET interface supports exactly one impression per request.
-func buildImpFromGET(q url.Values) (openrtb2.Imp, error) {
-	imp := openrtb2.Imp{}
-
-	// slot → imp.tagid
-	if slot := qFirst(q, "slot"); slot != "" {
-		imp.TagID = slot
-	}
-
-	// stored auction response
-	if sarid := qFirst(q, "sarid"); sarid != "" {
-		ext, err := setGETImpExtField(imp.Ext, "prebid", "storedauctionresponse", map[string]string{"id": sarid})
-		if err != nil {
-			return imp, err
-		}
-		imp.Ext = ext
-	}
-
-	// Determine media type and populate accordingly
-	mtype := qFirst(q, "mtype")
-	switch mtype {
-	case "2", "vid":
-		v := &openrtb2.Video{}
-		applyGETVideoParams(q, v)
-		imp.Video = v
-	case "3", "aud":
-		a := &openrtb2.Audio{}
-		applyGETAudioParams(q, a)
-		imp.Audio = a
-	default:
-		// Default to banner (mtype=1 or empty)
-		b := &openrtb2.Banner{}
-		applyGETBannerParams(q, b)
-		if b.W != nil || b.H != nil || len(b.Format) > 0 {
-			imp.Banner = b
-		}
-	}
-
-	return imp, nil
-}
-
-func applyGETBannerParams(q url.Values, b *openrtb2.Banner) {
-	if w := qInt(q, "w"); w > 0 {
-		w64 := int64(w)
-		b.W = &w64
-	}
-	if h := qInt(q, "h"); h > 0 {
-		h64 := int64(h)
-		b.H = &h64
-	}
-	if pos := qInt(q, "pos"); pos >= 0 {
-		p := adcom1.PlacementPosition(pos)
-		b.Pos = &p
-	}
-	if topframe := qInt(q, "topframe"); topframe >= 0 {
-		tf := int8(topframe)
-		b.TopFrame = tf
-	}
-	if battr := qInts(q, "battr"); len(battr) > 0 {
-		for _, ba := range battr {
-			b.BAttr = append(b.BAttr, adcom1.CreativeAttribute(ba))
-		}
-	}
-	if btype := qInts(q, "btype"); len(btype) > 0 {
-		for _, bt := range btype {
-			b.BType = append(b.BType, openrtb2.BannerAdType(bt))
-		}
-	}
-	if expdir := qInts(q, "expdir"); len(expdir) > 0 {
-		for _, ed := range expdir {
-			b.ExpDir = append(b.ExpDir, adcom1.ExpandableDirection(ed))
-		}
-	}
-	if mimes := qCSV(q, "mimes"); len(mimes) > 0 {
-		b.MIMEs = mimes
-	}
-	if api := qInts(q, "api"); len(api) > 0 {
-		for _, a := range api {
-			b.API = append(b.API, adcom1.APIFramework(a))
-		}
-	}
-}
-
-func applyGETVideoParams(q url.Values, v *openrtb2.Video) {
-	if mindur := qInt(q, "mindur"); mindur > 0 {
-		v.MinDuration = int64(mindur)
-	}
-	if maxdur := qInt(q, "maxdur"); maxdur > 0 {
-		v.MaxDuration = int64(maxdur)
-	}
-	if w := qInt(q, "w"); w > 0 {
-		w64 := int64(w)
-		v.W = &w64
-	}
-	if h := qInt(q, "h"); h > 0 {
-		h64 := int64(h)
-		v.H = &h64
-	}
-	if skip := qInt(q, "skip"); skip >= 0 {
-		s := int8(skip)
-		v.Skip = &s
-	}
-	if skipmin := qInt(q, "skipmin"); skipmin > 0 {
-		v.SkipMin = int64(skipmin)
-	}
-	if skipafter := qInt(q, "skipafter"); skipafter > 0 {
-		v.SkipAfter = int64(skipafter)
-	}
-	if startdelay := qInt(q, "startdelay"); startdelay != -1 {
-		sd := adcom1.StartDelay(startdelay)
-		v.StartDelay = &sd
-	}
-	if linearity := qInt(q, "linearity"); linearity > 0 {
-		v.Linearity = adcom1.LinearityMode(linearity)
-	}
-	if placement := qInt(q, "placement"); placement > 0 {
-		v.Placement = adcom1.VideoPlacementSubtype(placement)
-	}
-	if plcmt := qInt(q, "plcmt"); plcmt > 0 {
-		v.Plcmt = adcom1.VideoPlcmtSubtype(plcmt)
-	}
-	if pos := qInt(q, "pos"); pos >= 0 {
-		p := adcom1.PlacementPosition(pos)
-		v.Pos = &p
-	}
-	if poddur := qInt(q, "poddur"); poddur > 0 {
-		v.PodDur = int64(poddur)
-	}
-	if podid := qFirst(q, "podid"); podid != "" {
-		v.PodID = podid
-	}
-	if podseq := qInt(q, "podseq"); podseq != -1 {
-		v.PodSeq = adcom1.PodSequence(podseq)
-	}
-	if seq := qInt(q, "seq"); seq > 0 {
-		v.Sequence = int8(seq)
-	}
-	if slotinpod := qInt(q, "slotinpod"); slotinpod != -1 {
-		v.SlotInPod = adcom1.SlotPositionInPod(slotinpod)
-	}
-	if minbr := qInt(q, "minbr"); minbr > 0 {
-		v.MinBitRate = int64(minbr)
-	}
-	if maxbr := qInt(q, "maxbr"); maxbr > 0 {
-		v.MaxBitRate = int64(maxbr)
-	}
-	if maxex := qInt(q, "maxex"); maxex != -1 {
-		v.MaxExtended = int64(maxex)
-	}
-	if playbackend := qInt(q, "playbackend"); playbackend > 0 {
-		v.PlaybackEnd = adcom1.PlaybackCessationMode(playbackend)
-	}
-	if boxingallowed := qInt(q, "boxingallowed"); boxingallowed >= 0 {
-		ba := int8(boxingallowed)
-		v.BoxingAllowed = &ba
-	}
-	if mimes := qCSV(q, "mimes"); len(mimes) > 0 {
-		v.MIMEs = mimes
-	}
-	if proto := qInts(q, "proto"); len(proto) > 0 {
-		for _, p := range proto {
-			v.Protocols = append(v.Protocols, adcom1.MediaCreativeSubtype(p))
-		}
-	}
-	if api := qInts(q, "api"); len(api) > 0 {
-		for _, a := range api {
-			v.API = append(v.API, adcom1.APIFramework(a))
-		}
-	}
-	if delivery := qInts(q, "delivery"); len(delivery) > 0 {
-		for _, d := range delivery {
-			v.Delivery = append(v.Delivery, adcom1.DeliveryMethod(d))
-		}
-	}
-	if battr := qInts(q, "battr"); len(battr) > 0 {
-		for _, ba := range battr {
-			v.BAttr = append(v.BAttr, adcom1.CreativeAttribute(ba))
-		}
-	}
-	if playbackmethod := qInts(q, "playbackmethod"); len(playbackmethod) > 0 {
-		for _, pm := range playbackmethod {
-			v.PlaybackMethod = append(v.PlaybackMethod, adcom1.PlaybackMethod(pm))
-		}
-	}
-	if rqddurs := qInts(q, "rqddurs"); len(rqddurs) > 0 {
-		for _, rd := range rqddurs {
-			v.RqdDurs = append(v.RqdDurs, int64(rd))
-		}
-	}
-	if maxseq := qInt(q, "maxseq"); maxseq > 0 {
-		v.MaxSeq = int64(maxseq)
-	}
-	if mincpms := qInt(q, "mincpms"); mincpms > 0 {
-		v.MinCPMPerSec = float64(mincpms)
-	}
-}
-
-func applyGETAudioParams(q url.Values, a *openrtb2.Audio) {
-	if mindur := qInt(q, "mindur"); mindur > 0 {
-		a.MinDuration = int64(mindur)
-	}
-	if maxdur := qInt(q, "maxdur"); maxdur > 0 {
-		a.MaxDuration = int64(maxdur)
-	}
-	if minbr := qInt(q, "minbr"); minbr > 0 {
-		a.MinBitrate = int64(minbr)
-	}
-	if maxbr := qInt(q, "maxbr"); maxbr > 0 {
-		a.MaxBitrate = int64(maxbr)
-	}
-	if maxseq := qInt(q, "maxseq"); maxseq > 0 {
-		a.MaxSeq = int64(maxseq)
-	}
-	if stitched := qInt(q, "stitched"); stitched >= 0 {
-		s := int8(stitched)
-		a.Stitched = &s
-	}
-	if feed := qInt(q, "feed"); feed > 0 {
-		a.Feed = adcom1.FeedType(feed)
-	}
-	if nvol := qInt(q, "nvol"); nvol > 0 {
-		nvolVal := adcom1.VolumeNormalizationMode(nvol)
-		a.NVol = &nvolVal
-	}
-	if mimes := qCSV(q, "mimes"); len(mimes) > 0 {
-		a.MIMEs = mimes
-	}
-	if api := qInts(q, "api"); len(api) > 0 {
-		for _, ap := range api {
-			a.API = append(a.API, adcom1.APIFramework(ap))
-		}
-	}
-	if delivery := qInts(q, "delivery"); len(delivery) > 0 {
-		for _, d := range delivery {
-			a.Delivery = append(a.Delivery, adcom1.DeliveryMethod(d))
-		}
-	}
-	if battr := qInts(q, "battr"); len(battr) > 0 {
-		for _, ba := range battr {
-			a.BAttr = append(a.BAttr, adcom1.CreativeAttribute(ba))
-		}
-	}
-	if proto := qInts(q, "proto"); len(proto) > 0 {
-		for _, p := range proto {
-			a.Protocols = append(a.Protocols, adcom1.MediaCreativeSubtype(p))
-		}
-	}
-	if startdelay := qInt(q, "startdelay"); startdelay != -1 {
-		sd := adcom1.StartDelay(startdelay)
-		a.StartDelay = &sd
-	}
-	if poddur := qInt(q, "poddur"); poddur > 0 {
-		a.PodDur = int64(poddur)
-	}
-	if podid := qFirst(q, "podid"); podid != "" {
-		a.PodID = podid
-	}
-	if podseq := qInt(q, "podseq"); podseq != -1 {
-		a.PodSeq = adcom1.PodSequence(podseq)
-	}
-	if seq := qInt(q, "seq"); seq > 0 {
-		a.Sequence = int64(seq)
-	}
-	if slotinpod := qInt(q, "slotinpod"); slotinpod != -1 {
-		a.SlotInPod = adcom1.SlotPositionInPod(slotinpod)
-	}
-	if mincpms := qInt(q, "mincpms"); mincpms > 0 {
-		a.MinCPMPerSec = float64(mincpms)
-	}
-	if rqddurs := qInts(q, "rqddurs"); len(rqddurs) > 0 {
-		for _, rd := range rqddurs {
-			a.RqdDurs = append(a.RqdDurs, int64(rd))
-		}
-	}
-	// Note: openrtb2.Audio has no Linearity field — audio linearity is not an OpenRTB 2.x concept.
-	// The linearity param is silently ignored for audio requests.
-}
-
-func applyGETPrivacyParams(q url.Values, req *openrtb2.BidRequest) {
-	regs := &openrtb2.Regs{}
-	hasRegs := false
+// applyGETPrivacyParamsToMap writes privacy-related query params into reqMap as a
+// sparse map. Using maps (rather than marshalling structs) ensures that explicit
+// zero values like coppa=0 appear in the JSON output and correctly override stored
+// request values during the MergePatch merge.
+func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
+	regsMap := map[string]interface{}{}
 
 	if gdpr := qInt(q, "gdpr", "gdpr_applies"); gdpr >= 0 {
-		g := int8(gdpr)
-		regs.GDPR = &g
-		hasRegs = true
+		regsMap["gdpr"] = gdpr
 	}
 	if gpp := qFirst(q, "gppc"); gpp != "" {
-		regs.GPP = gpp
-		hasRegs = true
+		regsMap["gpp"] = gpp
 	}
 	if gpps := qCSV(q, "gpps"); len(gpps) > 0 {
+		var ids []int
 		for _, s := range gpps {
 			if i := qParseInt(s); i > 0 {
-				regs.GPPSID = append(regs.GPPSID, int8(i))
+				ids = append(ids, i)
 			}
 		}
-		hasRegs = true
+		if len(ids) > 0 {
+			regsMap["gppsid"] = ids
+		}
 	}
 	if coppa := qInt(q, "coppa"); coppa >= 0 {
-		regs.COPPA = int8(coppa)
-		hasRegs = true
+		regsMap["coppa"] = coppa
 	}
 	if usp := qFirst(q, "usp"); usp != "" {
-		regs.USPrivacy = usp
-		hasRegs = true
+		regsMap["us_privacy"] = usp
 	}
-	if hasRegs {
-		req.Regs = regs
+	if len(regsMap) > 0 {
+		reqMap["regs"] = regsMap
 	}
 
-	// user.consent (GDPR TCF string)
 	if consent := qFirst(q, "gdpr_consent", "consent_string", "tcfc", "cs"); consent != "" {
-		if req.User == nil {
-			req.User = &openrtb2.User{}
+		userMap, _ := reqMap["user"].(map[string]interface{})
+		if userMap == nil {
+			userMap = map[string]interface{}{}
 		}
-		req.User.Consent = consent
+		userMap["consent"] = consent
+		reqMap["user"] = userMap
 	}
 
-	// device fields
+	deviceMap, _ := reqMap["device"].(map[string]interface{})
+	if deviceMap == nil {
+		deviceMap = map[string]interface{}{}
+	}
 	if dnt := qInt(q, "dnt"); dnt >= 0 {
-		d := int8(dnt)
-		if req.Device == nil {
-			req.Device = &openrtb2.Device{}
-		}
-		req.Device.DNT = &d
+		deviceMap["dnt"] = dnt
 	}
 	if lmt := qInt(q, "lmt"); lmt >= 0 {
-		l := int8(lmt)
-		if req.Device == nil {
-			req.Device = &openrtb2.Device{}
-		}
-		req.Device.Lmt = &l
+		deviceMap["lmt"] = lmt
 	}
 	if ifa := qFirst(q, "ifa"); ifa != "" {
-		if req.Device == nil {
-			req.Device = &openrtb2.Device{}
-		}
-		req.Device.IFA = ifa
+		deviceMap["ifa"] = ifa
 	}
 	if ua := qFirst(q, "ua"); ua != "" {
-		if req.Device == nil {
-			req.Device = &openrtb2.Device{}
-		}
-		req.Device.UA = ua
+		deviceMap["ua"] = ua
 	}
 	if dtype := qFirst(q, "dtype"); dtype != "" {
-		if req.Device == nil {
-			req.Device = &openrtb2.Device{}
-		}
 		if dt := qParseInt(dtype); dt > 0 {
-			req.Device.DeviceType = adcom1.DeviceType(dt)
+			deviceMap["devicetype"] = dt
 		}
+	}
+	if len(deviceMap) > 0 {
+		reqMap["device"] = deviceMap
 	}
 }
 
-func applyGETContentParams(q url.Values, req *openrtb2.BidRequest) {
-	content := &openrtb2.Content{}
-	hasContent := false
+// applyGETContentParamsToMap writes content-related query params into the
+// site.content or app.content sub-object in reqMap.
+func applyGETContentParamsToMap(q url.Values, reqMap map[string]interface{}) {
+	contentMap := map[string]interface{}{}
 
 	if genre := qFirst(q, "cgenre"); genre != "" {
-		content.Genre = genre
-		hasContent = true
+		contentMap["genre"] = genre
 	}
 	if lang := qFirst(q, "clang"); lang != "" {
-		content.Language = lang
-		hasContent = true
+		contentMap["language"] = lang
 	}
 	if rating := qFirst(q, "crating"); rating != "" {
-		content.ContentRating = rating
-		hasContent = true
+		contentMap["contentrating"] = rating
 	}
 	if title := qFirst(q, "ctitle"); title != "" {
-		content.Title = title
-		hasContent = true
+		contentMap["title"] = title
 	}
 	if series := qFirst(q, "cseries"); series != "" {
-		content.Series = series
-		hasContent = true
+		contentMap["series"] = series
 	}
 	if curl := qFirst(q, "curl", "url_override"); curl != "" {
-		content.URL = curl
-		hasContent = true
+		contentMap["url"] = curl
 	}
 	if livestream := qInt(q, "clivestream"); livestream >= 0 {
-		ls := int8(livestream)
-		content.LiveStream = &ls
-		hasContent = true
+		contentMap["livestream"] = livestream
 	}
 
-	if !hasContent {
+	if len(contentMap) == 0 {
 		return
 	}
 
-	if req.Site != nil {
-		req.Site.Content = content
-	} else if req.App != nil {
-		req.App.Content = content
+	if site, ok := reqMap["site"].(map[string]interface{}); ok {
+		site["content"] = contentMap
+	} else if app, ok := reqMap["app"].(map[string]interface{}); ok {
+		app["content"] = contentMap
 	} else {
-		// Default to site context
-		req.Site = &openrtb2.Site{Content: content}
+		reqMap["site"] = map[string]interface{}{"content": contentMap}
 	}
 }
 
-// applyGETHeaderParams maps the X-Device-* HTTP headers onto the bid request.
-//
-// Precedence for ua and ip (three tiers):
+// applyGETHeaderParamsToMap writes X-Device-* header values into the device sub-map
+// of reqMap, applying three-tier precedence for ua and ip:
 //  1. X-Device-User-Agent / X-Device-IP — always override, including query params.
-//  2. Query params (ua, ip) — already applied; survive when X-Device-* is absent.
-//  3. Standard transport headers (User-Agent, X-Forwarded-For, …) — fallback only;
-//     consulted only when neither X-Device-* nor a query param set the field.
+//  2. Query params (already in deviceMap) — survive when X-Device-* is absent.
+//  3. Standard transport headers (User-Agent, X-Forwarded-For, …) — fallback only.
 //
-// The transport-header tier exists because in SSAI/CTV the stitcher's own IP and
-// User-Agent appear on the wire rather than the viewer's; a query param explicitly
-// supplied by the player is therefore a more trustworthy source than those headers.
-//
-// Required:
-//   - X-Device-IP         → device.ip / device.ipv6
-//   - X-Device-User-Agent → device.ua
-//
-// Optional:
-//   - X-Device-Make       → device.make
-//   - X-Device-Model      → device.model
-//   - X-Device-Os         → device.os
-//   - X-Device-Player     → imp[0].displaymanager
-func applyGETHeaderParams(h http.Header, req *openrtb2.BidRequest) {
-	device := func() *openrtb2.Device {
-		if req.Device == nil {
-			req.Device = &openrtb2.Device{}
-		}
-		return req.Device
+// X-Device-Player is handled in buildImpOverrideFromGET (imp-level field).
+func applyGETHeaderParamsToMap(h http.Header, reqMap map[string]interface{}) {
+	deviceMap, _ := reqMap["device"].(map[string]interface{})
+	if deviceMap == nil {
+		deviceMap = map[string]interface{}{}
 	}
 
-	// device.ua — three-tier precedence: X-Device-User-Agent > query param > User-Agent.
+	// ua — three-tier
 	if xdua := strings.TrimSpace(h.Get("X-Device-User-Agent")); xdua != "" {
-		device().UA = xdua
-	} else if req.Device == nil || req.Device.UA == "" {
+		deviceMap["ua"] = xdua
+	} else if _, hasUA := deviceMap["ua"]; !hasUA {
 		if ua := strings.TrimSpace(h.Get("User-Agent")); ua != "" {
-			device().UA = ua
+			deviceMap["ua"] = ua
 		}
 	}
 
-	// device.ip / device.ipv6 — three-tier precedence: X-Device-IP > query param > proxy headers.
-	// X-Forwarded-For may carry a comma-separated chain; the first entry is the originating client.
-	applyGETIPHeaders(h, req, device)
+	// ip — three-tier
+	applyGETIPToMap(h, deviceMap)
 
 	if make := firstHeader(h, "X-Device-Make"); make != "" {
-		device().Make = make
+		deviceMap["make"] = make
 	}
 	if model := firstHeader(h, "X-Device-Model"); model != "" {
-		device().Model = model
+		deviceMap["model"] = model
 	}
 	if os := firstHeader(h, "X-Device-Os"); os != "" {
-		device().OS = os
+		deviceMap["os"] = os
 	}
 
-	// imp[0].displaymanager - the audio/video player identifier.
-	if player := firstHeader(h, "X-Device-Player"); player != "" && len(req.Imp) > 0 {
-		req.Imp[0].DisplayManager = player
+	if len(deviceMap) > 0 {
+		reqMap["device"] = deviceMap
 	}
 }
 
-// applyGETIPHeaders applies the three-tier IP precedence:
-// X-Device-IP (override) > query param already set > proxy headers (fallback).
-func applyGETIPHeaders(h http.Header, req *openrtb2.BidRequest, device func() *openrtb2.Device) {
+// applyGETIPToMap applies the three-tier IP precedence directly to a device map.
+func applyGETIPToMap(h http.Header, deviceMap map[string]interface{}) {
 	if xdip := strings.TrimSpace(h.Get("X-Device-IP")); xdip != "" {
 		if comma := strings.IndexByte(xdip, ','); comma >= 0 {
 			xdip = xdip[:comma]
@@ -633,16 +306,18 @@ func applyGETIPHeaders(h http.Header, req *openrtb2.BidRequest, device func() *o
 		xdip = strings.TrimSpace(xdip)
 		if parsed := net.ParseIP(xdip); parsed != nil {
 			if parsed.To4() != nil {
-				device().IP = xdip
+				deviceMap["ip"] = xdip
 			} else {
-				device().IPv6 = xdip
+				deviceMap["ipv6"] = xdip
 			}
 		}
 		return
 	}
 
-	// Only consult proxy headers if no query param (or prior source) set device.ip/ipv6.
-	if req.Device != nil && (req.Device.IP != "" || req.Device.IPv6 != "") {
+	// Transport headers are fallback only; don't overwrite a query-param-set ip.
+	_, hasIP := deviceMap["ip"]
+	_, hasIPv6 := deviceMap["ipv6"]
+	if hasIP || hasIPv6 {
 		return
 	}
 
@@ -653,12 +328,329 @@ func applyGETIPHeaders(h http.Header, req *openrtb2.BidRequest, device func() *o
 		ip = strings.TrimSpace(ip)
 		if parsed := net.ParseIP(ip); parsed != nil {
 			if parsed.To4() != nil {
-				device().IP = ip
+				deviceMap["ip"] = ip
 			} else {
-				device().IPv6 = ip
+				deviceMap["ipv6"] = ip
 			}
 		}
 	}
+}
+
+// buildImpOverrideFromGET builds a sparse imp JSON object containing only the
+// query params that were explicitly set. It is stored in ext.prebid.getImpOverride
+// and applied to each imp after processStoredRequests, so stored imp fields (id,
+// ext with bidder params, mimes) are preserved and only the GET-specific fields
+// (w, h, etc.) are overlaid via RFC 7396 recursive object merge.
+func buildImpOverrideFromGET(h http.Header, q url.Values) (json.RawMessage, error) {
+	impMap := map[string]interface{}{}
+
+	if slot := qFirst(q, "slot"); slot != "" {
+		impMap["tagid"] = slot
+	}
+
+	if sarid := qFirst(q, "sarid"); sarid != "" {
+		ext, err := setGETImpExtField(nil, "prebid", "storedauctionresponse", map[string]string{"id": sarid})
+		if err != nil {
+			return nil, err
+		}
+		impMap["ext"] = json.RawMessage(ext)
+	}
+
+	mtype := qFirst(q, "mtype")
+	switch mtype {
+	case "2", "vid":
+		if vm := buildSparseVideoParams(q); len(vm) > 0 {
+			impMap["video"] = vm
+		}
+	case "3", "aud":
+		if am := buildSparseAudioParams(q); len(am) > 0 {
+			impMap["audio"] = am
+		}
+	default:
+		if bm := buildSparseBannerParams(q); len(bm) > 0 {
+			impMap["banner"] = bm
+		}
+	}
+
+	if player := strings.TrimSpace(h.Get("X-Device-Player")); player != "" {
+		impMap["displaymanager"] = player
+	}
+
+	if len(impMap) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(impMap)
+}
+
+func buildSparseVideoParams(q url.Values) map[string]interface{} {
+	m := map[string]interface{}{}
+	if v := qInt(q, "mindur"); v > 0 {
+		m["minduration"] = v
+	}
+	if v := qInt(q, "maxdur"); v > 0 {
+		m["maxduration"] = v
+	}
+	if v := qInt(q, "w"); v > 0 {
+		m["w"] = v
+	}
+	if v := qInt(q, "h"); v > 0 {
+		m["h"] = v
+	}
+	if v := qInt(q, "skip"); v >= 0 {
+		m["skip"] = v
+	}
+	if v := qInt(q, "skipmin"); v > 0 {
+		m["skipmin"] = v
+	}
+	if v := qInt(q, "skipafter"); v > 0 {
+		m["skipafter"] = v
+	}
+	if v := qInt(q, "startdelay"); v != -1 {
+		m["startdelay"] = v
+	}
+	if v := qInt(q, "linearity"); v > 0 {
+		m["linearity"] = v
+	}
+	if v := qInt(q, "placement"); v > 0 {
+		m["placement"] = v
+	}
+	if v := qInt(q, "plcmt"); v > 0 {
+		m["plcmt"] = v
+	}
+	if v := qInt(q, "pos"); v >= 0 {
+		m["pos"] = v
+	}
+	if v := qInt(q, "poddur"); v > 0 {
+		m["poddur"] = v
+	}
+	if v := qFirst(q, "podid"); v != "" {
+		m["podid"] = v
+	}
+	if v := qInt(q, "podseq"); v != -1 {
+		m["podseq"] = v
+	}
+	if v := qInt(q, "seq"); v > 0 {
+		m["sequence"] = v
+	}
+	if v := qInt(q, "slotinpod"); v != -1 {
+		m["slotinpod"] = v
+	}
+	if v := qInt(q, "minbr"); v > 0 {
+		m["minbitrate"] = v
+	}
+	if v := qInt(q, "maxbr"); v > 0 {
+		m["maxbitrate"] = v
+	}
+	if v := qInt(q, "maxex"); v != -1 {
+		m["maxextended"] = v
+	}
+	if v := qInt(q, "playbackend"); v > 0 {
+		m["playbackend"] = v
+	}
+	if v := qInt(q, "boxingallowed"); v >= 0 {
+		m["boxingallowed"] = v
+	}
+	if v := qInt(q, "maxseq"); v > 0 {
+		m["maxseq"] = v
+	}
+	if v := qInt(q, "mincpms"); v > 0 {
+		m["mincpmpersec"] = float64(v)
+	}
+	if v := qCSV(q, "mimes"); len(v) > 0 {
+		m["mimes"] = v
+	}
+	if v := qInts(q, "proto"); len(v) > 0 {
+		m["protocols"] = v
+	}
+	if v := qInts(q, "api"); len(v) > 0 {
+		m["api"] = v
+	}
+	if v := qInts(q, "delivery"); len(v) > 0 {
+		m["delivery"] = v
+	}
+	if v := qInts(q, "battr"); len(v) > 0 {
+		m["battr"] = v
+	}
+	if v := qInts(q, "playbackmethod"); len(v) > 0 {
+		m["playbackmethod"] = v
+	}
+	if v := qInts(q, "rqddurs"); len(v) > 0 {
+		m["rqddurs"] = v
+	}
+	return m
+}
+
+func buildSparseAudioParams(q url.Values) map[string]interface{} {
+	m := map[string]interface{}{}
+	if v := qInt(q, "mindur"); v > 0 {
+		m["minduration"] = v
+	}
+	if v := qInt(q, "maxdur"); v > 0 {
+		m["maxduration"] = v
+	}
+	if v := qInt(q, "minbr"); v > 0 {
+		m["minbitrate"] = v
+	}
+	if v := qInt(q, "maxbr"); v > 0 {
+		m["maxbitrate"] = v
+	}
+	if v := qInt(q, "maxseq"); v > 0 {
+		m["maxseq"] = v
+	}
+	if v := qInt(q, "stitched"); v >= 0 {
+		m["stitched"] = v
+	}
+	if v := qInt(q, "feed"); v > 0 {
+		m["feed"] = v
+	}
+	if v := qInt(q, "nvol"); v > 0 {
+		m["nvol"] = v
+	}
+	if v := qCSV(q, "mimes"); len(v) > 0 {
+		m["mimes"] = v
+	}
+	if v := qInts(q, "api"); len(v) > 0 {
+		m["api"] = v
+	}
+	if v := qInts(q, "delivery"); len(v) > 0 {
+		m["delivery"] = v
+	}
+	if v := qInts(q, "battr"); len(v) > 0 {
+		m["battr"] = v
+	}
+	if v := qInts(q, "proto"); len(v) > 0 {
+		m["protocols"] = v
+	}
+	if v := qInt(q, "startdelay"); v != -1 {
+		m["startdelay"] = v
+	}
+	if v := qInt(q, "poddur"); v > 0 {
+		m["poddur"] = v
+	}
+	if v := qFirst(q, "podid"); v != "" {
+		m["podid"] = v
+	}
+	if v := qInt(q, "podseq"); v != -1 {
+		m["podseq"] = v
+	}
+	if v := qInt(q, "seq"); v > 0 {
+		m["sequence"] = v
+	}
+	if v := qInt(q, "slotinpod"); v != -1 {
+		m["slotinpod"] = v
+	}
+	if v := qInt(q, "mincpms"); v > 0 {
+		m["mincpmpersec"] = float64(v)
+	}
+	if v := qInts(q, "rqddurs"); len(v) > 0 {
+		m["rqddurs"] = v
+	}
+	return m
+}
+
+func buildSparseBannerParams(q url.Values) map[string]interface{} {
+	m := map[string]interface{}{}
+	if v := qInt(q, "w"); v > 0 {
+		m["w"] = v
+	}
+	if v := qInt(q, "h"); v > 0 {
+		m["h"] = v
+	}
+	if v := qInt(q, "pos"); v >= 0 {
+		m["pos"] = v
+	}
+	if v := qInt(q, "topframe"); v >= 0 {
+		m["topframe"] = v
+	}
+	if v := qInts(q, "battr"); len(v) > 0 {
+		m["battr"] = v
+	}
+	if v := qInts(q, "btype"); len(v) > 0 {
+		m["btype"] = v
+	}
+	if v := qInts(q, "expdir"); len(v) > 0 {
+		m["expdir"] = v
+	}
+	if v := qCSV(q, "mimes"); len(v) > 0 {
+		m["mimes"] = v
+	}
+	if v := qInts(q, "api"); len(v) > 0 {
+		m["api"] = v
+	}
+	return m
+}
+
+// applyGETImpOverrideJSON extracts ext.prebid.getImpOverride from requestJSON,
+// applies it as a MergePatch to every imp in the request, and returns the
+// cleaned-up JSON with getImpOverride removed.
+//
+// Called by auction.go immediately after processStoredRequests for GET requests,
+// so stored imp fields survive the top-level merge and GET-specific fields are
+// overlaid per RFC 7396 recursive object merging rules.
+func applyGETImpOverrideJSON(requestJSON []byte) ([]byte, error) {
+	var reqMap map[string]json.RawMessage
+	if err := jsonutil.UnmarshalValid(requestJSON, &reqMap); err != nil {
+		return nil, err
+	}
+
+	extRaw, hasExt := reqMap["ext"]
+	if !hasExt {
+		return requestJSON, nil
+	}
+	var extMap map[string]json.RawMessage
+	if err := jsonutil.UnmarshalValid(extRaw, &extMap); err != nil {
+		return nil, err
+	}
+
+	prebidRaw, hasPrebid := extMap["prebid"]
+	if !hasPrebid {
+		return requestJSON, nil
+	}
+	var prebidMap map[string]json.RawMessage
+	if err := jsonutil.UnmarshalValid(prebidRaw, &prebidMap); err != nil {
+		return nil, err
+	}
+
+	impOverride, hasOverride := prebidMap["getImpOverride"]
+	if !hasOverride {
+		return requestJSON, nil
+	}
+
+	delete(prebidMap, "getImpOverride")
+
+	impsRaw, hasImps := reqMap["imp"]
+	if hasImps && len(impsRaw) > 0 {
+		var imps []json.RawMessage
+		if err := jsonutil.UnmarshalValid(impsRaw, &imps); err != nil {
+			return nil, err
+		}
+		for i, imp := range imps {
+			merged, err := jsonpatch.MergePatch(imp, impOverride)
+			if err != nil {
+				return nil, fmt.Errorf("applying GET imp override to imp[%d]: %w", i, err)
+			}
+			imps[i] = merged
+		}
+		impsBytes, err := json.Marshal(imps)
+		if err != nil {
+			return nil, err
+		}
+		reqMap["imp"] = impsBytes
+	}
+
+	prebidBytes, err := json.Marshal(prebidMap)
+	if err != nil {
+		return nil, err
+	}
+	extMap["prebid"] = prebidBytes
+
+	extBytes, err := json.Marshal(extMap)
+	if err != nil {
+		return nil, err
+	}
+	reqMap["ext"] = extBytes
+
+	return json.Marshal(reqMap)
 }
 
 // firstHeader returns the first non-empty value among the given header names.

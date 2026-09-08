@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 // parseGETResult is a helper that parses the raw JSON returned by parseGETRequest
@@ -38,24 +39,18 @@ func getExtPrebid(t *testing.T, m map[string]interface{}) map[string]interface{}
 	return prebidMap
 }
 
-// getImpExtPrebid extracts imp[0].ext.prebid as a map.
-func getImpExtPrebid(t *testing.T, m map[string]interface{}) map[string]interface{} {
+// getImpOverrideMap extracts ext.prebid.getImpOverride as a map.
+// Returns nil when no imp-specific params were set.
+func getImpOverrideMap(t *testing.T, m map[string]interface{}) map[string]interface{} {
 	t.Helper()
-	impsRaw, ok := m["imp"]
-	require.True(t, ok, "imp missing")
-	imps, ok := impsRaw.([]interface{})
-	require.True(t, ok && len(imps) > 0, "imp not a non-empty array")
-	impMap, ok := imps[0].(map[string]interface{})
-	require.True(t, ok, "imp[0] not a map")
-	extRaw, ok := impMap["ext"]
-	require.True(t, ok, "imp[0].ext missing")
-	extMap, ok := extRaw.(map[string]interface{})
-	require.True(t, ok, "imp[0].ext not a map")
-	prebidRaw, ok := extMap["prebid"]
-	require.True(t, ok, "imp[0].ext.prebid missing")
-	prebidMap, ok := prebidRaw.(map[string]interface{})
-	require.True(t, ok, "imp[0].ext.prebid not a map")
-	return prebidMap
+	prebid := getExtPrebid(t, m)
+	raw, ok := prebid["getImpOverride"]
+	if !ok {
+		return nil
+	}
+	override, ok := raw.(map[string]interface{})
+	require.True(t, ok, "getImpOverride is not a map")
+	return override
 }
 
 // --- TestParseGETRequest_RequiresSrid ---
@@ -95,7 +90,6 @@ func TestParseGETRequest_Tmax(t *testing.T) {
 
 	t.Run("tmax below minimum (50) is ignored", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x&tmax=50")
-		// tmax should be absent or zero
 		val, exists := m["tmax"]
 		if exists {
 			assert.EqualValues(t, float64(0), val)
@@ -146,13 +140,12 @@ func TestParseGETRequest_OutputFormat(t *testing.T) {
 
 // --- TestParseGETRequest_SlotMapsToTagID ---
 
+// Imp-specific params now live in ext.prebid.getImpOverride (applied post-merge).
 func TestParseGETRequest_SlotMapsToTagID(t *testing.T) {
 	m := parseGETResult(t, "srid=x&slot=my-slot")
-	impsRaw, ok := m["imp"]
-	require.True(t, ok)
-	imps := impsRaw.([]interface{})
-	imp0 := imps[0].(map[string]interface{})
-	assert.Equal(t, "my-slot", imp0["tagid"])
+	override := getImpOverrideMap(t, m)
+	require.NotNil(t, override, "getImpOverride missing")
+	assert.Equal(t, "my-slot", override["tagid"])
 }
 
 // --- TestParseGETRequest_VideoParams ---
@@ -160,10 +153,10 @@ func TestParseGETRequest_SlotMapsToTagID(t *testing.T) {
 func TestParseGETRequest_VideoParams(t *testing.T) {
 	t.Run("mindur/maxdur/w/h set on video imp", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x&mtype=2&mindur=5&maxdur=30&w=640&h=360")
-		impsRaw := m["imp"].([]interface{})
-		imp0 := impsRaw[0].(map[string]interface{})
-		video, ok := imp0["video"].(map[string]interface{})
-		require.True(t, ok, "imp[0].video missing")
+		override := getImpOverrideMap(t, m)
+		require.NotNil(t, override, "getImpOverride missing")
+		video, ok := override["video"].(map[string]interface{})
+		require.True(t, ok, "getImpOverride.video missing")
 		assert.EqualValues(t, float64(5), video["minduration"])
 		assert.EqualValues(t, float64(30), video["maxduration"])
 		assert.EqualValues(t, float64(640), video["w"])
@@ -172,10 +165,10 @@ func TestParseGETRequest_VideoParams(t *testing.T) {
 
 	t.Run("skip/skipmin/skipafter set on video imp", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x&mtype=vid&skip=1&skipmin=5&skipafter=3")
-		impsRaw := m["imp"].([]interface{})
-		imp0 := impsRaw[0].(map[string]interface{})
-		video, ok := imp0["video"].(map[string]interface{})
-		require.True(t, ok, "imp[0].video missing")
+		override := getImpOverrideMap(t, m)
+		require.NotNil(t, override, "getImpOverride missing")
+		video, ok := override["video"].(map[string]interface{})
+		require.True(t, ok, "getImpOverride.video missing")
 		assert.EqualValues(t, float64(1), video["skip"])
 		assert.EqualValues(t, float64(5), video["skipmin"])
 		assert.EqualValues(t, float64(3), video["skipafter"])
@@ -186,10 +179,10 @@ func TestParseGETRequest_VideoParams(t *testing.T) {
 
 func TestParseGETRequest_AudioParams(t *testing.T) {
 	m := parseGETResult(t, "srid=x&mtype=3&mindur=10&maxdur=60")
-	impsRaw := m["imp"].([]interface{})
-	imp0 := impsRaw[0].(map[string]interface{})
-	audio, ok := imp0["audio"].(map[string]interface{})
-	require.True(t, ok, "imp[0].audio missing")
+	override := getImpOverrideMap(t, m)
+	require.NotNil(t, override, "getImpOverride missing")
+	audio, ok := override["audio"].(map[string]interface{})
+	require.True(t, ok, "getImpOverride.audio missing")
 	assert.EqualValues(t, float64(10), audio["minduration"])
 	assert.EqualValues(t, float64(60), audio["maxduration"])
 }
@@ -197,23 +190,18 @@ func TestParseGETRequest_AudioParams(t *testing.T) {
 // --- TestParseGETRequest_BannerDefault ---
 
 func TestParseGETRequest_BannerDefault(t *testing.T) {
-	t.Run("default mtype results in no banner when no dimensions given", func(t *testing.T) {
-		// Implementation only sets imp.banner if w/h/format present
+	t.Run("no imp-specific params produce no getImpOverride", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x")
-		impsRaw := m["imp"].([]interface{})
-		imp0 := impsRaw[0].(map[string]interface{})
-		// banner may or may not be set depending on implementation; if set, it should be valid
-		if banner, ok := imp0["banner"]; ok {
-			assert.NotNil(t, banner)
-		}
+		override := getImpOverrideMap(t, m)
+		assert.Nil(t, override, "no imp-specific params should produce no getImpOverride")
 	})
 
-	t.Run("mtype=1 with w/h sets banner dimensions", func(t *testing.T) {
+	t.Run("mtype=1 with w/h sets banner dimensions in override", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x&mtype=1&w=300&h=250")
-		impsRaw := m["imp"].([]interface{})
-		imp0 := impsRaw[0].(map[string]interface{})
-		banner, ok := imp0["banner"].(map[string]interface{})
-		require.True(t, ok, "imp[0].banner missing")
+		override := getImpOverrideMap(t, m)
+		require.NotNil(t, override, "getImpOverride missing")
+		banner, ok := override["banner"].(map[string]interface{})
+		require.True(t, ok, "getImpOverride.banner missing")
 		assert.EqualValues(t, float64(300), banner["w"])
 	})
 }
@@ -257,6 +245,18 @@ func TestParseGETRequest_Privacy(t *testing.T) {
 	})
 }
 
+// TestParseGETRequest_CoppaZeroIsExplicit verifies that coppa=0 appears in the
+// generated JSON rather than being silently omitted by omitempty. Without this,
+// a stored request with coppa=1 would not be overridden by the GET param.
+func TestParseGETRequest_CoppaZeroIsExplicit(t *testing.T) {
+	m := parseGETResult(t, "srid=x&coppa=0")
+	regs, ok := m["regs"].(map[string]interface{})
+	require.True(t, ok, "regs missing")
+	val, exists := regs["coppa"]
+	assert.True(t, exists, "coppa=0 must be present in JSON, not omitted by omitempty")
+	assert.EqualValues(t, float64(0), val)
+}
+
 // --- TestParseGETRequest_ContentParams ---
 
 func TestParseGETRequest_ContentParams(t *testing.T) {
@@ -275,10 +275,10 @@ func TestParseGETRequest_ContentParams(t *testing.T) {
 func TestParseGETRequest_CSVParams(t *testing.T) {
 	t.Run("proto CSV sets video protocols", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x&mtype=2&proto=2,3,5")
-		impsRaw := m["imp"].([]interface{})
-		imp0 := impsRaw[0].(map[string]interface{})
-		video, ok := imp0["video"].(map[string]interface{})
-		require.True(t, ok, "imp[0].video missing")
+		override := getImpOverrideMap(t, m)
+		require.NotNil(t, override, "getImpOverride missing")
+		video, ok := override["video"].(map[string]interface{})
+		require.True(t, ok, "getImpOverride.video missing")
 		protocols, ok := video["protocols"].([]interface{})
 		require.True(t, ok, "video.protocols missing")
 		assert.Equal(t, []interface{}{float64(2), float64(3), float64(5)}, protocols)
@@ -286,24 +286,29 @@ func TestParseGETRequest_CSVParams(t *testing.T) {
 
 	t.Run("api CSV sets video api", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x&mtype=2&api=1,2")
-		impsRaw := m["imp"].([]interface{})
-		imp0 := impsRaw[0].(map[string]interface{})
-		video, ok := imp0["video"].(map[string]interface{})
-		require.True(t, ok, "imp[0].video missing")
+		override := getImpOverrideMap(t, m)
+		require.NotNil(t, override, "getImpOverride missing")
+		video, ok := override["video"].(map[string]interface{})
+		require.True(t, ok, "getImpOverride.video missing")
 		api, ok := video["api"].([]interface{})
 		require.True(t, ok, "video.api missing")
 		assert.Equal(t, []interface{}{float64(1), float64(2)}, api)
 	})
 }
 
-// TestParseGETRequest_SaridSetsStoredAuctionResponse verifies sarid lands on
-// imp.ext.prebid.storedauctionresponse without clobbering the rest of imp.ext.
+// TestParseGETRequest_SaridSetsStoredAuctionResponse verifies sarid lands in
+// getImpOverride.ext.prebid.storedauctionresponse without clobbering sibling keys.
 func TestParseGETRequest_SaridSetsStoredAuctionResponse(t *testing.T) {
 	m := parseGETResult(t, "srid=test-req&sarid=stored-resp-1")
-	impPrebid := getImpExtPrebid(t, m)
+	override := getImpOverrideMap(t, m)
+	require.NotNil(t, override, "getImpOverride missing")
 
-	sar, ok := impPrebid["storedauctionresponse"].(map[string]interface{})
-	require.True(t, ok, "imp.ext.prebid.storedauctionresponse missing or not an object")
+	extRaw, ok := override["ext"].(map[string]interface{})
+	require.True(t, ok, "getImpOverride.ext missing")
+	prebid, ok := extRaw["prebid"].(map[string]interface{})
+	require.True(t, ok, "getImpOverride.ext.prebid missing")
+	sar, ok := prebid["storedauctionresponse"].(map[string]interface{})
+	require.True(t, ok, "storedauctionresponse missing or not an object")
 	assert.Equal(t, "stored-resp-1", sar["id"])
 }
 
@@ -373,7 +378,7 @@ func TestParseGETRequest_RequiredDeviceHeaders(t *testing.T) {
 }
 
 // TestParseGETRequest_OptionalDeviceHeaders covers make/model/os plus the player
-// header which maps to imp[0].displaymanager rather than the device object.
+// header which maps to getImpOverride.displaymanager (not the device object).
 func TestParseGETRequest_OptionalDeviceHeaders(t *testing.T) {
 	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
 		"X-Device-Make":   "Roku",
@@ -386,20 +391,19 @@ func TestParseGETRequest_OptionalDeviceHeaders(t *testing.T) {
 	assert.Equal(t, "Ultra", dev["model"])
 	assert.Equal(t, "RokuOS", dev["os"])
 
-	imps, ok := m["imp"].([]interface{})
-	require.True(t, ok && len(imps) > 0)
-	imp := imps[0].(map[string]interface{})
-	assert.Equal(t, "SuperPlayer 4.2", imp["displaymanager"])
+	override := getImpOverrideMap(t, m)
+	require.NotNil(t, override, "getImpOverride missing — X-Device-Player should be there")
+	assert.Equal(t, "SuperPlayer 4.2", override["displaymanager"])
 }
 
 // TestParseGETRequest_HeadersOverrideQueryParams asserts the Tech Response 3.1
-// rule 4 precedence: headers win over conflicting query string values.
+// rule 4 precedence: X-Device-* headers win over conflicting query string values.
 func TestParseGETRequest_HeadersOverrideQueryParams(t *testing.T) {
 	m := parseGETResultWithHeaders(t, "srid=test-req&ua=QueryAgent/1.0", map[string]string{
 		"X-Device-User-Agent": "HeaderAgent/2.0",
 	})
 	dev := getDevice(t, m)
-	assert.Equal(t, "HeaderAgent/2.0", dev["ua"], "header must override query param")
+	assert.Equal(t, "HeaderAgent/2.0", dev["ua"], "X-Device-User-Agent must override query param")
 }
 
 // TestParseGETRequest_QueryUsedWhenHeaderAbsent verifies the query value survives
@@ -424,12 +428,10 @@ func TestParseGETRequest_QueryUASurvivesTransportUserAgent(t *testing.T) {
 		"transport User-Agent must not overwrite query param ua when X-Device-User-Agent is absent")
 }
 
-// TestParseGETRequest_XForwardedForDoesNotOverrideQueryIP verifies the three-tier
-// precedence for device.ip: once the ip field is set (here via a future ?ip= query
-// param path), X-Forwarded-For must not overwrite it.  This guards against a proxy
-// or stitcher IP replacing the real viewer IP that was passed explicitly.
+// TestParseGETRequest_XForwardedForFallbackUsedWhenNoQueryIP verifies that
+// X-Forwarded-For is still used as a fallback when neither X-Device-IP nor a
+// query ip is present.
 func TestParseGETRequest_XForwardedForFallbackUsedWhenNoQueryIP(t *testing.T) {
-	// No X-Device-IP, no ?ip= query param — X-Forwarded-For is the correct fallback.
 	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
 		"X-Forwarded-For": "203.0.113.55",
 	})
@@ -484,15 +486,58 @@ func TestParseGETRequest_MalformedIPHeaderIgnored(t *testing.T) {
 	}
 }
 
-// TestParseGETRequest_PlayerHeaderWithoutImpIsSafe guards against an index panic
-// if the player header arrives on a request with no impression.
+// TestParseGETRequest_PlayerHeaderWithoutImpIsSafe verifies that X-Device-Player
+// goes into the imp override (not a direct imp mutation), so there is no panic
+// when the header arrives on a request with no other imp params.
 func TestParseGETRequest_PlayerHeaderWithoutImpIsSafe(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
 	assert.NotPanics(t, func() {
-		_, err := parseGETRequest(req, 0)
+		data, err := parseGETRequest(req, 0)
 		require.NoError(t, err)
+		var m map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &m))
+		override := getImpOverrideMap(t, m)
+		require.NotNil(t, override)
+		assert.Equal(t, "SuperPlayer 4.2", override["displaymanager"])
 	})
+}
+
+// TestParseGETRequest_AppliesOverridesToStoredRequest is the integration test from
+// the PR reviewer that exercises both bugs together:
+//  1. stored imp fields (id, mimes, ext/bidder params) must survive the merge
+//  2. coppa=0 must override the stored coppa=1 (not be silently dropped by omitempty)
+func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
+	stored := json.RawMessage(`{"regs":{"coppa":1},"imp":[{"id":"stored-imp",` +
+		`"video":{"mimes":["video/mp4"]},` +
+		`"ext":{"prebid":{"bidder":{"appnexus":{"placementId":123}}}}}]}`)
+
+	requestJSON, err := parseGETRequest(httptest.NewRequest(http.MethodGet,
+		"/openrtb2/auction?srid=x&mtype=2&w=640&coppa=0", nil), 0)
+	require.NoError(t, err)
+
+	// Simulate processStoredRequests: stored is base, GET request is patch.
+	merged, err := jsonpatch.MergePatch(stored, requestJSON)
+	require.NoError(t, err)
+
+	// Simulate auction.go post-merge step.
+	merged, err = applyGETImpOverrideJSON(merged)
+	require.NoError(t, err)
+
+	var request openrtb2.BidRequest
+	require.NoError(t, json.Unmarshal(merged, &request))
+	require.Len(t, request.Imp, 1)
+	require.NotNil(t, request.Regs)
+
+	assert.Equal(t, "stored-imp", request.Imp[0].ID, "stored imp id must survive")
+	require.NotNil(t, request.Imp[0].Video)
+	assert.Equal(t, []string{"video/mp4"}, request.Imp[0].Video.MIMEs, "stored mimes must survive")
+	assert.Contains(t, string(request.Imp[0].Ext), "placementId", "stored bidder params must survive")
+	assert.EqualValues(t, 0, request.Regs.COPPA, "coppa=0 must override stored coppa=1")
+
+	// GET-specific field must be applied
+	require.NotNil(t, request.Imp[0].Video.W)
+	assert.EqualValues(t, 640, *request.Imp[0].Video.W)
 }
 
 // --- Query string length limit (Tech Response 3.1, consideration 1) ---

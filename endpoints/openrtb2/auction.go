@@ -529,6 +529,19 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
+	// For GET requests, apply the imp override that was carried through the merge in
+	// ext.prebid.getImpOverride. This overlays GET-specific imp fields (w, h, mtype
+	// params) onto the stored imp without replacing it entirely, preserving the stored
+	// imp's id, ext (bidder params), and other fields that RFC 7396 array replacement
+	// would otherwise discard.
+	if httpRequest.Method == http.MethodGet {
+		var impOverrideErr error
+		if requestJson, impOverrideErr = applyGETImpOverrideJSON(requestJson); impOverrideErr != nil {
+			errs = []error{impOverrideErr}
+			return
+		}
+	}
+
 	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
