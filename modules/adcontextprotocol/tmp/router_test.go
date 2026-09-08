@@ -39,7 +39,7 @@ func newFixture(t *testing.T) *tmpFixture {
 				f.ContextHandler(w, r)
 				return
 			}
-			_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{
+			_ = json.NewEncoder(w).Encode(tmproto.ProviderContextMatchResponse{
 				Type:      "context_match_response",
 				RequestID: "req",
 				Offers:    []tmproto.Offer{{PackageID: "pkg-a"}, {PackageID: "pkg-b"}},
@@ -263,6 +263,33 @@ func TestFanOut_RejectsForbiddenRouterHopFieldOnProviderResponse(t *testing.T) {
 	}
 }
 
+// A provider that returns a well-formed context response but sneaks in
+// a router-hop field (`signals_by_provider`, `context`, `ext`) MUST be
+// rejected — adcp provider-context-match-response.json's `not:
+// {anyOf: [...]}` clause is a schema-level MUST for the context hop
+// too, mirroring the identity hop.
+func TestFanOut_RejectsForbiddenRouterHopFieldOnContextResponse(t *testing.T) {
+	f := newFixture(t)
+	defer f.Close()
+
+	f.ContextHandler = func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"type":"context_match_response","request_id":"r","offers":[{"package_id":"pkg-a"}],"signals_by_provider":{"leaked":{}}}`))
+	}
+
+	res := f.Module.fanOut(context.Background(), deriveInputs(&f.Module.cfg, sampleBidRequest()))
+	if res == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if res.ErrCount != 1 {
+		t.Errorf("expected 1 provider with errors when context response leaks a router-hop field; got %d", res.ErrCount)
+	}
+	for _, s := range res.Segments {
+		if strings.HasPrefix(s, "adcp_package_id") {
+			t.Errorf("context-forbidden-field rejection must drop the response; got package segment %q", s)
+		}
+	}
+}
+
 // panickingRoundTripper panics inside RoundTrip. The fan-out's inner
 // goroutine must recover, record the error, and let the sibling call
 // complete instead of taking the process down.
@@ -309,7 +336,7 @@ func TestFanOut_IdentityErrorDropsOffers(t *testing.T) {
 	}
 	// Context returns real offers.
 	f.ContextHandler = func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{
+		_ = json.NewEncoder(w).Encode(tmproto.ProviderContextMatchResponse{
 			Type:      "context_match_response",
 			RequestID: "req",
 			Offers:    []tmproto.Offer{{PackageID: "pkg-a"}, {PackageID: "pkg-b"}},
@@ -350,7 +377,7 @@ func TestFanOut_RandomizesContextIdentityOrder(t *testing.T) {
 	}
 	f.ContextHandler = func(w http.ResponseWriter, _ *http.Request) {
 		setFirst("context")
-		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
+		_ = json.NewEncoder(w).Encode(tmproto.ProviderContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
 	}
 	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
 		setFirst("identity")
@@ -403,7 +430,7 @@ func TestFanOut_SigningHeadersOnOutbound(t *testing.T) {
 	f.ContextHandler = func(w http.ResponseWriter, r *http.Request) {
 		sawSig = r.Header.Get(tmproto.HeaderTMPSignature)
 		sawKid = r.Header.Get(tmproto.HeaderTMPKeyID)
-		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
+		_ = json.NewEncoder(w).Encode(tmproto.ProviderContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
 	}
 	f.IdentHandler = func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(tmproto.ProviderIdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
@@ -446,7 +473,7 @@ func TestFanOut_SignsAgainstProviderBaseURL(t *testing.T) {
 			t.Errorf("decode outbound context request: %v", err)
 		}
 		capturedRequestID = capturedReq.RequestID
-		_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
+		_ = json.NewEncoder(w).Encode(tmproto.ProviderContextMatchResponse{Type: "context_match_response", Offers: []tmproto.Offer{{PackageID: "pkg"}}})
 	}
 	f.IdentHandler = func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(tmproto.ProviderIdentityMatchResponse{Type: "identity_match_response", EligiblePackageIDs: []string{"pkg"}})
@@ -495,15 +522,24 @@ func TestMergeSegments_TMPXAndOfferMacros(t *testing.T) {
 		TmpxMacroMapping: map[string]map[string]string{
 			"prov": {"primary": "TMPX_1"},
 		},
+		TargetingKvMapping: map[string]map[string]string{
+			"prov": {"iab_cat": "IAB_CAT"},
+		},
 	}}
 	results := []providerResult{{
 		Name: "prov",
-		Context: &tmproto.ContextMatchResponse{
+		Context: &tmproto.ProviderContextMatchResponse{
 			Offers: []tmproto.Offer{
-				{PackageID: "pkg-a", Macros: map[string]string{"brand": "Acme"}},
+				{PackageID: "pkg-a", CreativeData: map[string]string{"brand": "Acme"}},
 				{PackageID: "pkg-b"},
 			},
-			Signals: map[string]any{"iab_cat": "sports"},
+			// Provider-hop targeting_kvs — adcp 3.2 shape. Resolved
+			// through TargetingKvMapping[prov][iab_cat] → IAB_CAT.
+			Signals: map[string]any{
+				"targeting_kvs": []any{
+					map[string]any{"key": "iab_cat", "value": "sports"},
+				},
+			},
 		},
 		Identity: &tmproto.ProviderIdentityMatchResponse{
 			EligiblePackageIDs: []string{"pkg-a", "pkg-b"},
@@ -516,7 +552,7 @@ func TestMergeSegments_TMPXAndOfferMacros(t *testing.T) {
 	out := m.mergeSegments(results)
 	want := map[string]string{
 		"brand":           "Acme",
-		"iab_cat":         "sports",
+		"IAB_CAT":         "sports",
 		"TMPX_1":          "opaque-chunk-1",
 		"adcp_package_id": "pkg-a,pkg-b",
 	}
@@ -546,8 +582,8 @@ func TestMergeSegments_PackageIDsDedupedAcrossProviders(t *testing.T) {
 		MaxSegmentValueLen:  256,
 	}}
 	results := []providerResult{
-		{Name: "a", Context: &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-1"}, {PackageID: "pkg-2"}}}},
-		{Name: "b", Context: &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-2"}, {PackageID: "pkg-3"}}}},
+		{Name: "a", Context: &tmproto.ProviderContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-1"}, {PackageID: "pkg-2"}}}},
+		{Name: "b", Context: &tmproto.ProviderContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-2"}, {PackageID: "pkg-3"}}}},
 	}
 
 	out := m.mergeSegments(results)
@@ -573,7 +609,7 @@ func TestMergeSegments_EmptyPackageKeyDisables(t *testing.T) {
 	}}
 	out := m.mergeSegments([]providerResult{{
 		Name:    "prov",
-		Context: &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-a"}}},
+		Context: &tmproto.ProviderContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-a"}}},
 	}})
 	for _, s := range out {
 		if strings.HasPrefix(s, "adcp_package_id=") || strings.Contains(s, "package") {
@@ -595,7 +631,7 @@ func TestMergeSegments_FailClosedDropsTMPX(t *testing.T) {
 	}}
 	results := []providerResult{{
 		Name:              "prov",
-		Context:           &tmproto.ContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-a"}}},
+		Context:           &tmproto.ProviderContextMatchResponse{Offers: []tmproto.Offer{{PackageID: "pkg-a"}}},
 		IdentityAttempted: true,
 		Identity:          nil,
 	}}
@@ -624,7 +660,7 @@ func TestMergeSegments_TMPXUnmappedSlotDropsProvider(t *testing.T) {
 	}}
 	results := []providerResult{{
 		Name: "prov",
-		Context: &tmproto.ContextMatchResponse{
+		Context: &tmproto.ProviderContextMatchResponse{
 			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
 		},
 		Identity: &tmproto.ProviderIdentityMatchResponse{
@@ -700,7 +736,7 @@ func TestMergeSegments_TMPXReorderedSlotsDropped(t *testing.T) {
 	}}
 	results := []providerResult{{
 		Name: "prov",
-		Context: &tmproto.ContextMatchResponse{
+		Context: &tmproto.ProviderContextMatchResponse{
 			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
 		},
 		Identity: &tmproto.ProviderIdentityMatchResponse{
@@ -736,7 +772,7 @@ func TestMergeSegments_TMPXEmptyValueFailsClosed(t *testing.T) {
 	}}
 	results := []providerResult{{
 		Name: "prov",
-		Context: &tmproto.ContextMatchResponse{
+		Context: &tmproto.ProviderContextMatchResponse{
 			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
 		},
 		Identity: &tmproto.ProviderIdentityMatchResponse{
@@ -770,7 +806,7 @@ func TestMergeSegments_TMPXProviderNotInMappingSkipped(t *testing.T) {
 	}}
 	results := []providerResult{{
 		Name: "prov",
-		Context: &tmproto.ContextMatchResponse{
+		Context: &tmproto.ProviderContextMatchResponse{
 			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
 		},
 		Identity: &tmproto.ProviderIdentityMatchResponse{
@@ -785,5 +821,125 @@ func TestMergeSegments_TMPXProviderNotInMappingSkipped(t *testing.T) {
 		if strings.HasPrefix(s, "TMPX_") || strings.HasPrefix(s, "primary=") {
 			t.Errorf("provider with no mapping entry should emit no TMPX targeting; got %q", s)
 		}
+	}
+}
+
+// TestMergeSegments_TargetingKvsUnmappedKeyDropped verifies the adcp
+// 3.2 publisher-owned targeting_kvs model: any (provider_id, key) tuple
+// not present in TargetingKvMapping is dropped independently, and
+// nothing falls back to the provider-local key. Mapped keys still
+// emit; unmapped keys don't leak.
+func TestMergeSegments_TargetingKvsUnmappedKeyDropped(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+		Providers: []ProviderConfig{
+			{Name: "prov"},
+		},
+		TargetingKvMapping: map[string]map[string]string{
+			"prov": {"known_key": "PUB_DEST"},
+		},
+	}}
+	results := []providerResult{{
+		Name: "prov",
+		Context: &tmproto.ProviderContextMatchResponse{
+			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
+			Signals: map[string]any{
+				"targeting_kvs": []any{
+					map[string]any{"key": "known_key", "value": "v1"},
+					map[string]any{"key": "unknown_key", "value": "v2"},
+				},
+			},
+		},
+	}}
+	out := m.mergeSegments(results)
+	sawPubDest := false
+	for _, s := range out {
+		if s == "PUB_DEST=v1" {
+			sawPubDest = true
+			continue
+		}
+		if strings.HasPrefix(s, "known_key=") {
+			t.Errorf("provider-local key must not leak when mapping resolves it to a destination; got %q", s)
+		}
+		if strings.HasPrefix(s, "unknown_key=") {
+			t.Errorf("unmapped (provider, key) must be dropped; got %q", s)
+		}
+	}
+	if !sawPubDest {
+		t.Errorf("expected PUB_DEST=v1 in segments; got %v", out)
+	}
+}
+
+// TestMergeSegments_TargetingKvsProviderNotInMappingSkipped verifies
+// providers absent from TargetingKvMapping emit no context targeting
+// on this surface (same fail-closed semantics as TmpxMacroMapping).
+func TestMergeSegments_TargetingKvsProviderNotInMappingSkipped(t *testing.T) {
+	m := &Module{cfg: Config{
+		PackageTargetingKey: "adcp_package_id",
+		MaxSegments:         64,
+		MaxSegmentValueLen:  256,
+		Providers: []ProviderConfig{
+			{Name: "prov"},
+		},
+	}}
+	results := []providerResult{{
+		Name: "prov",
+		Context: &tmproto.ProviderContextMatchResponse{
+			Offers: []tmproto.Offer{{PackageID: "pkg-a"}},
+			Signals: map[string]any{
+				"targeting_kvs": []any{
+					map[string]any{"key": "iab_cat", "value": "sports"},
+				},
+			},
+		},
+	}}
+	out := m.mergeSegments(results)
+	for _, s := range out {
+		if strings.HasPrefix(s, "iab_cat=") {
+			t.Errorf("provider with no mapping entry should emit no context targeting; got %q", s)
+		}
+	}
+}
+
+// TestExtractTargetingKvs covers the shape parser for
+// signals["targeting_kvs"] on the context provider hop: valid entries
+// pass through, missing or malformed shapes yield nil / skip entries.
+func TestExtractTargetingKvs(t *testing.T) {
+	cases := []struct {
+		name    string
+		signals map[string]any
+		want    int
+	}{
+		{"nil", nil, 0},
+		{"missing-key", map[string]any{"segments": []any{"foo"}}, 0},
+		{"wrong-type", map[string]any{"targeting_kvs": "not-an-array"}, 0},
+		{
+			"one-valid-entry",
+			map[string]any{"targeting_kvs": []any{
+				map[string]any{"key": "iab_cat", "value": "sports"},
+			}},
+			1,
+		},
+		{
+			"mixed-shapes-skips-junk",
+			map[string]any{"targeting_kvs": []any{
+				map[string]any{"key": "iab_cat", "value": "sports"},
+				"not an object",
+				map[string]any{"key": "", "value": "no-key"},
+				map[string]any{"key": "brand"}, // missing value → key kept, empty value
+				map[string]any{"key": 42, "value": "non-string-key"},
+			}},
+			2,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := extractTargetingKvs(tc.signals)
+			if len(got) != tc.want {
+				t.Errorf("len = %d; want %d (%v)", len(got), tc.want, got)
+			}
+		})
 	}
 }

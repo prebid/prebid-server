@@ -278,6 +278,46 @@ func TestValidated_MaskingDefaultEIDList(t *testing.T) {
 	}
 }
 
+func TestValidated_TargetingKvMappingRejectsUnknownProvider(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TargetingKvMapping = map[string]map[string]string{
+		"not_in_providers": {"iab_cat": "IAB_CAT"},
+	}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when targeting_kv_mapping refers to unknown provider")
+	}
+}
+
+func TestValidated_TargetingKvMappingRejectsEmptyDest(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TargetingKvMapping = map[string]map[string]string{
+		"example": {"iab_cat": ""},
+	}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when targeting_kv_mapping destination is empty")
+	}
+}
+
+func TestValidated_TargetingKvMappingRejectsEmptyProvider(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TargetingKvMapping = map[string]map[string]string{
+		"example": {},
+	}
+	if _, err := cfg.validated(); err == nil {
+		t.Fatal("expected error when targeting_kv_mapping[provider] is empty")
+	}
+}
+
+func TestValidated_TargetingKvMappingAcceptsValidEntry(t *testing.T) {
+	cfg := validConfig(t)
+	cfg.TargetingKvMapping = map[string]map[string]string{
+		"example": {"iab_cat": "IAB_CAT", "brand_id": "BRAND"},
+	}
+	if _, err := cfg.validated(); err != nil {
+		t.Errorf("expected valid config; got %v", err)
+	}
+}
+
 func TestValidated_TmpxMacroMappingRejectsUnknownProvider(t *testing.T) {
 	cfg := validConfig(t)
 	cfg.TmpxMacroMapping = map[string]map[string]string{

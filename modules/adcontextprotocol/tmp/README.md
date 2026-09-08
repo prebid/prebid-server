@@ -89,6 +89,18 @@ hooks:
           example:
             primary: TMPX_1
             secondary: TMPX_2
+        # Publisher-owned deployment configuration for adcp 3.2
+        # context-hop targeting_kvs (publisher-targeting-kv-config.json).
+        # Outer key MUST match one of the `providers[].name` above; inner
+        # key is a provider-local targeting key from the provider's
+        # `signals.targeting_kvs`; value is the ad-server destination.
+        # Tuples with no mapping entry are dropped independently — no
+        # fallback to the provider-local key. Omit to disable context
+        # KV targeting.
+        targeting_kv_mapping:
+          example:
+            iab_cat: IAB_CAT
+            brand_id: BRAND
         timeout_ms: 300
         # Set to a positive value to jitter the second of a provider's context /
         # identity outbound calls by a random [0, N] ms, breaking timing
@@ -156,6 +168,7 @@ hooks:
 | `providers[].identity_url` or `providers[].context_url` | At least one is required per provider. Each URL, when set, **MUST end in the literal path segment `/identity` or `/context`** (case-sensitive, after trailing-slash normalization) — the module derives the TMP signing base URL by stripping that suffix, and any other shape (e.g. a versioned `/api/context-match`) is rejected at Builder startup. The module POSTs to the value verbatim, so a bare-origin `https://tmp.example.com` will 404. When both are set they MUST derive to the same base URL, because TMP signatures bind to the provider's single registered base endpoint per `provider-registration.json`. |
 | `providers[].tmpx_slots` | Optional. Ordered list of `slot_id`s the provider registered in adcp `provider-registration.json`. Required when the provider emits TMPX. The module drops any provider response whose emitted slot sequence is not a non-empty ordered prefix of this list. |
 | `tmpx_macro_mapping` | Optional. Publisher-owned map of `provider_id → slot_id → ad-server macro name` used to route each provider's TMPX chunks. Omit to disable TMPX targeting. Missing entries for a provider's registered slots produce a startup warning; unmapped slots seen at serve time fail closed. |
+| `targeting_kv_mapping` | Optional. Publisher-owned map of `provider_id → provider-local key → ad-server destination` used to route each provider's context-hop `signals.targeting_kvs` (adcp 3.2 publisher-targeting-kv-config.json). Providers absent from the map, or (provider, key) tuples with no entry, are dropped independently — no fallback to the provider-local key. Omit to disable context KV targeting. |
 
 ### Providers
 
@@ -188,10 +201,17 @@ surfaces are covered per the adcp TMP spec:
 
 - **Package IDs** eligible under identity, comma-joined under
   `package_targeting_key` (default `adcp_package_id`).
-- **Response-level context signals** — the identity-agent-neutral
-  `ContextMatchResponse.signals` map, one `key=value` per scalar entry.
-- **Per-offer creative macros** — `Offer.macros` for offers that survived
-  the identity eligibility gate.
+- **Context targeting_kvs** resolved through `targeting_kv_mapping`.
+  Providers emit `{key, value}` pairs on the context hop under
+  `signals.targeting_kvs` using their own local vocabulary; the
+  publisher's mapping decides the ad-server destination for each
+  `(provider_id, key)` tuple. Tuples with no mapping entry are dropped
+  independently — no fallback to the provider-local key
+  (adcp publisher-targeting-kv-config.json).
+- **Per-offer creative_data** — `Offer.creative_data` for offers that
+  survived the identity eligibility gate. Free-form key/value pairs the
+  buyer passes for dynamic creative rendering; emitted verbatim (this is
+  not the ad-server targeting namespace — that's `targeting_kv_mapping`).
 - **Identity TMPX chunks** resolved through `tmpx_macro_mapping`. Providers
   emit `{slot_id, value}` pairs against their registered `tmpx_slots`; the
   publisher's mapping decides the ad-server destination for each pair on

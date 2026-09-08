@@ -17,7 +17,7 @@ import (
 // When the module is configured with signing.disabled=true (m.signer==nil)
 // the request goes out unsigned — the doTMP path omits both signature
 // headers.
-func (m *Module) callContext(ctx context.Context, p ProviderConfig, req *tmproto.ContextMatchRequest) (*tmproto.ContextMatchResponse, error) {
+func (m *Module) callContext(ctx context.Context, p ProviderConfig, req *tmproto.ContextMatchRequest) (*tmproto.ProviderContextMatchResponse, error) {
 	var sig string
 	if m.signer != nil {
 		epoch := tmproto.CurrentEpoch()
@@ -37,7 +37,10 @@ func (m *Module) callContext(ctx context.Context, p ProviderConfig, req *tmproto
 	if err != nil {
 		return nil, err
 	}
-	var resp tmproto.ContextMatchResponse
+	if forbidden := findForbiddenProviderContextFields(body); forbidden != "" {
+		return nil, fmt.Errorf("context response from %s carries forbidden provider-hop field %q; adcp provider-context-match-response.json rejects router-hop and envelope-extension fields", p.Name, forbidden)
+	}
+	var resp tmproto.ProviderContextMatchResponse
 	if err := jsonutil.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("context decode: %w", err)
 	}
@@ -102,6 +105,34 @@ var forbiddenProviderResponseFields = []string{
 	"tmpx_macros",
 	"context",
 	"ext",
+}
+
+// forbiddenProviderContextResponseFields enumerates the top-level fields
+// the provider→router context shape MUST NOT carry per adcp
+// provider-context-match-response.json. `signals_by_provider` is
+// router-attributed only; `context` and `ext` are envelope extensions
+// forbidden on this hop.
+var forbiddenProviderContextResponseFields = []string{
+	"signals_by_provider",
+	"context",
+	"ext",
+}
+
+// findForbiddenProviderContextFields is the context-hop counterpart to
+// findForbiddenProviderResponseFields. Returns the first forbidden
+// top-level field name a provider's response body carries, or "" when
+// clean.
+func findForbiddenProviderContextFields(body []byte) string {
+	var top map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(body, &top); err != nil {
+		return ""
+	}
+	for _, f := range forbiddenProviderContextResponseFields {
+		if _, ok := top[f]; ok {
+			return f
+		}
+	}
+	return ""
 }
 
 // findForbiddenProviderResponseFields returns the first top-level field

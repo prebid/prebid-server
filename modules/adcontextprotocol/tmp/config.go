@@ -131,6 +131,23 @@ type Config struct {
 	// in the adcontextprotocol/adcp repo for the wire-level model.
 	TmpxMacroMapping map[string]map[string]string `json:"tmpx_macro_mapping"`
 
+	// TargetingKvMapping is the publisher-owned deployment configuration
+	// analog for context-match targeting_kvs (adcp
+	// publisher-targeting-kv-config.json, part of the 3.2.0-rc.1 wire).
+	// Outer key is the provider's Name (used as `provider_id`); inner
+	// key is a provider-local targeting key from the provider's
+	// signals["targeting_kvs"]; value is the ad-server destination.
+	//
+	// The provider names the KEY (its local vocabulary), the publisher
+	// owns the DESTINATION namespace: at serve time the router looks up
+	// TargetingKvMapping[provider][key] and emits destination=value.
+	// Tuples with no mapping entry are dropped independently
+	// (per-provider AND per-key, no fallback to the raw key), so a
+	// hostile or misconfigured provider cannot invent a publisher-side
+	// targeting name. Providers absent from the outer map contribute
+	// no context targeting on this surface.
+	TargetingKvMapping map[string]map[string]string `json:"targeting_kv_mapping"`
+
 	// MaxSegments caps the total number of segments emitted onto the
 	// response ext, regardless of how many providers respond or how many
 	// offers/signals they include. Default 128. A hostile-or-buggy
@@ -546,6 +563,33 @@ func (c *Config) validated() (ed25519.PrivateKey, error) {
 				if _, ok := slotMap[slotID]; !ok {
 					logger.Warnf("adcontextprotocol.tmp: tmpx_macro_mapping[%q] has no entry for registered slot_id %q; that slot will fail closed at serve time", providerID, slotID)
 				}
+			}
+		}
+	}
+	// targeting_kv_mapping mirrors tmpx_macro_mapping's shape but for
+	// context-hop targeting_kvs (adcp publisher-targeting-kv-config.json).
+	// Provider-local keys are not spec-restricted in charset (they're
+	// dictated by the provider's vocabulary), so we only enforce the
+	// publisher-owned outer key charset and non-empty destinations.
+	for providerID, keyMap := range c.TargetingKvMapping {
+		if !providerNameRE.MatchString(providerID) {
+			return nil, fmt.Errorf("targeting_kv_mapping key %q must match adcp provider_id charset %s", providerID, providerNameRE)
+		}
+		if !seenNames[providerID] {
+			return nil, fmt.Errorf("targeting_kv_mapping refers to provider %q that is not in providers[]", providerID)
+		}
+		if len(keyMap) == 0 {
+			return nil, fmt.Errorf("targeting_kv_mapping[%q] is empty; omit the provider to disable its context targeting", providerID)
+		}
+		for k, dest := range keyMap {
+			if k == "" {
+				return nil, fmt.Errorf("targeting_kv_mapping[%q]: provider-local key must be non-empty", providerID)
+			}
+			if dest == "" {
+				return nil, fmt.Errorf("targeting_kv_mapping[%q][%q]: destination must be non-empty", providerID, k)
+			}
+			if len(dest) > tmpxMaxMacroLen {
+				return nil, fmt.Errorf("targeting_kv_mapping[%q][%q]: destination exceeds %d chars", providerID, k, tmpxMaxMacroLen)
 			}
 		}
 	}
