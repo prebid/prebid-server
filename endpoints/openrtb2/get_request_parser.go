@@ -51,8 +51,11 @@ func enforceSingleImp(httpRequest *http.Request, req *openrtb2.BidRequest, accou
 // Parameter precedence (lowest → highest):
 //  1. Stored request (loaded later in the normal parseRequest / processStoredRequests flow)
 //  2. Individual GET query params mapped to OpenRTB fields
-//  3. HTTP headers override conflicting query values (Tech Response §3.1 rule 4);
-//     see applyGETHeaderParams.
+//  3. X-Device-* HTTP headers override all conflicting values (Tech Response §3.1 rule 4).
+//
+// Standard transport headers (User-Agent, X-Forwarded-For, …) sit below query
+// params in the precedence order: they are only used when neither an X-Device-*
+// header nor a query param set the field.  See applyGETHeaderParams.
 func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) {
 	// Query strings are length limited by clients and intermediaries. Enforcing an explicit
 	// cap here guards against malicious resource exhaustion attacks.
@@ -564,9 +567,15 @@ func applyGETContentParams(q url.Values, req *openrtb2.BidRequest) {
 
 // applyGETHeaderParams maps the X-Device-* HTTP headers onto the bid request.
 //
-// Per the Audio requirements (Req12-14), these headers are the authoritative
-// source for device information on the GET interface and therefore override any
-// conflicting value already set from query parameters.
+// Precedence for ua and ip (three tiers):
+//  1. X-Device-User-Agent / X-Device-IP — always override, including query params.
+//  2. Query params (ua, ip) — already applied; survive when X-Device-* is absent.
+//  3. Standard transport headers (User-Agent, X-Forwarded-For, …) — fallback only;
+//     consulted only when neither X-Device-* nor a query param set the field.
+//
+// The transport-header tier exists because in SSAI/CTV the stitcher's own IP and
+// User-Agent appear on the wire rather than the viewer's; a query param explicitly
+// supplied by the player is therefore a more trustworthy source than those headers.
 //
 // Required:
 //   - X-Device-IP         → device.ip / device.ipv6
@@ -577,10 +586,6 @@ func applyGETContentParams(q url.Values, req *openrtb2.BidRequest) {
 //   - X-Device-Model      → device.model
 //   - X-Device-Os         → device.os
 //   - X-Device-Player     → imp[0].displaymanager
-//
-// Standard fallbacks (User-Agent, X-Forwarded-For, X-Real-IP, True-Client-IP)
-// are only consulted when the corresponding X-Device-* header is absent, so an
-// explicit device header always wins over a proxy-populated one.
 func applyGETHeaderParams(h http.Header, req *openrtb2.BidRequest) {
 	device := func() *openrtb2.Device {
 		if req.Device == nil {
@@ -589,28 +594,18 @@ func applyGETHeaderParams(h http.Header, req *openrtb2.BidRequest) {
 		return req.Device
 	}
 
-	// device.ua - X-Device-User-Agent takes priority over the standard User-Agent.
-	if ua := firstHeader(h, "X-Device-User-Agent", "User-Agent"); ua != "" {
-		device().UA = ua
-	}
-
-	// device.ip / device.ipv6 - X-Device-IP takes priority over proxy headers.
-	// X-Forwarded-For may carry a comma-separated chain; the first entry is the
-	// originating client.
-	if ip := firstHeader(h, "X-Device-IP", "X-Forwarded-For", "X-Real-IP", "True-Client-IP"); ip != "" {
-		if comma := strings.IndexByte(ip, ','); comma >= 0 {
-			ip = ip[:comma]
-		}
-		ip = strings.TrimSpace(ip)
-
-		if parsed := net.ParseIP(ip); parsed != nil {
-			if parsed.To4() != nil {
-				device().IP = ip
-			} else {
-				device().IPv6 = ip
-			}
+	// device.ua — three-tier precedence: X-Device-User-Agent > query param > User-Agent.
+	if xdua := strings.TrimSpace(h.Get("X-Device-User-Agent")); xdua != "" {
+		device().UA = xdua
+	} else if req.Device == nil || req.Device.UA == "" {
+		if ua := strings.TrimSpace(h.Get("User-Agent")); ua != "" {
+			device().UA = ua
 		}
 	}
+
+	// device.ip / device.ipv6 — three-tier precedence: X-Device-IP > query param > proxy headers.
+	// X-Forwarded-For may carry a comma-separated chain; the first entry is the originating client.
+	applyGETIPHeaders(h, req, device)
 
 	if make := firstHeader(h, "X-Device-Make"); make != "" {
 		device().Make = make
@@ -625,6 +620,44 @@ func applyGETHeaderParams(h http.Header, req *openrtb2.BidRequest) {
 	// imp[0].displaymanager - the audio/video player identifier.
 	if player := firstHeader(h, "X-Device-Player"); player != "" && len(req.Imp) > 0 {
 		req.Imp[0].DisplayManager = player
+	}
+}
+
+// applyGETIPHeaders applies the three-tier IP precedence:
+// X-Device-IP (override) > query param already set > proxy headers (fallback).
+func applyGETIPHeaders(h http.Header, req *openrtb2.BidRequest, device func() *openrtb2.Device) {
+	if xdip := strings.TrimSpace(h.Get("X-Device-IP")); xdip != "" {
+		if comma := strings.IndexByte(xdip, ','); comma >= 0 {
+			xdip = xdip[:comma]
+		}
+		xdip = strings.TrimSpace(xdip)
+		if parsed := net.ParseIP(xdip); parsed != nil {
+			if parsed.To4() != nil {
+				device().IP = xdip
+			} else {
+				device().IPv6 = xdip
+			}
+		}
+		return
+	}
+
+	// Only consult proxy headers if no query param (or prior source) set device.ip/ipv6.
+	if req.Device != nil && (req.Device.IP != "" || req.Device.IPv6 != "") {
+		return
+	}
+
+	if ip := firstHeader(h, "X-Forwarded-For", "X-Real-IP", "True-Client-IP"); ip != "" {
+		if comma := strings.IndexByte(ip, ','); comma >= 0 {
+			ip = ip[:comma]
+		}
+		ip = strings.TrimSpace(ip)
+		if parsed := net.ParseIP(ip); parsed != nil {
+			if parsed.To4() != nil {
+				device().IP = ip
+			} else {
+				device().IPv6 = ip
+			}
+		}
 	}
 }
 

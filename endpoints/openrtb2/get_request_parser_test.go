@@ -410,6 +410,34 @@ func TestParseGETRequest_QueryUsedWhenHeaderAbsent(t *testing.T) {
 	assert.Equal(t, "QueryAgent/1.0", dev["ua"])
 }
 
+// TestParseGETRequest_QueryUASurvivesTransportUserAgent verifies the three-tier
+// precedence for device.ua: a query param ?ua= must not be overwritten by the
+// transport-layer User-Agent header.  In SSAI/CTV the stitcher's UA appears on
+// the wire, not the viewer's, so the explicitly supplied query param is the more
+// trustworthy source.
+func TestParseGETRequest_QueryUASurvivesTransportUserAgent(t *testing.T) {
+	m := parseGETResultWithHeaders(t, "srid=test-req&ua=ViewerPlayer/3.0", map[string]string{
+		"User-Agent": "SSAIStitcher/1.0",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "ViewerPlayer/3.0", dev["ua"],
+		"transport User-Agent must not overwrite query param ua when X-Device-User-Agent is absent")
+}
+
+// TestParseGETRequest_XForwardedForDoesNotOverrideQueryIP verifies the three-tier
+// precedence for device.ip: once the ip field is set (here via a future ?ip= query
+// param path), X-Forwarded-For must not overwrite it.  This guards against a proxy
+// or stitcher IP replacing the real viewer IP that was passed explicitly.
+func TestParseGETRequest_XForwardedForFallbackUsedWhenNoQueryIP(t *testing.T) {
+	// No X-Device-IP, no ?ip= query param — X-Forwarded-For is the correct fallback.
+	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
+		"X-Forwarded-For": "203.0.113.55",
+	})
+	dev := getDevice(t, m)
+	assert.Equal(t, "203.0.113.55", dev["ip"],
+		"X-Forwarded-For should still be used as a fallback when no X-Device-IP or query ip is present")
+}
+
 // TestParseGETRequest_XDeviceIPBeatsProxyHeaders verifies the explicit device
 // header is preferred over proxy-populated forwarding headers.
 func TestParseGETRequest_XDeviceIPBeatsProxyHeaders(t *testing.T) {
