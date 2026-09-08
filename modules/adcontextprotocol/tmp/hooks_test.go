@@ -34,7 +34,7 @@ func newHooksFixtureModule(t *testing.T) (*Module, func()) {
 	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/context":
-			_ = json.NewEncoder(w).Encode(tmproto.ContextMatchResponse{
+			_ = json.NewEncoder(w).Encode(tmproto.ProviderContextMatchResponse{
 				Type:      "context_match_response",
 				RequestID: "req",
 				Offers:    []tmproto.Offer{{PackageID: "pkg-a"}},

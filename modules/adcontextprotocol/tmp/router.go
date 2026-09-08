@@ -17,7 +17,9 @@ import (
 type providerResult struct {
 	Name string
 	// Context is set when the context call succeeded, nil otherwise.
-	Context *tmproto.ContextMatchResponse
+	// This is the provider→router shape (offers + provider-local
+	// targeting_kvs in signals), not the router→publisher shape.
+	Context *tmproto.ProviderContextMatchResponse
 	// Identity is set when the identity call succeeded, nil otherwise.
 	// This is the provider→router shape (eligibility + provider-local
 	// TmpxChunks), not the router→publisher shape.
@@ -233,16 +235,24 @@ func (m *Module) callProvider(
 
 // mergeSegments joins each provider's context offers with its identity
 // eligibility and flattens the survivors into "key=value" strings suitable
-// for prebid targeting. The emitted segments cover four surfaces the AdCP
-// TMP spec calls out (see adcp docs/trusted-match/specification.mdx and
-// adcp-go tmproto/types_gen.go):
+// for prebid targeting. The emitted segments cover four surfaces the adcp
+// 3.2 TMP spec calls out (see adcp docs/trusted-match/specification.mdx
+// and adcp-go tmproto/types_gen.go):
 //
 //  1. Matched package IDs → cfg.PackageTargetingKey, comma-joined and
 //     deduplicated across providers. Empty PackageTargetingKey disables
 //     this line entirely.
-//  2. ContextMatchResponse.Signals → raw keys (last-wins on collision
-//     across providers, with an emitted warn segment recording the loser).
-//  3. Offer.Macros (per-offer creative macros) → raw keys.
+//  2. Provider-hop signals.targeting_kvs → each `{key, value}` resolved
+//     to a publisher-local destination via cfg.TargetingKvMapping
+//     (provider.Name → provider-local key → ad-server destination).
+//     Tuples with no mapping entry are dropped independently — no
+//     fallback to the provider-local key, per adcp
+//     publisher-targeting-kv-config.json. A collision on the destination
+//     across providers emits a warn but both segments are appended;
+//     the spec explicitly allows multiple tuples to map to one
+//     destination and forbids overwriting.
+//  3. Offer.CreativeData (per-offer free-form creative data) → raw keys.
+//     Same append-plus-warn semantics on collision as (2).
 //  4. ProviderIdentityMatchResponse.TmpxChunks[] → each chunk resolved
 //     to a publisher-local ad-server macro via cfg.TmpxMacroMapping
 //     (keyed on provider.Name → slot_id → macro_name), emitted as
@@ -307,15 +317,21 @@ func (m *Module) mergeSegments(results []providerResult) []string {
 				seenPkg[offer.PackageID] = true
 				pkgIDs = append(pkgIDs, offer.PackageID)
 			}
-			// Per-offer creative macros. Only surfaced for eligible offers so
-			// a provider cannot leak macros for packages the identity gate
-			// filtered out.
-			for k, v := range offer.Macros {
+			// Per-offer creative_data (adcp 3.2 rename of offer.macros).
+			// Only surfaced for eligible offers so a provider cannot leak
+			// creative data for packages the identity gate filtered out.
+			// These are free-form key/value pairs the buyer passes for
+			// dynamic creative rendering — the module surfaces them
+			// verbatim; publishers who don't want them as ad-server
+			// targeting can ignore them (their keys don't collide with
+			// mapped targeting_kvs since publisher mapping owns the
+			// destination namespace).
+			for k, v := range offer.CreativeData {
 				if v == "" {
 					continue
 				}
 				if prev, dup := signalOwner[k]; dup && prev != r.Name {
-					logger.Warnf("adcontextprotocol.tmp: offer macro key %q from %q overwrites earlier value from %q", k, r.Name, prev)
+					logger.Warnf("adcontextprotocol.tmp: offer creative_data key %q from %q overwrites earlier value from %q", k, r.Name, prev)
 				}
 				signalOwner[k] = r.Name
 				if !appendSeg(k + "=" + v) {
@@ -324,16 +340,31 @@ func (m *Module) mergeSegments(results []providerResult) []string {
 			}
 		}
 
-		for k, v := range r.Context.Signals {
-			str, ok := stringifySignal(v)
-			if !ok {
+		// Provider-origin targeting_kvs (adcp 3.2 publisher-owned
+		// mapping model, publisher-targeting-kv-config.json). The
+		// provider hop carries {key, value} pairs under
+		// signals["targeting_kvs"] using the provider's own key
+		// vocabulary; the publisher's TargetingKvMapping resolves
+		// (provider_id, key) to a local ad-server destination. Any
+		// unmapped tuple is dropped independently (spec says "Missing
+		// providers and missing keys are dropped independently, without
+		// falling back to the provider-local key"). Non-targeting_kvs
+		// signal keys (e.g. contextual segments) are not treated as
+		// ad-server targeting.
+		providerKvMap := m.cfg.TargetingKvMapping[r.Name]
+		for _, kv := range extractTargetingKvs(r.Context.Signals) {
+			if kv.Value == "" {
 				continue
 			}
-			if prev, dup := signalOwner[k]; dup && prev != r.Name {
-				logger.Warnf("adcontextprotocol.tmp: context signal key %q from %q overwrites earlier value from %q", k, r.Name, prev)
+			dest, ok := providerKvMap[kv.Key]
+			if !ok || dest == "" {
+				continue
 			}
-			signalOwner[k] = r.Name
-			if !appendSeg(k + "=" + str) {
+			if prev, dup := signalOwner[dest]; dup && prev != r.Name {
+				logger.Warnf("adcontextprotocol.tmp: targeting destination %q from %q overwrites earlier value from %q", dest, r.Name, prev)
+			}
+			signalOwner[dest] = r.Name
+			if !appendSeg(dest + "=" + kv.Value) {
 				return out
 			}
 		}
@@ -451,22 +482,43 @@ func chunkSlotIDs(chunks []tmproto.TmpxChunk) []string {
 	return out
 }
 
-// stringifySignal accepts scalar signal values (string, bool, number)
-// and rejects non-scalars — a map or slice from a hostile provider
-// would flow into targeting as "map[…]" garbage otherwise.
-func stringifySignal(v any) (string, bool) {
-	if v == nil {
-		return "", false
+// targetingKv is one provider-emitted key/value pair extracted from
+// ProviderContextMatchResponse.signals["targeting_kvs"]. The publisher's
+// TargetingKvMapping resolves (provider_id, Key) → local ad-server
+// destination before it lands as targeting.
+type targetingKv struct {
+	Key, Value string
+}
+
+// extractTargetingKvs pulls the `targeting_kvs` array out of the
+// provider-hop signals map (per adcp
+// provider-context-match-response.json). Only entries with both key
+// and value as strings are surfaced; anything malformed is silently
+// skipped so a hostile provider cannot inject garbage into targeting.
+// A missing or non-array `targeting_kvs` yields nil.
+func extractTargetingKvs(signals map[string]any) []targetingKv {
+	raw, ok := signals["targeting_kvs"]
+	if !ok {
+		return nil
 	}
-	switch x := v.(type) {
-	case string:
-		return x, true
-	case bool:
-		return fmt.Sprintf("%t", x), true
-	case float64, float32, int, int64, int32:
-		return fmt.Sprintf("%v", x), true
+	entries, ok := raw.([]any)
+	if !ok {
+		return nil
 	}
-	return "", false
+	out := make([]targetingKv, 0, len(entries))
+	for _, e := range entries {
+		obj, ok := e.(map[string]any)
+		if !ok {
+			continue
+		}
+		k, _ := obj["key"].(string)
+		v, _ := obj["value"].(string)
+		if k == "" {
+			continue
+		}
+		out = append(out, targetingKv{Key: k, Value: v})
+	}
+	return out
 }
 
 // boundedSegment truncates the segment string to the configured cap so
