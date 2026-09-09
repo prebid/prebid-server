@@ -1,0 +1,535 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>ocm: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/ocm/ocm.go (83.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package ocm
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "net/http"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+// mTypeUnset is the zero value of openrtb2.MarkupType, meaning the response did
+// not state a media type. OpenRTB defines no 0 markup type, so it is only ever an
+// omission.
+const mTypeUnset openrtb2.MarkupType = 0
+
+// adapter routes bid requests to the Orange Click Media exchange.
+type adapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the OCM adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{endpoint: cfg.Endpoint}, nil
+}</span>
+
+// MakeRequests packs every impression into a single OpenRTB request for the OCM
+// exchange.
+//
+// The publisherId param identifies the seller and is written to the request-level
+// publisher ID, so all impressions in one request must agree on it; a divergent
+// publisherId is a misconfiguration and rejects the whole request.
+//
+// The placementId param names the impression-level stored request that the OCM
+// endpoint expands into the impression's real configuration, so it is encoded as
+// imp.ext.prebid.storedrequest.id rather than as a plain slot identifier. It is
+// required: an impression referencing no stored request cannot be resolved
+// downstream, and would fail the whole request rather than just itself.
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">var publisherID string
+        for i := range request.Imp </span><span class="cov8" title="1">{
+                impExt, err := parseImpExt(&amp;request.Imp[i])
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: %s", i, err)}}
+                }</span>
+
+                <span class="cov8" title="1">if i == 0 </span><span class="cov8" title="1">{
+                        publisherID = impExt.PublisherID
+                }</span> else<span class="cov8" title="1"> if impExt.PublisherID != publisherID </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("imp[%d]: all impressions must share the same publisherId, found %q and %q", i, impExt.PublisherID, publisherID),
+                        }}
+                }</span>
+
+                // Imp elements are safe to modify in place: prebid-server hands each
+                // adapter its own shallow copy of the imp slice.
+                <span class="cov8" title="1">if err := setStoredRequestID(&amp;request.Imp[i], impExt.PlacementID); err != nil </span><span class="cov0" title="0">{
+                        return nil, []error{&amp;errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: %s", i, err)}}
+                }</span>
+        }
+
+        <span class="cov8" title="1">if err := setPublisherID(request, publisherID); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{Message: err.Error()}}
+        }</span>
+        <span class="cov8" title="1">if err := removeOCMAliases(request); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{Message: err.Error()}}
+        }</span>
+
+        <span class="cov8" title="1">body, err := jsonutil.Marshal(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{fmt.Errorf("unable to marshal bid request: %w", err)}
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        return []*adapters.RequestData{{
+                Method:  http.MethodPost,
+                Uri:     a.endpoint,
+                Body:    body,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+        }}, nil</span>
+}
+
+// parseImpExt decodes imp.ext.bidder into ExtImpOcm and validates it. Both params
+// are required and must be non-blank; the JSON schema already enforces presence,
+// and the whitespace check here covers values the schema accepts but the OCM
+// endpoint cannot resolve.
+func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOcm, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to unmarshal ext: %s", err)
+        }</span>
+
+        <span class="cov8" title="1">var impExt openrtb_ext.ExtImpOcm
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;impExt); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to unmarshal ext.bidder: %s", err)
+        }</span>
+
+        <span class="cov8" title="1">if strings.TrimSpace(impExt.PublisherID) == "" </span><span class="cov8" title="1">{
+                return nil, errors.New("publisherId is required and must not be blank")
+        }</span>
+        <span class="cov8" title="1">if strings.TrimSpace(impExt.PlacementID) == "" </span><span class="cov8" title="1">{
+                return nil, errors.New("placementId is required and must not be blank")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;impExt, nil</span>
+}
+
+// setStoredRequestID consumes imp.ext.bidder and records placementId as the
+// impression's stored-request ID at imp.ext.prebid.storedrequest.id, which is
+// where the OCM endpoint looks for it.
+//
+// The surrounding ext is rebuilt through a generic map rather than a typed struct
+// so that keys this adapter knows nothing about — gpid, tid, data and any future
+// additions — survive the round trip untouched.
+func setStoredRequestID(imp *openrtb2.Imp, placementID string) error <span class="cov8" title="1">{
+        ext := map[string]json.RawMessage{}
+        if len(imp.Ext) &gt; 0 </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(imp.Ext, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("unable to unmarshal ext: %s", err)
+                }</span>
+                <span class="cov8" title="1">if ext == nil </span><span class="cov0" title="0">{
+                        ext = map[string]json.RawMessage{}
+                }</span>
+        }
+        <span class="cov8" title="1">delete(ext, "bidder")
+
+        prebid := map[string]json.RawMessage{}
+        if raw, exists := ext["prebid"]; exists &amp;&amp; len(raw) &gt; 0 </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(raw, &amp;prebid); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("unable to unmarshal ext.prebid: %s", err)
+                }</span>
+                <span class="cov8" title="1">if prebid == nil </span><span class="cov0" title="0">{
+                        prebid = map[string]json.RawMessage{}
+                }</span>
+        }
+
+        <span class="cov8" title="1">storedRequest, err := jsonutil.Marshal(openrtb_ext.ExtStoredRequest{ID: placementID})
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">prebid["storedrequest"] = storedRequest
+
+        prebidJSON, err := jsonutil.Marshal(prebid)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">ext["prebid"] = prebidJSON
+
+        extJSON, err := jsonutil.Marshal(ext)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">imp.Ext = extJSON
+        return nil</span>
+}
+
+// setPublisherID writes publisherId to the request-level publisher ID and removes
+// the originating host's parent account. Site, App, Publisher and publisher.ext
+// are copied before mutation because prebid-server shares them across adapters.
+func setPublisherID(request *openrtb2.BidRequest, publisherID string) error <span class="cov8" title="1">{
+        if request.Site != nil </span><span class="cov8" title="1">{
+                site := *request.Site
+                publisher, err := publisherWithID(site.Publisher, publisherID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("unable to update site.publisher: %w", err)
+                }</span>
+                <span class="cov8" title="1">site.Publisher = publisher
+                request.Site = &amp;site
+                return nil</span>
+        }
+
+        <span class="cov8" title="1">if request.App != nil </span><span class="cov8" title="1">{
+                app := *request.App
+                publisher, err := publisherWithID(app.Publisher, publisherID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("unable to update app.publisher: %w", err)
+                }</span>
+                <span class="cov8" title="1">app.Publisher = publisher
+                request.App = &amp;app</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// publisherWithID returns a copy of publisher carrying id and without
+// ext.prebid.parentAccount, or a fresh Publisher when the request omitted one.
+func publisherWithID(publisher *openrtb2.Publisher, id string) (*openrtb2.Publisher, error) <span class="cov8" title="1">{
+        if publisher == nil </span><span class="cov8" title="1">{
+                return &amp;openrtb2.Publisher{ID: id}, nil
+        }</span>
+
+        <span class="cov8" title="1">cpy := *publisher
+        cpy.ID = id
+
+        ext, err := removeParentAccount(publisher.Ext)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">cpy.Ext = ext
+        return &amp;cpy, nil</span>
+}
+
+// removeParentAccount removes only publisher.ext.prebid.parentAccount, retaining
+// every other publisher extension field.
+func removeParentAccount(publisherExt json.RawMessage) (json.RawMessage, error) <span class="cov8" title="1">{
+        if len(publisherExt) == 0 </span><span class="cov8" title="1">{
+                return publisherExt, nil
+        }</span>
+
+        <span class="cov8" title="1">ext := map[string]json.RawMessage{}
+        if err := jsonutil.Unmarshal(publisherExt, &amp;ext); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("unable to unmarshal ext: %s", err)
+        }</span>
+
+        <span class="cov8" title="1">prebidJSON, exists := ext[openrtb_ext.PrebidExtKey]
+        if !exists || len(prebidJSON) == 0 </span><span class="cov0" title="0">{
+                return publisherExt, nil
+        }</span>
+
+        <span class="cov8" title="1">prebid := map[string]json.RawMessage{}
+        if err := jsonutil.Unmarshal(prebidJSON, &amp;prebid); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("unable to unmarshal ext.%s: %s", openrtb_ext.PrebidExtKey, err)
+        }</span>
+        <span class="cov8" title="1">if _, exists := prebid["parentAccount"]; !exists </span><span class="cov0" title="0">{
+                return publisherExt, nil
+        }</span>
+
+        <span class="cov8" title="1">delete(prebid, "parentAccount")
+        prebidJSON, err := jsonutil.Marshal(prebid)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">ext[openrtb_ext.PrebidExtKey] = prebidJSON
+
+        return jsonutil.Marshal(ext)</span>
+}
+
+// removeOCMAliases removes aliases that resolve to this adapter before forwarding
+// the request to another Prebid Server. Other aliases and request extensions are
+// retained, and request.Ext receives new backing storage rather than mutating the
+// shared input bytes.
+func removeOCMAliases(request *openrtb2.BidRequest) error <span class="cov8" title="1">{
+        if len(request.Ext) == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">ext := map[string]json.RawMessage{}
+        if err := jsonutil.Unmarshal(request.Ext, &amp;ext); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("unable to unmarshal request.ext: %s", err)
+        }</span>
+
+        <span class="cov8" title="1">prebidJSON, exists := ext[openrtb_ext.PrebidExtKey]
+        if !exists || len(prebidJSON) == 0 </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">prebid := map[string]json.RawMessage{}
+        if err := jsonutil.Unmarshal(prebidJSON, &amp;prebid); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("unable to unmarshal request.ext.%s: %s", openrtb_ext.PrebidExtKey, err)
+        }</span>
+
+        <span class="cov8" title="1">aliasesJSON, exists := prebid["aliases"]
+        if !exists || len(aliasesJSON) == 0 </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">aliases := map[string]string{}
+        if err := jsonutil.Unmarshal(aliasesJSON, &amp;aliases); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("unable to unmarshal request.ext.%s.aliases: %s", openrtb_ext.PrebidExtKey, err)
+        }</span>
+
+        <span class="cov8" title="1">changed := false
+        for alias, bidder := range aliases </span><span class="cov8" title="1">{
+                if bidder == string(openrtb_ext.BidderOcm) </span><span class="cov8" title="1">{
+                        delete(aliases, alias)
+                        changed = true
+                }</span>
+        }
+        <span class="cov8" title="1">if !changed </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">if len(aliases) == 0 </span><span class="cov8" title="1">{
+                delete(prebid, "aliases")
+        }</span> else<span class="cov0" title="0"> {
+                aliasesJSON, err := jsonutil.Marshal(aliases)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov0" title="0">prebid["aliases"] = aliasesJSON</span>
+        }
+        <span class="cov8" title="1">prebidJSON, err := jsonutil.Marshal(prebid)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">ext[openrtb_ext.PrebidExtKey] = prebidJSON
+
+        requestExt, err := jsonutil.Marshal(ext)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">request.Ext = requestExt
+        return nil</span>
+}
+
+// MakeBids unpacks the OCM exchange's OpenRTB bid response. Bids whose media
+// type cannot be resolved are skipped and reported, so one malformed bid does
+// not discard the rest of the seat.
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var response openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: err.Error()}}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+        if response.Cur != "" </span><span class="cov8" title="1">{
+                bidResponse.Currency = response.Cur
+        }</span>
+
+        <span class="cov8" title="1">var errs []error
+        for _, seatBid := range response.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bidType, err := getMediaTypeForBid(seatBid.Bid[i])
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:      &amp;seatBid.Bid[i],
+                                BidType:  bidType,
+                                BidVideo: videoFromBidExt(seatBid.Bid[i].Ext, bidType),
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+
+// videoFromBidExt returns targeting metadata supplied by the receiving PBS for
+// video bids. Invalid, unrelated, and non-video bid extensions are ignored.
+func videoFromBidExt(bidExt json.RawMessage, bidType openrtb_ext.BidType) *openrtb_ext.ExtBidPrebidVideo <span class="cov8" title="1">{
+        if bidType != openrtb_ext.BidTypeVideo || len(bidExt) == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+
+        <span class="cov8" title="1">var ext openrtb_ext.ExtBid
+        if err := jsonutil.Unmarshal(bidExt, &amp;ext); err != nil || ext.Prebid == nil </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return ext.Prebid.Video</span>
+}
+
+// getMediaTypeForBid resolves the bid's media type from the OpenRTB 2.6 bid.mtype
+// field, which is authoritative whenever it is set.
+//
+// Not every upstream populates mtype: a Prebid Server passes through whatever
+// mtype its winning adapter set, and reports the type it resolved in
+// bid.ext.prebid.type instead (see exchange/entities.PbsOrtbBid). Treating an
+// absent mtype as fatal would therefore discard perfectly good bids, so
+// ext.prebid.type is consulted in that one case.
+//
+// A set-but-unsupported mtype (audio, or a value this adapter does not know) is
+// rejected outright and never allowed to fall through to the extension. Doing
+// otherwise would let an ext of "banner" reclassify an audio bid, contradicting
+// the authoritative field and delivering a media type OCM does not declare.
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative, nil</span>
+        case mTypeUnset:<span class="cov8" title="1">
+                if bidType, ok := mediaTypeFromBidExt(bid.Ext); ok </span><span class="cov8" title="1">{
+                        return bidType, nil
+                }</span>
+                <span class="cov8" title="1">return "", &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("unable to determine media type for bid %q: no mtype and no ext.prebid.type", bid.ID),
+                }</span>
+        default:<span class="cov8" title="1">
+                return "", &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("unsupported mtype %d for bid %q", bid.MType, bid.ID),
+                }</span>
+        }
+}
+
+// mediaTypeFromBidExt reads a media type from bid.ext.prebid.type, accepting
+// only the types OCM declares support for. A malformed or absent ext is not an
+// error here; the caller reports the failure to resolve a type.
+func mediaTypeFromBidExt(bidExt json.RawMessage) (openrtb_ext.BidType, bool) <span class="cov8" title="1">{
+        if len(bidExt) == 0 </span><span class="cov8" title="1">{
+                return "", false
+        }</span>
+
+        <span class="cov8" title="1">var parsed struct {
+                Prebid struct {
+                        Type openrtb_ext.BidType `json:"type"`
+                } `json:"prebid"`
+        }
+        if err := jsonutil.Unmarshal(bidExt, &amp;parsed); err != nil </span><span class="cov8" title="1">{
+                return "", false
+        }</span>
+
+        <span class="cov8" title="1">switch parsed.Prebid.Type </span>{
+        case openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative:<span class="cov8" title="1">
+                return parsed.Prebid.Type, true</span>
+        }
+
+        <span class="cov8" title="1">return "", false</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
