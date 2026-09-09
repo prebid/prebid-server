@@ -38,10 +38,6 @@
                 "ver": "1.2"
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-1",
-                  "placementId": "feed-native"
-                },
                 "prebid": {
                   "storedrequest": {
                     "id": "feed-native"

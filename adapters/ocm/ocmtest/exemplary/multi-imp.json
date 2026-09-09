@@ -62,10 +62,6 @@
                 ]
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-1",
-                  "placementId": "homepage-top"
-                },
                 "prebid": {
                   "storedrequest": {
                     "id": "homepage-top"
@@ -83,10 +79,6 @@
                 "h": 480
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-1",
-                  "placementId": "homepage-instream"
-                },
                 "prebid": {
                   "storedrequest": {
                     "id": "homepage-instream"

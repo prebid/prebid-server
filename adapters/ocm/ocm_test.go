@@ -18,8 +18,8 @@ import (
 const testEndpoint = "https://pbam.test.invalid/openrtb2/auction"
 
 // End-to-end MakeRequests/MakeBids behavior lives in the JSON fixtures under
-// ocmtest/. The Go tests below cover only what those fixtures cannot: the error
-// *type* contract, since fixtures compare error messages alone.
+// ocmtest/. The Go tests below supplement them with error-type and shared-object
+// mutation contracts that JSON fixtures cannot express.
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOcm,
@@ -127,6 +127,142 @@ func TestMakeRequestsSetsAppPublisher(t *testing.T) {
 	require.NotNil(t, sent.App.Publisher)
 	assert.Equal(t, "pub-a", sent.App.Publisher.ID)
 	assert.Nil(t, sent.Site)
+}
+
+func TestMakeRequestsSanitizesForwardedContext(t *testing.T) {
+	tests := []struct {
+		name         string
+		setPublisher func(*openrtb2.BidRequest, *openrtb2.Publisher)
+		getPublisher func(*openrtb2.BidRequest) *openrtb2.Publisher
+	}{
+		{
+			name: "site",
+			setPublisher: func(request *openrtb2.BidRequest, publisher *openrtb2.Publisher) {
+				request.Site = &openrtb2.Site{Domain: "example.test", Publisher: publisher}
+			},
+			getPublisher: func(request *openrtb2.BidRequest) *openrtb2.Publisher {
+				return request.Site.Publisher
+			},
+		},
+		{
+			name: "app",
+			setPublisher: func(request *openrtb2.BidRequest, publisher *openrtb2.Publisher) {
+				request.App = &openrtb2.App{Bundle: "com.example.app", Publisher: publisher}
+			},
+			getPublisher: func(request *openrtb2.BidRequest) *openrtb2.Publisher {
+				return request.App.Publisher
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			publisherExt := json.RawMessage(`{
+				"prebid":{"parentAccount":"origin-host","unrelatedPrebid":"keep"},
+				"unrelatedPublisher":{"value":1}
+			}`)
+			sharedPublisher := &openrtb2.Publisher{
+				ID:   "origin-publisher",
+				Name: "shared publisher",
+				Ext:  publisherExt,
+			}
+			request := &openrtb2.BidRequest{
+				ID: "req",
+				Imp: []openrtb2.Imp{bannerImp("imp-1", json.RawMessage(`{
+					"bidder":{"publisherId":"ocm-publisher","placementId":"placement-1"},
+					"gpid":"/1234/example#slot"
+				}`))},
+				Ext: json.RawMessage(`{
+					"prebid":{
+						"aliases":{"publisher_ocm":"ocm"},
+						"unrelatedPrebid":"keep"
+					},
+					"unrelatedRequest":{"value":2}
+				}`),
+			}
+			test.setPublisher(request, sharedPublisher)
+
+			requests, errs := newBidder(t).MakeRequests(request, &adapters.ExtraRequestInfo{})
+			require.Empty(t, errs)
+			require.Len(t, requests, 1)
+
+			var sent openrtb2.BidRequest
+			require.NoError(t, json.Unmarshal(requests[0].Body, &sent))
+			sentPublisher := test.getPublisher(&sent)
+			require.NotNil(t, sentPublisher)
+			assert.Equal(t, "ocm-publisher", sentPublisher.ID)
+			assert.Equal(t, "shared publisher", sentPublisher.Name)
+			assert.JSONEq(t, `{
+				"prebid":{"unrelatedPrebid":"keep"},
+				"unrelatedPublisher":{"value":1}
+			}`, string(sentPublisher.Ext))
+			assert.JSONEq(t, `{
+				"prebid":{
+					"unrelatedPrebid":"keep"
+				},
+				"unrelatedRequest":{"value":2}
+			}`, string(sent.Ext))
+			require.Len(t, sent.Imp, 1)
+			assert.JSONEq(t, `{
+				"gpid":"/1234/example#slot",
+				"prebid":{"storedrequest":{"id":"placement-1"}}
+			}`, string(sent.Imp[0].Ext))
+
+			// The publisher is shared by adapter requests. Sanitizing the OCM copy
+			// must not rewrite the object retained by the originating request.
+			assert.Equal(t, "origin-publisher", sharedPublisher.ID)
+			assert.Equal(t, publisherExt, sharedPublisher.Ext)
+			assert.NotSame(t, sharedPublisher, test.getPublisher(request))
+		})
+	}
+}
+
+func TestMakeBidsPreservesVideoMetadata(t *testing.T) {
+	request := &openrtb2.BidRequest{ID: "req", Imp: []openrtb2.Imp{{ID: "imp-1"}}}
+	response := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body: []byte(`{
+			"id":"req",
+			"seatbid":[{"bid":[{
+				"id":"bid-1",
+				"impid":"imp-1",
+				"price":1.2,
+				"mtype":2,
+				"ext":{"prebid":{"type":"video","video":{"duration":30,"primary_category":"IAB1-2"}}}
+			}]}]
+		}`),
+	}
+
+	bidResponse, errs := newBidder(t).MakeBids(request, nil, response)
+	require.Empty(t, errs)
+	require.Len(t, bidResponse.Bids, 1)
+	assert.Equal(t, &openrtb_ext.ExtBidPrebidVideo{
+		Duration:        30,
+		PrimaryCategory: "IAB1-2",
+	}, bidResponse.Bids[0].BidVideo)
+}
+
+func TestMakeBidsIgnoresVideoMetadataForNonVideoBid(t *testing.T) {
+	request := &openrtb2.BidRequest{ID: "req", Imp: []openrtb2.Imp{{ID: "imp-1"}}}
+	response := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body: []byte(`{
+			"id":"req",
+			"seatbid":[{"bid":[{
+				"id":"bid-1",
+				"impid":"imp-1",
+				"price":1.2,
+				"mtype":1,
+				"ext":{"prebid":{"type":"video","video":{"duration":30,"primary_category":"IAB1-2"}}}
+			}]}]
+		}`),
+	}
+
+	bidResponse, errs := newBidder(t).MakeBids(request, nil, response)
+	require.Empty(t, errs)
+	require.Len(t, bidResponse.Bids, 1)
+	assert.Equal(t, openrtb_ext.BidTypeBanner, bidResponse.Bids[0].BidType)
+	assert.Nil(t, bidResponse.Bids[0].BidVideo)
 }
 
 func TestMakeBidsErrorTypes(t *testing.T) {
@@ -331,7 +467,7 @@ func TestSetStoredRequestID(t *testing.T) {
 		{
 			name:   "creates prebid and storedrequest",
 			impExt: `{"bidder":{"publisherId":"a"}}`,
-			want:   `{"bidder":{"publisherId":"a"},"prebid":{"storedrequest":{"id":"slot-1"}}}`,
+			want:   `{"prebid":{"storedrequest":{"id":"slot-1"}}}`,
 		},
 		{
 			name:   "merges into existing prebid",

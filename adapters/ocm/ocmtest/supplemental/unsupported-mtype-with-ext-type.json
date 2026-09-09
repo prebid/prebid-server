@@ -21,7 +21,6 @@
               "id": "imp-banner-1",
               "banner": {"format": [{"w": 300, "h": 250}]},
               "ext": {
-                "bidder": {"publisherId": "ocm-pub-1", "placementId": "homepage-top"},
                 "prebid": {"storedrequest": {"id": "homepage-top"}}
               }
             }

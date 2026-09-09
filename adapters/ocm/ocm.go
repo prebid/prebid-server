@@ -69,7 +69,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 	}
 
-	setPublisherID(request, publisherID)
+	if err := setPublisherID(request, publisherID); err != nil {
+		return nil, []error{&errortypes.BadInput{Message: err.Error()}}
+	}
+	if err := removeOCMAliases(request); err != nil {
+		return nil, []error{&errortypes.BadInput{Message: err.Error()}}
+	}
 
 	body, err := jsonutil.Marshal(request)
 	if err != nil {
@@ -114,8 +119,9 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOcm, error) {
 	return &impExt, nil
 }
 
-// setStoredRequestID records placementId as the impression's stored-request ID at
-// imp.ext.prebid.storedrequest.id, which is where the OCM endpoint looks for it.
+// setStoredRequestID consumes imp.ext.bidder and records placementId as the
+// impression's stored-request ID at imp.ext.prebid.storedrequest.id, which is
+// where the OCM endpoint looks for it.
 //
 // The surrounding ext is rebuilt through a generic map rather than a typed struct
 // so that keys this adapter knows nothing about — gpid, tid, data and any future
@@ -130,6 +136,7 @@ func setStoredRequestID(imp *openrtb2.Imp, placementID string) error {
 			ext = map[string]json.RawMessage{}
 		}
 	}
+	delete(ext, "bidder")
 
 	prebid := map[string]json.RawMessage{}
 	if raw, exists := ext["prebid"]; exists && len(raw) > 0 {
@@ -162,34 +169,150 @@ func setStoredRequestID(imp *openrtb2.Imp, placementID string) error {
 	return nil
 }
 
-// setPublisherID writes publisherId to the request-level publisher ID. Site and App
-// are copied before mutation because prebid-server shares the BidRequest across
-// adapters and only imp elements may be modified in place.
-func setPublisherID(request *openrtb2.BidRequest, publisherID string) {
+// setPublisherID writes publisherId to the request-level publisher ID and removes
+// the originating host's parent account. Site, App, Publisher and publisher.ext
+// are copied before mutation because prebid-server shares them across adapters.
+func setPublisherID(request *openrtb2.BidRequest, publisherID string) error {
 	if request.Site != nil {
 		site := *request.Site
-		site.Publisher = publisherWithID(site.Publisher, publisherID)
+		publisher, err := publisherWithID(site.Publisher, publisherID)
+		if err != nil {
+			return fmt.Errorf("unable to update site.publisher: %w", err)
+		}
+		site.Publisher = publisher
 		request.Site = &site
-		return
+		return nil
 	}
 
 	if request.App != nil {
 		app := *request.App
-		app.Publisher = publisherWithID(app.Publisher, publisherID)
+		publisher, err := publisherWithID(app.Publisher, publisherID)
+		if err != nil {
+			return fmt.Errorf("unable to update app.publisher: %w", err)
+		}
+		app.Publisher = publisher
 		request.App = &app
 	}
+	return nil
 }
 
-// publisherWithID returns a copy of publisher carrying id, or a fresh Publisher
-// when the request did not include one.
-func publisherWithID(publisher *openrtb2.Publisher, id string) *openrtb2.Publisher {
+// publisherWithID returns a copy of publisher carrying id and without
+// ext.prebid.parentAccount, or a fresh Publisher when the request omitted one.
+func publisherWithID(publisher *openrtb2.Publisher, id string) (*openrtb2.Publisher, error) {
 	if publisher == nil {
-		return &openrtb2.Publisher{ID: id}
+		return &openrtb2.Publisher{ID: id}, nil
 	}
 
 	cpy := *publisher
 	cpy.ID = id
-	return &cpy
+
+	ext, err := removeParentAccount(publisher.Ext)
+	if err != nil {
+		return nil, err
+	}
+	cpy.Ext = ext
+	return &cpy, nil
+}
+
+// removeParentAccount removes only publisher.ext.prebid.parentAccount, retaining
+// every other publisher extension field.
+func removeParentAccount(publisherExt json.RawMessage) (json.RawMessage, error) {
+	if len(publisherExt) == 0 {
+		return publisherExt, nil
+	}
+
+	ext := map[string]json.RawMessage{}
+	if err := jsonutil.Unmarshal(publisherExt, &ext); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal ext: %s", err)
+	}
+
+	prebidJSON, exists := ext[openrtb_ext.PrebidExtKey]
+	if !exists || len(prebidJSON) == 0 {
+		return publisherExt, nil
+	}
+
+	prebid := map[string]json.RawMessage{}
+	if err := jsonutil.Unmarshal(prebidJSON, &prebid); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal ext.%s: %s", openrtb_ext.PrebidExtKey, err)
+	}
+	if _, exists := prebid["parentAccount"]; !exists {
+		return publisherExt, nil
+	}
+
+	delete(prebid, "parentAccount")
+	prebidJSON, err := jsonutil.Marshal(prebid)
+	if err != nil {
+		return nil, err
+	}
+	ext[openrtb_ext.PrebidExtKey] = prebidJSON
+
+	return jsonutil.Marshal(ext)
+}
+
+// removeOCMAliases removes aliases that resolve to this adapter before forwarding
+// the request to another Prebid Server. Other aliases and request extensions are
+// retained, and request.Ext receives new backing storage rather than mutating the
+// shared input bytes.
+func removeOCMAliases(request *openrtb2.BidRequest) error {
+	if len(request.Ext) == 0 {
+		return nil
+	}
+
+	ext := map[string]json.RawMessage{}
+	if err := jsonutil.Unmarshal(request.Ext, &ext); err != nil {
+		return fmt.Errorf("unable to unmarshal request.ext: %s", err)
+	}
+
+	prebidJSON, exists := ext[openrtb_ext.PrebidExtKey]
+	if !exists || len(prebidJSON) == 0 {
+		return nil
+	}
+	prebid := map[string]json.RawMessage{}
+	if err := jsonutil.Unmarshal(prebidJSON, &prebid); err != nil {
+		return fmt.Errorf("unable to unmarshal request.ext.%s: %s", openrtb_ext.PrebidExtKey, err)
+	}
+
+	aliasesJSON, exists := prebid["aliases"]
+	if !exists || len(aliasesJSON) == 0 {
+		return nil
+	}
+	aliases := map[string]string{}
+	if err := jsonutil.Unmarshal(aliasesJSON, &aliases); err != nil {
+		return fmt.Errorf("unable to unmarshal request.ext.%s.aliases: %s", openrtb_ext.PrebidExtKey, err)
+	}
+
+	changed := false
+	for alias, bidder := range aliases {
+		if bidder == string(openrtb_ext.BidderOcm) {
+			delete(aliases, alias)
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+
+	if len(aliases) == 0 {
+		delete(prebid, "aliases")
+	} else {
+		aliasesJSON, err := jsonutil.Marshal(aliases)
+		if err != nil {
+			return err
+		}
+		prebid["aliases"] = aliasesJSON
+	}
+	prebidJSON, err := jsonutil.Marshal(prebid)
+	if err != nil {
+		return err
+	}
+	ext[openrtb_ext.PrebidExtKey] = prebidJSON
+
+	requestExt, err := jsonutil.Marshal(ext)
+	if err != nil {
+		return err
+	}
+	request.Ext = requestExt
+	return nil
 }
 
 // MakeBids unpacks the OCM exchange's OpenRTB bid response. Bids whose media
@@ -224,13 +347,28 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: bidType,
+				Bid:      &seatBid.Bid[i],
+				BidType:  bidType,
+				BidVideo: videoFromBidExt(seatBid.Bid[i].Ext, bidType),
 			})
 		}
 	}
 
 	return bidResponse, errs
+}
+
+// videoFromBidExt returns targeting metadata supplied by the receiving PBS for
+// video bids. Invalid, unrelated, and non-video bid extensions are ignored.
+func videoFromBidExt(bidExt json.RawMessage, bidType openrtb_ext.BidType) *openrtb_ext.ExtBidPrebidVideo {
+	if bidType != openrtb_ext.BidTypeVideo || len(bidExt) == 0 {
+		return nil
+	}
+
+	var ext openrtb_ext.ExtBid
+	if err := jsonutil.Unmarshal(bidExt, &ext); err != nil || ext.Prebid == nil {
+		return nil
+	}
+	return ext.Prebid.Video
 }
 
 // getMediaTypeForBid resolves the bid's media type from the OpenRTB 2.6 bid.mtype

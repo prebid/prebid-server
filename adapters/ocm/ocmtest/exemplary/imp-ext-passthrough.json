@@ -54,10 +54,6 @@
                 ]
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-1",
-                  "placementId": "homepage-top"
-                },
                 "gpid": "/1234/homepage#top",
                 "tid": "b4c9a1de-0000-4000-8000-000000000001",
                 "data": {
@@ -80,7 +76,9 @@
             }
           }
         },
-        "impIDs": ["imp-banner-1"]
+        "impIDs": [
+          "imp-banner-1"
+        ]
       },
       "mockResponse": {
         "status": 200,

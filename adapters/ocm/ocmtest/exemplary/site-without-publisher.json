@@ -43,10 +43,6 @@
                 ]
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-3",
-                  "placementId": "sidebar-halfpage"
-                },
                 "prebid": {
                   "storedrequest": {
                     "id": "sidebar-halfpage"

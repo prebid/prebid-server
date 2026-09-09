@@ -48,10 +48,6 @@
                 "maxduration": 30
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-1",
-                  "placementId": "article-instream"
-                },
                 "prebid": {
                   "storedrequest": {
                     "id": "article-instream"
@@ -89,7 +85,16 @@
                   "crid": "creative-video-11",
                   "w": 640,
                   "h": 480,
-                  "mtype": 2
+                  "mtype": 2,
+                  "ext": {
+                    "prebid": {
+                      "type": "video",
+                      "video": {
+                        "duration": 30,
+                        "primary_category": "IAB1-2"
+                      }
+                    }
+                  }
                 }
               ]
             }
@@ -111,9 +116,22 @@
             "crid": "creative-video-11",
             "w": 640,
             "h": 480,
-            "mtype": 2
+            "mtype": 2,
+            "ext": {
+              "prebid": {
+                "type": "video",
+                "video": {
+                  "duration": 30,
+                  "primary_category": "IAB1-2"
+                }
+              }
+            }
           },
-          "type": "video"
+          "type": "video",
+          "video": {
+            "duration": 30,
+            "primary_category": "IAB1-2"
+          }
         }
       ]
     }

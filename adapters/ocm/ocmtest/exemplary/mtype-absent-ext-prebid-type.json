@@ -44,10 +44,6 @@
                 "h": 480
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-1",
-                  "placementId": "article-instream"
-                },
                 "prebid": {
                   "storedrequest": {
                     "id": "article-instream"

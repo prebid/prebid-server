@@ -50,10 +50,6 @@
                 ]
               },
               "ext": {
-                "bidder": {
-                  "publisherId": "ocm-pub-2",
-                  "placementId": "app-bottom-banner"
-                },
                 "prebid": {
                   "storedrequest": {
                     "id": "app-bottom-banner"
