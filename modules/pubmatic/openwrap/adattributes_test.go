@@ -775,6 +775,7 @@ func TestShouldServerInjectFormatLevelAdAttributes(t *testing.T) {
 		{"5.2.1", true},
 		{"5.3.0", true},
 		{"5.3.1", false},
+		{"5.4.0", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
@@ -1087,6 +1088,207 @@ func TestApplyOWSDKFormatLevelAdAttributes(t *testing.T) {
 			}
 			if tt.imp.Video != nil {
 				assertFormatExtOWSDK(t, "video", tt.imp.Video.Ext, tt.video)
+			}
+		})
+	}
+}
+
+func TestShouldMergeSignalFormatLevelOWSDK(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{"", false},
+		{"5.3.0", false},
+		{"5.3.1", false},
+		{"5.4.0", true},
+		{"5.4.1", true},
+		{"6.0.0", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			assert.Equal(t, tt.want, shouldMergeSignalFormatLevelOWSDK(tt.version))
+		})
+	}
+}
+
+func TestMergeSignalFormatOWSDKFromFormatExt(t *testing.T) {
+	tests := []struct {
+		name       string
+		requestExt json.RawMessage
+		signalExt  json.RawMessage
+		wantJSON   string
+	}{
+		{
+			name:       "empty_signal_owsdk_unchanged",
+			requestExt: json.RawMessage(`{"prebid":{"foo":1}}`),
+			signalExt:  json.RawMessage(`{"owsdk":{}}`),
+			wantJSON:   `{"prebid":{"foo":1}}`,
+		},
+		{
+			name:       "missing_ext_creates_owsdk_only",
+			requestExt: nil,
+			signalExt:  json.RawMessage(`{"owsdk":{"adattributes":[1,3,4]}}`),
+			wantJSON:   `{"owsdk":{"adattributes":[1,3,4]}}`,
+		},
+		{
+			name:       "preserves_existing_prebid_and_adds_owsdk",
+			requestExt: json.RawMessage(`{"prebid":{"bidder":{}}}`),
+			signalExt:  json.RawMessage(`{"owsdk":{"adattributes":[1,3,4]}}`),
+			wantJSON:   `{"prebid":{"bidder":{}},"owsdk":{"adattributes":[1,3,4]}}`,
+		},
+		{
+			name:       "merges_adattributes_into_existing_owsdk",
+			requestExt: json.RawMessage(`{"prebid":{"x":1},"owsdk":{"ctaoverlay":1}}`),
+			signalExt:  json.RawMessage(`{"owsdk":{"adattributes":[1,3,4]}}`),
+			wantJSON:   `{"prebid":{"x":1},"owsdk":{"ctaoverlay":1,"adattributes":[1,3,4]}}`,
+		},
+		{
+			name:       "signal_adattributes_overwrites_existing",
+			requestExt: json.RawMessage(`{"owsdk":{"adattributes":[1]}}`),
+			signalExt:  json.RawMessage(`{"owsdk":{"adattributes":[1,3,4]}}`),
+			wantJSON:   `{"owsdk":{"adattributes":[1,3,4]}}`,
+		},
+		{
+			name:       "ignores_other_signal_format_ext_keys",
+			requestExt: json.RawMessage(`{"prebid":{"y":2}}`),
+			signalExt:  json.RawMessage(`{"other":99,"owsdk":{"adattributes":[1,3,4]}}`),
+			wantJSON:   `{"prebid":{"y":2},"owsdk":{"adattributes":[1,3,4]}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mergeSignalFormatOWSDKFromFormatExt(tt.requestExt, tt.signalExt)
+			assert.NoError(t, err)
+			assert.JSONEq(t, tt.wantJSON, string(got))
+		})
+	}
+}
+
+func TestMergeSignalFormatLevelOWSDK(t *testing.T) {
+	signalRequest := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{
+			ID: "imp1",
+			Banner: &openrtb2.Banner{
+				Ext: json.RawMessage(`{"owsdk":{"adattributes":[1,3,4]},"other":99}`),
+			},
+			Video: &openrtb2.Video{
+				Ext: json.RawMessage(`{"owsdk":{"adattributes":[1,2,3]},"other":88}`),
+			},
+		}},
+	}
+
+	tests := []struct {
+		name        string
+		imp         *openrtb2.Imp
+		signal      *openrtb2.BidRequest
+		sdkVersion  string
+		wantBanner  string
+		wantVideo   string
+		wantNoMerge bool
+	}{
+		{
+			name: "5.4.0_merges_banner_and_video_owsdk_preserving_prebid",
+			imp: &openrtb2.Imp{
+				ID:     "imp1",
+				Banner: &openrtb2.Banner{Ext: json.RawMessage(`{"prebid":{"bidder":{}}}`)},
+				Video:  &openrtb2.Video{Ext: json.RawMessage(`{"prebid":{"bidder":{}}}`)},
+			},
+			signal:     signalRequest,
+			sdkVersion: "5.4.0",
+			wantBanner: `{"prebid":{"bidder":{}},"owsdk":{"adattributes":[1,3,4]}}`,
+			wantVideo:  `{"prebid":{"bidder":{}},"owsdk":{"adattributes":[1,2,3]}}`,
+		},
+		{
+			name: "5.3.0_does_not_merge_signal_format_owsdk",
+			imp: &openrtb2.Imp{
+				ID:     "imp1",
+				Banner: &openrtb2.Banner{Ext: json.RawMessage(`{"prebid":{"bidder":{}}}`)},
+				Video:  &openrtb2.Video{Ext: json.RawMessage(`{"prebid":{"bidder":{}}}`)},
+			},
+			signal:      signalRequest,
+			sdkVersion:  "5.3.0",
+			wantNoMerge: true,
+		},
+		{
+			name: "no_signal_owsdk_leaves_request_unchanged",
+			imp: &openrtb2.Imp{
+				ID:     "imp1",
+				Banner: &openrtb2.Banner{Ext: json.RawMessage(`{"prebid":{"bidder":{}}}`)},
+			},
+			signal: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{
+					ID:     "imp1",
+					Banner: &openrtb2.Banner{Ext: json.RawMessage(`{"other":1}`)},
+				}},
+			},
+			sdkVersion:  "5.4.0",
+			wantBanner:  `{"prebid":{"bidder":{}}}`,
+			wantNoMerge: true,
+		},
+		{
+			name: "banner_only_when_video_absent_on_request",
+			imp: &openrtb2.Imp{
+				ID:     "imp1",
+				Banner: &openrtb2.Banner{Ext: json.RawMessage(`{}`)},
+			},
+			signal:     signalRequest,
+			sdkVersion: "5.4.0",
+			wantBanner: `{"owsdk":{"adattributes":[1,3,4]}}`,
+		},
+		{
+			name:       "nil_imp_noop",
+			imp:        nil,
+			signal:     signalRequest,
+			sdkVersion: "5.4.0",
+		},
+		{
+			name: "nil_signal_noop",
+			imp: &openrtb2.Imp{
+				ID:     "imp1",
+				Banner: &openrtb2.Banner{Ext: json.RawMessage(`{"prebid":{}}`)},
+			},
+			signal:      nil,
+			sdkVersion:  "5.4.0",
+			wantBanner:  `{"prebid":{}}`,
+			wantNoMerge: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.imp == nil {
+				assert.NoError(t, MergeSignalFormatLevelOWSDK(tt.imp, tt.signal, tt.sdkVersion))
+				return
+			}
+
+			bannerBefore := ""
+			if tt.imp.Banner != nil && tt.imp.Banner.Ext != nil {
+				bannerBefore = string(tt.imp.Banner.Ext)
+			}
+			videoBefore := ""
+			if tt.imp.Video != nil && tt.imp.Video.Ext != nil {
+				videoBefore = string(tt.imp.Video.Ext)
+			}
+
+			assert.NoError(t, MergeSignalFormatLevelOWSDK(tt.imp, tt.signal, tt.sdkVersion))
+
+			if tt.wantNoMerge && tt.wantBanner == "" && tt.wantVideo == "" {
+				if tt.imp.Banner != nil {
+					assert.Equal(t, bannerBefore, string(tt.imp.Banner.Ext))
+				}
+				if tt.imp.Video != nil {
+					assert.Equal(t, videoBefore, string(tt.imp.Video.Ext))
+				}
+				return
+			}
+
+			if tt.wantBanner != "" && tt.imp.Banner != nil {
+				assert.JSONEq(t, tt.wantBanner, string(tt.imp.Banner.Ext))
+			}
+			if tt.wantVideo != "" && tt.imp.Video != nil {
+				assert.JSONEq(t, tt.wantVideo, string(tt.imp.Video.Ext))
 			}
 		})
 	}

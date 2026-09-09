@@ -49,9 +49,12 @@ const (
 	MRECHeight = 250
 
 	// Server injects format-level ext.owsdk.adattributes only for displaymanagerver in [4.1.0, 5.3.0].
-	// SDK 5.3.1+ sends adattributes on the request; OpenWrap does not add them.
+	// SDK 5.4.0+ sends format-level owsdk in signal; OpenWrap merges from signal instead.
 	OWSDKServerAdAttributesMinSDKVersion = "4.1.0"
 	OWSDKServerAdAttributesMaxSDKVersion = "5.3.0"
+
+	// SDK 5.4.0+ includes format-level ext.owsdk (e.g. adattributes) in decoded signal banner/video ext.
+	OWSDKSignalFormatLevelMinSDKVersion = "5.4.0"
 )
 
 const (
@@ -179,6 +182,14 @@ func init() {
 	}
 }
 
+// shouldMergeSignalFormatLevelOWSDK is true when displaymanagerver is >= 5.4.0.
+func shouldMergeSignalFormatLevelOWSDK(sdkVersion string) bool {
+	if sdkVersion == "" {
+		return false
+	}
+	return !isVersionLessThan(sdkVersion, OWSDKSignalFormatLevelMinSDKVersion)
+}
+
 // shouldServerInjectFormatLevelAdAttributes is true when displaymanagerver is in [4.1.0, 5.3.0] inclusive.
 func shouldServerInjectFormatLevelAdAttributes(sdkVersion string) bool {
 	if sdkVersion == "" {
@@ -264,6 +275,65 @@ func marshalExtOWSDKOnly(owsdkBytes []byte) (json.RawMessage, error) {
 	return json.Marshal(map[string]json.RawMessage{
 		extOWSDKKey: owsdkBytes,
 	})
+}
+
+// mergeSignalFormatOWSDKFromFormatExt copies signal format ext.owsdk onto the request format ext.
+// Only owsdk is taken from signal; other signal format ext keys are ignored. Request ext keys are preserved.
+func mergeSignalFormatOWSDKFromFormatExt(requestExt, signalExt json.RawMessage) (json.RawMessage, error) {
+	if len(signalExt) == 0 {
+		return requestExt, nil
+	}
+
+	signalOWSDK, _, _, err := jsonparser.Get(signalExt, extOWSDKKey)
+	if err != nil || len(signalOWSDK) <= 2 {
+		return requestExt, nil
+	}
+
+	adAttributesJSON, _, _, _ := jsonparser.Get(signalOWSDK, adAttributesKey)
+	return mergeOWSDKServerFieldsIntoExtJSON(requestExt, signalOWSDK, adAttributesJSON)
+}
+
+// MergeSignalFormatLevelOWSDK copies format-level ext.owsdk from decoded SDK signal onto the request imp
+// when displaymanagerver >= 5.4.0. v25 requests already carry format-level owsdk on the imp and do not use signal.
+// For SDK < 5.4.0 this is a no-op (server injection handles 4.1.0–5.3.0).
+func MergeSignalFormatLevelOWSDK(imp *openrtb2.Imp, signalRequest *openrtb2.BidRequest, sdkVersion string) error {
+	if imp == nil || signalRequest == nil || len(signalRequest.Imp) == 0 || !shouldMergeSignalFormatLevelOWSDK(sdkVersion) {
+		return nil
+	}
+
+	var signalImp *openrtb2.Imp
+	if len(signalRequest.Imp) == 1 {
+		signalImp = &signalRequest.Imp[0]
+	} else {
+		for i := range signalRequest.Imp {
+			if signalRequest.Imp[i].ID == imp.ID {
+				signalImp = &signalRequest.Imp[i]
+				break
+			}
+		}
+	}
+	if signalImp == nil {
+		return nil
+	}
+
+	var errs []error
+
+	if imp.Banner != nil && signalImp.Banner != nil {
+		if out, err := mergeSignalFormatOWSDKFromFormatExt(imp.Banner.Ext, signalImp.Banner.Ext); err != nil {
+			errs = append(errs, fmt.Errorf("banner: %w", err))
+		} else {
+			imp.Banner.Ext = out
+		}
+	}
+	if imp.Video != nil && signalImp.Video != nil {
+		if out, err := mergeSignalFormatOWSDKFromFormatExt(imp.Video.Ext, signalImp.Video.Ext); err != nil {
+			errs = append(errs, fmt.Errorf("video: %w", err))
+		} else {
+			imp.Video.Ext = out
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 // ApplyOWSDKFormatLevelAdAttributes sets imp.banner|video ext.owsdk.adattributes from unifiedFeatureMatrix

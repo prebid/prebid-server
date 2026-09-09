@@ -989,7 +989,14 @@ func (m *OpenWrap) applyImpChanges(rCtx models.RequestCtx, imp *openrtb2.Imp, de
 	imp.Ext = rCtx.ImpBidCtx[imp.ID].NewExt
 
 	if sdkutils.IsSdkEndpoint(rCtx.Endpoint) || rCtx.Endpoint == models.EndpointV25 {
-		if err := ApplyOWSDKFormatLevelAdAttributes(imp, rCtx.ImpBidCtx[imp.ID], deviceOS); err != nil {
+		impCtx := rCtx.ImpBidCtx[imp.ID]
+		// SDK mediation: copy format-level owsdk from decoded signal. v25 carries it on the request imp already.
+		if rCtx.SignalRequest != nil {
+			if err := MergeSignalFormatLevelOWSDK(imp, rCtx.SignalRequest, impCtx.DisplayManagerVer); err != nil {
+				glog.Errorf("OWSDK format-level signal owsdk merge imp=%s: %v", imp.ID, err)
+			}
+		}
+		if err := ApplyOWSDKFormatLevelAdAttributes(imp, impCtx, deviceOS); err != nil {
 			glog.Errorf("OWSDK format-level adattributes imp=%s: %v", imp.ID, err)
 		}
 	}
