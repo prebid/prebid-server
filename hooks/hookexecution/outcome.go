@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/v4/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // Status indicates the result of hook execution.
@@ -85,6 +86,8 @@ type HookOutcome struct {
 	DebugMessages []string                `json:"debug_messages,omitempty"`
 	Errors        []string                `json:"-"`
 	Warnings      []string                `json:"-"`
+	// SeatNonBid is internal response metadata, not part of hook trace output.
+	SeatNonBid []openrtb_ext.SeatNonBid `json:"-"`
 }
 
 // HookID points to the specific hook defined by the hook execution plan.

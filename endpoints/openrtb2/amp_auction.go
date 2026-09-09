@@ -892,6 +892,9 @@ func setSeatNonBid(finalExtBidResponse *openrtb_ext.ExtBidResponse, request *ope
 	if finalExtBidResponse.Prebid == nil {
 		finalExtBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{}
 	}
+	if len(finalExtBidResponse.Prebid.SeatNonBid) > 0 {
+		return true
+	}
 	finalExtBidResponse.Prebid.SeatNonBid = auctionResponse.GetSeatNonBid()
 	return true
 }

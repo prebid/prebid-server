@@ -123,16 +123,17 @@ type NonBidObject struct {
 
 // ExtResponseNonBidPrebid represents bidresponse.ext.prebid.seatnonbid[].nonbid[].ext
 type ExtResponseNonBidPrebid struct {
-	Bid NonBidObject `json:"bid"`
+	Bid  NonBidObject `json:"bid"`
+	Type string       `json:"type,omitempty"`
 }
 
 type NonBidExt struct {
 	Prebid ExtResponseNonBidPrebid `json:"prebid"`
 }
 
-// NonBid represnts the Non Bid Reason (statusCode) for given impression ID
+// NonBid represents the Non Bid Reason. ImpId is populated for impression-scoped statuses.
 type NonBid struct {
-	ImpId      string     `json:"impid"`
+	ImpId      string     `json:"impid,omitempty"`
 	StatusCode int        `json:"statuscode"`
 	Ext        *NonBidExt `json:"ext,omitempty"`
 }
