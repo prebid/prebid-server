@@ -13,6 +13,10 @@ PBS_METRICS_PROMETHEUS_NAMESPACE - this is responsable for the primary prefix ad
 - PBS_METRICS_PROMETHEUS_SUBSYSTEM=server - default is empty.
 
 PBS_METRICS_PROMETHEUS_SUBSYSTEM - this is a secondary prefix added to metrics to ensure uniqueness.
+
+- PBS_METRICS_PROMETHEUS_ACCOUNT_REQUEST_STATUS_ENABLED=false - default is false.
+
+PBS_METRICS_PROMETHEUS_ACCOUNT_REQUEST_STATUS_ENABLED - If this flag is set to true, the per-account request status metric is enabled.
   
 - PBS_METRICS_DISABLED_METRICS_ADAPTER_CONNECTIONS_METRICS=false - default is true.
 
