@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-invalid-ext-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {"format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"publisherId": ""}}
+      }
+    ],
+    "site": {"domain": "example.gr", "page": "https://example.gr/"}
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp[0]: publisherId is required and must not be blank",
+      "comparison": "literal"
+    }
+  ]
+}

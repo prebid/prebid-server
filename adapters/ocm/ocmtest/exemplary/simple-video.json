@@ -1,0 +1,121 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-video-req",
+    "imp": [
+      {
+        "id": "imp-video-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "article-instream"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/video",
+      "publisher": {
+        "id": "publisher-from-request"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-video-req",
+          "imp": [
+            {
+              "id": "imp-video-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480,
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "ocm-pub-1",
+                  "placementId": "article-instream"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "article-instream"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/video",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-video-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-video-req",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-video-1",
+                  "impid": "imp-video-1",
+                  "price": 6.4,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "creative-video-11",
+                  "w": 640,
+                  "h": 480,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-video-1",
+            "impid": "imp-video-1",
+            "price": 6.4,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "crid": "creative-video-11",
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

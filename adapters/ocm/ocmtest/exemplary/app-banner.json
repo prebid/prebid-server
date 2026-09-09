@@ -1,0 +1,127 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-app-req",
+    "imp": [
+      {
+        "id": "imp-app-1",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-2",
+            "placementId": "app-bottom-banner"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.orangeclickmedia.demo",
+      "name": "OCM Demo",
+      "publisher": {
+        "id": "publisher-from-request"
+      }
+    },
+    "device": {
+      "ifa": "38400000-8cf0-11bd-b23e-10b96e40000d",
+      "os": "android"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-app-req",
+          "imp": [
+            {
+              "id": "imp-app-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "ocm-pub-2",
+                  "placementId": "app-bottom-banner"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "app-bottom-banner"
+                  }
+                }
+              }
+            }
+          ],
+          "app": {
+            "bundle": "com.orangeclickmedia.demo",
+            "name": "OCM Demo",
+            "publisher": {
+              "id": "ocm-pub-2"
+            }
+          },
+          "device": {
+            "ifa": "38400000-8cf0-11bd-b23e-10b96e40000d",
+            "os": "android"
+          }
+        },
+        "impIDs": [
+          "imp-app-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-app-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-app-1",
+                  "impid": "imp-app-1",
+                  "price": 0.92,
+                  "adm": "<div id=\"ocm-creative\">app banner</div>",
+                  "crid": "creative-app-3",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-app-1",
+            "impid": "imp-app-1",
+            "price": 0.92,
+            "adm": "<div id=\"ocm-creative\">app banner</div>",
+            "crid": "creative-app-3",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

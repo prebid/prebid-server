@@ -1,0 +1,131 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-ext-passthrough-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "homepage-top"
+          },
+          "gpid": "/1234/homepage#top",
+          "tid": "b4c9a1de-0000-4000-8000-000000000001",
+          "data": {
+            "pbadslot": "/1234/homepage#top"
+          },
+          "prebid": {
+            "is_rewarded_inventory": 1
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/",
+      "publisher": {
+        "id": "publisher-from-request"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-ext-passthrough-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "ocm-pub-1",
+                  "placementId": "homepage-top"
+                },
+                "gpid": "/1234/homepage#top",
+                "tid": "b4c9a1de-0000-4000-8000-000000000001",
+                "data": {
+                  "pbadslot": "/1234/homepage#top"
+                },
+                "prebid": {
+                  "is_rewarded_inventory": 1,
+                  "storedrequest": {
+                    "id": "homepage-top"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          }
+        },
+        "impIDs": ["imp-banner-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-ext-passthrough-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-banner-1",
+                  "impid": "imp-banner-1",
+                  "price": 1.4,
+                  "adm": "<div id=\"ocm-creative\">banner</div>",
+                  "crid": "creative-9001",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner-1",
+            "impid": "imp-banner-1",
+            "price": 1.4,
+            "adm": "<div id=\"ocm-creative\">banner</div>",
+            "crid": "creative-9001",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
