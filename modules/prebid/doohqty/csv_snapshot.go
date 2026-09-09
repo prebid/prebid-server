@@ -3,6 +3,7 @@ package doohqty
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,18 +16,20 @@ import (
 )
 
 const (
-	csvSnapshotMaxBodyBytes = 10 * 1024 * 1024
-	csvSnapshotMaxWarnings  = 20
+	csvSnapshotMaxBodyBytes      = 10 * 1024 * 1024
+	csvSnapshotMaxErrorBodyBytes = 2 * 1024
+	csvSnapshotMaxWarnings       = 20
 )
 
 type csvSnapshotSource struct {
-	ctx       context.Context
-	cancel    context.CancelFunc
-	client    *http.Client
-	mu        sync.Mutex
-	snapshots map[string]*csvPublisherSnapshot
-	wg        sync.WaitGroup
-	closed    bool
+	ctx          context.Context
+	cancel       context.CancelFunc
+	client       *http.Client
+	maxBodyBytes int64
+	mu           sync.Mutex
+	snapshots    map[string]*csvPublisherSnapshot
+	wg           sync.WaitGroup
+	closed       bool
 }
 
 type csvPublisherSnapshot struct {
@@ -42,10 +45,11 @@ type csvPublisherSnapshot struct {
 func newCSVSnapshotSource(parent context.Context, client *http.Client) *csvSnapshotSource {
 	ctx, cancel := context.WithCancel(parent)
 	return &csvSnapshotSource{
-		ctx:       ctx,
-		cancel:    cancel,
-		client:    client,
-		snapshots: make(map[string]*csvPublisherSnapshot),
+		ctx:          ctx,
+		cancel:       cancel,
+		client:       client,
+		maxBodyBytes: csvSnapshotMaxBodyBytes,
+		snapshots:    make(map[string]*csvPublisherSnapshot),
 	}
 }
 
@@ -140,8 +144,9 @@ func (s *csvSnapshotSource) startRefreshLocked(cacheKey string, snapshot *csvPub
 
 		snapshot.refreshing = false
 		if err != nil {
+			// Leave values and warnings alone so they keep describing the
+			// snapshot still being served.
 			snapshot.lastErr = err.Error()
-			snapshot.warnings = warnings
 			return
 		}
 
@@ -154,7 +159,7 @@ func (s *csvSnapshotSource) startRefreshLocked(cacheKey string, snapshot *csvPub
 }
 
 func (s *csvSnapshotSource) fetchSnapshot(cfg moduleConfig, accountID string) (map[lookupKey]impressionValue, []string, error) {
-	requestCtx, cancel := context.WithTimeout(s.ctx, time.Duration(cfg.TimeoutMS)*time.Millisecond)
+	requestCtx, cancel := context.WithTimeout(s.ctx, time.Duration(cfg.Source.SyncTimeoutMS)*time.Millisecond)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(requestCtx, http.MethodGet, cfg.Source.Endpoint, nil)
@@ -172,16 +177,15 @@ func (s *csvSnapshotSource) fetchSnapshot(cfg moduleConfig, accountID string) (m
 	}
 	defer resp.Body.Close()
 
-	body := io.LimitReader(resp.Body, csvSnapshotMaxBodyBytes)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		responseBody, readErr := io.ReadAll(body)
+		responseBody, readErr := io.ReadAll(io.LimitReader(resp.Body, csvSnapshotMaxErrorBodyBytes))
 		if readErr != nil {
 			return nil, nil, fmt.Errorf("CSV endpoint returned status %d and response could not be read: %s", resp.StatusCode, readErr)
 		}
 		return nil, nil, fmt.Errorf("CSV endpoint returned status %d: %s", resp.StatusCode, string(responseBody))
 	}
 
-	values, warnings, err := parseImpressionValueCSV(accountID, body)
+	values, warnings, err := parseImpressionValueCSV(accountID, newMaxBytesReader(resp.Body, s.maxBodyBytes))
 	if err != nil {
 		return nil, warnings, err
 	}
@@ -203,6 +207,42 @@ func (s *csvSnapshotSource) Shutdown() {
 
 func csvSnapshotCacheKey(accountID string, cfg sourceConfig) string {
 	return accountID + "\x1f" + string(cfg.Type) + "\x1f" + cfg.Endpoint
+}
+
+// maxBytesReader reads at most limit bytes and then fails instead of reporting EOF
+type maxBytesReader struct {
+	reader    io.Reader
+	remaining int64
+	limit     int64
+}
+
+func newMaxBytesReader(reader io.Reader, limit int64) *maxBytesReader {
+	return &maxBytesReader{
+		reader:    reader,
+		remaining: limit + 1,
+		limit:     limit,
+	}
+}
+
+func (r *maxBytesReader) Read(p []byte) (int, error) {
+	if r.remaining <= 0 {
+		return 0, r.limitErr()
+	}
+	if int64(len(p)) > r.remaining {
+		p = p[:r.remaining]
+	}
+
+	n, err := r.reader.Read(p)
+	r.remaining -= int64(n)
+	if r.remaining <= 0 {
+		return n, r.limitErr()
+	}
+
+	return n, err
+}
+
+func (r *maxBytesReader) limitErr() error {
+	return fmt.Errorf("CSV snapshot exceeds the %d byte limit", r.limit)
 }
 
 type impressionValueCSVColumns struct {
@@ -238,6 +278,10 @@ func parseImpressionValueCSV(accountID string, data io.Reader) (map[lookupKey]im
 			break
 		}
 		if err != nil {
+			var parseErr *csv.ParseError
+			if !errors.As(err, &parseErr) {
+				return nil, warnings, fmt.Errorf("failed to read CSV: %s", err)
+			}
 			warnings = appendCSVSnapshotWarning(warnings, fmt.Sprintf("CSV row %d skipped: %s", line, err))
 			continue
 		}

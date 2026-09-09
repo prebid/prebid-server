@@ -25,6 +25,7 @@ hooks:
         source:
           type: csv_snapshot
           sync_rate_seconds: 300
+          sync_timeout_ms: 10000
         lookup_paths:
           - dooh.id
         overwrite_policy: missing_only
@@ -44,6 +45,8 @@ hooks:
 `lookup_paths` defaults to `["dooh.id"]` and supports `dooh.id`, `dooh.name`, `dooh.publisher.id`, `imp.id`, and `imp.tagid`. The first non-empty path is used for each impression.
 
 `overwrite_policy` defaults to `missing_only`. Set it to `always` only when the configured source should override an existing `imp.qty`.
+
+`timeout_ms` defaults to `100` and budgets the auction-path `request_lookup` call only. CSV snapshot downloads use `source.sync_timeout_ms` defaults to `10000` since the download happens off the auction path, and a bulk file cannot complete in an auction-sized budget.
 
 `cache_ttl_seconds`, `negative_cache_ttl_seconds`, and `cache_size_bytes` apply to `request_lookup` caching. `csv_snapshot` uses one in-memory snapshot per publisher/source endpoint and refreshes based on `source.sync_rate_seconds`.
 
@@ -143,6 +146,8 @@ imp.tagid,tag-456,8.5,2,
 ```
 
 Rows with invalid multipliers, unsupported lookup paths, unsupported source types, or missing `vendor` when `sourcetype` is `1` are skipped. A successful sync replaces the full publisher snapshot; missing rows are removed on the next successful sync. Failed refreshes keep the last good snapshot.
+
+The response must arrive within `source.sync_timeout_ms` and must not exceed 10 MB. An oversized response is a failed refresh, not a partial snapshot: parsing a truncated file would silently drop values for every display past the limit.
 
 Cold publishers do not block auctions. The first matching request starts the async CSV fetch and leaves the request unchanged until a snapshot is available.
 

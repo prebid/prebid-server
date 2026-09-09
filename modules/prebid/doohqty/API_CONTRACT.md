@@ -71,6 +71,8 @@ imp.tagid,tag-456,8.5,2,
 - Cold cache requests are left unchanged while the first snapshot loads.
 - Failed refreshes keep using the last successful snapshot.
 - Duplicate `path,key` rows keep the first valid row and skip later duplicates with a warning.
+- The download must complete within `source.sync_timeout_ms` (default `10000`). This is separate from `timeout_ms`, which budgets the auction-path `request_lookup` call.
+- Responses larger than 10 MB are rejected instead of parsed. A truncated CSV would silently drop every display past the limit, so an oversized response is treated as a failed refresh and the last successful snapshot keeps serving.
 
 ## Request Lookup Source
 

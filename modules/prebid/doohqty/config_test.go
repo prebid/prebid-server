@@ -158,3 +158,33 @@ func TestApplyAccountConfigClearsInheritedSourceHeaders(t *testing.T) {
 	assert.Empty(t, cfg.Source.Endpoint)
 	assert.Nil(t, cfg.Source.Headers)
 }
+
+func TestSyncTimeoutMSIsIndependentOfAuctionTimeout(t *testing.T) {
+	cfg, err := parseModuleConfig(json.RawMessage(`{"timeout_ms": 50}`))
+
+	require.NoError(t, err)
+	assert.Equal(t, 50, cfg.TimeoutMS)
+	assert.Equal(t, defaultSyncTimeoutMS, cfg.Source.SyncTimeoutMS)
+}
+
+func TestApplyAccountConfigOverridesSyncTimeoutMS(t *testing.T) {
+	cfg, err := applyAccountConfig(defaultModuleConfig(), json.RawMessage(`{
+		"source": {"sync_timeout_ms": 25000}
+	}`))
+
+	require.NoError(t, err)
+	assert.Equal(t, 25000, cfg.Source.SyncTimeoutMS)
+	assert.Equal(t, defaultTimeoutMS, cfg.TimeoutMS)
+}
+
+func TestNormalizeSourceConfigSyncTimeoutMS(t *testing.T) {
+	cfg, err := normalizeSourceConfig(sourceConfig{Type: sourceTypeCSVSnapshot})
+
+	require.NoError(t, err)
+	assert.Equal(t, defaultSyncTimeoutMS, cfg.SyncTimeoutMS)
+
+	_, err = normalizeSourceConfig(sourceConfig{Type: sourceTypeCSVSnapshot, SyncTimeoutMS: -1})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "source.sync_timeout_ms cannot be negative")
+}

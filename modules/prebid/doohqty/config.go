@@ -17,6 +17,7 @@ const (
 	defaultNegativeCacheTTLSeconds = 30
 	defaultCacheSizeBytes          = 10 * 1024 * 1024
 	defaultSyncRateSeconds         = 300
+	defaultSyncTimeoutMS           = 10000
 )
 
 const (
@@ -46,6 +47,7 @@ type sourceConfig struct {
 	Endpoint        string            `json:"endpoint"`
 	Headers         map[string]string `json:"headers,omitempty"`
 	SyncRateSeconds int               `json:"sync_rate_seconds"`
+	SyncTimeoutMS   int               `json:"sync_timeout_ms"`
 }
 
 type moduleConfig struct {
@@ -74,6 +76,7 @@ type sourceConfigOverlay struct {
 	Endpoint        *string           `json:"endpoint,omitempty"`
 	Headers         map[string]string `json:"headers,omitempty"`
 	SyncRateSeconds *int              `json:"sync_rate_seconds,omitempty"`
+	SyncTimeoutMS   *int              `json:"sync_timeout_ms,omitempty"`
 }
 
 func parseModuleConfig(data json.RawMessage) (moduleConfig, error) {
@@ -94,6 +97,7 @@ func defaultModuleConfig() moduleConfig {
 		Source: sourceConfig{
 			Type:            defaultSourceType,
 			SyncRateSeconds: defaultSyncRateSeconds,
+			SyncTimeoutMS:   defaultSyncTimeoutMS,
 		},
 		LookupPaths:             []string{defaultLookupPath},
 		OverwritePolicy:         defaultOverwritePolicy,
@@ -159,6 +163,9 @@ func applySourceConfigOverlay(base *sourceConfig, overlay sourceConfigOverlay) {
 	}
 	if overlay.SyncRateSeconds != nil {
 		base.SyncRateSeconds = *overlay.SyncRateSeconds
+	}
+	if overlay.SyncTimeoutMS != nil {
+		base.SyncTimeoutMS = *overlay.SyncTimeoutMS
 	}
 }
 
@@ -244,6 +251,13 @@ func normalizeSourceConfig(cfg sourceConfig) (sourceConfig, error) {
 	}
 	if cfg.SyncRateSeconds == 0 {
 		cfg.SyncRateSeconds = defaultSyncRateSeconds
+	}
+
+	if cfg.SyncTimeoutMS < 0 {
+		return cfg, fmt.Errorf("source.sync_timeout_ms cannot be negative")
+	}
+	if cfg.SyncTimeoutMS == 0 {
+		cfg.SyncTimeoutMS = defaultSyncTimeoutMS
 	}
 
 	for name := range cfg.Headers {

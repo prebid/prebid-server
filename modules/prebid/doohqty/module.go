@@ -60,7 +60,7 @@ func (m *Module) HandleProcessedAuctionHook(
 
 	cfg, err := applyAccountConfig(m.cfg, miCtx.AccountConfig)
 	if err != nil {
-		return result, hookexecution.NewFailure(err.Error())
+		return result, hookexecution.NewFailure("%s", err.Error())
 	}
 	if !cfg.Enabled {
 		return result, nil
