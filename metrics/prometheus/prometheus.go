@@ -91,7 +91,7 @@ type Metrics struct {
 	accountRequests                       *prometheus.CounterVec
 	accountDebugRequests                  *prometheus.CounterVec
 	accountStoredResponses                *prometheus.CounterVec
-	accountGotBidsRequests               *prometheus.CounterVec
+	accountGotBidsRequests                *prometheus.CounterVec
 	accountBidResponseValidationSizeError *prometheus.CounterVec
 	accountBidResponseValidationSizeWarn  *prometheus.CounterVec
 	accountBidResponseSecureMarkupError   *prometheus.CounterVec

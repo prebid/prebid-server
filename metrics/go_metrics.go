@@ -129,8 +129,8 @@ type accountMetrics struct {
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
 	adapterMetrics       map[string]*AdapterMetrics
 	moduleMetrics        map[string]*ModuleMetrics
-	storedResponsesMeter  metrics.Meter
-	gotBidsRequestMeter   metrics.Meter
+	storedResponsesMeter metrics.Meter
+	gotBidsRequestMeter  metrics.Meter
 
 	bidValidationCreativeSizeMeter     metrics.Meter
 	bidValidationCreativeSizeWarnMeter metrics.Meter
