@@ -533,6 +533,23 @@ func TestPrepareCookieForWrite(t *testing.T) {
 	}
 }
 
+type failingEncoder struct{}
+
+func (failingEncoder) Encode(*Cookie) (string, error) {
+	return "", errors.New("encode failed")
+}
+
+func TestPrepareCookieForWriteEncoderError(t *testing.T) {
+	cookie := &Cookie{
+		uids: map[string]UIDEntry{
+			"adnxs": newTempId("UID", 1),
+		},
+	}
+
+	_, err := cookie.PrepareCookieForWrite(&config.HostCookie{}, failingEncoder{}, nil)
+	assert.Error(t, err)
+}
+
 func TestSyncHostCookie(t *testing.T) {
 	testCases := []struct {
 		name            string

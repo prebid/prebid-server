@@ -1,0 +1,84 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "audio": {
+        "mimes": ["audio/mp4", "audio/mpeg", "audio/ogg"],
+        "minduration": 5,
+        "maxduration": 30,
+        "protocols": [3, 6, 2, 5, 7, 8]
+      },
+      "ext": {
+        "bidder": {
+          "publisherId": "123",
+          "supplyId": "ssp-1"
+        }
+      }
+    }],
+    "site": {
+      "page": "https://example.com/audio"
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://localhost/br?publisher_id=123&supply_id=ssp-1",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "audio": {
+            "mimes": ["audio/mp4", "audio/mpeg", "audio/ogg"],
+            "minduration": 5,
+            "maxduration": 30,
+            "protocols": [3, 6, 2, 5, 7, 8]
+          },
+          "ext": {
+"bidder": {
+            "publisherId": "123",
+            "supplyId": "ssp-1"
+          }
+          }
+        }],
+        "site": {
+          "page": "https://example.com/audio",
+          "publisher": {
+            "id": "123"
+          }
+        }
+      },
+      "impIDs": ["test-imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "cur": "USD",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 4.00,
+            "adm": "<VAST version=\"2.0\"><Ad id=\"13473443\"><InLine><AdSystem>StackAdapt</AdSystem><Creatives><Creative><Linear><Duration>00:00:14</Duration><MediaFiles><MediaFile type=\"audio/mp4\">https://example.com/audio.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "crid": "creative-101",
+            "mtype": 3
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "test-bid-id",
+        "impid": "test-imp-id",
+        "price": 4,
+        "adm": "<VAST version=\"2.0\"><Ad id=\"13473443\"><InLine><AdSystem>StackAdapt</AdSystem><Creatives><Creative><Linear><Duration>00:00:14</Duration><MediaFiles><MediaFile type=\"audio/mp4\">https://example.com/audio.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+        "crid": "creative-101",
+        "mtype": 3
+      },
+      "type": "audio"
+    }]
+  }]
+}
