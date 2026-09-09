@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Matterfull RTB Adapter Params",
+  "description": "A schema which validates params accepted by the Matterfull RTB adapter",
+  "type": "object",
+  "properties": {
+    "pid": {
+      "type": "string",
+      "description": "Publisher token for the separately provisioned Matterfull RTB OpenRTB integration.",
+      "minLength": 20
+    }
+  },
+  "required": ["pid"]
+}
