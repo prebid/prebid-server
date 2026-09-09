@@ -69,6 +69,14 @@ func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest, reqInfo *adapte
 		imp.TagID = tlext.InvCode
 	}
 
+	// parentId and publisherId are optional; when present forward them on imp.ext
+	if err := setImpExtFields(imp, map[string]*string{
+		"parentId":    tlext.ParentID,
+		"publisherId": tlext.PublisherID,
+	}); err != nil {
+		return err
+	}
+
 	// floor is optional
 	if tlext.Floor != nil {
 		imp.BidFloor = *tlext.Floor
@@ -97,6 +105,45 @@ func resolveBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestIn
 		imp.BidFloor = converted
 	}
 	imp.BidFloorCur = "USD"
+	return nil
+}
+
+// setImpExtFields writes the supplied optional string fields into imp.ext,
+// preserving all other imp.ext fields. Nil or empty values are skipped.
+func setImpExtFields(imp *openrtb2.Imp, fields map[string]*string) error {
+	pending := make(map[string]string, len(fields))
+	for key, value := range fields {
+		if value != nil && *value != "" {
+			pending[key] = *value
+		}
+	}
+	if len(pending) == 0 {
+		return nil
+	}
+
+	var impExt map[string]json.RawMessage
+	if len(imp.Ext) > 0 {
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
+			return err
+		}
+	}
+	if impExt == nil {
+		impExt = make(map[string]json.RawMessage, len(pending))
+	}
+
+	for key, value := range pending {
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		impExt[key] = encoded
+	}
+
+	ext, err := json.Marshal(impExt)
+	if err != nil {
+		return err
+	}
+	imp.Ext = ext
 	return nil
 }
 
