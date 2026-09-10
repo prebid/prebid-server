@@ -1,0 +1,18 @@
+endpoint: "https://rtb.aniview.com/sspRTB2"
+maintainer:
+  email: "support@aniview.com"
+gvlVendorID: 780
+endpointCompression: gzip
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://player.aniview.com/ssync/ssync.html?pbs=1&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&st=iframe&r={{.RedirectURL}}
+    userMacro: "[AV_UID]"
