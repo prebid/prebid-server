@@ -1,0 +1,129 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-alias-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "homepage-top"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/"
+    },
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "ocmAlias": "ocm",
+          "partnerAlias": "appnexus"
+        },
+        "debug": true
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-alias-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "homepage-top"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          },
+          "ext": {
+            "prebid": {
+              "aliases": {
+                "partnerAlias": "appnexus"
+              },
+              "debug": true
+            }
+          }
+        },
+        "impIDs": [
+          "imp-banner-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-alias-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-banner-1",
+                  "impid": "imp-banner-1",
+                  "price": 1.85,
+                  "adm": "<div id=\"ocm-creative\">banner</div>",
+                  "crid": "creative-9001",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner-1",
+            "impid": "imp-banner-1",
+            "price": 1.85,
+            "adm": "<div id=\"ocm-creative\">banner</div>",
+            "crid": "creative-9001",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

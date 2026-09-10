@@ -101,12 +101,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpOcm, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal ext: %s", err)
+		return nil, fmt.Errorf("unable to unmarshal ext: %w", err)
 	}
 
 	var impExt openrtb_ext.ExtImpOcm
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal ext.bidder: %s", err)
+		return nil, fmt.Errorf("unable to unmarshal ext.bidder: %w", err)
 	}
 
 	if strings.TrimSpace(impExt.PublisherID) == "" {
@@ -130,7 +130,7 @@ func setStoredRequestID(imp *openrtb2.Imp, placementID string) error {
 	ext := map[string]json.RawMessage{}
 	if len(imp.Ext) > 0 {
 		if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
-			return fmt.Errorf("unable to unmarshal ext: %s", err)
+			return fmt.Errorf("unable to unmarshal ext: %w", err)
 		}
 		if ext == nil {
 			ext = map[string]json.RawMessage{}
@@ -141,7 +141,7 @@ func setStoredRequestID(imp *openrtb2.Imp, placementID string) error {
 	prebid := map[string]json.RawMessage{}
 	if raw, exists := ext["prebid"]; exists && len(raw) > 0 {
 		if err := jsonutil.Unmarshal(raw, &prebid); err != nil {
-			return fmt.Errorf("unable to unmarshal ext.prebid: %s", err)
+			return fmt.Errorf("unable to unmarshal ext.prebid: %w", err)
 		}
 		if prebid == nil {
 			prebid = map[string]json.RawMessage{}
@@ -223,7 +223,7 @@ func removeParentAccount(publisherExt json.RawMessage) (json.RawMessage, error) 
 
 	ext := map[string]json.RawMessage{}
 	if err := jsonutil.Unmarshal(publisherExt, &ext); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal ext: %s", err)
+		return nil, fmt.Errorf("unable to unmarshal ext: %w", err)
 	}
 
 	prebidJSON, exists := ext[openrtb_ext.PrebidExtKey]
@@ -233,7 +233,7 @@ func removeParentAccount(publisherExt json.RawMessage) (json.RawMessage, error) 
 
 	prebid := map[string]json.RawMessage{}
 	if err := jsonutil.Unmarshal(prebidJSON, &prebid); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal ext.%s: %s", openrtb_ext.PrebidExtKey, err)
+		return nil, fmt.Errorf("unable to unmarshal ext.%s: %w", openrtb_ext.PrebidExtKey, err)
 	}
 	if _, exists := prebid["parentAccount"]; !exists {
 		return publisherExt, nil
@@ -260,7 +260,7 @@ func removeOCMAliases(request *openrtb2.BidRequest) error {
 
 	ext := map[string]json.RawMessage{}
 	if err := jsonutil.Unmarshal(request.Ext, &ext); err != nil {
-		return fmt.Errorf("unable to unmarshal request.ext: %s", err)
+		return fmt.Errorf("unable to unmarshal request.ext: %w", err)
 	}
 
 	prebidJSON, exists := ext[openrtb_ext.PrebidExtKey]
@@ -269,7 +269,7 @@ func removeOCMAliases(request *openrtb2.BidRequest) error {
 	}
 	prebid := map[string]json.RawMessage{}
 	if err := jsonutil.Unmarshal(prebidJSON, &prebid); err != nil {
-		return fmt.Errorf("unable to unmarshal request.ext.%s: %s", openrtb_ext.PrebidExtKey, err)
+		return fmt.Errorf("unable to unmarshal request.ext.%s: %w", openrtb_ext.PrebidExtKey, err)
 	}
 
 	aliasesJSON, exists := prebid["aliases"]
@@ -278,7 +278,7 @@ func removeOCMAliases(request *openrtb2.BidRequest) error {
 	}
 	aliases := map[string]string{}
 	if err := jsonutil.Unmarshal(aliasesJSON, &aliases); err != nil {
-		return fmt.Errorf("unable to unmarshal request.ext.%s.aliases: %s", openrtb_ext.PrebidExtKey, err)
+		return fmt.Errorf("unable to unmarshal request.ext.%s.aliases: %w", openrtb_ext.PrebidExtKey, err)
 	}
 
 	changed := false
