@@ -1,0 +1,187 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "a4f21c9e7b",
+            "customParams": {
+              "key01": 1,
+              "key02": true,
+              "key03": "value-03",
+              "key04": 4,
+              "key05": false,
+              "key06": "value-06",
+              "key07": 7,
+              "key08": true,
+              "key09": "value-09",
+              "key10": 10,
+              "key11": false,
+              "key12": "value-12",
+              "key13": 13,
+              "key14": true,
+              "key15": "value-15",
+              "key16": 16,
+              "key17": false,
+              "key18": "value-18",
+              "key19": 19,
+              "key20": true,
+              "key21": "value-21",
+              "key22": 22,
+              "key23": false,
+              "key24": "value-24",
+              "key25": 25,
+              "key26": true,
+              "key27": "value-27",
+              "key28": 28,
+              "key29": false,
+              "key30": "value-30",
+              "key31": 31,
+              "key32": true,
+              "key33": "value-33",
+              "key34": 34,
+              "key35": false,
+              "key36": "value-36",
+              "key37": 37,
+              "key38": true,
+              "key39": "value-39",
+              "key40": 40
+            }
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.example.com/hb/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "a4f21c9e7b",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "data": {
+                  "key01": "1",
+                  "key02": "true",
+                  "key03": "value-03",
+                  "key04": "4",
+                  "key05": "false",
+                  "key06": "value-06",
+                  "key07": "7",
+                  "key08": "true",
+                  "key09": "value-09",
+                  "key10": "10",
+                  "key11": "false",
+                  "key12": "value-12",
+                  "key13": "13",
+                  "key14": "true",
+                  "key15": "value-15",
+                  "key16": "16",
+                  "key17": "false",
+                  "key18": "value-18",
+                  "key19": "19",
+                  "key20": "true",
+                  "key21": "value-21",
+                  "key22": "22",
+                  "key23": "false",
+                  "key24": "value-24",
+                  "key25": "25",
+                  "key26": "true",
+                  "key27": "value-27",
+                  "key28": "28",
+                  "key29": "false",
+                  "key30": "value-30",
+                  "key31": "31",
+                  "key32": "true",
+                  "key33": "value-33",
+                  "key34": "34",
+                  "key35": "false",
+                  "key36": "value-36",
+                  "key37": "37",
+                  "key38": "true",
+                  "key39": "value-39",
+                  "key40": "40"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example.com/article"
+          }
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "epom",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "test-imp-id",
+                  "price": 1.5,
+                  "adm": "<div>creative</div>",
+                  "crid": "c1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "test-imp-id",
+            "price": 1.5,
+            "adm": "<div>creative</div>",
+            "crid": "c1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

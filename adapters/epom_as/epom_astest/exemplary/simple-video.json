@@ -1,0 +1,123 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "placementKey": "a4f21c9e7b"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "startdelay": 0,
+          "linearity": 1,
+          "minduration": 5,
+          "maxduration": 60
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example.com/article"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.example.com/hb/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "a4f21c9e7b",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "startdelay": 0,
+                "linearity": 1,
+                "minduration": 5,
+                "maxduration": 60
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example.com/article"
+          },
+          "tmax": 500
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "epom",
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 2.75,
+                  "adm": "<VAST version=\"4.0\"><Ad><InLine/></Ad></VAST>",
+                  "crid": "creative-99",
+                  "dealid": "epom-direct",
+                  "mtype": 2,
+                  "w": 640,
+                  "h": 480
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 2.75,
+            "adm": "<VAST version=\"4.0\"><Ad><InLine/></Ad></VAST>",
+            "crid": "creative-99",
+            "dealid": "epom-direct",
+            "mtype": 2,
+            "w": 640,
+            "h": 480
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
