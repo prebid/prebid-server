@@ -41,51 +41,17 @@ type oxBidExt struct {
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var bannerAndNativeImps []openrtb2.Imp
-	var videoImps []openrtb2.Imp
-
-	for _, imp := range request.Imp {
-		// OpenX doesn't allow multi-type imp. Banner takes priority over video and video takes priority over native
-		// Openx also wants to send banner and native imps in one request
-		if imp.Banner != nil {
-			bannerAndNativeImps = append(bannerAndNativeImps, imp)
-		} else if imp.Video != nil {
-			videoImps = append(videoImps, imp)
-		} else if imp.Native != nil {
-			bannerAndNativeImps = append(bannerAndNativeImps, imp)
-		}
-	}
-
-	var adapterRequests []*adapters.RequestData
-	// Make a copy as we don't want to change the original request
-	reqCopy := *request
-
-	reqCopy.Imp = bannerAndNativeImps
-	adapterReq, errors := a.makeRequest(&reqCopy)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
-	}
-	errs = append(errs, errors...)
-
-	// OpenX only supports single imp video request
-	for _, videoImp := range videoImps {
-		reqCopy.Imp = []openrtb2.Imp{videoImp}
-		adapterReq, errors := a.makeRequest(&reqCopy)
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
-		}
-		errs = append(errs, errors...)
-	}
-
-	return adapterRequests, errs
-}
-
-func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
 	var validImps []openrtb2.Imp
 	reqExt := openxReqExt{BidderConfig: hbconfig}
 
+	// OpenX supports multi-imp requests with mixed media types, so every impression is sent in a
+	// single bid request, in the order it arrived.
 	for _, imp := range request.Imp {
+		// OpenX only bids on banner, video and native impressions.
+		if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+			continue
+		}
+
 		if err := preprocess(&imp, &reqExt); err != nil {
 			errs = append(errs, err)
 			continue
@@ -93,24 +59,33 @@ func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Requ
 		validImps = append(validImps, imp)
 	}
 
-	// If all the imps were malformed, don't bother making a server call with no impressions.
+	// If all the imps were malformed or unsupported, don't bother making a server call with no impressions.
 	if len(validImps) == 0 {
 		return nil, errs
 	}
 
-	request.Imp = validImps
+	// Make a copy as we don't want to change the original request
+	reqCopy := *request
+	reqCopy.Imp = validImps
 
-	var err error
-	request.Ext, err = json.Marshal(reqExt)
+	adapterReq, err := a.makeRequest(&reqCopy, reqExt)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
 
+	return []*adapters.RequestData{adapterReq}, errs
+}
+
+func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest, reqExt openxReqExt) (*adapters.RequestData, error) {
+	var err error
+	if request.Ext, err = json.Marshal(reqExt); err != nil {
+		return nil, err
+	}
+
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, err
 	}
 
 	headers := http.Header{}
@@ -122,7 +97,7 @@ func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Requ
 		Body:    reqJSON,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}, errs
+	}, nil
 }
 
 // Mutate the imp to get it ready to send to openx.
@@ -276,9 +251,8 @@ func getBidType(mtype openrtb2.MarkupType, impId string, imps []openrtb2.Imp) op
 	}
 }
 
-// getMediaTypeForImp figures out which media type this bid is for.
-//
-// OpenX doesn't support multi-type impressions.
+// getMediaTypeForImp is a fallback used only when the bid carries no mtype. It guesses the
+// media type from the impression's media objects:
 // If both banner and video exist, take banner as we do not want in-banner video.
 // If both video and native exist and banner is nil, take video.
 // If both banner and native exist, take banner.
