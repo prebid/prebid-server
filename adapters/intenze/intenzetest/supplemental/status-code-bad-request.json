@@ -41,7 +41,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://lb-east.intenze.co/?pass=accountId",
+        "uri": "https://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "imp": [
