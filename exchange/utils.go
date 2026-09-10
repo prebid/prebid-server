@@ -157,6 +157,7 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		reqWrapperCopy := req.CloneAndClearImpWrappers()
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
+
 		reqWrapperCopy.Imp = imps
 
 		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
@@ -848,11 +849,14 @@ func removeUnpermissionedEids(reqWrapper *openrtb_ext.RequestWrapper, bidder str
 		return nil
 	}
 
+	// clone User before mutating EIDs to avoid corrupting the shared pointer
+	userCopy := *reqWrapper.User
 	if len(eidsAllowed) == 0 {
-		reqWrapper.User.EIDs = nil
+		userCopy.EIDs = nil
 	} else {
-		reqWrapper.User.EIDs = eidsAllowed
+		userCopy.EIDs = eidsAllowed
 	}
+	reqWrapper.User = &userCopy
 	return nil
 }
 

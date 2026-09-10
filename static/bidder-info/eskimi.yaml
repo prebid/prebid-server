@@ -1,0 +1,21 @@
+endpoint: "https://ittr.eskimi.com/prebidjs"
+maintainer:
+  email: prebid@eskimi.com
+gvlVendorID: 814
+modifyingVastXmlAllowed: false
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://ittpx.eskimi.com/sync?sp_id=137&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&dest={{.RedirectURL}}"
+    userMacro: "${USER_ID}"

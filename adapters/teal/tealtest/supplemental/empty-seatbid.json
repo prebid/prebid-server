@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-empty-seatbid",
+    "imp": [
+      {
+        "id": "test-imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "account": "test-account"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-empty-seatbid",
+          "imp": [
+            {
+              "id": "test-imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "account": "test-account"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "demo-site",
+            "publisher": {
+              "id": "test-account"
+            }
+          },
+          "ext": {
+            "bids": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": ["test-imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-empty-seatbid",
+          "cur": "USD",
+          "seatbid": []
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ]
+}

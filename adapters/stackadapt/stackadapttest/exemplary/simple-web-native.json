@@ -1,0 +1,80 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "native": {
+        "request": "{\"ver\":\"1.1\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":0,\"data\":{\"type\":2,\"len\":140}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}}]}",
+        "ver": "1.1"
+      },
+      "ext": {
+        "bidder": {
+          "publisherId": "123",
+          "supplyId": "ssp-1"
+        }
+      }
+    }],
+    "site": {
+      "page": "https://example.com/page"
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://localhost/br?publisher_id=123&supply_id=ssp-1",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "native": {
+            "request": "{\"ver\":\"1.1\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":0,\"data\":{\"type\":2,\"len\":140}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}}]}",
+            "ver": "1.1"
+          },
+          "ext": {
+            "bidder": {
+              "publisherId": "123",
+              "supplyId": "ssp-1"
+            }
+          }
+        }],
+        "site": {
+          "page": "https://example.com/page",
+          "publisher": {
+            "id": "123"
+          }
+        }
+      },
+      "impIDs": ["test-imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "cur": "USD",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 3.00,
+            "adm": "{\"native\":{\"link\":{\"url\":\"https://example.com/click\"},\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Title\"}},{\"id\":2,\"img\":{\"url\":\"https://example.com/image.jpg\",\"w\":1200,\"h\":627}}],\"imptrackers\":[\"https://example.com/imp\"]}}",
+            "crid": "creative-789",
+            "mtype": 4
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "test-bid-id",
+        "impid": "test-imp-id",
+        "price": 3,
+        "adm": "{\"link\":{\"url\":\"https://example.com/click\"},\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Title\"}},{\"id\":2,\"img\":{\"url\":\"https://example.com/image.jpg\",\"w\":1200,\"h\":627}}],\"imptrackers\":[\"https://example.com/imp\"]}",
+        "crid": "creative-789",
+        "mtype": 4
+      },
+      "type": "native"
+    }]
+  }]
+}

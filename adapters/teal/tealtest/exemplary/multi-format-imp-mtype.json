@@ -1,0 +1,173 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-multi-format-mtype",
+    "imp": [
+      {
+        "id": "test-imp-multi-format",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "native": {
+          "request": "{\"ver\":\"1.2\"}"
+        },
+        "ext": {
+          "bidder": {
+            "account": "test-account",
+            "placement": "test-placement-multi"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-multi-format-mtype",
+          "imp": [
+            {
+              "id": "test-imp-multi-format",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "native": {
+                "request": "{\"ver\":\"1.2\"}"
+              },
+              "ext": {
+                "bidder": {
+                  "account": "test-account",
+                  "placement": "test-placement-multi"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "test-placement-multi"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "demo-site",
+            "publisher": {
+              "id": "test-account"
+            }
+          },
+          "ext": {
+            "bids": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": ["test-imp-multi-format"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-multi-format-mtype",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-banner",
+                  "impid": "test-imp-multi-format",
+                  "price": 1.75,
+                  "adm": "<div>Teal Banner Ad</div>",
+                  "mtype": 1,
+                  "crid": "creative-banner"
+                },
+                {
+                  "id": "bid-video",
+                  "impid": "test-imp-multi-format",
+                  "price": 2.10,
+                  "adm": "<VAST>Teal Video Ad</VAST>",
+                  "mtype": 2,
+                  "crid": "creative-video"
+                },
+                {
+                  "id": "bid-native",
+                  "impid": "test-imp-multi-format",
+                  "price": 0.90,
+                  "adm": "{\"native\":{\"assets\":[]}}",
+                  "mtype": 4,
+                  "crid": "creative-native"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner",
+            "impid": "test-imp-multi-format",
+            "price": 1.75,
+            "adm": "<div>Teal Banner Ad</div>",
+            "mtype": 1,
+            "crid": "creative-banner"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-video",
+            "impid": "test-imp-multi-format",
+            "price": 2.10,
+            "adm": "<VAST>Teal Video Ad</VAST>",
+            "mtype": 2,
+            "crid": "creative-video"
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-native",
+            "impid": "test-imp-multi-format",
+            "price": 0.90,
+            "adm": "{\"native\":{\"assets\":[]}}",
+            "mtype": 4,
+            "crid": "creative-native"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
