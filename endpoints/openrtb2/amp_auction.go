@@ -31,7 +31,6 @@ import (
 	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/privacy"
-	"github.com/prebid/prebid-server/v4/privacy/ccpa"
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/v4/stored_responses"
@@ -652,11 +651,11 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		return []error{err}
 	}
 
-	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
+	policyWriter, policyWriterErr, policyWriterValid := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
 	var errors []error
 	if policyWriterErr != nil {
 		errors = append(errors, policyWriterErr)
-		if !shouldApplyAmpPolicyDespiteWarning(ampParams, policyWriterErr) {
+		if !policyWriterValid {
 			return errors
 		}
 	}
@@ -677,15 +676,6 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	}
 
 	return errors
-}
-
-func shouldApplyAmpPolicyDespiteWarning(ampParams amp.Params, policyWriterErr error) bool {
-	return errortypes.IsWarning(policyWriterErr) &&
-		ampParams.GdprApplies != nil &&
-		*ampParams.GdprApplies &&
-		ccpa.ValidateConsent(ampParams.Consent) &&
-		ampParams.ConsentType != amp.ConsentTCF1 &&
-		ampParams.ConsentType != amp.ConsentTCF2
 }
 
 // setConsentedProviders sets the addtl_consent value to user.ext.ConsentedProvidersSettings.consented_providers
