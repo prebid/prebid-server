@@ -4,6 +4,10 @@ maintainer:
   email: prebid@seedtag.com
 gvlVendorID: 157
 capabilities:
+  app:
+    mediaTypes:
+      - video
+      - banner
   site:
     mediaTypes:
       - video
