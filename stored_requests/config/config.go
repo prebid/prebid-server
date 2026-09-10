@@ -54,7 +54,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 		}
 	}
 
-	eventProducers := newEventProducers(cfg, client, provider, metricsEngine, router)
+	eventProducers, tickerTasks := newEventProducers(cfg, client, provider, metricsEngine, router)
 	fetcher = newFetcher(cfg, client, provider)
 
 	var shutdown1 func()
@@ -66,6 +66,10 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 	}
 
 	shutdown = func() {
+		for _, t := range tickerTasks {
+			t.Stop()
+		}
+
 		if shutdown1 != nil {
 			shutdown1()
 		}
@@ -192,7 +196,7 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	return cache
 }
 
-func newEventProducers(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider, metricsEngine metrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider, metricsEngine metrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer, tickerTasks []*task.TickerTask) {
 	if cfg.CacheEvents.Enabled {
 		eventProducers = append(eventProducers, newEventsAPI(router, cfg.CacheEvents.Endpoint))
 	}
@@ -214,6 +218,7 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, provider
 		dbEventTickerTask := task.NewTickerTask(fetchInterval, dbEventProducer)
 		dbEventTickerTask.Start()
 		eventProducers = append(eventProducers, dbEventProducer)
+		tickerTasks = append(tickerTasks, dbEventTickerTask)
 	}
 	return
 }
