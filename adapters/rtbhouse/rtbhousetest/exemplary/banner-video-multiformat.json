@@ -1,0 +1,150 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "https://good.site/url"
+        },
+        "imp": [{
+            "id": "test-imp-banner-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "video": {
+                "mimes": ["video/mp4"],
+                "w": 300,
+                "h": 250
+            },
+            "ext": {
+                "bidder": {}
+            }
+        }, {
+            "id": "test-imp-video-id",
+            "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480
+            },
+            "ext": {
+                "bidder": {}
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid_server",
+            "body": {
+                "id": "test-request-id",
+                "cur": ["USD"],
+                "site": {
+                    "page": "https://good.site/url"
+                },
+                "imp": [{
+                    "id": "test-imp-banner-id",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "video": {
+                        "mimes": ["video/mp4"],
+                        "w": 300,
+                        "h": 250
+                    },
+                    "ext": {
+                        "bidder": {}
+                    },
+                    "tagid": "test-imp-banner-id"
+                }, {
+                    "id": "test-imp-video-id",
+                    "video": {
+                        "mimes": ["video/mp4"],
+                        "w": 640,
+                        "h": 480
+                    },
+                    "ext": {
+                        "bidder": {}
+                    },
+                    "tagid": "test-imp-video-id"
+                }]
+            },
+            "impIDs":["test-imp-banner-id", "test-imp-video-id"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [{
+                    "seat": "rtbhouse",
+                    "bid": [{
+                        "id": "randomid-banner",
+                        "impid": "test-imp-banner-id",
+                        "price": 0.500000,
+                        "adid": "12345678",
+                        "adm": "some-test-ad",
+                        "cid": "987",
+                        "crid": "12345678",
+                        "h": 250,
+                        "w": 300,
+                        "mtype": 1
+                    }, {
+                        "id": "randomid-video",
+                        "impid": "test-imp-video-id",
+                        "price": 1.500000,
+                        "adid": "87654321",
+                        "adm": "<VAST version=\"4.0\"></VAST>",
+                        "cid": "987",
+                        "crid": "87654321",
+                        "dur": 30,
+                        "h": 480,
+                        "w": 640,
+                        "mtype": 2
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "randomid-banner",
+                "impid": "test-imp-banner-id",
+                "price": 0.5,
+                "adm": "some-test-ad",
+                "adid": "12345678",
+                "cid": "987",
+                "crid": "12345678",
+                "w": 300,
+                "h": 250,
+                "mtype": 1
+            },
+            "type": "banner"
+        }, {
+            "bid": {
+                "id": "randomid-video",
+                "impid": "test-imp-video-id",
+                "price": 1.5,
+                "adm": "<VAST version=\"4.0\"></VAST>",
+                "adid": "87654321",
+                "cid": "987",
+                "crid": "87654321",
+                "dur": 30,
+                "w": 640,
+                "h": 480,
+                "mtype": 2
+            },
+            "type": "video",
+            "video": {
+                "duration": 30,
+                "primary_category": ""
+            }
+        }]
+    }]
+}
