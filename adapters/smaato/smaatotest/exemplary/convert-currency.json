@@ -2,10 +2,10 @@
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
     "site": {
-      "page": "prebid.org",
       "publisher": {
-        "id": "1"
-      }
+        "id": "1100042525"
+      },
+      "page": "http://localhost:3000/server.html"
     },
     "imp": [
       {
@@ -15,13 +15,11 @@
             {
               "w": 320,
               "h": 50
-            },
-            {
-              "w": 320,
-              "h": 250
             }
           ]
         },
+        "bidfloor": 1.0,
+        "bidfloorcur": "EUR",
         "ext": {
           "bidder": {
             "publisherId": "1100042525",
@@ -29,18 +27,25 @@
           }
         }
       }
-    ]
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 1.2
+            }
+          }
+        }
+      }
+    }
   },
   "httpCalls": [
     {
       "expectedRequest": {
         "headers": {
-          "Content-Type": [
-            "application/json;charset=utf-8"
-          ],
-          "Accept": [
-            "application/json"
-          ]
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
         },
         "uri": "https://prebid/bidder",
         "body": {
@@ -49,31 +54,29 @@
             {
               "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
               "tagid": "130563103",
+              "bidfloor": 1.2,
+              "bidfloorcur": "USD",
               "banner": {
                 "format": [
                   {
                     "w": 320,
                     "h": 50
-                  },
-                  {
-                    "w": 320,
-                    "h": 250
                   }
                 ]
               }
             }
           ],
           "site": {
-            "page": "prebid.org",
             "publisher": {
               "id": "1100042525"
-            }
+            },
+            "page": "http://localhost:3000/server.html"
           },
           "ext": {
             "client": "prebid_server_1.3"
           }
         },
-        "impIDs":["1C86242D-9535-47D6-9576-7B1FE87F282C"]
+        "impIDs": ["1C86242D-9535-47D6-9576-7B1FE87F282C"]
       },
       "mockResponse": {
         "status": 200,
@@ -91,15 +94,12 @@
                   "adomain": [
                     "smaato.com"
                   ],
-                  "bidderName": "smaato",
                   "cid": "CM6523",
                   "crid": "CR69381",
                   "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
                   "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-                  "iurl": "https://bidstalkcreatives.s3.amazonaws.com/1x1.png",
-                  "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
-                  "price": 0.01,
-                  "w": 350,
+                  "price": 1.5,
+                  "w": 320,
                   "h": 50
                 }
               ]
@@ -125,10 +125,8 @@
             "crid": "CR69381",
             "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
             "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-            "iurl": "https://bidstalkcreatives.s3.amazonaws.com/1x1.png",
-            "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
-            "price": 0.01,
-            "w": 350,
+            "price": 1.5,
+            "w": 320,
             "h": 50,
             "exp": 300
           },
