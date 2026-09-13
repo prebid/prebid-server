@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id-empty",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sp": "",
+            "tk": ""
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-tk-empty",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sp": "123456789",
+            "tk": ""
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-ok",
+        "audio": {
+          "mimes": ["audio/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "sp": "123456789",
+            "tk": "a1b2c3d4"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.exchange.odeeo.io/v1/bidrequest/prebids2s",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"],
+          "X-Openrtb-Version": ["2.6"],
+          "X-Odeeo-Sp": ["123456789"],
+          "X-Odeeo-Tk": ["a1b2c3d4"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "test-imp-id-ok",
+              "audio": {
+                "mimes": ["audio/mp4"]
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id-ok"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp \"test-imp-id-empty\": sp and tk are required",
+      "comparison": "literal"
+    },
+    {
+      "value": "imp \"test-imp-id-tk-empty\": sp and tk are required",
+      "comparison": "literal"
+    }
+  ]
+}
