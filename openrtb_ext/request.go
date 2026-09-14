@@ -44,6 +44,7 @@ type ExtRequest struct {
 type ExtRequestPrebid struct {
 	AdServerTargeting    []AdServerTarget                `json:"adservertargeting,omitempty"`
 	Aliases              map[string]string               `json:"aliases,omitempty"`
+	PageViewIds          map[string]string               `json:"page_view_ids,omitempty"`
 	AliasGVLIDs          map[string]uint16               `json:"aliasgvlids,omitempty"`
 	Analytics            map[string]json.RawMessage      `json:"analytics,omitempty"`
 	BidAdjustmentFactors map[string]float64              `json:"bidadjustmentfactors,omitempty"`
