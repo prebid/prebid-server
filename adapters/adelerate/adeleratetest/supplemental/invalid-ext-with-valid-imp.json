@@ -1,0 +1,76 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "invalid-ext-imp",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": "invalid"
+        }
+      },
+      {
+        "id": "valid-imp",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "test-placement-1",
+            "publisherId": "test-publisher-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.bidelerate.com/openrtb2/auction",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "valid-imp",
+              "banner": {
+                "format": [
+                  {"w": 300, "h": 250}
+                ]
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "placementId": "test-placement-1",
+                  "publisherId": "test-publisher-1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com"
+          }
+        },
+        "impIDs": ["valid-imp"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext for impression invalid-ext-imp: .*",
+      "comparison": "regex"
+    }
+  ],
+  "expectedBidResponses": []
+}
