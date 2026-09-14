@@ -1,0 +1,20 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "missing publisherId for imp test-imp-id",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "placementId": "prebid-test-display" } }
+      }
+    ],
+    "site": { "domain": "example.nl" }
+  },
+  "httpCalls": []
+}

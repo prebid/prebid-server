@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "audio": { "mimes": ["audio/mpeg"] },
+        "ext": { "bidder": { "publisherId": "prebid-test" } }
+      }
+    ],
+    "site": { "domain": "example.nl" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "audio": { "mimes": ["audio/mpeg"] }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "publisher": { "id": "prebid-test" }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "test-imp-id",
+                  "price": 2.5,
+                  "crid": "cr-1",
+                  "ext": { "adswag": { "serve_url": "https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj" } }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "test-imp-id",
+            "price": 2.5,
+            "crid": "cr-1",
+            "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>adswag</AdSystem><VASTAdTagURI><![CDATA[https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+            "mtype": 3,
+            "ext": { "adswag": { "serve_url": "https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj" } }
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}

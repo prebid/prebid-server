@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "audio": {
+          "mimes": ["audio/mpeg", "audio/mp4"],
+          "minduration": 10,
+          "maxduration": 30,
+          "protocols": [2, 3, 7, 8]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "prebid-test",
+            "placementId": "prebid-test-audio"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.nl",
+      "page": "https://example.nl/radio"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "audio": {
+                "mimes": ["audio/mpeg", "audio/mp4"],
+                "minduration": 10,
+                "maxduration": 30,
+                "protocols": [2, 3, 7, 8]
+              },
+              "ext": {
+                "adswag": { "placement_id": "prebid-test-audio" }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "page": "https://example.nl/radio",
+            "publisher": { "id": "prebid-test" }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "req-abc-1",
+                  "impid": "test-imp-id",
+                  "price": 2.5,
+                  "cid": "cmp-test-1",
+                  "crid": "cr-test-1",
+                  "adomain": ["advertiser.example"],
+                  "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"4.2\"><Ad id=\"req-abc\"><Wrapper><AdSystem>Adswag</AdSystem><VASTAdTagURI><![CDATA[https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj]]></VASTAdTagURI></Wrapper></Ad></VAST>",
+                  "ext": {
+                    "adswag": {
+                      "serve_url": "https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "req-abc-1",
+            "impid": "test-imp-id",
+            "price": 2.5,
+            "cid": "cmp-test-1",
+            "crid": "cr-test-1",
+            "adomain": ["advertiser.example"],
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"4.2\"><Ad id=\"req-abc\"><Wrapper><AdSystem>Adswag</AdSystem><VASTAdTagURI><![CDATA[https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj]]></VASTAdTagURI></Wrapper></Ad></VAST>",
+            "mtype": 3,
+            "ext": {
+              "adswag": {
+                "serve_url": "https://ads.adswag.ai/v1/vast?sc=c2ln&sig=YWJj"
+              }
+            }
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}
