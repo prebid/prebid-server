@@ -46,6 +46,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 )
 
@@ -208,7 +209,19 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	normalizedGeoscopes := getNormalizedGeoscopes(cfg.BidderInfos)
-	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes}
+	// Registry for the collectors hook modules register themselves. Modules are built before the
+	// metrics engine, which needs moduleStageNames from that build, so this cannot be the core
+	// Prometheus registry; the Prometheus listener gathers from both (see server/prometheus.go).
+	// Prometheus is the only exporter that can serve those collectors, so the registry exists only
+	// when its listener will run. Modules otherwise get a nil registerer and skip recording rather
+	// than collecting series nothing can scrape.
+	var moduleMetricsRegisterer prometheus.Registerer
+	var moduleMetricsGatherer prometheus.Gatherer
+	if cfg.Metrics.Prometheus.Port != 0 {
+		moduleMetricsRegistry := prometheus.NewRegistry()
+		moduleMetricsRegisterer, moduleMetricsGatherer = moduleMetricsRegistry, moduleMetricsRegistry
+	}
+	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes, MetricsRegisterer: moduleMetricsRegisterer}
 	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		logger.Fatalf("Failed to init hook modules: %v", err)
@@ -216,6 +229,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
+	r.MetricsEngine.ModuleMetricsGatherer = moduleMetricsGatherer
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
