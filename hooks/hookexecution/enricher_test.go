@@ -267,6 +267,44 @@ func TestGetModulesJSON(t *testing.T) {
 	}
 }
 
+func TestGetModulesJSONIncludesHookWarnings(t *testing.T) {
+	stageOutcomes := []StageOutcome{
+		{
+			Stage: "processed_auction_request",
+			Groups: []GroupOutcome{
+				{
+					InvocationResults: []HookOutcome{
+						{
+							HookID: HookID{
+								ModuleCode:   "prebid.rulesengine",
+								HookImplCode: "rulesengine",
+							},
+							Status:   StatusSuccess,
+							Warnings: []string{"Bidder [testBidder] was removed from the request by the rules engine"},
+						},
+					},
+				},
+			},
+		},
+	}
+	bidRequest := &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid":{"trace":"basic"}}`)}
+	account := &config.Account{DebugAllow: true}
+
+	modules, warns, err := GetModulesJSON(stageOutcomes, bidRequest, account)
+
+	require.NoError(t, err)
+	assert.Empty(t, warns)
+	var modulesOutcome ModulesOutcome
+	require.NoError(t, jsonutil.UnmarshalValid(modules, &modulesOutcome))
+	assert.Equal(t, Messages{
+		"prebid.rulesengine": {
+			"rulesengine": {"Bidder [testBidder] was removed from the request by the rules engine"},
+		},
+	}, modulesOutcome.Warnings)
+	require.NotNil(t, modulesOutcome.Trace)
+	assert.Len(t, modulesOutcome.Trace.Stages, 1)
+}
+
 func getStageOutcomes(t *testing.T, file string) []StageOutcome {
 	var stageOutcomes []StageOutcome
 	var stageOutcomesTest []StageOutcomeTest
