@@ -42,6 +42,31 @@ func TestFetchLatestGVLVendorIDs(t *testing.T) {
 			},
 		},
 		{
+			// Regression test: a vendor marked with "deletedDate" is NOT removed from the GVL's
+			// "vendors" map per the IAB TCF spec -- it is left in place, just flagged. A deleted
+			// vendor must be excluded from the returned ID set, not treated as still valid merely
+			// because it is still present.
+			name: "fetch-excludes-deleted-vendor",
+			settings: serverSettings{
+				vendorListLatestVersion: 1,
+				vendorLists: map[int]map[int]string{
+					3: {
+						1: MarshalVendorList(vendorList{
+							GVLSpecificationVersion: 3,
+							VendorListVersion:       1,
+							Vendors: map[string]*vendor{
+								"10": {ID: 10},
+								"20": {ID: 20, DeletedDate: "2023-06-01"},
+							},
+						}),
+					},
+				},
+			},
+			expectedIDs: map[uint16]struct{}{
+				10: {},
+			},
+		},
+		{
 			name: "fetch-with-no-vendors",
 			settings: serverSettings{
 				vendorListLatestVersion: 1,
