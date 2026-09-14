@@ -1,0 +1,115 @@
+{
+  "mockBidRequest": {
+    "id": "bidwave-video-request",
+    "site": {
+      "domain": "publisher.example.com",
+      "page": "https://publisher.example.com/video"
+    },
+    "device": {
+      "ip": "203.0.113.44",
+      "ua": "Mozilla/5.0"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "tagid": "/bidwave/example/video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "11111111-1111-4111-8111-111111111111"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidwave.net/rtb/v1/bid",
+        "impIDs": ["imp-1"],
+        "body": {
+          "id": "bidwave-video-request",
+          "site": {
+            "domain": "publisher.example.com",
+            "page": "https://publisher.example.com/video"
+          },
+          "device": {
+            "ip": "203.0.113.44",
+            "ua": "Mozilla/5.0"
+          },
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "/bidwave/example/video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [2, 3],
+                "w": 640,
+                "h": 360
+              }
+            }
+          ],
+          "ext": {
+            "bidwave": {
+              "pid": "11111111-1111-4111-8111-111111111111"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "bidwave-video-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "bidwave",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 2.5,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "video-creative-1",
+                  "w": 640,
+                  "h": 360,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 2.5,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "video-creative-1",
+            "w": 640,
+            "h": 360,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
