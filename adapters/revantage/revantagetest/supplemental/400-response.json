@@ -1,0 +1,46 @@
+{
+  "mockBidRequest": {
+    "id": "bad-request",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"feedId": "feed-abc"}}
+      }
+    ],
+    "site": {"domain": "example.com"},
+    "tmax": 1000,
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.revantage.io/bid?feed=feed-abc",
+        "body": {
+          "id": "bad-request",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+              "ext": {"feedId": "feed-abc", "bidder": {}}
+            }
+          ],
+          "site": {"domain": "example.com"},
+          "tmax": 1000,
+          "cur": ["USD"]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
