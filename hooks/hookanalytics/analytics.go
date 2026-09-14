@@ -42,4 +42,6 @@ const (
 	ResultStatusBlock  ResultStatus = "success-block"
 	ResultStatusModify ResultStatus = "success-modify"
 	ResultStatusError  ResultStatus = "error"
+	ResultStatusRun    ResultStatus = "run"
+	ResultStatusSkip   ResultStatus = "skip"
 )

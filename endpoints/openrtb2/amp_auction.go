@@ -117,7 +117,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// to compute the auction timeout.
 	start := time.Now()
 
-	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAmp, deps.metricsEngine)
+	abTests := hookexecution.NewABTests(deps.cfg)
+	hookExecutor := hookexecution.NewHookExecutor(deps.hookExecutionPlanBuilder, hookexecution.EndpointAmp, deps.metricsEngine, abTests)
 
 	ao := analytics.AmpObject{
 		Status:    http.StatusOK,
@@ -397,6 +398,15 @@ func sendAmpResponse(
 			}
 		}
 	}
+
+	// Add A/B test targeting keywords to targeting
+	abTestTargeting := hookExecutor.GetABTestTargetingKeywords()
+	for keyword, value := range abTestTargeting {
+		if _, exists := targets[keyword]; !exists {
+			targets[keyword] = value
+		}
+	}
+
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
 	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, auctionResponse, reqWrapper, account, ao, errs)
