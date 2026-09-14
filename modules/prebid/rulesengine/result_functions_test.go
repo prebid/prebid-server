@@ -113,8 +113,10 @@ func TestExcludeBiddersCall(t *testing.T) {
 				ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 			}
 			result := &ProcessedAuctionHookResult{
-				HookResult:     hookResult,
-				AllowedBidders: make(map[string]struct{}),
+				HookResult: hookResult,
+				IncludeBidders: includeBiddersState{
+					allowedBidders: make(map[string]struct{}),
+				},
 			}
 
 			err := eb.Call(tt.req, result, rules.ResultFunctionMeta{})
@@ -195,10 +197,45 @@ func TestExcludeBiddersCallEmitsWarnings(t *testing.T) {
 			},
 		},
 		{
+			name:       "multiple_bidders_excluded_for_same_ruleset",
+			argBidders: []string{"bidder1", "bidder2", "bidder3"},
+			meta: rules.ResultFunctionMeta{
+				RulesetName: "geo-ruleset",
+				SchemaFunctionResults: []rules.SchemaFunctionStep{
+					{FuncName: "deviceCountryIn", FuncResult: "true"},
+				},
+			},
+			req: mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder4"}),
+			expectedWarnings: []string{
+				`Bidders [bidder1, bidder2] were removed from the request by the rules engine ruleset "geo-ruleset": deviceCountryIn rule evaluated to true`,
+			},
+		},
+		{
 			name:             "no_warning_when_no_configured_bidder_present",
 			argBidders:       []string{"bidder1", "bidder2"},
 			meta:             rules.ResultFunctionMeta{},
 			req:              mockRequestWrapperWithBidders(t, []string{"bidder3"}),
+			expectedWarnings: nil,
+		},
+		{
+			name:             "no_warning_when_request_is_nil",
+			argBidders:       []string{"bidder1"},
+			meta:             rules.ResultFunctionMeta{},
+			req:              nil,
+			expectedWarnings: nil,
+		},
+		{
+			name:             "no_warning_when_imp_ext_is_missing",
+			argBidders:       []string{"bidder1"},
+			meta:             rules.ResultFunctionMeta{},
+			req:              mockRequestWrapperWithImpExt(nil),
+			expectedWarnings: nil,
+		},
+		{
+			name:             "no_warning_when_imp_ext_prebid_is_missing",
+			argBidders:       []string{"bidder1"},
+			meta:             rules.ResultFunctionMeta{},
+			req:              mockRequestWrapperWithImpExt(json.RawMessage(`{}`)),
 			expectedWarnings: nil,
 		},
 	}
@@ -210,7 +247,9 @@ func TestExcludeBiddersCallEmitsWarnings(t *testing.T) {
 				HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 					ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 				},
-				AllowedBidders: make(map[string]struct{}),
+				IncludeBidders: includeBiddersState{
+					allowedBidders: make(map[string]struct{}),
+				},
 			}
 
 			err := eb.Call(tt.req, result, tt.meta)
@@ -229,7 +268,9 @@ func TestExcludeBiddersCallMultipleExclusions(t *testing.T) {
 		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 		},
-		AllowedBidders: make(map[string]struct{}),
+		IncludeBidders: includeBiddersState{
+			allowedBidders: make(map[string]struct{}),
+		},
 	}
 
 	ebA := &ExcludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidderA"}}}
@@ -254,30 +295,6 @@ func TestExcludeBiddersCallMultipleExclusions(t *testing.T) {
 	assert.Equal(t, []string{
 		`Bidder [bidderA] was removed from the request by the rules engine ruleset "bidderConfig": deviceCountry rule evaluated to "JPN"`,
 		`Bidder [bidderB] was removed from the request by the rules engine ruleset "customRuleset": channel rule evaluated to "web"`,
-	}, result.HookResult.Warnings)
-}
-
-func TestExcludeBiddersCallMultipleBiddersEmitsOneWarning(t *testing.T) {
-	req := mockRequestWrapperWithBidders(t, []string{"openx", "rubicon", "pubmatic", "appnexus"})
-	result := &ProcessedAuctionHookResult{
-		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
-			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
-		},
-		AllowedBidders: make(map[string]struct{}),
-	}
-	exclude := &ExcludeBidders{Args: config.ResultFuncParams{Bidders: []string{"openx", "rubicon", "pubmatic"}}}
-	meta := rules.ResultFunctionMeta{
-		RulesetName: "geo-ruleset",
-		SchemaFunctionResults: []rules.SchemaFunctionStep{
-			{FuncName: "deviceCountryIn", FuncResult: "true"},
-		},
-	}
-
-	err := exclude.Call(req, result, meta)
-
-	assert.NoError(t, err)
-	assert.Equal(t, []string{
-		`Bidders [openx, rubicon, pubmatic] were removed from the request by the rules engine ruleset "geo-ruleset": deviceCountryIn rule evaluated to true`,
 	}, result.HookResult.Warnings)
 }
 
@@ -453,8 +470,10 @@ func TestIncludeBiddersCall(t *testing.T) {
 			}
 
 			result := &ProcessedAuctionHookResult{
-				HookResult:     hookResult,
-				AllowedBidders: make(map[string]struct{}),
+				HookResult: hookResult,
+				IncludeBidders: includeBiddersState{
+					allowedBidders: make(map[string]struct{}),
+				},
 			}
 
 			err := ib.Call(tt.req, result, rules.ResultFunctionMeta{})
@@ -462,22 +481,23 @@ func TestIncludeBiddersCall(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Emptyf(t, result.HookResult.ChangeSet, "change set is empty")
 			assert.Len(t, result.HookResult.ChangeSet.Mutations(), 0)
-			assert.Len(t, result.AllowedBidders, len(tt.argBidders))
+			assert.Len(t, result.IncludeBidders.allowedBidders, len(tt.argBidders))
 			// Every include invocation records its ruleset context so the removal warning can be
 			// built after all rulesets have run.
-			assert.Len(t, result.IncludeContexts, 1)
+			assert.Len(t, result.IncludeBidders.contexts, 1)
 		})
 	}
 }
 
-// TestIncludeBiddersCallRecordsContext verifies that each IncludeBidders.Call appends its
-// ResultFunctionMeta to IncludeContexts (accumulating across multiple invocations) so the final
-// removal warning can attribute the removal to the correct ruleset(s).
+// TestIncludeBiddersCallRecordsContext verifies that each IncludeBidders.Call records its
+// ResultFunctionMeta so the final removal warning can attribute the removal to the correct ruleset(s).
 func TestIncludeBiddersCallRecordsContext(t *testing.T) {
 	req := mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2"})
 	result := &ProcessedAuctionHookResult{
-		HookResult:     hs.HookResult[hs.ProcessedAuctionRequestPayload]{ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{}},
-		AllowedBidders: make(map[string]struct{}),
+		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{}},
+		IncludeBidders: includeBiddersState{
+			allowedBidders: make(map[string]struct{}),
+		},
 	}
 
 	metaA := rules.ResultFunctionMeta{RulesetName: "rulesetA"}
@@ -489,8 +509,8 @@ func TestIncludeBiddersCallRecordsContext(t *testing.T) {
 	ibB := &IncludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder2"}}}
 	assert.NoError(t, ibB.Call(req, result, metaB))
 
-	assert.Equal(t, []rules.ResultFunctionMeta{metaA, metaB}, result.IncludeContexts)
-	assert.Equal(t, map[string]struct{}{"bidder1": {}, "bidder2": {}}, result.AllowedBidders)
+	assert.Equal(t, []rules.ResultFunctionMeta{metaA, metaB}, result.IncludeBidders.contexts)
+	assert.Equal(t, map[string]struct{}{"bidder1": {}, "bidder2": {}}, result.IncludeBidders.allowedBidders)
 }
 
 // TestBiddersRemovedByInclude asserts that only bidders present in the request but absent from the
@@ -608,9 +628,11 @@ func TestAppendInclusionWarnings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := &ProcessedAuctionHookResult{
-				HookResult:      hs.HookResult[hs.ProcessedAuctionRequestPayload]{ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{}},
-				AllowedBidders:  tt.allowed,
-				IncludeContexts: tt.includeContexts,
+				HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{}},
+				IncludeBidders: includeBiddersState{
+					allowedBidders: tt.allowed,
+					contexts:       tt.includeContexts,
+				},
 			}
 
 			appendInclusionWarnings(tt.req, result)
@@ -692,5 +714,12 @@ func mockRequestWrapperWithBidders(t *testing.T, bidders []string) *openrtb_ext.
 	rw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
 	rw.SetImp([]*openrtb_ext.ImpWrapper{impWrapper})
 
+	return rw
+}
+
+func mockRequestWrapperWithImpExt(ext json.RawMessage) *openrtb_ext.RequestWrapper {
+	impWrapper := &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "imp1", Ext: ext}}
+	rw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
+	rw.SetImp([]*openrtb_ext.ImpWrapper{impWrapper})
 	return rw
 }

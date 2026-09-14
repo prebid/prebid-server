@@ -12,10 +12,14 @@ import (
 type RequestWrapper = openrtb_ext.RequestWrapper
 type ModelGroup = cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]
 
+type includeBiddersState struct {
+	allowedBidders map[string]struct{}
+	contexts       []rules.ResultFunctionMeta
+}
+
 type ProcessedAuctionHookResult struct {
-	HookResult      hs.HookResult[hs.ProcessedAuctionRequestPayload]
-	AllowedBidders  map[string]struct{}
-	IncludeContexts []rules.ResultFunctionMeta
+	HookResult     hs.HookResult[hs.ProcessedAuctionRequestPayload]
+	IncludeBidders includeBiddersState
 }
 
 func handleProcessedAuctionHook(
@@ -26,7 +30,9 @@ func handleProcessedAuctionHook(
 		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 		},
-		AllowedBidders: make(map[string]struct{}),
+		IncludeBidders: includeBiddersState{
+			allowedBidders: make(map[string]struct{}),
+		},
 	}
 
 	for _, ruleSet := range ruleSets {
@@ -41,8 +47,8 @@ func handleProcessedAuctionHook(
 			result.HookResult.Errors = append(result.HookResult.Errors, err.Error())
 		}
 
-		if len(result.AllowedBidders) > 0 {
-			result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(result.AllowedBidders)
+		if len(result.IncludeBidders.allowedBidders) > 0 {
+			result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(result.IncludeBidders.allowedBidders)
 		}
 	}
 

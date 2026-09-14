@@ -205,12 +205,12 @@ type IncludeBidders struct {
 // Call is a method that applies the changes specified in the IncludeBidders instance to the provided ChangeSet by creating a mutation.
 func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
 	for _, bidderName := range ib.Args.Bidders {
-		result.AllowedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
+		result.IncludeBidders.allowedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
 	}
 	// Record the ruleset context so that, once every ruleset has run and the final allow-list is
 	// known, we can surface a debug warning naming the bidders that were implicitly removed because
 	// they were not on any include list.
-	result.IncludeContexts = append(result.IncludeContexts, meta)
+	result.IncludeBidders.contexts = append(result.IncludeBidders.contexts, meta)
 	return nil
 }
 
@@ -255,18 +255,18 @@ func biddersRemovedByInclude(req *openrtb_ext.RequestWrapper, allowed map[string
 // implicitly removed from the request (bidders present in the request but absent from every
 // include list). It is a no-op when no include rule fired or when nothing was removed.
 func appendInclusionWarnings(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult) {
-	if result == nil || len(result.IncludeContexts) == 0 {
+	if result == nil || len(result.IncludeBidders.contexts) == 0 {
 		return
 	}
 
-	removed := biddersRemovedByInclude(req, result.AllowedBidders)
+	removed := biddersRemovedByInclude(req, result.IncludeBidders.allowedBidders)
 	if len(removed) == 0 {
 		return
 	}
 
 	result.HookResult.Warnings = append(
 		result.HookResult.Warnings,
-		buildInclusionWarning(removed, result.IncludeContexts),
+		buildInclusionWarning(removed, result.IncludeBidders.contexts),
 	)
 }
 
