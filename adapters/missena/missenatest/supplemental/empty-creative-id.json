@@ -4,16 +4,6 @@
     "tmax": 500,
     "at": 1,
     "cur": ["EUR"],
-    "regs": {
-      "ext": {
-        "gdpr": 1
-      }
-    },
-    "user": {
-      "ext": {
-        "consent": "CO-X2XiO_eyUoAsAxBFRBECsA"
-      }
-    },
     "device": {
       "ip": "123.123.123.123",
       "ua": "test-user-agent"
@@ -77,21 +67,11 @@
                 "id": "test-imp-id"
               }
             ],
-            "regs": {
-              "ext": {
-                "gdpr": 1
-              }
-            },
             "site": {
               "domain": "example.com",
               "page": "https://example.com/page"
             },
-            "tmax": 500,
-            "user": {
-              "ext": {
-                "consent": "CO-X2XiO_eyUoAsAxBFRBECsA"
-              }
-            }
+            "tmax": 500
           },
           "params": {
             "apiKey": "test-api-key",
@@ -110,14 +90,7 @@
           "cpm": 1.5,
           "currency": "EUR",
           "requestId": "test-request-id",
-          "width": 1,
-          "height": 1,
-          "creativeId": "test-creative-id",
-          "dealId": "test-deal-id",
-          "ttl": 60,
-          "meta": {
-            "advertiserDomains": ["example-advertiser.com"]
-          }
+          "creativeId": ""
         }
       }
     }
@@ -132,12 +105,7 @@
             "impid": "test-imp-id",
             "price": 1.5,
             "adm": "<div>test ad</div>",
-            "crid": "test-creative-id",
-            "w": 1,
-            "h": 1,
-            "dealid": "test-deal-id",
-            "exp": 60,
-            "adomain": ["example-advertiser.com"]
+            "crid": "test-request-id"
           },
           "type": "banner"
         }
