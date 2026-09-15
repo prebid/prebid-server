@@ -1,0 +1,15 @@
+{
+  "description": "int8 overflow values (>127) are dropped; valid values within int8 range are kept",
+  "query": "srid=testvideo&mtype=2&placement=300&linearity=200&plcmt=128&pos=255&skip=200&playbackend=300&proto=1,300,2&delivery=1,200&playbackmethod=1,300",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "protocols": [1, 2],
+      "delivery": [1],
+      "playbackmethod": [1]
+    }
+  }
+}

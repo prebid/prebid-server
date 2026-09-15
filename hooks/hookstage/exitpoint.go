@@ -3,6 +3,8 @@ package hookstage
 import (
 	"context"
 	"net/http"
+
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // Exitpoint hooks are invoked just before the response is returned.
@@ -26,7 +28,11 @@ type Exitpoint interface {
 // The response is typically of type *openrtb2.BidResponse and can be modified
 // based on the module’s implementation.
 // Modules can also add custom headers depending on their response type.
+// When Body is set by a module, the caller writes the raw bytes directly
+// instead of JSON-encoding Response, allowing modules to control serialization.
 type ExitpointPayload struct {
+	Request  *openrtb_ext.RequestWrapper
 	Response any
 	W        http.ResponseWriter
+	Body     []byte
 }

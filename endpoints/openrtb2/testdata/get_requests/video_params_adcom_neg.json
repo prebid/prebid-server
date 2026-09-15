@@ -1,0 +1,16 @@
+{
+  "description": "Video AdCOM -1 sentinel values: startdelay, podseq, slotinpod, maxextended",
+  "query": "srid=testvideo&mtype=2&startdelay=-1&podseq=-1&slotinpod=-1&maxex=-1",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "startdelay": -1,
+      "podseq": -1,
+      "slotinpod": -1,
+      "maxextended": -1
+    }
+  }
+}
