@@ -6,9 +6,9 @@ import (
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -51,7 +51,7 @@ func TestNewPermissions(t *testing.T) {
 		fakePurposeEnforcerBuilder := fakePurposeEnforcerBuilder{
 			purposeEnforcer: nil,
 		}.Builder
-		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{}, &metrics.MetricsEngineMock{})
+		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, nil, vendorListFetcher, fakePurposeEnforcerBuilder, RequestInfo{}, &metrics.MetricsEngineMock{})
 
 		assert.IsType(t, tt.wantType, perms, tt.description)
 	}

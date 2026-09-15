@@ -9,7 +9,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/modern-go/reflect2"
-	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v4/errortypes"
 )
 
 const (

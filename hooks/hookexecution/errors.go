@@ -3,7 +3,7 @@ package hookexecution
 import (
 	"fmt"
 
-	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v4/errortypes"
 )
 
 // TimeoutError indicates exceeding of the max execution time allotted for hook.

@@ -46,7 +46,8 @@
               },
               "ext": {
                 "bidder": {}
-              }
+              },
+              "tagid": "test-imp-id"
             }
           ]
         },

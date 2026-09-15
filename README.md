@@ -44,7 +44,7 @@ Ensure that you deploy the `/static` directory, as Prebid Server requires those 
 
 ## Developing
 
-Prebid Server requires [Go](https://go.dev) version 1.23 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
+Prebid Server requires [Go](https://go.dev) version 1.26.2 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
 1. Clone The Repository
 ``` bash
@@ -91,6 +91,14 @@ An option for developing Prebid Server in a reproducible environment isolated fr
 ## Importing Prebid Server
 
 Prebid Server is not currently intended to be imported by other projects. Go Modules is used to manage dependencies, which also makes it possible to import Prebid Server packages. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
+
+## Swapping Global Dependencies
+
+Logger is a global side-effectful dependency that sometimes needs to be swapped to modify the behavior.  
+The `Logger` package contains an interface definition for unstructured logging with built-in `glog` implementation.
+The interface provides standard logging methods: `Debug`, `Info`, `Warn`, `Error`, and `Fatal`.
+The `glog` implementation is based on `github.com/golang/glog` package and serves as the concrete implementation for the logging interface.
+By default, the package uses the `glog` logger implementation.
 
 ## Contributing
 > [!IMPORTANT]

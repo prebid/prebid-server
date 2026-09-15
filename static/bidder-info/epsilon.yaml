@@ -1,4 +1,5 @@
 aliasOf: conversant
+gvlVendorID: 24
 userSync:
   redirect:
     url: "https://prebid-match.dotomi.com/match/bounce/current?version=1&networkId=72582&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&rurl={{.RedirectURL}}"

@@ -1,8 +1,8 @@
 package rulesengine
 
 import (
-	"github.com/prebid/prebid-server/v3/modules/prebid/rulesengine/config"
-	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
+	"github.com/prebid/prebid-server/v4/rules"
 )
 
 // treeBuilder is a custom tree builder for the rules engine module.

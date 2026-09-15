@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
 )
 
 func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders, metricsEngine metrics.MetricsEngine, requestType metrics.RequestType) httprouter.Handle {

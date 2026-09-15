@@ -1,0 +1,50 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "w": 320,
+          "h": 480,
+          "pos": 7,
+          "mimes": [
+            "image/jpg",
+            "image/gif",
+            "text/html"
+          ],
+          "format": [
+            {
+              "w": 320,
+              "h": 480
+            }
+          ],
+          "api": [
+            5,
+            7
+          ],
+          "vcm": 1,
+          "id": "1"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisher-id"
+      },
+      "id": "site-id"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "failed to unmarshal bidder ext",
+      "comparison": "startswith"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ import (
 	"github.com/modern-go/reflect2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
-	"github.com/prebid/prebid-server/v3/errortypes"
+	"github.com/prebid/prebid-server/v4/errortypes"
 )
 
 // jsonConfigMergeClone uses the same configuration as the `ConfigCompatibleWithStandardLibrary` profile

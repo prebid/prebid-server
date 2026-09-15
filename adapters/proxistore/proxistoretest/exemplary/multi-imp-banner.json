@@ -1,0 +1,151 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "Mozilla/5.0"
+    },
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "website": "example.com",
+            "language": "fr"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "website": "example.com",
+            "language": "fr"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://api.proxistore.com/v3/rtb/openrtb",
+        "body": {
+          "id": "test-request-id",
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "Mozilla/5.0"
+          },
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/page"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [{"w": 300, "h": 250}]
+              },
+              "ext": {
+                "bidder": {
+                  "website": "example.com",
+                  "language": "fr"
+                }
+              }
+            },
+            {
+              "id": "imp-2",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "ext": {
+                "bidder": {
+                  "website": "example.com",
+                  "language": "fr"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-1", "imp-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.50,
+                  "adm": "<div>Ad 1</div>",
+                  "crid": "creative-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 0.80,
+                  "adm": "<div>Ad 2</div>",
+                  "crid": "creative-2",
+                  "w": 728,
+                  "h": 90,
+                  "mtype": 1
+                }
+              ],
+              "seat": "proxistore"
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.50,
+            "adm": "<div>Ad 1</div>",
+            "crid": "creative-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-2",
+            "price": 0.80,
+            "adm": "<div>Ad 2</div>",
+            "crid": "creative-2",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

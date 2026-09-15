@@ -1,7 +1,7 @@
 package connatix
 
 import (
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 type adapter struct {

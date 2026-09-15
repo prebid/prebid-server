@@ -1,8 +1,8 @@
 package exchange
 
 import (
-	"github.com/prebid/prebid-server/v3/exchange/entities"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/exchange/entities"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 type SeatNonBidBuilder map[string][]openrtb_ext.NonBid

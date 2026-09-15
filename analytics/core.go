@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // Module must be implemented by analytics modules to extract the required information and logging
@@ -82,9 +82,8 @@ type CookieSyncBidder struct {
 }
 
 type UsersyncInfo struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	SupportCORS bool   `json:"supportCORS,omitempty"`
+	URL  string `json:"url,omitempty"`
+	Type string `json:"type,omitempty"`
 }
 
 // NotificationEvent object of a transaction at /event

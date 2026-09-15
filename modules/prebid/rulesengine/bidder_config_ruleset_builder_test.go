@@ -3,7 +3,7 @@ package rulesengine
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/rules"
+	"github.com/prebid/prebid-server/v4/rules"
 	"github.com/stretchr/testify/assert"
 )
 

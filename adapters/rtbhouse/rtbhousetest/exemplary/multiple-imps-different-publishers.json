@@ -60,7 +60,8 @@
                   "publisherId": "first-publisher"
                 }
               },
-              "id": "test-imp-id-1"
+              "id": "test-imp-id-1",
+              "tagid": "test-imp-id-1"
             },
             {
               "banner": {
@@ -76,7 +77,8 @@
                   "publisherId": "second-publisher"
                 }
               },
-              "id": "test-imp-id-2"
+              "id": "test-imp-id-2",
+              "tagid": "test-imp-id-2"
             }
           ],
           "site": {

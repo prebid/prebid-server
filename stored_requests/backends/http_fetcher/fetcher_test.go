@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -239,6 +239,64 @@ func TestFetchAccountRfcCompliant(t *testing.T) {
 	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"disabled":true}`), "acc-1")
 	assert.Empty(t, errs, "Unexpected error fetching existing account")
 	assert.JSONEq(t, `{"disabled": true, "id":"acc-1"}`, string(account), "Unexpected account data fetching existing account")
+}
+
+func TestFetchAccountsDoesNotAccumulateQueryParams(t *testing.T) {
+	var seen [][]string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		got := richSplit(r.URL.Query().Get("account-ids"))
+		seen = append(seen, got)
+
+		// Validate and respond using existing helper
+		newAccountHandler(t, got, false)(w, r)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	fetcher := NewFetcher(server.Client(), server.URL, false)
+
+	// first fetcher call
+	_, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1"})
+	assert.Empty(t, errs)
+
+	// second fetcher call with different account ID
+	_, errs = fetcher.FetchAccounts(context.Background(), []string{"acc-2"})
+	assert.Empty(t, errs)
+
+	assert.Equal(t, 2, len(seen))
+	assert.Equal(t, []string{"acc-1"}, seen[0])
+	assert.Equal(t, []string{"acc-2"}, seen[1])
+}
+
+func TestFetchAccountsDoesNotAccumulateQueryParamsRfcCompliant(t *testing.T) {
+	var seen [][]string
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		got := r.URL.Query()["account-id"]
+		seen = append(seen, got)
+
+		// true flag for RFC compliant
+		newAccountHandler(t, got, true)(w, r)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	fetcher := NewFetcher(server.Client(), server.URL, true)
+
+	// first fetcher call
+	_, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1"})
+	assert.Empty(t, errs)
+
+	// second fetcher call with different account ID
+	_, errs = fetcher.FetchAccounts(context.Background(), []string{"acc-2"})
+	assert.Empty(t, errs)
+
+	assert.Equal(t, 2, len(seen))
+	assert.Equal(t, []string{"acc-1"}, seen[0])
+	assert.Equal(t, []string{"acc-2"}, seen[1])
 }
 
 func TestFetchAccount(t *testing.T) {

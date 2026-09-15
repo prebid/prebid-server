@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/metrics"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -1951,6 +1951,26 @@ func TestRecordGvlListRequest(t *testing.T) {
 	m.RecordGvlListRequest()
 
 	assertCounterValue(t, "Record instance of fetched GVL list", "success", m.gvlListRequests, 1.00)
+}
+
+func TestRecordLiveGVLFetch(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordLiveGVLFetch(true)
+	m.RecordLiveGVLFetch(true)
+	m.RecordLiveGVLFetch(false)
+
+	assertCounterVecValue(t, "", "live_gvl_fetch:ok", m.liveGVLFetch,
+		float64(2),
+		prometheus.Labels{
+			successLabel: requestSuccessful,
+		})
+
+	assertCounterVecValue(t, "", "live_gvl_fetch:fail", m.liveGVLFetch,
+		float64(1),
+		prometheus.Labels{
+			successLabel: requestFailed,
+		})
 }
 
 func TestRecordAdsCertReqMetric(t *testing.T) {

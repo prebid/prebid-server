@@ -1,0 +1,24 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id",
+    "imp": [],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisher-id"
+      },
+      "id": "site-id"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "request contains no impressions",
+      "comparison": "literal"
+    }
+  ]
+}

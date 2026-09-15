@@ -10,11 +10,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/prebid/prebid-server/v3/adapters"
-	"github.com/prebid/prebid-server/v3/config"
-	"github.com/prebid/prebid-server/v3/macros"
-	"github.com/prebid/prebid-server/v3/openrtb_ext"
-	"github.com/prebid/prebid-server/v3/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 )
@@ -204,6 +204,8 @@ func getBidType(markupType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
 	default:
 		return "", fmt.Errorf("unsupported mtype: %d", markupType)
 	}

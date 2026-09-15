@@ -64,3 +64,21 @@ func (f UniformBidderFilter) Allowed(bidder string) bool {
 func NewUniformBidderFilter(mode BidderFilterMode) BidderFilter {
 	return UniformBidderFilter{mode: mode}
 }
+
+type CompositeFilter struct {
+	RequestFilter BidderFilter
+	AccountFilter BidderFilter
+}
+
+func (f CompositeFilter) Allowed(bidder string) bool {
+	if f.RequestFilter == nil && f.AccountFilter == nil {
+		return true
+	}
+	if f.RequestFilter == nil {
+		return f.AccountFilter.Allowed(bidder)
+	}
+	if f.AccountFilter == nil {
+		return f.RequestFilter.Allowed(bidder)
+	}
+	return f.RequestFilter.Allowed(bidder) && f.AccountFilter.Allowed(bidder)
+}

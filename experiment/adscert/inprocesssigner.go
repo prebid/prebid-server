@@ -8,7 +8,7 @@ import (
 	"github.com/IABTechLab/adscert/pkg/adscert/discovery"
 	"github.com/IABTechLab/adscert/pkg/adscert/signatory"
 	"github.com/benbjohnson/clock"
-	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v4/config"
 )
 
 // inProcessSigner holds the signatory to add adsCert header to requests using in process go library

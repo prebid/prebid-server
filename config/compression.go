@@ -1,6 +1,6 @@
 package config
 
-import "github.com/prebid/prebid-server/v3/util/httputil"
+import "github.com/prebid/prebid-server/v4/util/httputil"
 
 type Compression struct {
 	Request  CompressionInfo `mapstructure:"request"`

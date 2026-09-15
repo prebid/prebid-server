@@ -5,7 +5,7 @@ package devicedetection
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/modules/moduledeps"
+	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 )
 

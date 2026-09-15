@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v4/config"
 	"github.com/stretchr/testify/assert"
 )
 

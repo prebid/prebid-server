@@ -102,7 +102,7 @@
             "consent_required": true
           },
           "type": "pbs",
-          "dsa": "",
+          "pbjs": "prebid-test-version",
           "tech": {
             "device": {
               "geo": {
@@ -122,9 +122,15 @@
                 "id": "MEDIA_SQUARE"
               },
               "content": {}
+            },
+            "user": {
+              "ext": {
+                "gdpr": "consent-covering"
+              }
             }
           },
-          "test": true
+          "test": true,
+          "user_uid": ""
         },
         "impIDs": ["2c35e25e-e7d3-41bf-b810-06a449f456b9"]
       },

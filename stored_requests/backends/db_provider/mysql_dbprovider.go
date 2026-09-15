@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/prebid/prebid-server/v3/config"
+	"github.com/prebid/prebid-server/v4/config"
 )
 
 const customTLSKey = "prebid-tls"

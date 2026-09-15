@@ -3,7 +3,7 @@ package hookstage
 import (
 	"context"
 
-	"github.com/prebid/prebid-server/v3/adapters"
+	"github.com/prebid/prebid-server/v4/adapters"
 )
 
 // RawBidderResponse hooks are invoked for each bidder participating in auction.

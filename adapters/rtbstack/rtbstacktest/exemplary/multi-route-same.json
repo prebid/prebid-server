@@ -1,0 +1,162 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-same-route",
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-same-1",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=client-x&endpoint=500&ssp=600",
+            "tagId": "tag-1"
+          }
+        }
+      },
+      {
+        "id": "imp-same-2",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=client-x&endpoint=500&ssp=600",
+            "tagId": "tag-2"
+          }
+        }
+      },
+      {
+        "id": "imp-same-3",
+        "banner": {
+          "format": [{ "w": 970, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=client-x&endpoint=500&ssp=600",
+            "tagId": "tag-3"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-adx-admixer.rtb-stack.com/pbs?ssp=600&endpoint=500&client=client-x",
+        "body": {
+          "id": "test-request-same-route",
+          "site": {
+            "page": "https://example.com",
+            "domain": "example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-same-1",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "tagid": "tag-1",
+              "ext": {}
+            },
+            {
+              "id": "imp-same-2",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "tagid": "tag-2",
+              "ext": {}
+            },
+            {
+              "id": "imp-same-3",
+              "banner": { "format": [{ "w": 970, "h": 250 }] },
+              "tagid": "tag-3",
+              "ext": {}
+            }
+          ]
+        },
+        "impIDs": ["imp-same-1", "imp-same-2", "imp-same-3"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-same-route",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-same-1",
+                  "impid": "imp-same-1",
+                  "price": 1.10,
+                  "adm": "<div>1</div>",
+                  "crid": "crid-1",
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-same-2",
+                  "impid": "imp-same-2",
+                  "price": 1.20,
+                  "adm": "<div>2</div>",
+                  "crid": "crid-2",
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-same-3",
+                  "impid": "imp-same-3",
+                  "price": 1.30,
+                  "adm": "<div>3</div>",
+                  "crid": "crid-3",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-same-1",
+            "impid": "imp-same-1",
+            "price": 1.10,
+            "adm": "<div>1</div>",
+            "crid": "crid-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-same-2",
+            "impid": "imp-same-2",
+            "price": 1.20,
+            "adm": "<div>2</div>",
+            "crid": "crid-2",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-same-3",
+            "impid": "imp-same-3",
+            "price": 1.30,
+            "adm": "<div>3</div>",
+            "crid": "crid-3",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
