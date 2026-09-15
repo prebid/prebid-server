@@ -300,7 +300,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		logger.Errorf("Error setting seat non-bid: %v", err)
 	}
-	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao, false)
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req, account, labels, ao, false)
 }
 
 // setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
@@ -349,14 +349,14 @@ func rejectAuctionRequest(
 
 	// Exit-point stage must NOT be triggered on rejection paths (4xx/5xx errors).
 	// Pass hasErrors=true so sendAuctionResponse skips ExecuteExitpointStage.
-	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao, true)
+	return sendAuctionResponse(w, hookExecutor, response, &openrtb_ext.RequestWrapper{BidRequest: request}, account, labels, ao, true)
 }
 
 func sendAuctionResponse(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
 	response *openrtb2.BidResponse,
-	request *openrtb2.BidRequest,
+	req *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
@@ -368,7 +368,11 @@ func sendAuctionResponse(
 		stageOutcomes := hookExecutor.GetOutcomes()
 		ao.HookExecutionOutcome = stageOutcomes
 
-		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
+		var bidRequest *openrtb2.BidRequest
+		if req != nil {
+			bidRequest = req.BidRequest
+		}
+		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, bidRequest, account)
 		if err != nil {
 			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
 			logger.Errorf("%v", err)
@@ -389,15 +393,22 @@ func sendAuctionResponse(
 	w.Header().Set("Content-Type", "application/json")
 
 	// Exitpoint modifies the response and sets response headers according to hook implementation.
+	// If the module sets Body, it is written directly; otherwise Response is JSON-encoded.
 	var finalResponse interface{} = response
+	var body []byte
 	if !hasErrors {
-		finalResponse = hookExecutor.ExecuteExitpointStage(response, w)
+		finalResponse, body = hookExecutor.ExecuteExitpointStage(req, response, w)
 	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
-	if err := enc.Encode(finalResponse); err != nil {
+	if len(body) > 0 {
+		if _, err := w.Write(body); err != nil {
+			labels.RequestStatus = metrics.RequestStatusNetworkErr
+			ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
+		}
+	} else if err := enc.Encode(finalResponse); err != nil {
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
@@ -428,15 +439,16 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	var errL []error
 
 	var requestJson []byte
-	var getImpPatch json.RawMessage
+	var gp *getParams
 
 	switch httpRequest.Method {
 	case http.MethodGet:
 		// GET requests carry the bid request in query parameters; the JSON is
 		// constructed in-process, so compression negotiation and body size
-		// limits do not apply. The imp-level patch is returned separately and
-		// applied after processStoredRequests via applyGETImpPatch.
-		requestJson, getImpPatch, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
+		// limits do not apply. Inventory fields and the imp-level patch are returned
+		// separately and applied after processStoredRequests via gp.applyInventory
+		// and applyGETImpPatch.
+		requestJson, gp, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
 		if err != nil {
 			errs = []error{err}
 			return
@@ -540,27 +552,32 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	// Apply the GET imp patch collected during parseGETRequest. This overlays GET-specific
-	// imp fields (w, h, mtype params, slot, sarid) onto the stored imp without replacing
-	// it entirely, preserving the stored imp's id, ext (bidder params), and other fields
-	// that RFC 7396 array replacement would otherwise discard.
-	if len(getImpPatch) > 0 {
-		var impPatchErr error
-		if requestJson, impPatchErr = applyGETImpPatch(requestJson, getImpPatch); impPatchErr != nil {
-			errs = []error{impPatchErr}
+	// Apply the GET inventory fields and imp patch collected during parseGETRequest.
+	// Both steps run after processStoredRequests so that applyInventory can inspect the
+	// stored request to determine the correct context object (site/app/dooh), and so
+	// applyGETImpPatch preserves stored imp fields (id, ext/bidder params, mimes).
+	if gp != nil {
+		var getErr error
+		if requestJson, getErr = gp.applyInventory(requestJson, storedRequests[storedBidRequestId]); getErr != nil {
+			errs = []error{getErr}
 			return
+		}
+		// Enforce single imp before patching so the patch runs only on imp[0].
+		if requestJson, getErr = enforceSingleImp(httpRequest, requestJson, accountId); getErr != nil {
+			errs = []error{getErr}
+			return
+		}
+		if len(gp.impPatch) > 0 {
+			if requestJson, getErr = applyGETImpPatch(requestJson, gp.impPatch); getErr != nil {
+				errs = []error{getErr}
+				return
+			}
 		}
 	}
 
 	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
-	}
-
-	// The GET interface assumes a single impression per request. Enforced after stored
-	// requests are merged, since that is where extra imps can appear.
-	if httpRequest.Method == http.MethodGet {
-		enforceSingleImp(httpRequest, req.BidRequest, accountId)
 	}
 
 	// normalize to openrtb 2.6

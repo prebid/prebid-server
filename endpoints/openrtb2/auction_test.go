@@ -5011,7 +5011,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 		description    string
 		expectedErrors []error
 		expectedStatus int
-		request        *openrtb2.BidRequest
+		request        *openrtb_ext.RequestWrapper
 		response       *openrtb2.BidResponse
 		hookExecutor   hookexecution.HookStageExecutor
 	}{
@@ -5022,7 +5022,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 				errors.New("/openrtb2/auction Failed to send response: json: error calling MarshalJSON for type json.RawMessage: invalid character '.' looking for beginning of value"),
 			},
 			expectedStatus: 0,
-			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			request:        &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{ID: "some-id", Test: 1}},
 			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("...")},
 			hookExecutor:   hookExecutor,
 		},
@@ -5033,7 +5033,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 				errors.New("Value is not a boolean: active"),
 			},
 			expectedStatus: 0,
-			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
+			request:        &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)}},
 			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
 			hookExecutor:   hookExecutor,
 		},
