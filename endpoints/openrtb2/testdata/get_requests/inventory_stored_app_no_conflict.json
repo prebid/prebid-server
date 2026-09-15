@@ -1,0 +1,21 @@
+{
+  "description": "pubid sent without ctx param, stored request declares app — inventory lands on app, no site conflict",
+  "query": "srid=testapp&pubid=pub-456&page=https://example.com",
+  "stored_bid_request": {
+    "app": {"bundle": "com.example"},
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "app": {
+      "bundle": "com.example",
+      "publisher": {"id": "pub-456"}
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testapp"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

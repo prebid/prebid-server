@@ -25,12 +25,16 @@ func mustParseQuery(raw string) url.Values {
 	return v
 }
 
-// parseGETResult is a helper that parses the request JSON returned by parseGETRequest
-// into a generic map for easy field access. The imp patch (second return value) is discarded.
+// parseGETResult is a helper that simulates the full GET pipeline up to inventory
+// application: parseGETRequest then applyInventory with no stored request (defaults
+// to site). Tests for non-inventory fields may use this directly; the imp patch is
+// accessible via parseGETImpPatch.
 func parseGETResult(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
-	data, _, err := parseGETRequest(req, 0)
+	data, gp, err := parseGETRequest(req, 0)
+	require.NoError(t, err)
+	data, err = gp.applyInventory(data, nil)
 	require.NoError(t, err)
 	var out map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &out))
@@ -57,13 +61,13 @@ func getExtPrebid(t *testing.T, m map[string]interface{}) map[string]interface{}
 func parseGETImpPatch(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
-	_, patch, err := parseGETRequest(req, 0)
+	_, gp, err := parseGETRequest(req, 0)
 	require.NoError(t, err)
-	if len(patch) == 0 {
+	if len(gp.impPatch) == 0 {
 		return nil
 	}
 	var out map[string]interface{}
-	require.NoError(t, json.Unmarshal(patch, &out))
+	require.NoError(t, json.Unmarshal(gp.impPatch, &out))
 	return out
 }
 
@@ -197,6 +201,26 @@ func TestParseGETRequest_Debug(t *testing.T) {
 		if exists {
 			assert.NotEqual(t, true, val)
 		}
+	})
+}
+
+// --- TestParseGETRequest_Test ---
+
+func TestParseGETRequest_Test(t *testing.T) {
+	t.Run("test=1 sets test to 1", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&test=1")
+		assert.Equal(t, float64(1), m["test"])
+	})
+
+	t.Run("test=true sets test to 1", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&test=true")
+		assert.Equal(t, float64(1), m["test"])
+	})
+
+	t.Run("test=0 does not set test", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&test=0")
+		_, exists := m["test"]
+		assert.False(t, exists)
 	})
 }
 
@@ -455,7 +479,7 @@ func TestParseGETRequest_OptionalDeviceHeaders(t *testing.T) {
 	req.Header.Set("X-Device-Os", "RokuOS")
 	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
 
-	data, impPatch, err := parseGETRequest(req, 0)
+	data, gp, err := parseGETRequest(req, 0)
 	require.NoError(t, err)
 	var m map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &m))
@@ -465,9 +489,9 @@ func TestParseGETRequest_OptionalDeviceHeaders(t *testing.T) {
 	assert.Equal(t, "Ultra", dev["model"])
 	assert.Equal(t, "RokuOS", dev["os"])
 
-	require.NotNil(t, impPatch, "imp patch missing — X-Device-Player should be there")
+	require.NotNil(t, gp.impPatch, "imp patch missing — X-Device-Player should be there")
 	var override map[string]interface{}
-	require.NoError(t, json.Unmarshal(impPatch, &override))
+	require.NoError(t, json.Unmarshal(gp.impPatch, &override))
 	assert.Equal(t, "SuperPlayer 4.2", override["displaymanager"])
 }
 
@@ -568,11 +592,11 @@ func TestParseGETRequest_PlayerHeaderWithoutImpIsSafe(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
 	assert.NotPanics(t, func() {
-		_, impPatch, err := parseGETRequest(req, 0)
+		_, gp, err := parseGETRequest(req, 0)
 		require.NoError(t, err)
-		require.NotNil(t, impPatch)
+		require.NotNil(t, gp.impPatch)
 		var override map[string]interface{}
-		require.NoError(t, json.Unmarshal(impPatch, &override))
+		require.NoError(t, json.Unmarshal(gp.impPatch, &override))
 		assert.Equal(t, "SuperPlayer 4.2", override["displaymanager"])
 	})
 }
@@ -586,7 +610,7 @@ func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
 		`"video":{"mimes":["video/mp4"]},` +
 		`"ext":{"prebid":{"bidder":{"appnexus":{"placementId":123}}}}}]}`)
 
-	requestJSON, impPatch, err := parseGETRequest(httptest.NewRequest(http.MethodGet,
+	requestJSON, gp, err := parseGETRequest(httptest.NewRequest(http.MethodGet,
 		"/openrtb2/auction?srid=x&mtype=2&w=640&coppa=0", nil), 0)
 	require.NoError(t, err)
 
@@ -594,8 +618,10 @@ func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
 	merged, err := jsonpatch.MergePatch(stored, requestJSON)
 	require.NoError(t, err)
 
-	// Simulate auction.go post-merge step.
-	merged, err = applyGETImpPatch(merged, impPatch)
+	// Simulate auction.go post-merge steps.
+	merged, err = gp.applyInventory(merged, stored)
+	require.NoError(t, err)
+	merged, err = applyGETImpPatch(merged, gp.impPatch)
 	require.NoError(t, err)
 
 	var request openrtb2.BidRequest
@@ -673,22 +699,21 @@ func TestParseGETRequest_MaxInitialLineLength(t *testing.T) {
 func TestEnforceSingleImp(t *testing.T) {
 	testCases := []struct {
 		name         string
-		imps         []openrtb2.Imp
+		requestJson  []byte
 		expectedImps []string
 	}{
 		{
-			name:         "nil imps untouched",
-			imps:         nil,
-			expectedImps: nil,
+			name:        "no imp array untouched",
+			requestJson: []byte(`{"id":"req-id"}`),
 		},
 		{
 			name:         "single imp untouched",
-			imps:         []openrtb2.Imp{{ID: "imp-1"}},
+			requestJson:  []byte(`{"id":"req-id","imp":[{"id":"imp-1"}]}`),
 			expectedImps: []string{"imp-1"},
 		},
 		{
 			name:         "extra imps discarded",
-			imps:         []openrtb2.Imp{{ID: "imp-1"}, {ID: "imp-2"}, {ID: "imp-3"}},
+			requestJson:  []byte(`{"id":"req-id","imp":[{"id":"imp-1"},{"id":"imp-2"},{"id":"imp-3"}]}`),
 			expectedImps: []string{"imp-1"},
 		},
 	}
@@ -697,28 +722,37 @@ func TestEnforceSingleImp(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			httpReq := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 			httpReq.Header.Set("Referer", "https://publisher.example.com/show")
-			bidReq := &openrtb2.BidRequest{ID: "req-id", Imp: test.imps}
 
-			enforceSingleImp(httpReq, bidReq, "test-account")
+			result, err := enforceSingleImp(httpReq, test.requestJson, "test-account")
+			require.NoError(t, err)
 
-			actualImps := make([]string, 0, len(bidReq.Imp))
-			for _, imp := range bidReq.Imp {
+			var parsed struct {
+				Imp []struct {
+					ID string `json:"id"`
+				} `json:"imp"`
+			}
+			require.NoError(t, json.Unmarshal(result, &parsed))
+
+			actualImps := make([]string, 0, len(parsed.Imp))
+			for _, imp := range parsed.Imp {
 				actualImps = append(actualImps, imp.ID)
 			}
 			if test.expectedImps == nil {
 				assert.Empty(t, actualImps)
-				return
+			} else {
+				assert.Equal(t, test.expectedImps, actualImps)
 			}
-			assert.Equal(t, test.expectedImps, actualImps)
 		})
 	}
 }
 
-// TestEnforceSingleImpNilRequest guards against a panic when the bid request is nil.
-func TestEnforceSingleImpNilRequest(t *testing.T) {
+// TestEnforceSingleImpEmptyInput guards against a panic when the request JSON is nil or empty.
+func TestEnforceSingleImpEmptyInput(t *testing.T) {
 	httpReq := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 	assert.NotPanics(t, func() {
-		enforceSingleImp(httpReq, nil, "test-account")
+		result, err := enforceSingleImp(httpReq, nil, "test-account")
+		assert.NoError(t, err)
+		assert.Nil(t, result)
 	})
 }
 
@@ -753,8 +787,9 @@ func TestQFloat(t *testing.T) {
 // Each fixture simulates the full GET auction pipeline:
 //  1. parseGETRequest — builds sparse JSON from query params + imp patch
 //  2. MergePatch(stored_bid_request, getJSON) — stored as base, GET overrides
-//  3. applyGETImpPatch — applies imp-level GET params to each stored imp
-//  4. enforceSingleImp — truncates to at most one impression
+//  3. applyInventory — routes pubid/page/content to the correct context object
+//  4. enforceSingleImp — truncates to at most one impression (before patching)
+//  5. applyGETImpPatch — applies imp-level GET params to imp[0]
 func TestGETRequestStoredFixtures(t *testing.T) {
 	dir := filepath.Join("testdata", "get_requests")
 	entries, err := os.ReadDir(dir)
@@ -784,30 +819,20 @@ func TestGETRequestStoredFixtures(t *testing.T) {
 				req.Header.Set(k, v)
 			}
 
-			getJSON, impPatch, err := parseGETRequest(req, 0)
+			getJSON, gp, err := parseGETRequest(req, 0)
 			require.NoError(t, err, "parseGETRequest must not error")
 
 			merged, err := jsonpatch.MergePatch(tc.StoredBidRequest, getJSON)
 			require.NoError(t, err, "stored+GET merge must not error")
 
-			final, err := applyGETImpPatch(merged, impPatch)
-			require.NoError(t, err, "applyGETImpPatch must not error")
+			merged, err = gp.applyInventory(merged, tc.StoredBidRequest)
+			require.NoError(t, err, "applyInventory must not error")
 
-			// Enforce single imp via raw JSON to avoid a struct round-trip that would
-			// drop explicit zero values (e.g. minduration=0) or inject null fields.
-			var reqMapRaw map[string]json.RawMessage
-			require.NoError(t, json.Unmarshal(final, &reqMapRaw))
-			if impsRaw, ok := reqMapRaw["imp"]; ok {
-				var imps []json.RawMessage
-				require.NoError(t, json.Unmarshal(impsRaw, &imps))
-				if len(imps) > 1 {
-					impsBytes, merr := json.Marshal(imps[:1])
-					require.NoError(t, merr)
-					reqMapRaw["imp"] = impsBytes
-					final, err = json.Marshal(reqMapRaw)
-					require.NoError(t, err)
-				}
-			}
+			merged, err = enforceSingleImp(req, merged, "test-account")
+			require.NoError(t, err, "enforceSingleImp must not error")
+
+			final, err := applyGETImpPatch(merged, gp.impPatch)
+			require.NoError(t, err, "applyGETImpPatch must not error")
 
 			if len(tc.ExpectedBidReq) > 0 {
 				assert.JSONEq(t, string(tc.ExpectedBidReq), string(final), tc.Description)

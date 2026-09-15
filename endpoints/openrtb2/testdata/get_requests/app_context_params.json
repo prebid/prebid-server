@@ -1,6 +1,6 @@
 {
-  "description": "ctx=app routes pubid and content to app, not site",
-  "query": "srid=testapp&ctx=app&pubid=pub-123&cgenre=comedy",
+  "description": "pubid and content route to app when the stored request declares app",
+  "query": "srid=testapp&pubid=pub-123&cgenre=comedy",
   "stored_bid_request": {
     "app": {"id": "stored-app"},
     "imp": [{"id": "imp1"}]
