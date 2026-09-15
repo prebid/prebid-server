@@ -245,6 +245,19 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}}
 	}
 
+	// peak226 native responses sometimes carry markup in a non-standard adm_native field (an
+	// already-parsed ORTB native object) instead of adm (a JSON string per OpenRTB), with adm
+	// left empty. openrtb2.Bid has no field for it, so recover it with a best-effort parallel
+	// decode keyed by position; if this fails, adm is simply left as the server sent it.
+	var rawResp struct {
+		SeatBid []struct {
+			Bid []struct {
+				AdmNative json.RawMessage `json:"adm_native,omitempty"`
+			} `json:"bid,omitempty"`
+		} `json:"seatbid,omitempty"`
+	}
+	_ = jsonutil.Unmarshal(response.Body, &rawResp)
+
 	totalBids := 0
 	for _, seatBid := range bidResp.SeatBid {
 		totalBids += len(seatBid.Bid)
@@ -260,7 +273,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var errs []error
-	for _, seatBid := range bidResp.SeatBid {
+	for si, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
 			bid := seatBid.Bid[i]
 
@@ -270,7 +283,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				continue
 			}
 
-			resolveMacros(&bid)
+			var admNative json.RawMessage
+			if si < len(rawResp.SeatBid) && i < len(rawResp.SeatBid[si].Bid) {
+				admNative = rawResp.SeatBid[si].Bid[i].AdmNative
+			}
+			resolveMacros(&bid, admNative)
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
@@ -286,11 +303,20 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 // the bid price. peak226 always returns the macro in adm and relies on the demand-side
 // adapter to expand it, so leaving it unresolved would render the literal macro text in the
 // creative and report the wrong price on the win and billing notices.
-func resolveMacros(bid *openrtb2.Bid) {
+//
+// For native bids, adm is left empty and the markup instead arrives via admNative (the raw
+// adm_native field recovered by the caller); it is adopted as adm here once the macro is
+// resolved. A plain substring replace is enough since admNative is opaque JSON text and the
+// macro only ever appears inside a string value (observed so far in a nested tracker URL),
+// never in JSON structural syntax.
+func resolveMacros(bid *openrtb2.Bid, admNative json.RawMessage) {
 	if bid == nil {
 		return
 	}
 	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	if bid.AdM == "" && len(admNative) > 0 {
+		bid.AdM = string(admNative)
+	}
 	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
 	bid.BURL = strings.Replace(bid.BURL, "${AUCTION_PRICE}", price, -1)
