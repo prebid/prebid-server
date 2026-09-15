@@ -63,10 +63,15 @@ func (ev *eventTracking) isModifyingVASTXMLAllowed(bidderName string) bool {
 	return ev.bidderInfos[bidderName].ModifyingVastXmlAllowed && ev.isEventAllowed()
 }
 
+// isVASTBid returns true for bid types that carry VAST XML (video and audio per OpenRTB 2.6).
+func isVASTBid(bidType openrtb_ext.BidType) bool {
+	return bidType == openrtb_ext.BidTypeVideo || bidType == openrtb_ext.BidTypeAudio
+}
+
 // modifyBidVAST injects event Impression url if needed, otherwise returns original VAST string
 func (ev *eventTracking) modifyBidVAST(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName) {
 	bid := pbsBid.Bid
-	if pbsBid.BidType != openrtb_ext.BidTypeVideo || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
+	if !isVASTBid(pbsBid.BidType) || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
 		return
 	}
 	vastXML := makeVAST(bid)
@@ -81,7 +86,7 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *entities.PbsOrtbBid, bidderName o
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
 func (ev *eventTracking) modifyBidJSON(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
-	if !ev.isEventAllowed() || pbsBid.BidType == openrtb_ext.BidTypeVideo {
+	if !ev.isEventAllowed() || isVASTBid(pbsBid.BidType) {
 		return jsonBytes, nil
 	}
 	var winEventURL string
@@ -104,7 +109,7 @@ func (ev *eventTracking) modifyBidJSON(pbsBid *entities.PbsOrtbBid, bidderName o
 
 // makeBidExtEvents make the data for bid.ext.prebid.events if needed, otherwise returns nil
 func (ev *eventTracking) makeBidExtEvents(pbsBid *entities.PbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
-	if !ev.isEventAllowed() || pbsBid.BidType == openrtb_ext.BidTypeVideo {
+	if !ev.isEventAllowed() || isVASTBid(pbsBid.BidType) {
 		return nil
 	}
 	return &openrtb_ext.ExtBidPrebidEvents{
