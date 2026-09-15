@@ -76,9 +76,9 @@ type testCase struct {
 	planBuilder                hooks.ExecutionPlanBuilder
 
 	// GET endpoint fields
-	HttpMethod          string                     `json:"httpMethod"`
-	GeneratedRequestID  string                     `json:"generatedRequestId"`
-	MockStoredRequests  map[string]json.RawMessage `json:"mockStoredRequests"`
+	HttpMethod         string                     `json:"httpMethod"`
+	GeneratedRequestID string                     `json:"generatedRequestId"`
+	MockStoredRequests map[string]json.RawMessage `json:"mockStoredRequests"`
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`

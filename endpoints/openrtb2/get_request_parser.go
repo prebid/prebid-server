@@ -588,17 +588,17 @@ func applyCSVSpecs(q url.Values, m map[string]interface{}, specs []sliceSpec) {
 
 // sharedAVIntSpecs contains int params common to both video and audio.
 var sharedAVIntSpecs = []intSpec{
-	{"mindur", "minduration", okGTE0},      // 0 is a valid lower bound
+	{"mindur", "minduration", okGTE0}, // 0 is a valid lower bound
 	{"maxdur", "maxduration", okGT0},
 	{"minbr", "minbitrate", okGT0},
 	{"maxbr", "maxbitrate", okGT0},
 	{"maxseq", "maxseq", okGT0},
-	{"maxex", "maxextended", okNotN1},      // -1 URL literal silently dropped
-	{"startdelay", "startdelay", okNotN1},  // -1 URL literal silently dropped
+	{"maxex", "maxextended", okNotN1},     // -1 URL literal silently dropped
+	{"startdelay", "startdelay", okNotN1}, // -1 URL literal silently dropped
 	{"poddur", "poddur", okGT0},
-	{"podseq", "podseq", okNotN1},          // -1 URL literal silently dropped
-	{"seq", "sequence", okGTE0},            // 0 is a valid sequence number
-	{"slotinpod", "slotinpod", okNotN1},    // -1 URL literal silently dropped
+	{"podseq", "podseq", okNotN1},       // -1 URL literal silently dropped
+	{"seq", "sequence", okGTE0},         // 0 is a valid sequence number
+	{"slotinpod", "slotinpod", okNotN1}, // -1 URL literal silently dropped
 }
 
 // sharedAVSliceSpecs contains slice params common to both video and audio.
@@ -649,8 +649,8 @@ var videoOnlyIntSpecs = []intSpec{
 	{"w", "w", okGEMinDim},
 	{"h", "h", okGEMinDim},
 	{"skip", "skip", okGTE0},
-	{"skipmin", "skipmin", okGTE0},         // 0 means no minimum skip-ad wait
-	{"skipafter", "skipafter", okGTE0},     // 0 means immediately skippable
+	{"skipmin", "skipmin", okGTE0},     // 0 means no minimum skip-ad wait
+	{"skipafter", "skipafter", okGTE0}, // 0 means immediately skippable
 	{"linearity", "linearity", okGT0},
 	{"placement", "placement", okGT0},
 	{"plcmt", "plcmt", okGT0},

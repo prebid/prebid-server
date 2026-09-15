@@ -732,12 +732,12 @@ func TestQFloat(t *testing.T) {
 		{"mincpms=1.25", 1.25, true},
 		{"mincpms=10", 10, true},
 		{"mincpms=0.01", 0.01, true},
-		{"mincpms=0", 0, false},    // zero is indistinguishable from not-set
-		{"mincpms=-1", 0, false},   // negative rejected
-		{"mincpms=abc", 0, false},  // unparsable dropped
-		{"mincpms=Inf", 0, false},  // Inf rejected
-		{"mincpms=NaN", 0, false},  // NaN rejected
-		{"", 0, false},             // absent param
+		{"mincpms=0", 0, false},   // zero is indistinguishable from not-set
+		{"mincpms=-1", 0, false},  // negative rejected
+		{"mincpms=abc", 0, false}, // unparsable dropped
+		{"mincpms=Inf", 0, false}, // Inf rejected
+		{"mincpms=NaN", 0, false}, // NaN rejected
+		{"", 0, false},            // absent param
 	}
 	for _, tc := range cases {
 		q := mustParseQuery(tc.query)
