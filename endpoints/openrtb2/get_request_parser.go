@@ -599,8 +599,8 @@ func applySharedAVParams(q url.Values, m map[string]interface{}) {
 	vw.intN("minbitrate", getDomainPositive, "minbr")
 	vw.intN("maxbitrate", getDomainPositive, "maxbr")
 	vw.intN("maxseq", getDomainPositive)
-	vw.intN("maxextended", getDomainAny, "maxex")    // -1 is valid per AdCOM (no end time)
-	vw.intN("startdelay", getDomainAny)              // -1/-2 are valid AdCOM values
+	vw.intN("maxextended", getDomainAny, "maxex") // -1 is valid per AdCOM (no end time)
+	vw.intN("startdelay", getDomainAny)           // -1/-2 are valid AdCOM values
 	vw.intN("poddur", getDomainPositive)
 	vw.intN("podseq", getDomainInt8)                 // -1 = any pod
 	vw.intN("sequence", getDomainNonNegative, "seq") // 0 is a valid sequence number
