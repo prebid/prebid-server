@@ -1,0 +1,22 @@
+{
+  "description": "Banner parameter mappings",
+  "query": "srid=testbanner&mtype=1&w=300&h=250&pos=1&topframe=1&battr=1,2&btype=1&expdir=1,2&api=1,2&mimes=image/jpeg,image/png",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "banner": {
+      "w": 300,
+      "h": 250,
+      "format": [{"w": 300, "h": 250}],
+      "pos": 1,
+      "topframe": 1,
+      "battr": [1, 2],
+      "btype": [1],
+      "expdir": [1, 2],
+      "api": [1, 2],
+      "mimes": ["image/jpeg", "image/png"]
+    }
+  }
+}

@@ -133,6 +133,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Assert request with bid adjustments defined is processing correctly",
 			"bidadjustments",
 		},
+		{
+			"Assert GET /openrtb2/auction endpoint correctly parses query parameters",
+			"get-auction",
+		},
 	}
 
 	for _, tc := range testSuites {
@@ -215,7 +219,12 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 	t.Helper()
 
 	// Hit the auction endpoint with the test case configuration and mockBidRequest
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+	var request *http.Request
+	if test.HttpMethod == "GET" {
+		request = httptest.NewRequest("GET", "/openrtb2/auction?"+test.Query, nil)
+	} else {
+		request = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+	}
 	recorder := httptest.NewRecorder()
 	auctionEndpointHandler(recorder, request, nil)
 

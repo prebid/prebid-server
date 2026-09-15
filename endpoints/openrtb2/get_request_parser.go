@@ -3,9 +3,11 @@ package openrtb2
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -43,9 +45,56 @@ func enforceSingleImp(httpRequest *http.Request, req *openrtb2.BidRequest, accou
 	)
 }
 
+// reUnfilledMacro matches a query param value that is entirely an unexpanded ad-server macro.
+// Such values are dropped before parsing so they never end up as literal strings in the bid
+// request.  The four common placeholder styles are matched (after URL-decoding by url.Values):
+//
+//	[MACRO]      square-bracket, uppercase/digits/underscore only
+//	%%MACRO%%    double-percent
+//	${MACRO}     dollar-brace
+//	{MACRO}      bare curly-brace
+//
+// Values like "[Live] Player" intentionally do NOT match because they contain mixed case and
+// spaces — they are display text that happens to include brackets, not an unfilled placeholder.
+var reUnfilledMacro = regexp.MustCompile(
+	`^\[([A-Z][A-Z0-9_]*)\]$` +
+		`|^%%([A-Z][A-Z0-9_]*)%%$` +
+		`|^\$\{([A-Z][A-Z0-9_]*)\}$` +
+		`|^\{([A-Z][A-Z0-9_]*)\}$`,
+)
+
+// sanitizeGETQuery returns a copy of q with unfilled macro values dropped and
+// control characters stripped from all remaining string values.
+func sanitizeGETQuery(q url.Values) url.Values {
+	out := make(url.Values, len(q))
+	for key, vals := range q {
+		var cleaned []string
+		for _, v := range vals {
+			if reUnfilledMacro.MatchString(v) {
+				continue
+			}
+			stripped := strings.Map(func(r rune) rune {
+				if r < 0x20 || r == 0x7F {
+					return -1
+				}
+				return r
+			}, v)
+			cleaned = append(cleaned, stripped)
+		}
+		if len(cleaned) > 0 {
+			out[key] = cleaned
+		}
+	}
+	return out
+}
+
 // parseGETRequest builds an OpenRTB BidRequest JSON from HTTP GET query parameters.
 // The stored request ID (srid) is required — without it we cannot know the auction structure.
 // All other parameters are optional and overlay on top of the stored request.
+//
+// Returns (requestJSON, impPatch, error). impPatch is a sparse imp JSON Merge Patch
+// that the caller must apply to every imp AFTER processStoredRequests via applyGETImpPatch.
+// Keeping the patch separate avoids embedding internal state in ext.prebid.
 //
 // Parameter precedence (lowest → highest):
 //  1. Stored request (loaded later in the normal parseRequest / processStoredRequests flow)
@@ -56,25 +105,46 @@ func enforceSingleImp(httpRequest *http.Request, req *openrtb2.BidRequest, accou
 // params in the precedence order: they are only used when neither an X-Device-*
 // header nor a query param set the field.
 //
-// Imp-level params (video/audio/banner dimensions, slot, sarid, displaymanager) are
-// stored in ext.prebid.getImpOverride and applied to each imp AFTER processStoredRequests
-// via applyGETImpOverrideJSON. This preserves stored imp fields (id, ext, mimes) that
-// would otherwise be lost when the imp array is replaced during JSON Merge Patch.
-//
 // Request-level params are built as a sparse map so that explicit zero values (e.g.
 // coppa=0) survive JSON marshalling and correctly override stored request values.
-func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) {
+func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, json.RawMessage, error) {
 	if maxInitialLineLength > 0 {
 		if lineLength := len(r.Method) + 1 + len(r.URL.RequestURI()) + 1 + len(r.Proto); lineLength > maxInitialLineLength {
-			return nil, fmt.Errorf("request line exceeded max size of %d bytes", maxInitialLineLength)
+			return nil, nil, fmt.Errorf("request line exceeded max size of %d bytes", maxInitialLineLength)
 		}
 	}
 
-	q := r.URL.Query()
+	q := sanitizeGETQuery(r.URL.Query())
 
-	srid := qFirst(q, "srid")
+	srid := qFirst(q, "srid", "tag_id")
 	if srid == "" {
-		return nil, fmt.Errorf("GET /openrtb2/auction requires 'srid' (stored request ID) query parameter")
+		return nil, nil, fmt.Errorf("GET /openrtb2/auction requires 'srid' (stored request ID) query parameter")
+	}
+
+	// Fast path: only srid provided — all auction structure comes from the stored request.
+	// Device headers (X-Device-*, User-Agent, X-Forwarded-For) are still applied so
+	// the request carries accurate device context even when no query params overlay it.
+	// X-Device-Player goes into the imp patch even here.
+	if len(q) == 1 {
+		reqMap := map[string]interface{}{
+			"ext": map[string]interface{}{
+				"prebid": map[string]interface{}{
+					"storedrequest": map[string]interface{}{"id": srid},
+					"server":        map[string]interface{}{"http_method": "GET"},
+				},
+			},
+		}
+		applyGETHeaderParamsToMap(r.Header, reqMap)
+		var fastImpPatch json.RawMessage
+		if player := strings.TrimSpace(r.Header.Get("X-Device-Player")); player != "" {
+			p, perr := json.Marshal(map[string]interface{}{"displaymanager": player})
+			if perr != nil {
+				return nil, nil, perr
+			}
+			fastImpPatch = p
+		}
+		b, err := json.Marshal(reqMap)
+		return b, fastImpPatch, err
 	}
 
 	reqMap := map[string]interface{}{}
@@ -96,7 +166,7 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) 
 
 	// tmax
 	if tmaxStr := qFirst(q, "tmax"); tmaxStr != "" {
-		if tmax, err := strconv.ParseInt(tmaxStr, 10, 64); err == nil && tmax >= 100 {
+		if tmax, err := strconv.ParseInt(tmaxStr, 10, 64); err == nil && tmax > 0 {
 			reqMap["tmax"] = tmax
 		}
 	}
@@ -104,23 +174,45 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) 
 	// Privacy params (sparse — coppa=0 is preserved)
 	applyGETPrivacyParamsToMap(q, reqMap)
 
+	// Inventory context: site (default), app, or dooh.
+	// Declared explicitly because parseGETRequest runs before the stored request
+	// is fetched, so it cannot inspect which top-level object the stored request uses.
+	ctxKey := strings.ToLower(qFirst(q, "ctx"))
+	switch ctxKey {
+	case "app", "dooh":
+		// use as-is
+	default:
+		ctxKey = "site"
+	}
+
 	// Publisher ID
-	if pubid := qFirst(q, "pubid"); pubid != "" {
-		site, _ := reqMap["site"].(map[string]interface{})
-		if site == nil {
-			site = map[string]interface{}{}
-			reqMap["site"] = site
+	if pubid := qFirst(q, "pubid", "account"); pubid != "" {
+		ctxMap, _ := reqMap[ctxKey].(map[string]interface{})
+		if ctxMap == nil {
+			ctxMap = map[string]interface{}{}
+			reqMap[ctxKey] = ctxMap
 		}
-		pub, _ := site["publisher"].(map[string]interface{})
+		pub, _ := ctxMap["publisher"].(map[string]interface{})
 		if pub == nil {
 			pub = map[string]interface{}{}
-			site["publisher"] = pub
+			ctxMap["publisher"] = pub
 		}
 		pub["id"] = pubid
 	}
+	// page is site-specific (no equivalent field on app or dooh)
+	if ctxKey == "site" {
+		if page := qFirst(q, "page"); page != "" {
+			site, _ := reqMap["site"].(map[string]interface{})
+			if site == nil {
+				site = map[string]interface{}{}
+				reqMap["site"] = site
+			}
+			site["page"] = page
+		}
+	}
 
 	// Content params
-	applyGETContentParamsToMap(q, reqMap)
+	applyGETContentParamsToMap(q, ctxKey, reqMap)
 
 	// Blocking
 	if bcat := qCSV(q, "bcat"); len(bcat) > 0 {
@@ -130,22 +222,20 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) 
 		reqMap["badv"] = badv
 	}
 
-	// Imp override — not placed directly in imp array to avoid RFC 7396 array replacement.
-	// Applied to each imp after processStoredRequests by applyGETImpOverrideJSON.
-	impOverride, err := buildImpOverrideFromGET(r.Header, q)
+	// Build the imp-level patch; returned separately so ext.prebid stays clean.
+	// Applied by the caller via applyGETImpPatch after processStoredRequests.
+	impPatch, err := buildImpOverrideFromGET(r.Header, q)
 	if err != nil {
-		return nil, err
-	}
-	if len(impOverride) > 0 {
-		prebidMap["getImpOverride"] = json.RawMessage(impOverride)
+		return nil, nil, err
 	}
 
-	// Header params (device fields; X-Device-Player goes into imp override above)
+	// Header params (device fields; X-Device-Player goes into imp patch above)
 	applyGETHeaderParamsToMap(r.Header, reqMap)
 
 	reqMap["ext"] = map[string]interface{}{"prebid": prebidMap}
 
-	return json.Marshal(reqMap)
+	b, err := json.Marshal(reqMap)
+	return b, impPatch, err
 }
 
 // applyGETPrivacyParamsToMap writes privacy-related query params into reqMap as a
@@ -154,13 +244,10 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, error) 
 // request values during the MergePatch merge.
 func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 	regsMap := map[string]interface{}{}
-
-	if gdpr := qInt(q, "gdpr", "gdpr_applies"); gdpr >= 0 {
-		regsMap["gdpr"] = gdpr
-	}
-	if gpp := qFirst(q, "gppc"); gpp != "" {
-		regsMap["gpp"] = gpp
-	}
+	rw := newMapWriter(q, regsMap)
+	rw.intN("gdpr", getDomainNonNegative, "gdpr", "gdpr_applies")
+	rw.text("gpp", "gppc")
+	// gpp_sid: positive-integer CSV — filtered individually, not a simple domain check.
 	if gpps := qCSV(q, "gpps"); len(gpps) > 0 {
 		var ids []int
 		for _, s := range gpps {
@@ -169,20 +256,25 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 			}
 		}
 		if len(ids) > 0 {
-			regsMap["gppsid"] = ids
+			regsMap["gpp_sid"] = ids
 		}
 	}
-	if coppa := qInt(q, "coppa"); coppa >= 0 {
-		regsMap["coppa"] = coppa
-	}
-	if usp := qFirst(q, "usp"); usp != "" {
-		regsMap["us_privacy"] = usp
+	rw.intN("coppa", getDomainInt8)
+	rw.text("us_privacy", "usp")
+	// gpc lives in regs.ext, not regs directly.
+	if gpc, ok := qIntIn(q, getDomainNonNegative, "gpc"); ok {
+		regsExt, _ := regsMap["ext"].(map[string]interface{})
+		if regsExt == nil {
+			regsExt = map[string]interface{}{}
+		}
+		regsExt["gpc"] = gpc
+		regsMap["ext"] = regsExt
 	}
 	if len(regsMap) > 0 {
 		reqMap["regs"] = regsMap
 	}
 
-	if consent := qFirst(q, "gdpr_consent", "consent_string", "tcfc", "cs"); consent != "" {
+	if consent := qFirst(q, "tcfc", "gdpr_consent", "consent_string", "cs"); consent != "" {
 		userMap, _ := reqMap["user"].(map[string]interface{})
 		if userMap == nil {
 			userMap = map[string]interface{}{}
@@ -190,27 +282,54 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 		userMap["consent"] = consent
 		reqMap["user"] = userMap
 	}
+	if addtlConsent := qFirst(q, "addtl_consent"); addtlConsent != "" {
+		userMap, _ := reqMap["user"].(map[string]interface{})
+		if userMap == nil {
+			userMap = map[string]interface{}{}
+		}
+		userExt, _ := userMap["ext"].(map[string]interface{})
+		if userExt == nil {
+			userExt = map[string]interface{}{}
+		}
+		userExt["ConsentedProvidersSettings"] = map[string]interface{}{
+			"consented_providers": addtlConsent,
+		}
+		userMap["ext"] = userExt
+		reqMap["user"] = userMap
+	}
 
 	deviceMap, _ := reqMap["device"].(map[string]interface{})
 	if deviceMap == nil {
 		deviceMap = map[string]interface{}{}
 	}
-	if dnt := qInt(q, "dnt"); dnt >= 0 {
-		deviceMap["dnt"] = dnt
-	}
-	if lmt := qInt(q, "lmt"); lmt >= 0 {
-		deviceMap["lmt"] = lmt
-	}
-	if ifa := qFirst(q, "ifa"); ifa != "" {
+	dw := newMapWriter(q, deviceMap)
+	dw.intN("dnt", getDomainNonNegative)
+	dw.intN("lmt", getDomainNonNegative)
+	// Reject the all-zero UUID placeholder produced by unfilled query macros.
+	if ifa := qFirst(q, "ifa"); ifa != "" && ifa != "00000000-0000-0000-0000-000000000000" {
 		deviceMap["ifa"] = ifa
 	}
-	if ua := qFirst(q, "ua"); ua != "" {
-		deviceMap["ua"] = ua
-	}
-	if dtype := qFirst(q, "dtype"); dtype != "" {
-		if dt := qParseInt(dtype); dt > 0 {
-			deviceMap["devicetype"] = dt
+	dw.text("ua")
+	dw.intN("devicetype", getDomainPositive, "dtype")
+	// ifa_type lives in device.ext, not device directly.
+	if ifaType := qFirst(q, "ifat"); ifaType != "" {
+		devExt, _ := deviceMap["ext"].(map[string]interface{})
+		if devExt == nil {
+			devExt = map[string]interface{}{}
 		}
+		devExt["ifa_type"] = ifaType
+		deviceMap["ext"] = devExt
+	}
+	// ip/ipv6: custom — requires net.ParseIP normalisation and To4 routing.
+	if parsed := net.ParseIP(strings.TrimSpace(qFirst(q, "ip"))); parsed != nil {
+		if parsed.To4() != nil {
+			deviceMap["ip"] = parsed.String()
+		} else {
+			deviceMap["ipv6"] = parsed.String()
+		}
+	}
+	if parsed := net.ParseIP(strings.TrimSpace(qFirst(q, "ipv6"))); parsed != nil && parsed.To4() == nil {
+		deviceMap["ipv6"] = parsed.String()
 	}
 	if len(deviceMap) > 0 {
 		reqMap["device"] = deviceMap
@@ -218,43 +337,30 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 }
 
 // applyGETContentParamsToMap writes content-related query params into the
-// site.content or app.content sub-object in reqMap.
-func applyGETContentParamsToMap(q url.Values, reqMap map[string]interface{}) {
+// ctxKey.content sub-object in reqMap (ctxKey is "site", "app", or "dooh").
+func applyGETContentParamsToMap(q url.Values, ctxKey string, reqMap map[string]interface{}) {
 	contentMap := map[string]interface{}{}
-
-	if genre := qFirst(q, "cgenre"); genre != "" {
-		contentMap["genre"] = genre
-	}
-	if lang := qFirst(q, "clang"); lang != "" {
-		contentMap["language"] = lang
-	}
-	if rating := qFirst(q, "crating"); rating != "" {
-		contentMap["contentrating"] = rating
-	}
-	if title := qFirst(q, "ctitle"); title != "" {
-		contentMap["title"] = title
-	}
-	if series := qFirst(q, "cseries"); series != "" {
-		contentMap["series"] = series
-	}
-	if curl := qFirst(q, "curl", "url_override"); curl != "" {
-		contentMap["url"] = curl
-	}
-	if livestream := qInt(q, "clivestream"); livestream >= 0 {
-		contentMap["livestream"] = livestream
-	}
+	cw := newMapWriter(q, contentMap)
+	cw.text("genre", "cgenre")
+	cw.text("language", "clang")
+	cw.text("contentrating", "crating")
+	cw.text("title", "ctitle")
+	cw.text("series", "cseries", "rss_feed")
+	cw.text("url", "curl", "url_override")
+	cw.intN("livestream", getDomainNonNegative, "clivestream")
+	cw.csv("cat", "ccat")
+	cw.intN("cattax", getDomainNonNegative, "ccattax")
 
 	if len(contentMap) == 0 {
 		return
 	}
 
-	if site, ok := reqMap["site"].(map[string]interface{}); ok {
-		site["content"] = contentMap
-	} else if app, ok := reqMap["app"].(map[string]interface{}); ok {
-		app["content"] = contentMap
-	} else {
-		reqMap["site"] = map[string]interface{}{"content": contentMap}
+	ctxMap, _ := reqMap[ctxKey].(map[string]interface{})
+	if ctxMap == nil {
+		ctxMap = map[string]interface{}{}
+		reqMap[ctxKey] = ctxMap
 	}
+	ctxMap["content"] = contentMap
 }
 
 // applyGETHeaderParamsToMap writes X-Device-* header values into the device sub-map
@@ -336,11 +442,11 @@ func applyGETIPToMap(h http.Header, deviceMap map[string]interface{}) {
 	}
 }
 
-// buildImpOverrideFromGET builds a sparse imp JSON object containing only the
-// query params that were explicitly set. It is stored in ext.prebid.getImpOverride
-// and applied to each imp after processStoredRequests, so stored imp fields (id,
-// ext with bidder params, mimes) are preserved and only the GET-specific fields
-// (w, h, etc.) are overlaid via RFC 7396 recursive object merge.
+// buildImpOverrideFromGET builds a sparse imp JSON Merge Patch containing only the
+// query params that were explicitly set. The caller (parseGETRequest) returns it as
+// the second value and passes it to applyGETImpPatch after processStoredRequests,
+// so stored imp fields (id, ext with bidder params, mimes) are preserved and only
+// the GET-specific fields (w, h, etc.) are overlaid via RFC 7396 recursive merge.
 func buildImpOverrideFromGET(h http.Header, q url.Values) (json.RawMessage, error) {
 	impMap := map[string]interface{}{}
 
@@ -348,28 +454,71 @@ func buildImpOverrideFromGET(h http.Header, q url.Values) (json.RawMessage, erro
 		impMap["tagid"] = slot
 	}
 
+	impExtMap := map[string]interface{}{}
+
 	if sarid := qFirst(q, "sarid"); sarid != "" {
-		ext, err := setGETImpExtField(nil, "prebid", "storedauctionresponse", map[string]string{"id": sarid})
-		if err != nil {
-			return nil, err
+		impExtMap["prebid"] = map[string]interface{}{
+			"storedauctionresponse": map[string]string{"id": sarid},
 		}
-		impMap["ext"] = json.RawMessage(ext)
+	}
+
+	if targeting := qFirst(q, "targeting"); targeting != "" {
+		dataMap := map[string]interface{}{}
+		if json.Unmarshal([]byte(targeting), &dataMap) == nil && len(dataMap) > 0 {
+			impExtMap["data"] = dataMap
+		}
+	}
+
+	if len(impExtMap) > 0 {
+		impMap["ext"] = impExtMap
 	}
 
 	mtype := qFirst(q, "mtype")
 	switch mtype {
 	case "2", "vid":
+		// Explicit video: overlay video params, delete any banner/audio from stored request.
 		if vm := buildSparseVideoParams(q); len(vm) > 0 {
 			impMap["video"] = vm
 		}
+		impMap["banner"] = nil
+		impMap["audio"] = nil
 	case "3", "aud":
+		// Explicit audio: overlay audio params, delete any banner/video from stored request.
 		if am := buildSparseAudioParams(q); len(am) > 0 {
 			impMap["audio"] = am
 		}
-	default:
+		impMap["banner"] = nil
+		impMap["video"] = nil
+	case "1", "ban":
+		// Explicit banner: overlay banner params, delete any video/audio from stored request.
 		if bm := buildSparseBannerParams(q); len(bm) > 0 {
 			impMap["banner"] = bm
 		}
+		impMap["video"] = nil
+		impMap["audio"] = nil
+	case "":
+		// No mtype: build all three media param maps and defer selection until the stored
+		// imp has been resolved. applyGETImpPatch will detect the existing media type and
+		// apply only the matching sub-map via the "_deferred_media" key.
+		deferredMedia := map[string]interface{}{}
+		if bm := buildSparseBannerParams(q); len(bm) > 0 {
+			deferredMedia["banner"] = bm
+		}
+		if vm := buildSparseVideoParams(q); len(vm) > 0 {
+			deferredMedia["video"] = vm
+		}
+		if am := buildSparseAudioParams(q); len(am) > 0 {
+			deferredMedia["audio"] = am
+		}
+		if len(deferredMedia) > 0 {
+			impMap["_deferred_media"] = deferredMedia
+		}
+	default:
+		// Unknown/native mtype: no GET media params apply.
+		// Null banner/video/audio so stored values for the wrong type are removed.
+		impMap["banner"] = nil
+		impMap["video"] = nil
+		impMap["audio"] = nil
 	}
 
 	if player := strings.TrimSpace(h.Get("X-Device-Player")); player != "" {
@@ -382,275 +531,322 @@ func buildImpOverrideFromGET(h http.Header, q url.Values) (json.RawMessage, erro
 	return json.Marshal(impMap)
 }
 
-func buildSparseVideoParams(q url.Values) map[string]interface{} {
-	m := map[string]interface{}{}
-	if v := qInt(q, "mindur"); v > 0 {
-		m["minduration"] = v
+// intSpec maps a GET query parameter to an OpenRTB JSON field, setting it only
+// when the parsed integer value satisfies the ok condition.
+type intSpec struct {
+	src string
+	dst string
+	ok  func(int) bool
+}
+
+// sliceSpec maps a GET query parameter to an OpenRTB JSON array field.
+// Used for both integer arrays (applySliceSpecs) and string arrays (applyCSVSpecs).
+type sliceSpec struct {
+	src string
+	dst string
+}
+
+// Condition predicates shared across all spec tables.
+var (
+	okGT0 = func(v int) bool { return v > 0 }
+	// okGTE0 accepts zero, which is a valid OpenRTB value for many fields.
+	okGTE0 = func(v int) bool { return v >= 0 }
+	// okNotN1 uses -1 as the "not set" sentinel (qParseInt returns -1 for absent/invalid).
+	// A literal "-1" in the URL is also silently dropped — qParseInt cannot distinguish
+	// absent from the string "-1", so the field falls back to the stored request value.
+	okNotN1 = func(v int) bool { return v != -1 }
+	// okGEMinDim accepts pixel dimensions of at least minAdDim (10px).
+	okGEMinDim = func(v int) bool { return v >= minAdDim }
+)
+
+// applyIntSpecs reads each spec's query param and writes it to m when ok holds.
+func applyIntSpecs(q url.Values, m map[string]interface{}, specs []intSpec) {
+	for _, s := range specs {
+		if v := qInt(q, s.src); s.ok(v) {
+			m[s.dst] = v
+		}
 	}
-	if v := qInt(q, "maxdur"); v > 0 {
-		m["maxduration"] = v
+}
+
+// applySliceSpecs reads comma-separated integer params and writes non-empty results to m.
+func applySliceSpecs(q url.Values, m map[string]interface{}, specs []sliceSpec) {
+	for _, s := range specs {
+		if v := qInts(q, s.src); len(v) > 0 {
+			m[s.dst] = v
+		}
 	}
-	if v := qInt(q, "w"); v > 0 {
-		m["w"] = v
+}
+
+// applyCSVSpecs reads comma-separated string params and writes non-empty results to m.
+func applyCSVSpecs(q url.Values, m map[string]interface{}, specs []sliceSpec) {
+	for _, s := range specs {
+		if v := qCSV(q, s.src); len(v) > 0 {
+			m[s.dst] = v
+		}
 	}
-	if v := qInt(q, "h"); v > 0 {
-		m["h"] = v
+}
+
+// sharedAVIntSpecs contains int params common to both video and audio.
+var sharedAVIntSpecs = []intSpec{
+	{"mindur", "minduration", okGTE0},      // 0 is a valid lower bound
+	{"maxdur", "maxduration", okGT0},
+	{"minbr", "minbitrate", okGT0},
+	{"maxbr", "maxbitrate", okGT0},
+	{"maxseq", "maxseq", okGT0},
+	{"maxex", "maxextended", okNotN1},      // -1 URL literal silently dropped
+	{"startdelay", "startdelay", okNotN1},  // -1 URL literal silently dropped
+	{"poddur", "poddur", okGT0},
+	{"podseq", "podseq", okNotN1},          // -1 URL literal silently dropped
+	{"seq", "sequence", okGTE0},            // 0 is a valid sequence number
+	{"slotinpod", "slotinpod", okNotN1},    // -1 URL literal silently dropped
+}
+
+// sharedAVSliceSpecs contains slice params common to both video and audio.
+var sharedAVSliceSpecs = []sliceSpec{
+	{"proto", "protocols"},
+	{"api", "api"},
+	{"delivery", "delivery"},
+	{"battr", "battr"},
+	{"rqddurs", "rqddurs"},
+}
+
+// applySharedAVParams writes all params shared between video and audio into m,
+// including rqddurs/duration exclusivity enforcement.
+func applySharedAVParams(q url.Values, m map[string]interface{}) {
+	applyIntSpecs(q, m, sharedAVIntSpecs)
+	applySliceSpecs(q, m, sharedAVSliceSpecs)
+	if v := qCSV(q, "mimes"); len(v) > 0 {
+		m["mimes"] = v
 	}
-	if v := qInt(q, "skip"); v >= 0 {
-		m["skip"] = v
-	}
-	if v := qInt(q, "skipmin"); v > 0 {
-		m["skipmin"] = v
-	}
-	if v := qInt(q, "skipafter"); v > 0 {
-		m["skipafter"] = v
-	}
-	if v := qInt(q, "startdelay"); v != -1 {
-		m["startdelay"] = v
-	}
-	if v := qInt(q, "linearity"); v > 0 {
-		m["linearity"] = v
-	}
-	if v := qInt(q, "placement"); v > 0 {
-		m["placement"] = v
-	}
-	if v := qInt(q, "plcmt"); v > 0 {
-		m["plcmt"] = v
-	}
-	if v := qInt(q, "pos"); v >= 0 {
-		m["pos"] = v
-	}
-	if v := qInt(q, "poddur"); v > 0 {
-		m["poddur"] = v
+	if v, ok := qFloat(q, "mincpms"); ok {
+		m["mincpmpersec"] = v
 	}
 	if v := qFirst(q, "podid"); v != "" {
 		m["podid"] = v
 	}
-	if v := qInt(q, "podseq"); v != -1 {
-		m["podseq"] = v
+	enforceRqddursDurationExclusivity(m)
+}
+
+// enforceRqddursDurationExclusivity implements the OpenRTB 2.6 rule that rqddurs and
+// minduration/maxduration are mutually exclusive. The losing side is set to nil so that
+// RFC 7396 merge-patch semantics delete those fields from the stored request.
+// When both sides appear in the GET params, rqddurs takes precedence.
+func enforceRqddursDurationExclusivity(m map[string]interface{}) {
+	_, hasRqddurs := m["rqddurs"]
+	_, hasMin := m["minduration"]
+	_, hasMax := m["maxduration"]
+
+	if hasRqddurs {
+		m["minduration"] = nil
+		m["maxduration"] = nil
+	} else if hasMin || hasMax {
+		m["rqddurs"] = nil
 	}
-	if v := qInt(q, "seq"); v > 0 {
-		m["sequence"] = v
-	}
-	if v := qInt(q, "slotinpod"); v != -1 {
-		m["slotinpod"] = v
-	}
-	if v := qInt(q, "minbr"); v > 0 {
-		m["minbitrate"] = v
-	}
-	if v := qInt(q, "maxbr"); v > 0 {
-		m["maxbitrate"] = v
-	}
-	if v := qInt(q, "maxex"); v != -1 {
-		m["maxextended"] = v
-	}
-	if v := qInt(q, "playbackend"); v > 0 {
-		m["playbackend"] = v
-	}
-	if v := qInt(q, "boxingallowed"); v >= 0 {
-		m["boxingallowed"] = v
-	}
-	if v := qInt(q, "maxseq"); v > 0 {
-		m["maxseq"] = v
-	}
-	if v := qInt(q, "mincpms"); v > 0 {
-		m["mincpmpersec"] = float64(v)
-	}
-	if v := qCSV(q, "mimes"); len(v) > 0 {
-		m["mimes"] = v
-	}
-	if v := qInts(q, "proto"); len(v) > 0 {
-		m["protocols"] = v
-	}
-	if v := qInts(q, "api"); len(v) > 0 {
-		m["api"] = v
-	}
-	if v := qInts(q, "delivery"); len(v) > 0 {
-		m["delivery"] = v
-	}
-	if v := qInts(q, "battr"); len(v) > 0 {
-		m["battr"] = v
-	}
-	if v := qInts(q, "playbackmethod"); len(v) > 0 {
-		m["playbackmethod"] = v
-	}
-	if v := qInts(q, "rqddurs"); len(v) > 0 {
-		m["rqddurs"] = v
-	}
+}
+
+// videoOnlyIntSpecs contains int params exclusive to video.
+var videoOnlyIntSpecs = []intSpec{
+	{"w", "w", okGEMinDim},
+	{"h", "h", okGEMinDim},
+	{"skip", "skip", okGTE0},
+	{"skipmin", "skipmin", okGTE0},         // 0 means no minimum skip-ad wait
+	{"skipafter", "skipafter", okGTE0},     // 0 means immediately skippable
+	{"linearity", "linearity", okGT0},
+	{"placement", "placement", okGT0},
+	{"plcmt", "plcmt", okGT0},
+	{"pos", "pos", okGTE0},
+	{"playbackend", "playbackend", okGT0},
+	{"boxingallowed", "boxingallowed", okGTE0},
+}
+
+var videoOnlySliceSpecs = []sliceSpec{
+	{"playbackmethod", "playbackmethod"},
+}
+
+func buildSparseVideoParams(q url.Values) map[string]interface{} {
+	m := map[string]interface{}{}
+	applySharedAVParams(q, m)
+	applyIntSpecs(q, m, videoOnlyIntSpecs)
+	applySliceSpecs(q, m, videoOnlySliceSpecs)
 	return m
+}
+
+// audioOnlyIntSpecs contains int params exclusive to audio.
+var audioOnlyIntSpecs = []intSpec{
+	{"stitched", "stitched", okGTE0},
+	{"feed", "feed", okGT0},
+	{"nvol", "nvol", okGTE0}, // 0 is a valid volume normalisation value
 }
 
 func buildSparseAudioParams(q url.Values) map[string]interface{} {
 	m := map[string]interface{}{}
-	if v := qInt(q, "mindur"); v > 0 {
-		m["minduration"] = v
-	}
-	if v := qInt(q, "maxdur"); v > 0 {
-		m["maxduration"] = v
-	}
-	if v := qInt(q, "minbr"); v > 0 {
-		m["minbitrate"] = v
-	}
-	if v := qInt(q, "maxbr"); v > 0 {
-		m["maxbitrate"] = v
-	}
-	if v := qInt(q, "maxseq"); v > 0 {
-		m["maxseq"] = v
-	}
-	if v := qInt(q, "stitched"); v >= 0 {
-		m["stitched"] = v
-	}
-	if v := qInt(q, "feed"); v > 0 {
-		m["feed"] = v
-	}
-	if v := qInt(q, "nvol"); v > 0 {
-		m["nvol"] = v
-	}
-	if v := qCSV(q, "mimes"); len(v) > 0 {
-		m["mimes"] = v
-	}
-	if v := qInts(q, "api"); len(v) > 0 {
-		m["api"] = v
-	}
-	if v := qInts(q, "delivery"); len(v) > 0 {
-		m["delivery"] = v
-	}
-	if v := qInts(q, "battr"); len(v) > 0 {
-		m["battr"] = v
-	}
-	if v := qInts(q, "proto"); len(v) > 0 {
-		m["protocols"] = v
-	}
-	if v := qInt(q, "startdelay"); v != -1 {
-		m["startdelay"] = v
-	}
-	if v := qInt(q, "poddur"); v > 0 {
-		m["poddur"] = v
-	}
-	if v := qFirst(q, "podid"); v != "" {
-		m["podid"] = v
-	}
-	if v := qInt(q, "podseq"); v != -1 {
-		m["podseq"] = v
-	}
-	if v := qInt(q, "seq"); v > 0 {
-		m["sequence"] = v
-	}
-	if v := qInt(q, "slotinpod"); v != -1 {
-		m["slotinpod"] = v
-	}
-	if v := qInt(q, "mincpms"); v > 0 {
-		m["mincpmpersec"] = float64(v)
-	}
-	if v := qInts(q, "rqddurs"); len(v) > 0 {
-		m["rqddurs"] = v
-	}
+	applySharedAVParams(q, m)
+	applyIntSpecs(q, m, audioOnlyIntSpecs)
 	return m
+}
+
+// minAdDim is the minimum pixel value accepted for any ad width or height.
+// Dimensions below this threshold are not usable for ad serving.
+const minAdDim = 10
+
+var bannerIntSpecs = []intSpec{
+	{"pos", "pos", okGTE0},
+	{"topframe", "topframe", okGTE0},
+}
+
+var bannerSliceSpecs = []sliceSpec{
+	{"battr", "battr"},
+	{"btype", "btype"},
+	{"expdir", "expdir"},
+	{"api", "api"},
+}
+
+var bannerCSVSpecs = []sliceSpec{
+	{"mimes", "mimes"},
 }
 
 func buildSparseBannerParams(q url.Values) map[string]interface{} {
 	m := map[string]interface{}{}
+
+	// Resolve primary size: ms=WxH shorthand, then explicit w/h override.
+	w, h := 0, 0
+	if ms := qFirst(q, "ms"); ms != "" {
+		if parts := strings.SplitN(ms, "x", 2); len(parts) == 2 {
+			w = qParseInt(parts[0])
+			h = qParseInt(parts[1])
+		}
+	}
 	if v := qInt(q, "w"); v > 0 {
-		m["w"] = v
+		w = v
 	}
 	if v := qInt(q, "h"); v > 0 {
-		m["h"] = v
+		h = v
 	}
-	if v := qInt(q, "pos"); v >= 0 {
-		m["pos"] = v
+	if w >= minAdDim && h >= minAdDim {
+		m["w"] = w
+		m["h"] = h
+		formats := []map[string]interface{}{{"w": w, "h": h}}
+		for _, s := range qCSV(q, "sizes") {
+			parts := strings.SplitN(s, "x", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			sw, sh := qParseInt(parts[0]), qParseInt(parts[1])
+			if sw >= minAdDim && sh >= minAdDim {
+				formats = append(formats, map[string]interface{}{"w": sw, "h": sh})
+			}
+		}
+		m["format"] = formats
 	}
-	if v := qInt(q, "topframe"); v >= 0 {
-		m["topframe"] = v
-	}
-	if v := qInts(q, "battr"); len(v) > 0 {
-		m["battr"] = v
-	}
-	if v := qInts(q, "btype"); len(v) > 0 {
-		m["btype"] = v
-	}
-	if v := qInts(q, "expdir"); len(v) > 0 {
-		m["expdir"] = v
-	}
-	if v := qCSV(q, "mimes"); len(v) > 0 {
-		m["mimes"] = v
-	}
-	if v := qInts(q, "api"); len(v) > 0 {
-		m["api"] = v
-	}
+
+	applyIntSpecs(q, m, bannerIntSpecs)
+	applySliceSpecs(q, m, bannerSliceSpecs)
+	applyCSVSpecs(q, m, bannerCSVSpecs)
 	return m
 }
 
-// applyGETImpOverrideJSON extracts ext.prebid.getImpOverride from requestJSON,
-// applies it as a MergePatch to every imp in the request, and returns the
-// cleaned-up JSON with getImpOverride removed.
+// applyGETImpPatch applies impPatch as a JSON Merge Patch to every imp in requestJSON.
+// Called after processStoredRequests so stored imp fields (id, ext, mimes) are
+// preserved and only the GET-specific fields are overlaid via RFC 7396 rules.
 //
-// Called by auction.go immediately after processStoredRequests for GET requests,
-// so stored imp fields survive the top-level merge and GET-specific fields are
-// overlaid per RFC 7396 recursive object merging rules.
-func applyGETImpOverrideJSON(requestJSON []byte) ([]byte, error) {
+// When impPatch contains "_deferred_media" (no explicit mtype in the GET request),
+// this function detects which media type each stored imp already has and applies only
+// the matching sub-map from the deferred set, leaving the imp's other media objects
+// untouched.
+//
+// impPatch is the second return value of parseGETRequest; a nil or empty patch is a no-op.
+func applyGETImpPatch(requestJSON []byte, impPatch json.RawMessage) ([]byte, error) {
+	if len(impPatch) == 0 {
+		return requestJSON, nil
+	}
+
 	var reqMap map[string]json.RawMessage
 	if err := jsonutil.UnmarshalValid(requestJSON, &reqMap); err != nil {
 		return nil, err
 	}
 
-	extRaw, hasExt := reqMap["ext"]
-	if !hasExt {
-		return requestJSON, nil
-	}
-	var extMap map[string]json.RawMessage
-	if err := jsonutil.UnmarshalValid(extRaw, &extMap); err != nil {
-		return nil, err
-	}
-
-	prebidRaw, hasPrebid := extMap["prebid"]
-	if !hasPrebid {
-		return requestJSON, nil
-	}
-	var prebidMap map[string]json.RawMessage
-	if err := jsonutil.UnmarshalValid(prebidRaw, &prebidMap); err != nil {
-		return nil, err
-	}
-
-	impOverride, hasOverride := prebidMap["getImpOverride"]
-	if !hasOverride {
-		return requestJSON, nil
-	}
-
-	delete(prebidMap, "getImpOverride")
-
 	impsRaw, hasImps := reqMap["imp"]
-	if hasImps && len(impsRaw) > 0 {
-		var imps []json.RawMessage
-		if err := jsonutil.UnmarshalValid(impsRaw, &imps); err != nil {
-			return nil, err
-		}
-		for i, imp := range imps {
-			merged, err := jsonpatch.MergePatch(imp, impOverride)
-			if err != nil {
-				return nil, fmt.Errorf("applying GET imp override to imp[%d]: %w", i, err)
+	if !hasImps || len(impsRaw) == 0 {
+		return requestJSON, nil
+	}
+
+	var imps []json.RawMessage
+	if err := jsonutil.UnmarshalValid(impsRaw, &imps); err != nil {
+		return nil, err
+	}
+
+	// Decode the patch once; check for deferred media.
+	var patchMap map[string]json.RawMessage
+	if err := json.Unmarshal(impPatch, &patchMap); err != nil {
+		return nil, err
+	}
+	deferredRaw, hasDeferred := patchMap["_deferred_media"]
+
+	for i, imp := range imps {
+		effectivePatch := impPatch
+		if hasDeferred {
+			var resolveErr error
+			effectivePatch, resolveErr = resolveGETImpPatch(patchMap, deferredRaw, imp)
+			if resolveErr != nil {
+				return nil, fmt.Errorf("resolving deferred media for imp[%d]: %w", i, resolveErr)
 			}
-			imps[i] = merged
 		}
-		impsBytes, err := json.Marshal(imps)
+		merged, err := jsonpatch.MergePatch(imp, effectivePatch)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("applying GET imp patch to imp[%d]: %w", i, err)
 		}
-		reqMap["imp"] = impsBytes
+		imps[i] = merged
 	}
 
-	prebidBytes, err := json.Marshal(prebidMap)
+	impsBytes, err := json.Marshal(imps)
 	if err != nil {
 		return nil, err
 	}
-	extMap["prebid"] = prebidBytes
-
-	extBytes, err := json.Marshal(extMap)
-	if err != nil {
-		return nil, err
-	}
-	reqMap["ext"] = extBytes
-
+	reqMap["imp"] = impsBytes
 	return json.Marshal(reqMap)
+}
+
+// resolveGETImpPatch builds an effective patch for one imp when the original patch
+// contains deferred media params (no explicit mtype). It detects the imp's existing
+// media type and injects the matching sub-map from deferredRaw, discarding the rest.
+func resolveGETImpPatch(patchMap map[string]json.RawMessage, deferredRaw json.RawMessage, imp json.RawMessage) (json.RawMessage, error) {
+	var deferredMedia map[string]json.RawMessage
+	if err := json.Unmarshal(deferredRaw, &deferredMedia); err != nil {
+		return nil, err
+	}
+
+	// Build effective patch without the internal key.
+	effective := make(map[string]json.RawMessage, len(patchMap))
+	for k, v := range patchMap {
+		if k != "_deferred_media" {
+			effective[k] = v
+		}
+	}
+
+	// Apply only the media params that match the stored imp's media type.
+	if mediaType := detectStoredImpMediaType(imp); mediaType != "" {
+		if mediaParams, ok := deferredMedia[mediaType]; ok {
+			effective[mediaType] = mediaParams
+		}
+	}
+
+	return json.Marshal(effective)
+}
+
+// detectStoredImpMediaType returns the primary media type present in a stored imp.
+// Priority order: video > audio > banner > native.
+// Returns "" when no recognised media object is found.
+func detectStoredImpMediaType(imp json.RawMessage) string {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(imp, &fields); err != nil {
+		return ""
+	}
+	for _, mt := range []string{"video", "audio", "banner", "native"} {
+		if raw, ok := fields[mt]; ok && len(raw) > 0 && string(raw) != "null" {
+			return mt
+		}
+	}
+	return ""
 }
 
 // firstHeader returns the first non-empty value among the given header names.
@@ -694,6 +890,73 @@ func setGETImpExtField(ext json.RawMessage, outerKey, innerKey string, value int
 }
 
 // --- query param helpers ---
+
+// getIntDomain defines the inclusive range of acceptable integer values for a GET param.
+type getIntDomain struct{ min, max int }
+
+var (
+	getDomainAny         = getIntDomain{math.MinInt, math.MaxInt}
+	getDomainInt8        = getIntDomain{math.MinInt8, math.MaxInt8}
+	getDomainNonNegative = getIntDomain{0, math.MaxInt}
+	getDomainPositive    = getIntDomain{1, math.MaxInt}
+)
+
+// qIntIn parses the first matching param as an int and returns (value, true) only
+// when the parsed value falls within domain. Absent or malformed params return (0, false).
+func qIntIn(q url.Values, domain getIntDomain, names ...string) (int, bool) {
+	s := qFirst(q, names...)
+	if s == "" {
+		return 0, false
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil || v < domain.min || v > domain.max {
+		return 0, false
+	}
+	return v, true
+}
+
+// mapWriter is a thin helper that encapsulates the "read param → validate → write to map"
+// pattern, making parameter definitions more uniform and reducing repetitive conditionals.
+type mapWriter struct {
+	q   url.Values
+	dst map[string]interface{}
+}
+
+func newMapWriter(q url.Values, dst map[string]interface{}) mapWriter {
+	return mapWriter{q: q, dst: dst}
+}
+
+// intN reads the first matching param, validates it within domain, and writes the integer
+// to dstKey. When no names are provided dstKey is used as the param name.
+func (w mapWriter) intN(dstKey string, domain getIntDomain, names ...string) {
+	if len(names) == 0 {
+		names = []string{dstKey}
+	}
+	if v, ok := qIntIn(w.q, domain, names...); ok {
+		w.dst[dstKey] = v
+	}
+}
+
+// text reads the first non-empty matching param and writes it to dstKey.
+// When no names are provided dstKey is used as the param name.
+func (w mapWriter) text(dstKey string, names ...string) {
+	if len(names) == 0 {
+		names = []string{dstKey}
+	}
+	if v := qFirst(w.q, names...); v != "" {
+		w.dst[dstKey] = v
+	}
+}
+
+// csv reads a comma-separated param and writes the resulting string slice to dstKey.
+func (w mapWriter) csv(dstKey string, names ...string) {
+	if len(names) == 0 {
+		names = []string{dstKey}
+	}
+	if v := qCSV(w.q, names...); len(v) > 0 {
+		w.dst[dstKey] = v
+	}
+}
 
 // qFirst returns the first non-empty value from the given param names (alias-aware).
 func qFirst(q url.Values, names ...string) string {
@@ -753,6 +1016,22 @@ func qParseInt(s string) int {
 		return -1
 	}
 	return i
+}
+
+// qFloat parses the first matching param as a float64.
+// Returns (value, true) only when the value is finite and > 0.
+// Inf, NaN, zero, and negative values all return (0, false), as do absent or
+// unparsable params — consistent with the invalid-values-are-dropped rule.
+func qFloat(q url.Values, names ...string) (float64, bool) {
+	s := qFirst(q, names...)
+	if s == "" {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil || math.IsNaN(v) || math.IsInf(v, 0) || v <= 0 {
+		return 0, false
+	}
+	return v, true
 }
 
 // qInts parses a comma-separated string of integers from the first matching param.

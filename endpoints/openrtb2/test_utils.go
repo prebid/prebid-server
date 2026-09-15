@@ -75,6 +75,11 @@ type testCase struct {
 	Query                      string                     `json:"query"`
 	planBuilder                hooks.ExecutionPlanBuilder
 
+	// GET endpoint fields
+	HttpMethod          string                     `json:"httpMethod"`
+	GeneratedRequestID  string                     `json:"generatedRequestId"`
+	MockStoredRequests  map[string]json.RawMessage `json:"mockStoredRequests"`
+
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
 
@@ -1151,10 +1156,23 @@ func parseTestData(fileData []byte, testFile string) (testCase, error) {
 	parsedTestData := testCase{}
 	var err, errEm error
 
-	// Get testCase values
+	// Parse HTTP method early so we can conditionally require fields
+	parsedTestData.HttpMethod, _ = jsonparser.GetString(fileData, "httpMethod")
+	parsedTestData.Query, _ = jsonparser.GetString(fileData, "query")
+	parsedTestData.GeneratedRequestID, _ = jsonparser.GetString(fileData, "generatedRequestId")
+
+	// mockBidRequest is required for POST tests; optional for GET (no body)
 	parsedTestData.BidRequest, _, _, err = jsonparser.Get(fileData, "mockBidRequest")
-	if err != nil {
+	if err != nil && parsedTestData.HttpMethod != "GET" {
 		return parsedTestData, fmt.Errorf("Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
+	}
+
+	// Parse optional GET stored request map
+	jsonMockStoredRequests, _, _, err := jsonparser.Get(fileData, "mockStoredRequests")
+	if err == nil && jsonMockStoredRequests != nil {
+		if err = jsonutil.UnmarshalValid(jsonMockStoredRequests, &parsedTestData.MockStoredRequests); err != nil {
+			return parsedTestData, fmt.Errorf("Error unmarshaling root.mockStoredRequests from file %s. Desc: %v.", testFile, err)
+		}
 	}
 
 	// Get testCaseConfig values
@@ -1366,7 +1384,9 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher, requestValidator)
 
 	var storedRequestFetcher stored_requests.Fetcher
-	if len(test.StoredRequest) > 0 {
+	if len(test.MockStoredRequests) > 0 {
+		storedRequestFetcher = &mockAmpStoredReqFetcher{test.MockStoredRequests}
+	} else if len(test.StoredRequest) > 0 {
 		storedRequestFetcher = &mockAmpStoredReqFetcher{test.StoredRequest}
 	} else {
 		storedRequestFetcher = &mockStoredReqFetcher{}
@@ -1401,8 +1421,9 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		endpointBuilder = NewEndpoint
 	}
 
+	uuidGen := fakeUUIDGenerator{id: test.GeneratedRequestID}
 	endpoint, err := endpointBuilder(
-		fakeUUIDGenerator{},
+		uuidGen,
 		testExchange,
 		requestValidator,
 		storedRequestFetcher,

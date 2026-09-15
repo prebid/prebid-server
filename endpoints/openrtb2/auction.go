@@ -428,15 +428,26 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	var errL []error
 
 	var requestJson []byte
+	var getImpPatch json.RawMessage
 
 	switch httpRequest.Method {
 	case http.MethodGet:
 		// GET requests carry the bid request in query parameters; the JSON is
 		// constructed in-process, so compression negotiation and body size
-		// limits do not apply.
-		requestJson, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
+		// limits do not apply. The imp-level patch is returned separately and
+		// applied after processStoredRequests via applyGETImpPatch.
+		requestJson, getImpPatch, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
 		if err != nil {
 			errs = []error{err}
+			return
+		}
+		uuid, uuidErr := deps.uuidGenerator.Generate()
+		if uuidErr != nil {
+			errs = []error{uuidErr}
+			return
+		}
+		if requestJson, uuidErr = jsonparser.Set(requestJson, []byte(`"`+uuid+`"`), "id"); uuidErr != nil {
+			errs = []error{uuidErr}
 			return
 		}
 	case http.MethodPost:
@@ -529,15 +540,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	// For GET requests, apply the imp override that was carried through the merge in
-	// ext.prebid.getImpOverride. This overlays GET-specific imp fields (w, h, mtype
-	// params) onto the stored imp without replacing it entirely, preserving the stored
-	// imp's id, ext (bidder params), and other fields that RFC 7396 array replacement
-	// would otherwise discard.
-	if httpRequest.Method == http.MethodGet {
-		var impOverrideErr error
-		if requestJson, impOverrideErr = applyGETImpOverrideJSON(requestJson); impOverrideErr != nil {
-			errs = []error{impOverrideErr}
+	// Apply the GET imp patch collected during parseGETRequest. This overlays GET-specific
+	// imp fields (w, h, mtype params, slot, sarid) onto the stored imp without replacing
+	// it entirely, preserving the stored imp's id, ext (bidder params), and other fields
+	// that RFC 7396 array replacement would otherwise discard.
+	if len(getImpPatch) > 0 {
+		var impPatchErr error
+		if requestJson, impPatchErr = applyGETImpPatch(requestJson, getImpPatch); impPatchErr != nil {
+			errs = []error{impPatchErr}
 			return
 		}
 	}

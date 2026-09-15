@@ -1,0 +1,20 @@
+{
+  "description": "ifat maps to device.ext.ifa_type",
+  "query": "srid=testifat&ifa=some-ifa-value&ifat=dpns",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "device": {
+      "ifa": "some-ifa-value",
+      "ext": {"ifa_type": "dpns"}
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testifat"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

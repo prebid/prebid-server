@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,12 +16,21 @@ import (
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
-// parseGETResult is a helper that parses the raw JSON returned by parseGETRequest
-// into a generic map for easy field access.
+// mustParseQuery parses a raw query string into url.Values, panicking on error.
+func mustParseQuery(raw string) url.Values {
+	v, err := url.ParseQuery(raw)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// parseGETResult is a helper that parses the request JSON returned by parseGETRequest
+// into a generic map for easy field access. The imp patch (second return value) is discarded.
 func parseGETResult(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
-	data, err := parseGETRequest(req, 0)
+	data, _, err := parseGETRequest(req, 0)
 	require.NoError(t, err)
 	var out map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &out))
@@ -39,18 +51,20 @@ func getExtPrebid(t *testing.T, m map[string]interface{}) map[string]interface{}
 	return prebidMap
 }
 
-// getImpOverrideMap extracts ext.prebid.getImpOverride as a map.
-// Returns nil when no imp-specific params were set.
-func getImpOverrideMap(t *testing.T, m map[string]interface{}) map[string]interface{} {
+// parseGETImpPatch returns the imp-level patch produced by parseGETRequest as a map.
+// Returns nil when no imp-specific params were set (slot, mtype, sarid, video/audio/banner
+// dimensions, X-Device-Player).
+func parseGETImpPatch(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
-	prebid := getExtPrebid(t, m)
-	raw, ok := prebid["getImpOverride"]
-	if !ok {
+	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
+	_, patch, err := parseGETRequest(req, 0)
+	require.NoError(t, err)
+	if len(patch) == 0 {
 		return nil
 	}
-	override, ok := raw.(map[string]interface{})
-	require.True(t, ok, "getImpOverride is not a map")
-	return override
+	var out map[string]interface{}
+	require.NoError(t, json.Unmarshal(patch, &out))
+	return out
 }
 
 // --- TestParseGETRequest_RequiresSrid ---
@@ -58,14 +72,14 @@ func getImpOverrideMap(t *testing.T, m map[string]interface{}) map[string]interf
 func TestParseGETRequest_RequiresSrid(t *testing.T) {
 	t.Run("missing srid returns error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction", nil)
-		_, err := parseGETRequest(req, 0)
+		_, _, err := parseGETRequest(req, 0)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "srid")
 	})
 
 	t.Run("srid present returns no error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=abc", nil)
-		_, err := parseGETRequest(req, 0)
+		_, _, err := parseGETRequest(req, 0)
 		assert.NoError(t, err)
 	})
 }
@@ -80,6 +94,67 @@ func TestParseGETRequest_SridInStoredRequest(t *testing.T) {
 	assert.Equal(t, "abc123", sr["id"])
 }
 
+func TestParseGETRequest_TagIDAlias(t *testing.T) {
+	t.Run("tag_id accepted as srid alias", func(t *testing.T) {
+		m := parseGETResult(t, "tag_id=mystore")
+		prebid := getExtPrebid(t, m)
+		sr, ok := prebid["storedrequest"].(map[string]interface{})
+		require.True(t, ok, "ext.prebid.storedrequest missing")
+		assert.Equal(t, "mystore", sr["id"])
+	})
+
+	t.Run("tag_id alone triggers fast path", func(t *testing.T) {
+		m := parseGETResult(t, "tag_id=fast")
+		assert.Equal(t, []string{"ext"}, mapKeys(m), "unexpected top-level keys")
+	})
+
+	t.Run("srid takes precedence over tag_id", func(t *testing.T) {
+		m := parseGETResult(t, "srid=canonical&tag_id=alias")
+		prebid := getExtPrebid(t, m)
+		sr, ok := prebid["storedrequest"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "canonical", sr["id"])
+	})
+}
+
+// TestParseGETRequest_SridOnlyFastPath verifies the fast path taken when only srid
+// is provided: the result contains exactly storedrequest.id and server.http_method
+// and no other keys (except device if headers were present).
+func TestParseGETRequest_SridOnlyFastPath(t *testing.T) {
+	t.Run("only srid — no extra top-level keys", func(t *testing.T) {
+		m := parseGETResult(t, "srid=fast")
+		assert.Equal(t, []string{"ext"}, mapKeys(m), "unexpected top-level keys")
+		prebid := getExtPrebid(t, m)
+		sr, ok := prebid["storedrequest"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "fast", sr["id"])
+		server, ok := prebid["server"].(map[string]interface{})
+		require.True(t, ok)
+		assert.Equal(t, "GET", server["http_method"])
+	})
+
+	t.Run("only srid + device header — device populated via fast path", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=fast", nil)
+		req.Header.Set("X-Device-User-Agent", "FastPathAgent/1.0")
+		data, _, err := parseGETRequest(req, 0)
+		require.NoError(t, err)
+		var m map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &m))
+		dev, ok := m["device"].(map[string]interface{})
+		require.True(t, ok, "device missing")
+		assert.Equal(t, "FastPathAgent/1.0", dev["ua"])
+	})
+}
+
+// mapKeys returns the sorted keys of a map[string]interface{}.
+func mapKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // --- TestParseGETRequest_Tmax ---
 
 func TestParseGETRequest_Tmax(t *testing.T) {
@@ -88,17 +163,20 @@ func TestParseGETRequest_Tmax(t *testing.T) {
 		assert.EqualValues(t, float64(300), m["tmax"])
 	})
 
-	t.Run("tmax below minimum (50) is ignored", func(t *testing.T) {
+	t.Run("tmax=50 is accepted (no arbitrary minimum)", func(t *testing.T) {
 		m := parseGETResult(t, "srid=x&tmax=50")
-		val, exists := m["tmax"]
-		if exists {
-			assert.EqualValues(t, float64(0), val)
-		}
+		assert.EqualValues(t, float64(50), m["tmax"])
+	})
+
+	t.Run("tmax=0 is ignored (zero is indistinguishable from not-set)", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&tmax=0")
+		_, exists := m["tmax"]
+		assert.False(t, exists)
 	})
 
 	t.Run("invalid tmax (abc) is ignored, no error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=x&tmax=abc", nil)
-		_, err := parseGETRequest(req, 0)
+		_, _, err := parseGETRequest(req, 0)
 		assert.NoError(t, err)
 	})
 }
@@ -140,11 +218,10 @@ func TestParseGETRequest_OutputFormat(t *testing.T) {
 
 // --- TestParseGETRequest_SlotMapsToTagID ---
 
-// Imp-specific params now live in ext.prebid.getImpOverride (applied post-merge).
+// Imp-specific params are returned as the imp patch (second return value of parseGETRequest).
 func TestParseGETRequest_SlotMapsToTagID(t *testing.T) {
-	m := parseGETResult(t, "srid=x&slot=my-slot")
-	override := getImpOverrideMap(t, m)
-	require.NotNil(t, override, "getImpOverride missing")
+	override := parseGETImpPatch(t, "srid=x&slot=my-slot")
+	require.NotNil(t, override, "imp patch missing")
 	assert.Equal(t, "my-slot", override["tagid"])
 }
 
@@ -152,11 +229,10 @@ func TestParseGETRequest_SlotMapsToTagID(t *testing.T) {
 
 func TestParseGETRequest_VideoParams(t *testing.T) {
 	t.Run("mindur/maxdur/w/h set on video imp", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x&mtype=2&mindur=5&maxdur=30&w=640&h=360")
-		override := getImpOverrideMap(t, m)
-		require.NotNil(t, override, "getImpOverride missing")
+		override := parseGETImpPatch(t, "srid=x&mtype=2&mindur=5&maxdur=30&w=640&h=360")
+		require.NotNil(t, override, "imp patch missing")
 		video, ok := override["video"].(map[string]interface{})
-		require.True(t, ok, "getImpOverride.video missing")
+		require.True(t, ok, "imp patch video missing")
 		assert.EqualValues(t, float64(5), video["minduration"])
 		assert.EqualValues(t, float64(30), video["maxduration"])
 		assert.EqualValues(t, float64(640), video["w"])
@@ -164,11 +240,10 @@ func TestParseGETRequest_VideoParams(t *testing.T) {
 	})
 
 	t.Run("skip/skipmin/skipafter set on video imp", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x&mtype=vid&skip=1&skipmin=5&skipafter=3")
-		override := getImpOverrideMap(t, m)
-		require.NotNil(t, override, "getImpOverride missing")
+		override := parseGETImpPatch(t, "srid=x&mtype=vid&skip=1&skipmin=5&skipafter=3")
+		require.NotNil(t, override, "imp patch missing")
 		video, ok := override["video"].(map[string]interface{})
-		require.True(t, ok, "getImpOverride.video missing")
+		require.True(t, ok, "imp patch video missing")
 		assert.EqualValues(t, float64(1), video["skip"])
 		assert.EqualValues(t, float64(5), video["skipmin"])
 		assert.EqualValues(t, float64(3), video["skipafter"])
@@ -178,11 +253,10 @@ func TestParseGETRequest_VideoParams(t *testing.T) {
 // --- TestParseGETRequest_AudioParams ---
 
 func TestParseGETRequest_AudioParams(t *testing.T) {
-	m := parseGETResult(t, "srid=x&mtype=3&mindur=10&maxdur=60")
-	override := getImpOverrideMap(t, m)
-	require.NotNil(t, override, "getImpOverride missing")
+	override := parseGETImpPatch(t, "srid=x&mtype=3&mindur=10&maxdur=60")
+	require.NotNil(t, override, "imp patch missing")
 	audio, ok := override["audio"].(map[string]interface{})
-	require.True(t, ok, "getImpOverride.audio missing")
+	require.True(t, ok, "imp patch audio missing")
 	assert.EqualValues(t, float64(10), audio["minduration"])
 	assert.EqualValues(t, float64(60), audio["maxduration"])
 }
@@ -190,18 +264,16 @@ func TestParseGETRequest_AudioParams(t *testing.T) {
 // --- TestParseGETRequest_BannerDefault ---
 
 func TestParseGETRequest_BannerDefault(t *testing.T) {
-	t.Run("no imp-specific params produce no getImpOverride", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x")
-		override := getImpOverrideMap(t, m)
-		assert.Nil(t, override, "no imp-specific params should produce no getImpOverride")
+	t.Run("no imp-specific params produce no imp patch", func(t *testing.T) {
+		override := parseGETImpPatch(t, "srid=x")
+		assert.Nil(t, override, "no imp-specific params should produce no imp patch")
 	})
 
 	t.Run("mtype=1 with w/h sets banner dimensions in override", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x&mtype=1&w=300&h=250")
-		override := getImpOverrideMap(t, m)
-		require.NotNil(t, override, "getImpOverride missing")
+		override := parseGETImpPatch(t, "srid=x&mtype=1&w=300&h=250")
+		require.NotNil(t, override, "imp patch missing")
 		banner, ok := override["banner"].(map[string]interface{})
-		require.True(t, ok, "getImpOverride.banner missing")
+		require.True(t, ok, "imp patch banner missing")
 		assert.EqualValues(t, float64(300), banner["w"])
 	})
 }
@@ -274,22 +346,20 @@ func TestParseGETRequest_ContentParams(t *testing.T) {
 
 func TestParseGETRequest_CSVParams(t *testing.T) {
 	t.Run("proto CSV sets video protocols", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x&mtype=2&proto=2,3,5")
-		override := getImpOverrideMap(t, m)
-		require.NotNil(t, override, "getImpOverride missing")
+		override := parseGETImpPatch(t, "srid=x&mtype=2&proto=2,3,5")
+		require.NotNil(t, override, "imp patch missing")
 		video, ok := override["video"].(map[string]interface{})
-		require.True(t, ok, "getImpOverride.video missing")
+		require.True(t, ok, "imp patch video missing")
 		protocols, ok := video["protocols"].([]interface{})
 		require.True(t, ok, "video.protocols missing")
 		assert.Equal(t, []interface{}{float64(2), float64(3), float64(5)}, protocols)
 	})
 
 	t.Run("api CSV sets video api", func(t *testing.T) {
-		m := parseGETResult(t, "srid=x&mtype=2&api=1,2")
-		override := getImpOverrideMap(t, m)
-		require.NotNil(t, override, "getImpOverride missing")
+		override := parseGETImpPatch(t, "srid=x&mtype=2&api=1,2")
+		require.NotNil(t, override, "imp patch missing")
 		video, ok := override["video"].(map[string]interface{})
-		require.True(t, ok, "getImpOverride.video missing")
+		require.True(t, ok, "imp patch video missing")
 		api, ok := video["api"].([]interface{})
 		require.True(t, ok, "video.api missing")
 		assert.Equal(t, []interface{}{float64(1), float64(2)}, api)
@@ -297,16 +367,15 @@ func TestParseGETRequest_CSVParams(t *testing.T) {
 }
 
 // TestParseGETRequest_SaridSetsStoredAuctionResponse verifies sarid lands in
-// getImpOverride.ext.prebid.storedauctionresponse without clobbering sibling keys.
+// the imp patch at ext.prebid.storedauctionresponse without clobbering sibling keys.
 func TestParseGETRequest_SaridSetsStoredAuctionResponse(t *testing.T) {
-	m := parseGETResult(t, "srid=test-req&sarid=stored-resp-1")
-	override := getImpOverrideMap(t, m)
-	require.NotNil(t, override, "getImpOverride missing")
+	override := parseGETImpPatch(t, "srid=test-req&sarid=stored-resp-1")
+	require.NotNil(t, override, "imp patch missing")
 
 	extRaw, ok := override["ext"].(map[string]interface{})
-	require.True(t, ok, "getImpOverride.ext missing")
+	require.True(t, ok, "imp patch ext missing")
 	prebid, ok := extRaw["prebid"].(map[string]interface{})
-	require.True(t, ok, "getImpOverride.ext.prebid missing")
+	require.True(t, ok, "imp patch ext.prebid missing")
 	sar, ok := prebid["storedauctionresponse"].(map[string]interface{})
 	require.True(t, ok, "storedauctionresponse missing or not an object")
 	assert.Equal(t, "stored-resp-1", sar["id"])
@@ -348,7 +417,7 @@ func parseGETResultWithHeaders(t *testing.T, rawQuery string, headers map[string
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	data, err := parseGETRequest(req, 0)
+	data, _, err := parseGETRequest(req, 0)
 	require.NoError(t, err)
 	var out map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &out))
@@ -378,21 +447,27 @@ func TestParseGETRequest_RequiredDeviceHeaders(t *testing.T) {
 }
 
 // TestParseGETRequest_OptionalDeviceHeaders covers make/model/os plus the player
-// header which maps to getImpOverride.displaymanager (not the device object).
+// header which maps to the imp patch displaymanager (not the device object).
 func TestParseGETRequest_OptionalDeviceHeaders(t *testing.T) {
-	m := parseGETResultWithHeaders(t, "srid=test-req", map[string]string{
-		"X-Device-Make":   "Roku",
-		"X-Device-Model":  "Ultra",
-		"X-Device-Os":     "RokuOS",
-		"X-Device-Player": "SuperPlayer 4.2",
-	})
+	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
+	req.Header.Set("X-Device-Make", "Roku")
+	req.Header.Set("X-Device-Model", "Ultra")
+	req.Header.Set("X-Device-Os", "RokuOS")
+	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
+
+	data, impPatch, err := parseGETRequest(req, 0)
+	require.NoError(t, err)
+	var m map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &m))
+
 	dev := getDevice(t, m)
 	assert.Equal(t, "Roku", dev["make"])
 	assert.Equal(t, "Ultra", dev["model"])
 	assert.Equal(t, "RokuOS", dev["os"])
 
-	override := getImpOverrideMap(t, m)
-	require.NotNil(t, override, "getImpOverride missing — X-Device-Player should be there")
+	require.NotNil(t, impPatch, "imp patch missing — X-Device-Player should be there")
+	var override map[string]interface{}
+	require.NoError(t, json.Unmarshal(impPatch, &override))
 	assert.Equal(t, "SuperPlayer 4.2", override["displaymanager"])
 }
 
@@ -487,18 +562,17 @@ func TestParseGETRequest_MalformedIPHeaderIgnored(t *testing.T) {
 }
 
 // TestParseGETRequest_PlayerHeaderWithoutImpIsSafe verifies that X-Device-Player
-// goes into the imp override (not a direct imp mutation), so there is no panic
+// goes into the imp patch (not a direct imp mutation), so there is no panic
 // when the header arrives on a request with no other imp params.
 func TestParseGETRequest_PlayerHeaderWithoutImpIsSafe(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
 	assert.NotPanics(t, func() {
-		data, err := parseGETRequest(req, 0)
+		_, impPatch, err := parseGETRequest(req, 0)
 		require.NoError(t, err)
-		var m map[string]interface{}
-		require.NoError(t, json.Unmarshal(data, &m))
-		override := getImpOverrideMap(t, m)
-		require.NotNil(t, override)
+		require.NotNil(t, impPatch)
+		var override map[string]interface{}
+		require.NoError(t, json.Unmarshal(impPatch, &override))
 		assert.Equal(t, "SuperPlayer 4.2", override["displaymanager"])
 	})
 }
@@ -512,7 +586,7 @@ func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
 		`"video":{"mimes":["video/mp4"]},` +
 		`"ext":{"prebid":{"bidder":{"appnexus":{"placementId":123}}}}}]}`)
 
-	requestJSON, err := parseGETRequest(httptest.NewRequest(http.MethodGet,
+	requestJSON, impPatch, err := parseGETRequest(httptest.NewRequest(http.MethodGet,
 		"/openrtb2/auction?srid=x&mtype=2&w=640&coppa=0", nil), 0)
 	require.NoError(t, err)
 
@@ -521,7 +595,7 @@ func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	// Simulate auction.go post-merge step.
-	merged, err = applyGETImpOverrideJSON(merged)
+	merged, err = applyGETImpPatch(merged, impPatch)
 	require.NoError(t, err)
 
 	var request openrtb2.BidRequest
@@ -578,7 +652,7 @@ func TestParseGETRequest_MaxInitialLineLength(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+test.rawQuery, nil)
 
-			result, err := parseGETRequest(req, test.maxInitialLineLength)
+			result, _, err := parseGETRequest(req, test.maxInitialLineLength)
 
 			if test.expectedErr != "" {
 				require.Error(t, err)
@@ -645,5 +719,130 @@ func TestEnforceSingleImpNilRequest(t *testing.T) {
 	httpReq := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 	assert.NotPanics(t, func() {
 		enforceSingleImp(httpReq, nil, "test-account")
+	})
+}
+
+// TestQFloat verifies the float query-param helper.
+func TestQFloat(t *testing.T) {
+	cases := []struct {
+		query string
+		want  float64
+		ok    bool
+	}{
+		{"mincpms=1.25", 1.25, true},
+		{"mincpms=10", 10, true},
+		{"mincpms=0.01", 0.01, true},
+		{"mincpms=0", 0, false},    // zero is indistinguishable from not-set
+		{"mincpms=-1", 0, false},   // negative rejected
+		{"mincpms=abc", 0, false},  // unparsable dropped
+		{"mincpms=Inf", 0, false},  // Inf rejected
+		{"mincpms=NaN", 0, false},  // NaN rejected
+		{"", 0, false},             // absent param
+	}
+	for _, tc := range cases {
+		q := mustParseQuery(tc.query)
+		got, ok := qFloat(q, "mincpms")
+		assert.Equal(t, tc.ok, ok, "query=%q ok", tc.query)
+		if tc.ok {
+			assert.InDelta(t, tc.want, got, 1e-9, "query=%q value", tc.query)
+		}
+	}
+}
+
+// TestGETRequestStoredFixtures runs JSON fixture files from testdata/get_requests/.
+// Each fixture simulates the full GET auction pipeline:
+//  1. parseGETRequest — builds sparse JSON from query params + imp patch
+//  2. MergePatch(stored_bid_request, getJSON) — stored as base, GET overrides
+//  3. applyGETImpPatch — applies imp-level GET params to each stored imp
+//  4. enforceSingleImp — truncates to at most one impression
+func TestGETRequestStoredFixtures(t *testing.T) {
+	dir := filepath.Join("testdata", "get_requests")
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err, "testdata/get_requests/ must exist")
+
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		t.Run(strings.TrimSuffix(entry.Name(), ".json"), func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+			require.NoError(t, err)
+
+			var tc struct {
+				Description      string            `json:"description"`
+				Query            string            `json:"query"`
+				Headers          map[string]string `json:"headers"`
+				StoredBidRequest json.RawMessage   `json:"stored_bid_request"`
+				ExpectedBidReq   json.RawMessage   `json:"expected_bid_request"`
+				ExpectedImp      json.RawMessage   `json:"expected_imp"`
+			}
+			require.NoError(t, json.Unmarshal(data, &tc), "fixture must be valid JSON")
+
+			req, err := http.NewRequest(http.MethodGet, "/openrtb2/auction?"+tc.Query, nil)
+			require.NoError(t, err)
+			for k, v := range tc.Headers {
+				req.Header.Set(k, v)
+			}
+
+			getJSON, impPatch, err := parseGETRequest(req, 0)
+			require.NoError(t, err, "parseGETRequest must not error")
+
+			merged, err := jsonpatch.MergePatch(tc.StoredBidRequest, getJSON)
+			require.NoError(t, err, "stored+GET merge must not error")
+
+			final, err := applyGETImpPatch(merged, impPatch)
+			require.NoError(t, err, "applyGETImpPatch must not error")
+
+			// Enforce single imp via raw JSON to avoid a struct round-trip that would
+			// drop explicit zero values (e.g. minduration=0) or inject null fields.
+			var reqMapRaw map[string]json.RawMessage
+			require.NoError(t, json.Unmarshal(final, &reqMapRaw))
+			if impsRaw, ok := reqMapRaw["imp"]; ok {
+				var imps []json.RawMessage
+				require.NoError(t, json.Unmarshal(impsRaw, &imps))
+				if len(imps) > 1 {
+					impsBytes, merr := json.Marshal(imps[:1])
+					require.NoError(t, merr)
+					reqMapRaw["imp"] = impsBytes
+					final, err = json.Marshal(reqMapRaw)
+					require.NoError(t, err)
+				}
+			}
+
+			if len(tc.ExpectedBidReq) > 0 {
+				assert.JSONEq(t, string(tc.ExpectedBidReq), string(final), tc.Description)
+			}
+
+			if len(tc.ExpectedImp) > 0 {
+				var br struct {
+					Imp []json.RawMessage `json:"imp"`
+				}
+				require.NoError(t, json.Unmarshal(final, &br))
+				require.Len(t, br.Imp, 1, "expected exactly one imp after enforceSingleImp")
+				assert.JSONEq(t, string(tc.ExpectedImp), string(br.Imp[0]), tc.Description)
+			}
+		})
+	}
+}
+
+func TestParseGETUnfilledMacros(t *testing.T) {
+	// Each of these encoded values decodes to an unfilled macro placeholder; the
+	// ua param should be silently dropped, leaving no device object in the output.
+	for _, macro := range []string{"%5BUA%5D", "%25%25USER_AGENT%25%25", "%24%7BUA%7D", "%7BUA%7D"} {
+		m := parseGETResult(t, "srid=x&ua="+macro)
+		assert.Nil(t, m["device"], macro)
+	}
+
+	// "[Live] Player" has brackets around ordinary mixed-case text — it is not a
+	// macro placeholder and must survive sanitisation unchanged.
+	m := parseGETResult(t, "srid=x&ua=%5BLive%5D%20Player")
+	assert.Equal(t, "[Live] Player", m["device"].(map[string]interface{})["ua"], "brackets around ordinary text are not a macro")
+}
+
+func TestParseGETTextValues(t *testing.T) {
+	t.Run("control characters are removed", func(t *testing.T) {
+		// %09 = tab, %00 = NUL, %7F = DEL — all stripped, leaving "PlayerOne".
+		m := parseGETResult(t, "srid=x&ua=Player%09One%00%7F")
+		assert.Equal(t, "PlayerOne", m["device"].(map[string]interface{})["ua"])
 	})
 }

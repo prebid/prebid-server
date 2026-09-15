@@ -1,0 +1,16 @@
+{
+  "description": "All-zero UUID IFA (unfilled query macro) is silently dropped",
+  "query": "srid=testifa&ifa=00000000-0000-0000-0000-000000000000",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testifa"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "description": "Audio parameter mappings",
+  "query": "srid=testaudio&mtype=3&mindur=0&maxdur=120&minbr=64&maxbr=320&maxseq=5&stitched=0&feed=1&nvol=0&startdelay=0&poddur=60&podseq=0&seq=0&slotinpod=0&maxex=0&mincpms=5&proto=1,2&api=1&delivery=1&battr=1&rqddurs=15,30&mimes=audio/mpeg,audio/ogg&podid=audpod",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "audio": {
+      "minbitrate": 64,
+      "maxbitrate": 320,
+      "maxseq": 5,
+      "stitched": 0,
+      "feed": 1,
+      "nvol": 0,
+      "startdelay": 0,
+      "poddur": 60,
+      "podseq": 0,
+      "sequence": 0,
+      "slotinpod": 0,
+      "maxextended": 0,
+      "mincpmpersec": 5,
+      "protocols": [1, 2],
+      "api": [1],
+      "delivery": [1],
+      "battr": [1],
+      "rqddurs": [15, 30],
+      "mimes": ["audio/mpeg", "audio/ogg"],
+      "podid": "audpod"
+    }
+  }
+}

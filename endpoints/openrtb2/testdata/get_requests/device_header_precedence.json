@@ -1,0 +1,24 @@
+{
+  "description": "Device query and header precedence",
+  "query": "srid=testheaderprecedence&ua=QueryAgent%2F1.0&ip=10.0.0.1",
+  "headers": {
+    "X-Device-User-Agent": "HeaderAgent/2.0",
+    "X-Device-IP": "5.6.7.8"
+  },
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "device": {
+      "ua": "HeaderAgent/2.0",
+      "ip": "5.6.7.8"
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testheaderprecedence"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}
