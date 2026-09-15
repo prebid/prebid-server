@@ -2,6 +2,7 @@ aliasOf: "teqblaze"
 endpoint: "https://node.reklamup.com/pserver"
 maintainer:
   email: "support@reklamup.com"
+gvlVendorID: 1619
 capabilities:
   site:
     mediaTypes:
