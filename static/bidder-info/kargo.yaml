@@ -9,6 +9,11 @@ capabilities:
       - banner
       - video
       - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
 userSync:
   redirect:
     url: "https://crb.kargo.com/api/v1/dsync/PrebidServer?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
