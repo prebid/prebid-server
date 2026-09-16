@@ -1,6 +1,8 @@
 endpoint: "http://rt.marphezis.com/pbs"
 maintainer:
   email: "prebid@onlinemediasolutions.com"
+modifyingVastXmlAllowed: true
+gvlVendorID: 883
 capabilities:
   app:
     mediaTypes:
@@ -10,3 +12,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: https://rt.marphezis.com/sync/pub?pubid=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&rurl={{.RedirectURL}}
+    userMacro: "$USERID"
