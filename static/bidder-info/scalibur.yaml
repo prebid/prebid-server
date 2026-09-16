@@ -23,5 +23,9 @@ userSync:
   iframe:
     url: "https://srv.scalibur.io/adserver/sync?type=iframe&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
     userMacro: "[PBS_UID]"
+  redirect:
+    url: "https://srv.scalibur.io/adserver/sync?type=img&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "[PBS_UID]"
   supports:
     - iframe
+    - redirect
