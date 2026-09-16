@@ -1,5 +1,5 @@
 {
-  "description": "pubid sent without ctx param, stored request declares app — inventory lands on app, no site conflict",
+  "description": "pubid sent, stored request declares app — inventory lands on app, no site conflict",
   "query": "srid=testapp&pubid=pub-456&page=https://example.com",
   "stored_bid_request": {
     "app": {"bundle": "com.example"},

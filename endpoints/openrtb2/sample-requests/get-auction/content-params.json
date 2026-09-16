@@ -1,7 +1,7 @@
 {
-  "description": "GET site/content: account alias for pubid, content genre/title/lang/cat params and ctx=site are written to site.publisher and site.content",
+  "description": "GET site/content: account alias for pubid, content genre/title/lang/cat params written to site.publisher and site.content (context auto-detected from stored request)",
   "httpMethod": "GET",
-  "query": "srid=stored-site&ctx=site&account=pub456&page=https://news.example.com&cgenre=news&ctitle=Breaking+News&clang=en&ccat=IAB1,IAB2&ccattax=6&rss_feed=Top+Stories+Feed",
+  "query": "srid=stored-site&account=pub456&page=https://news.example.com&cgenre=news&ctitle=Breaking+News&clang=en&ccat=IAB1,IAB2&ccattax=6&rss_feed=Top+Stories+Feed",
   "generatedRequestId": "test-get-uuid-content",
   "mockStoredRequests": {
     "stored-site": {
