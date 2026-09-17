@@ -47,8 +47,8 @@ jobs:
         id: run_semgrep_tests
         if: contains(steps.should_run_semgrep.outputs.hasChanges, 'true')
         run: |
-          unqouted_string=$(echo '${{ steps.calculate_diff.outputs.result }}' | jq .pullRequest.files | tr -d '"')
-          outputs=$(semgrep --gitlab-sast --config=.semgrep/adapter $unqouted_string  | jq '[.vulnerabilities[] | {"file": .location.file, "severity": .severity, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c)
+          mapfile -t files < <(echo '${{ steps.calculate_diff.outputs.result }}' | jq -r '.pullRequest.files[]')
+          outputs=$(semgrep --gitlab-sast --config=.semgrep/adapter "${files[@]}" | jq '[.vulnerabilities[] | {"file": .location.file, "severity": .severity, "start": .location.start_line, "end": .location.end_line, "message": (.message | gsub("\\n"; "\n"))}]' | jq -c)
           echo "${outputs}" > semgrep_result.json
 
       - name: Prepare Artifacts
