@@ -110,14 +110,14 @@ func setImpExtFields(imp *openrtb2.Imp, fields map[string]*string) error {
 	}
 
 	for key, value := range pending {
-		encoded, err := json.Marshal(value)
+		encoded, err := jsonutil.Marshal(value)
 		if err != nil {
 			return err
 		}
 		impExt[key] = encoded
 	}
 
-	ext, err := json.Marshal(impExt)
+	ext, err := jsonutil.Marshal(impExt)
 	if err != nil {
 		return err
 	}
