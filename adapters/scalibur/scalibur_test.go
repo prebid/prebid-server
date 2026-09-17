@@ -2,6 +2,7 @@ package scalibur
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -17,7 +18,7 @@ import (
 func newTestAdapter() adapters.Bidder {
 	adapter, _ := Builder(
 		openrtb_ext.BidderScalibur,
-		config.Adapter{Endpoint: "https://srv.scalibur.io/adserver/ortb?type=prebid-server"},
+		config.Adapter{Endpoint: "http://{{.Host}}.scalibur.io/adserver/ortb?type=prebid-server"},
 		config.Server{},
 	)
 	return adapter
@@ -66,7 +67,7 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 	require.Len(t, requests, 1)
 
 	r := requests[0]
-	assert.Equal(t, "https://srv.scalibur.io/adserver/ortb?type=prebid-server", r.Uri)
+	assert.Equal(t, "http://srv.scalibur.io/adserver/ortb?type=prebid-server", r.Uri)
 	assert.Equal(t, "POST", r.Method)
 	assert.Contains(t, r.Headers.Get("Content-Type"), "application/json")
 
@@ -80,9 +81,86 @@ func TestMakeRequests_SuccessBanner(t *testing.T) {
 	assert.Equal(t, float64(1.25), imp.BidFloor)
 	assert.Equal(t, "USD", imp.BidFloorCur)
 
+	// Placement is carried as the ORTB imp.tagid, not in imp.ext.
+	assert.Equal(t, "p123", imp.TagID)
+
 	var outExt map[string]interface{}
 	require.NoError(t, json.Unmarshal(imp.Ext, &outExt))
-	assert.Equal(t, "p123", outExt["placementId"])
+	assert.NotContains(t, outExt, "placementId")
+}
+
+func TestMakeRequests_NoFloorOmitsExtFloorFields(t *testing.T) {
+	bidder := newTestAdapter()
+
+	ext, _ := json.Marshal(adapters.ExtImpBidder{
+		Bidder: json.RawMessage(`{"placementId": "p123"}`),
+	})
+
+	req := &openrtb2.BidRequest{
+		ID: "req-no-floor",
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "imp1",
+				Ext:    ext,
+				Banner: &openrtb2.Banner{W: ptrInt64(300), H: ptrInt64(250)},
+			},
+		},
+	}
+
+	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{
+		CurrencyConversions: &mockConversions{},
+	})
+
+	require.Len(t, errs, 0)
+	require.Len(t, requests, 1)
+
+	var out openrtb2.BidRequest
+	require.NoError(t, json.Unmarshal(requests[0].Body, &out))
+
+	var outExt map[string]interface{}
+	require.NoError(t, json.Unmarshal(out.Imp[0].Ext, &outExt))
+
+	// With no floor there is no floor currency either.
+	assert.NotContains(t, outExt, "bidfloor")
+	assert.NotContains(t, outExt, "bidfloorcur")
+}
+
+// Imps naming different subdomains fan out into one request per subdomain, in first-seen order.
+func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
+	bidder := newTestAdapter()
+
+	impWithHost := func(id, host string) openrtb2.Imp {
+		ext, _ := json.Marshal(adapters.ExtImpBidder{
+			Bidder: json.RawMessage(fmt.Sprintf(`{"placementId": %q, "host": %q}`, "p-"+id, host)),
+		})
+		return openrtb2.Imp{
+			ID:     id,
+			Ext:    ext,
+			Banner: &openrtb2.Banner{W: ptrInt64(300), H: ptrInt64(250)},
+		}
+	}
+
+	req := &openrtb2.BidRequest{
+		ID: "req-multi-host",
+		Imp: []openrtb2.Imp{
+			impWithHost("imp-eu", "eu"),
+			impWithHost("imp-us", "us"),
+			impWithHost("imp-eu-2", "eu"),
+		},
+	}
+
+	requests, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{
+		CurrencyConversions: &mockConversions{},
+	})
+
+	require.Len(t, errs, 0)
+	require.Len(t, requests, 2)
+
+	assert.Equal(t, "http://eu.scalibur.io/adserver/ortb?type=prebid-server", requests[0].Uri)
+	assert.Equal(t, []string{"imp-eu", "imp-eu-2"}, requests[0].ImpIDs)
+
+	assert.Equal(t, "http://us.scalibur.io/adserver/ortb?type=prebid-server", requests[1].Uri)
+	assert.Equal(t, []string{"imp-us"}, requests[1].ImpIDs)
 }
 
 func TestMakeRequests_InvalidExt(t *testing.T) {
