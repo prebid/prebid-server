@@ -232,3 +232,44 @@ func TestMakeBidsDefaultsCurrencyWhenAbsent(t *testing.T) {
 	require.NotNil(t, response)
 	assert.Equal(t, "USD", response.Currency, "PBS defaults to USD when the response omits cur")
 }
+
+func TestMakeBidsCopiesNonUSDCurrency(t *testing.T) {
+	bidder := buildTestAdapter(t)
+	body := []byte(`{
+		"id": "test-request-id",
+		"cur": "EUR",
+		"seatbid": [{
+			"seat": "jjtech",
+			"bid": [{"id": "jjt-bid-1", "impid": "imp-1", "price": 1.5, "adm": "<div>jjt</div>", "mtype": 1}]
+		}]
+	}`)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusOK, Body: body})
+
+	assert.Empty(t, errs)
+	require.NotNil(t, response)
+	assert.Equal(t, "EUR", response.Currency, "a non-USD cur in the response must be copied, not dropped")
+}
+
+func TestMakeBidsRejectedBidDoesNotAffectOthers(t *testing.T) {
+	bidder := buildTestAdapter(t)
+	body := []byte(`{
+		"id": "test-request-id",
+		"cur": "USD",
+		"seatbid": [{
+			"seat": "jjtech",
+			"bid": [
+				{"id": "jjt-bid-banner", "impid": "imp-1", "price": 1.5, "adm": "<div>jjt</div>", "mtype": 1},
+				{"id": "jjt-bid-video", "impid": "imp-1", "price": 2.0, "mtype": 2}
+			]
+		}]
+	}`)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusOK, Body: body})
+
+	require.Len(t, errs, 1)
+	require.NotNil(t, response)
+	require.Len(t, response.Bids, 1, "the valid banner bid must still be returned despite the rejected video bid")
+	assert.Equal(t, "jjt-bid-banner", response.Bids[0].Bid.ID)
+	assert.Equal(t, openrtb_ext.BidTypeBanner, response.Bids[0].BidType)
+}
