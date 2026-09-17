@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
@@ -272,4 +273,13 @@ func TestMakeBidsRejectedBidDoesNotAffectOthers(t *testing.T) {
 	require.Len(t, response.Bids, 1, "the valid banner bid must still be returned despite the rejected video bid")
 	assert.Equal(t, "jjt-bid-banner", response.Bids[0].Bid.ID)
 	assert.Equal(t, openrtb_ext.BidTypeBanner, response.Bids[0].BidType)
+}
+
+func TestJsonSamples(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderJJTech, config.Adapter{Endpoint: testEndpoint}, config.Server{})
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "jjtechtest", bidder)
 }
