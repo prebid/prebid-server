@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "banner-request-id",
+    "site": {
+      "page": "https://publisher.com/page"
+    },
+    "imp": [
+      {
+        "id": "banner-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "AV_PUBLISHERID": "1234567890abcdef12345678",
+            "AV_CHANNELID": "abcdef1234567890abcdef12"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.aniview.com/sspRTB2",
+        "body": {
+          "id": "banner-request-id",
+          "site": {
+            "page": "https://publisher.com/page"
+          },
+          "imp": [
+            {
+              "id": "banner-imp-id",
+              "tagid": "abcdef1234567890abcdef12",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [{"w": 300, "h": 250}]
+              },
+              "ext": {
+                "bidder": {
+                  "AV_PUBLISHERID": "1234567890abcdef12345678",
+                  "AV_CHANNELID": "abcdef1234567890abcdef12"
+                }
+              }
+            }
+          ],
+          "ext": {
+            "aniview": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": ["banner-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "banner-request-id",
+          "seatbid": [
+            {
+              "seat": "1234567890abcdef12345678",
+              "bid": [
+                {
+                  "id": "banner-bid-id",
+                  "impid": "banner-imp-id",
+                  "price": 1.2,
+                  "adm": "<div id=\"aniview-ad\"><script src=\"https://cdn.aniview.com/tag.js\"></script></div>",
+                  "crid": "banner-creative-id",
+                  "adomain": ["advertiser.com"],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "banner-bid-id",
+            "impid": "banner-imp-id",
+            "price": 1.2,
+            "adm": "<div id=\"aniview-ad\"><script src=\"https://cdn.aniview.com/tag.js\"></script></div>",
+            "crid": "banner-creative-id",
+            "adomain": ["advertiser.com"],
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}
