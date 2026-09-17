@@ -1,0 +1,20 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext.bidder for imp test-imp-id:.*",
+      "comparison": "regex"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": "not-an-object" }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" }
+  },
+  "httpCalls": []
+}
