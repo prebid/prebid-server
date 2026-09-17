@@ -1,6 +1,7 @@
 package jjtech
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -17,30 +18,38 @@ type adapter struct {
 	endpoint string
 }
 
-// jjtechImpExt is the imp.ext shape JJTech's bidding server expects.
-type jjtechImpExt struct {
-	JJTech openrtb_ext.ExtImpJJTech `json:"jjtech"`
-}
-
 // Builder builds a new instance of the JJTech adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{endpoint: cfg.Endpoint}, nil
 }
 
 // MakeRequests batches every valid impression into a single call to JJTech's bidding server,
-// replacing the Prebid Server imp.ext.bidder params with JJTech's own imp.ext.jjtech shape.
+// swapping the Prebid Server imp.ext.bidder params for JJTech's own imp.ext.jjtech shape.
+// Every other key Prebid Server core supplies on imp.ext (gpid, tid, data, skadn, ae and the
+// sanitized prebid object) is preserved and forwarded untouched.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	imps := make([]openrtb2.Imp, 0, len(request.Imp))
 
 	for _, imp := range request.Imp {
-		params, err := parseImpParams(imp)
+		params, impExt, err := parseImpParams(imp)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		ext, err := jsonutil.Marshal(jjtechImpExt{JJTech: params})
+		paramsJSON, err := jsonutil.Marshal(params)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		// impExt is freshly unmarshaled from imp.Ext, so rewriting it cannot reach
+		// the caller's impression.
+		delete(impExt, "bidder")
+		impExt["jjtech"] = paramsJSON
+
+		ext, err := jsonutil.Marshal(impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -76,28 +85,31 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}}, errs
 }
 
-func parseImpParams(imp openrtb2.Imp) (openrtb_ext.ExtImpJJTech, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return openrtb_ext.ExtImpJJTech{}, &errortypes.BadInput{
+// parseImpParams validates the JJTech publisher params on an impression and returns them
+// alongside the impression's full ext, decoded key by key so callers can rewrite only the
+// bidder entry and keep everything else Prebid Server core supplied.
+func parseImpParams(imp openrtb2.Imp) (openrtb_ext.ExtImpJJTech, map[string]json.RawMessage, error) {
+	var impExt map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
+		return openrtb_ext.ExtImpJJTech{}, nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: failed to parse imp.ext: %s", imp.ID, err.Error()),
 		}
 	}
 
 	var params openrtb_ext.ExtImpJJTech
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &params); err != nil {
-		return openrtb_ext.ExtImpJJTech{}, &errortypes.BadInput{
+	if err := jsonutil.Unmarshal(impExt["bidder"], &params); err != nil {
+		return openrtb_ext.ExtImpJJTech{}, nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: failed to parse jjtech params: %s", imp.ID, err.Error()),
 		}
 	}
 
 	if params.PlacementID == "" {
-		return openrtb_ext.ExtImpJJTech{}, &errortypes.BadInput{
+		return openrtb_ext.ExtImpJJTech{}, nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: placementId is required", imp.ID),
 		}
 	}
 
-	return params, nil
+	return params, impExt, nil
 }
 
 // MakeBids converts JJTech's OpenRTB response into Prebid Server bids.
@@ -112,7 +124,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var response openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("failed to parse bid response: %s", err.Error()),
+		}}
 	}
 
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))

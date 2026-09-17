@@ -3,6 +3,8 @@ geoscope:
   - global
 maintainer:
   email: "bhavin@jambojar-tech.com"
+openrtb:
+  version: 2.6
 capabilities:
   app:
     mediaTypes:
