@@ -128,3 +128,107 @@ func TestMakeRequestsNoValidImpsReturnsNoRequest(t *testing.T) {
 	assert.Empty(t, requests)
 	require.Len(t, errs, 1)
 }
+
+func singleImpRequest() *openrtb2.BidRequest {
+	return &openrtb2.BidRequest{
+		ID:   "test-request-id",
+		Imp:  []openrtb2.Imp{bannerImp("imp-1", "test-placement-1")},
+		Site: &openrtb2.Site{Page: "https://example.com/article"},
+	}
+}
+
+func TestMakeBidsMapsBannerBid(t *testing.T) {
+	bidder := buildTestAdapter(t)
+	body := []byte(`{
+		"id": "test-request-id",
+		"cur": "USD",
+		"seatbid": [{
+			"seat": "jjtech",
+			"bid": [{
+				"id": "jjt-bid-1",
+				"impid": "imp-1",
+				"price": 1.5,
+				"adm": "<div>jjt</div>",
+				"crid": "jjt-creative-1",
+				"adomain": ["jambojar-tech.com"],
+				"w": 300,
+				"h": 250,
+				"mtype": 1
+			}]
+		}]
+	}`)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusOK, Body: body})
+
+	assert.Empty(t, errs)
+	require.NotNil(t, response)
+	require.Len(t, response.Bids, 1)
+	assert.Equal(t, "USD", response.Currency)
+	assert.Equal(t, openrtb_ext.BidTypeBanner, response.Bids[0].BidType)
+	assert.Equal(t, "imp-1", response.Bids[0].Bid.ImpID)
+	assert.Equal(t, 1.5, response.Bids[0].Bid.Price)
+	assert.Equal(t, "jjt-creative-1", response.Bids[0].Bid.CrID)
+}
+
+func TestMakeBidsNoContentReturnsNoBids(t *testing.T) {
+	bidder := buildTestAdapter(t)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusNoContent})
+
+	assert.Nil(t, response)
+	assert.Nil(t, errs)
+}
+
+func TestMakeBidsServerErrorReturnsError(t *testing.T) {
+	bidder := buildTestAdapter(t)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusInternalServerError, Body: []byte(`{}`)})
+
+	assert.Nil(t, response)
+	require.Len(t, errs, 1)
+}
+
+func TestMakeBidsUnparseableBodyReturnsError(t *testing.T) {
+	bidder := buildTestAdapter(t)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusOK, Body: []byte(`not json`)})
+
+	assert.Nil(t, response)
+	require.Len(t, errs, 1)
+}
+
+func TestMakeBidsRejectsUnsupportedMType(t *testing.T) {
+	bidder := buildTestAdapter(t)
+	body := []byte(`{
+		"id": "test-request-id",
+		"cur": "USD",
+		"seatbid": [{
+			"seat": "jjtech",
+			"bid": [{"id": "jjt-bid-video", "impid": "imp-1", "price": 1.5, "mtype": 2}]
+		}]
+	}`)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusOK, Body: body})
+
+	require.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Error(), "unsupported mtype")
+	require.NotNil(t, response)
+	assert.Empty(t, response.Bids, "a non-banner bid must be dropped")
+}
+
+func TestMakeBidsDefaultsCurrencyWhenAbsent(t *testing.T) {
+	bidder := buildTestAdapter(t)
+	body := []byte(`{
+		"id": "test-request-id",
+		"seatbid": [{
+			"seat": "jjtech",
+			"bid": [{"id": "jjt-bid-1", "impid": "imp-1", "price": 1.5, "adm": "<div>jjt</div>", "mtype": 1}]
+		}]
+	}`)
+
+	response, errs := bidder.MakeBids(singleImpRequest(), &adapters.RequestData{}, &adapters.ResponseData{StatusCode: http.StatusOK, Body: body})
+
+	assert.Empty(t, errs)
+	require.NotNil(t, response)
+	assert.Equal(t, "USD", response.Currency, "PBS defaults to USD when the response omits cur")
+}

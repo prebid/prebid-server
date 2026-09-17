@@ -100,6 +100,53 @@ func parseImpParams(imp openrtb2.Imp) (openrtb_ext.ExtImpJJTech, error) {
 	return params, nil
 }
 
+// MakeBids converts JJTech's OpenRTB response into Prebid Server bids.
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	return nil, nil
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
+		return nil, nil
+	}
+
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
+	}
+
+	var response openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
+		return nil, []error{err}
+	}
+
+	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	if response.Cur != "" {
+		bidderResponse.Currency = response.Cur
+	}
+
+	var errs []error
+	for _, seatBid := range response.SeatBid {
+		for i := range seatBid.Bid {
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i])
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
+			})
+		}
+	}
+
+	return bidderResponse, errs
+}
+
+// getMediaTypeForBid resolves the bid's media type from ORTB 2.6 mtype. JJTech is
+// banner-only, so any other markup type is a bad response.
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	if bid.MType == openrtb2.MarkupBanner {
+		return openrtb_ext.BidTypeBanner, nil
+	}
+
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("unsupported mtype %d for bid %s", bid.MType, bid.ID),
+	}
 }
