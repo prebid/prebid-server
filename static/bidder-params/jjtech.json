@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "JJTech Adapter Params",
+  "description": "A schema which validates params accepted by the JJTech adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID assigned by JJTech during publisher onboarding",
+      "minLength": 1
+    }
+  },
+  "required": ["placementId"]
+}
