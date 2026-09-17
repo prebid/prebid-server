@@ -175,6 +175,10 @@ func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
 	me.Called(pubId)
 }
 
+func (me *MetricsEngineMock) RecordAccountGotBids(pubId string) {
+	me.Called(pubId)
+}
+
 func (me *MetricsEngineMock) RecordGvlListRequest() {
 	me.Called()
 }

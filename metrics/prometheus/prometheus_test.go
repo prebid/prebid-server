@@ -1945,6 +1945,36 @@ func TestStoredResponsesMetric(t *testing.T) {
 	}
 }
 
+func TestRecordAccountGotBidsMetric(t *testing.T) {
+	testCases := []struct {
+		description   string
+		publisherId   string
+		expectedCount float64
+	}{
+		{
+			description:   "known publisher id increments account gotbids counter",
+			publisherId:   "acct-id",
+			expectedCount: 1,
+		},
+		{
+			description:   "unknown publisher does not panic and does not record",
+			publisherId:   metrics.PublisherUnknown,
+			expectedCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			m := createMetricsForTesting()
+
+			assert.NotPanics(t, func() { m.RecordAccountGotBids(test.publisherId) })
+
+			if test.publisherId != metrics.PublisherUnknown {
+				assertCounterVecValue(t, "", "account got bids requests", m.accountGotBidsRequests, test.expectedCount, prometheus.Labels{accountLabel: test.publisherId})
+			}
+		})
+	}
+}
+
 func TestRecordGvlListRequest(t *testing.T) {
 	m := createMetricsForTesting()
 
