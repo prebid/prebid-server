@@ -36,7 +36,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "expect",
+      "value": "^failed to parse bid response: expect \\{ or n, but found",
       "comparison": "regex"
     }
   ]
