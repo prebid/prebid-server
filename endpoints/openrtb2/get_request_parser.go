@@ -69,23 +69,12 @@ func enforceSingleImp(httpRequest *http.Request, requestJson []byte, accountID s
 	return json.Marshal(reqMap)
 }
 
-// reUnfilledMacro matches a query param value that is entirely an unexpanded ad-server macro.
-// Such values are dropped before parsing so they never end up as literal strings in the bid
-// request.  The four common placeholder styles are matched (after URL-decoding by url.Values):
-//
-//	[MACRO]      square-bracket, uppercase/digits/underscore only
-//	%%MACRO%%    double-percent
-//	${MACRO}     dollar-brace
-//	{MACRO}      bare curly-brace
-//
-// Values like "[Live] Player" intentionally do NOT match because they contain mixed case and
-// spaces — they are display text that happens to include brackets, not an unfilled placeholder.
-var reUnfilledMacro = regexp.MustCompile(
-	`^\[([A-Z][A-Z0-9_]*)\]$` +
-		`|^%%([A-Z][A-Z0-9_]*)%%$` +
-		`|^\$\{([A-Z][A-Z0-9_]*)\}$` +
-		`|^\{([A-Z][A-Z0-9_]*)\}$`,
-)
+// reUnfilledMacro matches a query param value that is entirely an unexpanded GAM-style macro
+// (%%anything%%). Such values are dropped before parsing so they never end up as literal strings
+// in the bid request. Numeric params reject non-numeric strings anyway; this filter matters only
+// for string params like srid and ua where passing a filled value through gives a clearer error
+// ("stored request '%%PATTERN:srid%%' not found") than silently dropping it.
+var reUnfilledMacro = regexp.MustCompile(`^%%[^%]+%%$`)
 
 // sanitizeGETQuery returns a copy of q with unfilled macro values dropped and
 // control characters stripped from all remaining string values.

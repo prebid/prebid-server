@@ -851,16 +851,29 @@ func TestGETRequestStoredFixtures(t *testing.T) {
 }
 
 func TestParseGETUnfilledMacros(t *testing.T) {
-	// Each of these encoded values decodes to an unfilled macro placeholder; the
-	// ua param should be silently dropped, leaving no device object in the output.
-	for _, macro := range []string{"%5BUA%5D", "%25%25USER_AGENT%25%25", "%24%7BUA%7D", "%7BUA%7D"} {
-		m := parseGETResult(t, "srid=x&ua="+macro)
-		assert.Nil(t, m["device"], macro)
+	// %%MACRO%% style (GAM) — filtered, device must be absent.
+	// %25%25USER_AGENT%25%25 decodes to %%USER_AGENT%%.
+	m := parseGETResult(t, "srid=x&ua=%25%25USER_AGENT%25%25")
+	assert.Nil(t, m["device"], "%%USER_AGENT%% should be filtered")
+
+	// %%PATTERN:key%% style with colon and lowercase — also filtered.
+	// %25%25PATTERN%3Aua%25%25 decodes to %%PATTERN:ua%%.
+	m = parseGETResult(t, "srid=x&ua=%25%25PATTERN%3Aua%25%25")
+	assert.Nil(t, m["device"], "%%PATTERN:ua%% should be filtered")
+
+	// [UA], ${UA}, {UA} — no longer filtered; they pass through as literal strings.
+	// Numeric params reject them by type; string params give a clearer downstream error.
+	for _, tc := range []struct{ encoded, decoded string }{
+		{"%5BUA%5D", "[UA]"},
+		{"%24%7BUA%7D", "${UA}"},
+		{"%7BUA%7D", "{UA}"},
+	} {
+		m = parseGETResult(t, "srid=x&ua="+tc.encoded)
+		assert.Equal(t, tc.decoded, m["device"].(map[string]interface{})["ua"], tc.encoded+" should pass through")
 	}
 
-	// "[Live] Player" has brackets around ordinary mixed-case text — it is not a
-	// macro placeholder and must survive sanitisation unchanged.
-	m := parseGETResult(t, "srid=x&ua=%5BLive%5D%20Player")
+	// "[Live] Player" — brackets around ordinary mixed-case text, must survive unchanged.
+	m = parseGETResult(t, "srid=x&ua=%5BLive%5D%20Player")
 	assert.Equal(t, "[Live] Player", m["device"].(map[string]interface{})["ua"], "brackets around ordinary text are not a macro")
 }
 
