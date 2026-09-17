@@ -1,0 +1,78 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-malformed-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "homepage-top"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-malformed-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "homepage-top"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-banner-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "this is not a bid response"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "expect { or n, but found \"",
+      "comparison": "startswith"
+    }
+  ]
+}

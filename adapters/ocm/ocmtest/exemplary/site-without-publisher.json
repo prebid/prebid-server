@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-no-publisher-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-3",
+            "placementId": "sidebar-halfpage"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/sports"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-no-publisher-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "sidebar-halfpage"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/sports",
+            "publisher": {
+              "id": "ocm-pub-3"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-banner-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-no-publisher-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-banner-1",
+                  "impid": "imp-banner-1",
+                  "price": 3.05,
+                  "adm": "<div id=\"ocm-creative\">halfpage</div>",
+                  "crid": "creative-hp-5",
+                  "w": 300,
+                  "h": 600,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner-1",
+            "impid": "imp-banner-1",
+            "price": 3.05,
+            "adm": "<div id=\"ocm-creative\">halfpage</div>",
+            "crid": "creative-hp-5",
+            "w": 300,
+            "h": 600,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

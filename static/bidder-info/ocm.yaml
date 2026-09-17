@@ -1,0 +1,28 @@
+endpoint: "https://pbam.orangeclickmedia.com/openrtb2/auction"
+endpointCompression: gzip
+maintainer:
+  email: devs-subs@orangeclickmedia.com
+gvlVendorID: 1148
+geoscope:
+  - global
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://pbam.orangeclickmedia.com/usersync/redirect?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+  iframe:
+    url: "https://pbam.orangeclickmedia.com/usersync/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
