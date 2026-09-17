@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
@@ -110,6 +111,77 @@ func TestMakeRequestsRejectsMissingPlacementID(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "imp-bad")
 	require.Len(t, requests, 1, "the valid imp must still be sent")
 	assert.Equal(t, []string{"imp-good"}, requests[0].ImpIDs)
+}
+
+func TestMakeRequestsRejectsMalformedImpExt(t *testing.T) {
+	bidder := buildTestAdapter(t)
+	bad := openrtb2.Imp{
+		ID:     "imp-bad",
+		Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+		Ext:    json.RawMessage(`"not-an-object"`),
+	}
+	request := &openrtb2.BidRequest{
+		ID:   "test-request-id",
+		Imp:  []openrtb2.Imp{bad, bannerImp("imp-good", "test-placement-1")},
+		Site: &openrtb2.Site{Page: "https://example.com/article"},
+	}
+
+	requests, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	require.Len(t, errs, 1)
+	assert.IsType(t, &errortypes.BadInput{}, errs[0])
+	assert.Contains(t, errs[0].Error(), "imp imp-bad: failed to parse imp.ext")
+	require.Len(t, requests, 1, "the valid imp must still be sent")
+	assert.Equal(t, []string{"imp-good"}, requests[0].ImpIDs)
+}
+
+// PBS core hands adapters an imp.ext carrying gpid, tid, data, skadn, ae and a
+// sanitized prebid object alongside bidder. Only bidder may be swapped out.
+func TestMakeRequestsPreservesOtherImpExtFields(t *testing.T) {
+	bidder := buildTestAdapter(t)
+	request := &openrtb2.BidRequest{
+		ID:  "test-request-id",
+		App: &openrtb2.App{Bundle: "com.example.app"},
+		Imp: []openrtb2.Imp{{
+			ID:     "imp-1",
+			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+			Ext: json.RawMessage(`{
+				"gpid": "/homepage/banner1",
+				"tid": "test-transaction-id",
+				"data": {"pbadslot": "/homepage/banner1"},
+				"ae": 1,
+				"skadn": {"versions": ["2.0"], "sourceapp": "123456789"},
+				"prebid": {"is_rewarded_inventory": 1},
+				"bidder": {"placementId": "test-placement-1"}
+			}`),
+		}},
+	}
+
+	requests, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	require.Empty(t, errs)
+	require.Len(t, requests, 1)
+
+	var sent openrtb2.BidRequest
+	require.NoError(t, jsonutil.Unmarshal(requests[0].Body, &sent))
+	require.Len(t, sent.Imp, 1)
+
+	var ext map[string]json.RawMessage
+	require.NoError(t, jsonutil.Unmarshal(sent.Imp[0].Ext, &ext))
+
+	assert.NotContains(t, ext, "bidder", "the bidder key must be replaced")
+	assert.JSONEq(t, `{"placementId":"test-placement-1"}`, string(ext["jjtech"]))
+	for key, expected := range map[string]string{
+		"gpid":   `"/homepage/banner1"`,
+		"tid":    `"test-transaction-id"`,
+		"data":   `{"pbadslot":"/homepage/banner1"}`,
+		"ae":     `1`,
+		"skadn":  `{"versions":["2.0"],"sourceapp":"123456789"}`,
+		"prebid": `{"is_rewarded_inventory":1}`,
+	} {
+		require.Contains(t, ext, key)
+		assert.JSONEq(t, expected, string(ext[key]), "imp.ext.%s must be forwarded untouched", key)
+	}
 }
 
 func TestMakeRequestsNoValidImpsReturnsNoRequest(t *testing.T) {
