@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "said": "123"
+          },
+          "params": "not-an-object"
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "failed to parse imp.ext.params for imp imp-1:",
+      "comparison": "regex"
+    }
+  ]
+}
