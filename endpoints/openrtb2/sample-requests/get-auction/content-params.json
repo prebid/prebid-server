@@ -1,0 +1,36 @@
+{
+  "description": "GET site/content: account alias for pubid, content genre/title/lang/cat params written to site.publisher and site.content (context auto-detected from stored request)",
+  "httpMethod": "GET",
+  "query": "srid=stored-site&account=pub456&page=https://news.example.com&cgenre=news&ctitle=Breaking+News&clang=en&ccat=IAB1,IAB2&ccattax=6&rss_feed=Top+Stories+Feed",
+  "generatedRequestId": "test-get-uuid-content",
+  "mockStoredRequests": {
+    "stored-site": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-content",
+    "seatbid": [
+      {
+        "bid": [
+          {"id": "appnexus-bid", "impid": "imp1", "price": 1.50}
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  }
+}

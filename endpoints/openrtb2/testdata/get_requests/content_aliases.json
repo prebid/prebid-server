@@ -1,0 +1,21 @@
+{
+  "description": "Content aliases without canonical names",
+  "query": "srid=testcontent&url_override=https%3A%2F%2Fexample.com%2Fpage",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "site": {
+      "content": {
+        "url": "https://example.com/page"
+      }
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testcontent"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

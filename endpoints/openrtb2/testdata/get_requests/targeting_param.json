@@ -1,0 +1,24 @@
+{
+  "description": "targeting JSON is merged into imp.ext.data, coexisting with stored ext.prebid bidder params",
+  "query": "srid=testtargeting&mtype=2&targeting={\"gam-key1\":\"val1\",\"gam-key2\":\"val2\"}",
+  "stored_bid_request": {
+    "imp": [{
+      "id": "imp1",
+      "ext": {
+        "prebid": {"bidder": {"appnexus": {"placementId": 123}}},
+        "data": {"stored-key": "stored-value"}
+      }
+    }]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "ext": {
+      "prebid": {"bidder": {"appnexus": {"placementId": 123}}},
+      "data": {
+        "stored-key": "stored-value",
+        "gam-key1": "val1",
+        "gam-key2": "val2"
+      }
+    }
+  }
+}

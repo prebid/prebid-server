@@ -1,0 +1,29 @@
+{
+  "description": "Site inventory, content, and blocking-list mappings",
+  "query": "srid=testsite&pubid=pub123&cgenre=news&ctitle=Breaking+News&clang=en&ccat=IAB1,IAB2&ccattax=6&rss_feed=Breaking+Bad&bcat=IAB1,IAB2&badv=badvertiser.com",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "site": {
+      "publisher": {"id": "pub123"},
+      "content": {
+        "genre": "news",
+        "title": "Breaking News",
+        "language": "en",
+        "series": "Breaking Bad",
+        "cat": ["IAB1", "IAB2"],
+        "cattax": 6
+      }
+    },
+    "bcat": ["IAB1", "IAB2"],
+    "badv": ["badvertiser.com"],
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testsite"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

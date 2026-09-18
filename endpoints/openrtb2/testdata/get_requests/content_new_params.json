@@ -1,0 +1,40 @@
+{
+  "description": "New content params: id, episode, season, artist, album, isrc, prodq, context, userrating, qagmediarating, keywords, sourcerelationship, len, langb, embeddable, channel, network",
+  "query": "srid=testcontent&cid=cnt1&cepisode=3&cseason=2&cartist=ArtistName&calbum=AlbumName&cisrc=ISRC123&cprodq=1&ccontext=2&cuserrating=4.5&cqagmediarating=1&ckeywords=news,sport&csourcerelationship=1&clen=120&clangb=en-US&cembeddable=1&cchannel=ChannelOne&cnetwork=NetOne",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1"
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "site": {
+      "content": {
+        "id": "cnt1",
+        "episode": 3,
+        "season": "2",
+        "artist": "ArtistName",
+        "album": "AlbumName",
+        "isrc": "ISRC123",
+        "prodq": 1,
+        "context": 2,
+        "userrating": "4.5",
+        "qagmediarating": 1,
+        "keywords": "news,sport",
+        "sourcerelationship": 1,
+        "len": 120,
+        "langb": "en-US",
+        "embeddable": 1,
+        "channel": {"name": "ChannelOne"},
+        "network": {"name": "NetOne"}
+      }
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testcontent"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "description": "account is accepted as an alias for pubid",
+  "query": "srid=testsite&account=pub456",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "site": {
+      "publisher": {"id": "pub456"}
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testsite"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

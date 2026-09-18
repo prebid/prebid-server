@@ -300,7 +300,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		logger.Errorf("Error setting seat non-bid: %v", err)
 	}
-	labels, ao = sendAuctionResponse(w, hookExecutor, response, req.BidRequest, account, labels, ao)
+	labels, ao = sendAuctionResponse(w, hookExecutor, response, req, account, labels, ao, false)
 }
 
 // setSeatNonBidRaw is transitional function for setting SeatNonBid inside bidResponse.Ext
@@ -347,17 +347,20 @@ func rejectAuctionRequest(
 	ao.Response = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao)
+	// Exit-point stage must NOT be triggered on rejection paths (4xx/5xx errors).
+	// Pass hasErrors=true so sendAuctionResponse skips ExecuteExitpointStage.
+	return sendAuctionResponse(w, hookExecutor, response, &openrtb_ext.RequestWrapper{BidRequest: request}, account, labels, ao, true)
 }
 
 func sendAuctionResponse(
 	w http.ResponseWriter,
 	hookExecutor hookexecution.HookStageExecutor,
 	response *openrtb2.BidResponse,
-	request *openrtb2.BidRequest,
+	req *openrtb_ext.RequestWrapper,
 	account *config.Account,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
+	hasErrors bool,
 ) (metrics.Labels, analytics.AuctionObject) {
 	hookExecutor.ExecuteAuctionResponseStage(response)
 
@@ -365,7 +368,11 @@ func sendAuctionResponse(
 		stageOutcomes := hookExecutor.GetOutcomes()
 		ao.HookExecutionOutcome = stageOutcomes
 
-		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account)
+		var bidRequest *openrtb2.BidRequest
+		if req != nil {
+			bidRequest = req.BidRequest
+		}
+		ext, warns, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, bidRequest, account)
 		if err != nil {
 			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
 			logger.Errorf("%v", err)
@@ -385,13 +392,23 @@ func sendAuctionResponse(
 
 	w.Header().Set("Content-Type", "application/json")
 
-	// Exitpoint will modify the response and set response headers according to hook implementation.
-	finalResponse := hookExecutor.ExecuteExitpointStage(response, w)
+	// Exitpoint modifies the response and sets response headers according to hook implementation.
+	// If the module sets Body, it is written directly; otherwise Response is JSON-encoded.
+	var finalResponse interface{} = response
+	var body []byte
+	if !hasErrors {
+		finalResponse, body = hookExecutor.ExecuteExitpointStage(req, response, w)
+	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
-	if err := enc.Encode(finalResponse); err != nil {
+	if len(body) > 0 {
+		if _, err := w.Write(body); err != nil {
+			labels.RequestStatus = metrics.RequestStatusNetworkErr
+			ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
+		}
+	} else if err := enc.Encode(finalResponse); err != nil {
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
@@ -420,44 +437,43 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	errs = nil
 	var err error
 	var errL []error
-	var r io.ReadCloser = httpRequest.Body
-	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
-	if reqContentEncoding != "" {
-		if !deps.cfg.Compression.Request.IsSupported(reqContentEncoding) {
-			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEncoding)}
-			return
-		} else {
-			r, err = getCompressionEnabledReader(httpRequest.Body, reqContentEncoding)
-			if err != nil {
-				errs = []error{err}
-				return
-			}
-		}
-	}
-	defer r.Close()
-	limitedReqReader := &io.LimitedReader{
-		R: r,
-		N: deps.cfg.MaxRequestSize,
-	}
 
-	requestJson, err := io.ReadAll(limitedReqReader)
-	if err != nil {
-		errs = []error{err}
+	var requestJson []byte
+	var gp *getParams
+
+	switch httpRequest.Method {
+	case http.MethodGet:
+		// GET requests carry the bid request in query parameters; the JSON is
+		// constructed in-process, so compression negotiation and body size
+		// limits do not apply. Inventory fields and the imp-level patch are returned
+		// separately and applied after processStoredRequests via gp.applyInventory
+		// and applyGETImpPatch.
+		requestJson, gp, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
+		if err != nil {
+			errs = []error{err}
+			return
+		}
+		uuid, uuidErr := deps.uuidGenerator.Generate()
+		if uuidErr != nil {
+			errs = []error{uuidErr}
+			return
+		}
+		if requestJson, uuidErr = jsonparser.Set(requestJson, []byte(`"`+uuid+`"`), "id"); uuidErr != nil {
+			errs = []error{uuidErr}
+			return
+		}
+	case http.MethodPost:
+		requestJson, err = readRequestBody(httpRequest, deps.cfg)
+		if err != nil {
+			errs = []error{err}
+			return
+		}
+	default:
+		errs = []error{fmt.Errorf("unsupported HTTP method: %s", httpRequest.Method)}
 		return
 	}
-	labels.RequestSize = len(requestJson)
 
-	if limitedReqReader.N <= 0 {
-		// Limited Reader returns 0 if the request was exactly at the max size or over the limit.
-		// This is because it only reads up to N bytes. To check if the request was too large,
-		//  we need to look at the next byte of its underlying reader, limitedReader.R.
-		if _, err := limitedReqReader.R.Read(make([]byte, 1)); err != io.EOF {
-			// Discard the rest of the request body so that the connection can be reused.
-			io.Copy(io.Discard, httpRequest.Body)
-			errs = []error{fmt.Errorf("request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
-			return
-		}
-	}
+	labels.RequestSize = len(requestJson)
 
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
@@ -534,6 +550,29 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	// Fetch the Stored Request data and merge it into the HTTP request.
 	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(requestJson, impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest); len(errs) > 0 {
 		return
+	}
+
+	// Apply the GET inventory fields and imp patch collected during parseGETRequest.
+	// Both steps run after processStoredRequests so that applyInventory can inspect the
+	// stored request to determine the correct context object (site/app/dooh), and so
+	// applyGETImpPatch preserves stored imp fields (id, ext/bidder params, mimes).
+	if gp != nil {
+		var getErr error
+		if requestJson, getErr = gp.applyInventory(requestJson, storedRequests[storedBidRequestId]); getErr != nil {
+			errs = []error{getErr}
+			return
+		}
+		// Enforce single imp before patching so the patch runs only on imp[0].
+		if requestJson, getErr = enforceSingleImp(httpRequest, requestJson, accountId); getErr != nil {
+			errs = []error{getErr}
+			return
+		}
+		if len(gp.impPatch) > 0 {
+			if requestJson, getErr = applyGETImpPatch(requestJson, gp.impPatch); getErr != nil {
+				errs = []error{getErr}
+				return
+			}
+		}
 	}
 
 	if err := jsonutil.UnmarshalValid(requestJson, req.BidRequest); err != nil {
