@@ -51,6 +51,15 @@ func (b SeatNonBidBuilder) rejectImps(impIds []string, nonBidReason NonBidReason
 	}
 }
 
+func (b SeatNonBidBuilder) appendSeatNonBids(seatNonBids []openrtb_ext.SeatNonBid) {
+	if b == nil {
+		return
+	}
+	for _, seatNonBid := range seatNonBids {
+		b[seatNonBid.Seat] = append(b[seatNonBid.Seat], seatNonBid.NonBid...)
+	}
+}
+
 // slice transforms the seat non bid map into a slice of SeatNonBid objects representing the non-bids for each seat
 func (b SeatNonBidBuilder) Slice() []openrtb_ext.SeatNonBid {
 	seatNonBid := make([]openrtb_ext.SeatNonBid, 0)

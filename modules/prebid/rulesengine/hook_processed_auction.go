@@ -5,6 +5,7 @@ import (
 
 	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/rules"
 	"github.com/prebid/prebid-server/v4/util/randomutil"
 )
 
@@ -12,8 +13,9 @@ type RequestWrapper = openrtb_ext.RequestWrapper
 type ModelGroup = cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]
 
 type ProcessedAuctionHookResult struct {
-	HookResult     hs.HookResult[hs.ProcessedAuctionRequestPayload]
-	AllowedBidders map[string]struct{}
+	HookResult      hs.HookResult[hs.ProcessedAuctionRequestPayload]
+	AllowedBidders  map[string]struct{}
+	IncludeContexts []rules.ResultFunctionMeta
 }
 
 func handleProcessedAuctionHook(
@@ -44,6 +46,7 @@ func handleProcessedAuctionHook(
 		}
 	}
 
+	appendInclusionWarnings(payload.Request, &result)
 	return result.HookResult, nil
 }
 
