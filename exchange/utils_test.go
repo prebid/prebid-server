@@ -594,9 +594,10 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"bidder":                json.RawMessage(`"anyBidder"`),
 				"is_rewarded_inventory": json.RawMessage(`"anyIsRewardedInventory"`),
 				"options":               json.RawMessage(`"anyOptions"`),
+				"adunitcode":            json.RawMessage(`"anyAdUnitCode"`),
 			},
 			expected: map[string]json.RawMessage{
-				"prebid":  json.RawMessage(`{"is_rewarded_inventory":"anyIsRewardedInventory","options":"anyOptions"}`),
+				"prebid":  json.RawMessage(`{"adunitcode":"anyAdUnitCode","is_rewarded_inventory":"anyIsRewardedInventory","options":"anyOptions"}`),
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
