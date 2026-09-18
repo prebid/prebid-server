@@ -1,12 +1,14 @@
 package rulesengine
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/modules/moduledeps"
 	"github.com/stretchr/testify/assert"
 )
@@ -256,6 +258,67 @@ func TestGetRefreshRate(t *testing.T) {
 				assert.NoError(t, err, "Expected no error but got one")
 			}
 			assert.Equal(t, tc.expectedRefreshRate, res)
+		})
+	}
+}
+
+// TestHandleProcessedAuctionHookDoesNotBlockOnBusyTreeManager proves that
+// Module.HandleProcessedAuctionHook never blocks the auction request goroutine waiting to
+// enqueue a tree-build instruction. The tree manager's requests channel is unbuffered and
+// drained by a single background goroutine (treeManager.Run); if nothing is reading from it
+// (e.g. because that goroutine is busy building trees for another account, or - as
+// reproduced directly here - hasn't started at all), a blocking send would hang the current
+// auction request indefinitely. That directly contradicts the hook's own stated intent of
+// only "loading rules engine account configuration for future requests".
+func TestHandleProcessedAuctionHookDoesNotBlockOnBusyTreeManager(t *testing.T) {
+	testCases := []struct {
+		name string
+		// seedCache, when set, pre-populates the cache so the hook takes the
+		// cache-hit-needs-rebuild path instead of the cache-miss path.
+		seedCache bool
+	}{
+		{name: "cache_miss"},
+		{name: "cache_hit_needs_rebuild", seedCache: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// A 1-second refresh rate combined with the zero-value (year 1) timestamp on
+			// the seeded cache entry below ensures rebuildTrees reports the entry expired,
+			// so the "cache hit, needs rebuild" case actually exercises the tree-manager
+			// send path instead of skipping it.
+			cache := NewCache(1)
+			tm := &treeManager{
+				// Unbuffered and intentionally never drained by a Run goroutine in this
+				// test, to deterministically simulate a tree manager that is busy (or not
+				// yet available to receive) at the moment the hook fires.
+				requests: make(chan buildInstruction),
+				done:     make(chan struct{}),
+			}
+			m := Module{Cache: cache, TreeManager: tm}
+
+			accountID := "acct-1"
+			if tc.seedCache {
+				cache.Set(accountID, &cacheEntry{hashedConfig: "some-old-hash"})
+			}
+
+			miCtx := hs.ModuleInvocationContext{
+				AccountID:     accountID,
+				AccountConfig: json.RawMessage(`{"enabled": true, "ruleSets": []}`),
+			}
+
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				_, _ = m.HandleProcessedAuctionHook(context.Background(), miCtx, hs.ProcessedAuctionRequestPayload{})
+			}()
+
+			select {
+			case <-done:
+				// Hook returned promptly, as intended for a fire-and-forget cache trigger.
+			case <-time.After(2 * time.Second):
+				t.Fatal("HandleProcessedAuctionHook blocked sending to treeManager.requests instead of returning promptly")
+			}
 		})
 	}
 }
