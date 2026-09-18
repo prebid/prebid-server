@@ -134,19 +134,46 @@ func TestMakeRequests_NoImps(t *testing.T) {
 	assert.Nil(t, errs)
 }
 
-// TestGetBidType_Undeterminable — getBidType returns an explicit error (not a
-// silent banner default) when the imp is missing or declares no media type, so
-// MakeBids can skip the bid and surface the issue in logs.
-func TestGetBidType_Undeterminable(t *testing.T) {
-	bid := &openrtb2.Bid{ImpID: "imp1"}
+// TestGetBidType pins media type resolution priorities and error pathways.
+func TestGetBidType(t *testing.T) {
+	t.Run("explicit prebid type overrides impression fallback", func(t *testing.T) {
+		bid := &openrtb2.Bid{ImpID: "imp1", Ext: json.RawMessage(`{"prebid":{"type":"video"}}`)}
+		imp := openrtb2.Imp{ID: "imp1", Banner: &openrtb2.Banner{}}
+
+		bidType, err := getBidType(bid, map[string]openrtb2.Imp{imp.ID: imp})
+		require.NoError(t, err)
+		assert.Equal(t, openrtb_ext.BidTypeVideo, bidType)
+	})
+
+	t.Run("falls back to impression type when bid.ext.prebid.type is absent", func(t *testing.T) {
+		testCases := []struct {
+			name string
+			imp  openrtb2.Imp
+			want openrtb_ext.BidType
+		}{
+			{name: "banner", imp: openrtb2.Imp{ID: "imp1", Banner: &openrtb2.Banner{}}, want: openrtb_ext.BidTypeBanner},
+			{name: "video", imp: openrtb2.Imp{ID: "imp1", Video: &openrtb2.Video{}}, want: openrtb_ext.BidTypeVideo},
+			{name: "native", imp: openrtb2.Imp{ID: "imp1", Native: &openrtb2.Native{}}, want: openrtb_ext.BidTypeNative},
+		}
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				bid := &openrtb2.Bid{ImpID: "imp1"}
+				bidType, err := getBidType(bid, map[string]openrtb2.Imp{tc.imp.ID: tc.imp})
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, bidType)
+			})
+		}
+	})
 
 	t.Run("imp not found", func(t *testing.T) {
+		bid := &openrtb2.Bid{ImpID: "imp1"}
 		_, err := getBidType(bid, map[string]openrtb2.Imp{})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), `failed to determine bid type for imp "imp1"`)
 	})
 
-	t.Run("imp has no media type", func(t *testing.T) {
+	t.Run("bid and imp have no type", func(t *testing.T) {
+		bid := &openrtb2.Bid{ImpID: "imp1"}
 		imp := openrtb2.Imp{ID: "imp1"}
 		_, err := getBidType(bid, map[string]openrtb2.Imp{imp.ID: imp})
 		require.Error(t, err)
