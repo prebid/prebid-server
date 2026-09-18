@@ -218,6 +218,7 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, *getPar
 	}
 
 	reqMap := map[string]interface{}{}
+	reqW := newMapWriter(q, reqMap)
 
 	// ext.prebid skeleton
 	prebidMap := map[string]interface{}{
@@ -227,19 +228,9 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, *getPar
 	pm := newMapWriter(q, prebidMap)
 	pm.text("of")
 	pm.text("om")
-	if d := qFirst(q, "debug"); d == "1" || d == "true" {
-		prebidMap["debug"] = true
-	}
-	if test := qFirst(q, "test"); test == "1" || test == "true" {
-		reqMap["test"] = 1
-	}
-
-	// tmax
-	if tmaxStr := qFirst(q, "tmax"); tmaxStr != "" {
-		if tmax, err := strconv.ParseInt(tmaxStr, 10, 64); err == nil && tmax > 0 {
-			reqMap["tmax"] = tmax
-		}
-	}
+	pm.flag("debug", true)
+	reqW.flag("test", 1)
+	reqW.intN("tmax", getDomainPositive)
 
 	// Privacy params (sparse — coppa=0 is preserved)
 	applyGETPrivacyParamsToMap(q, reqMap)
@@ -254,9 +245,8 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, *getPar
 	}
 
 	// Blocking
-	rw := newMapWriter(q, reqMap)
-	rw.csv("bcat")
-	rw.csv("badv")
+	reqW.csv("bcat")
+	reqW.csv("badv")
 
 	// Build the imp-level patch; returned separately so ext.prebid stays clean.
 	// Applied by the caller via applyGETImpPatch after processStoredRequests.
@@ -300,10 +290,7 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 	rw.text("us_privacy", "usp")
 	// gpc lives in regs.ext, not regs directly.
 	if gpc, ok := qIntIn(q, getDomainNonNegative, "gpc"); ok {
-		regsExt, _ := regsMap["ext"].(map[string]interface{})
-		if regsExt == nil {
-			regsExt = map[string]interface{}{}
-		}
+		regsExt := subMap(regsMap, "ext")
 		regsExt["gpc"] = gpc
 		regsMap["ext"] = regsExt
 	}
@@ -312,22 +299,13 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 	}
 
 	if consent := qFirst(q, "tcfc", "gdpr_consent", "consent_string", "cs"); consent != "" {
-		userMap, _ := reqMap["user"].(map[string]interface{})
-		if userMap == nil {
-			userMap = map[string]interface{}{}
-		}
+		userMap := subMap(reqMap, "user")
 		userMap["consent"] = consent
 		reqMap["user"] = userMap
 	}
 	if addtlConsent := qFirst(q, "addtl_consent"); addtlConsent != "" {
-		userMap, _ := reqMap["user"].(map[string]interface{})
-		if userMap == nil {
-			userMap = map[string]interface{}{}
-		}
-		userExt, _ := userMap["ext"].(map[string]interface{})
-		if userExt == nil {
-			userExt = map[string]interface{}{}
-		}
+		userMap := subMap(reqMap, "user")
+		userExt := subMap(userMap, "ext")
 		userExt["ConsentedProvidersSettings"] = map[string]interface{}{
 			"consented_providers": addtlConsent,
 		}
@@ -335,10 +313,7 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 		reqMap["user"] = userMap
 	}
 
-	deviceMap, _ := reqMap["device"].(map[string]interface{})
-	if deviceMap == nil {
-		deviceMap = map[string]interface{}{}
-	}
+	deviceMap := subMap(reqMap, "device")
 	dw := newMapWriter(q, deviceMap)
 	dw.intN("dnt", getDomainInt8)
 	dw.intN("lmt", getDomainInt8)
@@ -350,10 +325,7 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 	dw.intN("devicetype", getDomainInt8, "dtype")
 	// ifa_type lives in device.ext, not device directly.
 	if ifaType := qFirst(q, "ifat"); ifaType != "" {
-		devExt, _ := deviceMap["ext"].(map[string]interface{})
-		if devExt == nil {
-			devExt = map[string]interface{}{}
-		}
+		devExt := subMap(deviceMap, "ext")
 		devExt["ifa_type"] = ifaType
 		deviceMap["ext"] = devExt
 	}
@@ -419,10 +391,7 @@ func buildGETContentMap(q url.Values) map[string]interface{} {
 //
 // X-Device-Player is handled in buildImpOverrideFromGET (imp-level field).
 func applyGETHeaderParamsToMap(h http.Header, reqMap map[string]interface{}) {
-	deviceMap, _ := reqMap["device"].(map[string]interface{})
-	if deviceMap == nil {
-		deviceMap = map[string]interface{}{}
-	}
+	deviceMap := subMap(reqMap, "device")
 
 	// ua — three-tier
 	if xdua := strings.TrimSpace(h.Get("X-Device-User-Agent")); xdua != "" {
@@ -899,6 +868,17 @@ func detectStoredImpMediaType(imp json.RawMessage) string {
 	return ""
 }
 
+// subMap returns the map[string]interface{} stored at key in m, or a new empty
+// map when the key is absent or holds a non-map value. The caller is responsible
+// for writing the returned map back to m[key] when needed.
+func subMap(m map[string]interface{}, key string) map[string]interface{} {
+	sub, _ := m[key].(map[string]interface{})
+	if sub == nil {
+		sub = map[string]interface{}{}
+	}
+	return sub
+}
+
 // firstHeader returns the first non-empty value among the given header names.
 func firstHeader(h http.Header, names ...string) string {
 	for _, name := range names {
@@ -1028,6 +1008,17 @@ func (w mapWriter) float(dstKey string, names ...string) {
 	}
 	if v, ok := qFloat(w.q, names...); ok {
 		w.dst[dstKey] = v
+	}
+}
+
+// flag reads the first matching param and, when its value is "1" or "true", writes value to dstKey.
+// When no names are provided dstKey is used as the param name.
+func (w mapWriter) flag(dstKey string, value interface{}, names ...string) {
+	if len(names) == 0 {
+		names = []string{dstKey}
+	}
+	if v := qFirst(w.q, names...); v == "1" || v == "true" {
+		w.dst[dstKey] = value
 	}
 }
 
