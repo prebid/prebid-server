@@ -1,0 +1,22 @@
+endpoint: "https://{{.Region}}.a.viddea.com/edge_direct"
+geoscope:
+  - global
+maintainer:
+  email: "support@edge226.com"
+gvlVendorID: 1202
+modifyingVastXmlAllowed: false
+openrtb:
+  version: 2.6
+  gpp-supported: true
+  multiformat-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

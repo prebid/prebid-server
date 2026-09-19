@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.example.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-test",
+            "placementId": "plc-test"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us.a.viddea.com/edge_direct",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://publisher.example.com/page",
+            "publisher": {
+              "id": "pub-test"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "plc-test",
+              "banner": {
+                "format": [{"w": 300, "h": 250}]
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "peak226",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 2.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 1.0,
+                  "adm": "audio-not-supported",
+                  "crid": "cr-2",
+                  "mtype": 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unrecognized bid type for impression imp-2",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 2.5,
+            "adm": "<div>ad</div>",
+            "crid": "cr-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
