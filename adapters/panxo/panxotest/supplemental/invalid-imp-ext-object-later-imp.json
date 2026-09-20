@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-invalid-ext-later-imp",
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "abc123def456"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {"w": 728, "h": 90}
+          ]
+        },
+        "ext": "not-an-object"
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext for impression index 1: .*",
+      "comparison": "regex"
+    }
+  ]
+}
