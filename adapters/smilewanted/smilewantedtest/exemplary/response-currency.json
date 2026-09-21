@@ -2,17 +2,20 @@
   "mockBidRequest": {
     "id": "test-request-id",
     "at": 1,
+    "cur": ["NOK"],
     "imp": [
       {
         "id": "test-imp-id",
         "banner": {
           "format": [
             {
-                "w": 300,
+                "w": 320,
                 "h": 250
             }
           ]
         },
+        "bidfloor": 5,
+        "bidfloorcur": "NOK",
         "ext": {
           "bidder": {
             "zoneId": "zone_code_test_display"
@@ -29,17 +32,20 @@
         "body": {
           "id": "test-request-id",
           "at": 1,
+          "cur": ["NOK"],
           "imp": [
             {
               "id": "test-imp-id",
               "banner": {
                 "format": [
                   {
-                      "w": 300,
+                      "w": 320,
                       "h": 250
                   }
                 ]
               },
+              "bidfloor": 5,
+              "bidfloorcur": "NOK",
               "ext": {
                 "bidder": {
                   "zoneId": "zone_code_test_display"
@@ -58,17 +64,17 @@
             {
               "seat": "smilewanted",
               "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                "id": "476664ab-1069-4a2a-8191-4d0f69a4e29c",
                 "impid": "test-imp-id",
-                "price": 0.5,
+                "price": 5.84,
                 "adm": "some-test-ad",
                 "crid": "crid_10",
                 "h": 250,
-                "w": 300
+                "w": 320
               }]
             }
           ],
-          "cur": "USD"
+          "cur": "NOK"
         }
       }
     }
@@ -76,17 +82,17 @@
 
   "expectedBidResponses": [
     {
-      "currency": "USD",
+      "currency": "NOK",
       "bids": [
         {
           "bid": {
-            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "id": "476664ab-1069-4a2a-8191-4d0f69a4e29c",
             "impid": "test-imp-id",
-            "price": 0.5,
+            "price": 5.84,
             "adm": "some-test-ad",
             "crid": "crid_10",
             "h": 250,
-            "w": 300
+            "w": 320
           },
           "type": "banner"
         }
