@@ -1,0 +1,63 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": { "accountID": "test-account" }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://s2s.prebid.bid-na.ads.aps.amazon-adsystem.com/e/pb/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": { "accountID": "test-account" }
+              }
+            }
+          ],
+          "cur": [
+            "USD"
+          ],
+          "ext": {
+            "account": "test-account",
+            "sdk": {
+              "version": "1.0.0",
+              "source": "prebid-server"
+            }
+          }
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": "Server error"
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500.",
+      "comparison": "literal"
+    }
+  ]
+}

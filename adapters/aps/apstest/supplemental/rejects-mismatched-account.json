@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": { "accountID": "acct-1" }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": { "accountID": "acct-2" }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com"
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp \"imp-2\": all imps in a request must use the same APS accountID (got \"acct-1\" and \"acct-2\")",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}
