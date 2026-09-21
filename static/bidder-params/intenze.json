@@ -4,13 +4,20 @@
     "description": "A schema which validates params accepted by the Intenze adapter",
     "type": "object",
     "properties": {
+        "region": {
+            "type": "string",
+            "description": "Target region traffic. By default us-east.",
+            "minLength": 1
+        },
         "accountId": {
             "type": "string",
-            "description": "Account id",
+            "description": "Use this for Account ID of Ad Exchange",
+            "minLength": 1
+        },
+        "placementId": {
+            "type": "string",
+            "description": "Use this for Placement ID of SSP",
             "minLength": 1
         }
-    },
-    "required": [
-        "accountId"
-    ]
+    }
 }

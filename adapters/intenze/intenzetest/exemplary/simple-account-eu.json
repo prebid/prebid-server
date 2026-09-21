@@ -33,6 +33,7 @@
         },
         "ext": {
           "bidder": {
+            "region": "eu",
             "accountId": "accountId"
           }
         }
@@ -59,7 +60,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "https://lb-east.intenze.co/?pass=accountId",
+        "uri": "https://n2.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {

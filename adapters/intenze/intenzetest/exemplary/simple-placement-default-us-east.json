@@ -33,7 +33,7 @@
         },
         "ext": {
           "bidder": {
-            "accountId": "accountId"
+            "placementId": "123"
           }
         }
       }
@@ -59,7 +59,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "https://lb-east.intenze.co/?pass=accountId",
+        "uri": "https://us-east-ssp.intenze.co/pbs-serve?placementId=123",
         "body": {
           "id": "some-request-id",
           "device": {
