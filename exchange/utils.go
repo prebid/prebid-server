@@ -158,6 +158,17 @@ func (rs *requestSplitter) cleanOpenRTBRequests(ctx context.Context,
 		bidRequestCopy := *req.BidRequest
 		reqWrapperCopy.BidRequest = &bidRequestCopy
 
+		// bidRequestCopy is a shallow copy: slice fields like Cur still share the
+		// original request's backing array across every bidder's copy. If a bidder
+		// adapter appends to such a slice (e.g. Cur) and the shared backing array has
+		// spare capacity, that append writes into memory visible to every other
+		// bidder's concurrently-running goroutine, corrupting their view of the field
+		// or racing with their own append (see #4637). Give this copy its own backing
+		// array so appends by one bidder can never affect another.
+		if req.BidRequest.Cur != nil {
+			bidRequestCopy.Cur = append([]string(nil), req.BidRequest.Cur...)
+		}
+
 		reqWrapperCopy.Imp = imps
 
 		coreBidder, isRequestAlias := resolveBidder(bidder, requestAliases)
