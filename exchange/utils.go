@@ -906,31 +906,26 @@ func randomizeList(list []openrtb_ext.BidderName) {
 }
 
 func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) extCacheInstructions {
-	//returnCreative defaults to true
-	cacheInstructions := extCacheInstructions{returnCreative: true}
-	foundBidsRC := false
-	foundVastRC := false
+	// returnBidsCreative and returnVastCreative each default to true and are set
+	// independently, per media type, so that ext.prebid.cache.bids.returnCreative only
+	// affects non-video bids and ext.prebid.cache.vastXml.returnCreative only affects
+	// video bids (they must not be merged into a single flag applied to every bid).
+	cacheInstructions := extCacheInstructions{returnBidsCreative: true, returnVastCreative: true}
 
 	if requestExtPrebid != nil && requestExtPrebid.Cache != nil {
 		if requestExtPrebid.Cache.Bids != nil {
 			cacheInstructions.cacheBids = true
 			if requestExtPrebid.Cache.Bids.ReturnCreative != nil {
-				cacheInstructions.returnCreative = *requestExtPrebid.Cache.Bids.ReturnCreative
-				foundBidsRC = true
+				cacheInstructions.returnBidsCreative = *requestExtPrebid.Cache.Bids.ReturnCreative
 			}
 		}
 
 		if requestExtPrebid.Cache.VastXML != nil {
 			cacheInstructions.cacheVAST = true
 			if requestExtPrebid.Cache.VastXML.ReturnCreative != nil {
-				cacheInstructions.returnCreative = *requestExtPrebid.Cache.VastXML.ReturnCreative
-				foundVastRC = true
+				cacheInstructions.returnVastCreative = *requestExtPrebid.Cache.VastXML.ReturnCreative
 			}
 		}
-	}
-
-	if foundBidsRC && foundVastRC {
-		cacheInstructions.returnCreative = *requestExtPrebid.Cache.Bids.ReturnCreative || *requestExtPrebid.Cache.VastXML.ReturnCreative
 	}
 
 	return cacheInstructions
