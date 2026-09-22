@@ -1,6 +1,7 @@
 package openrtb2
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -177,7 +178,7 @@ func (p *getParams) applyInventory(requestJson []byte, storedRequest json.RawMes
 //
 // Request-level params are built as a sparse map so that explicit zero values (e.g.
 // coppa=0) survive JSON marshalling and correctly override stored request values.
-func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, *getParams, error) {
+func parseGETRequest(r *http.Request, maxInitialLineLength int, maxObjectBytes int64) ([]byte, *getParams, error) {
 	if maxInitialLineLength > 0 {
 		if lineLength := len(r.Method) + 1 + len(r.URL.RequestURI()) + 1 + len(r.Proto); lineLength > maxInitialLineLength {
 			return nil, nil, fmt.Errorf("request line exceeded max size of %d bytes", maxInitialLineLength)
@@ -218,6 +219,22 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, *getPar
 	}
 
 	reqMap := map[string]interface{}{}
+
+	// req=<json|base64> — an arbitrary object merged as the base before named params.
+	// Named params always take precedence over the req= blob.
+	if raw := qFirst(q, "req"); raw != "" {
+		if maxObjectBytes > 0 && int64(len(raw)) > maxObjectBytes {
+			return nil, nil, fmt.Errorf("req param exceeds max size of %d bytes", maxObjectBytes)
+		}
+		blob, err := parseReqParam(raw)
+		if err != nil {
+			return nil, nil, fmt.Errorf("req: %w", err)
+		}
+		if err := json.Unmarshal(blob, &reqMap); err != nil {
+			return nil, nil, fmt.Errorf("req: %w", err)
+		}
+	}
+
 	reqW := newMapWriter(q, reqMap)
 
 	// ext.prebid skeleton
@@ -259,7 +276,10 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, *getPar
 	// Header params (device fields; X-Device-Player goes into imp patch above)
 	applyGETHeaderParamsToMap(r.Header, reqMap)
 
-	reqMap["ext"] = map[string]interface{}{"prebid": prebidMap}
+	// Merge prebid into the existing ext map so that vendor ext fields set via req= are preserved.
+	extMap := subMap(reqMap, "ext")
+	extMap["prebid"] = prebidMap
+	reqMap["ext"] = extMap
 
 	b, err := json.Marshal(reqMap)
 	return b, gp, err
@@ -866,6 +886,20 @@ func detectStoredImpMediaType(imp json.RawMessage) string {
 		}
 	}
 	return ""
+}
+
+// parseReqParam decodes a req= query param value from JSON or base64-encoded JSON.
+func parseReqParam(raw string) ([]byte, error) {
+	b := []byte(raw)
+	if json.Valid(b) {
+		return b, nil
+	}
+	for _, enc := range []*base64.Encoding{base64.URLEncoding, base64.RawURLEncoding, base64.StdEncoding, base64.RawStdEncoding} {
+		if decoded, err := enc.DecodeString(raw); err == nil && json.Valid(decoded) {
+			return decoded, nil
+		}
+	}
+	return nil, fmt.Errorf("value is neither valid JSON nor base64-encoded JSON")
 }
 
 // subMap returns the map[string]interface{} stored at key in m, or a new empty

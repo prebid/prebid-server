@@ -448,7 +448,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		// limits do not apply. Inventory fields and the imp-level patch are returned
 		// separately and applied after processStoredRequests via gp.applyInventory
 		// and applyGETImpPatch.
-		requestJson, gp, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength)
+		requestJson, gp, err = parseGETRequest(httpRequest, deps.cfg.MaxInitialLineLength, deps.cfg.MaxRequestSize)
 		if err != nil {
 			errs = []error{err}
 			return

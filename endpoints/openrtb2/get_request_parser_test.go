@@ -32,7 +32,7 @@ func mustParseQuery(raw string) url.Values {
 func parseGETResult(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
-	data, gp, err := parseGETRequest(req, 0)
+	data, gp, err := parseGETRequest(req, 0, 0)
 	require.NoError(t, err)
 	data, err = gp.applyInventory(data, nil)
 	require.NoError(t, err)
@@ -61,7 +61,7 @@ func getExtPrebid(t *testing.T, m map[string]interface{}) map[string]interface{}
 func parseGETImpPatch(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
-	_, gp, err := parseGETRequest(req, 0)
+	_, gp, err := parseGETRequest(req, 0, 0)
 	require.NoError(t, err)
 	if len(gp.impPatch) == 0 {
 		return nil
@@ -76,14 +76,14 @@ func parseGETImpPatch(t *testing.T, rawQuery string) map[string]interface{} {
 func TestParseGETRequest_RequiresSrid(t *testing.T) {
 	t.Run("missing srid returns error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction", nil)
-		_, _, err := parseGETRequest(req, 0)
+		_, _, err := parseGETRequest(req, 0, 0)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "srid")
 	})
 
 	t.Run("srid present returns no error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=abc", nil)
-		_, _, err := parseGETRequest(req, 0)
+		_, _, err := parseGETRequest(req, 0, 0)
 		assert.NoError(t, err)
 	})
 }
@@ -140,7 +140,7 @@ func TestParseGETRequest_SridOnlyFastPath(t *testing.T) {
 	t.Run("only srid + device header — device populated via fast path", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=fast", nil)
 		req.Header.Set("X-Device-User-Agent", "FastPathAgent/1.0")
-		data, _, err := parseGETRequest(req, 0)
+		data, _, err := parseGETRequest(req, 0, 0)
 		require.NoError(t, err)
 		var m map[string]interface{}
 		require.NoError(t, json.Unmarshal(data, &m))
@@ -180,7 +180,7 @@ func TestParseGETRequest_Tmax(t *testing.T) {
 
 	t.Run("invalid tmax (abc) is ignored, no error", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=x&tmax=abc", nil)
-		_, _, err := parseGETRequest(req, 0)
+		_, _, err := parseGETRequest(req, 0, 0)
 		assert.NoError(t, err)
 	})
 }
@@ -441,7 +441,7 @@ func parseGETResultWithHeaders(t *testing.T, rawQuery string, headers map[string
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	data, _, err := parseGETRequest(req, 0)
+	data, _, err := parseGETRequest(req, 0, 0)
 	require.NoError(t, err)
 	var out map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &out))
@@ -479,7 +479,7 @@ func TestParseGETRequest_OptionalDeviceHeaders(t *testing.T) {
 	req.Header.Set("X-Device-Os", "RokuOS")
 	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
 
-	data, gp, err := parseGETRequest(req, 0)
+	data, gp, err := parseGETRequest(req, 0, 0)
 	require.NoError(t, err)
 	var m map[string]interface{}
 	require.NoError(t, json.Unmarshal(data, &m))
@@ -592,7 +592,7 @@ func TestParseGETRequest_PlayerHeaderWithoutImpIsSafe(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=test-req", nil)
 	req.Header.Set("X-Device-Player", "SuperPlayer 4.2")
 	assert.NotPanics(t, func() {
-		_, gp, err := parseGETRequest(req, 0)
+		_, gp, err := parseGETRequest(req, 0, 0)
 		require.NoError(t, err)
 		require.NotNil(t, gp.impPatch)
 		var override map[string]interface{}
@@ -611,7 +611,7 @@ func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
 		`"ext":{"prebid":{"bidder":{"appnexus":{"placementId":123}}}}}]}`)
 
 	requestJSON, gp, err := parseGETRequest(httptest.NewRequest(http.MethodGet,
-		"/openrtb2/auction?srid=x&mtype=2&w=640&coppa=0", nil), 0)
+		"/openrtb2/auction?srid=x&mtype=2&w=640&coppa=0", nil), 0, 0)
 	require.NoError(t, err)
 
 	// Simulate processStoredRequests: stored is base, GET request is patch.
@@ -678,7 +678,7 @@ func TestParseGETRequest_MaxInitialLineLength(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+test.rawQuery, nil)
 
-			result, _, err := parseGETRequest(req, test.maxInitialLineLength)
+			result, _, err := parseGETRequest(req, test.maxInitialLineLength, 0)
 
 			if test.expectedErr != "" {
 				require.Error(t, err)
@@ -819,7 +819,7 @@ func TestGETRequestStoredFixtures(t *testing.T) {
 				req.Header.Set(k, v)
 			}
 
-			getJSON, gp, err := parseGETRequest(req, 0)
+			getJSON, gp, err := parseGETRequest(req, 0, 0)
 			require.NoError(t, err, "parseGETRequest must not error")
 
 			merged, err := jsonpatch.MergePatch(tc.StoredBidRequest, getJSON)
