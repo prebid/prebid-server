@@ -272,7 +272,7 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int) ([]byte, *getPar
 func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 	regsMap := map[string]interface{}{}
 	rw := newMapWriter(q, regsMap)
-	rw.intN("gdpr", getDomainInt8, "gdpr", "gdpr_applies")
+	rw.intN("gdpr", getDomainInt8, "gdpr_applies")
 	rw.text("gpp", "gppc")
 	// gpp_sid: positive-integer CSV — filtered individually, not a simple domain check.
 	if gpps := qCSV(q, "gpps"); len(gpps) > 0 {
@@ -960,64 +960,43 @@ func newMapWriter(q url.Values, dst map[string]interface{}) mapWriter {
 // intN reads the first matching param, validates it within domain, and writes the integer
 // to dstKey. When no names are provided dstKey is used as the param name.
 func (w mapWriter) intN(dstKey string, domain getIntDomain, names ...string) {
-	if len(names) == 0 {
-		names = []string{dstKey}
-	}
-	if v, ok := qIntIn(w.q, domain, names...); ok {
+	if v, ok := qIntIn(w.q, domain, append([]string{dstKey}, names...)...); ok {
 		w.dst[dstKey] = v
 	}
 }
 
 // text reads the first non-empty matching param and writes it to dstKey.
-// When no names are provided dstKey is used as the param name.
 func (w mapWriter) text(dstKey string, names ...string) {
-	if len(names) == 0 {
-		names = []string{dstKey}
-	}
-	if v := qFirst(w.q, names...); v != "" {
+	if v := qFirst(w.q, append([]string{dstKey}, names...)...); v != "" {
 		w.dst[dstKey] = v
 	}
 }
 
 // intsN reads the first matching param as a comma-separated integer list, drops entries outside
-// domain, and writes the result to dstKey. When no names are provided dstKey is used as the param name.
+// domain, and writes the result to dstKey.
 func (w mapWriter) intsN(dstKey string, domain getIntDomain, names ...string) {
-	if len(names) == 0 {
-		names = []string{dstKey}
-	}
-	if v := qIntsIn(w.q, domain, names...); len(v) > 0 {
+	if v := qIntsIn(w.q, domain, append([]string{dstKey}, names...)...); len(v) > 0 {
 		w.dst[dstKey] = v
 	}
 }
 
 // csv reads a comma-separated param and writes the resulting string slice to dstKey.
 func (w mapWriter) csv(dstKey string, names ...string) {
-	if len(names) == 0 {
-		names = []string{dstKey}
-	}
-	if v := qCSV(w.q, names...); len(v) > 0 {
+	if v := qCSV(w.q, append([]string{dstKey}, names...)...); len(v) > 0 {
 		w.dst[dstKey] = v
 	}
 }
 
 // float reads the first matching param as a positive finite float64 and writes it to dstKey.
-// When no names are provided dstKey is used as the param name.
 func (w mapWriter) float(dstKey string, names ...string) {
-	if len(names) == 0 {
-		names = []string{dstKey}
-	}
-	if v, ok := qFloat(w.q, names...); ok {
+	if v, ok := qFloat(w.q, append([]string{dstKey}, names...)...); ok {
 		w.dst[dstKey] = v
 	}
 }
 
 // flag reads the first matching param and, when its value is "1" or "true", writes value to dstKey.
-// When no names are provided dstKey is used as the param name.
 func (w mapWriter) flag(dstKey string, value interface{}, names ...string) {
-	if len(names) == 0 {
-		names = []string{dstKey}
-	}
-	if v := qFirst(w.q, names...); v == "1" || v == "true" {
+	if v := qFirst(w.q, append([]string{dstKey}, names...)...); v == "1" || v == "true" {
 		w.dst[dstKey] = value
 	}
 }
