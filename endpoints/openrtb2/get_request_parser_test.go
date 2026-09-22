@@ -621,7 +621,7 @@ func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
 	// Simulate auction.go post-merge steps.
 	merged, err = gp.applyInventory(merged, stored)
 	require.NoError(t, err)
-	merged, err = applyGETImpPatch(merged, gp.impPatch)
+	merged, err = applyGETImpPatch(merged, gp.impPatch, gp.impIndexPatches)
 	require.NoError(t, err)
 
 	var request openrtb2.BidRequest
@@ -831,7 +831,7 @@ func TestGETRequestStoredFixtures(t *testing.T) {
 			merged, err = enforceSingleImp(req, merged, "test-account")
 			require.NoError(t, err, "enforceSingleImp must not error")
 
-			final, err := applyGETImpPatch(merged, gp.impPatch)
+			final, err := applyGETImpPatch(merged, gp.impPatch, gp.impIndexPatches)
 			require.NoError(t, err, "applyGETImpPatch must not error")
 
 			if len(tc.ExpectedBidReq) > 0 {

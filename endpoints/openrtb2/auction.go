@@ -568,7 +568,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 			return
 		}
 		if len(gp.impPatch) > 0 {
-			if requestJson, getErr = applyGETImpPatch(requestJson, gp.impPatch); getErr != nil {
+			if requestJson, getErr = applyGETImpPatch(requestJson, gp.impPatch, gp.impIndexPatches); getErr != nil {
 				errs = []error{getErr}
 				return
 			}

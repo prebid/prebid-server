@@ -1,0 +1,16 @@
+{
+  "description": "req.imp.bidfloor=2.5 patches every impression; stored imp fields are preserved",
+  "query": "srid=testid&req.imp.bidfloor=2.5",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1", "tagid": "slot1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1", "tagid": "slot1", "bidfloor": 2.5}],
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testid"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

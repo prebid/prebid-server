@@ -107,10 +107,11 @@ func sanitizeGETQuery(q url.Values) url.Values {
 // are deferred until the stored request is known so they can be routed to the correct
 // context object (site/app/dooh).
 type getParams struct {
-	impPatch json.RawMessage
-	pubid    string
-	page     string
-	content  map[string]interface{}
+	impPatch        json.RawMessage
+	impIndexPatches map[int]map[string]interface{} // per-imp patches from req.imp.N.xxx paths
+	pubid           string
+	page            string
+	content         map[string]interface{}
 }
 
 func (p *getParams) hasInventory() bool {
@@ -221,7 +222,7 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int, maxObjectBytes i
 	reqMap := map[string]interface{}{}
 
 	// req=<json|base64> — an arbitrary object merged as the base before named params.
-	// Named params always take precedence over the req= blob.
+	// Named params and req.xxx dotted paths take precedence over this blob.
 	if raw := qFirst(q, "req"); raw != "" {
 		if maxObjectBytes > 0 && int64(len(raw)) > maxObjectBytes {
 			return nil, nil, fmt.Errorf("req param exceeds max size of %d bytes", maxObjectBytes)
@@ -233,6 +234,7 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int, maxObjectBytes i
 		if err := json.Unmarshal(blob, &reqMap); err != nil {
 			return nil, nil, fmt.Errorf("req: %w", err)
 		}
+		stripDroppedKeys(reqMap)
 	}
 
 	reqW := newMapWriter(q, reqMap)
@@ -273,13 +275,30 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int, maxObjectBytes i
 	}
 	gp.impPatch = impPatch
 
-	// Header params (device fields; X-Device-Player goes into imp patch above)
+	// Header params (device fields; X-Device-Player goes into imp patch above).
 	applyGETHeaderParamsToMap(r.Header, reqMap)
 
 	// Merge prebid into the existing ext map so that vendor ext fields set via req= are preserved.
 	extMap := subMap(reqMap, "ext")
 	extMap["prebid"] = prebidMap
 	reqMap["ext"] = extMap
+
+	// req.xxx dotted paths — highest precedence, applied after all named params and headers.
+	// Unmarshal impPatch into a map so dotted paths can add/modify every-imp fields.
+	impPatchMap := map[string]interface{}{}
+	if len(gp.impPatch) > 0 {
+		if err := json.Unmarshal(gp.impPatch, &impPatchMap); err != nil {
+			return nil, nil, err
+		}
+	}
+	if err := applyGETDottedPaths(q, reqMap, impPatchMap, gp, maxObjectBytes); err != nil {
+		return nil, nil, err
+	}
+	if len(impPatchMap) > 0 {
+		if gp.impPatch, err = json.Marshal(impPatchMap); err != nil {
+			return nil, nil, err
+		}
+	}
 
 	b, err := json.Marshal(reqMap)
 	return b, gp, err
@@ -707,8 +726,8 @@ func buildSparseBannerParams(q url.Values) map[string]interface{} {
 // untouched.
 //
 // impPatch is the second return value of parseGETRequest; a nil or empty patch is a no-op.
-func applyGETImpPatch(requestJSON []byte, impPatch json.RawMessage) ([]byte, error) {
-	if len(impPatch) == 0 {
+func applyGETImpPatch(requestJSON []byte, impPatch json.RawMessage, indexPatches map[int]map[string]interface{}) ([]byte, error) {
+	if len(impPatch) == 0 && len(indexPatches) == 0 {
 		return requestJSON, nil
 	}
 
@@ -727,34 +746,50 @@ func applyGETImpPatch(requestJSON []byte, impPatch json.RawMessage) ([]byte, err
 		return nil, err
 	}
 
-	// Decode the patch once; check for deferred media.
-	var patchMap map[string]json.RawMessage
-	if err := json.Unmarshal(impPatch, &patchMap); err != nil {
-		return nil, err
-	}
-	deferredRaw, hasDeferred := patchMap["_deferred_media"]
+	// Apply every-imp patch.
+	if len(impPatch) > 0 {
+		var patchMap map[string]json.RawMessage
+		if err := json.Unmarshal(impPatch, &patchMap); err != nil {
+			return nil, err
+		}
+		deferredRaw, hasDeferred := patchMap["_deferred_media"]
 
-	for i, imp := range imps {
-		effectivePatch := impPatch
-		if hasDeferred {
-			var resolveErr error
-			effectivePatch, resolveErr = resolveGETImpPatch(patchMap, deferredRaw, imp)
-			if resolveErr != nil {
-				return nil, fmt.Errorf("resolving deferred media for imp[%d]: %w", i, resolveErr)
+		for i, imp := range imps {
+			effectivePatch := impPatch
+			if hasDeferred {
+				var resolveErr error
+				effectivePatch, resolveErr = resolveGETImpPatch(patchMap, deferredRaw, imp)
+				if resolveErr != nil {
+					return nil, fmt.Errorf("resolving deferred media for imp[%d]: %w", i, resolveErr)
+				}
+			} else {
+				var transferErr error
+				effectivePatch, transferErr = withTransferredMediaExt(imp, patchMap, impPatch)
+				if transferErr != nil {
+					return nil, fmt.Errorf("transferring media ext for imp[%d]: %w", i, transferErr)
+				}
 			}
-		} else {
-			// Explicit mtype: carry ext from the displaced media object to the new one.
-			var transferErr error
-			effectivePatch, transferErr = withTransferredMediaExt(imp, patchMap, impPatch)
-			if transferErr != nil {
-				return nil, fmt.Errorf("transferring media ext for imp[%d]: %w", i, transferErr)
+			merged, err := jsonpatch.MergePatch(imp, effectivePatch)
+			if err != nil {
+				return nil, fmt.Errorf("applying GET imp patch to imp[%d]: %w", i, err)
 			}
+			imps[i] = merged
 		}
-		merged, err := jsonpatch.MergePatch(imp, effectivePatch)
+	}
+
+	// Apply per-imp index patches (req.imp.N.xxx dotted paths).
+	for idx, patch := range indexPatches {
+		if idx < 0 || idx >= len(imps) {
+			continue
+		}
+		patchBytes, err := json.Marshal(patch)
 		if err != nil {
-			return nil, fmt.Errorf("applying GET imp patch to imp[%d]: %w", i, err)
+			return nil, fmt.Errorf("marshaling per-imp patch for imp[%d]: %w", idx, err)
 		}
-		imps[i] = merged
+		imps[idx], err = jsonpatch.MergePatch(imps[idx], patchBytes)
+		if err != nil {
+			return nil, fmt.Errorf("applying per-imp patch to imp[%d]: %w", idx, err)
+		}
 	}
 
 	impsBytes, err := json.Marshal(imps)
@@ -886,6 +921,171 @@ func detectStoredImpMediaType(imp json.RawMessage) string {
 		}
 	}
 	return ""
+}
+
+// droppedPathSegments lists path segments that are dropped when processing req.xxx
+// dotted paths or req= / req.imp= blob overlays. These are internal parser markers
+// that must never be injectable from outside.
+var droppedPathSegments = map[string]bool{
+	"_deferred_media": true,
+}
+
+// parsePathValue converts a raw query-param string to a typed Go value using JSON
+// semantics: if the string is valid JSON it is parsed (3→float64, true→bool,
+// null→nil, "x"→string, {...}→map, [...]→slice); otherwise the raw string is
+// returned as-is.
+func parsePathValue(raw string) interface{} {
+	b := []byte(raw)
+	if json.Valid(b) {
+		var v interface{}
+		json.Unmarshal(b, &v) //nolint: errcheck — Valid guarantees success
+		return v
+	}
+	return raw
+}
+
+// stripDroppedKeys removes any key listed in droppedPathSegments from m, recursively.
+func stripDroppedKeys(m map[string]interface{}) {
+	for k := range droppedPathSegments {
+		delete(m, k)
+	}
+	for _, v := range m {
+		if child, ok := v.(map[string]interface{}); ok {
+			stripDroppedKeys(child)
+		}
+	}
+}
+
+// mergeInto deep-merges src into dst: map values are merged recursively; all other
+// values overwrite dst.
+func mergeInto(dst, src map[string]interface{}) {
+	for k, v := range src {
+		if srcMap, ok := v.(map[string]interface{}); ok {
+			if dstMap, ok := dst[k].(map[string]interface{}); ok {
+				mergeInto(dstMap, srcMap)
+				continue
+			}
+		}
+		dst[k] = v
+	}
+}
+
+// setAtPath sets val at the given path in m, creating intermediate maps as needed.
+// Array indexing is supported: when the next segment is a non-negative integer and
+// m[key] is a []interface{}, the element at that index is accessed (out-of-bounds
+// indices are silently skipped). Map values are deep-merged into existing maps.
+func setAtPath(m map[string]interface{}, segs []string, val interface{}) {
+	if len(segs) == 0 {
+		return
+	}
+	key := segs[0]
+	if len(segs) == 1 {
+		if newMap, isMap := val.(map[string]interface{}); isMap {
+			if existing, ok := m[key].(map[string]interface{}); ok {
+				mergeInto(existing, newMap)
+				return
+			}
+		}
+		m[key] = val
+		return
+	}
+	// If the next segment is a numeric index, navigate into an array element.
+	if idx, err := strconv.Atoi(segs[1]); err == nil {
+		arr, _ := m[key].([]interface{})
+		if idx < 0 || idx >= len(arr) {
+			return
+		}
+		if len(segs) == 2 {
+			if newMap, isMap := val.(map[string]interface{}); isMap {
+				if existing, ok := arr[idx].(map[string]interface{}); ok {
+					mergeInto(existing, newMap)
+					return
+				}
+			}
+			arr[idx] = val
+		} else {
+			if elemMap, ok := arr[idx].(map[string]interface{}); ok {
+				setAtPath(elemMap, segs[2:], val)
+			}
+		}
+		return
+	}
+	sub := subMap(m, key)
+	m[key] = sub
+	setAtPath(sub, segs[1:], val)
+}
+
+// applyGETDottedPaths processes all req.<path>=<value> query params and writes them
+// into reqMap (req-level paths) or into impPatchMap / gp.impIndexPatches (imp paths).
+// req.imp.field=val patches every imp; req.imp.N.field=val patches imp N only.
+// req.imp=<json|base64> blob-merges into the every-imp patch.
+// Paths containing a droppedPathSegments key are silently ignored.
+func applyGETDottedPaths(q url.Values, reqMap, impPatchMap map[string]interface{}, gp *getParams, maxObjectBytes int64) error {
+	for key := range q {
+		if !strings.HasPrefix(key, "req.") {
+			continue
+		}
+		path := key[4:] // strip "req."
+		if path == "" {
+			continue
+		}
+		segs := strings.Split(path, ".")
+		skip := false
+		for _, s := range segs {
+			if s == "" || droppedPathSegments[s] {
+				skip = true
+				break
+			}
+		}
+		if skip {
+			continue
+		}
+
+		raw := qFirst(q, key)
+		if maxObjectBytes > 0 && int64(len(raw)) > maxObjectBytes {
+			return fmt.Errorf("req.%s value exceeds max size of %d bytes", path, maxObjectBytes)
+		}
+
+		// imp-level routing.
+		if segs[0] == "imp" {
+			if len(segs) == 1 {
+				// req.imp=<json|base64> — blob overlay for every imp.
+				blob, err := parseReqParam(raw)
+				if err != nil {
+					return fmt.Errorf("req.imp: %w", err)
+				}
+				var blobMap map[string]interface{}
+				if err := json.Unmarshal(blob, &blobMap); err != nil {
+					return fmt.Errorf("req.imp: %w", err)
+				}
+				stripDroppedKeys(blobMap)
+				mergeInto(impPatchMap, blobMap)
+				continue
+			}
+			rest := segs[1:]
+			if idx, err := strconv.Atoi(rest[0]); err == nil {
+				// req.imp.N.field=val — per-imp patch.
+				if len(rest) < 2 {
+					continue // req.imp.0 with no sub-path — nothing to set
+				}
+				if gp.impIndexPatches == nil {
+					gp.impIndexPatches = make(map[int]map[string]interface{})
+				}
+				if gp.impIndexPatches[idx] == nil {
+					gp.impIndexPatches[idx] = map[string]interface{}{}
+				}
+				setAtPath(gp.impIndexPatches[idx], rest[1:], parsePathValue(raw))
+			} else {
+				// req.imp.field=val — every-imp patch.
+				setAtPath(impPatchMap, rest, parsePathValue(raw))
+			}
+			continue
+		}
+
+		// Req-level dotted path.
+		setAtPath(reqMap, segs, parsePathValue(raw))
+	}
+	return nil
 }
 
 // parseReqParam decodes a req= query param value from JSON or base64-encoded JSON.
