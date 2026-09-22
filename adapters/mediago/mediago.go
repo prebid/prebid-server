@@ -51,6 +51,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+	// MediaGo accepts the currencies requested by the publisher. Preserve an
+	// explicitly supplied currency list, but use USD when the request does not
+	// specify one. This keeps the upstream OpenRTB request self-contained while
+	// retaining PBS currency pass-through semantics.
+	if len(request.Cur) == 0 {
+		request.Cur = []string{"USD"}
+	}
 
 	mediagoExt, err := getMediaGoExt(request)
 	if err != nil {
