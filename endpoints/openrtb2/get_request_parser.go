@@ -70,12 +70,10 @@ func enforceSingleImp(httpRequest *http.Request, requestJson []byte, accountID s
 	return json.Marshal(reqMap)
 }
 
-// reUnfilledMacro matches a query param value that is entirely an unexpanded GAM-style macro
-// (%%anything%%). Such values are dropped before parsing so they never end up as literal strings
-// in the bid request. Numeric params reject non-numeric strings anyway; this filter matters only
-// for string params like srid and ua where passing a filled value through gives a clearer error
-// ("stored request '%%PATTERN:srid%%' not found") than silently dropping it.
-var reUnfilledMacro = regexp.MustCompile(`^%%[^%]+%%$`)
+// reUnfilledMacro matches any unexpanded GAM-style macro (%%anything%%) that appears anywhere
+// inside a query param value. Such values are dropped before parsing so they never end up as
+// literal strings in the bid request — for example curl=https://example.com/%%PATTERN:show%%.
+var reUnfilledMacro = regexp.MustCompile(`%%[^%]+%%`)
 
 // sanitizeGETQuery returns a copy of q with unfilled macro values dropped and
 // control characters stripped from all remaining string values.
@@ -111,11 +109,12 @@ type getParams struct {
 	impIndexPatches map[int]map[string]interface{} // per-imp patches from req.imp.N.xxx paths
 	pubid           string
 	page            string
+	app             map[string]interface{} // app-level fields (bundle, name, domain, storeurl)
 	content         map[string]interface{}
 }
 
 func (p *getParams) hasInventory() bool {
-	return p.pubid != "" || p.page != "" || len(p.content) > 0
+	return p.pubid != "" || p.page != "" || len(p.app) > 0 || len(p.content) > 0
 }
 
 // applyInventory writes the deferred inventory fields (pubid, page, content) into
@@ -144,6 +143,11 @@ func (p *getParams) applyInventory(requestJson []byte, storedRequest json.RawMes
 	}
 	if p.page != "" && ctxKey == "site" {
 		ctxPatch["page"] = p.page
+	}
+	if ctxKey == "app" {
+		for k, v := range p.app {
+			ctxPatch[k] = v
+		}
 	}
 	if len(p.content) > 0 {
 		ctxPatch["content"] = p.content
@@ -257,9 +261,17 @@ func parseGETRequest(r *http.Request, maxInitialLineLength int, maxObjectBytes i
 	// Inventory params (pubid, page, content) are deferred to applyInventory, called
 	// after processStoredRequests, so we can detect whether the stored request declares
 	// app or dooh and route the fields to the correct context object.
+	appMap := map[string]interface{}{}
+	aw := newMapWriter(q, appMap)
+	aw.text("bundle", "app_bundle")
+	aw.text("name", "appname", "app_name")
+	aw.text("domain", "app_domain")
+	aw.text("storeurl", "app_storeurl")
+
 	gp := &getParams{
 		pubid:   qFirst(q, "pubid", "account"),
 		page:    qFirst(q, "page"),
+		app:     appMap,
 		content: buildGETContentMap(q),
 	}
 
