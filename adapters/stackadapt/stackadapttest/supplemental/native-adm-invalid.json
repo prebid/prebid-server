@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "native": {
+        "request": "{\"ver\":\"1.1\"}",
+        "ver": "1.1"
+      },
+      "ext": {
+        "bidder": {
+          "publisherId": "pub-123",
+          "supplyId": "ssp-1"
+        }
+      }
+    }],
+    "site": {
+      "page": "https://example.com/page"
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://localhost/br?publisher_id=pub-123&supply_id=ssp-1",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "native": {
+            "request": "{\"ver\":\"1.1\"}",
+            "ver": "1.1"
+          },
+          "ext": {
+            "bidder": {
+              "publisherId": "pub-123",
+              "supplyId": "ssp-1"
+            }
+          }
+        }],
+        "site": {
+          "page": "https://example.com/page",
+          "publisher": {
+            "id": "pub-123"
+          }
+        }
+      },
+      "impIDs": ["test-imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "cur": "USD",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 1.50,
+            "adm": "{\"native\":\"not-an-object\"}",
+            "crid": "creative-123",
+            "mtype": 4
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": []
+  }],
+  "expectedMakeBidsErrors": [{
+    "value": "unable to get native adm",
+    "comparison": "literal"
+  }]
+}

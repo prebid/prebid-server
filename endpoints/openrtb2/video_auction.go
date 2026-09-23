@@ -428,16 +428,16 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 	var errors string
 	var status int = http.StatusInternalServerError
 	for _, er := range errL {
-		erVal := errortypes.ReadCode(er)
-		if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
-			status = http.StatusServiceUnavailable
+		switch errortypes.ReadCode(er) {
+		case errortypes.BlockedAppErrorCode, errortypes.AccountDisabledErrorCode:
+			status = http.StatusForbidden
 			labels.RequestStatus = metrics.RequestStatusBlockedApp
 			break
-		} else if erVal == errortypes.AcctRequiredErrorCode {
+		case errortypes.AcctRequiredErrorCode:
 			status = http.StatusBadRequest
 			labels.RequestStatus = metrics.RequestStatusBadInput
 			break
-		} else if erVal == errortypes.MalformedAcctErrorCode {
+		case errortypes.MalformedAcctErrorCode:
 			status = http.StatusInternalServerError
 			labels.RequestStatus = metrics.RequestStatusAccountConfigErr
 			break
