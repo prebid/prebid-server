@@ -1,0 +1,99 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sspPlacementId": "testSspPlacementId",
+            "region": "us"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ssp-us.screencore.io/pbs-bid?pId=testSspPlacementId",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "sspPlacementId": "testSspPlacementId"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "screencore",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 2.1,
+                  "adm": "<div>ssp ad</div>",
+                  "crid": "test-creative-id",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 2.1,
+            "adm": "<div>ssp ad</div>",
+            "crid": "test-creative-id",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
