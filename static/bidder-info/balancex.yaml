@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.ssp.balance-x.com/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"
