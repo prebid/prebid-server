@@ -646,6 +646,7 @@ func buildSparseVideoParams(q url.Values) map[string]interface{} {
 	vw.intN("playbackend", getDomainInt8)
 	vw.intN("boxingallowed", getDomainInt8)
 	vw.intsN("playbackmethod", getDomainInt8)
+	vw.intsN("poddedupe", getDomainInt8)
 	return m
 }
 
@@ -663,6 +664,13 @@ func buildSparseAudioParams(q url.Values) map[string]interface{} {
 // Dimensions below this threshold are not usable for ad serving.
 const minAdDim = 10
 
+// isValidAdDim reports whether a WxH pair is usable for ad serving. Square
+// dimensions (w == h) are accepted at any positive size even below minAdDim,
+// matching the PBS param sheet rule for banner w/sizes.
+func isValidAdDim(w, h int) bool {
+	return w > 0 && h > 0 && (w == h || (w >= minAdDim && h >= minAdDim))
+}
+
 // appendSizeFormats appends valid WxH entries from the sizes CSV to formats and returns the result.
 func appendSizeFormats(formats []map[string]interface{}, sizes []string) []map[string]interface{} {
 	for _, s := range sizes {
@@ -671,7 +679,7 @@ func appendSizeFormats(formats []map[string]interface{}, sizes []string) []map[s
 			continue
 		}
 		sw, sh := qParseInt(parts[0]), qParseInt(parts[1])
-		if sw >= minAdDim && sh >= minAdDim {
+		if isValidAdDim(sw, sh) {
 			formats = append(formats, map[string]interface{}{"w": sw, "h": sh})
 		}
 	}
@@ -686,22 +694,33 @@ func buildSparseBannerParams(q url.Values) map[string]interface{} {
 	if ms := qFirst(q, "ms"); ms != "" {
 		if parts := strings.SplitN(ms, "x", 2); len(parts) == 2 {
 			mw, mh := qParseInt(parts[0]), qParseInt(parts[1])
-			if mw >= minAdDim && mh >= minAdDim {
+			if isValidAdDim(mw, mh) {
 				m["format"] = appendSizeFormats([]map[string]interface{}{{"w": mw, "h": mh}}, qCSV(q, "sizes"))
 			}
 		}
 	}
-	w, h := 0, 0
-	if v := qInt(q, "w"); v >= minAdDim {
-		w = v
-		m["w"] = v
+	// w and h are validated as a pair so the square exception (n×n valid below minAdDim) applies.
+	// When only one dimension is provided the standard minimum still applies to that dimension alone.
+	w, h := qInt(q, "w"), qInt(q, "h")
+	if w > 0 && h > 0 {
+		if isValidAdDim(w, h) {
+			m["w"] = w
+			m["h"] = h
+		}
+	} else {
+		if w >= minAdDim {
+			m["w"] = w
+		} else {
+			w = 0
+		}
+		if h >= minAdDim {
+			m["h"] = h
+		} else {
+			h = 0
+		}
 	}
-	if v := qInt(q, "h"); v >= minAdDim {
-		h = v
-		m["h"] = v
-	}
-	// When both dimensions are provided without ms, they also define the primary format entry.
-	if _, hasFormat := m["format"]; !hasFormat && w >= minAdDim && h >= minAdDim {
+	// When both dimensions are valid and no ms-derived format was set, synthesise the format entry.
+	if _, hasFormat := m["format"]; !hasFormat && isValidAdDim(w, h) {
 		m["format"] = appendSizeFormats([]map[string]interface{}{{"w": w, "h": h}}, qCSV(q, "sizes"))
 	}
 

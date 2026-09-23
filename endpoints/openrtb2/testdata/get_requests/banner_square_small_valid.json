@@ -1,0 +1,15 @@
+{
+  "description": "square dimensions below minAdDim (5x5) are accepted; non-square small pair (5x6) is still rejected",
+  "query": "srid=testbanner&mtype=1&w=5&h=5",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "banner": {
+      "w": 5,
+      "h": 5,
+      "format": [{"w": 5, "h": 5}]
+    }
+  }
+}
