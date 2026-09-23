@@ -154,6 +154,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json", cfg.CurrencyConverter.FetchURL)
 	cmpBools(t, "account_required", false, cfg.AccountRequired)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", 20, cfg.Metrics.Influxdb.MetricSendInterval)
+	cmpBools(t, "metrics.prometheus.account_request_status_enabled", false, cfg.Metrics.Prometheus.AccountRequestStatusEnabled)
 	cmpBools(t, "account_adapter_details", false, cfg.Metrics.Disabled.AccountAdapterDetails)
 	cmpBools(t, "account_debug", true, cfg.Metrics.Disabled.AccountDebug)
 	cmpBools(t, "account_stored_responses", true, cfg.Metrics.Disabled.AccountStoredResponses)
@@ -361,6 +362,15 @@ func TestDefaults(t *testing.T) {
 		10: &expectedTCF2.Purpose10,
 	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
+}
+
+func TestPrometheusAccountRequestStatusEnabled(t *testing.T) {
+	_, v := newDefaultConfig(t)
+	v.Set("metrics.prometheus.account_request_status_enabled", true)
+
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
+	assert.NoError(t, err)
+	assert.True(t, cfg.Metrics.Prometheus.AccountRequestStatusEnabled)
 }
 
 // When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
