@@ -43,6 +43,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/apacdex"
 	"github.com/prebid/prebid-server/v4/adapters/appnexus"
 	"github.com/prebid/prebid-server/v4/adapters/appush"
+	"github.com/prebid/prebid-server/v4/adapters/aps"
 	"github.com/prebid/prebid-server/v4/adapters/aso"
 	"github.com/prebid/prebid-server/v4/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/v4/adapters/automatad"
@@ -322,6 +323,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAppush:            appush.Builder,
+		openrtb_ext.BidderAps:               aps.Builder,
 		openrtb_ext.BidderAso:               aso.Builder,
 		openrtb_ext.BidderAudienceNetwork:   audienceNetwork.Builder,
 		openrtb_ext.BidderAutomatad:         automatad.Builder,
