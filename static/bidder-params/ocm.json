@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "OCM Adapter Params",
+  "description": "A schema which validates params accepted by the OCM adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Orange Click Media publisher identifier"
+    },
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Placement identifier, resolved as the impression's stored request"
+    }
+  },
+  "required": [
+    "publisherId",
+    "placementId"
+  ]
+}

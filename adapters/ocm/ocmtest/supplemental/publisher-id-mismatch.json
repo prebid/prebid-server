@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-publisher-mismatch-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {"format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"publisherId": "ocm-pub-1", "placementId": "homepage-top"}}
+      },
+      {
+        "id": "imp-banner-2",
+        "banner": {"format": [{"w": 728, "h": 90}]},
+        "ext": {"bidder": {"publisherId": "ocm-pub-9", "placementId": "homepage-leaderboard"}}
+      }
+    ],
+    "site": {"domain": "example.gr", "page": "https://example.gr/"}
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp[1]: all impressions must share the same publisherId, found \"ocm-pub-9\" and \"ocm-pub-1\"",
+      "comparison": "literal"
+    }
+  ]
+}
