@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sspPlacementId": "testSspPlacementId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp test-imp-id: region is required when sspPlacementId is provided",
+      "comparison": "literal"
+    }
+  ]
+}
