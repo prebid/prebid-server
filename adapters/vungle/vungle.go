@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
@@ -33,6 +34,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 // MakeRequests split impressions into bid requests and change them into the form that vungle can handle.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	// The bidding token is the Vungle SDK token passed as user.buyeruid. Prebid Server core only
+	// creates the user object when it has a buyeruid to inject, so user may be nil here. Without a
+	// token Vungle never bids, so fail fast with a clear error instead of sending a request.
+	if request.User == nil || request.User.BuyerUID == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "missing bidder token in user.buyeruid",
+		}}
+	}
+
 	var requests []*adapters.RequestData
 	var errs []error
 	requestCopy := *request
