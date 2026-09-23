@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "auction-unsupported-mtype",
+    "site": {},
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-1",
+            "adUnitId": "plc-1",
+            "tenantId": "tenant-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ferio.bid/bidder",
+        "body": {
+          "id": "auction-unsupported-mtype",
+          "site": {
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "plc-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "pub-1",
+                  "adUnitId": "plc-1",
+                  "tenantId": "tenant-1"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "auction-unsupported-mtype",
+          "seatbid": [
+            {
+              "seat": "ferio",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.00,
+                  "adm": "<audio></audio>",
+                  "crid": "creative-audio",
+                  "mtype": 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported mtype 3 for imp imp-1",
+      "comparison": "literal"
+    }
+  ]
+}
