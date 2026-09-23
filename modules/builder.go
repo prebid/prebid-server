@@ -2,6 +2,7 @@ package modules
 
 import (
 	fiftyonedegreesDevicedetection "github.com/prebid/prebid-server/v4/modules/fiftyonedegrees/devicedetection"
+	prebidDoohcreativeapproval "github.com/prebid/prebid-server/v4/modules/prebid/doohcreativeapproval"
 	prebidOrtb2blocking "github.com/prebid/prebid-server/v4/modules/prebid/ortb2blocking"
 	prebidRulesengine "github.com/prebid/prebid-server/v4/modules/prebid/rulesengine"
 	wurflDevicedetection "github.com/prebid/prebid-server/v4/modules/scientiamobile/wurfl_devicedetection"
@@ -16,8 +17,9 @@ func builders() ModuleBuilders {
 			"devicedetection": fiftyonedegreesDevicedetection.Builder,
 		},
 		"prebid": {
-			"ortb2blocking": prebidOrtb2blocking.Builder,
-			"rulesengine":   prebidRulesengine.Builder,
+			"doohcreativeapproval": prebidDoohcreativeapproval.Builder,
+			"ortb2blocking":        prebidOrtb2blocking.Builder,
+			"rulesengine":          prebidRulesengine.Builder,
 		},
 		"scientiamobile": {
 			"wurfl_devicedetection": wurflDevicedetection.Builder,
