@@ -24,6 +24,10 @@
       "type": "integer",
       "description": "The network id.",
       "minimum": 1
+    },
+    "placementuuid": {
+      "type": "string",
+      "description": "The placement UUID (new inventory structure). Preferred over siteId/pageId/formatId; forwarded to Equativ as plcmtuuid."
     }
   },
   "dependencies": {
