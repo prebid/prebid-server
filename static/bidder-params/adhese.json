@@ -7,6 +7,7 @@
     "account": {
       "type": "string",
       "minLength": 1,
+      "pattern": "^[a-zA-Z0-9.-]+$",
       "description": "Your Adhese account name. If unknown, please contact your sales rep"
     },
     "location": {

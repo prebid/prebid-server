@@ -1,0 +1,131 @@
+{
+    "mockBidRequest": {
+        "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+        "imp": [
+            {
+                "id": "div-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "accountId": "620523ae7f4bbe1691bbb815",
+                        "pbsHost": "fakeHost",
+                        "placementId": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817",
+                        "useSourceBidderCode": true
+                    }
+                }
+            }
+        ],
+        "site": {
+            "domain": "somedomain.com",
+            "page": "https://somedomain.com"
+        },
+        "device": {
+            "ua": "userAgent",
+            "ip": "193.168.244.1"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://fakeHost.relevant-digital.com/openrtb2/auction",
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "imp": [
+                        {
+                            "id": "div-1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "ext": {
+                                "prebid": {
+                                    "storedrequest": {
+                                        "id": "620525862d7518bfd4bbb81e_620523b5d1dbed6b0fbbb817"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "somedomain.com",
+                        "page": "https://somedomain.com"
+                    },
+                    "device": {
+                        "ua": "userAgent",
+                        "ip": "193.168.244.1"
+                    },
+                    "ext": {
+                        "prebid": {
+                            "debug": false,
+                            "storedrequest": {
+                                "id": "620523ae7f4bbe1691bbb815"
+                            }
+                        },
+                        "relevant": {
+                            "adapterType": "server",
+                            "count": 1
+                        }
+                    },
+                    "tmax": 750
+                },
+                "impIDs": ["div-1"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "3621f78b-abdf-4562-8eca-1c5e893387d0",
+                    "seatbid": [
+                        {
+                            "seat": "pubmatic",
+                            "bid": [
+                                {
+                                    "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                                    "impid": "div-1",
+                                    "price": 0.5,
+                                    "adm": "some-test-ad",
+                                    "crid": "crid_10",
+                                    "w": 300,
+                                    "h": 250,
+                                    "mtype": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                        "impid": "div-1",
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "crid": "crid_10",
+                        "w": 300,
+                        "h": 250,
+                        "mtype": 1
+                    },
+                    "type": "banner",
+                    "seat": "pubmatic"
+                }
+            ]
+        }
+    ]
+}

@@ -44,7 +44,7 @@ func (m *mockEvidenceExtractor) fromSuaPayload(payload []byte) []stringEvidence 
 	return args.Get(0).([]stringEvidence)
 }
 
-func (m *mockEvidenceExtractor) extract(ctx hookstage.ModuleContext) ([]onpremise.Evidence, string, error) {
+func (m *mockEvidenceExtractor) extract(ctx *hookstage.ModuleContext) ([]onpremise.Evidence, string, error) {
 	args := m.Called(ctx)
 
 	res := args.Get(0)
@@ -131,16 +131,18 @@ func TestHandleEntrypointHookAccountAllowed(t *testing.T) {
 	result, err := module.HandleEntrypointHook(nil, hookstage.ModuleInvocationContext{}, hookstage.EntrypointPayload{})
 	assert.NoError(t, err)
 
+	evidenceFromHeadersCtx, _ := result.ModuleContext.Get(evidenceFromHeadersCtxKey)
 	assert.Equal(
-		t, result.ModuleContext[evidenceFromHeadersCtxKey], []stringEvidence{{
+		t, evidenceFromHeadersCtx, []stringEvidence{{
 			Prefix: "123",
 			Key:    "key",
 			Value:  "val",
 		}},
 	)
 
+	evidenceFromSuaCtx, _ := result.ModuleContext.Get(evidenceFromSuaCtxKey)
 	assert.Equal(
-		t, result.ModuleContext[evidenceFromSuaCtxKey], []stringEvidence{{
+		t, evidenceFromSuaCtx, []stringEvidence{{
 			Prefix: "123",
 			Key:    "User-Agent",
 			Value:  "ua",
@@ -179,9 +181,8 @@ func TestHandleRawAuctionHookExtractError(t *testing.T) {
 		accountValidator:  &mockValidator,
 	}
 
-	mctx := make(hookstage.ModuleContext)
-
-	mctx[ddEnabledCtxKey] = true
+	mctx := hookstage.NewModuleContext()
+	mctx.Set(ddEnabledCtxKey, true)
 
 	result, err := module.HandleRawAuctionHook(
 		context.TODO(), hookstage.ModuleInvocationContext{
@@ -252,7 +253,7 @@ func TestHandleRawAuctionHookEnrichment(t *testing.T) {
 	deviceDetectorM.On("getDeviceInfo", mock.Anything, mock.Anything).Return(
 		&deviceInfo{
 			HardwareVendor:        "Apple",
-			HardwareName:          "Macbook",
+			HardwareName:          "Macbook Pro",
 			DeviceType:            "device",
 			PlatformVendor:        "Apple",
 			PlatformName:          "MacOs",
@@ -268,6 +269,8 @@ func TestHandleRawAuctionHookEnrichment(t *testing.T) {
 			HardwareFamily:        "Macbook",
 			HardwareModel:         "Macbook",
 			HardwareModelVariants: "Macbook",
+			HardwareNamePrefix:    "Macbook",
+			HardwareNameVersion:   "Pro",
 			UserAgent:             "ua",
 			DeviceId:              "",
 		},
@@ -280,8 +283,8 @@ func TestHandleRawAuctionHookEnrichment(t *testing.T) {
 		accountValidator:  &mockValidator,
 	}
 
-	mctx := make(hookstage.ModuleContext)
-	mctx[ddEnabledCtxKey] = true
+	mctx := hookstage.NewModuleContext()
+	mctx.Set(ddEnabledCtxKey, true)
 
 	result, err := module.HandleRawAuctionHook(
 		nil, hookstage.ModuleInvocationContext{
@@ -401,7 +404,7 @@ func TestHandleRawAuctionHookEnrichment(t *testing.T) {
 				"architecture": "arm",
 				"model": ""
 			}
-		,"devicetype":2,"ua":"ua","make":"Apple","model":"Macbook","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1}
+		,"devicetype":2,"ua":"ua","make":"Apple","model":"Macbook","hwv":"Pro","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1}
 	}`)
 
 	var deviceDetectorErrM mockDeviceDetector
@@ -454,7 +457,7 @@ func TestHandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 	mockDeviceDetector.On("getDeviceInfo", mock.Anything, mock.Anything).Return(
 		&deviceInfo{
 			HardwareVendor:        "Apple",
-			HardwareName:          "Macbook",
+			HardwareName:          "Macbook Pro",
 			DeviceType:            "device",
 			PlatformVendor:        "Apple",
 			PlatformName:          "MacOs",
@@ -470,6 +473,8 @@ func TestHandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 			HardwareFamily:        "Macbook",
 			HardwareModel:         "Macbook",
 			HardwareModelVariants: "Macbook",
+			HardwareNamePrefix:    "Macbook",
+			HardwareNameVersion:   "Pro",
 			UserAgent:             "ua",
 			DeviceId:              "",
 			ScreenInchesHeight:    7,
@@ -483,8 +488,8 @@ func TestHandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 		accountValidator:  &mockValidator,
 	}
 
-	mctx := make(hookstage.ModuleContext)
-	mctx[ddEnabledCtxKey] = true
+	mctx := hookstage.NewModuleContext()
+	mctx.Set(ddEnabledCtxKey, true)
 
 	result, err := module.HandleRawAuctionHook(
 		nil, hookstage.ModuleInvocationContext{
@@ -500,7 +505,7 @@ func TestHandleRawAuctionHookEnrichmentWithErrors(t *testing.T) {
 
 	mutationResult, err := mutation.Apply(hookstage.RawAuctionRequestPayload(`{"device":{}}`))
 	assert.NoError(t, err)
-	require.JSONEq(t, string(mutationResult), `{"device":{"devicetype":2,"ua":"ua","make":"Apple","model":"Macbook","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1,"ppi":154,"ext":{"fiftyonedegrees_deviceId":""}}}`)
+	require.JSONEq(t, string(mutationResult), `{"device":{"devicetype":2,"ua":"ua","make":"Apple","model":"Macbook","hwv":"Pro","os":"MacOs","osv":"14","h":1080,"w":1024,"pxratio":223,"js":1,"geoFetch":1,"ppi":154,"ext":{"fiftyonedegrees_deviceId":""}}}`)
 }
 
 func TestConfigHashFromConfig(t *testing.T) {
@@ -633,7 +638,7 @@ func TestBuilderHandleDeviceDetectorError(t *testing.T) {
 func TestHydrateFields(t *testing.T) {
 	deviceInfo := &deviceInfo{
 		HardwareVendor:        "Apple",
-		HardwareName:          "Macbook",
+		HardwareName:          "Macbook Pro",
 		DeviceType:            "device",
 		PlatformVendor:        "Apple",
 		PlatformName:          "MacOs",
@@ -649,6 +654,8 @@ func TestHydrateFields(t *testing.T) {
 		HardwareFamily:        "Macbook",
 		HardwareModel:         "Macbook",
 		HardwareModelVariants: "Macbook",
+		HardwareNamePrefix:    "Macbook",
+		HardwareNameVersion:   "Pro",
 		UserAgent:             "ua",
 		DeviceId:              "dev-ide",
 	}
@@ -699,7 +706,7 @@ func TestHydrateFields(t *testing.T) {
 
 	require.JSONEq(
 		t,
-		`{"devicetype":2,"dnt":0,"ext":{"fiftyonedegrees_deviceId":"dev-ide","h":"901","w":843},"geoFetch":1,"h":901,"js":1,"language":"en","make":"Apple","model":"Macintosh","os":"MacOs","osv":"14","pxratio":223,"sua":{"browsers":[{"brand":"Not/A)Brand","version":["99","0","0","0"]},{"brand":"Samsung Internet","version":["23","0","1","1"]},{"brand":"Chromium","version":["115","0","5790","168"]}],"mobile":1,"model":"SM-A037U","platform":{"brand":"Android","version":["13","0","0"]},"source":2},"ua":"Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-A037U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36","w":843}`,
+		`{"devicetype":2,"dnt":0,"ext":{"fiftyonedegrees_deviceId":"dev-ide","h":"901","w":843},"geoFetch":1,"h":901,"hwv":"Pro","js":1,"language":"en","make":"Apple","model":"Macintosh","os":"MacOs","osv":"14","pxratio":223,"sua":{"browsers":[{"brand":"Not/A)Brand","version":["99","0","0","0"]},{"brand":"Samsung Internet","version":["23","0","1","1"]},{"brand":"Chromium","version":["115","0","5790","168"]}],"mobile":1,"model":"SM-A037U","platform":{"brand":"Android","version":["13","0","0"]},"source":2},"ua":"Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-A037U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36","w":843}`,
 		string(deviceHolder.Device),
 	)
 }

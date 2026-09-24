@@ -36,7 +36,12 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"placementId": "11", "host": "example"}`,
+	`{"placementId": "11", "host": "host"}`,
+	`{"placementId": "11", "host": "host.example.com"}`,
+	`{"placementId": "11", "host": "host.example.com:8080"}`,
+	`{"placementId": "11", "host": "host-example.test"}`,
+	`{"placementId": "11", "host": "Host.Example.com"}`,
+	`{"placementId": "11", "host": "localhost:3000"}`,
 }
 
 var invalidParams = []string{
@@ -45,4 +50,13 @@ var invalidParams = []string{
 	`{"placement_id": 346, "host": ""}`,
 	`{"placementID": "", "HOST": "example"}`,
 	`{"placementId": 234}`,
+	`{"placementId": "11", "host": "/path"}`,
+	`{"placementId": "11", "host": "//evil.com"}`,
+	`{"placementId": "11", "host": "host/path"}`,
+	`{"placementId": "11", "host": "host?query=1"}`,
+	`{"placementId": "11", "host": "host#fragment"}`,
+	`{"placementId": "11", "host": "user@host"}`,
+	`{"placementId": "11", "host": "https://host.com"}`,
+	`{"placementId": "11", "host": "host:notaport"}`,
+	`{"placementId": "11", "host": "host:8080:extra"}`,
 }

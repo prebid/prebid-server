@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type adapter struct {
@@ -65,6 +66,10 @@ func (a *adapter) MakeRequests(
 	// copy the request and dereference any pointers* and override the ext of the
 	modifiedRequest := *request
 	modifiedRequest.Imp[0].Ext = modifiedExt
+
+	if !urlutil.IsSafeHost(params.Account) {
+		return nil, []error{&errortypes.BadInput{Message: "Invalid account"}}
+	}
 
 	// create a map of macros to resolve
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.Account}

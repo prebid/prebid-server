@@ -1,0 +1,235 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com",
+      "domain": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-route-a-1",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=client-a&endpoint=100&ssp=200",
+            "tagId": "tag-a-1"
+          }
+        }
+      },
+      {
+        "id": "imp-route-b-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.eu-adx-admixer.rtb-stack.com/prebid?client=client-b&endpoint=300&ssp=400",
+            "tagId": "tag-b-1"
+          }
+        }
+      },
+      {
+        "id": "imp-route-a-2",
+        "banner": {
+          "format": [
+            {
+              "w": 970,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=client-a&endpoint=100&ssp=200",
+            "tagId": "tag-a-2"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-adx-admixer.rtb-stack.com/pbs?ssp=200&endpoint=100&client=client-a",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-route-a-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "tag-a-1",
+              "ext": {}
+            },
+            {
+              "id": "imp-route-a-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 970,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "tag-a-2",
+              "ext": {}
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-route-a-1",
+          "imp-route-a-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-a-1",
+                  "impid": "imp-route-a-1",
+                  "price": 1.25,
+                  "adm": "<div>A1</div>",
+                  "crid": "crid-a-1",
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-a-2",
+                  "impid": "imp-route-a-2",
+                  "price": 2.5,
+                  "adm": "<div>A2</div>",
+                  "crid": "crid-a-2",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://eu-adx-admixer.rtb-stack.com/pbs?ssp=400&endpoint=300&client=client-b",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-route-b-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "tag-b-1",
+              "ext": {}
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-route-b-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-b-1",
+                  "impid": "imp-route-b-1",
+                  "price": 0.75,
+                  "adm": "<div>B1</div>",
+                  "crid": "crid-b-1",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-a-1",
+            "impid": "imp-route-a-1",
+            "price": 1.25,
+            "adm": "<div>A1</div>",
+            "crid": "crid-a-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-a-2",
+            "impid": "imp-route-a-2",
+            "price": 2.5,
+            "adm": "<div>A2</div>",
+            "crid": "crid-a-2",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-b-1",
+            "impid": "imp-route-b-1",
+            "price": 0.75,
+            "adm": "<div>B1</div>",
+            "crid": "crid-b-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

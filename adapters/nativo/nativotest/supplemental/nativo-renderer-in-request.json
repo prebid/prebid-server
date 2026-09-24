@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "nativo-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 12345678
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "sdk": {
+          "renderers": [
+            {
+              "name": "NativoRenderer",
+              "version": "1.0.0"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://foo.io/?src=prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "nativo-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 12345678
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "sdk": {
+                "renderers": [
+                  {
+                    "name": "NativoRenderer",
+                    "version": "1.0.0"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "impIDs": ["nativo-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-response-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-id",
+                  "impid": "nativo-id",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "w": 300,
+                  "h": 250
+                }
+              ],
+              "seat": "nativo"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-id",
+            "impid": "nativo-id",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

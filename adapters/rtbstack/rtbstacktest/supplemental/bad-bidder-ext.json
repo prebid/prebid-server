@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-bad-bidder-ext",
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-bad-ext",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": "not-an-object"
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Wrong RTBStack bidder ext",
+      "comparison": "literal"
+    }
+  ]
+}
