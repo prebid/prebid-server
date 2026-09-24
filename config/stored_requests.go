@@ -230,6 +230,13 @@ func (cfg *StoredRequests) validate(errs []error) []error {
 		errs = cfg.Database.validate(cfg.DataType(), errs)
 	}
 
+	// Fetchers 2.0 uses one source; legacy fetching may combine several.
+	if cfg.DataType() == AccountDataType && cfg.V2Enabled {
+		if sources := cfg.enabledFetcherV2Sources(); len(sources) > 1 {
+			errs = append(errs, fmt.Errorf("%s: Fetchers 2.0 supports exactly one source; configured: %s", cfg.Section(), strings.Join(sources, ", ")))
+		}
+	}
+
 	// Categories do not use cache so none of the following checks apply
 	if cfg.DataType() == CategoryDataType {
 		return errs
@@ -253,6 +260,20 @@ func (cfg *StoredRequests) validate(errs []error) []error {
 	}
 	errs = cfg.InMemoryCache.validate(cfg.DataType(), errs)
 	return errs
+}
+
+func (cfg *StoredRequests) enabledFetcherV2Sources() []string {
+	sources := make([]string, 0, 3)
+	if cfg.Files.Enabled {
+		sources = append(sources, "filesystem")
+	}
+	if cfg.Database.ConnectionInfo.Database != "" {
+		sources = append(sources, "database")
+	}
+	if cfg.HTTP.Endpoint != "" {
+		sources = append(sources, "http")
+	}
+	return sources
 }
 
 // DatabaseConfig configures the Stored Request ecosystem to use Database. This must include a Fetcher,

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
@@ -91,14 +92,14 @@ func (f *Fetcher[K, V]) revalidate(ctx context.Context, cancel context.CancelFun
 	dur := f.time.Now().Sub(start)
 
 	if err != nil {
-		f.metrics.BackendFetch("background_refresh", "error", dur)
+		f.metrics.BackendFetch(metrics.FetcherOperationBackgroundRefresh, metrics.FetcherBackendError, dur)
 		f.backgroundRefresh.finish(key, true)
 		return
 	}
 	if !found {
 		// Deleted upstream: drop it so the next read reflects the deletion.
 		err := NotFoundError{Key: key}
-		f.metrics.BackendFetch("background_refresh", "notfound", dur)
+		f.metrics.BackendFetch(metrics.FetcherOperationBackgroundRefresh, metrics.FetcherBackendNotFound, dur)
 		f.cache.Invalidate(key)
 		if f.negatives != nil {
 			f.negatives.mark(key, err)
@@ -109,11 +110,11 @@ func (f *Fetcher[K, V]) revalidate(ctx context.Context, cancel context.CancelFun
 	v, err := f.transform(key, raw)
 	if err != nil {
 		// Newly-malformed upstream value: keep serving the last good value.
-		f.metrics.BackendFetch("background_refresh", "error", dur)
+		f.metrics.BackendFetch(metrics.FetcherOperationBackgroundRefresh, metrics.FetcherBackendError, dur)
 		f.backgroundRefresh.finish(key, true)
 		return
 	}
 	f.cache.Save(key, v)
-	f.metrics.BackendFetch("background_refresh", "ok", dur)
+	f.metrics.BackendFetch(metrics.FetcherOperationBackgroundRefresh, metrics.FetcherBackendOK, dur)
 	f.backgroundRefresh.finish(key, false)
 }

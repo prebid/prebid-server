@@ -11,6 +11,7 @@ import (
 
 	fetchercache "github.com/prebid/prebid-server/v4/fetcher/cache"
 	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -491,8 +492,8 @@ func newCountingRecorder() *countingRecorder {
 func (r *countingRecorder) CacheHit()      { r.hits++ }
 func (r *countingRecorder) CacheMiss()     { r.misses++ }
 func (r *countingRecorder) CacheNegative() { r.negatives++ }
-func (r *countingRecorder) BackendFetch(operation string, result string, _ time.Duration) {
-	r.backend[operation+":"+result]++
+func (r *countingRecorder) BackendFetch(operation metrics.FetcherOperation, result metrics.FetcherBackendResult, _ time.Duration) {
+	r.backend[string(operation)+":"+string(result)]++
 }
 
 func TestRecorderSignals(t *testing.T) {

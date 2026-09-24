@@ -8,6 +8,7 @@ import (
 	"time"
 
 	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 	"golang.org/x/sync/singleflight"
 )
@@ -93,10 +94,10 @@ func (f *Fetcher[K, V]) Start(ctx context.Context) error {
 	start := f.time.Now()
 	raw, err := f.preload.FetchAll(ctx)
 	if err != nil {
-		f.metrics.BackendFetch("start", "error", f.time.Now().Sub(start))
+		f.metrics.BackendFetch(metrics.FetcherOperationStart, metrics.FetcherBackendError, f.time.Now().Sub(start))
 		return err
 	}
-	f.metrics.BackendFetch("start", "ok", f.time.Now().Sub(start))
+	f.metrics.BackendFetch(metrics.FetcherOperationStart, metrics.FetcherBackendOK, f.time.Now().Sub(start))
 	var errs []error
 	for key, bytes := range raw {
 		v, err := f.transform(key, bytes)
@@ -108,9 +109,6 @@ func (f *Fetcher[K, V]) Start(ctx context.Context) error {
 	}
 	return errors.Join(errs...)
 }
-
-// Close is a no-op; background revalidations are fire-and-forget goroutines.
-func (f *Fetcher[K, V]) Close() {}
 
 // Get returns the typed value for key. On a fresh cache hit it is a pure lookup
 // with no upstream call and no unmarshal. Past TTL the behaviour depends on the
@@ -178,13 +176,12 @@ func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 
 	if err != nil {
 		// Systemic/transient failure: never cache, never negative-cache.
-		f.metrics.BackendFetch("get", "error", dur)
+		f.metrics.BackendFetch(metrics.FetcherOperationGet, metrics.FetcherBackendError, dur)
 		return zero, err
 	}
 	if !found {
-		// Definitive per-key not-found.
 		err := NotFoundError{Key: key}
-		f.metrics.BackendFetch("get", "notfound", dur)
+		f.metrics.BackendFetch(metrics.FetcherOperationGet, metrics.FetcherBackendNotFound, dur)
 		if f.negatives != nil {
 			f.negatives.mark(key, err)
 		}
@@ -196,7 +193,7 @@ func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 		// Malformed value: a permanent verdict. Surface the error and, when negative
 		// caching is on, remember it (error-preserving) so we re-serve the same
 		// malformed error without re-hitting the backend for a short window.
-		f.metrics.BackendFetch("get", "error", dur)
+		f.metrics.BackendFetch(metrics.FetcherOperationGet, metrics.FetcherBackendError, dur)
 		if f.negatives != nil {
 			f.negatives.mark(key, err)
 		}
@@ -204,6 +201,6 @@ func (f *Fetcher[K, V]) load(ctx context.Context, key K) (V, error) {
 	}
 
 	f.cache.Save(key, v)
-	f.metrics.BackendFetch("get", "ok", dur)
+	f.metrics.BackendFetch(metrics.FetcherOperationGet, metrics.FetcherBackendOK, dur)
 	return v, nil
 }

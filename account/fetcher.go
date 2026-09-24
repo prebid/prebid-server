@@ -135,26 +135,8 @@ func (r metricsRecorder) CacheNegative() {
 	r.engine.RecordFetcherResult(r.subsystem, metrics.FetcherResultNegative)
 }
 
-func (r metricsRecorder) BackendFetch(operation string, result string, d time.Duration) {
-	var mappedOperation metrics.FetcherOperation
-	switch operation {
-	case "start":
-		mappedOperation = metrics.FetcherOperationStart
-	case "background_refresh":
-		mappedOperation = metrics.FetcherOperationBackgroundRefresh
-	default:
-		mappedOperation = metrics.FetcherOperationGet
-	}
-	var mapped metrics.FetcherBackendResult
-	switch result {
-	case "ok":
-		mapped = metrics.FetcherBackendOK
-	case "notfound":
-		mapped = metrics.FetcherBackendNotFound
-	default:
-		mapped = metrics.FetcherBackendError
-	}
-	r.engine.RecordFetcherBackendFetch(r.subsystem, mappedOperation, mapped, d)
+func (r metricsRecorder) BackendFetch(operation metrics.FetcherOperation, result metrics.FetcherBackendResult, d time.Duration) {
+	r.engine.RecordFetcherBackendFetch(r.subsystem, operation, result, d)
 }
 
 // accountSource is the account-specific raw source stage used by the generic
