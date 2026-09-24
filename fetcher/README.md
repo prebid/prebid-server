@@ -27,7 +27,8 @@ Files:
 
 - `fetcher.go`: engine setup and lookup flow.
 - `config.go`: generic cache, refresh and negative-cache configuration.
-- `source/`: source interfaces implemented by callers.
+- `source.go`: source interfaces.
+- `source/`: reusable source implementations.
 - `cache.go`: cache interface.
 - `cache/`: positive cache implementations.
 - `negative.go`: negative cache wrapper.

@@ -1464,6 +1464,7 @@ func TestValidateFetcherV2AccountSources(t *testing.T) {
 		name         string
 		v2Enabled    bool
 		filesEnabled bool
+		databaseName string
 		httpEndpoint string
 		expectedErr  error
 	}{
@@ -1473,6 +1474,13 @@ func TestValidateFetcherV2AccountSources(t *testing.T) {
 			filesEnabled: true,
 			httpEndpoint: "http://localhost",
 			expectedErr:  errors.New("accounts: Fetchers 2.0 supports exactly one source; configured: filesystem, http"),
+		},
+		{
+			name:         "V2 Rejects Filesystem And Database Sources",
+			v2Enabled:    true,
+			filesEnabled: true,
+			databaseName: "accounts",
+			expectedErr:  errors.New("accounts: Fetchers 2.0 supports exactly one source; configured: filesystem, database"),
 		},
 		{
 			name:         "V1 Allows Multiple Sources",
@@ -1493,6 +1501,12 @@ func TestValidateFetcherV2AccountSources(t *testing.T) {
 			name:      "V2 Allows No Source",
 			v2Enabled: true,
 		},
+		{
+			name:         "V2 Database Source Remains Unsupported",
+			v2Enabled:    true,
+			databaseName: "accounts",
+			expectedErr:  errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"),
+		},
 	}
 
 	for _, test := range testCases {
@@ -1500,6 +1514,7 @@ func TestValidateFetcherV2AccountSources(t *testing.T) {
 			cfg, v := newDefaultConfig(t)
 			cfg.Accounts.V2Enabled = test.v2Enabled
 			cfg.Accounts.Files.Enabled = test.filesEnabled
+			cfg.Accounts.Database.ConnectionInfo.Database = test.databaseName
 			cfg.Accounts.HTTP.Endpoint = test.httpEndpoint
 
 			errs := cfg.validate(v)

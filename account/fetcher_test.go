@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/fetcher"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
@@ -33,25 +35,22 @@ func (f *fakeTime) Add(d time.Duration) {
 
 type mockSource struct {
 	accounts     map[string]json.RawMessage
-	accountCalls int
-	bulkCalls    int
+	accountCalls atomic.Int32
+	bulkCalls    atomic.Int32
 }
 
-func (m *mockSource) Fetch(_ context.Context, accountID string) (json.RawMessage, error) {
-	m.accountCalls++
-	raw, ok := m.accounts[accountID]
-	if !ok {
-		return nil, errAccountNotFound
-	}
-	return raw, nil
+func (m *mockSource) Fetch(_ context.Context, accountID string) (json.RawMessage, bool, error) {
+	m.accountCalls.Add(1)
+	raw, found := m.accounts[accountID]
+	return raw, found, nil
 }
 
 func (m *mockSource) FetchAll(_ context.Context) (map[string]json.RawMessage, error) {
-	m.bulkCalls++
+	m.bulkCalls.Add(1)
 	return m.accounts, nil
 }
 
-func newV2Fetcher(t *testing.T, source Source) *FetcherAccountFetcher {
+func newV2Fetcher(t *testing.T, source fetcher.Source[string]) *FetcherAccountFetcher {
 	t.Helper()
 	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600}
 	v2, err := NewFetcherAccountFetcher(source, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
@@ -77,7 +76,7 @@ func TestV2GetAccountTypedHit(t *testing.T) {
 	account, errs = GetAccount(context.Background(), cfg, v2, "pub-1", nil)
 	require.Empty(t, errs)
 	assert.Equal(t, "pub-1", account.ID)
-	assert.Equal(t, 1, source.accountCalls, "second GetAccount should be a cache hit")
+	assert.Equal(t, int32(1), source.accountCalls.Load(), "second GetAccount should be a cache hit")
 }
 
 func TestV2GetAccountAppliesDefaultsAndDerivedConfigOnce(t *testing.T) {
@@ -127,7 +126,7 @@ func TestV2GetAccountAppliesDefaultsAndDerivedConfigOnce(t *testing.T) {
 	account, errs = GetAccount(context.Background(), &config.Configuration{}, v2, "pub-1", nil)
 	require.Empty(t, errs)
 	require.NotNil(t, account)
-	assert.Equal(t, 1, source.accountCalls)
+	assert.Equal(t, int32(1), source.accountCalls.Load())
 }
 
 func TestV2RefreshTTLReloadsFromSource(t *testing.T) {
@@ -146,7 +145,7 @@ func TestV2RefreshTTLReloadsFromSource(t *testing.T) {
 	require.Empty(t, errs)
 	require.NotNil(t, account)
 	assert.False(t, account.Disabled)
-	assert.Equal(t, 1, source.accountCalls)
+	assert.Equal(t, int32(1), source.accountCalls.Load())
 
 	source.accounts["pub-1"] = json.RawMessage(`{"id":"pub-1","disabled":true}`)
 	clk.Add(2 * time.Second)
@@ -155,7 +154,7 @@ func TestV2RefreshTTLReloadsFromSource(t *testing.T) {
 	require.Empty(t, errs)
 	require.NotNil(t, account)
 	assert.False(t, account.Disabled, "ttl mode should return stale data immediately")
-	assert.Eventually(t, func() bool { return source.accountCalls == 2 }, time.Second, 5*time.Millisecond)
+	assert.Eventually(t, func() bool { return source.accountCalls.Load() == 2 }, time.Second, 5*time.Millisecond)
 }
 
 func TestV2GetAccountNotFoundFallsBackToDefaults(t *testing.T) {
@@ -204,12 +203,12 @@ func TestV2RefreshPreloadWarmsCache(t *testing.T) {
 	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "preload"}
 	v2, err := NewFetcherAccountFetcher(source, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
 	require.NoError(t, err)
-	assert.Equal(t, 1, source.bulkCalls, "preload should perform a single bulk fetch at startup")
+	assert.Equal(t, int32(1), source.bulkCalls.Load(), "preload should perform a single bulk fetch at startup")
 
 	account, errs := GetAccount(context.Background(), &config.Configuration{}, v2, "pub-1", nil)
 	require.Empty(t, errs)
 	assert.Equal(t, "pub-1", account.ID)
-	assert.Equal(t, 0, source.accountCalls, "preloaded account should be served without a per-key fetch")
+	assert.Equal(t, int32(0), source.accountCalls.Load(), "preloaded account should be served without a per-key fetch")
 }
 
 func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
@@ -225,7 +224,7 @@ func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
 	require.Empty(t, errs)
 	require.NotNil(t, account)
 	assert.False(t, account.Disabled)
-	assert.Equal(t, 1, source.accountCalls)
+	assert.Equal(t, int32(1), source.accountCalls.Load())
 
 	source.accounts["pub-1"] = json.RawMessage(`{"id":"pub-1","disabled":true}`)
 	clk.Add(2 * time.Second)
@@ -234,7 +233,7 @@ func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
 	require.Empty(t, errs)
 	require.NotNil(t, account)
 	assert.False(t, account.Disabled, "ttl mode should return stale data immediately and refresh in the background")
-	assert.Eventually(t, func() bool { return source.accountCalls == 2 }, time.Second, 5*time.Millisecond)
+	assert.Eventually(t, func() bool { return source.accountCalls.Load() == 2 }, time.Second, 5*time.Millisecond)
 }
 
 func TestV2UnboundedCacheDoesNotEvictByEntryCount(t *testing.T) {
@@ -254,7 +253,7 @@ func TestV2UnboundedCacheDoesNotEvictByEntryCount(t *testing.T) {
 		require.NotNil(t, account)
 		assert.Equal(t, id, account.ID)
 	}
-	assert.Equal(t, 1000, source.accountCalls)
+	assert.Equal(t, int32(1000), source.accountCalls.Load())
 
 	for i := 0; i < 1000; i++ {
 		id := fmt.Sprintf("pub-%d", i)
@@ -263,7 +262,7 @@ func TestV2UnboundedCacheDoesNotEvictByEntryCount(t *testing.T) {
 		require.NotNil(t, account)
 		assert.Equal(t, id, account.ID)
 	}
-	assert.Equal(t, 1000, source.accountCalls, "unbounded cache should retain every fetched account")
+	assert.Equal(t, int32(1000), source.accountCalls.Load(), "unbounded cache should retain every fetched account")
 }
 
 func TestV2RefreshPreloadUnsupportedSourceErrors(t *testing.T) {
@@ -298,8 +297,16 @@ func TestV2NegativeCacheInvalidConfigErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "negative")
 }
 
+func TestNewFetcherAccountFetcherRequiresTime(t *testing.T) {
+	source := &mockSource{accounts: map[string]json.RawMessage{}}
+
+	_, err := NewFetcherAccountFetcher(source, config.FetcherConfig{Type: "none"}, json.RawMessage(`{}`), nil, nil)
+
+	require.EqualError(t, err, "accounts.cache: time is required")
+}
+
 type notBulkSource struct{}
 
-func (notBulkSource) Fetch(_ context.Context, accountID string) (json.RawMessage, error) {
-	return nil, errAccountNotFound
+func (notBulkSource) Fetch(_ context.Context, accountID string) (json.RawMessage, bool, error) {
+	return nil, false, nil
 }

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	fetchercache "github.com/prebid/prebid-server/v4/fetcher/cache"
-	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
 	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,7 +161,7 @@ func TestNewRequiresTimeAndMetrics(t *testing.T) {
 	require.EqualError(t, err, "metrics recorder is required")
 }
 
-func newLRUFetcher(t *testing.T, src fetchersource.Source[string], clk *fakeTime, ttl time.Duration, negatives *NegativeStore[string]) *Fetcher[string, string] {
+func newLRUFetcher(t *testing.T, src Source[string], clk *fakeTime, ttl time.Duration, negatives *NegativeStore[string]) *Fetcher[string, string] {
 	t.Helper()
 	cfg := Config{
 		Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: ttl},
@@ -187,7 +186,7 @@ func newLRUFetcher(t *testing.T, src fetchersource.Source[string], clk *fakeTime
 	return f
 }
 
-func newServeStaleFetcher(t *testing.T, src fetchersource.Source[string], clk *fakeTime, ttl time.Duration) *Fetcher[string, string] {
+func newServeStaleFetcher(t *testing.T, src Source[string], clk *fakeTime, ttl time.Duration) *Fetcher[string, string] {
 	t.Helper()
 	f, err := New(Params[string, string]{
 		Source:    src,

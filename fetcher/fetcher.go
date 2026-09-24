@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
 	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 	"golang.org/x/sync/singleflight"
@@ -15,7 +14,7 @@ import (
 
 // Params configures a Fetcher. Source and Transform are required.
 type Params[K comparable, V any] struct {
-	Source    fetchersource.Source[K]
+	Source    Source[K]
 	Transform TransformFunc[K, V]
 	Config    Config
 	Time      timeutil.Time
@@ -24,13 +23,13 @@ type Params[K comparable, V any] struct {
 
 // Fetcher is the generic read-through engine. Construct it with New.
 type Fetcher[K comparable, V any] struct {
-	source              fetchersource.Source[K]
+	source              Source[K]
 	transform           TransformFunc[K, V]
 	cache               Cache[K, V]
 	negatives           *NegativeStore[K]
 	coalesceRequests    bool
 	refreshInBackground bool
-	preload             fetchersource.BulkSource[K]
+	preload             BulkSource[K]
 	time                timeutil.Time
 	metrics             Recorder
 	requestCoalescer    singleflight.Group

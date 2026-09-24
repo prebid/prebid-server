@@ -8,6 +8,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/v4/account"
 	"github.com/prebid/prebid-server/v4/config"
+	fetcherengine "github.com/prebid/prebid-server/v4/fetcher"
+	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
 	"github.com/prebid/prebid-server/v4/logger"
 	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/stored_requests"
@@ -141,7 +143,7 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, provider)
 	var fetcher5 stored_requests.AllFetcher
 	var shutdown5 func()
-	var accountSource account.Source
+	var accountSource fetcherengine.Source[string]
 	if cfg.Accounts.V2Enabled {
 		accountSource, shutdown5 = createAccountSource(&cfg.Accounts, client, provider)
 	} else {
@@ -180,7 +182,7 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	return
 }
 
-func createAccountSource(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider) (source account.Source, shutdown func()) {
+func createAccountSource(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider) (source fetcherengine.Source[string], shutdown func()) {
 	provider = prepareStoredRequestsProvider(cfg, provider)
 	source = newAccountSource(cfg, client)
 	shutdown = func() {
@@ -233,8 +235,8 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_pro
 	return
 }
 
-func newAccountSource(cfg *config.StoredRequests, client *http.Client) account.Source {
-	var source account.Source
+func newAccountSource(cfg *config.StoredRequests, client *http.Client) fetcherengine.Source[string] {
+	var source fetcherengine.Source[string]
 	if cfg.Files.Enabled {
 		logger.Infof("Loading Fetchers 2.0 Account data from filesystem at path %s", cfg.Files.Path)
 		fileSource, err := account.NewFileSource(cfg.Files.Path)
@@ -258,7 +260,7 @@ func newAccountSource(cfg *config.StoredRequests, client *http.Client) account.S
 	}
 	if source == nil {
 		logger.Warnf("No Stored %s support configured. If you need this, check your app config", cfg.DataType())
-		return account.EmptySource{}
+		return fetchersource.NilSource[string]{}
 	}
 	return source
 }

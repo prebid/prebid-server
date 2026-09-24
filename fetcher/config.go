@@ -5,7 +5,6 @@ import (
 	"time"
 
 	fetchercache "github.com/prebid/prebid-server/v4/fetcher/cache"
-	fetchersource "github.com/prebid/prebid-server/v4/fetcher/source"
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
@@ -87,7 +86,7 @@ func buildNegativeStore[K comparable](cfg NegativeConfig, t timeutil.Time) (*Neg
 	return store, nil
 }
 
-func applyRefreshConfig[K comparable](cfg RefreshConfig, src fetchersource.Source[K]) (refreshInBackground bool, preload fetchersource.BulkSource[K], err error) {
+func applyRefreshConfig[K comparable](cfg RefreshConfig, src Source[K]) (refreshInBackground bool, preload BulkSource[K], err error) {
 	refreshInBackground = cfg.ServeStale
 	switch cfg.Mode {
 	case "":
@@ -96,7 +95,7 @@ func applyRefreshConfig[K comparable](cfg RefreshConfig, src fetchersource.Sourc
 	case "none":
 	case "preload":
 		refreshInBackground = true
-		bulk, ok := src.(fetchersource.BulkSource[K])
+		bulk, ok := src.(BulkSource[K])
 		if !ok {
 			return false, nil, fmt.Errorf("cache.refresh %q requires a source that supports bulk loading (FetchAll)", cfg.Mode)
 		}

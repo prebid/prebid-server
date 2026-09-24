@@ -57,14 +57,14 @@ func (f *FetcherAccountFetcher) FetchAccount(ctx context.Context, _ json.RawMess
 // transform applies account defaults once at cache insert; this fetcher adds the
 // typed cache, request coalescing and optional negative caching. metricsEngine
 // may be nil (metrics are not recorded).
-func NewFetcherAccountFetcher(source Source, cfg config.FetcherConfig, defaults json.RawMessage, t timeutil.Time, metricsEngine metrics.MetricsEngine) (*FetcherAccountFetcher, error) {
+func NewFetcherAccountFetcher(source fetcher.Source[string], cfg config.FetcherConfig, defaults json.RawMessage, t timeutil.Time, metricsEngine metrics.MetricsEngine) (*FetcherAccountFetcher, error) {
 	var recorder fetcher.Recorder = fetcher.NilRecorder{}
 	if metricsEngine != nil {
 		recorder = metricsRecorder{engine: metricsEngine, subsystem: fetcherSubsystem}
 	}
 
 	engine, err := fetcher.New(fetcher.Params[string, *config.Account]{
-		Source:    newAccountFetcherSource(source),
+		Source:    source,
 		Transform: newAccountTransform(defaults),
 		Config:    newFetcherConfig(cfg),
 		Time:      t,
@@ -78,17 +78,6 @@ func NewFetcherAccountFetcher(source Source, cfg config.FetcherConfig, defaults 
 	}
 
 	return &FetcherAccountFetcher{engine: engine}, nil
-}
-
-func newAccountFetcherSource(source Source) fetcherSource {
-	if bulk, ok := source.(BulkSource); ok {
-		return accountBulkSource{source: bulk}
-	}
-	return accountSource{source: source}
-}
-
-type fetcherSource interface {
-	Fetch(ctx context.Context, key string) (json.RawMessage, bool, error)
 }
 
 func newFetcherConfig(cfg config.FetcherConfig) fetcher.Config {
@@ -137,39 +126,6 @@ func (r metricsRecorder) CacheNegative() {
 
 func (r metricsRecorder) BackendFetch(operation metrics.FetcherOperation, result metrics.FetcherBackendResult, d time.Duration) {
 	r.engine.RecordFetcherBackendFetch(r.subsystem, operation, result, d)
-}
-
-// accountSource is the account-specific raw source stage used by the generic
-// fetcher engine. A source-level not-found becomes found=false; systemic errors
-// are returned so they are not cached as definitive misses.
-type accountSource struct {
-	source Source
-}
-
-func (s accountSource) Fetch(ctx context.Context, key string) (json.RawMessage, bool, error) {
-	raw, err := s.source.Fetch(ctx, key)
-	if err != nil {
-		if errors.Is(err, errAccountNotFound) {
-			return nil, false, nil
-		}
-		return nil, false, err
-	}
-	return raw, true, nil
-}
-
-// accountBulkSource adapts an account BulkSource into a fetcher.BulkSource.
-// It returns the raw, unmerged account rows as-is; the shared transform applies defaults
-// downstream, so this path and the single-key path merge in exactly one place.
-type accountBulkSource struct {
-	source BulkSource
-}
-
-func (s accountBulkSource) Fetch(ctx context.Context, key string) (json.RawMessage, bool, error) {
-	return accountSource{source: s.source}.Fetch(ctx, key)
-}
-
-func (s accountBulkSource) FetchAll(ctx context.Context) (map[string]json.RawMessage, error) {
-	return s.source.FetchAll(ctx)
 }
 
 // newAccountTransform returns the single normalization step for accounts. It
