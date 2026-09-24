@@ -319,26 +319,27 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 // getBidType resolves the bid's media type. Teal declares multiformat-supported,
 // so a single impression can carry more than one media type (e.g. banner+video);
 // introspecting the imp alone cannot disambiguate which format a given bid is for.
-// The authoritative signal is the response's own bid.mtype (OpenRTB 2.6), so it is
+// The authoritative signal is the response's own bid.ext.prebid.type, so it is
 // consulted first.
 //
-// Only when the response omits mtype does getBidType fall back to introspecting the
+// Only when the response omits bid.ext.prebid.type does getBidType fall back to introspecting the
 // matching impression, looked up by ID via impsByID (built once in MakeBids to avoid
 // a per-bid scan of request.Imp), in banner > video > native order. Audio is omitted
 // because it is not in Teal's declared capabilities.
 //
-// When neither the bid's mtype nor a matching imp yields a recognized media type,
+// When neither bid.ext.prebid.type nor a matching imp yields a recognized media type,
 // getBidType returns an error so MakeBids can skip the bid and surface the problem in
 // logs rather than silently mis-typing it.
 func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ext.BidType, error) {
-	switch bid.MType {
-	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner, nil
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
+	// 1. Check if the bid type exists in bid.ext.prebid.type
+	if len(bid.Ext) > 0 {
+		var bidExt openrtb_ext.ExtBid
+		if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt.Prebid != nil && bidExt.Prebid.Type != "" {
+			return bidExt.Prebid.Type, nil
+		}
 	}
+
+	// 2. Fall back to inferring from the impression
 	if imp, ok := impsByID[bid.ImpID]; ok {
 		switch {
 		case imp.Banner != nil:
