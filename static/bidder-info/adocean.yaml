@@ -1,0 +1,14 @@
+endpoint: "https://{{.Host}}.adocean.pl"
+geoscope:
+  - global
+maintainer:
+  email: "prebid@gemius.com"
+gvlVendorID: 328
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
