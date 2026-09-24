@@ -79,11 +79,11 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest, reqExt openxReqExt) (*adapters.RequestData, error) {
 	var err error
-	if request.Ext, err = json.Marshal(reqExt); err != nil {
+	if request.Ext, err = jsonutil.Marshal(reqExt); err != nil {
 		return nil, err
 	}
 
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 
 	if openxExt.CustomParams != nil {
 		var err error
-		if impExt["customParams"], err = json.Marshal(openxExt.CustomParams); err != nil {
+		if impExt["customParams"], err = jsonutil.Marshal(openxExt.CustomParams); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
@@ -148,7 +148,7 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 
 	if len(impExt) > 0 {
 		var err error
-		if imp.Ext, err = json.Marshal(impExt); err != nil {
+		if imp.Ext, err = jsonutil.Marshal(impExt); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
