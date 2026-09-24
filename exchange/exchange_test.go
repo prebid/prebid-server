@@ -5473,7 +5473,7 @@ func TestGetAllBids(t *testing.T) {
 			}
 
 			adapterBids, adapterExtra, extraRespInfo := e.getAllBids(context.Background(), test.in.bidderRequests, test.in.bidAdjustments,
-				test.in.conversions, test.in.accountDebugAllowed, test.in.globalPrivacyControlHeader, test.in.headerDebugAllowed, test.in.alternateBidderCodes, test.in.experiment,
+				test.in.conversions, test.in.accountDebugAllowed, test.in.globalPrivacyControlHeader, adapters.ClientHintHeaders{}, test.in.headerDebugAllowed, test.in.alternateBidderCodes, test.in.experiment,
 				test.in.hookExecutor, test.in.pbsRequestStartTime, test.in.bidAdjustmentRules, test.in.tmaxAdjustments, false, test.in.liveAdaptersPreferredMediaType)
 
 			assert.Equalf(t, test.expected.extraRespInfo.bidsFound, extraRespInfo.bidsFound, "extraRespInfo.bidsFound mismatch")

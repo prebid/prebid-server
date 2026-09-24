@@ -144,9 +144,21 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }
 
+// ClientHintHeaders contains low-entropy User-Agent Client Hints headers
+// that should be forwarded to bidders. These headers provide structured
+// information about the user agent as an alternative to the User-Agent string.
+// See: https://wicg.github.io/ua-client-hints/ https://wicg.github.io/client-hints-infrastructure/#low-entropy-hint-table
+type ClientHintHeaders struct {
+	SecCHUA         string
+	SecCHUAMobile   string
+	SecCHUAPlatform string
+	SaveData        string
+}
+
 type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
 	GlobalPrivacyControlHeader string
+	ClientHints                ClientHintHeaders
 	CurrencyConversions        currency.Conversions
 	PreferredMediaType         openrtb_ext.BidType
 }

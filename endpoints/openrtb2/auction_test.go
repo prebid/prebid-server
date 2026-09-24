@@ -6616,3 +6616,80 @@ func TestProcessGDPR(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractClientHints(t *testing.T) {
+	testCases := []struct {
+		name          string
+		headers       http.Header
+		expectedHints adapters.ClientHintHeaders
+	}{
+		{
+			name: "all_low_entropy_headers_present",
+			headers: http.Header{
+				"Sec-Ch-Ua":          {`"Chromium";v="130", "Google Chrome";v="130"`},
+				"Sec-Ch-Ua-Mobile":   {"?0"},
+				"Sec-Ch-Ua-Platform": {`"macOS"`},
+				"Save-Data":          {"on"},
+			},
+			expectedHints: adapters.ClientHintHeaders{
+				SecCHUA:         `"Chromium";v="130", "Google Chrome";v="130"`,
+				SecCHUAMobile:   "?0",
+				SecCHUAPlatform: `"macOS"`,
+				SaveData:        "on",
+			},
+		},
+		{
+			name: "only_sec_ch_ua_headers",
+			headers: http.Header{
+				"Sec-Ch-Ua":          {`"Chrome";v="130"`},
+				"Sec-Ch-Ua-Mobile":   {"?1"},
+				"Sec-Ch-Ua-Platform": {`"Android"`},
+			},
+			expectedHints: adapters.ClientHintHeaders{
+				SecCHUA:         `"Chrome";v="130"`,
+				SecCHUAMobile:   "?1",
+				SecCHUAPlatform: `"Android"`,
+			},
+		},
+		{
+			name:          "no_client_hints_headers",
+			headers:       http.Header{},
+			expectedHints: adapters.ClientHintHeaders{},
+		},
+		{
+			name: "save_data_only",
+			headers: http.Header{
+				"Save-Data": {"on"},
+			},
+			expectedHints: adapters.ClientHintHeaders{
+				SaveData: "on",
+			},
+		},
+		{
+			name: "mixed_with_other_headers",
+			headers: http.Header{
+				"Content-Type":     {"application/json"},
+				"Sec-Ch-Ua":        {`"Firefox";v="120"`},
+				"Sec-Ch-Ua-Mobile": {"?0"},
+				"Accept":           {"*/*"},
+				"Sec-Gpc":          {"1"},
+			},
+			expectedHints: adapters.ClientHintHeaders{
+				SecCHUA:       `"Firefox";v="120"`,
+				SecCHUAMobile: "?0",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			httpReq := &http.Request{
+				Header: tc.headers,
+			}
+
+			result := extractClientHints(httpReq)
+
+			assert.Equal(t, tc.expectedHints, result)
+		})
+	}
+}

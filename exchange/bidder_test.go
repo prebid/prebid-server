@@ -467,6 +467,195 @@ func TestSetGPCHeaderNil(t *testing.T) {
 	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
 }
 
+func TestSetClientHintsHeaders(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: requestHeaders,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo, "")
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	bidAdjustments := map[string]float64{"test": 1}
+	bidReqOptions := bidRequestOptions{
+		accountDebugAllowed: true,
+		headerDebugAllowed:  false,
+		addCallSignHeader:   false,
+		bidAdjustments:      bidAdjustments,
+	}
+	extraInfo := &adapters.ExtraRequestInfo{
+		ClientHints: adapters.ClientHintHeaders{
+			SecCHUA:         `"Chromium";v="130", "Google Chrome";v="130"`,
+			SecCHUAMobile:   "?0",
+			SecCHUAPlatform: `"macOS"`,
+			SaveData:        "on",
+		},
+	}
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+
+	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:         server.URL,
+			RequestBody: "requestJson",
+			RequestHeaders: map[string][]string{
+				"Content-Type":       {"application/json"},
+				"X-Prebid":           {"pbs-go/unknown"},
+				"Sec-Ch-Ua":          {`"Chromium";v="130", "Google Chrome";v="130"`},
+				"Sec-Ch-Ua-Mobile":   {"?0"},
+				"Sec-Ch-Ua-Platform": {`"macOS"`},
+				"Save-Data":          {"on"},
+			},
+			ResponseBody: "responseJson",
+			Status:       200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.Len(t, seatBids, 1)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
+	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
+}
+
+func TestSetClientHintsHeadersPartial(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: requestHeaders,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo, "")
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	bidAdjustments := map[string]float64{"test": 1}
+	bidReqOptions := bidRequestOptions{
+		accountDebugAllowed: true,
+		headerDebugAllowed:  false,
+		addCallSignHeader:   false,
+		bidAdjustments:      bidAdjustments,
+	}
+	// Only set some Client Hints headers, leave others empty
+	extraInfo := &adapters.ExtraRequestInfo{
+		ClientHints: adapters.ClientHintHeaders{
+			SecCHUA:       `"Chromium";v="130"`,
+			SecCHUAMobile: "?1",
+			// SecCHUAPlatform and SaveData are empty - should NOT be forwarded
+		},
+	}
+	seatBids, extraBidderRespInfo, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), extraInfo, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, &hookexecution.EmptyHookExecutor{}, nil)
+
+	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:         server.URL,
+			RequestBody: "requestJson",
+			RequestHeaders: map[string][]string{
+				"Content-Type":     {"application/json"},
+				"X-Prebid":         {"pbs-go/unknown"},
+				"Sec-Ch-Ua":        {`"Chromium";v="130"`},
+				"Sec-Ch-Ua-Mobile": {"?1"},
+			},
+			ResponseBody: "responseJson",
+			Status:       200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.Len(t, seatBids, 1)
+	assert.False(t, extraBidderRespInfo.respProcessingStartTime.IsZero())
+	assert.ElementsMatch(t, seatBids[0].HttpCalls, expectedHttpCall)
+}
+
+func TestAddClientHintsHeaders(t *testing.T) {
+	testCases := []struct {
+		name            string
+		clientHints     adapters.ClientHintHeaders
+		expectedHeaders http.Header
+	}{
+		{
+			name: "all_headers_present",
+			clientHints: adapters.ClientHintHeaders{
+				SecCHUA:         `"Chrome";v="130"`,
+				SecCHUAMobile:   "?0",
+				SecCHUAPlatform: `"macOS"`,
+				SaveData:        "on",
+			},
+			expectedHeaders: http.Header{
+				"Sec-Ch-Ua":          {`"Chrome";v="130"`},
+				"Sec-Ch-Ua-Mobile":   {"?0"},
+				"Sec-Ch-Ua-Platform": {`"macOS"`},
+				"Save-Data":          {"on"},
+			},
+		},
+		{
+			name: "only_sec_ch_ua",
+			clientHints: adapters.ClientHintHeaders{
+				SecCHUA: `"Chrome";v="130"`,
+			},
+			expectedHeaders: http.Header{
+				"Sec-Ch-Ua": {`"Chrome";v="130"`},
+			},
+		},
+		{
+			name:            "no_headers",
+			clientHints:     adapters.ClientHintHeaders{},
+			expectedHeaders: http.Header{},
+		},
+		{
+			name: "save_data_only",
+			clientHints: adapters.ClientHintHeaders{
+				SaveData: "on",
+			},
+			expectedHeaders: http.Header{
+				"Save-Data": {"on"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			headers := http.Header{}
+			addClientHintsHeaders(headers, tc.clientHints)
+			assert.Equal(t, tc.expectedHeaders, headers)
+		})
+	}
+}
+
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
 // Because this is done in parallel, it should be run under the race detector.
 func TestMultiBidder(t *testing.T) {
