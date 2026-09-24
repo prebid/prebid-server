@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "StackAdapt Adapter Params",
+  "description": "A schema which validates params accepted by the StackAdapt adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An ID which identifies the publisher, provided by StackAdapt"
+    },
+    "supplyId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An ID which identifies the supply source, provided by StackAdapt"
+    },
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An ID which identifies the placement"
+    },
+    "banner": {
+      "type": "object",
+      "description": "Banner-specific parameters",
+      "properties": {
+        "expdir": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Expandable ad directions (1=left, 2=right, 3=up, 4=down, 5=fullscreen)"
+        }
+      }
+    },
+    "bidfloor": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Bid floor price in USD"
+    }
+  },
+  "required": ["publisherId", "supplyId"]
+}

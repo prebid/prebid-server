@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
@@ -162,8 +163,9 @@ func TestNewHTTPEvents(t *testing.T) {
 
 	metricsMock := &metrics.MetricsEngineMock{}
 
-	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
-	assertSliceLength(t, evProducers, 1)
+	evProducers, tickerTasks := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
+	require.Len(t, evProducers, 1)
+	require.Len(t, tickerTasks, 0)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
 }
 
@@ -269,8 +271,9 @@ func TestNewDatabaseEventProducers(t *testing.T) {
 	}
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Database.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers := newEventProducers(cfg, client, provider, metricsMock, nil)
-	assertProducerLength(t, evProducers, 1)
+	evProducers, tickerTasks := newEventProducers(cfg, client, provider, metricsMock, nil)
+	require.Len(t, evProducers, 1)
+	require.Len(t, tickerTasks, 1)
 
 	assertExpectationsMet(t, mock)
 	metricsMock.AssertExpectations(t)
@@ -287,13 +290,6 @@ func TestNewEventsAPI(t *testing.T) {
 	}
 }
 
-func assertProducerLength(t *testing.T, producers []events.EventProducer, expectedLength int) {
-	t.Helper()
-	if len(producers) != expectedLength {
-		t.Errorf("Expected %d producers, but got %d", expectedLength, len(producers))
-	}
-}
-
 func assertExpectationsMet(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("sqlmock expectations were not met: %v", err)
@@ -305,14 +301,6 @@ func assertHttpWithURL(t *testing.T, ev events.EventProducer, url string) {
 		assertStringsEqual(t, casted.Endpoint, url)
 	} else {
 		t.Errorf("The EventProducer was not a *HTTPEvents")
-	}
-}
-
-func assertSliceLength(t *testing.T, producers []events.EventProducer, expected int) {
-	t.Helper()
-
-	if len(producers) != expected {
-		t.Fatalf("Expected %d EventProducers. Got: %v", expected, producers)
 	}
 }
 
