@@ -1,0 +1,160 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.example.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-us",
+        "bidfloor": 1.0,
+        "bidfloorcur": "USD",
+        "banner": { "format": [{"w": 300, "h": 250}] },
+        "ext": {
+          "bidder": { "publisherId": "pub-us-1", "placementId": "plc-us-1" }
+        }
+      },
+      {
+        "id": "imp-jp",
+        "bidfloor": 2.0,
+        "bidfloorcur": "USD",
+        "banner": { "format": [{"w": 320, "h": 50}] },
+        "ext": {
+          "bidder": { "publisherId": "pub-jp-1", "placementId": "plc-jp-1", "region": "jp" }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us.a.viddea.com/edge_direct",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://publisher.example.com/page",
+            "publisher": { "id": "pub-us-1" }
+          },
+          "imp": [
+            {
+              "id": "imp-us",
+              "tagid": "plc-us-1",
+              "bidfloor": 1.0,
+              "bidfloorcur": "USD",
+              "banner": { "format": [{"w": 300, "h": 250}] }
+            }
+          ]
+        },
+        "impIDs": ["imp-us"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-us",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "peak226",
+              "bid": [
+                {
+                  "id": "bid-us-1",
+                  "impid": "imp-us",
+                  "price": 1.5,
+                  "adm": "<div>us-ad</div>",
+                  "crid": "cr-us-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://jp.a.viddea.com/edge_direct",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://publisher.example.com/page",
+            "publisher": { "id": "pub-jp-1" }
+          },
+          "imp": [
+            {
+              "id": "imp-jp",
+              "tagid": "plc-jp-1",
+              "bidfloor": 2.0,
+              "bidfloorcur": "USD",
+              "banner": { "format": [{"w": 320, "h": 50}] }
+            }
+          ]
+        },
+        "impIDs": ["imp-jp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-jp",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "peak226",
+              "bid": [
+                {
+                  "id": "bid-jp-1",
+                  "impid": "imp-jp",
+                  "price": 2.5,
+                  "adm": "<div>jp-ad</div>",
+                  "crid": "cr-jp-1",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-us-1",
+            "impid": "imp-us",
+            "price": 1.5,
+            "adm": "<div>us-ad</div>",
+            "crid": "cr-us-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-jp-1",
+            "impid": "imp-jp",
+            "price": 2.5,
+            "adm": "<div>jp-ad</div>",
+            "crid": "cr-jp-1",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
