@@ -86,7 +86,7 @@ func createLegacyCachedStoredRequests(cfg *config.StoredRequests, metricsEngine 
 	provider = prepareStoredRequestsProvider(cfg, provider)
 
 	eventProducers, tickerTasks := newEventProducers(cfg, client, provider, metricsEngine, router)
-  fetcher = createStoredRequestSource(cfg, client, provider)
+	fetcher = createStoredRequestSource(cfg, client, provider)
 
 	var shutdown1 func()
 
