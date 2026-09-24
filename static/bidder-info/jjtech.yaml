@@ -1,0 +1,14 @@
+endpoint: "https://ind-apac.jambojar.com/jjt-prebid/rtb-apac"
+geoscope:
+  - global
+maintainer:
+  email: "bhavin@jambojar-tech.com"
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
