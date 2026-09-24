@@ -13,10 +13,10 @@ type Recorder interface {
 	BackendFetch(operation string, result string, d time.Duration)
 }
 
-// NoopRecorder is an explicit Recorder for callers that do not want metrics.
-type NoopRecorder struct{}
+// NilRecorder is an explicit Recorder for callers that do not want metrics.
+type NilRecorder struct{}
 
-func (NoopRecorder) CacheHit()                                  {}
-func (NoopRecorder) CacheMiss()                                 {}
-func (NoopRecorder) CacheNegative()                             {}
-func (NoopRecorder) BackendFetch(string, string, time.Duration) {}
+func (NilRecorder) CacheHit()                                  {}
+func (NilRecorder) CacheMiss()                                 {}
+func (NilRecorder) CacheNegative()                             {}
+func (NilRecorder) BackendFetch(string, string, time.Duration) {}

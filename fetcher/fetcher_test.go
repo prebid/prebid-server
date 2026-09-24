@@ -110,7 +110,7 @@ func TestPreloadSeedsCache(t *testing.T) {
 			Refresh: RefreshConfig{Mode: "preload"},
 		},
 		Time:    clk,
-		Metrics: NoopRecorder{},
+		Metrics: NilRecorder{},
 	})
 	require.NoError(t, err)
 
@@ -132,7 +132,7 @@ func TestPreloadTransformErrorSurfaces(t *testing.T) {
 			Refresh: RefreshConfig{Mode: "preload"},
 		},
 		Time:    newFakeTime(),
-		Metrics: NoopRecorder{},
+		Metrics: NilRecorder{},
 	})
 	require.NoError(t, err)
 
@@ -149,7 +149,7 @@ func TestNewRequiresTimeAndMetrics(t *testing.T) {
 		Source:    src,
 		Transform: identityTransform,
 		Config:    Config{Cache: CacheConfig{Type: "none"}},
-		Metrics:   NoopRecorder{},
+		Metrics:   NilRecorder{},
 	}
 
 	_, err := New(params)
@@ -177,7 +177,7 @@ func newLRUFetcher(t *testing.T, src fetchersource.Source[string], clk *fakeTime
 		Transform: identityTransform,
 		Config:    cfg,
 		Time:      clk,
-		Metrics:   NoopRecorder{},
+		Metrics:   NilRecorder{},
 	})
 	require.NoError(t, err)
 	if negatives != nil {
@@ -193,7 +193,7 @@ func newServeStaleFetcher(t *testing.T, src fetchersource.Source[string], clk *f
 		Transform: identityTransform,
 		Config:    Config{Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: ttl}, Refresh: RefreshConfig{ServeStale: true}},
 		Time:      clk,
-		Metrics:   NoopRecorder{},
+		Metrics:   NilRecorder{},
 	})
 	require.NoError(t, err)
 	return f
@@ -284,7 +284,7 @@ func TestGetCoalescesConcurrentMisses(t *testing.T) {
 		Transform: identityTransform,
 		Config:    Config{Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour}, CoalesceRequests: true},
 		Time:      newFakeTime(),
-		Metrics:   NoopRecorder{},
+		Metrics:   NilRecorder{},
 	})
 	require.NoError(t, err)
 
@@ -382,7 +382,7 @@ func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
 			Refresh: RefreshConfig{ServeStale: true, BackgroundRefreshTimeout: 10 * time.Millisecond},
 		},
 		Time:    clk,
-		Metrics: NoopRecorder{},
+		Metrics: NilRecorder{},
 	})
 	require.NoError(t, err)
 
@@ -433,7 +433,7 @@ func TestGetNilCacheAlwaysFetches(t *testing.T) {
 		Transform: identityTransform,
 		Config:    Config{Cache: CacheConfig{Type: "none", TTL: time.Hour}},
 		Time:      newFakeTime(),
-		Metrics:   NoopRecorder{},
+		Metrics:   NilRecorder{},
 	})
 	require.NoError(t, err)
 
@@ -467,7 +467,7 @@ func TestGetTransformErrorNotCached(t *testing.T) {
 		Transform: func(string, json.RawMessage) (string, error) { return "", transformErr },
 		Config:    Config{Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour}},
 		Time:      newFakeTime(),
-		Metrics:   NoopRecorder{},
+		Metrics:   NilRecorder{},
 	})
 	require.NoError(t, err)
 

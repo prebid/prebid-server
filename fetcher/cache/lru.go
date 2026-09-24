@@ -39,16 +39,14 @@ func NewLRUCache[K comparable, V any](maxEntries int, ttl time.Duration, t timeu
 	return &LRUCache[K, V]{lru: lruCache, ttl: ttl, time: t}, nil
 }
 
-// Get returns the value if present, and whether it is stale (past its refresh
-// time). Stale entries are still returned; the caller decides whether to trigger a
-// background refresh.
-func (c *LRUCache[K, V]) Get(key K) (V, bool, bool) {
-	e, ok := c.lru.Get(key)
-	if !ok {
-		var zero V
-		return zero, false, false
+// Get returns the cached value, whether it was found, and whether it is stale.
+// A stale value is still returned so the caller can choose how to refresh it.
+func (c *LRUCache[K, V]) Get(key K) (value V, found bool, stale bool) {
+	e, found := c.lru.Get(key)
+	if !found {
+		return value, false, false
 	}
-	stale := !e.refreshAfter.IsZero() && c.time.Now().After(e.refreshAfter)
+	stale = !e.refreshAfter.IsZero() && c.time.Now().After(e.refreshAfter)
 	return e.v, true, stale
 }
 

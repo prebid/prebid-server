@@ -29,18 +29,16 @@ func NewUnboundedCache[K comparable, V any](ttl time.Duration, t timeutil.Time) 
 	}, nil
 }
 
-// Get returns the value if present, and whether it is stale (past its refresh
-// time). Stale entries are still returned; the caller decides whether to trigger a
-// background refresh.
-func (c *UnboundedCache[K, V]) Get(key K) (V, bool, bool) {
+// Get returns the cached value, whether it was found, and whether it is stale.
+// A stale value is still returned so the caller can choose how to refresh it.
+func (c *UnboundedCache[K, V]) Get(key K) (value V, found bool, stale bool) {
 	c.mu.RLock()
-	e, ok := c.data[key]
+	e, found := c.data[key]
 	c.mu.RUnlock()
-	if !ok {
-		var zero V
-		return zero, false, false
+	if !found {
+		return value, false, false
 	}
-	stale := !e.refreshAfter.IsZero() && c.time.Now().After(e.refreshAfter)
+	stale = !e.refreshAfter.IsZero() && c.time.Now().After(e.refreshAfter)
 	return e.v, true, stale
 }
 

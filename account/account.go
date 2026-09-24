@@ -15,9 +15,10 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-// Fetcher is an optional generic interface that a fetcher may implement to return
-// fully-derived, immutable typed values directly. Legacy account fetchers do not
-// implement it and take the JSON path unchanged.
+// Fetcher is the Fetchers 2.0 capability for resolving a fully-derived account
+// by ID. GetAccount checks for this capability to use the typed account directly,
+// avoiding the existing per-request JSON decoding and derivation path. Account
+// fetchers without this capability continue through the JSON-based path.
 type Fetcher[T any] interface {
 	Fetch(ctx context.Context, id string) (T, []error)
 }
@@ -53,8 +54,9 @@ func getAccountJSON(ctx context.Context, cfg *config.Configuration, fetcher stor
 			})
 			return nil, errs
 		}
-		// Make a copy of AccountDefaults instead of taking a reference,
-		// to preserve original accountID in case is needed to check NonStandardPublisherMap
+		// AccountDefaults is intentionally shallow-copied. This fallback only mutates
+		// ID and value-typed IP masking fields; pointer, map, and slice fields remain
+		// shared and must not be mutated.
 		pubAccount := cfg.AccountDefaults
 		pubAccount.ID = accountID
 		account = &pubAccount
@@ -97,6 +99,7 @@ func getAccountJSON(ctx context.Context, cfg *config.Configuration, fetcher stor
 // and the per-request access gating.
 func getAccountTyped(ctx context.Context, cfg *config.Configuration, fetcher Fetcher[*config.Account], accountID string) (account *config.Account, errs []error) {
 	fetched, accErrs := fetcher.Fetch(ctx, accountID)
+
 	if len(accErrs) > 0 {
 		// A malformed account is a hard error, mirroring the legacy path where the
 		// unmarshal/DSA failure returns immediately rather than falling back to defaults.
@@ -109,14 +112,16 @@ func getAccountTyped(ctx context.Context, cfg *config.Configuration, fetcher Fet
 		// AccountDefaults fallback, matching the legacy not-found branch.
 		fetched = nil
 	}
+
 	if fetched == nil {
 		if cfg.AccountRequired && cfg.AccountDefaults.Disabled {
 			return nil, []error{&errortypes.AcctRequired{
 				Message: "Prebid-server could not verify the Account ID. Please reach out to the prebid server host.",
 			}}
 		}
-		// Make a copy of AccountDefaults instead of taking a reference,
-		// to preserve original accountID in case is needed to check NonStandardPublisherMap
+		// AccountDefaults is intentionally shallow-copied. This fallback only mutates
+		// ID and value-typed IP masking fields; pointer, map, and slice fields remain
+		// shared and must not be mutated.
 		pubAccount := cfg.AccountDefaults
 		pubAccount.ID = accountID
 		account = &pubAccount
@@ -124,6 +129,7 @@ func getAccountTyped(ctx context.Context, cfg *config.Configuration, fetcher Fet
 		// Fully-derived, immutable account returned straight from the cache.
 		account = fetched
 	}
+
 	if account.Disabled {
 		errs = append(errs, &errortypes.AccountDisabled{
 			Message: fmt.Sprintf("Prebid-server has disabled Account ID: %s, please reach out to the prebid server host.", accountID),
@@ -136,9 +142,9 @@ func getAccountTyped(ctx context.Context, cfg *config.Configuration, fetcher Fet
 	return account, nil
 }
 
-// applyIPMaskingDefaults falls back to the default IPv4/IPv6 masking bit sizes when
-// the configured values are invalid. Re-running it on an already-valid account is a
-// read-only no-op.
+// applyIPMaskingDefaults fills invalid IPv4/IPv6 masking values. It only mutates
+// value-typed fields, so it is safe for shallow copies of config.Account. Do not
+// extend it to mutate reference fields without deep-copying those accounts.
 func applyIPMaskingDefaults(account *config.Account) {
 	if ipV6Err := account.Privacy.IPv6Config.Validate(nil); len(ipV6Err) > 0 {
 		account.Privacy.IPv6Config.AnonKeepBits = iputil.IPv6DefaultMaskingBitSize

@@ -60,6 +60,7 @@ func New[K comparable, V any](p Params[K, V]) (*Fetcher[K, V], error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if p.Config.Refresh.BackgroundRefreshTimeout <= 0 {
 		p.Config.Refresh.BackgroundRefreshTimeout = defaultBackgroundRefreshTimeout
 	}

@@ -45,7 +45,7 @@ func (f *FetcherAccountFetcher) FetchAccount(ctx context.Context, _ json.RawMess
 	if len(errs) > 0 {
 		return nil, errs
 	}
-	raw, err := json.Marshal(account)
+	raw, err := jsonutil.Marshal(account)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -58,11 +58,7 @@ func (f *FetcherAccountFetcher) FetchAccount(ctx context.Context, _ json.RawMess
 // typed cache, request coalescing and optional negative caching. metricsEngine
 // may be nil (metrics are not recorded).
 func NewFetcherAccountFetcher(source Source, cfg config.FetcherConfig, defaults json.RawMessage, t timeutil.Time, metricsEngine metrics.MetricsEngine) (*FetcherAccountFetcher, error) {
-	if t == nil {
-		t = &timeutil.RealTime{}
-	}
-
-	var recorder fetcher.Recorder = fetcher.NoopRecorder{}
+	var recorder fetcher.Recorder = fetcher.NilRecorder{}
 	if metricsEngine != nil {
 		recorder = metricsRecorder{engine: metricsEngine, subsystem: fetcherSubsystem}
 	}

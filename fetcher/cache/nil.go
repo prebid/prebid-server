@@ -5,6 +5,8 @@ package cache
 // deduplicate" behaviour for direct-source / live tenants.
 type NilCache[K comparable, V any] struct{}
 
-func (NilCache[K, V]) Get(K) (V, bool, bool) { var zero V; return zero, false, false }
-func (NilCache[K, V]) Save(K, V)             {}
-func (NilCache[K, V]) Invalidate(K)          {}
+func (NilCache[K, V]) Get(K) (value V, found bool, stale bool) {
+	return value, false, false
+}
+func (NilCache[K, V]) Save(K, V)    {}
+func (NilCache[K, V]) Invalidate(K) {}
