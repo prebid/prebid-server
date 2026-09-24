@@ -149,6 +149,7 @@ type ExtraRequestInfo struct {
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
 	PreferredMediaType         openrtb_ext.BidType
+	PageViewId                 string
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

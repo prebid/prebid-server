@@ -33,6 +33,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
+type KoblerRequestExt struct {
+	PageViewId string `json:"page_view_id,omitempty"`
+}
+
 func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
 	var errors []error
@@ -43,6 +47,33 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 
 	if !slices.Contains(sanitizedRequest.Cur, supportedCurrency) {
 		sanitizedRequest.Cur = append(sanitizedRequest.Cur, supportedCurrency)
+	}
+
+	if reqInfo.PageViewId != "" {
+		extMap := make(map[string]jsonutil.RawMessage)
+		if len(sanitizedRequest.Ext) > 0 {
+			if err := jsonutil.Unmarshal(sanitizedRequest.Ext, &extMap); err != nil {
+				errors = append(errors, err)
+				return nil, errors
+			}
+		}
+
+		koblerExt, err := jsonutil.Marshal(&KoblerRequestExt{
+			reqInfo.PageViewId,
+		})
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+		extMap["kobler"] = koblerExt
+
+		jsonExt, err := jsonutil.Marshal(extMap)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+
+		sanitizedRequest.Ext = jsonExt
 	}
 
 	for i := range sanitizedRequest.Imp {
