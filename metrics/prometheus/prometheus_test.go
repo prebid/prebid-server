@@ -1224,6 +1224,46 @@ func TestAccountCacheResultMetric(t *testing.T) {
 		})
 }
 
+func TestFetcherMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordFetcherResult("account", metrics.FetcherResultHit)
+	m.RecordFetcherResult("account", metrics.FetcherResultHit)
+	m.RecordFetcherResult("account", metrics.FetcherResultMiss)
+	m.RecordFetcherResult("account", metrics.FetcherResultNegative)
+
+	m.RecordFetcherBackendFetch("account", metrics.FetcherOperationGet, metrics.FetcherBackendOK, time.Millisecond)
+	m.RecordFetcherBackendFetch("account", metrics.FetcherOperationStart, metrics.FetcherBackendNotFound, time.Millisecond)
+
+	assertCounterVecValue(t, "", "fetcherResult:hit", m.FetcherResult, 2,
+		prometheus.Labels{
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherResultHit),
+		})
+	assertCounterVecValue(t, "", "fetcherResult:miss", m.FetcherResult, 1,
+		prometheus.Labels{
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherResultMiss),
+		})
+	assertCounterVecValue(t, "", "fetcherResult:negative", m.FetcherResult, 1,
+		prometheus.Labels{
+			subsystemLabel:     "account",
+			FetcherResultLabel: string(metrics.FetcherResultNegative),
+		})
+	assertCounterVecValue(t, "", "fetcherBackendFetch:ok", m.fetcherBackendFetch, 1,
+		prometheus.Labels{
+			subsystemLabel:     "account",
+			operationLabel:     string(metrics.FetcherOperationGet),
+			FetcherResultLabel: string(metrics.FetcherBackendOK),
+		})
+	assertCounterVecValue(t, "", "fetcherBackendFetch:notfound", m.fetcherBackendFetch, 1,
+		prometheus.Labels{
+			subsystemLabel:     "account",
+			operationLabel:     string(metrics.FetcherOperationStart),
+			FetcherResultLabel: string(metrics.FetcherBackendNotFound),
+		})
+}
+
 func TestCookieSyncMetric(t *testing.T) {
 	tests := []struct {
 		status metrics.CookieSyncStatus

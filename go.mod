@@ -19,6 +19,7 @@ require (
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
@@ -41,6 +42,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/yudai/gojsondiff v1.0.0
 	golang.org/x/net v0.55.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.37.0
 	google.golang.org/grpc v1.79.3
 	gopkg.in/evanphx/json-patch.v5 v5.9.0

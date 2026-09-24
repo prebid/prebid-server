@@ -15,7 +15,6 @@ func NewFetcher(
 	queryTemplate string,
 	responseQueryTemplate string,
 ) stored_requests.AllFetcher {
-
 	if provider == nil {
 		logger.Fatalf("The Database Stored Request Fetcher requires a database connection. Please report this as a bug.")
 	}

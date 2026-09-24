@@ -340,6 +340,60 @@ func CacheResults() []CacheResult {
 	}
 }
 
+// FetcherResult is the outcome of a Fetchers 2.0 (fetcher) cache lookup.
+type FetcherResult string
+
+const (
+	// FetcherResultHit is a value served from the positive cache without a backend call.
+	FetcherResultHit FetcherResult = "hit"
+	// FetcherResultMiss is a lookup that had to go to the backend source.
+	FetcherResultMiss FetcherResult = "miss"
+	// FetcherResultNegative is a not-found served from the negative cache without a backend call.
+	FetcherResultNegative FetcherResult = "negative"
+)
+
+// FetcherResults returns the possible fetcher cache lookup outcomes.
+func FetcherResults() []FetcherResult {
+	return []FetcherResult{
+		FetcherResultHit,
+		FetcherResultMiss,
+		FetcherResultNegative,
+	}
+}
+
+// FetcherBackendResult is the outcome of a fetcher upstream (source) fetch.
+type FetcherBackendResult string
+
+const (
+	// FetcherBackendOK is a successful backend fetch that returned a value.
+	FetcherBackendOK FetcherBackendResult = "ok"
+	// FetcherBackendNotFound is a definitive per-key not-found from the backend.
+	FetcherBackendNotFound FetcherBackendResult = "notfound"
+	// FetcherBackendError is a systemic backend failure (never cached).
+	FetcherBackendError FetcherBackendResult = "error"
+)
+
+// FetcherOperation is the fetcher operation that caused an upstream source call.
+type FetcherOperation string
+
+const (
+	// FetcherOperationGet is an on-demand read for one key.
+	FetcherOperationGet FetcherOperation = "get"
+	// FetcherOperationStart is the startup preload operation.
+	FetcherOperationStart FetcherOperation = "start"
+	// FetcherOperationBackgroundRefresh is an async refresh of a stale key.
+	FetcherOperationBackgroundRefresh FetcherOperation = "background_refresh"
+)
+
+// FetcherBackendResults returns the possible fetcher backend fetch outcomes.
+func FetcherBackendResults() []FetcherBackendResult {
+	return []FetcherBackendResult{
+		FetcherBackendOK,
+		FetcherBackendNotFound,
+		FetcherBackendError,
+	}
+}
+
 // TCFVersionValue : The possible values for TCF versions
 type TCFVersionValue string
 
@@ -488,6 +542,8 @@ type MetricsEngine interface {
 	RecordAccountCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
 	RecordStoredDataError(labels StoredDataLabels)
+	RecordFetcherResult(subsystem string, result FetcherResult)
+	RecordFetcherBackendFetch(subsystem string, operation FetcherOperation, result FetcherBackendResult, length time.Duration)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)
