@@ -1,0 +1,15 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "host": "ads.example.com/collect", "placementKey": "a4f21c9e7b" } }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    { "value": "imp test-imp-id: invalid host", "comparison": "literal" }
+  ]
+}
