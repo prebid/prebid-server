@@ -884,3 +884,182 @@ func TestParseGETTextValues(t *testing.T) {
 		assert.Equal(t, "PlayerOne", m["device"].(map[string]interface{})["ua"])
 	})
 }
+
+// jsonPath walks a nested map[string]interface{} by key segments and returns the
+// leaf as a string. Returns "" when any segment is absent or non-string.
+func jsonPath(m map[string]interface{}, path ...string) string {
+	var cur interface{} = m
+	for _, seg := range path {
+		mm, ok := cur.(map[string]interface{})
+		if !ok {
+			return ""
+		}
+		cur = mm[seg]
+	}
+	s, _ := cur.(string)
+	return s
+}
+
+func TestParseGETRequest_AliasPrecedence(t *testing.T) {
+	parse := func(t *testing.T, query string) (map[string]interface{}, *getParams) {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+query, nil)
+		data, gp, err := parseGETRequest(req, 0, 0)
+		require.NoError(t, err)
+		var m map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &m))
+		return m, gp
+	}
+
+	testCases := []struct {
+		name  string
+		query string
+		check func(t *testing.T, m map[string]interface{}, gp *getParams)
+	}{
+		// --- stored request ID ---
+		{
+			name:  "srid beats tag_id",
+			query: "srid=main&tag_id=alias",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "main", jsonPath(m, "ext", "prebid", "storedrequest", "id"))
+			},
+		},
+		{
+			name:  "tag_id alone sets storedrequest id",
+			query: "tag_id=alias",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "alias", jsonPath(m, "ext", "prebid", "storedrequest", "id"))
+			},
+		},
+		// --- publisher id ---
+		{
+			name:  "pubid beats account",
+			query: "srid=x&pubid=pub-main&account=pub-acc",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "pub-main", gp.pubid)
+			},
+		},
+		{
+			name:  "account alone sets pubid",
+			query: "srid=x&account=pub-acc",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "pub-acc", gp.pubid)
+			},
+		},
+		// --- app params ---
+		{
+			name:  "appname beats app_name",
+			query: "srid=x&appname=AppMain&app_name=AppAlias",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "AppMain", gp.app["name"])
+			},
+		},
+		{
+			name:  "app_name alone sets app name",
+			query: "srid=x&app_name=AppAlias",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "AppAlias", gp.app["name"])
+			},
+		},
+		{
+			name:  "bundle beats app_bundle",
+			query: "srid=x&bundle=com.main&app_bundle=com.alias",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "com.main", gp.app["bundle"])
+			},
+		},
+		{
+			name:  "app_bundle alone sets bundle",
+			query: "srid=x&app_bundle=com.alias",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "com.alias", gp.app["bundle"])
+			},
+		},
+		// --- privacy aliases ---
+		{
+			name:  "us_privacy beats usp",
+			query: "srid=x&us_privacy=1YNN&usp=1---",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "1YNN", jsonPath(m, "regs", "us_privacy"))
+			},
+		},
+		{
+			name:  "usp alone sets us_privacy",
+			query: "srid=x&usp=1---",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "1---", jsonPath(m, "regs", "us_privacy"))
+			},
+		},
+		{
+			name:  "gpp beats gppc",
+			query: "srid=x&gpp=MAIN&gppc=ALIAS",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "MAIN", jsonPath(m, "regs", "gpp"))
+			},
+		},
+		{
+			name:  "gppc alone sets gpp",
+			query: "srid=x&gppc=ALIAS",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "ALIAS", jsonPath(m, "regs", "gpp"))
+			},
+		},
+		{
+			name:  "tcfc beats gdpr_consent beats consent_string beats cs",
+			query: "srid=x&tcfc=TCFC&gdpr_consent=GC&consent_string=CS&cs=CS2",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "TCFC", jsonPath(m, "user", "consent"))
+			},
+		},
+		{
+			name:  "gdpr_consent beats consent_string",
+			query: "srid=x&gdpr_consent=GC&consent_string=CS",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "GC", jsonPath(m, "user", "consent"))
+			},
+		},
+		{
+			name:  "cs alone sets consent",
+			query: "srid=x&cs=CS2",
+			check: func(t *testing.T, m map[string]interface{}, _ *getParams) {
+				assert.Equal(t, "CS2", jsonPath(m, "user", "consent"))
+			},
+		},
+		// --- content aliases ---
+		{
+			name:  "cseries beats rss_feed",
+			query: "srid=x&cseries=MainSeries&rss_feed=AliasFeed",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "MainSeries", gp.content["series"])
+			},
+		},
+		{
+			name:  "rss_feed alone sets content series",
+			query: "srid=x&rss_feed=AliasFeed",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "AliasFeed", gp.content["series"])
+			},
+		},
+		{
+			name:  "curl beats url_override",
+			query: "srid=x&curl=https://main.example.com&url_override=https://alias.example.com",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "https://main.example.com", gp.content["url"])
+			},
+		},
+		{
+			name:  "url_override alone sets content url",
+			query: "srid=x&url_override=https://alias.example.com",
+			check: func(t *testing.T, _ map[string]interface{}, gp *getParams) {
+				assert.Equal(t, "https://alias.example.com", gp.content["url"])
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			m, gp := parse(t, tc.query)
+			tc.check(t, m, gp)
+		})
+	}
+}
