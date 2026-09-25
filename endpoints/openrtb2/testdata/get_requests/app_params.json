@@ -1,0 +1,25 @@
+{
+  "description": "bundle, appname, app_domain, app_storeurl land on app.* when stored request declares app",
+  "query": "srid=testapp&pubid=pub-1&bundle=com.example&appname=MyApp&app_domain=example.com&app_storeurl=https://store.example.com/app",
+  "stored_bid_request": {
+    "app": {"id": "app-1"},
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example",
+      "name": "MyApp",
+      "domain": "example.com",
+      "storeurl": "https://store.example.com/app",
+      "publisher": {"id": "pub-1"}
+    },
+    "imp": [{"id": "imp1"}],
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testapp"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "description": "Video parameter mappings",
+  "query": "srid=testvideo&mtype=2&mindur=0&maxdur=60&w=640&h=480&skip=1&skipmin=0&skipafter=0&startdelay=0&linearity=1&placement=1&plcmt=2&pos=0&poddur=30&podseq=0&seq=0&slotinpod=0&minbr=200&maxbr=2000&maxex=0&playbackend=1&boxingallowed=0&maxseq=3&mincpms=1.25&proto=1,2,3&api=1,2&delivery=1&battr=1,2&playbackmethod=1&rqddurs=5,10,15&mimes=video/mp4,video/webm&podid=pod1",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "w": 640,
+      "h": 480,
+      "skip": 1,
+      "skipmin": 0,
+      "skipafter": 0,
+      "startdelay": 0,
+      "linearity": 1,
+      "placement": 1,
+      "plcmt": 2,
+      "pos": 0,
+      "poddur": 30,
+      "podseq": 0,
+      "sequence": 0,
+      "slotinpod": 0,
+      "minbitrate": 200,
+      "maxbitrate": 2000,
+      "maxextended": 0,
+      "playbackend": 1,
+      "boxingallowed": 0,
+      "maxseq": 3,
+      "mincpmpersec": 1.25,
+      "protocols": [1, 2, 3],
+      "api": [1, 2],
+      "delivery": [1],
+      "battr": [1, 2],
+      "playbackmethod": [1],
+      "rqddurs": [5, 10, 15],
+      "mimes": ["video/mp4", "video/webm"],
+      "podid": "pod1"
+    }
+  }
+}

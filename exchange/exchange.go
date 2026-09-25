@@ -254,10 +254,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	}
 
 	if !e.server.Empty() {
+		var httpMethod string
+		if requestExtPrebid.Server != nil {
+			httpMethod = requestExtPrebid.Server.HTTPMethod
+		}
 		requestExtPrebid.Server = &openrtb_ext.ExtRequestPrebidServer{
 			ExternalUrl: e.server.ExternalUrl,
 			GvlID:       e.server.GvlID,
-			DataCenter:  e.server.DataCenter}
+			DataCenter:  e.server.DataCenter,
+			HTTPMethod:  httpMethod,
+		}
 		requestExt.SetPrebid(requestExtPrebid)
 	}
 

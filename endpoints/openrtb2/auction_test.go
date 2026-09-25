@@ -133,6 +133,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Assert request with bid adjustments defined is processing correctly",
 			"bidadjustments",
 		},
+		{
+			"Assert GET /openrtb2/auction endpoint correctly parses query parameters",
+			"get-auction",
+		},
 	}
 
 	for _, tc := range testSuites {
@@ -215,7 +219,12 @@ func runEndToEndTest(t *testing.T, auctionEndpointHandler httprouter.Handle, tes
 	t.Helper()
 
 	// Hit the auction endpoint with the test case configuration and mockBidRequest
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+	var request *http.Request
+	if test.HttpMethod == "GET" {
+		request = httptest.NewRequest("GET", "/openrtb2/auction?"+test.Query, nil)
+	} else {
+		request = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+	}
 	recorder := httptest.NewRecorder()
 	auctionEndpointHandler(recorder, request, nil)
 
@@ -5002,7 +5011,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 		description    string
 		expectedErrors []error
 		expectedStatus int
-		request        *openrtb2.BidRequest
+		request        *openrtb_ext.RequestWrapper
 		response       *openrtb2.BidResponse
 		hookExecutor   hookexecution.HookStageExecutor
 	}{
@@ -5013,7 +5022,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 				errors.New("/openrtb2/auction Failed to send response: json: error calling MarshalJSON for type json.RawMessage: invalid character '.' looking for beginning of value"),
 			},
 			expectedStatus: 0,
-			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1},
+			request:        &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{ID: "some-id", Test: 1}},
 			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("...")},
 			hookExecutor:   hookExecutor,
 		},
@@ -5024,7 +5033,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 				errors.New("Value is not a boolean: active"),
 			},
 			expectedStatus: 0,
-			request:        &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)},
+			request:        &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{ID: "some-id", Test: 1, Ext: json.RawMessage(`{"prebid": {"debug": "active", "trace": 1}}`)}},
 			response:       &openrtb2.BidResponse{ID: "some-id", Ext: json.RawMessage("{}")},
 			hookExecutor:   hookExecutor,
 		},
@@ -5037,7 +5046,7 @@ func TestSendAuctionResponse_LogsErrors(t *testing.T) {
 			ao := analytics.AuctionObject{}
 			account := &config.Account{DebugAllow: true}
 
-			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao)
+			_, ao = sendAuctionResponse(writer, test.hookExecutor, test.response, test.request, account, labels, ao, false)
 
 			assert.Equal(t, ao.Errors, test.expectedErrors, "Invalid errors.")
 			assert.Equal(t, test.expectedStatus, ao.Status, "Invalid HTTP response status.")

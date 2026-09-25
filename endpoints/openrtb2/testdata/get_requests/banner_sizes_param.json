@@ -1,0 +1,19 @@
+{
+  "description": "sizes appends additional format entries after the primary w/h",
+  "query": "srid=testbanner&mtype=1&w=300&h=250&sizes=728x90,320x50",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "banner": {
+      "w": 300,
+      "h": 250,
+      "format": [
+        {"w": 300, "h": 250},
+        {"w": 728, "h": 90},
+        {"w": 320, "h": 50}
+      ]
+    }
+  }
+}

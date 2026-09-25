@@ -1,0 +1,14 @@
+{
+  "description": "GET with a stored request whose imp list is empty is rejected by validation",
+  "httpMethod": "GET",
+  "query": "srid=stored-empty&mtype=1&w=300&h=250",
+  "generatedRequestId": "test-get-empty-imp",
+  "mockStoredRequests": {
+    "stored-empty": {
+      "site": {"id": "stored-site"},
+      "imp": []
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "request.imp must contain at least one element."
+}

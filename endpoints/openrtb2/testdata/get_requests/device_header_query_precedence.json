@@ -1,0 +1,39 @@
+{
+  "description": "X-Device-* headers beat query params; query params beat stored request device fields; X-Device-Player goes to imp.displaymanager",
+  "query": "srid=stored&ip=192.0.2.20&ua=query-agent&dtype=3&ifa=query-ifa&ifat=idfa",
+  "headers": {
+    "X-Device-IP": "192.0.2.30",
+    "X-Device-Make": "Header Make",
+    "X-Device-Model": "Header Model",
+    "X-Device-Os": "Header OS",
+    "X-Device-Player": "Header Player",
+    "X-Device-User-Agent": "header-agent"
+  },
+  "stored_bid_request": {
+    "device": {
+      "ip": "192.0.2.10",
+      "ua": "stored-agent",
+      "make": "Stored Make"
+    },
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1", "displaymanager": "Header Player"}],
+    "device": {
+      "ip": "192.0.2.30",
+      "ua": "header-agent",
+      "make": "Header Make",
+      "model": "Header Model",
+      "os": "Header OS",
+      "devicetype": 3,
+      "ifa": "query-ifa",
+      "ext": {"ifa_type": "idfa"}
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

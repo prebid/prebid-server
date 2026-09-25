@@ -1,0 +1,17 @@
+{
+  "description": "req._deferred_media path is silently dropped; req= blob with _deferred_media is stripped but siblings survive",
+  "query": "srid=testid&req._deferred_media.video.w=1&req.imp._deferred_media.video.w=1&req.imp.0._deferred_media.video.w=1&tmax=500",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "tmax": 500,
+    "imp": [{"id": "imp1"}],
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testid"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

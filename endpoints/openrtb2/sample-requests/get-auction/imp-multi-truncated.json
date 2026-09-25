@@ -1,0 +1,33 @@
+{
+  "description": "GET with a stored request with multiple imps: enforceSingleImp keeps only imp[0] and applyGETImpPatch runs on it",
+  "httpMethod": "GET",
+  "query": "srid=stored-multi&mtype=1&w=300&h=250",
+  "generatedRequestId": "test-get-uuid-multi",
+  "mockStoredRequests": {
+    "stored-multi": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {"id": "imp1", "ext": {"appnexus": {"placementId": 12345}}},
+        {"id": "imp2", "ext": {"appnexus": {"placementId": 99999}}}
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-multi",
+    "seatbid": [
+      {
+        "bid": [
+          {"id": "appnexus-bid", "impid": "imp1", "price": 1.50}
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  }
+}
