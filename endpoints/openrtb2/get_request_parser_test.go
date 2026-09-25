@@ -305,7 +305,8 @@ func TestParseGETRequest_BannerDefault(t *testing.T) {
 // --- TestParseGETRequest_PubID ---
 
 func TestParseGETRequest_PubID(t *testing.T) {
-	m := parseGETResult(t, "srid=x&pubid=pub-123")
+	// page signals site intent so pubid can be routed without a stored site context.
+	m := parseGETResult(t, "srid=x&pubid=pub-123&page=https://example.com")
 	site, ok := m["site"].(map[string]interface{})
 	require.True(t, ok, "site missing")
 	publisher, ok := site["publisher"].(map[string]interface{})
@@ -356,7 +357,8 @@ func TestParseGETRequest_CoppaZeroIsExplicit(t *testing.T) {
 // --- TestParseGETRequest_ContentParams ---
 
 func TestParseGETRequest_ContentParams(t *testing.T) {
-	m := parseGETResult(t, "srid=x&cgenre=comedy&clang=pl&ctitle=Test")
+	// page signals site intent so content params can be routed without a stored site context.
+	m := parseGETResult(t, "srid=x&page=https://example.com&cgenre=comedy&clang=pl&ctitle=Test")
 	site, ok := m["site"].(map[string]interface{})
 	require.True(t, ok, "site missing")
 	content, ok := site["content"].(map[string]interface{})

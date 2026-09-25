@@ -117,23 +117,67 @@ func (p *getParams) hasInventory() bool {
 	return p.pubid != "" || p.page != "" || len(p.app) > 0 || len(p.content) > 0
 }
 
-// applyInventory writes the deferred inventory fields (pubid, page, content) into
-// requestJson. It inspects the stored request to determine the target context object
-// (site by default, app or dooh when the stored request declares one), so the fields
-// land on the correct top-level object regardless of which context the stored request
-// declares.
-func (p *getParams) applyInventory(requestJson []byte, storedRequest json.RawMessage) ([]byte, error) {
+// detectContextKey returns the OpenRTB context declared in requestJson ("site", "app",
+// "dooh"), or "" when none is present. It checks the merged request rather than the raw
+// stored request so that req.xxx dotted-path params (e.g. req.dooh.id=…) are respected.
+func detectContextKey(requestJson []byte) string {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(requestJson, &m) != nil {
+		return ""
+	}
+	if _, ok := m["app"]; ok {
+		return "app"
+	}
+	if _, ok := m["dooh"]; ok {
+		return "dooh"
+	}
+	if _, ok := m["site"]; ok {
+		return "site"
+	}
+	return ""
+}
+
+// applyInventory writes the deferred inventory fields (pubid, page, app params, content)
+// into requestJson. Context resolution follows three rules:
+//
+//  1. Stored / dotted-path context wins — if the merged request already declares site,
+//     app, or dooh the params land there. Params intended for a different context are
+//     silently discarded with a warning log.
+//
+//  2. When no context is present in the merged request, the params themselves signal
+//     intent: page → site; bundle/name/domain/storeurl → app. Both together is an
+//     explicit error.
+//
+//  3. Shared params only (pubid, content) with no stored context and no directional
+//     params produce an explicit error instead of silently defaulting to site.
+func (p *getParams) applyInventory(requestJson []byte, _ json.RawMessage) ([]byte, error) {
 	if !p.hasInventory() {
 		return requestJson, nil
 	}
 
-	ctxKey := "site"
-	var stored map[string]json.RawMessage
-	if json.Unmarshal(storedRequest, &stored) == nil {
-		if _, ok := stored["app"]; ok {
+	ctxKey := detectContextKey(requestJson)
+
+	if ctxKey == "" {
+		// No stored / dotted-path context — derive from params.
+		hasSite := p.page != ""
+		hasApp := len(p.app) > 0
+		switch {
+		case hasSite && hasApp:
+			return nil, fmt.Errorf("GET request specifies both site params (page) and app params (bundle/name/domain/storeurl); the stored request must declare the channel")
+		case hasSite:
+			ctxKey = "site"
+		case hasApp:
 			ctxKey = "app"
-		} else if _, ok := stored["dooh"]; ok {
-			ctxKey = "dooh"
+		default:
+			return nil, fmt.Errorf("GET request cannot determine channel: stored request has no site/app/dooh and params contain no directional signal; add page (site) or bundle/name (app)")
+		}
+	} else {
+		// Stored / dotted-path context wins — warn about discarded intent.
+		if p.page != "" && ctxKey != "site" {
+			logger.Warnf("GET page param ignored; request context is %s", ctxKey)
+		}
+		if len(p.app) > 0 && ctxKey != "app" {
+			logger.Warnf("GET app params (bundle/name/domain/storeurl) ignored; request context is %s", ctxKey)
 		}
 	}
 
