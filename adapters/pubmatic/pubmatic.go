@@ -245,6 +245,12 @@ func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 		return banner, nil
 	}
 
+	if len(banner.Format) == 0 {
+		return nil, &errortypes.BadInput{
+			Message: "No sizes provided for Banner",
+		}
+	}
+
 	return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H), nil
 }
 
