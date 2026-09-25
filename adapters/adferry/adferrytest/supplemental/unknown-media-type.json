@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "r", "imp": [{ "id": "i", "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 }, "ext": { "bidder": { "placementId": "111c7fb088" } } }]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://rtb.adferry.co/api/ortb/prebid",
+      "body": { "id": "r", "imp": [{ "id": "i", "tagid": "111c7fb088", "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 }, "ext": { "bidder": { "placementId": "111c7fb088" } } }] },
+      "impIDs": ["i"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": { "id": "r", "cur": "USD", "seatbid": [{ "seat": "adferry", "bid": [{ "id": "b", "impid": "no-such-imp", "price": 1.0, "adm": "x" }] }] }
+    }
+  }],
+  "expectedBidResponses": [{ "currency": "USD", "bids": [] }],
+  "expectedMakeBidsErrors": [
+    { "value": "unsupported mtype 0 for bid b (imp no-such-imp)", "comparison": "literal" }
+  ]
+}
