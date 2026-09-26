@@ -1,0 +1,150 @@
+{
+  "mockBidRequest": {
+    "id": "request-app-audio",
+    "app": {
+      "id": "app-1",
+      "name": "Example App",
+      "bundle": "com.example.app",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.app",
+      "publisher": {
+        "id": "app-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+      "ip": "203.0.113.20",
+      "ifa": "4d7b9e2a-6f3c-4a8e-9b1d-2c5e7f8a9b0c",
+      "os": "android"
+    },
+    "imp": [
+      {
+        "id": "imp-audio",
+        "audio": {
+          "mimes": [
+            "audio/mp4",
+            "audio/mpeg"
+          ],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "test"
+          }
+        }
+      }
+    ],
+    "tmax": 800
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adspiro.example/pbs?pid=test",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "body": {
+          "id": "request-app-audio",
+          "app": {
+            "id": "app-1",
+            "name": "Example App",
+            "bundle": "com.example.app",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.app",
+            "publisher": {
+              "id": "app-publisher"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+            "ip": "203.0.113.20",
+            "ifa": "4d7b9e2a-6f3c-4a8e-9b1d-2c5e7f8a9b0c",
+            "os": "android"
+          },
+          "imp": [
+            {
+              "id": "imp-audio",
+              "audio": {
+                "mimes": [
+                  "audio/mp4",
+                  "audio/mpeg"
+                ],
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "test"
+                }
+              }
+            }
+          ],
+          "tmax": 800,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-audio"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-app-audio",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adspiro",
+              "bid": [
+                {
+                  "id": "bid-audio",
+                  "impid": "imp-audio",
+                  "price": 0.5,
+                  "adm": "<VAST version=\"4.2\"></VAST>",
+                  "adomain": [
+                    "adspiro.io"
+                  ],
+                  "crid": "adspiro-test-audio",
+                  "exp": 300,
+                  "dur": 30,
+                  "mtype": 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-audio",
+            "impid": "imp-audio",
+            "price": 0.5,
+            "adm": "<VAST version=\"4.2\"></VAST>",
+            "adomain": [
+              "adspiro.io"
+            ],
+            "crid": "adspiro-test-audio",
+            "exp": 300,
+            "dur": 30,
+            "mtype": 3
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}
