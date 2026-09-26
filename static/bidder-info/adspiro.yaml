@@ -1,0 +1,36 @@
+# Contact support@adspiro.io to enable a publisher account for Prebid Server.
+# The publisherId "test" returns a test bid for each impression.
+endpoint: "https://rtb.adspiro.io/pbs?pid={{.PublisherID}}"
+endpointCompression: gzip
+geoscope:
+  - USA
+maintainer:
+  email: "support@adspiro.io"
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  dooh:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+userSync:
+  redirect:
+    url: "https://rtb.adspiro.io/u/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+  skipwhen:
+    gdpr: true
