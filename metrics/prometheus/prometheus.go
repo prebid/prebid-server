@@ -8,6 +8,7 @@ import (
 
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/metrics"
+	vastlintmod "github.com/prebid/prebid-server/v4/modules/openadtech/vastlint"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prometheus/client_golang/prometheus"
 	promCollector "github.com/prometheus/client_golang/prometheus/collectors"
@@ -546,6 +547,9 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		[]string{successLabel})
 
 	createModulesMetrics(cfg, reg, &metrics, moduleStageNames, standardTimeBuckets)
+	if _, ok := moduleStageNames[vastlintmod.MetricsKey]; ok {
+		vastlintmod.Register(reg, cfg.Namespace, cfg.Subsystem)
+	}
 
 	metrics.Gatherer = reg
 

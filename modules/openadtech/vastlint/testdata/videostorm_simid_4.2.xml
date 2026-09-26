@@ -1,0 +1,34 @@
+<!-- VAST 4.2 SIMID linear tag shaped like the VideoStorm CTV test tag. Tracker hosts replaced. -->
+<VAST xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="vast.xsd" version="4.2">
+      <Ad id="2PTC_B3ON_RWPY">
+        <InLine>
+          <AdSystem>VideoStorm</AdSystem>
+          <AdTitle>1</AdTitle>
+          <AdServingId>1790395698192356720</AdServingId>
+          <Description>1</Description>
+          
+          <Error><![CDATA[https://example.test/error/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==error_code[ERRORCODE]]]></Error>
+
+          <Impression><![CDATA[https://example.test/impression/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Impression>
+
+          
+          <Creatives>
+            <Creative sequence="1">
+              <Linear>
+                <Duration>00:00:15</Duration>
+                <TrackingEvents><Tracking event="creativeView"><![CDATA[https://example.test/viewable/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="start"><![CDATA[https://example.test/start/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="firstQuartile"><![CDATA[https://example.test/firstQuartile/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="midpoint"><![CDATA[https://example.test/midpoint/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="thirdQuartile"><![CDATA[https://example.test/thirdQuartile/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="complete"><![CDATA[https://example.test/complete/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="mute"><![CDATA[https://example.test/mute/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="unmute"><![CDATA[https://example.test/unmute/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="pause"><![CDATA[https://example.test/pause/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking><Tracking event="resume"><![CDATA[https://example.test/resume/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></Tracking></TrackingEvents>
+                <VideoClicks>
+                  
+                  <ClickTracking id="linkstorm"><![CDATA[https://example.test/clicktracking/ZXlKSlNVUWlPaUl5VUZSRFgwSXpUMDVmVWxkUVdTSXNJbFZUUlZKZlNVUWlPaUl4Tnprd016azFOams0Tmpnek5ERTJNaUlzSWxORlUxTkpUMDVmU1VRaU9pSXhOemt3TXprMU5qazRNVGt5TXpVMk56SXdJaXdpVFVGRFVrOVRJam9pSW4wPQ==]]></ClickTracking>
+                </VideoClicks>
+                <MediaFiles>
+                  <MediaFile id="8" type="video/mp4" height="1080" width="1920" delivery="progressive" ><![CDATA[https://example.test/v/c81e728d9d4c2f636f067f89cc14862c/1501/mp4/high/video_high.mp4]]> </MediaFile><MediaFile id="9" type="video/mp4" height="720" width="1280" delivery="progressive" ><![CDATA[https://example.test/v/c81e728d9d4c2f636f067f89cc14862c/1501/mp4/medium_high/video_medium_high.mp4]]> </MediaFile><MediaFile id="10" type="video/mp4" height="480" width="854" delivery="progressive" ><![CDATA[https://example.test/v/c81e728d9d4c2f636f067f89cc14862c/1501/mp4/medium/video_medium.mp4]]> </MediaFile><MediaFile id="11" type="video/mp4" height="360" width="640" delivery="progressive" ><![CDATA[https://example.test/v/c81e728d9d4c2f636f067f89cc14862c/1501/mp4/low/video_low.mp4]]> </MediaFile><Mezzanine id="1501" type="video/mp4" height="1080" width="1920" delivery="progressive" ><![CDATA[https://example.test/v/c81e728d9d4c2f636f067f89cc14862c/1501/mp4/high/video_high.mp4]]></Mezzanine>
+                  <InteractiveCreativeFile type="text/html" apiFramework="SIMID" variableDuration="true">https://example.test/c/c81e728d9d4c2f636f067f89cc14862c/2PTC_B3ON_RWPY/linear.html?IID=2PTC_B3ON_RWPY&amp;data=SUlEW10yUFRDX0IzT05fUldQWXx8VVNFUl9JRFtdMTc5MDM5NTY5ODY4MzQxNjJ8fFNFU1NJT05fSURbXTE3OTAzOTU2OTgxOTIzNTY3MjB8fE1BQ1JPU1td&amp;sub_video=aHR0cHM6Ly92aWRlb3NiY2RuLnZpZGVvc3Rvcm0uY29tL3YvYzgxZTcyOGQ5ZDRjMmY2MzZmMDY3Zjg5Y2MxNDg2MmMvMTQxMi9tcDQvbG93L3ZpZGVvX2xvdy5tcDQ=&amp;r=352183</InteractiveCreativeFile>
+                </MediaFiles>
+              </Linear>
+              <UniversalAdId idRegistry="unknown">unknown</UniversalAdId>
+            </Creative>
+          </Creatives>
+        </InLine>
+      </Ad>
+    </VAST>

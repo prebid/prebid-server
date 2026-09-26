@@ -2107,3 +2107,11 @@ func TestRecordModuleMetrics(t *testing.T) {
 		}
 	}
 }
+
+func TestVastlintFindingsMetricRegisters(t *testing.T) {
+	assert.NotPanics(t, func() {
+		NewMetrics(config.PrometheusMetrics{Namespace: "prebid"}, config.DisabledMetrics{}, nil, map[string][]string{
+			"openadtech_vastlint": {"raw_bidder_response"},
+		})
+	})
+}
