@@ -1,11 +1,11 @@
-# Contact support@adspiro.io to enable a publisher account for Prebid Server.
+# Contact connect@adspiro.io to enable a publisher account for Prebid Server.
 # The publisherId "test" returns a test bid for each impression.
 endpoint: "https://rtb.adspiro.io/pbs?pid={{.PublisherID}}"
 endpointCompression: gzip
 geoscope:
   - USA
 maintainer:
-  email: "support@adspiro.io"
+  email: "connect@adspiro.io"
 modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
