@@ -89,7 +89,12 @@ func getPublisherID(imp *openrtb2.Imp) (string, error) {
 }
 
 func convertBidFloor(imp *openrtb2.Imp, requestInfo *adapters.ExtraRequestInfo) error {
-	if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, "USD") {
+	if imp.BidFloor <= 0 || strings.EqualFold(imp.BidFloorCur, "USD") {
+		return nil
+	}
+
+	if imp.BidFloorCur == "" {
+		imp.BidFloorCur = "USD"
 		return nil
 	}
 
