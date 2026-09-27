@@ -1,0 +1,98 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{ "w": 320, "h": 50 }]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "prebid-test"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.example.news",
+      "name": "Example News"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{ "w": 320, "h": 50 }]
+              }
+            }
+          ],
+          "app": {
+            "bundle": "com.example.news",
+            "name": "Example News",
+            "publisher": { "id": "prebid-test" }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "req-abc-1",
+                  "impid": "test-imp-id",
+                  "price": 1.1,
+                  "cid": "cmp-test-1",
+                  "crid": "cr-test-1",
+                  "ext": {
+                    "adswag": {
+                      "serve_url": "https://ads.adswag.ai/v1/ad?sc=c2ln&sig=YWJj"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "req-abc-1",
+            "impid": "test-imp-id",
+            "price": 1.1,
+            "cid": "cmp-test-1",
+            "crid": "cr-test-1",
+            "adm": "<iframe src=\"https://ads.adswag.ai/v1/ad?sc=c2ln&amp;sig=YWJj\" width=\"320\" height=\"50\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" style=\"border:0\" title=\"Advertisement\"></iframe>",
+            "w": 320,
+            "h": 50,
+            "mtype": 1,
+            "ext": {
+              "adswag": {
+                "serve_url": "https://ads.adswag.ai/v1/ad?sc=c2ln&sig=YWJj"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
