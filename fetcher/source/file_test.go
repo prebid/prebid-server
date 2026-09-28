@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileSourceFetchAndFetchAll(t *testing.T) {
+func TestFileSourceReturnsSingleAndBulkValues(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "one.json"), []byte(`{"id":"one"}`), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "ignored.txt"), []byte(`{"id":"ignored"}`), 0644))
@@ -33,7 +33,7 @@ func TestFileSourceFetchAndFetchAll(t *testing.T) {
 	assert.JSONEq(t, `{"id":"one"}`, string(values["one"]))
 }
 
-func TestFileSourceMissingDirectoryIsEmpty(t *testing.T) {
+func TestNewFileSourceTreatsMissingDirectoryAsEmpty(t *testing.T) {
 	source, err := NewFileSource(filepath.Join(t.TempDir(), "missing"))
 	require.NoError(t, err)
 
@@ -42,13 +42,13 @@ func TestFileSourceMissingDirectoryIsEmpty(t *testing.T) {
 	assert.False(t, found)
 }
 
-func TestFileSourceReturnsReadError(t *testing.T) {
+func TestNewFileSourceReturnsDirectoryReadError(t *testing.T) {
 	_, err := NewFileSource("invalid\x00path")
 
 	require.Error(t, err)
 }
 
-func TestFileSourceFetchAllReturnsMapCopy(t *testing.T) {
+func TestFetchAllReturnsIndependentMap(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "one.json"), []byte(`{"id":"one"}`), 0644))
 

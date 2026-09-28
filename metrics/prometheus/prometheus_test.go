@@ -1224,7 +1224,7 @@ func TestAccountCacheResultMetric(t *testing.T) {
 		})
 }
 
-func TestFetcherMetrics(t *testing.T) {
+func TestV2FetcherMetrics(t *testing.T) {
 	m := createMetricsForTesting()
 
 	m.RecordFetcherResult("account", metrics.FetcherResultHit)

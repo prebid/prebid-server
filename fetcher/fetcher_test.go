@@ -62,6 +62,22 @@ type timeoutOnceSource struct {
 	data  map[string]json.RawMessage
 }
 
+type secondLookupHitCache struct {
+	gets  atomic.Int32
+	value string
+}
+
+func (c *secondLookupHitCache) Get(string) (string, bool, bool) {
+	if c.gets.Add(1) == 1 {
+		return "", false, false
+	}
+	return c.value, true, false
+}
+
+func (c *secondLookupHitCache) Save(string, string) {}
+
+func (c *secondLookupHitCache) Invalidate(string) {}
+
 func (s *timeoutOnceSource) Fetch(ctx context.Context, key string) (json.RawMessage, bool, error) {
 	call := atomic.AddInt32(&s.calls, 1)
 	if call == 2 {
@@ -99,7 +115,7 @@ func (b bulkStub) Fetch(_ context.Context, key string) (json.RawMessage, bool, e
 	return raw, ok, nil
 }
 
-func TestPreloadSeedsCache(t *testing.T) {
+func TestStartPreloadsValuesIntoCache(t *testing.T) {
 	clk := newFakeTime()
 	src := bulkStub{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	f, err := New(Params[string, string]{
@@ -121,7 +137,7 @@ func TestPreloadSeedsCache(t *testing.T) {
 	assert.Equal(t, "v1", v)
 }
 
-func TestPreloadTransformErrorSurfaces(t *testing.T) {
+func TestStartReturnsPreloadTransformErrors(t *testing.T) {
 	src := bulkStub{data: map[string]json.RawMessage{"bad": json.RawMessage(`v1`)}}
 	transformErr := errors.New("bad value")
 	f, err := New(Params[string, string]{
@@ -143,7 +159,29 @@ func TestPreloadTransformErrorSurfaces(t *testing.T) {
 	assert.ErrorIs(t, err, transformErr)
 }
 
-func TestNewRequiresTimeAndMetrics(t *testing.T) {
+func TestStartReturnsPreloadSourceError(t *testing.T) {
+	preloadErr := errors.New("preload failed")
+	f, err := New(Params[string, string]{
+		Source: bulkStub{
+			data: map[string]json.RawMessage{},
+			err:  preloadErr,
+		},
+		Transform: identityTransform,
+		Config: Config{
+			Cache:   CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour},
+			Refresh: RefreshConfig{Mode: "preload"},
+		},
+		Time:    newFakeTime(),
+		Metrics: NilRecorder{},
+	})
+	require.NoError(t, err)
+
+	err = f.Start(context.Background())
+
+	assert.ErrorIs(t, err, preloadErr)
+}
+
+func TestNewRejectsMissingTimeOrMetricsRecorder(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{}}
 	params := Params[string, string]{
 		Source:    src,
@@ -201,7 +239,7 @@ func newServeStaleFetcher(t *testing.T, src Source[string], clk *fakeTime, ttl t
 
 // TestGetExpiresAndReloadsByDefault verifies the default (serve-stale off): past
 // TTL the entry is treated as expired and reloaded synchronously on the next read.
-func TestGetExpiresAndReloadsByDefault(t *testing.T) {
+func TestGetReloadsExpiredValueWhenStaleServingIsDisabled(t *testing.T) {
 	clk := newFakeTime()
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	f := newLRUFetcher(t, src, clk, time.Hour, nil)
@@ -225,7 +263,7 @@ func TestGetExpiresAndReloadsByDefault(t *testing.T) {
 	assert.Equal(t, 2, src.callCount())
 }
 
-func TestGetHitAfterMiss(t *testing.T) {
+func TestGetCachesSuccessfulBackendResult(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	f := newLRUFetcher(t, src, newFakeTime(), time.Hour, nil)
 
@@ -240,7 +278,7 @@ func TestGetHitAfterMiss(t *testing.T) {
 	assert.Equal(t, 1, src.callCount(), "second Get should be served from cache")
 }
 
-func TestGetNotFoundWithNegativeCache(t *testing.T) {
+func TestGetUsesNegativeCacheForRepeatedMissingKey(t *testing.T) {
 	clk := newFakeTime()
 	negativeCache, err := fetchercache.NewLRUCache[string, error](10, time.Minute, clk)
 	require.NoError(t, err)
@@ -260,7 +298,28 @@ func TestGetNotFoundWithNegativeCache(t *testing.T) {
 	assert.Equal(t, 1, src.callCount(), "negative cache should prevent a second backend call")
 }
 
-func TestGetNotFoundWithoutNegativeCache(t *testing.T) {
+func TestNegativeStoreInvalidatesStaleVerdict(t *testing.T) {
+	clk := newFakeTime()
+	negativeCache, err := fetchercache.NewLRUCache[string, error](10, time.Minute, clk)
+	require.NoError(t, err)
+	negatives, err := NewNegativeStore[string](negativeCache)
+	require.NoError(t, err)
+	verdict := NotFoundError{Key: "missing"}
+	negatives.mark("missing", verdict)
+
+	got, found := negatives.isCached("missing")
+	require.True(t, found)
+	assert.ErrorIs(t, got, ErrNotFound)
+
+	clk.Add(2 * time.Minute)
+	got, found = negatives.isCached("missing")
+	assert.False(t, found)
+	assert.NoError(t, got)
+	_, found, _ = negativeCache.Get("missing")
+	assert.False(t, found, "stale negative verdict should be removed from the cache")
+}
+
+func TestGetRefetchesRepeatedMissingKeyWhenNegativeCacheIsDisabled(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{}}
 	f := newLRUFetcher(t, src, newFakeTime(), time.Hour, nil)
 
@@ -310,6 +369,46 @@ func TestGetCoalescesConcurrentMisses(t *testing.T) {
 		assert.Equal(t, "v1", r)
 	}
 	assert.Equal(t, 1, src.callCount(), "concurrent misses should collapse into a single backend call")
+}
+
+func TestGetUsesValueCachedBeforeSingleflightLoad(t *testing.T) {
+	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`backend`)}}
+	f, err := New(Params[string, string]{
+		Source:    src,
+		Transform: identityTransform,
+		Config:    Config{Cache: CacheConfig{Type: "none"}, CoalesceRequests: true},
+		Time:      newFakeTime(),
+		Metrics:   NilRecorder{},
+	})
+	require.NoError(t, err)
+	cache := &secondLookupHitCache{value: "cached"}
+	f.cache = cache
+
+	value, err := f.Get(context.Background(), "a")
+
+	require.NoError(t, err)
+	assert.Equal(t, "cached", value)
+	assert.Equal(t, int32(2), cache.gets.Load())
+	assert.Equal(t, 0, src.callCount(), "the singleflight cache recheck should avoid a backend fetch")
+}
+
+func TestGetReturnsCoalescedBackendError(t *testing.T) {
+	backendErr := errors.New("backend error")
+	src := &stubSource{err: backendErr}
+	f, err := New(Params[string, string]{
+		Source:    src,
+		Transform: identityTransform,
+		Config:    Config{Cache: CacheConfig{Type: "none"}, CoalesceRequests: true},
+		Time:      newFakeTime(),
+		Metrics:   NilRecorder{},
+	})
+	require.NoError(t, err)
+
+	value, err := f.Get(context.Background(), "a")
+
+	assert.Empty(t, value)
+	assert.ErrorIs(t, err, backendErr)
+	assert.Equal(t, 1, src.callCount())
 }
 
 func TestGetServesStaleAndRefreshesInBackground(t *testing.T) {
@@ -369,6 +468,82 @@ func TestGetServesStaleWhileBackendDown(t *testing.T) {
 	}
 	assert.Eventually(t, func() bool { return src.callCount() >= 2 }, time.Second, 5*time.Millisecond)
 	assert.LessOrEqual(t, src.callCount(), 2, "failed refreshes must back off, not storm the backend")
+}
+
+func TestBackgroundRevalidationInvalidatesValueDeletedBySource(t *testing.T) {
+	clk := newFakeTime()
+	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
+	negativeCache, err := fetchercache.NewLRUCache[string, error](10, time.Minute, clk)
+	require.NoError(t, err)
+	negatives, err := NewNegativeStore[string](negativeCache)
+	require.NoError(t, err)
+	f := newServeStaleFetcher(t, src, clk, time.Hour)
+	f.negatives = negatives
+
+	value, err := f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", value)
+
+	delete(src.data, "a")
+	clk.Add(2 * time.Hour)
+	value, err = f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", value)
+
+	assert.Eventually(t, func() bool {
+		verdict, found := negatives.isCached("a")
+		return found && errors.Is(verdict, ErrNotFound)
+	}, time.Second, 5*time.Millisecond)
+
+	_, err = f.Get(context.Background(), "a")
+	assert.ErrorIs(t, err, ErrNotFound)
+	assert.Equal(t, 2, src.callCount(), "the negative verdict should prevent another backend fetch")
+}
+
+func TestBackgroundRevalidationKeepsStaleValueOnTransformError(t *testing.T) {
+	clk := newFakeTime()
+	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
+	transformErr := errors.New("bad refreshed value")
+	var failTransform atomic.Bool
+	f, err := New(Params[string, string]{
+		Source: src,
+		Transform: func(_ string, raw json.RawMessage) (string, error) {
+			if failTransform.Load() {
+				return "", transformErr
+			}
+			return string(raw), nil
+		},
+		Config: Config{
+			Cache:   CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour},
+			Refresh: RefreshConfig{ServeStale: true},
+		},
+		Time:    clk,
+		Metrics: NilRecorder{},
+	})
+	require.NoError(t, err)
+
+	value, err := f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", value)
+
+	failTransform.Store(true)
+	clk.Add(2 * time.Hour)
+	value, err = f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", value)
+
+	assert.Eventually(t, func() bool {
+		f.backgroundRefresh.mu.Lock()
+		defer f.backgroundRefresh.mu.Unlock()
+		state, found := f.backgroundRefresh.state["a"]
+		return found && !state.inFlight && !state.failedAt.IsZero()
+	}, time.Second, 5*time.Millisecond)
+
+	calls := src.callCount()
+	value, err = f.Get(context.Background(), "a")
+	require.NoError(t, err)
+	assert.Equal(t, "v1", value)
+	assert.Equal(t, calls, src.callCount(), "failed refreshes should back off while the stale value remains available")
 }
 
 func TestBackgroundRevalidationTimeoutReleasesSlot(t *testing.T) {
@@ -445,7 +620,7 @@ func TestGetNilCacheAlwaysFetches(t *testing.T) {
 	assert.Equal(t, 3, src.callCount())
 }
 
-func TestGetSourceErrorNotCached(t *testing.T) {
+func TestGetRetriesBackendErrors(t *testing.T) {
 	boom := errors.New("boom")
 	src := &stubSource{err: boom}
 	f := newLRUFetcher(t, src, newFakeTime(), time.Hour, nil)
@@ -459,7 +634,7 @@ func TestGetSourceErrorNotCached(t *testing.T) {
 	assert.Equal(t, 2, src.callCount(), "systemic errors must not be cached")
 }
 
-func TestGetTransformErrorNotCached(t *testing.T) {
+func TestGetRetriesTransformErrorWhenNegativeCacheIsDisabled(t *testing.T) {
 	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
 	transformErr := errors.New("bad value")
 	f, err := New(Params[string, string]{
@@ -476,6 +651,33 @@ func TestGetTransformErrorNotCached(t *testing.T) {
 	_, err = f.Get(context.Background(), "a")
 	assert.ErrorIs(t, err, transformErr)
 	assert.Equal(t, 2, src.callCount(), "malformed values must not be cached")
+}
+
+func TestGetCachesTransformErrorWhenNegativeCacheIsEnabled(t *testing.T) {
+	src := &stubSource{data: map[string]json.RawMessage{"a": json.RawMessage(`v1`)}}
+	transformErr := errors.New("bad value")
+	f, err := New(Params[string, string]{
+		Source:    src,
+		Transform: func(string, json.RawMessage) (string, error) { return "", transformErr },
+		Config: Config{
+			Cache: CacheConfig{Type: "lru", MaxEntries: 100, TTL: time.Hour},
+			Negative: NegativeConfig{
+				Enabled:    true,
+				Type:       "lru",
+				MaxEntries: 10,
+				TTL:        time.Minute,
+			},
+		},
+		Time:    newFakeTime(),
+		Metrics: NilRecorder{},
+	})
+	require.NoError(t, err)
+
+	_, err = f.Get(context.Background(), "a")
+	assert.ErrorIs(t, err, transformErr)
+	_, err = f.Get(context.Background(), "a")
+	assert.ErrorIs(t, err, transformErr)
+	assert.Equal(t, 1, src.callCount(), "the cached transform error should prevent another backend fetch")
 }
 
 // countingRecorder verifies the engine emits the expected telemetry.
@@ -495,7 +697,7 @@ func (r *countingRecorder) BackendFetch(operation metrics.FetcherOperation, resu
 	r.backend[string(operation)+":"+string(result)]++
 }
 
-func TestRecorderSignals(t *testing.T) {
+func TestFetcherRecordsCacheAndBackendOutcomes(t *testing.T) {
 	clk := newFakeTime()
 	negativeCache, err := fetchercache.NewLRUCache[string, error](10, time.Minute, clk)
 	require.NoError(t, err)

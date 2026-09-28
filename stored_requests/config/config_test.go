@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sync/atomic"
 	"testing"
@@ -32,6 +34,16 @@ import (
 func typedConfig(dataType config.DataType, sr *config.StoredRequests) *config.StoredRequests {
 	sr.SetDataType(dataType)
 	return sr
+}
+
+type trackingCloseProvider struct {
+	db_provider.DbProvider
+	closed bool
+}
+
+func (p *trackingCloseProvider) Close() error {
+	p.closed = true
+	return nil
 }
 
 func isEmptyCacheType(cache stored_requests.CacheJSON) bool {
@@ -169,7 +181,7 @@ func TestNewHTTPEvents(t *testing.T) {
 	assertHttpWithURL(t, evProducers[0], server1.URL)
 }
 
-func TestNewStoredRequestsV2AccountsSkipsLegacyAccountCache(t *testing.T) {
+func TestV2NewStoredRequestsUsesFetcherCacheInsteadOfLegacyAccountCache(t *testing.T) {
 	var calls int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&calls, 1)
@@ -208,6 +220,92 @@ func TestNewStoredRequestsV2AccountsSkipsLegacyAccountCache(t *testing.T) {
 	assert.Equal(t, "pub-1", account.ID)
 
 	assert.Equal(t, int32(2), atomic.LoadInt32(&calls), "v2 cache.type=none should reach the HTTP source every time, even if the legacy account cache is configured")
+}
+
+func TestV2NewStoredRequestsUsesLegacyAccountFetcherWhenDisabled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"accounts":{"pub-1":{"id":"pub-1"}}}`)
+	}))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Accounts: config.StoredRequests{
+			HTTP: config.HTTPFetcherConfig{
+				Endpoint:               server.URL,
+				UseRfcCompliantBuilder: true,
+			},
+		},
+	}
+	cfg.Accounts.SetDataType(config.AccountDataType)
+	require.NoError(t, cfg.MarshalAccountDefaults())
+
+	shutdown, _, _, accountsFetcher, _, _, _ := NewStoredRequests(
+		cfg,
+		&metricsconfig.NilMetricsEngine{},
+		server.Client(),
+		httprouter.New(),
+	)
+	defer shutdown()
+
+	account, errs := accountservice.GetAccount(
+		context.Background(),
+		cfg,
+		accountsFetcher,
+		"pub-1",
+		&metricsconfig.NilMetricsEngine{},
+	)
+
+	require.Empty(t, errs)
+	require.NotNil(t, account)
+	assert.Equal(t, "pub-1", account.ID)
+}
+
+func TestV2AccountSourceUsesFilesystemBackend(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(root, "accounts"), 0755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(root, "accounts", "pub-1.json"),
+		[]byte(`{"id":"pub-1"}`),
+		0644,
+	))
+	cfg := typedConfig(config.AccountDataType, &config.StoredRequests{
+		Files: config.FileFetcherConfig{
+			Enabled: true,
+			Path:    root,
+		},
+	})
+
+	source := newAccountSource(cfg, http.DefaultClient)
+	raw, found, err := source.Fetch(context.Background(), "pub-1")
+
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.JSONEq(t, `{"id":"pub-1"}`, string(raw))
+}
+
+func TestV2AccountSourceUsesNilSourceWhenNoBackendIsConfigured(t *testing.T) {
+	cfg := typedConfig(config.AccountDataType, &config.StoredRequests{})
+
+	source := newAccountSource(cfg, http.DefaultClient)
+	raw, found, err := source.Fetch(context.Background(), "missing")
+
+	require.NoError(t, err)
+	assert.False(t, found)
+	assert.Nil(t, raw)
+}
+
+func TestV2AccountSourceClosesDatabaseProviderOnShutdown(t *testing.T) {
+	provider := &trackingCloseProvider{}
+	_, shutdown := createAccountSource(
+		typedConfig(config.AccountDataType, &config.StoredRequests{}),
+		http.DefaultClient,
+		provider,
+	)
+
+	shutdown()
+
+	assert.True(t, provider.closed)
 }
 
 func TestNewEmptyCache(t *testing.T) {

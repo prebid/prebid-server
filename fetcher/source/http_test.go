@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHTTPSourceFetch(t *testing.T) {
+func TestHTTPSourceReturnsDecodedValue(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "one", r.URL.Query().Get("id"))
 		_, _ = w.Write([]byte(`{"id":"one"}`))
@@ -31,7 +31,7 @@ func TestHTTPSourceFetch(t *testing.T) {
 	assert.JSONEq(t, `{"id":"one"}`, string(raw))
 }
 
-func TestHTTPSourceNotFound(t *testing.T) {
+func TestHTTPSourceTreats404AsNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -46,7 +46,7 @@ func TestHTTPSourceNotFound(t *testing.T) {
 	assert.Nil(t, raw)
 }
 
-func TestNewHTTPSourceValidatesDependencies(t *testing.T) {
+func TestNewHTTPSourceRejectsMissingDependenciesAndInvalidEndpoint(t *testing.T) {
 	client := &http.Client{}
 
 	_, err := NewHTTPSource[string](nil, "http://example.com", testRequestBuilder, rawResponseDecoder)
@@ -62,7 +62,7 @@ func TestNewHTTPSourceValidatesDependencies(t *testing.T) {
 	require.ErrorContains(t, err, "invalid HTTP endpoint")
 }
 
-func TestHTTPSourceFetchErrors(t *testing.T) {
+func TestHTTPSourceReturnsContextualErrors(t *testing.T) {
 	expectedErr := errors.New("expected")
 	testCases := []struct {
 		name          string
@@ -135,7 +135,7 @@ func TestHTTPSourceFetchErrors(t *testing.T) {
 	}
 }
 
-func TestHTTPSourcePreservesDecoderNotFound(t *testing.T) {
+func TestHTTPSourcePropagatesDecoderNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{}`))
 	}))

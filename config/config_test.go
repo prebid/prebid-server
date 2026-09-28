@@ -1459,7 +1459,7 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	assert.Contains(t, errs, errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"))
 }
 
-func TestValidateFetcherV2AccountSources(t *testing.T) {
+func TestV2ConfigurationValidatesAccountSourceSelection(t *testing.T) {
 	testCases := []struct {
 		name         string
 		v2Enabled    bool

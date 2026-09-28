@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileSourceFetchAndFetchAll(t *testing.T) {
+func TestV2AccountFileSourceReturnsSingleAndBulkValues(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "accounts"), 0755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "accounts", "pub-1.json"), []byte(`{"id":"pub-1"}`), 0644))
@@ -39,7 +39,7 @@ func TestFileSourceFetchAndFetchAll(t *testing.T) {
 	assert.JSONEq(t, `{"id":"pub-1"}`, string(accounts["pub-1"]))
 }
 
-func TestFileSourceMissingAccountsDirectoryIsEmpty(t *testing.T) {
+func TestV2AccountFileSourceTreatsMissingAccountsDirectoryAsEmpty(t *testing.T) {
 	source, err := NewFileSource(t.TempDir())
 	require.NoError(t, err)
 
@@ -48,7 +48,14 @@ func TestFileSourceMissingAccountsDirectoryIsEmpty(t *testing.T) {
 	assert.Empty(t, accounts)
 }
 
-func TestHTTPSourceFetch(t *testing.T) {
+func TestV2NewAccountFileSourceReturnsErrorWhenRootIsMissing(t *testing.T) {
+	source, err := NewFileSource(filepath.Join(t.TempDir(), "missing"))
+
+	require.Nil(t, source)
+	require.Error(t, err)
+}
+
+func TestV2AccountHTTPSourceBuildsRFC3986Query(t *testing.T) {
 	var seen []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = r.URL.Query()["account-id"]
@@ -66,7 +73,7 @@ func TestHTTPSourceFetch(t *testing.T) {
 	assert.JSONEq(t, `{"id":"pub-1"}`, string(raw))
 }
 
-func TestHTTPSourceFetchWithLegacyQuery(t *testing.T) {
+func TestV2AccountHTTPSourceBuildsLegacyQuery(t *testing.T) {
 	var seen string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = r.URL.Query().Get("account-ids")
@@ -83,7 +90,7 @@ func TestHTTPSourceFetchWithLegacyQuery(t *testing.T) {
 	assert.Equal(t, `["pub-1"]`, seen)
 }
 
-func TestHTTPSourceFetchNotFound(t *testing.T) {
+func TestV2AccountHTTPSourceReturnsNotFoundFor404(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -97,7 +104,7 @@ func TestHTTPSourceFetchNotFound(t *testing.T) {
 	assert.False(t, found)
 }
 
-func TestHTTPSourceFetchNullAccountIsNotFound(t *testing.T) {
+func TestV2AccountHTTPSourceTreatsNullAccountAsNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"accounts":{"missing":null}}`)
 	}))
@@ -111,7 +118,7 @@ func TestHTTPSourceFetchNullAccountIsNotFound(t *testing.T) {
 	assert.False(t, found)
 }
 
-func TestHTTPSourceFetchOmittedAccountIsNotFound(t *testing.T) {
+func TestV2AccountHTTPSourceTreatsOmittedAccountAsNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"accounts":{}}`)
 	}))
@@ -125,7 +132,7 @@ func TestHTTPSourceFetchOmittedAccountIsNotFound(t *testing.T) {
 	assert.False(t, found)
 }
 
-func TestHTTPSourceFetchMalformedResponseErrors(t *testing.T) {
+func TestV2AccountHTTPSourceRejectsMalformedResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{`)
 	}))

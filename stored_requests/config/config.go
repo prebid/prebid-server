@@ -67,21 +67,6 @@ func prepareStoredRequestsProvider(cfg *config.StoredRequests, provider db_provi
 	return provider
 }
 
-func createRawStoredRequests(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider) (fetcher stored_requests.AllFetcher, shutdown func()) {
-	provider = prepareStoredRequestsProvider(cfg, provider)
-	fetcher = createStoredRequestSource(cfg, client, provider)
-	shutdown = func() {
-		if provider == nil {
-			return
-		}
-
-		if err := provider.Close(); err != nil {
-			logger.Errorf("Error closing DB connection: %v", err)
-		}
-	}
-	return
-}
-
 func createLegacyCachedStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router, provider db_provider.DbProvider) (fetcher stored_requests.AllFetcher, shutdown func()) {
 	provider = prepareStoredRequestsProvider(cfg, provider)
 

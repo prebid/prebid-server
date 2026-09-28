@@ -3,7 +3,9 @@ package account
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -14,7 +16,9 @@ import (
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/fetcher"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/stored_requests"
 )
 
 type fakeTime struct {
@@ -37,6 +41,7 @@ type mockSource struct {
 	accounts     map[string]json.RawMessage
 	accountCalls atomic.Int32
 	bulkCalls    atomic.Int32
+	bulkErr      error
 }
 
 func (m *mockSource) Fetch(_ context.Context, accountID string) (json.RawMessage, bool, error) {
@@ -47,7 +52,7 @@ func (m *mockSource) Fetch(_ context.Context, accountID string) (json.RawMessage
 
 func (m *mockSource) FetchAll(_ context.Context) (map[string]json.RawMessage, error) {
 	m.bulkCalls.Add(1)
-	return m.accounts, nil
+	return m.accounts, m.bulkErr
 }
 
 func newV2Fetcher(t *testing.T, source fetcher.Source[string]) *FetcherAccountFetcher {
@@ -58,7 +63,7 @@ func newV2Fetcher(t *testing.T, source fetcher.Source[string]) *FetcherAccountFe
 	return v2
 }
 
-func TestV2GetAccountTypedHit(t *testing.T) {
+func TestV2GetAccountUsesTypedCacheAfterFirstFetch(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1"}`),
 	}}
@@ -79,7 +84,7 @@ func TestV2GetAccountTypedHit(t *testing.T) {
 	assert.Equal(t, int32(1), source.accountCalls.Load(), "second GetAccount should be a cache hit")
 }
 
-func TestV2GetAccountAppliesDefaultsAndDerivedConfigOnce(t *testing.T) {
+func TestV2GetAccountCachesDefaultsAndDerivedConfig(t *testing.T) {
 	defaults := json.RawMessage(`{
 		"gdpr": {
 			"basic_enforcement_vendors": ["appnexus"],
@@ -129,7 +134,7 @@ func TestV2GetAccountAppliesDefaultsAndDerivedConfigOnce(t *testing.T) {
 	assert.Equal(t, int32(1), source.accountCalls.Load())
 }
 
-func TestV2RefreshTTLReloadsFromSource(t *testing.T) {
+func TestV2GetAccountUsesTTLRefreshByDefault(t *testing.T) {
 	clk := newFakeTime()
 	source := &mockSource{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1","disabled":false}`),
@@ -157,18 +162,77 @@ func TestV2RefreshTTLReloadsFromSource(t *testing.T) {
 	assert.Eventually(t, func() bool { return source.accountCalls.Load() == 2 }, time.Second, 5*time.Millisecond)
 }
 
-func TestV2GetAccountNotFoundFallsBackToDefaults(t *testing.T) {
+func TestV2GetAccountUsesDefaultsWhenTypedAccountIsMissing(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{}}
 	v2 := newV2Fetcher(t, source)
 	cfg := &config.Configuration{}
 
-	account, errs := GetAccount(context.Background(), cfg, v2, "unknown", nil)
+	account, errs := GetAccount(context.Background(), cfg, v2, "missing", nil)
 	require.Empty(t, errs)
 	require.NotNil(t, account)
-	assert.Equal(t, "unknown", account.ID, "not-found should fall back to AccountDefaults with the requested ID")
+	assert.Equal(t, "missing", account.ID, "not-found should fall back to AccountDefaults with the requested ID")
 }
 
-func TestV2GetAccountMalformedReturnsError(t *testing.T) {
+func TestV2GetAccountReturnsRequiredErrorWhenTypedAccountIsMissing(t *testing.T) {
+	source := &mockSource{accounts: map[string]json.RawMessage{}}
+	v2 := newV2Fetcher(t, source)
+	cfg := &config.Configuration{
+		AccountRequired: true,
+		AccountDefaults: config.Account{Disabled: true},
+	}
+
+	account, errs := GetAccount(context.Background(), cfg, v2, "missing", nil)
+
+	require.Nil(t, account)
+	require.Len(t, errs, 1)
+	assert.IsType(t, &errortypes.AcctRequired{}, errs[0])
+}
+
+func TestV2FetchAccountSerializesTypedAccount(t *testing.T) {
+	source := &mockSource{accounts: map[string]json.RawMessage{
+		"pub-1": json.RawMessage(`{"id":"pub-1"}`),
+	}}
+	v2 := newV2Fetcher(t, source)
+
+	raw, errs := v2.FetchAccount(context.Background(), nil, "pub-1")
+	require.Empty(t, errs)
+	var account config.Account
+	require.NoError(t, json.Unmarshal(raw, &account))
+	assert.Equal(t, "pub-1", account.ID)
+}
+
+func TestV2FetchAccountReturnsFetchError(t *testing.T) {
+	v2 := newV2Fetcher(t, &mockSource{accounts: map[string]json.RawMessage{}})
+
+	raw, errs := v2.FetchAccount(context.Background(), nil, "missing")
+	require.Nil(t, raw)
+	require.Len(t, errs, 1)
+	assert.IsType(t, stored_requests.NotFoundError{}, errs[0])
+}
+
+func TestV2FetchAccountReturnsMarshalError(t *testing.T) {
+	source := &mockSource{accounts: map[string]json.RawMessage{
+		"pub-1": json.RawMessage(`{"id":"pub-1"}`),
+	}}
+	v2 := newV2Fetcher(t, source)
+	fetchedAccount, fetchErrs := v2.Fetch(context.Background(), "pub-1")
+	require.Empty(t, fetchErrs)
+	fetchedAccount.BidAdjustments = &openrtb_ext.ExtRequestPrebidBidAdjustments{
+		MediaType: openrtb_ext.MediaType{
+			Banner: map[openrtb_ext.BidderName]openrtb_ext.AdjustmentsByDealID{
+				"appnexus": {
+					"deal": []openrtb_ext.Adjustment{{Value: math.NaN()}},
+				},
+			},
+		},
+	}
+	raw, errs := v2.FetchAccount(context.Background(), nil, "pub-1")
+	require.Nil(t, raw)
+	require.Len(t, errs, 1)
+	assert.IsType(t, &errortypes.FailedToMarshal{}, errs[0])
+}
+
+func TestV2GetAccountReturnsMalformedErrorForInvalidTypedAccount(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{
 		"bad": json.RawMessage(`{`),
 	}}
@@ -182,7 +246,7 @@ func TestV2GetAccountMalformedReturnsError(t *testing.T) {
 	assert.True(t, isMalformed, "malformed account JSON should surface a MalformedAcct error")
 }
 
-func TestV2GetAccountDisabled(t *testing.T) {
+func TestV2GetAccountRejectsDisabledTypedAccount(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{
 		"off": json.RawMessage(`{"id":"off","disabled":true}`),
 	}}
@@ -196,7 +260,7 @@ func TestV2GetAccountDisabled(t *testing.T) {
 	assert.True(t, isDisabled, "disabled account should surface an AccountDisabled error")
 }
 
-func TestV2RefreshPreloadWarmsCache(t *testing.T) {
+func TestV2NewFetcherAccountFetcherPreloadsAccounts(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1"}`),
 	}}
@@ -211,7 +275,7 @@ func TestV2RefreshPreloadWarmsCache(t *testing.T) {
 	assert.Equal(t, int32(0), source.accountCalls.Load(), "preloaded account should be served without a per-key fetch")
 }
 
-func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
+func TestV2GetAccountUsesExplicitTTLRefresh(t *testing.T) {
 	clk := newFakeTime()
 	source := &mockSource{accounts: map[string]json.RawMessage{
 		"pub-1": json.RawMessage(`{"id":"pub-1","disabled":false}`),
@@ -236,7 +300,7 @@ func TestV2RefreshTTLServesStaleByDefault(t *testing.T) {
 	assert.Eventually(t, func() bool { return source.accountCalls.Load() == 2 }, time.Second, 5*time.Millisecond)
 }
 
-func TestV2UnboundedCacheDoesNotEvictByEntryCount(t *testing.T) {
+func TestV2GetAccountUnboundedCacheRetainsAllEntries(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{}}
 	for i := 0; i < 1000; i++ {
 		id := fmt.Sprintf("pub-%d", i)
@@ -265,21 +329,21 @@ func TestV2UnboundedCacheDoesNotEvictByEntryCount(t *testing.T) {
 	assert.Equal(t, int32(1000), source.accountCalls.Load(), "unbounded cache should retain every fetched account")
 }
 
-func TestV2RefreshPreloadUnsupportedSourceErrors(t *testing.T) {
+func TestV2NewFetcherAccountFetcherRejectsPreloadWithoutBulkSource(t *testing.T) {
 	plain := notBulkSource{}
 	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "preload"}
 	_, err := NewFetcherAccountFetcher(plain, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
 	require.Error(t, err)
 }
 
-func TestV2RefreshUnknownModeErrors(t *testing.T) {
+func TestV2NewFetcherAccountFetcherRejectsUnknownRefreshMode(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{}}
 	cfg := config.FetcherConfig{Type: "lru", MaxEntries: 100, TTLSeconds: 3600, Refresh: "bogus"}
 	_, err := NewFetcherAccountFetcher(source, cfg, json.RawMessage(`{}`), newFakeTime(), nil)
 	require.Error(t, err)
 }
 
-func TestV2NegativeCacheInvalidConfigErrors(t *testing.T) {
+func TestV2NewFetcherAccountFetcherRejectsInvalidNegativeCacheConfig(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{}}
 	cfg := config.FetcherConfig{
 		Type:       "lru",
@@ -297,12 +361,81 @@ func TestV2NegativeCacheInvalidConfigErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "negative")
 }
 
-func TestNewFetcherAccountFetcherRequiresTime(t *testing.T) {
+func TestV2NewFetcherAccountFetcherRequiresTime(t *testing.T) {
 	source := &mockSource{accounts: map[string]json.RawMessage{}}
 
 	_, err := NewFetcherAccountFetcher(source, config.FetcherConfig{Type: "none"}, json.RawMessage(`{}`), nil, nil)
 
 	require.EqualError(t, err, "accounts.cache: time is required")
+}
+
+func TestV2NewFetcherAccountFetcherReturnsPreloadSourceError(t *testing.T) {
+	preloadErr := errors.New("preload failed")
+	source := &mockSource{
+		accounts: map[string]json.RawMessage{},
+		bulkErr:  preloadErr,
+	}
+
+	accountFetcher, err := NewFetcherAccountFetcher(
+		source,
+		config.FetcherConfig{Type: "lru", MaxEntries: 100, Refresh: "preload"},
+		json.RawMessage(`{}`),
+		newFakeTime(),
+		nil,
+	)
+
+	require.Nil(t, accountFetcher)
+	require.ErrorIs(t, err, preloadErr)
+	assert.Contains(t, err.Error(), "accounts.cache.preload")
+}
+
+func TestV2AccountTransformRejectsMalformedDefaults(t *testing.T) {
+	transform := newAccountTransform(json.RawMessage(`{`))
+
+	account, err := transform("pub-1", json.RawMessage(`{}`))
+
+	require.Nil(t, account)
+	assert.IsType(t, &errortypes.MalformedAcct{}, err)
+}
+
+func TestV2AccountTransformRejectsMalformedDSADefault(t *testing.T) {
+	transform := newAccountTransform(nil)
+
+	account, err := transform("pub-1", json.RawMessage(`{"privacy":{"dsa":{"default":"not-json"}}}`))
+
+	require.Nil(t, account)
+	assert.IsType(t, &errortypes.MalformedAcct{}, err)
+}
+
+func TestV2AccountTransformUsesRequestedIDWhenSourceOmitsID(t *testing.T) {
+	transform := newAccountTransform(nil)
+
+	account, err := transform("pub-1", json.RawMessage(`{"disabled":false}`))
+
+	require.NoError(t, err)
+	assert.Equal(t, "pub-1", account.ID)
+}
+
+func TestV2MetricsRecorderForwardsFetcherEvents(t *testing.T) {
+	engine := &metrics.MetricsEngineMock{}
+	engine.Mock.On("RecordFetcherResult", fetcherSubsystem, metrics.FetcherResultHit).Once()
+	engine.Mock.On("RecordFetcherResult", fetcherSubsystem, metrics.FetcherResultMiss).Once()
+	engine.Mock.On("RecordFetcherResult", fetcherSubsystem, metrics.FetcherResultNegative).Once()
+	engine.Mock.On(
+		"RecordFetcherBackendFetch",
+		fetcherSubsystem,
+		metrics.FetcherOperationGet,
+		metrics.FetcherBackendOK,
+		time.Second,
+	).Once()
+	recorder := metricsRecorder{engine: engine, subsystem: fetcherSubsystem}
+
+	recorder.CacheHit()
+	recorder.CacheMiss()
+	recorder.CacheNegative()
+	recorder.BackendFetch(metrics.FetcherOperationGet, metrics.FetcherBackendOK, time.Second)
+
+	engine.AssertExpectations(t)
 }
 
 type notBulkSource struct{}
