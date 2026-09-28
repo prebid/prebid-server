@@ -11,4 +11,10 @@ type ExtImpOcm struct {
 	// expands it into the impression's real configuration. It is required: an
 	// impression that references no stored request cannot be resolved.
 	PlacementID string `json:"placementId"`
+
+	// TmaxBufferMs is deducted from the request tmax before it is forwarded. The
+	// OCM endpoint is itself a Prebid Server that would otherwise spend the whole
+	// budget on its own bidders, leaving no room for the round trip back. Nil
+	// selects the adapter default; an explicit 0 disables the buffer.
+	TmaxBufferMs *int `json:"tmaxBufferMs,omitempty"`
 }

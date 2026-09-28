@@ -20,6 +20,11 @@ import (
 // omission.
 const mTypeUnset openrtb2.MarkupType = 0
 
+// defaultTmaxBufferMs is the headroom deducted from tmax when no impression sets
+// tmaxBufferMs. It covers the host's own processing, the round trip to the OCM
+// endpoint and that endpoint's response preparation.
+const defaultTmaxBufferMs = 250
+
 // adapter routes bid requests to the Orange Click Media exchange.
 type adapter struct {
 	endpoint string
@@ -42,12 +47,16 @@ func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server confi
 // imp.ext.prebid.storedrequest.id rather than as a plain slot identifier. It is
 // required: an impression referencing no stored request cannot be resolved
 // downstream, and would fail the whole request rather than just itself.
+//
+// The OCM endpoint is another Prebid Server, so tmax is reduced by a buffer
+// before forwarding; see setTMax.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, nil
 	}
 
 	var publisherID string
+	tmaxBufferMs := -1
 	for i := range request.Imp {
 		impExt, err := parseImpExt(&request.Imp[i])
 		if err != nil {
@@ -62,12 +71,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			}}
 		}
 
+		// tmax is request-level, so the largest buffer any impression asks for
+		// wins: it errs toward answering before the host's deadline.
+		if impExt.TmaxBufferMs != nil && *impExt.TmaxBufferMs > tmaxBufferMs {
+			tmaxBufferMs = *impExt.TmaxBufferMs
+		}
+
 		// Imp elements are safe to modify in place: prebid-server hands each
 		// adapter its own shallow copy of the imp slice.
 		if err := setStoredRequestID(&request.Imp[i], impExt.PlacementID); err != nil {
 			return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("imp[%d]: %s", i, err)}}
 		}
 	}
+
+	if tmaxBufferMs < 0 {
+		tmaxBufferMs = defaultTmaxBufferMs
+	}
+	setTMax(request, int64(tmaxBufferMs))
 
 	if err := setPublisherID(request, publisherID); err != nil {
 		return nil, []error{&errortypes.BadInput{Message: err.Error()}}
@@ -167,6 +187,22 @@ func setStoredRequestID(imp *openrtb2.Imp, placementID string) error {
 
 	imp.Ext = extJSON
 	return nil
+}
+
+// setTMax reduces tmax by bufferMs. The receiving Prebid Server gives its own
+// bidders the full tmax it is sent, so forwarding the host's value unchanged
+// would land the response after the host's deadline by the round trip plus the
+// downstream overhead. The result never exceeds the original tmax and, as long
+// as the original allows it, never drops below the buffer, so a tight budget is
+// not cut to nothing.
+//
+// A tmax of 0 means the request set none; it is forwarded unchanged so the
+// receiving Prebid Server applies its own default.
+func setTMax(request *openrtb2.BidRequest, bufferMs int64) {
+	if request.TMax <= 0 {
+		return
+	}
+	request.TMax = min(max(request.TMax-bufferMs, bufferMs), request.TMax)
 }
 
 // setPublisherID writes publisherId to the request-level publisher ID and removes

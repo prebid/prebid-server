@@ -242,6 +242,22 @@ func TestMakeBidsPreservesVideoMetadata(t *testing.T) {
 	}, bidResponse.Bids[0].BidVideo)
 }
 
+// TestMakeBidsKeepsVideoBidWithMalformedExt covers a bid whose mtype resolves the
+// type but whose ext cannot be parsed: the bid is kept, just without metadata.
+func TestMakeBidsKeepsVideoBidWithMalformedExt(t *testing.T) {
+	request := &openrtb2.BidRequest{ID: "req", Imp: []openrtb2.Imp{{ID: "imp-1"}}}
+	response := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"req","seatbid":[{"bid":[{"id":"bid-1","impid":"imp-1","price":1.2,"mtype":2,"ext":[]}]}]}`),
+	}
+
+	bidResponse, errs := newBidder(t).MakeBids(request, nil, response)
+	require.Empty(t, errs)
+	require.Len(t, bidResponse.Bids, 1)
+	assert.Equal(t, openrtb_ext.BidTypeVideo, bidResponse.Bids[0].BidType)
+	assert.Nil(t, bidResponse.Bids[0].BidVideo)
+}
+
 func TestMakeBidsIgnoresVideoMetadataForNonVideoBid(t *testing.T) {
 	request := &openrtb2.BidRequest{ID: "req", Imp: []openrtb2.Imp{{ID: "imp-1"}}}
 	response := &adapters.ResponseData{
@@ -485,6 +501,11 @@ func TestSetStoredRequestID(t *testing.T) {
 			want:   `{"prebid":{"storedrequest":{"id":"slot-1"}}}`,
 		},
 		{
+			name:   "tolerates null ext",
+			impExt: `null`,
+			want:   `{"prebid":{"storedrequest":{"id":"slot-1"}}}`,
+		},
+		{
 			name:   "preserves unrelated keys",
 			impExt: `{"gpid":"/1/a","tid":"t-1"}`,
 			want:   `{"gpid":"/1/a","tid":"t-1","prebid":{"storedrequest":{"id":"slot-1"}}}`,
@@ -543,4 +564,104 @@ func TestMakeRequestsMalformedImpExtPrebid(t *testing.T) {
 	require.Len(t, errs, 1)
 	assert.IsType(t, &errortypes.BadInput{}, errs[0])
 	assert.Contains(t, errs[0].Error(), "imp[0]: unable to unmarshal ext")
+}
+
+// TestMakeRequestsMalformedForwardedContext pins the error type for request-level
+// extensions that the adapter must rewrite before forwarding but cannot parse.
+func TestMakeRequestsMalformedForwardedContext(t *testing.T) {
+	tests := []struct {
+		name        string
+		site        *openrtb2.Site
+		app         *openrtb2.App
+		ext         json.RawMessage
+		wantMessage string
+	}{
+		{
+			name:        "site.publisher.ext is not an object",
+			site:        &openrtb2.Site{Publisher: &openrtb2.Publisher{Ext: json.RawMessage(`[]`)}},
+			wantMessage: "unable to update site.publisher: unable to unmarshal ext",
+		},
+		{
+			name:        "app.publisher.ext.prebid is not an object",
+			app:         &openrtb2.App{Publisher: &openrtb2.Publisher{Ext: json.RawMessage(`{"prebid":[]}`)}},
+			wantMessage: "unable to update app.publisher: unable to unmarshal ext.prebid",
+		},
+		{
+			name:        "request.ext is not an object",
+			site:        &openrtb2.Site{},
+			ext:         json.RawMessage(`[]`),
+			wantMessage: "unable to unmarshal request.ext",
+		},
+		{
+			name:        "request.ext.prebid is not an object",
+			site:        &openrtb2.Site{},
+			ext:         json.RawMessage(`{"prebid":[]}`),
+			wantMessage: "unable to unmarshal request.ext.prebid",
+		},
+		{
+			name:        "request.ext.prebid.aliases is not a string map",
+			site:        &openrtb2.Site{},
+			ext:         json.RawMessage(`{"prebid":{"aliases":{"a":1}}}`),
+			wantMessage: "unable to unmarshal request.ext.prebid.aliases",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := &openrtb2.BidRequest{
+				ID:   "req",
+				Imp:  []openrtb2.Imp{bannerImp("imp-1", json.RawMessage(`{"bidder":{"publisherId":"pub","placementId":"p"}}`))},
+				Site: test.site,
+				App:  test.app,
+				Ext:  test.ext,
+			}
+
+			requests, errs := newBidder(t).MakeRequests(request, &adapters.ExtraRequestInfo{})
+			assert.Nil(t, requests)
+			require.Len(t, errs, 1)
+			assert.IsType(t, &errortypes.BadInput{}, errs[0])
+			assert.Contains(t, errs[0].Error(), test.wantMessage)
+		})
+	}
+}
+
+// TestRemoveParentAccountLeavesUnrelatedExt covers the paths with nothing to
+// remove: the original bytes are returned as-is rather than re-encoded.
+func TestRemoveParentAccountLeavesUnrelatedExt(t *testing.T) {
+	tests := []struct {
+		name string
+		ext  json.RawMessage
+	}{
+		{name: "no prebid member", ext: json.RawMessage(`{"other":1}`)},
+		{name: "prebid without parentAccount", ext: json.RawMessage(`{"prebid":{"other":1}}`)},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := removeParentAccount(test.ext)
+			require.NoError(t, err)
+			assert.Equal(t, test.ext, got)
+		})
+	}
+}
+
+// TestRemoveOCMAliasesLeavesUnrelatedExt covers the paths with nothing to remove:
+// request.Ext is left pointing at the original bytes rather than re-encoded.
+func TestRemoveOCMAliasesLeavesUnrelatedExt(t *testing.T) {
+	tests := []struct {
+		name string
+		ext  json.RawMessage
+	}{
+		{name: "no prebid member", ext: json.RawMessage(`{"other":1}`)},
+		{name: "prebid without aliases", ext: json.RawMessage(`{"prebid":{"debug":true}}`)},
+		{name: "no alias resolves to ocm", ext: json.RawMessage(`{"prebid":{"aliases":{"a":"appnexus"}}}`)},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := &openrtb2.BidRequest{Ext: test.ext}
+			require.NoError(t, removeOCMAliases(request))
+			assert.Equal(t, test.ext, request.Ext)
+		})
+	}
 }

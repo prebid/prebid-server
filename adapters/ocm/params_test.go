@@ -38,6 +38,8 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"publisherId":"ocm-pub-1","placementId":"homepage-top"}`,
+	`{"publisherId":"ocm-pub-1","placementId":"homepage-top","tmaxBufferMs":0}`,
+	`{"publisherId":"ocm-pub-1","placementId":"homepage-top","tmaxBufferMs":300}`,
 }
 
 var invalidParams = []string{
@@ -54,4 +56,7 @@ var invalidParams = []string{
 	`{"publisherId":""}`,
 	`{"publisherId":"ocm-pub-1","placementId":42}`,
 	`{"publisherId":"ocm-pub-1","placementId":""}`,
+	`{"publisherId":"ocm-pub-1","placementId":"homepage-top","tmaxBufferMs":-1}`,
+	`{"publisherId":"ocm-pub-1","placementId":"homepage-top","tmaxBufferMs":"250"}`,
+	`{"publisherId":"ocm-pub-1","placementId":"homepage-top","tmaxBufferMs":1.5}`,
 }
