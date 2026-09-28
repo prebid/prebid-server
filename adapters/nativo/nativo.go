@@ -1,6 +1,7 @@
 package nativo
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -26,7 +27,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	requestJSON, err := jsonutil.Marshal(request)
+	requestCopy := *request
+	requestCopy.Imp = populateNativoImpExt(request.Imp)
+
+	requestJSON, err := jsonutil.Marshal(&requestCopy)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -43,6 +47,49 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	}
 
 	return []*adapters.RequestData{requestData}, nil
+}
+
+// populateNativoImpExt hoists a validated placementId bidder param into imp.ext.nativo.placementid,
+// the location Nativo's endpoint reads it from. Bidder params only ever land under
+// imp.ext.prebid.bidder.nativo (validated against static/bidder-params/nativo.json) - nothing else
+// copies them to the SSP-facing key, so without this the param is silently dropped from the outgoing
+// request. See https://github.com/prebid/prebid-server/issues/4393.
+func populateNativoImpExt(imps []openrtb2.Imp) []openrtb2.Imp {
+	updatedImps := make([]openrtb2.Imp, len(imps))
+	copy(updatedImps, imps)
+
+	for i, imp := range updatedImps {
+		var bidderExt adapters.ExtImpBidder
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			continue
+		}
+
+		var nativoExt openrtb_ext.ImpExtNativo
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &nativoExt); err != nil || nativoExt.PlacementID == 0 {
+			continue
+		}
+
+		var extMap map[string]json.RawMessage
+		if err := jsonutil.Unmarshal(imp.Ext, &extMap); err != nil {
+			continue
+		}
+
+		nativoParamsJSON, err := jsonutil.Marshal(struct {
+			PlacementID jsonutil.StringInt `json:"placementid"`
+		}{PlacementID: nativoExt.PlacementID})
+		if err != nil {
+			continue
+		}
+		extMap["nativo"] = nativoParamsJSON
+
+		updatedExt, err := jsonutil.Marshal(extMap)
+		if err != nil {
+			continue
+		}
+		updatedImps[i].Ext = updatedExt
+	}
+
+	return updatedImps
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {

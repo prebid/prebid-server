@@ -234,6 +234,74 @@ func TestGetMediaTypeForImp(t *testing.T) {
 	}
 }
 
+func TestPopulateNativoImpExt(t *testing.T) {
+	tests := []struct {
+		description string
+		imps        []openrtb2.Imp
+		expectedExt []string
+	}{
+		{
+			description: "placementId as number is hoisted into ext.nativo.placementid",
+			imps: []openrtb2.Imp{
+				{ID: "imp-1", Ext: json.RawMessage(`{"bidder":{"placementId":12345678}}`)},
+			},
+			expectedExt: []string{`{"bidder":{"placementId":12345678},"nativo":{"placementid":12345678}}`},
+		},
+		{
+			description: "placementId as string is normalized and hoisted",
+			imps: []openrtb2.Imp{
+				{ID: "imp-1", Ext: json.RawMessage(`{"bidder":{"placementId":"12345678"}}`)},
+			},
+			expectedExt: []string{`{"bidder":{"placementId":"12345678"},"nativo":{"placementid":12345678}}`},
+		},
+		{
+			description: "missing placementId leaves ext unchanged",
+			imps: []openrtb2.Imp{
+				{ID: "imp-1", Ext: json.RawMessage(`{"bidder":{}}`)},
+			},
+			expectedExt: []string{`{"bidder":{}}`},
+		},
+		{
+			description: "missing ext.bidder leaves ext unchanged",
+			imps: []openrtb2.Imp{
+				{ID: "imp-1", Ext: json.RawMessage(`{}`)},
+			},
+			expectedExt: []string{`{}`},
+		},
+		{
+			description: "multiple imps are each hoisted independently",
+			imps: []openrtb2.Imp{
+				{ID: "imp-1", Ext: json.RawMessage(`{"bidder":{"placementId":111}}`)},
+				{ID: "imp-2", Ext: json.RawMessage(`{"bidder":{}}`)},
+				{ID: "imp-3", Ext: json.RawMessage(`{"bidder":{"placementId":333}}`)},
+			},
+			expectedExt: []string{
+				`{"bidder":{"placementId":111},"nativo":{"placementid":111}}`,
+				`{"bidder":{}}`,
+				`{"bidder":{"placementId":333},"nativo":{"placementid":333}}`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			original := make([]openrtb2.Imp, len(test.imps))
+			copy(original, test.imps)
+
+			result := populateNativoImpExt(test.imps)
+
+			require.Len(t, result, len(test.expectedExt))
+			for i, expected := range test.expectedExt {
+				assert.JSONEq(t, expected, string(result[i].Ext))
+			}
+			// the input slice's Imp elements must not be mutated in place.
+			for i := range original {
+				assert.Equal(t, string(original[i].Ext), string(test.imps[i].Ext))
+			}
+		})
+	}
+}
+
 func TestMakeBidsNativoRenderer(t *testing.T) {
 	bidder := &adapter{endpoint: "https://foo.io/?src=prebid"}
 
