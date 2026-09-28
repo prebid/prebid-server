@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": {
+          "bidder": {
+            "tagId": "16"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "deepintent.com",
+      "page": "http://deepintent.com/"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "DeepIntent only supports Banner and Video media types. Ignoring ImpID=test-imp-id",
+      "comparison": "literal"
+    }
+  ]
+}
