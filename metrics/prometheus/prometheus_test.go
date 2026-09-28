@@ -2,6 +2,7 @@ package prometheusmetrics
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,67 @@ func createMetricsForTesting() *Metrics {
 		Namespace: "prebid",
 		Subsystem: "server",
 	}, config.DisabledMetrics{}, syncerKeys, modulesStages)
+}
+
+// bucketUpperBounds returns a histogram's configured bucket upper bounds, in order, as
+// reported by Prometheus (excluding the implicit +Inf bucket every histogram carries).
+func bucketUpperBounds(h *dto.Histogram) []float64 {
+	rawBuckets := h.GetBucket()
+	bounds := make([]float64, 0, len(rawBuckets))
+	for _, b := range rawBuckets {
+		if math.IsInf(b.GetUpperBound(), 1) {
+			continue
+		}
+		bounds = append(bounds, b.GetUpperBound())
+	}
+	return bounds
+}
+
+// TestPrometheusMetricsBucketsOverride covers https://github.com/prebid/prebid-server/issues/4957:
+// config.PrometheusMetricsBuckets lets an operator override NewMetrics()'s per-histogram-family
+// bucket boundaries, defaulting to today's exact hardcoded values so leaving it unset changes no
+// behavior. Exercises both a plain prometheus.Histogram family (StandardTimeBuckets, via
+// dnsLookupTimer) and a prometheus.HistogramVec family (RequestSizeBuckets, via requestsSize),
+// since NewMetrics wires the override through both constructors.
+func TestPrometheusMetricsBucketsOverride(t *testing.T) {
+	t.Run("default preserves the existing hardcoded buckets", func(t *testing.T) {
+		m := createMetricsForTesting()
+
+		m.RecordDNSTime(time.Second)
+		dnsMetric := dto.Metric{}
+		assert.NoError(t, m.dnsLookupTimer.Write(&dnsMetric))
+		assert.Equal(t, []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}, bucketUpperBounds(dnsMetric.GetHistogram()))
+
+		m.RecordRequest(metrics.Labels{RType: metrics.ReqTypeORTB2Web, RequestStatus: metrics.RequestStatusOK, RequestSize: 123})
+		sizeHistogram, found := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+		assert.True(t, found)
+		assert.Equal(t, []float64{100, 500, 750, 1000, 2000, 4000, 7000, 10000, 15000, 20000, 50000, 75000}, bucketUpperBounds(&sizeHistogram))
+	})
+
+	t.Run("configured buckets override the defaults", func(t *testing.T) {
+		customStandardBuckets := []float64{1, 2, 3}
+		customSizeBuckets := []float64{10, 20}
+
+		m := NewMetrics(config.PrometheusMetrics{
+			Port:      8080,
+			Namespace: "prebid",
+			Subsystem: "server",
+			Buckets: config.PrometheusMetricsBuckets{
+				StandardTimeBuckets: customStandardBuckets,
+				RequestSizeBuckets:  customSizeBuckets,
+			},
+		}, config.DisabledMetrics{}, []string{}, modulesStages)
+
+		m.RecordDNSTime(time.Second)
+		dnsMetric := dto.Metric{}
+		assert.NoError(t, m.dnsLookupTimer.Write(&dnsMetric))
+		assert.Equal(t, customStandardBuckets, bucketUpperBounds(dnsMetric.GetHistogram()))
+
+		m.RecordRequest(metrics.Labels{RType: metrics.ReqTypeORTB2Web, RequestStatus: metrics.RequestStatusOK, RequestSize: 5})
+		sizeHistogram, found := getHistogramFromHistogramVec(m.requestsSize, requestEndpointLabel, string(metrics.EndpointAuction))
+		assert.True(t, found)
+		assert.Equal(t, customSizeBuckets, bucketUpperBounds(&sizeHistogram))
+	})
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
