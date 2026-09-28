@@ -302,6 +302,120 @@ func TestParseGETRequest_BannerDefault(t *testing.T) {
 	})
 }
 
+// --- TestParseGETRequest_DtypeDooh ---
+
+// TestParseGETRequest_DtypeDooh verifies that dtype=8 (DOOH device type) signals
+// a DOOH request even when the stored request has no site/app/dooh object.
+// Without this fix, setSiteImplicitly would turn the request into a site request.
+func TestParseGETRequest_DtypeDooh(t *testing.T) {
+	t.Run("dtype=8 alone creates dooh object, no site", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&dtype=8")
+		_, hasDooh := m["dooh"]
+		assert.True(t, hasDooh, "dooh object must be present when dtype=8")
+		_, hasSite := m["site"]
+		assert.False(t, hasSite, "site must not be created when dtype=8")
+	})
+
+	t.Run("dtype=8 with pubid routes publisher to dooh", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&dtype=8&pubid=pub-dooh")
+		dooh, ok := m["dooh"].(map[string]interface{})
+		require.True(t, ok, "dooh object missing")
+		publisher, ok := dooh["publisher"].(map[string]interface{})
+		require.True(t, ok, "dooh.publisher missing")
+		assert.Equal(t, "pub-dooh", publisher["id"])
+		_, hasSite := m["site"]
+		assert.False(t, hasSite, "site must not be created when dtype=8")
+	})
+
+	t.Run("stored site wins over dtype=8 hint", func(t *testing.T) {
+		// Simulate a stored request that already has a site object.
+		// We inject it via req.site.page dotted-path which sets site before applyInventory.
+		m := parseGETResult(t, "srid=x&dtype=8&req.site.page=https://example.com")
+		_, hasSite := m["site"]
+		assert.True(t, hasSite, "stored site context must survive dtype=8")
+		_, hasDooh := m["dooh"]
+		assert.False(t, hasDooh, "dooh must not be created when site is explicitly declared")
+	})
+}
+
+// --- TestGETImpPatch_ExplicitMtypeRemovesOtherMedia ---
+
+// TestGETImpPatch_ExplicitMtypeRemovesOtherMedia verifies that an explicit mtype query param
+// causes all non-matching media objects from the stored request to be removed, including native.
+func TestGETImpPatch_ExplicitMtypeRemovesOtherMedia(t *testing.T) {
+	// Stored imp has all three media types; explicit mtype=2 (video) should keep only video.
+	storedImp := json.RawMessage(`{"id":"imp1","banner":{"format":[{"w":300,"h":250}]},"audio":{"minduration":5},"native":{"request":"{}"},"video":{"minduration":5}}`)
+
+	patch := parseGETImpPatch(t, "srid=x&mtype=2&w=640&h=360")
+	require.NotNil(t, patch, "imp patch missing")
+
+	merged, err := jsonpatch.MergePatch(storedImp, json.RawMessage(mustMarshal(t, patch)))
+	require.NoError(t, err)
+
+	var result map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(merged, &result))
+
+	assert.Contains(t, result, "video", "video must be present after mtype=2")
+	_, hasBanner := result["banner"]
+	assert.False(t, hasBanner, "banner must be removed after explicit mtype=2")
+	_, hasAudio := result["audio"]
+	assert.False(t, hasAudio, "audio must be removed after explicit mtype=2")
+	_, hasNative := result["native"]
+	assert.False(t, hasNative, "native must be removed after explicit mtype=2")
+
+	// Also verify video got the correct dimensions.
+	var video map[string]interface{}
+	require.NoError(t, json.Unmarshal(result["video"], &video))
+	assert.EqualValues(t, float64(640), video["w"])
+	assert.EqualValues(t, float64(360), video["h"])
+}
+
+// mustMarshal marshals v to JSON, failing the test on error.
+func mustMarshal(t *testing.T, v interface{}) []byte {
+	t.Helper()
+	b, err := json.Marshal(v)
+	require.NoError(t, err)
+	return b
+}
+
+// --- TestParseGETRequest_BannerOverrideDims ---
+
+func TestParseGETRequest_BannerOverrideDims(t *testing.T) {
+	t.Run("ow/oh set banner dimensions", func(t *testing.T) {
+		override := parseGETImpPatch(t, "srid=x&mtype=1&ow=728&oh=90")
+		require.NotNil(t, override, "imp patch missing")
+		banner, ok := override["banner"].(map[string]interface{})
+		require.True(t, ok, "imp patch banner missing")
+		assert.EqualValues(t, float64(728), banner["w"])
+		assert.EqualValues(t, float64(90), banner["h"])
+	})
+
+	// In deferred mode (no mtype), banner uses ow/oh and video uses w/h independently.
+	t.Run("deferred: ow/oh go to banner, w/h go to video", func(t *testing.T) {
+		override := parseGETImpPatch(t, "srid=x&w=1920&h=1080&ow=300&oh=250")
+		require.NotNil(t, override, "imp patch missing")
+		deferred, ok := override["_deferred_media"].(map[string]interface{})
+		require.True(t, ok, "_deferred_media missing")
+		banner, ok := deferred["banner"].(map[string]interface{})
+		require.True(t, ok, "_deferred_media.banner missing")
+		assert.EqualValues(t, float64(300), banner["w"], "ow should set banner.w")
+		assert.EqualValues(t, float64(250), banner["h"], "oh should set banner.h")
+		video, ok := deferred["video"].(map[string]interface{})
+		require.True(t, ok, "_deferred_media.video missing")
+		assert.EqualValues(t, float64(1920), video["w"], "w should still set video.w")
+		assert.EqualValues(t, float64(1080), video["h"], "h should still set video.h")
+	})
+
+	t.Run("w/h used for banner when ow/oh absent", func(t *testing.T) {
+		override := parseGETImpPatch(t, "srid=x&mtype=1&w=320&h=50")
+		require.NotNil(t, override, "imp patch missing")
+		banner, ok := override["banner"].(map[string]interface{})
+		require.True(t, ok, "imp patch banner missing")
+		assert.EqualValues(t, float64(320), banner["w"])
+		assert.EqualValues(t, float64(50), banner["h"])
+	})
+}
+
 // --- TestParseGETRequest_PubID ---
 
 func TestParseGETRequest_PubID(t *testing.T) {
@@ -352,6 +466,42 @@ func TestParseGETRequest_CoppaZeroIsExplicit(t *testing.T) {
 	val, exists := regs["coppa"]
 	assert.True(t, exists, "coppa=0 must be present in JSON, not omitted by omitempty")
 	assert.EqualValues(t, float64(0), val)
+}
+
+// --- TestParseGETRequest_ConsentStringType ---
+
+func TestParseGETRequest_ConsentStringType(t *testing.T) {
+	t.Run("cs without cst goes to user.consent", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&cs=TCFconsent")
+		user, ok := m["user"].(map[string]interface{})
+		require.True(t, ok, "user missing")
+		assert.Equal(t, "TCFconsent", user["consent"])
+	})
+
+	t.Run("cs with cst=2 (TCF2) goes to user.consent", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&cs=TCFconsent&cst=2")
+		user, ok := m["user"].(map[string]interface{})
+		require.True(t, ok, "user missing")
+		assert.Equal(t, "TCFconsent", user["consent"])
+	})
+
+	t.Run("cs with cst=3 (CCPA) goes to regs.us_privacy", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&cs=1YYY&cst=3")
+		regs, ok := m["regs"].(map[string]interface{})
+		require.True(t, ok, "regs missing")
+		assert.Equal(t, "1YYY", regs["us_privacy"])
+		// must not also appear in user.consent
+		if user, ok := m["user"].(map[string]interface{}); ok {
+			assert.Empty(t, user["consent"], "cs must not duplicate to user.consent when cst=3")
+		}
+	})
+
+	t.Run("tcfc always goes to user.consent regardless of cst", func(t *testing.T) {
+		m := parseGETResult(t, "srid=x&tcfc=TCFconsent&cst=3")
+		user, ok := m["user"].(map[string]interface{})
+		require.True(t, ok, "user missing")
+		assert.Equal(t, "TCFconsent", user["consent"])
+	})
 }
 
 // --- TestParseGETRequest_ContentParams ---

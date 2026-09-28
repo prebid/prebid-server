@@ -120,6 +120,8 @@ func (p *getParams) hasInventory() bool {
 // detectContextKey returns the OpenRTB context declared in requestJson ("site", "app",
 // "dooh"), or "" when none is present. It checks the merged request rather than the raw
 // stored request so that req.xxx dotted-path params (e.g. req.dooh.id=…) are respected.
+// device.devicetype=8 (DOOH) is treated as an implied dooh context when no explicit
+// site/app/dooh object is present.
 func detectContextKey(requestJson []byte) string {
 	var m map[string]json.RawMessage
 	if json.Unmarshal(requestJson, &m) != nil {
@@ -133,6 +135,18 @@ func detectContextKey(requestJson []byte) string {
 	}
 	if _, ok := m["site"]; ok {
 		return "site"
+	}
+	// device.devicetype=8 signals DOOH even without an explicit dooh object.
+	if dev, ok := m["device"]; ok {
+		var devMap map[string]json.RawMessage
+		if json.Unmarshal(dev, &devMap) == nil {
+			if dt, ok := devMap["devicetype"]; ok {
+				var v int
+				if json.Unmarshal(dt, &v) == nil && v == 8 {
+					return "dooh"
+				}
+			}
+		}
 	}
 	return ""
 }
@@ -151,11 +165,17 @@ func detectContextKey(requestJson []byte) string {
 //  3. Shared params only (pubid, content) with no stored context and no directional
 //     params produce an explicit error instead of silently defaulting to site.
 func (p *getParams) applyInventory(requestJson []byte, _ json.RawMessage) ([]byte, error) {
-	if !p.hasInventory() {
-		return requestJson, nil
-	}
-
 	ctxKey := detectContextKey(requestJson)
+
+	// When dtype=8 implies dooh but no explicit dooh object exists yet, we must inject
+	// an empty dooh:{} so that setSiteImplicitly (which runs later) does not create a
+	// site object for what is really a DOOH request.
+	if !p.hasInventory() {
+		if ctxKey != "dooh" {
+			return requestJson, nil
+		}
+		// Fall through to inject dooh context (ctxPatch will be empty, producing dooh:{}).
+	}
 
 	if ctxKey == "" {
 		// No stored / dotted-path context — derive from params.
@@ -196,8 +216,18 @@ func (p *getParams) applyInventory(requestJson []byte, _ json.RawMessage) ([]byt
 	if len(p.content) > 0 {
 		ctxPatch["content"] = p.content
 	}
+	// When dtype=8 implied dooh but there is no explicit dooh object yet, we must
+	// merge dooh:{} even if there are no inventory fields to add — this prevents
+	// setSiteImplicitly from creating a site object for a DOOH request.
 	if len(ctxPatch) == 0 {
-		return requestJson, nil
+		var rawCheck map[string]json.RawMessage
+		if json.Unmarshal(requestJson, &rawCheck) == nil {
+			if _, hasExplicit := rawCheck[ctxKey]; hasExplicit {
+				return requestJson, nil
+			}
+		} else {
+			return requestJson, nil
+		}
 	}
 
 	patchJSON, err := json.Marshal(map[string]interface{}{ctxKey: ctxPatch})
@@ -389,13 +419,22 @@ func applyGETPrivacyParamsToMap(q url.Values, reqMap map[string]interface{}) {
 		regsExt["gpc"] = gpc
 		regsMap["ext"] = regsExt
 	}
+	// cst=3 routes cs to regs.us_privacy (CCPA); any other value routes it to user.consent.
+	cst := qParseInt(qFirst(q, "cst"))
+	if cs := qFirst(q, "cs"); cs != "" && cst == 3 {
+		regsMap["us_privacy"] = cs
+	}
 	if len(regsMap) > 0 {
 		reqMap["regs"] = regsMap
 	}
 
-	if consent := qFirst(q, "tcfc", "gdpr_consent", "consent_string", "cs"); consent != "" {
+	if consent := qFirst(q, "tcfc", "gdpr_consent", "consent_string"); consent != "" {
 		userMap := subMap(reqMap, "user")
 		userMap["consent"] = consent
+		reqMap["user"] = userMap
+	} else if cs := qFirst(q, "cs"); cs != "" && cst != 3 {
+		userMap := subMap(reqMap, "user")
+		userMap["consent"] = cs
 		reqMap["user"] = userMap
 	}
 	if addtlConsent := qFirst(q, "addtl_consent"); addtlConsent != "" {
@@ -588,26 +627,29 @@ func buildImpOverrideFromGET(h http.Header, q url.Values) (json.RawMessage, erro
 	mtype := qFirst(q, "mtype")
 	switch mtype {
 	case "2", "vid":
-		// Explicit video: overlay video params, delete any banner/audio from stored request.
+		// Explicit video: overlay video params, delete all other media from stored request.
 		if vm := buildSparseVideoParams(q); len(vm) > 0 {
 			impMap["video"] = vm
 		}
 		impMap["banner"] = nil
 		impMap["audio"] = nil
+		impMap["native"] = nil
 	case "3", "aud":
-		// Explicit audio: overlay audio params, delete any banner/video from stored request.
+		// Explicit audio: overlay audio params, delete all other media from stored request.
 		if am := buildSparseAudioParams(q); len(am) > 0 {
 			impMap["audio"] = am
 		}
 		impMap["banner"] = nil
 		impMap["video"] = nil
+		impMap["native"] = nil
 	case "1", "ban":
-		// Explicit banner: overlay banner params, delete any video/audio from stored request.
+		// Explicit banner: overlay banner params, delete all other media from stored request.
 		if bm := buildSparseBannerParams(q); len(bm) > 0 {
 			impMap["banner"] = bm
 		}
 		impMap["video"] = nil
 		impMap["audio"] = nil
+		impMap["native"] = nil
 	case "":
 		// No mtype: build all three media param maps and defer selection until the stored
 		// imp has been resolved. applyGETImpPatch will detect the existing media type and
@@ -625,12 +667,18 @@ func buildImpOverrideFromGET(h http.Header, q url.Values) (json.RawMessage, erro
 		if len(deferredMedia) > 0 {
 			impMap["_deferred_media"] = deferredMedia
 		}
-	default:
-		// Unknown/native mtype: no GET media params apply.
-		// Null banner/video/audio so stored values for the wrong type are removed.
+	case "4", "nat":
+		// Explicit native: no GET media params for native itself, delete all other media.
 		impMap["banner"] = nil
 		impMap["video"] = nil
 		impMap["audio"] = nil
+	default:
+		// Unknown mtype: no GET media params apply.
+		// Null all known media types so stored values are cleared.
+		impMap["banner"] = nil
+		impMap["video"] = nil
+		impMap["audio"] = nil
+		impMap["native"] = nil
 	}
 
 	if player := strings.TrimSpace(h.Get("X-Device-Player")); player != "" {
@@ -755,9 +803,16 @@ func buildSparseBannerParams(q url.Values) map[string]interface{} {
 			}
 		}
 	}
+	// ow/oh are banner-specific dimension overrides; fall back to the generic w/h when absent.
 	// w and h are validated as a pair so the square exception (n×n valid below minAdDim) applies.
 	// When only one dimension is provided the standard minimum still applies to that dimension alone.
-	w, h := qInt(q, "w"), qInt(q, "h")
+	w, h := qInt(q, "ow"), qInt(q, "oh")
+	if w < 0 {
+		w = qInt(q, "w")
+	}
+	if h < 0 {
+		h = qInt(q, "h")
+	}
 	if w > 0 && h > 0 {
 		if isValidAdDim(w, h) {
 			m["w"] = w
@@ -939,9 +994,9 @@ func withTransferredMediaExt(imp json.RawMessage, patchMap map[string]json.RawMe
 		return patch, nil
 	}
 
-	// Find ext from the highest-priority displaced media object (video > audio > banner).
+	// Find ext from the highest-priority displaced media object (video > audio > banner > native).
 	var extToTransfer json.RawMessage
-	for _, mt := range []string{"video", "audio", "banner"} {
+	for _, mt := range []string{"video", "audio", "banner", "native"} {
 		if mt == newMT {
 			continue
 		}
