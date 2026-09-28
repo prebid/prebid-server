@@ -305,6 +305,16 @@ func TestCloneUserAgent(t *testing.T) {
 		assert.NotSame(t, given.Ext, result.Ext, "ext")
 	})
 
+	t.Run("ext-does-not-mutate-original", func(t *testing.T) {
+		given := &openrtb2.UserAgent{Ext: json.RawMessage(`{"anyField":1}`)}
+		originalExt := given.Ext
+		result := CloneUserAgent(given)
+		if assert.NotEmpty(t, originalExt) && assert.NotEmpty(t, given.Ext) && assert.NotEmpty(t, result.Ext) {
+			assert.Same(t, &originalExt[0], &given.Ext[0], "original-ext-backing")
+			assert.NotSame(t, &originalExt[0], &result.Ext[0], "clone-ext-backing")
+		}
+	})
+
 	t.Run("assumptions", func(t *testing.T) {
 		assert.ElementsMatch(t, discoverPointerFields(reflect.TypeOf(openrtb2.UserAgent{})),
 			[]string{
