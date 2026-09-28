@@ -47,7 +47,11 @@ import (
 )
 
 type extCacheInstructions struct {
-	cacheBids, cacheVAST, returnCreative bool
+	cacheBids, cacheVAST bool
+	// returnBidsCreative and returnVastCreative independently control whether the
+	// creative markup (adm) is stripped from non-video and video bids respectively,
+	// mirroring ext.prebid.cache.bids.returnCreative and ext.prebid.cache.vastXml.returnCreative.
+	returnBidsCreative, returnVastCreative bool
 }
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -535,7 +539,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 	e.bidValidationEnforcement.SetBannerCreativeMaxSize(r.Account.Validations)
 
 	// Build the response
-	bidResponse := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs, &seatNonBidBuilder)
+	bidResponse := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper, adapterExtra, auc, bidResponseExt, cacheInstructions.returnBidsCreative, cacheInstructions.returnVastCreative, r.ImpExtInfoMap, r.PubID, errs, &seatNonBidBuilder)
 	bidResponse = adservertargeting.Apply(r.BidRequestWrapper, r.ResolvedBidRequest, bidResponse, r.QueryParams, bidResponseExt, r.Account.TruncateTargetAttribute)
 
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
@@ -954,7 +958,7 @@ func errsToBidderWarnings(errs []error) []openrtb_ext.ExtBidderMessage {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, bidRequest *openrtb_ext.RequestWrapper, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, pubID string, errList []error, seatNonBidBuilder *SeatNonBidBuilder) *openrtb2.BidResponse {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid, bidRequest *openrtb_ext.RequestWrapper, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnBidsCreative, returnVastCreative bool, impExtInfoMap map[string]ImpExtInfo, pubID string, errList []error, seatNonBidBuilder *SeatNonBidBuilder) *openrtb2.BidResponse {
 	bidResponse := new(openrtb2.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -969,7 +973,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	for a, adapterSeatBids := range adapterSeatBids {
 		//while processing every single bib, do we need to handle categories here?
 		if adapterSeatBids != nil && len(adapterSeatBids.Bids) > 0 {
-			sb := e.makeSeatBid(adapterSeatBids, a, adapterExtra, auc, returnCreative, impExtInfoMap, bidRequest, bidResponseExt, pubID, seatNonBidBuilder)
+			sb := e.makeSeatBid(adapterSeatBids, a, adapterExtra, auc, returnBidsCreative, returnVastCreative, impExtInfoMap, bidRequest, bidResponseExt, pubID, seatNonBidBuilder)
 			seatBids = append(seatBids, *sb)
 			bidResponse.Cur = adapterSeatBids.Currency
 		}
@@ -1288,14 +1292,14 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*en
 
 // Return an openrtb seatBid for a bidder
 // buildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) makeSeatBid(adapterBid *entities.PbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, bidRequest *openrtb_ext.RequestWrapper, bidResponseExt *openrtb_ext.ExtBidResponse, pubID string, seatNonBidBuilder *SeatNonBidBuilder) *openrtb2.SeatBid {
+func (e *exchange) makeSeatBid(adapterBid *entities.PbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnBidsCreative, returnVastCreative bool, impExtInfoMap map[string]ImpExtInfo, bidRequest *openrtb_ext.RequestWrapper, bidResponseExt *openrtb_ext.ExtBidResponse, pubID string, seatNonBidBuilder *SeatNonBidBuilder) *openrtb2.SeatBid {
 	seatBid := &openrtb2.SeatBid{
 		Seat:  adapter.String(),
 		Group: 0, // Prebid cannot support roadblocking
 	}
 
 	var errList []error
-	seatBid.Bid, errList = e.makeBid(adapterBid.Bids, auc, returnCreative, impExtInfoMap, bidRequest, bidResponseExt, adapter, pubID, seatNonBidBuilder)
+	seatBid.Bid, errList = e.makeBid(adapterBid.Bids, auc, returnBidsCreative, returnVastCreative, impExtInfoMap, bidRequest, bidResponseExt, adapter, pubID, seatNonBidBuilder)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errsToBidderErrors(errList)...)
 	}
@@ -1303,7 +1307,7 @@ func (e *exchange) makeSeatBid(adapterBid *entities.PbsOrtbSeatBid, adapter open
 	return seatBid
 }
 
-func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, bidRequest *openrtb_ext.RequestWrapper, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string, seatNonBidBuilder *SeatNonBidBuilder) ([]openrtb2.Bid, []error) {
+func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnBidsCreative, returnVastCreative bool, impExtInfoMap map[string]ImpExtInfo, bidRequest *openrtb_ext.RequestWrapper, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string, seatNonBidBuilder *SeatNonBidBuilder) ([]openrtb2.Bid, []error) {
 	result := make([]openrtb2.Bid, 0, len(bids))
 	errs := make([]error, 0, 1)
 
@@ -1362,6 +1366,11 @@ func (e *exchange) makeBid(bids []*entities.PbsOrtbBid, auc *auction, returnCrea
 			result = append(result, *bid.Bid)
 			resultBid := &result[len(result)-1]
 			resultBid.Ext = bidExtJSON
+			// vastXml.returnCreative governs video bids; bids.returnCreative governs every other media type.
+			returnCreative := returnBidsCreative
+			if bid.BidType == openrtb_ext.BidTypeVideo {
+				returnCreative = returnVastCreative
+			}
 			if !returnCreative {
 				resultBid.AdM = ""
 			}
