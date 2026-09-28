@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.ssp-data-fusion.bid/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"
