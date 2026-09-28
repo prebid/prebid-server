@@ -7,33 +7,15 @@ import (
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
-var validParams = []string{
-	`{ "sourceId": "someSourceId", "accountId": "0800fc577294" }`,
-}
-
-var invalidParams = []string{
-	``,
-	`null`,
-	`true`,
-	`9`,
-	`1.2`,
-	`[]`,
-	`{}`,
-	`{  "accountId": "", "sourceId": "" }`,
-	`{  "accountId": true, "sourceId": true }`,
-	`{  "accountId": 123, "sourceId": 123 }`,
-	`{  "accountId": null, "sourceId": null }`,
-}
-
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
-		t.Fatalf("Failed to fetch the json-schemas. %v", err)
+		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
 
-	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderEscalax, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected Escalax params: %s", validParam)
+	for _, p := range validParams {
+		if err := validator.Validate(openrtb_ext.BidderEscalax, json.RawMessage(p)); err != nil {
+			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
 }
@@ -41,12 +23,45 @@ func TestValidParams(t *testing.T) {
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
-		t.Fatalf("Failed to fetch the json-schemas. %v", err)
+		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
 
-	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderEscalax, json.RawMessage(invalidParam)); err == nil {
-			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
+	for _, p := range invalidParams {
+		if err := validator.Validate(openrtb_ext.BidderEscalax, json.RawMessage(p)); err == nil {
+			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
+}
+
+var validParams = []string{
+	`{"accountId": "acc1", "sourceId": "src1"}`,
+	`{"accountId": "acc1", "sourceId": "src1", "region": "us"}`,
+	`{"accountId": "acc1", "sourceId": "src1", "region": "eu"}`,
+	`{"accountId": "acc1", "sourceId": "src1", "region": "apac"}`,
+
+	`{"supplyPlacementId": "sp1"}`,
+	`{"supplyPlacementId": "sp1", "region": "us"}`,
+	`{"supplyPlacementId": "sp1", "region": "eu"}`,
+	`{"supplyPlacementId": "sp1", "region": "apac"}`,
+}
+
+var invalidParams = []string{
+	`{}`,
+	`{"accountId": "acc1"}`,
+	`{"sourceId": "src1"}`,
+	`{"region": "us"}`,
+
+	`{"accountId": "acc1", "sourceId": "src1", "supplyPlacementId": "sp1"}`,
+
+	`{"accountId": 42, "sourceId": "src1"}`,
+	`{"accountId": "acc1", "sourceId": 42}`,
+	`{"supplyPlacementId": 42}`,
+	`{"accountId": "acc1", "sourceId": "src1", "region": 42}`,
+
+	`{"accountId": "", "sourceId": "src1"}`,
+	`{"accountId": "acc1", "sourceId": ""}`,
+	`{"supplyPlacementId": ""}`,
+
+	`{"accountId": "acc1", "sourceId": "src1", "region": "asia"}`,
+	`{"supplyPlacementId": "sp1", "region": "au"}`,
 }
