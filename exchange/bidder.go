@@ -307,6 +307,7 @@ func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
+				preserveOriginalSeats(httpInfo.response.Body, bidResponse, bidderRequest.BidderName)
 				reject := hookExecutor.ExecuteRawBidderResponseStage(bidResponse, string(bidder.BidderName))
 				if reject != nil {
 					errs = append(errs, reject)
@@ -455,6 +456,57 @@ func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 
 	extraRespInfo.seatNonBidBuilder = seatNonBidBuilder
 	return seatBids, extraRespInfo, errs
+}
+
+// preserveOriginalSeats copies seats from an OpenRTB bidder response into the
+// bid metadata. Adapters flatten seatbid.bid into BidderResponse.Bids, so the
+// association with the original seat would otherwise be lost. Bid IDs are used
+// to restore that association without requiring every OpenRTB adapter to do it.
+// Explicit metadata supplied by an adapter always takes precedence. Metadata
+// is unnecessary when the original and final seats are identical.
+func preserveOriginalSeats(responseBody []byte, bidderResponse *adapters.BidderResponse, defaultSeat openrtb_ext.BidderName) {
+	var response openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(responseBody, &response); err != nil {
+		return
+	}
+
+	seatsByBidID := make(map[string]string)
+	ambiguousBidIDs := make(map[string]struct{})
+	for _, seatBid := range response.SeatBid {
+		if seatBid.Seat == "" {
+			continue
+		}
+		for _, bid := range seatBid.Bid {
+			if bid.ID == "" {
+				continue
+			}
+			if existingSeat, exists := seatsByBidID[bid.ID]; exists && existingSeat != seatBid.Seat {
+				delete(seatsByBidID, bid.ID)
+				ambiguousBidIDs[bid.ID] = struct{}{}
+				continue
+			}
+			if _, ambiguous := ambiguousBidIDs[bid.ID]; !ambiguous {
+				seatsByBidID[bid.ID] = seatBid.Seat
+			}
+		}
+	}
+
+	for i := range bidderResponse.Bids {
+		bid := bidderResponse.Bids[i]
+		if bid == nil || bid.Bid == nil || (bid.BidMeta != nil && bid.BidMeta.Seat != "") {
+			continue
+		}
+		outputSeat := defaultSeat
+		if bid.Seat != "" {
+			outputSeat = bid.Seat
+		}
+		if seat := seatsByBidID[bid.Bid.ID]; seat != "" && seat != outputSeat.String() {
+			if bid.BidMeta == nil {
+				bid.BidMeta = &openrtb_ext.ExtBidPrebidMeta{}
+			}
+			bid.BidMeta.Seat = seat
+		}
+	}
 }
 
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
