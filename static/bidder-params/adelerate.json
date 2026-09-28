@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adelerate Adapter Params",
+  "description": "A schema which validates params accepted by the Adelerate adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The placement ID provided by Adelerate"
+    },
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The publisher ID provided by Adelerate"
+    },
+    "floor": {
+      "type": "number",
+      "description": "Minimum CPM price. Use of Prebid Floors module is preferred."
+    },
+    "floorCurrency": {
+      "type": "string",
+      "description": "Currency for the floor param. Defaults to USD."
+    }
+  },
+  "required": [
+    "placementId",
+    "publisherId"
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "test-placement-1",
+            "publisherId": "test-publisher-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.bidelerate.com/openrtb2/auction",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {"w": 300, "h": 250}
+                ]
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "placementId": "test-placement-1",
+                  "publisherId": "test-publisher-1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com"
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "unsupported-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1.0,
+                  "adm": "<div>unsupported ad</div>",
+                  "crid": "unsupported-creative",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 99
+                },
+                {
+                  "id": "valid-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1.5,
+                  "adm": "<div>valid ad</div>",
+                  "crid": "valid-creative",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ],
+              "seat": "adelerate"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "valid-bid-id",
+            "impid": "test-imp-id",
+            "price": 1.5,
+            "adm": "<div>valid ad</div>",
+            "crid": "valid-creative",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported mtype 99 for bid unsupported-bid-id",
+      "comparison": "literal"
+    }
+  ]
+}
