@@ -299,7 +299,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r *AuctionRequest, debugLog 
 		r.RequestType == metrics.ReqTypeORTB2App ||
 		r.RequestType == metrics.ReqTypeAMP {
 		//Extract First party data for auction endpoint only
-		resolvedFPD, fpdErrors := firstpartydata.ExtractFPDForBidders(r.BidRequestWrapper)
+		resolvedFPD, fpdErrors := firstpartydata.ExtractFPDForBidders(r.BidRequestWrapper, r.Account.BidderConfig.ArrayMerge)
 		if len(fpdErrors) > 0 {
 			var errMessages []string
 			for _, fpdError := range fpdErrors {
