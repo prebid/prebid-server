@@ -1,0 +1,49 @@
+{
+    "hooks": {
+        "enabled": true,
+        "modules": {
+            "zerogpu": {
+                "rtd": {
+                    "enabled": true,
+                    "api_key": "<your ZeroGPU API key>",
+                    "endpoint": "https://api.zerogpu.ai/v1/responses",
+                    "model": "zlm-v1-iab-domain-classifier",
+                    "timeout_ms": 2000,
+                    "cache_ttl_seconds": 86400,
+                    "negative_cache_ttl_seconds": 300,
+                    "retry_cache_ttl_seconds": 30,
+                    "cache_size": 10485760,
+                    "min_score": 0.5,
+                    "max_segments": 0,
+                    "data_provider_name": "zerogpu.ai",
+                    "enrich_content_1_0": false,
+                    "enrich_user_audience": false,
+                    "account_filter": {
+                        "allow_list": []
+                    }
+                }
+            }
+        },
+        "host_execution_plan": {
+            "endpoints": {
+                "/openrtb2/auction": {
+                    "stages": {
+                        "processed_auction_request": {
+                            "groups": [
+                                {
+                                    "timeout": 10,
+                                    "hook_sequence": [
+                                        {
+                                            "module_code": "zerogpu.rtd",
+                                            "hook_impl_code": "zerogpu-rtd-processed-auction-request"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
