@@ -1,0 +1,13 @@
+{
+  "description": "GET with a stored request that has no imp key at all is rejected by validation",
+  "httpMethod": "GET",
+  "query": "srid=stored-no-imp&mtype=1&w=300&h=250",
+  "generatedRequestId": "test-get-no-imp",
+  "mockStoredRequests": {
+    "stored-no-imp": {
+      "site": {"page": "https://example.com"}
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "request.imp must contain at least one element."
+}

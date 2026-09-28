@@ -29,5 +29,38 @@
       }
     ],
     "cur": "USD"
+  },
+  "expectedValidatedBidRequest": {
+    "id": "test-get-uuid-multi",
+    "imp": [
+      {
+        "id": "imp1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}],
+          "w": 300,
+          "h": 250
+        },
+        "secure": 1,
+        "ext": {
+          "prebid": {
+            "bidder": {"appnexus": {"placementId": 12345}}
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com",
+      "publisher": {"domain": "example.com"},
+      "ext": {"amp": 0}
+    },
+    "device": {"ip": "192.0.2.1"},
+    "at": 1,
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored-multi"},
+        "server": {"externalurl": "", "gvlid": 0, "datacenter": "", "http_method": "GET"}
+      }
+    }
   }
 }

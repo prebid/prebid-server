@@ -737,6 +737,32 @@ func TestParseGETRequest_MalformedIPHeaderIgnored(t *testing.T) {
 	}
 }
 
+// TestParseGETRequest_IPQueryParam verifies that the ip query param routes
+// IPv4 to device.ip and IPv6 (including URL-encoded colons) to device.ipv6.
+func TestParseGETRequest_IPQueryParam(t *testing.T) {
+	t.Run("ipv4 via ip param goes to device.ip", func(t *testing.T) {
+		m := parseGETResult(t, "srid=s&ip=203.0.113.7")
+		dev := getDevice(t, m)
+		assert.Equal(t, "203.0.113.7", dev["ip"])
+		assert.NotContains(t, dev, "ipv6")
+	})
+
+	t.Run("ipv6 via ip param goes to device.ipv6", func(t *testing.T) {
+		// URL-encoded colons: ip=2001%3Adb8%3A%3A9
+		m := parseGETResult(t, "srid=s&ip=2001%3Adb8%3A%3A9")
+		dev := getDevice(t, m)
+		assert.Equal(t, "2001:db8::9", dev["ipv6"])
+		assert.NotContains(t, dev, "ip")
+	})
+
+	t.Run("explicit ipv6 param accepts only ipv6", func(t *testing.T) {
+		m := parseGETResult(t, "srid=s&ipv6=2001%3Adb8%3A%3A1")
+		dev := getDevice(t, m)
+		assert.Equal(t, "2001:db8::1", dev["ipv6"])
+		assert.NotContains(t, dev, "ip")
+	})
+}
+
 // TestParseGETRequest_PlayerHeaderWithoutImpIsSafe verifies that X-Device-Player
 // goes into the imp patch (not a direct imp mutation), so there is no panic
 // when the header arrives on a request with no other imp params.
