@@ -4,31 +4,41 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 728,
-              "h": 90
-            }
-          ]
-        },
-        "video": {
-          "w": 728,
-          "h": 90,
-          "protocols": [
-            2
-          ],
-          "playbackmethod": [
-            2
-          ],
+        "audio": {
           "mimes": [
-            "foo",
-            "bar"
-          ]
+            "audio/mp4",
+            "audio/mpeg",
+            "audio/aac"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "startdelay": 0,
+          "minbitrate": 32,
+          "maxbitrate": 320,
+          "delivery": [
+            1,
+            2
+          ],
+          "feed": 3,
+          "nvol": 1
         },
         "ext": {
           "bidder": {
-            "adUnitId": "inview",
+            "adUnitId": "fake-site-id",
             "publisherId": "test-publisher-id"
           }
         }
@@ -59,31 +69,41 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 728,
-                    "h": 90
-                  }
-                ]
-              },
-              "video": {
-                "w": 728,
-                "h": 90,
-                "protocols": [
-                  2
-                ],
-                "playbackmethod": [
-                  2
-                ],
+              "audio": {
                 "mimes": [
-                  "foo",
-                  "bar"
-                ]
+                  "audio/mp4",
+                  "audio/mpeg",
+                  "audio/aac"
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8,
+                  11,
+                  12,
+                  13,
+                  14,
+                  15,
+                  16
+                ],
+                "startdelay": 0,
+                "minbitrate": 32,
+                "maxbitrate": 320,
+                "delivery": [
+                  1,
+                  2
+                ],
+                "feed": 3,
+                "nvol": 1
               },
               "ext": {
                 "insticator": {
-                  "adUnitId": "inview",
+                  "adUnitId": "fake-site-id",
                   "publisherId": "test-publisher-id"
                 }
               }
@@ -111,11 +131,18 @@
                   "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                   "impid": "test-imp-id",
                   "price": 0.5,
-                  "adm": "some-test-ad",
+                  "adm": "some-test-vast-audio-ad",
+                  "adomain": [
+                    "insticator.com"
+                  ],
+                  "cat": [
+                    "IAB1-1"
+                  ],
+                  "dur": 30,
                   "crid": "crid_10",
-                  "h": 90,
-                  "w": 728,
-                  "mtype": 1
+                  "ext": {
+                    "insticator": {}
+                  }
                 }
               ]
             }
@@ -134,11 +161,18 @@
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "some-test-vast-audio-ad",
+            "adomain": [
+              "insticator.com"
+            ],
+            "cat": [
+              "IAB1-1"
+            ],
+            "dur": 30,
             "crid": "crid_10",
-            "w": 728,
-            "h": 90,
-            "mtype": 1
+            "ext": {
+              "insticator": {}
+            }
           },
           "type": "banner"
         }
