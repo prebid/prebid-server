@@ -143,9 +143,9 @@ func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		ID: "req-multi-host",
 		Imp: []openrtb2.Imp{
-			impWithHost("imp-eu", "eu"),
-			impWithHost("imp-us", "us"),
-			impWithHost("imp-eu-2", "eu"),
+			impWithHost("imp-eu", "pool1"),
+			impWithHost("imp-us", "pool2"),
+			impWithHost("imp-eu-2", "pool1"),
 		},
 	}
 
@@ -156,10 +156,10 @@ func TestMakeRequests_GroupsImpsByHost(t *testing.T) {
 	require.Len(t, errs, 0)
 	require.Len(t, requests, 2)
 
-	assert.Equal(t, "http://eu.scalibur.io/adserver/ortb?type=prebid-server", requests[0].Uri)
+	assert.Equal(t, "http://pool1.scalibur.io/adserver/ortb?type=prebid-server", requests[0].Uri)
 	assert.Equal(t, []string{"imp-eu", "imp-eu-2"}, requests[0].ImpIDs)
 
-	assert.Equal(t, "http://us.scalibur.io/adserver/ortb?type=prebid-server", requests[1].Uri)
+	assert.Equal(t, "http://pool2.scalibur.io/adserver/ortb?type=prebid-server", requests[1].Uri)
 	assert.Equal(t, []string{"imp-us"}, requests[1].ImpIDs)
 }
 

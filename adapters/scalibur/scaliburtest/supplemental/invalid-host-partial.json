@@ -32,7 +32,7 @@
         "ext": {
           "bidder": {
             "placementId": "placement-good",
-            "host": "eu"
+            "host": "pool1"
           }
         }
       }
@@ -41,7 +41,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://eu.scalibur.io/adserver/ortb?type=prebid-server",
+        "uri": "http://pool1.scalibur.io/adserver/ortb?type=prebid-server",
         "impIDs": [
           "imp-good-host"
         ],

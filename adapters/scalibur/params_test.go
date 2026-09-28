@@ -38,9 +38,9 @@ var validParams = []string{
 	`{"placementId":"p123"}`,
 	`{"placementId":"p123", "bidfloor": 1.5}`,
 	`{"placementId":"p123", "bidfloor": 1.5, "bidfloorcur": "USD"}`,
-	`{"host":"eu"}`,
-	`{"host":"dev101"}`,
-	`{"placementId":"p123", "host":"us-east-1"}`,
+	`{"host":"srv"}`,
+	`{"host":"pool1"}`,
+	`{"placementId":"p123", "host":"pool10"}`,
 	`{"bidfloor": 1.5}`,
 	`{"placementId":"p123", "customKey": "customValue"}`,
 }
@@ -54,14 +54,13 @@ var invalidParams = []string{
 	`{"placementId": 123}`,
 	`{"host":"evil.com/path?x=1"}`,
 	`{"host":"https://eu.scalibur.io"}`,
-	// The endpoint domain is fixed, so the host param may not carry a domain,
-	// a port, or anything else that could redirect the request off scalibur.io.
+	// The host param is a closed enum, so nothing outside the listed pools is
+	// accepted: no domains, ports, casing variants or unlisted pool names.
 	`{"host":"eu.scalibur.io"}`,
 	`{"host":"eu.evil.com"}`,
-	`{"host":"host:8080"}`,
-	`{"host":"EU"}`,
+	`{"host":"pool1:8080"}`,
+	`{"host":"POOL1"}`,
 	`{"host":""}`,
-	// RFC 1123: a label may not start or end with a hyphen.
-	`{"host":"-foo"}`,
-	`{"host":"foo-"}`,
+	`{"host":"pool11"}`,
+	`{"host":"eu"}`,
 }

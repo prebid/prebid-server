@@ -18,8 +18,20 @@
     },
     "host": {
       "type": "string",
-      "description": "Subdomain label of the scalibur.io endpoint, for account or environment specific servers. A single RFC 1123 DNS label only, no dots or port; the domain itself is fixed. Defaults to srv. Impressions naming different subdomains are sent as separate requests, one per subdomain.",
-      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+      "description": "Fixed routing pool for the Scalibur endpoint, selected from this closed set. The endpoint domain is fixed, so the only hostnames reachable are the ones listed here. Set by the Prebid Server host, not by publishers; omitted it defaults to srv, which is the standard endpoint. Impressions naming different pools are sent as separate requests, one per pool.",
+      "enum": [
+        "srv",
+        "pool1",
+        "pool2",
+        "pool3",
+        "pool4",
+        "pool5",
+        "pool6",
+        "pool7",
+        "pool8",
+        "pool9",
+        "pool10"
+      ]
     }
   }
 }

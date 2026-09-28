@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/adcom1"
@@ -20,10 +19,13 @@ import (
 // defaultHostLabel resolves the {{.Host}} macro when no host param is supplied.
 const defaultHostLabel = "srv"
 
-// hostLabelPattern matches a single RFC 1123 DNS label, mirroring the
-// bidder-params schema. The endpoint domain is fixed in the template, so only
-// the subdomain varies.
-var hostLabelPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+// allowedHostLabels is the closed set of routing pools, mirroring the enum in
+// the bidder-params schema. The endpoint domain is fixed in the template, so
+// these are the only hostnames the adapter can ever reach.
+var allowedHostLabels = map[string]struct{}{
+	"srv": {}, "pool1": {}, "pool2": {}, "pool3": {}, "pool4": {}, "pool5": {},
+	"pool6": {}, "pool7": {}, "pool8": {}, "pool9": {}, "pool10": {},
+}
 
 type adapter struct {
 	endpoint *template.Template
@@ -371,7 +373,7 @@ func resolveHostLabel(impID string, ext *openrtb_ext.ExtImpScalibur) (string, er
 		host = ext.Host
 	}
 
-	if !hostLabelPattern.MatchString(host) {
+	if _, ok := allowedHostLabels[host]; !ok {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: invalid host %s", impID, host),
 		}
