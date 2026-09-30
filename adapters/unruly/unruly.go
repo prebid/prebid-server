@@ -71,14 +71,14 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 			errors = append(errors, err)
 			return nil, errors
 		}
-		unrulyExtCopy, err := json.Marshal(&unrulyExt)
+		unrulyExtCopy, err := jsonutil.Marshal(&unrulyExt)
 		if err != nil {
 			errors = append(errors, err)
 			return nil, errors
 		}
 		// Replace only the bidder params so that fields Prebid Server passes through survive.
 		impExt["bidder"] = unrulyExtCopy
-		impExtCopy, err := json.Marshal(impExt)
+		impExtCopy, err := jsonutil.Marshal(impExt)
 		if err != nil {
 			errors = append(errors, err)
 			return nil, errors
