@@ -240,12 +240,16 @@ func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 	return nil
 }
 
-func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
+func assignBannerSize(banner *openrtb2.Banner, instl int8) (*openrtb2.Banner, error) {
 	if banner.W != nil && banner.H != nil {
 		return banner, nil
 	}
 
 	if len(banner.Format) == 0 {
+		// Per OpenRTB 2.6 spec, banner sizes are optional for interstitial impressions.
+		if instl == 1 {
+			return banner, nil
+		}
 		return nil, &errortypes.BadInput{
 			Message: "No sizes provided for Banner",
 		}
@@ -308,7 +312,7 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	}
 
 	if imp.Banner != nil {
-		bannerCopy, err := assignBannerSize(imp.Banner)
+		bannerCopy, err := assignBannerSize(imp.Banner, imp.Instl)
 		if err != nil {
 			return wrapExt, pubID, err
 		}
