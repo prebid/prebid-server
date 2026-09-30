@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>screencore: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/screencore/screencore.go (93.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package screencore
+
+import (
+        "fmt"
+        "net/http"
+        "net/url"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+type adapter struct{}
+
+type reqBodyExt struct {
+        ScreencoreBidderExt reqBodyExtBidder `json:"bidder"`
+}
+
+type reqBodyExtBidder struct {
+        SspPlacementID string `json:"sspPlacementId,omitempty"`
+}
+
+var regionEndpoints = map[string]string{
+        "us":   "https://ssp-us.screencore.io/pbs-bid",
+        "eu":   "https://ssp-eu.screencore.io/pbs-bid",
+        "asia": "https://ssp-asia.screencore.io/pbs-bid",
+}
+
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{}, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+        var adapterRequests []*adapters.RequestData
+
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                var bidderExt adapters.ExtImpBidder
+                if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">var screencoreExt openrtb_ext.ImpExtScreencore
+                if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;screencoreExt); err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if screencoreExt.SspPlacementID == "" </span><span class="cov0" title="0">{
+                        errs = append(errs, fmt.Errorf("imp %s: sspPlacementId is required", imp.ID))
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">adapterReq, err := a.makeRequest(request, imp, screencoreExt)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">adapterRequests = append(adapterRequests, adapterReq)</span>
+        }
+
+        <span class="cov8" title="1">return adapterRequests, errs</span>
+}
+
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, ext openrtb_ext.ImpExtScreencore) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        endpoint, err := buildSspEndpoint(ext)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("imp %s: %w", imp.ID, err)
+        }</span>
+
+        <span class="cov8" title="1">impExt := reqBodyExt{
+                ScreencoreBidderExt: reqBodyExtBidder{
+                        SspPlacementID: ext.SspPlacementID,
+                },
+        }
+        impExtJSON, err := jsonutil.Marshal(impExt)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">reqCopy := *request
+        impCopy := imp
+        impCopy.Ext = impExtJSON
+        reqCopy.Imp = []openrtb2.Imp{impCopy}
+
+        reqJSON, err := jsonutil.Marshal(reqCopy)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+
+        return &amp;adapters.RequestData{
+                Method:  http.MethodPost,
+                Uri:     endpoint,
+                Body:    reqJSON,
+                Headers: headers,
+                ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
+        }, nil</span>
+}
+
+func buildSspEndpoint(ext openrtb_ext.ImpExtScreencore) (string, error) <span class="cov8" title="1">{
+        base, err := resolveRegionEndpoint(ext.Region)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", err
+        }</span>
+
+        <span class="cov8" title="1">endpointURL, err := url.Parse(base)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("invalid ssp endpoint %q: %w", base, err)
+        }</span>
+
+        <span class="cov8" title="1">query := endpointURL.Query()
+        query.Set("pId", ext.SspPlacementID)
+        endpointURL.RawQuery = query.Encode()
+
+        return endpointURL.String(), nil</span>
+}
+
+func resolveRegionEndpoint(region string) (string, error) <span class="cov8" title="1">{
+        if region == "" </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("region is required when sspPlacementId is provided")
+        }</span>
+        <span class="cov8" title="1">endpoint, ok := regionEndpoints[region]
+        if !ok </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("unsupported region %q, expected one of us/eu/asia", region)
+        }</span>
+        <span class="cov8" title="1">return endpoint, nil</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var response openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+        if len(response.Cur) != 0 </span><span class="cov8" title="1">{
+                bidResponse.Currency = response.Cur
+        }</span>
+
+        <span class="cov8" title="1">for _, seatBid := range response.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := seatBid.Bid[i]
+                        bidType, err := getBidType(bid)
+                        if err != nil </span><span class="cov8" title="1">{
+                                return nil, []error{err}
+                        }</span>
+
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;bid,
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+
+        <span class="cov8" title="1">return bidResponse, nil</span>
+}
+
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative, nil</span>
+        default:<span class="cov8" title="1">
+                return "", fmt.Errorf("could not define media type for bid: %s", bid.ImpID)</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
