@@ -1,0 +1,115 @@
+{
+  "mockBidRequest": {
+    "id": "req-video",
+    "app": {
+      "bundle": "com.example.app",
+      "name": "Example App",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.app"
+    },
+    "imp": [
+      {
+        "id": "imp-v",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "ext": {
+          "bidder": {
+            "seatKey": "bds_testseatkey"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://biddigi-auction-service.biddigi25.workers.dev/inbound/openrtb2/auction",
+        "body": {
+          "id": "req-video",
+          "app": {
+            "bundle": "com.example.app",
+            "name": "Example App",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.app"
+          },
+          "imp": [
+            {
+              "id": "imp-v",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "minduration": 5,
+                "maxduration": 30
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-v"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-video",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "biddigi",
+              "bid": [
+                {
+                  "id": "bid-v",
+                  "impid": "imp-v",
+                  "price": 1.0,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "cr-v",
+                  "mtype": 2,
+                  "dur": 15
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-v",
+            "impid": "imp-v",
+            "price": 1.0,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "crid": "cr-v",
+            "mtype": 2,
+            "dur": 15
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
