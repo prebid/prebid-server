@@ -24,7 +24,11 @@
           "data": {
             "pbadslot": "/19968336/header-bid-tag-0"
           },
-          "tid": "some-transaction-id"
+          "tid": "some-transaction-id",
+          "prebid": {
+            "is_rewarded_inventory": 1
+          },
+          "ae": 1
         }
       }
     ]
@@ -59,7 +63,11 @@
                 "data": {
                   "pbadslot": "/19968336/header-bid-tag-0"
                 },
-                "tid": "some-transaction-id"
+                "tid": "some-transaction-id",
+                "prebid": {
+                  "is_rewarded_inventory": 1
+                },
+                "ae": 1
               }
             }
           ]
