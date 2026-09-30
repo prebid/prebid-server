@@ -55,8 +55,8 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 	numRequests := len(req.Imp)
 	for i := 0; i < numRequests; i++ {
 		imp := req.Imp[i]
-		var bidderExt adapters.ExtImpBidder
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		var impExt map[string]json.RawMessage
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("ext data not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -64,7 +64,7 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 			return nil, errors
 		}
 		var unrulyExt openrtb_ext.ExtImpUnruly
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
+		if err := jsonutil.Unmarshal(impExt["bidder"], &unrulyExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("siteid not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -76,10 +76,9 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 			errors = append(errors, err)
 			return nil, errors
 		}
-		bidderExtCopy := struct {
-			Bidder json.RawMessage `json:"bidder,omitempty"`
-		}{unrulyExtCopy}
-		impExtCopy, err := json.Marshal(&bidderExtCopy)
+		// Replace only the bidder params so that fields Prebid Server passes through survive.
+		impExt["bidder"] = unrulyExtCopy
+		impExtCopy, err := json.Marshal(impExt)
 		if err != nil {
 			errors = append(errors, err)
 			return nil, errors

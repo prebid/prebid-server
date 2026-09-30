@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-invalid-siteid-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "siteid": "not-an-int"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "siteid not provided in imp id=test-invalid-siteid-id. Abort all Request",
+      "comparison": "literal"
+    }
+  ]
+}
