@@ -105,13 +105,13 @@ func sanitizeGETQuery(q url.Values) url.Values {
 // are deferred until the stored request is known so they can be routed to the correct
 // context object (site/app/dooh).
 type getParams struct {
-	impPatch           json.RawMessage
-	impIndexPatches    map[int]map[string]interface{} // per-imp patches from req.imp.N.xxx paths
-	reqIndexedPatches  []reqIndexedPatch              // req.xxx paths with numeric segments, applied after stored-request merge
-	pubid              string
-	page               string
-	app                map[string]interface{} // app-level fields (bundle, name, domain, storeurl)
-	content            map[string]interface{}
+	impPatch          json.RawMessage
+	impIndexPatches   map[int]map[string]interface{} // per-imp patches from req.imp.N.xxx paths
+	reqIndexedPatches []reqIndexedPatch              // req.xxx paths with numeric segments, applied after stored-request merge
+	pubid             string
+	page              string
+	app               map[string]interface{} // app-level fields (bundle, name, domain, storeurl)
+	content           map[string]interface{}
 }
 
 // reqIndexedPatch holds a single req.xxx dotted-path override that contains an array
