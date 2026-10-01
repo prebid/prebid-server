@@ -1,0 +1,11 @@
+{
+  "description": "non-square video dimensions below minAdDim (5x6) produce no video.w or video.h",
+  "query": "srid=testvideo&mtype=2&w=5&h=6",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1", "video": {"mimes": ["video/mp4"]}}]
+  },
+  "expected_imp": {
+    "id": "imp1",
+    "video": {"mimes": ["video/mp4"]}
+  }
+}

@@ -1006,6 +1006,11 @@ func TestGETRequestStoredFixtures(t *testing.T) {
 			merged, err = gp.applyInventory(merged, tc.StoredBidRequest)
 			require.NoError(t, err, "applyInventory must not error")
 
+			if len(gp.reqIndexedPatches) > 0 {
+				merged, err = applyGETReqIndexedPatches(merged, gp.reqIndexedPatches)
+				require.NoError(t, err, "applyGETReqIndexedPatches must not error")
+			}
+
 			merged, err = enforceSingleImp(req, merged, "test-account")
 			require.NoError(t, err, "enforceSingleImp must not error")
 

@@ -746,9 +746,24 @@ func enforceRqddursDurationExclusivity(m map[string]interface{}) {
 func buildSparseVideoParams(q url.Values) map[string]interface{} {
 	m := map[string]interface{}{}
 	applySharedAVParams(q, m)
+	// w and h are validated as a pair so the square exception (n×n valid below minAdDim)
+	// applies consistently with banner. When only one dimension is provided the standard
+	// minimum still applies to that dimension alone.
+	w, h := qInt(q, "w"), qInt(q, "h")
+	if w > 0 && h > 0 {
+		if isValidAdDim(w, h) {
+			m["w"] = w
+			m["h"] = h
+		}
+	} else {
+		if w >= minAdDim {
+			m["w"] = w
+		}
+		if h >= minAdDim {
+			m["h"] = h
+		}
+	}
 	vw := newMapWriter(q, m)
-	vw.intN("w", getDomainMinDim)
-	vw.intN("h", getDomainMinDim)
 	vw.intN("skip", getDomainInt8)
 	vw.intN("skipmin", getDomainInt8)
 	vw.intN("skipafter", getDomainInt8)
