@@ -5,15 +5,21 @@ import (
 
 	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/rules"
 	"github.com/prebid/prebid-server/v4/util/randomutil"
 )
 
 type RequestWrapper = openrtb_ext.RequestWrapper
 type ModelGroup = cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]
 
+type includeBiddersState struct {
+	allowedBidders map[string]struct{}
+	contexts       []rules.ResultFunctionMeta
+}
+
 type ProcessedAuctionHookResult struct {
 	HookResult     hs.HookResult[hs.ProcessedAuctionRequestPayload]
-	AllowedBidders map[string]struct{}
+	IncludeBidders includeBiddersState
 }
 
 func handleProcessedAuctionHook(
@@ -24,7 +30,9 @@ func handleProcessedAuctionHook(
 		HookResult: hs.HookResult[hs.ProcessedAuctionRequestPayload]{
 			ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 		},
-		AllowedBidders: make(map[string]struct{}),
+		IncludeBidders: includeBiddersState{
+			allowedBidders: make(map[string]struct{}),
+		},
 	}
 
 	for _, ruleSet := range ruleSets {
@@ -39,10 +47,14 @@ func handleProcessedAuctionHook(
 			result.HookResult.Errors = append(result.HookResult.Errors, err.Error())
 		}
 
-		if len(result.AllowedBidders) > 0 {
-			result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(result.AllowedBidders)
+		if len(result.IncludeBidders.allowedBidders) > 0 {
+			result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(result.IncludeBidders.allowedBidders)
 		}
 	}
+
+	// Once every ruleset has run the final allow-list is known, so surface a debug warning naming the
+	// bidders that were implicitly removed by include rules (present in the request but not allowed).
+	appendInclusionWarnings(payload.Request, &result)
 
 	return result.HookResult, nil
 }
