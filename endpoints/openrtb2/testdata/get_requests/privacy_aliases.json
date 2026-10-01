@@ -1,19 +1,33 @@
 {
   "description": "Privacy aliases without canonical names",
-  "query": "srid=testprivaliases&gdpr_applies=1",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
   "expected_bid_request": {
-    "imp": [{"id": "imp1"}],
+    "ext": {
+      "prebid": {
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testprivaliases"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
     "regs": {
       "gdpr": 1
     },
-    "ext": {
-      "prebid": {
-        "storedrequest": {"id": "testprivaliases"},
-        "server": {"http_method": "GET"}
+    "site": {}
+  },
+  "query": "srid=testprivaliases\u0026gdpr_applies=1",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
       }
-    }
+    ],
+    "site": {}
   }
 }

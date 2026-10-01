@@ -1,19 +1,33 @@
 {
   "description": "sizes appends additional format entries after the primary w/h",
-  "query": "srid=testbanner&mtype=1&w=300&h=250&sizes=728x90,320x50",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
   "expected_imp": {
-    "id": "imp1",
     "banner": {
-      "w": 300,
-      "h": 250,
       "format": [
-        {"w": 300, "h": 250},
-        {"w": 728, "h": 90},
-        {"w": 320, "h": 50}
-      ]
-    }
+        {
+          "h": 250,
+          "w": 300
+        },
+        {
+          "h": 90,
+          "w": 728
+        },
+        {
+          "h": 50,
+          "w": 320
+        }
+      ],
+      "h": 250,
+      "w": 300
+    },
+    "id": "imp1"
+  },
+  "query": "srid=testbanner\u0026mtype=1\u0026w=300\u0026h=250\u0026sizes=728x90,320x50",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
   }
 }

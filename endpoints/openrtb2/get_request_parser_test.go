@@ -26,14 +26,22 @@ func mustParseQuery(raw string) url.Values {
 }
 
 // parseGETResult is a helper that simulates the full GET pipeline up to inventory
-// application: parseGETRequest then applyInventory with no stored request (defaults
-// to site). Tests for non-inventory fields may use this directly; the imp patch is
-// accessible via parseGETImpPatch.
+// application: parseGETRequest then applyInventory. When the request has no
+// channel-specific params and the parsed data has no channel context, a minimal
+// site{} is injected before applyInventory so that the channel-determination check
+// does not error — the real pipeline provides this context via the stored request.
 func parseGETResult(t *testing.T, rawQuery string) map[string]interface{} {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?"+rawQuery, nil)
 	data, gp, err := parseGETRequest(req, 0, 0)
 	require.NoError(t, err)
+	if !gp.hasInventory() && detectContextKey(data) == "" {
+		var base map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &base))
+		base["site"] = map[string]interface{}{}
+		data, err = json.Marshal(base)
+		require.NoError(t, err)
+	}
 	data, err = gp.applyInventory(data, nil)
 	require.NoError(t, err)
 	var out map[string]interface{}
@@ -108,7 +116,11 @@ func TestParseGETRequest_TagIDAlias(t *testing.T) {
 	})
 
 	t.Run("tag_id alone triggers fast path", func(t *testing.T) {
-		m := parseGETResult(t, "tag_id=fast")
+		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?tag_id=fast", nil)
+		data, _, err := parseGETRequest(req, 0, 0)
+		require.NoError(t, err)
+		var m map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &m))
 		assert.Equal(t, []string{"ext"}, mapKeys(m), "unexpected top-level keys")
 	})
 
@@ -126,7 +138,11 @@ func TestParseGETRequest_TagIDAlias(t *testing.T) {
 // and no other keys (except device if headers were present).
 func TestParseGETRequest_SridOnlyFastPath(t *testing.T) {
 	t.Run("only srid — no extra top-level keys", func(t *testing.T) {
-		m := parseGETResult(t, "srid=fast")
+		req := httptest.NewRequest(http.MethodGet, "/openrtb2/auction?srid=fast", nil)
+		data, _, err := parseGETRequest(req, 0, 0)
+		require.NoError(t, err)
+		var m map[string]interface{}
+		require.NoError(t, json.Unmarshal(data, &m))
 		assert.Equal(t, []string{"ext"}, mapKeys(m), "unexpected top-level keys")
 		prebid := getExtPrebid(t, m)
 		sr, ok := prebid["storedrequest"].(map[string]interface{})
@@ -784,7 +800,7 @@ func TestParseGETRequest_PlayerHeaderWithoutImpIsSafe(t *testing.T) {
 //  1. stored imp fields (id, mimes, ext/bidder params) must survive the merge
 //  2. coppa=0 must override the stored coppa=1 (not be silently dropped by omitempty)
 func TestParseGETRequest_AppliesOverridesToStoredRequest(t *testing.T) {
-	stored := json.RawMessage(`{"regs":{"coppa":1},"imp":[{"id":"stored-imp",` +
+	stored := json.RawMessage(`{"site":{},"regs":{"coppa":1},"imp":[{"id":"stored-imp",` +
 		`"video":{"mimes":["video/mp4"]},` +
 		`"ext":{"prebid":{"bidder":{"appnexus":{"placementId":123}}}}}]}`)
 

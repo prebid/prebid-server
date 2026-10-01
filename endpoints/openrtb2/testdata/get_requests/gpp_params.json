@@ -1,20 +1,38 @@
 {
   "description": "GPP parameter mappings",
-  "query": "srid=testgpp&gppc=DBABM~CPXxRfAP&gpps=2,6,9",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
   "expected_bid_request": {
-    "imp": [{"id": "imp1"}],
-    "regs": {
-      "gpp": "DBABM~CPXxRfAP",
-      "gpp_sid": [2, 6, 9]
-    },
     "ext": {
       "prebid": {
-        "storedrequest": {"id": "testgpp"},
-        "server": {"http_method": "GET"}
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testgpp"
+        }
       }
-    }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "regs": {
+      "gpp": "DBABM~CPXxRfAP",
+      "gpp_sid": [
+        2,
+        6,
+        9
+      ]
+    },
+    "site": {}
+  },
+  "query": "srid=testgpp\u0026gppc=DBABM~CPXxRfAP\u0026gpps=2,6,9",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
   }
 }

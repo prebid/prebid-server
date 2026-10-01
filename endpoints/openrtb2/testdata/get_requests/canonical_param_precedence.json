@@ -1,19 +1,33 @@
 {
   "description": "tcfc is the canonical consent param; gdpr_consent and consent_string are aliases",
-  "query": "srid=testprecedence&tcfc=CANONICAL_CONSENT&gdpr_consent=ALIAS_CONSENT&consent_string=ALIAS2_CONSENT",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
   "expected_bid_request": {
-    "imp": [{"id": "imp1"}],
-    "user": {
-      "consent": "CANONICAL_CONSENT"
-    },
     "ext": {
       "prebid": {
-        "storedrequest": {"id": "testprecedence"},
-        "server": {"http_method": "GET"}
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testprecedence"
+        }
       }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {},
+    "user": {
+      "consent": "CANONICAL_CONSENT"
     }
+  },
+  "query": "srid=testprecedence\u0026tcfc=CANONICAL_CONSENT\u0026gdpr_consent=ALIAS_CONSENT\u0026consent_string=ALIAS2_CONSENT",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
   }
 }

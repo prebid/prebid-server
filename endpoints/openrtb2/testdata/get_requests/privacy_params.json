@@ -1,25 +1,39 @@
 {
   "description": "Privacy parameters and alias precedence",
-  "query": "srid=testpriv&gdpr=1&coppa=0&usp=1YNN&lmt=1&dnt=0",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
   "expected_bid_request": {
-    "imp": [{"id": "imp1"}],
-    "regs": {
-      "gdpr": 1,
-      "coppa": 0,
-      "us_privacy": "1YNN"
-    },
     "device": {
-      "lmt": 1,
-      "dnt": 0
+      "dnt": 0,
+      "lmt": 1
     },
     "ext": {
       "prebid": {
-        "storedrequest": {"id": "testpriv"},
-        "server": {"http_method": "GET"}
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testpriv"
+        }
       }
-    }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "regs": {
+      "coppa": 0,
+      "gdpr": 1,
+      "us_privacy": "1YNN"
+    },
+    "site": {}
+  },
+  "query": "srid=testpriv\u0026gdpr=1\u0026coppa=0\u0026usp=1YNN\u0026lmt=1\u0026dnt=0",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
   }
 }

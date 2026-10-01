@@ -1,18 +1,34 @@
 {
   "description": "req= JSON blob sets vendor ext fields; named params (tmax) still override",
-  "query": "srid=testid&tmax=500&req=%7B%22tmax%22%3A9999%2C%22ext%22%3A%7B%22vendor%22%3A%7B%22k%22%3A%22v%22%7D%7D%7D",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
   "expected_bid_request": {
-    "tmax": 500,
-    "imp": [{"id": "imp1"}],
     "ext": {
       "prebid": {
-        "storedrequest": {"id": "testid"},
-        "server": {"http_method": "GET"}
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testid"
+        }
       },
-      "vendor": {"k": "v"}
-    }
+      "vendor": {
+        "k": "v"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {},
+    "tmax": 500
+  },
+  "query": "srid=testid\u0026tmax=500\u0026req=%7B%22tmax%22%3A9999%2C%22ext%22%3A%7B%22vendor%22%3A%7B%22k%22%3A%22v%22%7D%7D%7D",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
   }
 }

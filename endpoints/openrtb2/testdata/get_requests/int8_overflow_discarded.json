@@ -1,15 +1,27 @@
 {
-  "description": "int8 overflow values (>127) are dropped; valid values within int8 range are kept",
-  "query": "srid=testvideo&mtype=2&placement=300&linearity=200&plcmt=128&pos=255&skip=200&playbackend=300&proto=1,300,2&delivery=1,200&playbackmethod=1,300",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
+  "description": "int8 overflow values (\u003e127) are dropped; valid values within int8 range are kept",
   "expected_imp": {
     "id": "imp1",
     "video": {
-      "protocols": [1, 2],
-      "delivery": [1],
-      "playbackmethod": [1]
+      "delivery": [
+        1
+      ],
+      "playbackmethod": [
+        1
+      ],
+      "protocols": [
+        1,
+        2
+      ]
     }
+  },
+  "query": "srid=testvideo\u0026mtype=2\u0026placement=300\u0026linearity=200\u0026plcmt=128\u0026pos=255\u0026skip=200\u0026playbackend=300\u0026proto=1,300,2\u0026delivery=1,200\u0026playbackmethod=1,300",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
   }
 }

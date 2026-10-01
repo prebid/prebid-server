@@ -1,11 +1,27 @@
 {
   "description": "square video dimensions below minAdDim (5x5) are accepted; validated as a pair like banner",
-  "query": "srid=testvideo&mtype=2&w=5&h=5",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1", "video": {"mimes": ["video/mp4"]}}]
-  },
   "expected_imp": {
     "id": "imp1",
-    "video": {"mimes": ["video/mp4"], "w": 5, "h": 5}
+    "video": {
+      "h": 5,
+      "mimes": [
+        "video/mp4"
+      ],
+      "w": 5
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=2\u0026w=5\u0026h=5",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        }
+      }
+    ],
+    "site": {}
   }
 }

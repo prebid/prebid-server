@@ -176,14 +176,15 @@ func detectContextKey(requestJson []byte) string {
 func (p *getParams) applyInventory(requestJson []byte, _ json.RawMessage) ([]byte, error) {
 	ctxKey := detectContextKey(requestJson)
 
-	// When dtype=8 implies dooh but no explicit dooh object exists yet, we must inject
-	// an empty dooh:{} so that setSiteImplicitly (which runs later) does not create a
-	// site object for what is really a DOOH request.
-	if !p.hasInventory() {
-		if ctxKey != "dooh" {
-			return requestJson, nil
-		}
-		// Fall through to inject dooh context (ctxPatch will be empty, producing dooh:{}).
+	// When there are no inventory params and the stored context already resolves to a
+	// concrete non-dooh channel (site or app), there is nothing to apply — return early.
+	// Otherwise, fall through:
+	//   ctxKey == "dooh" (or dtype=8 implied): inject an empty dooh object so that
+	//     setSiteImplicitly does not create a site for a DOOH request.
+	//   ctxKey == "": context rules below produce the "cannot determine channel" error
+	//     even when no inventory params are present.
+	if !p.hasInventory() && ctxKey != "" && ctxKey != "dooh" {
+		return requestJson, nil
 	}
 
 	if ctxKey == "" {

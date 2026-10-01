@@ -1,19 +1,33 @@
 {
   "description": "Device IP supplied through the query",
-  "query": "srid=testip&ip=1.2.3.4",
-  "stored_bid_request": {
-    "imp": [{"id": "imp1"}]
-  },
   "expected_bid_request": {
-    "imp": [{"id": "imp1"}],
     "device": {
       "ip": "1.2.3.4"
     },
     "ext": {
       "prebid": {
-        "storedrequest": {"id": "testip"},
-        "server": {"http_method": "GET"}
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testip"
+        }
       }
-    }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  },
+  "query": "srid=testip\u0026ip=1.2.3.4",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
   }
 }
