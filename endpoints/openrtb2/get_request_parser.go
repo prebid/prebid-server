@@ -105,12 +105,21 @@ func sanitizeGETQuery(q url.Values) url.Values {
 // are deferred until the stored request is known so they can be routed to the correct
 // context object (site/app/dooh).
 type getParams struct {
-	impPatch        json.RawMessage
-	impIndexPatches map[int]map[string]interface{} // per-imp patches from req.imp.N.xxx paths
-	pubid           string
-	page            string
-	app             map[string]interface{} // app-level fields (bundle, name, domain, storeurl)
-	content         map[string]interface{}
+	impPatch           json.RawMessage
+	impIndexPatches    map[int]map[string]interface{} // per-imp patches from req.imp.N.xxx paths
+	reqIndexedPatches  []reqIndexedPatch              // req.xxx paths with numeric segments, applied after stored-request merge
+	pubid              string
+	page               string
+	app                map[string]interface{} // app-level fields (bundle, name, domain, storeurl)
+	content            map[string]interface{}
+}
+
+// reqIndexedPatch holds a single req.xxx dotted-path override that contains an array
+// index. These are deferred until after processStoredRequests so that the arrays
+// declared by the stored request are present when setAtPath navigates into them.
+type reqIndexedPatch struct {
+	segs []string
+	val  interface{}
 }
 
 func (p *getParams) hasInventory() bool {
@@ -1213,9 +1222,41 @@ func applyGETDottedPaths(q url.Values, reqMap, impPatchMap map[string]interface{
 		}
 
 		// Req-level dotted path.
+		// If the path contains a numeric segment the target is an element of an array
+		// declared by the stored request. Defer until after processStoredRequests so
+		// the array is present when setAtPath navigates into it.
+		if segsContainNumeric(segs[1:]) {
+			gp.reqIndexedPatches = append(gp.reqIndexedPatches, reqIndexedPatch{segs: segs, val: parsePathValue(raw)})
+			continue
+		}
 		setAtPath(reqMap, segs, parsePathValue(raw))
 	}
 	return nil
+}
+
+// segsContainNumeric reports whether any segment in segs is a non-negative integer.
+func segsContainNumeric(segs []string) bool {
+	for _, s := range segs {
+		if _, err := strconv.Atoi(s); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// applyGETReqIndexedPatches applies req.xxx dotted paths that contain array indices to
+// requestJson. These are deferred until after processStoredRequests so that the arrays
+// from the stored request are present when setAtPath navigates into them.
+// An out-of-bounds index is silently dropped, consistent with req.imp.N out-of-range behaviour.
+func applyGETReqIndexedPatches(requestJson []byte, patches []reqIndexedPatch) ([]byte, error) {
+	var m map[string]interface{}
+	if err := json.Unmarshal(requestJson, &m); err != nil {
+		return nil, err
+	}
+	for _, p := range patches {
+		setAtPath(m, p.segs, p.val)
+	}
+	return json.Marshal(m)
 }
 
 // parseReqParam decodes a req= query param value from JSON or base64-encoded JSON.

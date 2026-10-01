@@ -566,6 +566,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 			errs = []error{getErr}
 			return
 		}
+		// Apply req.xxx indexed dotted paths (e.g. req.user.data.0.id=x) now that the
+		// stored request's arrays are present in the merged JSON.
+		if len(gp.reqIndexedPatches) > 0 {
+			if requestJson, getErr = applyGETReqIndexedPatches(requestJson, gp.reqIndexedPatches); getErr != nil {
+				errs = []error{getErr}
+				return
+			}
+		}
 		// Enforce single imp before patching so the patch runs only on imp[0].
 		if requestJson, getErr = enforceSingleImp(httpRequest, requestJson, accountId); getErr != nil {
 			errs = []error{getErr}
