@@ -501,7 +501,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	accountId, isAppReq, isDOOHReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson)
+	var getPubID string
+	if gp != nil {
+		getPubID = gp.pubid
+	}
+	accountId, isAppReq, isDOOHReq, errs := getAccountIdFromRawRequest(hasStoredBidRequest, storedRequests[storedBidRequestId], requestJson, getPubID)
 	// fill labels here in order to pass correct metrics in case of errors
 	if isAppReq {
 		labels.Source = metrics.DemandApp
@@ -1997,7 +2001,7 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte) (string, bool, bool, []error) {
+func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMessage, originalRequest []byte, getPubID string) (string, bool, bool, []error) {
 	request := originalRequest
 	if hasStoredRequest {
 		request = storedRequest
@@ -2014,6 +2018,13 @@ func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMes
 		if err != nil {
 			return "", isAppReq, isDOOHReq, []error{err}
 		}
+	}
+
+	// The GET pubid/account param is written to publisher.id by applyInventory, which runs
+	// after this function. Override whatever publisher.id the stored request declared so that
+	// the account used for access control matches the publisher.id bidders will receive.
+	if getPubID != "" {
+		accountId = getPubID
 	}
 
 	if accountId == "" {
