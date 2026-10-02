@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "APS Adapter Params",
+  "description": "A schema which validates params accepted by the APS adapter",
+  "type": "object",
+  "properties": {
+    "accountID": {
+      "type": "string",
+      "description": "The APS publisher account id."
+    },
+    "region": {
+      "type": "string",
+      "description": "APS regional S2S origin to route to. Optional; defaults to na."
+    }
+  },
+  "required": ["accountID"]
+}

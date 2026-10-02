@@ -1,0 +1,12 @@
+# {{.Region}} comes from the aps.region imp param (default na).
+endpoint: "https://s2s.prebid.bid-{{.Region}}.ads.aps.amazon-adsystem.com/e/pb/bid"
+geoscope:
+  - USA
+maintainer:
+  email: "aps-prebid@amazon.com"
+gvlVendorID: 793
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
