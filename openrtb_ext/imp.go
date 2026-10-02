@@ -24,6 +24,9 @@ const IsRewardedInventoryKey = "is_rewarded_inventory"
 // OptionsKey is the json key for ExtImpPrebid.Options
 const OptionsKey = "options"
 
+// AdUnitCodeKey is the json key for ExtImpPrebid.AdUnitCode
+const AdUnitCodeKey = "adunitcode"
+
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid
 type ExtImpPrebid struct {
 	// StoredRequest specifies which stored impression to use, if any.
