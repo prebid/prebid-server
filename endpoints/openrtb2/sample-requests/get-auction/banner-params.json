@@ -1,0 +1,34 @@
+{
+  "description": "GET banner: explicit mtype=ban, dimensions, sizes CSV, pubid, and page params are all written to the right OpenRTB destinations",
+  "httpMethod": "GET",
+  "query": "srid=stored-banner&mtype=ban&w=640&h=360&sizes=300x250,320x50&pubid=pub123&page=https://example.com",
+  "generatedRequestId": "test-get-uuid-banner",
+  "mockStoredRequests": {
+    "stored-banner": {
+      "imp": [
+        {
+          "id": "imp1",
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-banner",
+    "seatbid": [
+      {
+        "bid": [
+          {"id": "appnexus-bid", "impid": "imp1", "price": 1.50}
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  }
+}

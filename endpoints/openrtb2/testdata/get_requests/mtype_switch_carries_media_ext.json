@@ -1,0 +1,54 @@
+{
+  "description": "explicit mtype switch carries ext from the displaced media object to the new one",
+  "expected_imp": {
+    "audio": {
+      "ext": {
+        "vendor": {
+          "code": "unit-1"
+        }
+      },
+      "maxduration": 30,
+      "mimes": [
+        "audio/mpeg"
+      ]
+    },
+    "ext": {
+      "prebid": {
+        "bidder": {
+          "appnexus": {
+            "placementId": 123
+          }
+        }
+      }
+    },
+    "id": "stored-imp"
+  },
+  "query": "srid=testvideo\u0026mtype=3\u0026mimes=audio%2Fmpeg\u0026maxdur=30",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 123
+              }
+            }
+          }
+        },
+        "id": "stored-imp",
+        "video": {
+          "ext": {
+            "vendor": {
+              "code": "unit-1"
+            }
+          },
+          "mimes": [
+            "video/mp4"
+          ]
+        }
+      }
+    ],
+    "site": {}
+  }
+}

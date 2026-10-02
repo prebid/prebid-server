@@ -1,0 +1,37 @@
+{
+  "description": "GET deferred-media: no mtype, stored imp has video — GET video params (mindur/maxdur/api) are applied to the video object, not banner; tag_id alias for srid works",
+  "httpMethod": "GET",
+  "query": "tag_id=stored-video&mindur=5&maxdur=30&api=1,2&protocols=2,3",
+  "generatedRequestId": "test-get-uuid-video",
+  "mockStoredRequests": {
+    "stored-video": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {
+          "id": "imp1",
+          "video": {"mimes": ["video/mp4"]},
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-video",
+    "seatbid": [
+      {
+        "bid": [
+          {"id": "appnexus-bid", "impid": "imp1", "price": 1.50}
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  }
+}

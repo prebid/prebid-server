@@ -1,0 +1,30 @@
+{
+  "description": "No mtype: w/h/poddur are applied to the stored video imp, not a banner",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "h": 360,
+      "mimes": [
+        "video/mp4"
+      ],
+      "poddur": 60,
+      "w": 640
+    }
+  },
+  "query": "srid=testvideo\u0026w=640\u0026h=360\u0026poddur=60",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1",
+        "video": {
+          "h": 480,
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 320
+        }
+      }
+    ],
+    "site": {}
+  }
+}

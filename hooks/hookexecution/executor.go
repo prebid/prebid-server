@@ -40,7 +40,7 @@ type StageExecutor interface {
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
 	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid)
 	ExecuteAuctionResponseStage(response *openrtb2.BidResponse)
-	ExecuteExitpointStage(response any, w http.ResponseWriter) any
+	ExecuteExitpointStage(req *openrtb_ext.RequestWrapper, response any, w http.ResponseWriter) (any, []byte)
 }
 
 type HookStageExecutor interface {
@@ -297,10 +297,10 @@ func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidRespons
 	e.pushStageOutcome(outcome)
 }
 
-func (e *hookExecutor) ExecuteExitpointStage(response any, w http.ResponseWriter) any {
+func (e *hookExecutor) ExecuteExitpointStage(req *openrtb_ext.RequestWrapper, response any, w http.ResponseWriter) (any, []byte) {
 	plan := e.planBuilder.PlanForExitpointStage(e.endpoint, e.account)
 	if len(plan) == 0 {
-		return response
+		return response, nil
 	}
 
 	handler := func(
@@ -314,7 +314,7 @@ func (e *hookExecutor) ExecuteExitpointStage(response any, w http.ResponseWriter
 
 	stageName := hooks.StageExitpoint.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.ExitpointPayload{W: w, Response: response}
+	payload := hookstage.ExitpointPayload{Request: req, W: w, Response: response}
 
 	outcome, payload, context, _ := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityExitpoint
@@ -323,7 +323,7 @@ func (e *hookExecutor) ExecuteExitpointStage(response any, w http.ResponseWriter
 	e.saveModuleContexts(context)
 	e.pushStageOutcome(outcome)
 
-	return payload.Response
+	return payload.Response, payload.Body
 }
 
 func (e *hookExecutor) newContext(stage string) executionContext {
@@ -387,6 +387,6 @@ func (executor EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[ope
 func (executor EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {
 }
 
-func (executor EmptyHookExecutor) ExecuteExitpointStage(response any, _ http.ResponseWriter) any {
-	return response
+func (executor EmptyHookExecutor) ExecuteExitpointStage(_ *openrtb_ext.RequestWrapper, response any, _ http.ResponseWriter) (any, []byte) {
+	return response, nil
 }

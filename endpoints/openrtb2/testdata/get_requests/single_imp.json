@@ -1,0 +1,37 @@
+{
+  "description": "Only the first resolved impression is used",
+  "expected_imp": {
+    "banner": {
+      "h": 250,
+      "w": 300
+    },
+    "id": "imp1"
+  },
+  "query": "srid=testmultimp",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "banner": {
+          "h": 250,
+          "w": 300
+        },
+        "id": "imp1"
+      },
+      {
+        "banner": {
+          "h": 90,
+          "w": 728
+        },
+        "id": "imp2"
+      },
+      {
+        "banner": {
+          "h": 600,
+          "w": 160
+        },
+        "id": "imp3"
+      }
+    ],
+    "site": {}
+  }
+}

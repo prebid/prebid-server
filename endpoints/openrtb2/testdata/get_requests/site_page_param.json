@@ -1,0 +1,19 @@
+{
+  "description": "page maps to site.page",
+  "query": "srid=testpage&page=https://example.com/article",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testpage"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

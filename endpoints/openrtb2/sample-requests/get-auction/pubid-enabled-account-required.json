@@ -1,0 +1,35 @@
+{
+  "description": "GET pubid resolves a valid account even when accountRequired is true and the stored request has no publisher",
+  "httpMethod": "GET",
+  "query": "srid=stored-site-no-pub&pubid=alternate_bidder_code_acct",
+  "generatedRequestId": "test-get-uuid-pubid-acct-required",
+  "mockStoredRequests": {
+    "stored-site-no-pub": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "accountRequired": true,
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-pubid-acct-required",
+    "seatbid": [
+      {
+        "bid": [{"id": "appnexus-bid", "impid": "imp1", "price": 1.50}],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  }
+}

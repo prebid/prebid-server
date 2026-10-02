@@ -53,6 +53,16 @@ func Test_eventsData_makeBidExtEvents(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "audio: events enabled for account and request",
+			args: args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeAudio, generatedBidId: ""},
+			want: nil,
+		},
+		{
+			name: "audio: events disabled for account and request",
+			args: args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeAudio, generatedBidId: ""},
+			want: nil,
+		},
+		{
 			name: "banner: use generated bid id",
 			args: args{enabledForAccount: false, enabledForRequest: true, bidType: openrtb_ext.BidTypeBanner, generatedBidId: "randomId"},
 			want: &openrtb_ext.ExtBidPrebidEvents{
@@ -116,6 +126,18 @@ func Test_eventsData_modifyBidJSON(t *testing.T) {
 		{
 			name:      "video: events enabled for account and request",
 			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeVideo, generatedBidId: ""},
+			jsonBytes: []byte(`{"ID": "something"}`),
+			want:      []byte(`{"ID": "something"}`),
+		},
+		{
+			name:      "audio: events disabled for account and request",
+			args:      args{enabledForAccount: false, enabledForRequest: false, bidType: openrtb_ext.BidTypeAudio, generatedBidId: ""},
+			jsonBytes: []byte(`{"ID": "something"}`),
+			want:      []byte(`{"ID": "something"}`),
+		},
+		{
+			name:      "audio: events enabled for account and request",
+			args:      args{enabledForAccount: true, enabledForRequest: true, bidType: openrtb_ext.BidTypeAudio, generatedBidId: ""},
 			jsonBytes: []byte(`{"ID": "something"}`),
 			want:      []byte(`{"ID": "something"}`),
 		},
@@ -189,6 +211,23 @@ func Test_isEventAllowed(t *testing.T) {
 			}
 			isEventAllowed := evData.isEventAllowed()
 			assert.Equal(t, tt.want, isEventAllowed)
+		})
+	}
+}
+
+func TestIsVASTBid(t *testing.T) {
+	tests := []struct {
+		bidType openrtb_ext.BidType
+		want    bool
+	}{
+		{openrtb_ext.BidTypeVideo, true},
+		{openrtb_ext.BidTypeAudio, true},
+		{openrtb_ext.BidTypeBanner, false},
+		{openrtb_ext.BidTypeNative, false},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.bidType), func(t *testing.T) {
+			assert.Equal(t, tt.want, isVASTBid(tt.bidType))
 		})
 	}
 }

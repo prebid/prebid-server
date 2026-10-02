@@ -1,0 +1,76 @@
+{
+  "description": "GET app+content: pubid, bundle, name, storeurl and all c* content params route to app.publisher, app, and app.content (context detected from stored app object)",
+  "httpMethod": "GET",
+  "query": "srid=stored-app-content&pubid=app-publisher&bundle=com.example.app&name=Example&storeurl=https%3A%2F%2Fstore.example%2Fapp&cgenre=news&clang=en&crating=PG&ccat=IAB1%2CIAB2-1&ccattax=3&cseries=main-series&ctitle=Episode&curl=https%3A%2F%2Fcontent.example&clivestream=1",
+  "generatedRequestId": "test-get-uuid-app-content",
+  "mockStoredRequests": {
+    "stored-app-content": {
+      "app": {"id": "app-id"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 320, "h": 50}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-app-content",
+    "seatbid": [
+      {
+        "bid": [{"id": "appnexus-bid", "impid": "imp1", "price": 1.50}],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  },
+  "expectedValidatedBidRequest": {
+    "id": "test-get-uuid-app-content",
+    "imp": [
+      {
+        "id": "imp1",
+        "banner": {"format": [{"w": 320, "h": 50}]},
+        "secure": 1,
+        "ext": {
+          "prebid": {
+            "bidder": {"appnexus": {"placementId": 12345}}
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-id",
+      "name": "Example",
+      "bundle": "com.example.app",
+      "storeurl": "https://store.example/app",
+      "publisher": {"id": "app-publisher"},
+      "content": {
+        "title": "Episode",
+        "series": "main-series",
+        "genre": "news",
+        "contentrating": "PG",
+        "language": "en",
+        "cat": ["IAB1", "IAB2-1"],
+        "cattax": 3,
+        "url": "https://content.example",
+        "livestream": 1
+      }
+    },
+    "device": {"ip": "192.0.2.1"},
+    "at": 1,
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored-app-content"},
+        "server": {"externalurl": "", "gvlid": 0, "datacenter": "", "http_method": "GET"},
+        "channel": {"name": "app", "version": ""}
+      }
+    }
+  }
+}

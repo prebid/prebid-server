@@ -1,0 +1,20 @@
+{
+  "description": "GET pubid overrides a stored publisher.id for account lookup so the access check and the publisher.id sent to bidders agree",
+  "httpMethod": "GET",
+  "query": "srid=stored-site-with-pub&pubid=disabled_acct",
+  "generatedRequestId": "test-get-uuid-pubid-override",
+  "mockStoredRequests": {
+    "stored-site-with-pub": {
+      "site": {"page": "https://example.com", "publisher": {"id": "stored_pub"}},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "expectedReturnCode": 403,
+  "expectedErrorMessage": "Invalid request: Prebid-server has disabled Account ID: disabled_acct, please reach out to the prebid server host.\n"
+}
