@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.example.app"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-test",
+            "placementId": "plc-test",
+            "region": "jp"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://jp.a.viddea.com/edge_direct",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-test"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "plc-test",
+              "banner": {
+                "format": [{"w": 320, "h": 50}]
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "peak226",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 0.85,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-1",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 0.85,
+            "adm": "<div>ad</div>",
+            "crid": "cr-1",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

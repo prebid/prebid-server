@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Peak226 Adapter Params",
+  "description": "A schema which validates params accepted by the Peak226 adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "Publisher/account ID",
+      "minLength": 1
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID for this ad unit",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "description": "Data center to send the request to. Defaults to us.",
+      "enum": ["us", "eu", "jp"]
+    }
+  },
+  "required": ["publisherId", "placementId"]
+}
