@@ -1,0 +1,20 @@
+endpoint: "https://rtb.adferry.co/api/ortb/prebid"
+maintainer:
+  email: admin@adferry.co
+gvlVendorID: 0
+capabilities:
+  app:
+    mediaTypes:
+      - video
+      - banner
+      - audio
+  site:
+    mediaTypes:
+      - video
+      - banner
+      - audio
+  dooh:
+    mediaTypes:
+      - video
+# No user sync: Adferry is CTV/app-first and runs no cookie-match endpoint.
+# Declaring one here would make PBS expect a usersync URL that does not exist.
