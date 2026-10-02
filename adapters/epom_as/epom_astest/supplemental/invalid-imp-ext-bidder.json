@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "not-an-object"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example.com/article"
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp test-imp-id: cannot resolve host or placementKey:.*",
+      "comparison": "regex"
+    }
+  ]
+}
