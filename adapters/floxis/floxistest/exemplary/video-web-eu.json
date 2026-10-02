@@ -1,0 +1,102 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "protocols": [2, 3, 5, 6]
+        },
+        "ext": {
+          "bidder": {
+            "seat": "pub-seat-eu",
+            "region": "eu"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "271",
+      "domain": "example.eu"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
+        "uri": "https://eu.floxis.tech/pbs?seat=pub-seat-eu",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480,
+                "protocols": [2, 3, 5, 6]
+              },
+              "ext": {
+                "bidder": {
+                  "seat": "pub-seat-eu",
+                  "region": "eu"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "271",
+            "domain": "example.eu"
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "floxis",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 3.5,
+                  "adm": "<VAST></VAST>",
+                  "crid": "creative-1",
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 3.5,
+            "adm": "<VAST></VAST>",
+            "crid": "creative-1",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

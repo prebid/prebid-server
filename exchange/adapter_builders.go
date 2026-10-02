@@ -111,6 +111,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/ferio"
 	"github.com/prebid/prebid-server/v4/adapters/flatads"
 	"github.com/prebid/prebid-server/v4/adapters/flipp"
+	"github.com/prebid/prebid-server/v4/adapters/floxis"
 	"github.com/prebid/prebid-server/v4/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v4/adapters/frvradn"
 	"github.com/prebid/prebid-server/v4/adapters/fwssp"
@@ -391,6 +392,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderFerio:             ferio.Builder,
 		openrtb_ext.BidderFlatads:           flatads.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
+		openrtb_ext.BidderFloxis:            floxis.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
 		openrtb_ext.BidderFWSSP:             fwssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
