@@ -43,6 +43,64 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestPreserveOriginalSeats(t *testing.T) {
+	tests := []struct {
+		name         string
+		responseBody string
+		bids         []*adapters.TypedBid
+		expected     []*adapters.TypedBid
+	}{
+		{
+			name:         "seat is copied by bid id",
+			responseBody: `{"seatbid":[{"seat":"original-seat-a","bid":[{"id":"bid-a"}]},{"seat":"original-seat-b","bid":[{"id":"bid-b"}]}]}`,
+			bids: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid-b"}},
+				{Bid: &openrtb2.Bid{ID: "bid-a"}},
+			},
+			expected: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid-b"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "original-seat-b"}},
+				{Bid: &openrtb2.Bid{ID: "bid-a"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "original-seat-a"}},
+			},
+		},
+		{
+			name:         "adapter metadata takes precedence",
+			responseBody: `{"seatbid":[{"seat":"original-seat","bid":[{"id":"bid"}]}]}`,
+			bids: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "adapter-seat"}},
+			},
+			expected: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "adapter-seat"}},
+			},
+		},
+		{
+			name:         "unchanged seat is omitted",
+			responseBody: `{"seatbid":[{"seat":"adapter","bid":[{"id":"bid"}]}]}`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+			expected:     []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+		},
+		{
+			name:         "ambiguous bid id is ignored",
+			responseBody: `{"seatbid":[{"seat":"seat-a","bid":[{"id":"bid"}]},{"seat":"seat-b","bid":[{"id":"bid"}]}]}`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+			expected:     []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+		},
+		{
+			name:         "malformed response is ignored",
+			responseBody: `not-json`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+			expected:     []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bidderResponse := &adapters.BidderResponse{Bids: tt.bids}
+			preserveOriginalSeats([]byte(tt.responseBody), bidderResponse, "adapter")
+			assert.Equal(t, tt.expected, bidderResponse.Bids)
+		})
+	}
+}
+
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
 //
 // 1. The Bidder implementation is called with the arguments we expect.

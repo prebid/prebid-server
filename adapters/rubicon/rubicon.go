@@ -1000,7 +1000,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 
-			updatedBidExt := updateBidExtWithMeta(bid, buyer, sb.Seat)
+			updatedBidExt := updateBidExtWithNetworkID(bid, buyer)
 			if updatedBidExt != nil {
 				bid.Ext = updatedBidExt
 			}
@@ -1091,8 +1091,8 @@ func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
 }
 
-func updateBidExtWithMeta(bid rubiconBid, buyer int, seat string) json.RawMessage {
-	if buyer <= 0 && seat == "" {
+func updateBidExtWithNetworkID(bid rubiconBid, buyer int) json.RawMessage {
+	if buyer <= 0 {
 		return nil
 	}
 	var bidExt *extPrebid
@@ -1106,15 +1106,14 @@ func updateBidExtWithMeta(bid rubiconBid, buyer int, seat string) json.RawMessag
 		if bidExt.Prebid != nil {
 			if bidExt.Prebid.Meta != nil {
 				bidExt.Prebid.Meta.NetworkID = buyer
-				bidExt.Prebid.Meta.Seat = seat
 			} else {
-				bidExt.Prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat}
+				bidExt.Prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}
 			}
 		} else {
-			bidExt.Prebid = &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat}}
+			bidExt.Prebid = &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}}
 		}
 	} else {
-		bidExt = &extPrebid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer, Seat: seat}}}
+		bidExt = &extPrebid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}}}
 	}
 
 	marshalledExt, err := json.Marshal(&bidExt)
