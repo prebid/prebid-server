@@ -89,6 +89,7 @@ type Metrics struct {
 
 	// Account Metrics
 	accountRequests                       *prometheus.CounterVec
+	accountRequestStatus                  *prometheus.CounterVec
 	accountDebugRequests                  *prometheus.CounterVec
 	accountStoredResponses                *prometheus.CounterVec
 	accountBidResponseValidationSizeError *prometheus.CounterVec
@@ -106,7 +107,8 @@ type Metrics struct {
 	moduleExecutionErrors map[string]*prometheus.CounterVec
 	moduleTimeouts        map[string]*prometheus.CounterVec
 
-	metricsDisabled config.DisabledMetrics
+	accountRequestStatusEnabled bool
+	metricsDisabled             config.DisabledMetrics
 }
 
 const (
@@ -178,6 +180,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
+	metrics.accountRequestStatusEnabled = cfg.AccountRequestStatusEnabled
 	metrics.metricsDisabled = disabledMetrics
 
 	metrics.connectionsClosed = newCounterWithoutLabels(cfg, reg,
@@ -499,6 +502,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server labeled by account.",
 		[]string{accountLabel})
 
+	metrics.accountRequestStatus = newCounter(cfg, reg,
+		"account_request_status",
+		"Count of total requests to Prebid Server labeled by account and request status.",
+		[]string{accountLabel, requestStatusLabel})
+
 	metrics.accountDebugRequests = newCounter(cfg, reg,
 		"account_debug_requests",
 		"Count of total requests to Prebid Server that have debug enabled labled by account",
@@ -718,6 +726,12 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		m.accountRequests.With(prometheus.Labels{
 			accountLabel: labels.PubID,
 		}).Inc()
+		if m.accountRequestStatusEnabled {
+			m.accountRequestStatus.With(prometheus.Labels{
+				accountLabel:       labels.PubID,
+				requestStatusLabel: string(labels.RequestStatus),
+			}).Inc()
+		}
 	}
 }
 

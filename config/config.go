@@ -629,10 +629,11 @@ type InfluxMetrics struct {
 }
 
 type PrometheusMetrics struct {
-	Port             int    `mapstructure:"port"`
-	Namespace        string `mapstructure:"namespace"`
-	Subsystem        string `mapstructure:"subsystem"`
-	TimeoutMillisRaw int    `mapstructure:"timeout_ms"`
+	Port                        int    `mapstructure:"port"`
+	Namespace                   string `mapstructure:"namespace"`
+	Subsystem                   string `mapstructure:"subsystem"`
+	TimeoutMillisRaw            int    `mapstructure:"timeout_ms"`
+	AccountRequestStatusEnabled bool   `mapstructure:"account_request_status_enabled"`
 }
 
 func (cfg *PrometheusMetrics) validate(errs []error) []error {
@@ -1020,6 +1021,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
+	v.SetDefault("metrics.prometheus.account_request_status_enabled", false)
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
