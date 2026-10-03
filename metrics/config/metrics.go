@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/v4/metrics"
 	prometheusmetrics "github.com/prebid/prebid-server/v4/metrics/prometheus"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prometheus/client_golang/prometheus"
 	gometrics "github.com/rcrowley/go-metrics"
 	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
@@ -59,8 +60,9 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 // DetailedMetricsEngine is a MultiMetricsEngine that preserves links to underlying metrics engines.
 type DetailedMetricsEngine struct {
 	metrics.MetricsEngine
-	GoMetrics         *metrics.Metrics
-	PrometheusMetrics *prometheusmetrics.Metrics
+	GoMetrics             *metrics.Metrics
+	PrometheusMetrics     *prometheusmetrics.Metrics
+	ModuleMetricsGatherer prometheus.Gatherer
 }
 
 // MultiMetricsEngine logs metrics to multiple metrics databases The can be useful in transitioning

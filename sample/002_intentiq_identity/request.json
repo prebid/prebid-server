@@ -1,0 +1,59 @@
+{
+  "id": "iiq-identity-sample-auction",
+  "test": 1,
+  "tmax": 3000,
+  "site": {
+    "domain": "example.com",
+    "page": "https://example.com/article"
+  },
+  "device": {
+    "ip": "1.2.3.4",
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "user": {
+    "eids": [
+      {
+        "source": "pubcid.org",
+        "uids": [
+          {
+            "id": "sample-pubcid-0000-0000-0000"
+          }
+        ]
+      }
+    ]
+  },
+  "imp": [
+    {
+      "id": "imp-1",
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          }
+        ]
+      },
+      "ext": {
+        "prebid": {
+          "bidder": {
+            "pubmatic": {
+              "publisherId": "111111",
+              "adSlot": "test"
+            }
+          },
+          "storedbidresponse": [
+            {
+              "bidder": "pubmatic",
+              "id": "test-bid-id"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "ext": {
+    "prebid": {
+      "debug": true
+    }
+  }
+}
