@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "bidwave-invalid-publisher-request",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 123
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid bidwave params for impression imp-1:",
+      "comparison": "startswith"
+    }
+  ]
+}
