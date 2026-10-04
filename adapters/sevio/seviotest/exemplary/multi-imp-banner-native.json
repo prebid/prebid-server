@@ -1,0 +1,145 @@
+{
+    "mockBidRequest": {
+        "id": "testRequestIdMulti",
+        "site": {
+            "page": "https://publisher-website.com/web"
+        },
+        "imp": [
+            {
+                "id": "bannerImp",
+                "banner": {
+                    "format": [{
+                        "w": 300,
+                        "h": 250
+                    }]
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": "bannerPlacement"
+                    }
+                }
+            },
+            {
+                "id": "nativeImp",
+                "native": {
+                    "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}",
+                    "ver": "1.2"
+                },
+                "ext": {
+                    "bidder": {
+                        "placementId": "nativePlacement"
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://test-request.com/prebid",
+            "body": {
+                "id": "testRequestIdMulti",
+                "site": {
+                    "page": "https://publisher-website.com/web"
+                },
+                "imp": [
+                    {
+                        "id": "bannerImp",
+                        "banner": {
+                            "format": [{
+                                "w": 300,
+                                "h": 250
+                            }]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "placementId": "bannerPlacement"
+                            }
+                        }
+                    },
+                    {
+                        "id": "nativeImp",
+                        "native": {
+                            "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}",
+                            "ver": "1.2"
+                        },
+                        "ext": {
+                            "bidder": {
+                                "placementId": "nativePlacement"
+                            }
+                        }
+                    }
+                ]
+            },
+            "impIDs":["bannerImp","nativeImp"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "testRequestIdMulti",
+                "seatbid": [{
+                    "seat": "sevio",
+                    "bid": [
+                        {
+                            "id": "bannerBidId",
+                            "impid": "bannerImp",
+                            "price": 2.10,
+                            "adm": "iframe-content",
+                            "adid": "advBanner",
+                            "cid": "cidBanner",
+                            "crid": "cridBanner",
+                            "w": 300,
+                            "h": 250,
+                            "mtype": 1
+                        },
+                        {
+                            "id": "nativeBidId",
+                            "impid": "nativeImp",
+                            "price": 1.50,
+                            "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hi\"}}]}}",
+                            "adid": "advNative",
+                            "cid": "cidNative",
+                            "crid": "cridNative",
+                            "mtype": 4
+                        }
+                    ]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [
+            {
+                "bid": {
+                    "id": "bannerBidId",
+                    "impid": "bannerImp",
+                    "price": 2.10,
+                    "adm": "iframe-content",
+                    "adid": "advBanner",
+                    "cid": "cidBanner",
+                    "crid": "cridBanner",
+                    "w": 300,
+                    "h": 250,
+                    "mtype": 1
+                },
+                "type": "banner"
+            },
+            {
+                "bid": {
+                    "id": "nativeBidId",
+                    "impid": "nativeImp",
+                    "price": 1.50,
+                    "adm": "{\"native\":{\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hi\"}}]}}",
+                    "adid": "advNative",
+                    "cid": "cidNative",
+                    "crid": "cridNative",
+                    "mtype": 4
+                },
+                "type": "native"
+            }
+        ]
+    }]
+}
