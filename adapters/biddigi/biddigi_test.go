@@ -1,6 +1,7 @@
 package biddigi
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -109,6 +110,54 @@ func TestOtherImpExtFieldsArePreserved(t *testing.T) {
 	var sent openrtb2.BidRequest
 	assert.NoError(t, jsonutil.Unmarshal(reqs[0].Body, &sent))
 	assert.JSONEq(t, `{"gpid":"/1/home","data":{"x":1}}`, string(sent.Imp[0].Ext))
+}
+
+// Preserving imp.ext means preserving the BYTES, not a value that happens to compare equal.
+// Decoding into interface{} turns every JSON number into a float64, and re-marshalling a float64
+// does not reproduce what arrived: an int64 id above 2^53 is rounded and a uint64 deal id loses
+// its last digits outright.
+//
+// Compared with assert.Equal on the raw bytes rather than assert.JSONEq, deliberately: JSONEq
+// decodes both sides through the same float64 path and so agrees with the wrong answer. Key order
+// is alphabetical because that is how a Go map marshals.
+func TestImpExtNumbersSurviveByteForByte(t *testing.T) {
+	for _, tc := range []struct{ name, ext, want string }{
+		{
+			"int64 id above 2^53",
+			`{"bidder":{"seatKey":"k"},"data":{"lineItemId":9007199254740993}}`,
+			`{"data":{"lineItemId":9007199254740993}}`,
+		},
+		{
+			"uint64 id near max",
+			`{"bidder":{"seatKey":"k"},"data":{"dealId":18446744073709551615}}`,
+			`{"data":{"dealId":18446744073709551615}}`,
+		},
+		{
+			"decimal is not reformatted",
+			`{"bidder":{"seatKey":"k"},"data":{"floor":1.10}}`,
+			`{"data":{"floor":1.10}}`,
+		},
+		{
+			"exponent is not expanded",
+			`{"bidder":{"seatKey":"k"},"data":{"n":1e2}}`,
+			`{"data":{"n":1e2}}`,
+		},
+		{
+			"untouched keys survive alongside an injected placementId",
+			`{"bidder":{"seatKey":"k"},"gpid":"/1/home","data":{"lineItemId":9007199254740993}}`,
+			`{"biddigi":{"placementId":"p1"},"data":{"lineItemId":9007199254740993},"gpid":"/1/home"}`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			placementID := ""
+			if strings.Contains(tc.want, "placementId") {
+				placementID = "p1"
+			}
+			out, err := stripBidderExt(openrtb2.Imp{ID: "imp-1", Ext: jsonRaw(tc.ext)}, placementID)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, string(out.Ext))
+		})
+	}
 }
 
 // With no placementId and nothing else in imp.ext, an empty object would be noise on the wire.

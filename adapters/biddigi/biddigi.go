@@ -1,6 +1,7 @@
 package biddigi
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -142,8 +143,16 @@ func parseImpExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpBiddigi, error) {
 // ext.data belong to PBS and to other modules, and an adapter that flattens them breaks features
 // it has nothing to do with. When nothing is left, imp.ext is dropped entirely rather than sent
 // as an empty object.
+//
+// The values are held as json.RawMessage, NOT decoded into interface{}. Decoding a JSON number
+// into interface{} yields a float64, and re-marshalling that float64 does not reproduce the bytes
+// that arrived: an integer above 2^53 is silently rounded (9007199254740993 comes back out as
+// ...992, and a uint64 deal id loses its last three digits entirely), while 1.10 becomes 1.1 and
+// 1e2 becomes 100. This function's whole job is to remove one key and pass the rest through
+// untouched, so every key except "bidder" is carried as the exact bytes the caller sent and is
+// never parsed at all.
 func stripBidderExt(imp openrtb2.Imp, placementID string) (openrtb2.Imp, error) {
-	var ext map[string]interface{}
+	var ext map[string]json.RawMessage
 	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return imp, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: failed to parse imp.ext: %s", imp.ID, err.Error()),
@@ -153,7 +162,11 @@ func stripBidderExt(imp openrtb2.Imp, placementID string) (openrtb2.Imp, error) 
 	delete(ext, "bidder")
 
 	if placementID != "" {
-		ext["biddigi"] = map[string]interface{}{"placementId": placementID}
+		encoded, err := jsonutil.Marshal(map[string]string{"placementId": placementID})
+		if err != nil {
+			return imp, fmt.Errorf("imp %s: unable to marshal imp.ext.biddigi: %w", imp.ID, err)
+		}
+		ext["biddigi"] = encoded
 	}
 
 	if len(ext) == 0 {
