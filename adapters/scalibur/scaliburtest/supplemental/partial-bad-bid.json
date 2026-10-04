@@ -15,8 +15,7 @@
         "ext": {
           "bidder": {
             "placementId": "test-scl-placement"
-          },
-          "gpid": "test-gpid-value"
+          }
         }
       }
     ]
@@ -42,9 +41,7 @@
                 ]
               },
               "bidfloorcur": "USD",
-              "ext": {
-                "gpid": "test-gpid-value"
-              },
+              "ext": {},
               "tagid": "test-scl-placement"
             }
           ]
@@ -54,24 +51,51 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
+          "cur": "USD",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "test-bid-id",
+                  "id": "good-bid-1",
                   "impid": "test-imp-id",
                   "price": 0.5,
-                  "adm": "<html>...</html>",
-                  "crid": "test-creative-id",
+                  "adm": "<html>first</html>",
+                  "crid": "creative-1",
+                  "mtype": 1,
+                  "w": 300,
+                  "h": 250
+                },
+                {
+                  "id": "orphan-bid",
+                  "impid": "no-such-imp",
+                  "price": 9.99,
+                  "adm": "<html>orphan</html>",
+                  "crid": "creative-orphan",
+                  "mtype": 1,
+                  "w": 300,
+                  "h": 250
+                },
+                {
+                  "id": "good-bid-2",
+                  "impid": "test-imp-id",
+                  "price": 1.5,
+                  "adm": "<html>second</html>",
+                  "crid": "creative-2",
+                  "mtype": 1,
                   "w": 300,
                   "h": 250
                 }
               ]
             }
-          ],
-          "cur": "USD"
+          ]
         }
       }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Invalid bid imp ID no-such-imp",
+      "comparison": "literal"
     }
   ],
   "expectedBidResponses": [
@@ -80,11 +104,25 @@
       "bids": [
         {
           "bid": {
-            "id": "test-bid-id",
+            "id": "good-bid-1",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "<html>...</html>",
-            "crid": "test-creative-id",
+            "adm": "<html>first</html>",
+            "crid": "creative-1",
+            "mtype": 1,
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "good-bid-2",
+            "impid": "test-imp-id",
+            "price": 1.5,
+            "adm": "<html>second</html>",
+            "crid": "creative-2",
+            "mtype": 1,
             "w": 300,
             "h": 250
           },
