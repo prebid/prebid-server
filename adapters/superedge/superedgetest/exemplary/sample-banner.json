@@ -1,0 +1,168 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "test-site-id",
+      "page": "https://www.example.com/"
+    },
+    "ext": {
+      "prebid": {
+        "bidderparams": {
+          "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb-us.superedge.co.jp/bid?sk=f9f2b1ef23fe2759c2cad0953029a94b",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ],
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {
+                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "test-site-id",
+            "page": "https://www.example.com/"
+          },
+          "ext": {
+            "prebid": {
+              "bidderparams": {
+                "sk": "f9f2b1ef23fe2759c2cad0953029a94b"
+              }
+            }
+          }
+        },
+        "impIDs": [
+          "test-imp-id",
+          "test-imp-id-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "superedge",
+              "bid": [
+                {
+                  "id": "test-imp-id",
+                  "impid": "test-imp-id",
+                  "price": 0.5,
+                  "adm": "some-ads",
+                  "crid": "crid_testid"
+                },
+                {
+                  "id": "test-imp-id-2",
+                  "impid": "test-imp-id-2",
+                  "price": 1.0,
+                  "adm": "some-ads-2",
+                  "crid": "crid_testid2"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-ads",
+            "crid": "crid_testid"
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "test-imp-id-2",
+            "impid": "test-imp-id-2",
+            "price": 1.0,
+            "adm": "some-ads-2",
+            "crid": "crid_testid2"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
