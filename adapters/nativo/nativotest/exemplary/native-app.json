@@ -74,6 +74,9 @@
                 "ext": {
                   "bidder": {
                     "placementId": 12345678
+                  },
+                  "nativo": {
+                    "placementid": 12345678
                   }
                 }
               }
