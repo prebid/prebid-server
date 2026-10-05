@@ -16,25 +16,38 @@ type adapter struct {
 	endpoint string
 }
 
+type fwsspImpExt struct {
+	CustomSiteSectionId string `json:"custom_site_section_id,omitempty"`
+	NetworkId           string `json:"network_id,omitempty"`
+	ProfileId           string `json:"profile_id,omitempty"`
+	TID                 string `json:"tid,omitempty"`
+	TIDT                int    `json:"tidt,omitempty"`
+}
+
+type fwsspRequestImpExt struct {
+	Bidder openrtb_ext.ImpExtFWSSP `json:"bidder"`
+	TID    string                  `json:"tid,omitempty"`
+	TIDT   int                     `json:"tidt,omitempty"`
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
-			}}
-		}
-
-		var impExt openrtb_ext.ImpExtFWSSP
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
+		var params fwsspRequestImpExt
+		if err := jsonutil.Unmarshal(imp.Ext, &params); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
 			}}
 		}
 
 		var err error
-		if imp.Ext, err = jsonutil.Marshal(impExt); err != nil {
+		if imp.Ext, err = jsonutil.Marshal(&fwsspImpExt{
+			CustomSiteSectionId: params.Bidder.CustomSiteSectionId,
+			NetworkId:           params.Bidder.NetworkId,
+			ProfileId:           params.Bidder.ProfileId,
+			TID:                 params.TID,
+			TIDT:                params.TIDT,
+		}); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to transfer requestImpExt to Json fomat, %s", err.Error()),
 			}}

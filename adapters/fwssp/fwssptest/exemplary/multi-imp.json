@@ -1,6 +1,9 @@
 {
   "mockBidRequest": {
     "id": "fwssp-test",
+    "source": {
+      "tid": "source-tid-abc123"
+    },
     "site": {
       "page": "prebid.org"
     },
@@ -17,7 +20,9 @@
             "custom_site_section_id": "ss_12345",
             "network_id": "123456",
             "profile_id": "123456:prof_12345"
-          }
+          },
+          "tid": "imp-1-tid-xyz789",
+          "tidt": 2
         }
       },
       {
@@ -32,7 +37,9 @@
             "custom_site_section_id": "ss_12345",
             "network_id": "123456",
             "profile_id": "123456:prof_12345"
-          }
+          },
+          "tid": "imp-2-tid-xyz790",
+          "tidt": 2
         }
       }
     ]
@@ -44,6 +51,9 @@
         "uri": "https://testfreewheel.com",
         "body":{
           "id": "fwssp-test",
+          "source": {
+            "tid": "source-tid-abc123"
+          },
           "site": {
             "page": "prebid.org"
           },
@@ -58,7 +68,9 @@
               "ext": {
                 "custom_site_section_id": "ss_12345",
                 "network_id": "123456",
-                "profile_id": "123456:prof_12345"
+                "profile_id": "123456:prof_12345",
+                "tid": "imp-1-tid-xyz789",
+                "tidt": 2
               }
             },
             {
@@ -71,7 +83,9 @@
               "ext": {
                 "custom_site_section_id": "ss_12345",
                 "network_id": "123456",
-                "profile_id": "123456:prof_12345"
+                "profile_id": "123456:prof_12345",
+                "tid": "imp-2-tid-xyz790",
+                "tidt": 2
               }
             }
           ]
