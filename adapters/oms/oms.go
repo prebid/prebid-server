@@ -43,9 +43,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			return nil, []error{err}
 		}
 
-		uri = fmt.Sprintf("%s?publisherId=%s", a.endpoint, omsImpExt.Pid)
+		uri = fmt.Sprintf("%s?pid=%s", a.endpoint, omsImpExt.Pid)
 		if omsImpExt.Pid == "" && omsImpExt.PublisherID > 0 {
-			uri = fmt.Sprintf("%s?publisherId=%d", a.endpoint, omsImpExt.PublisherID)
+			uri = fmt.Sprintf("%s?pid=%d", a.endpoint, omsImpExt.PublisherID)
 		}
 	}
 
