@@ -558,7 +558,20 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	}
 
 	metrics.Registerer = prometheus.WrapRegistererWithPrefix(metricsPrefix, reg)
-	metrics.Registerer.MustRegister(promCollector.NewGoCollector())
+
+	// By default (DisableGoMetricsPrefix=false), the standard Prometheus Go runtime
+	// collector is registered on the namespace/subsystem-prefixed Registerer, same as
+	// Prebid Server's own custom metrics - preserving existing behavior for deployments
+	// that already rely on the prefixed names. Setting DisableGoMetricsPrefix registers it
+	// on the unprefixed reg instead, so its metrics keep the standard go_* names
+	// client_golang recommends (https://github.com/prometheus/client_golang/blob/main/prometheus/wrap.go#L62-L67);
+	// prefixing them breaks dashboards/alerts built against the standard names and prevents
+	// horizontal comparison across services.
+	if cfg.DisableGoMetricsPrefix {
+		reg.MustRegister(promCollector.NewGoCollector())
+	} else {
+		metrics.Registerer.MustRegister(promCollector.NewGoCollector())
+	}
 
 	preloadLabelValues(&metrics, syncerKeys, moduleStageNames)
 
