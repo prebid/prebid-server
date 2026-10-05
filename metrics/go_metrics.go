@@ -130,6 +130,7 @@ type accountMetrics struct {
 	adapterMetrics       map[string]*AdapterMetrics
 	moduleMetrics        map[string]*ModuleMetrics
 	storedResponsesMeter metrics.Meter
+	gotBidsRequestMeter  metrics.Meter
 
 	bidValidationCreativeSizeMeter     metrics.Meter
 	bidValidationCreativeSizeWarnMeter metrics.Meter
@@ -591,6 +592,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.adapterMetrics = make(map[string]*AdapterMetrics, len(me.exchanges))
 	am.moduleMetrics = make(map[string]*ModuleMetrics)
 	am.storedResponsesMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.stored_responses", id), me.MetricsRegistry)
+	am.gotBidsRequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests.gotbids", id), me.MetricsRegistry)
 	if !me.MetricsDisabled.AccountAdapterDetails {
 		for _, a := range me.exchanges {
 			am.adapterMetrics[a] = makeBlankAdapterMetrics(me.MetricsDisabled)
@@ -657,6 +659,12 @@ func (me *Metrics) RecordStoredResponse(pubId string) {
 	me.StoredResponsesMeter.Mark(1)
 	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
 		me.getAccountMetrics(pubId).storedResponsesMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordAccountGotBids(pubId string) {
+	if pubId != PublisherUnknown {
+		me.getAccountMetrics(pubId).gotBidsRequestMeter.Mark(1)
 	}
 }
 
