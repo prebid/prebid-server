@@ -1,0 +1,9 @@
+endpoint: "https://hb.adapex.io/pbs"
+aliasOf: "floxis"
+maintainer:
+  email: prebid@floxis.tech
+gvlVendorID: 1609
+userSync:
+  redirect:
+    url: "https://sync.adapex.io/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&us_privacy={{.USPrivacy}}&dest={{.RedirectURL}}"
+    userMacro: "${USER_ID}"

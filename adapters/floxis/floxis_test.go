@@ -81,6 +81,44 @@ func TestPartnerPrefixesHost(t *testing.T) {
 	assert.Equal(t, "https://acme-us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
 }
 
+func TestAliasEndpointWithoutHostMacroIgnoresRegionAndPartner(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderName("adapex"), config.Adapter{Endpoint: "https://hb.adapex.io/pbs"}, config.Server{})
+	assert.NoError(t, buildErr)
+
+	req := &openrtb2.BidRequest{
+		ID:   "req-1",
+		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","region":"eu","partner":"acme"}}`)},
+		Site: &openrtb2.Site{ID: "271"},
+	}
+	reqData, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
+	assert.Empty(t, errs)
+	assert.Len(t, reqData, 1)
+	assert.Equal(t, "https://hb.adapex.io/pbs?seat=abc", reqData[0].Uri)
+}
+
+func TestAliasEndpointWithoutHostMacroRoutesOncePerSeat(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderName("adapex"), config.Adapter{Endpoint: "https://hb.adapex.io/pbs"}, config.Server{})
+	assert.NoError(t, buildErr)
+
+	imp1 := bannerImp(`{"bidder":{"seat":"seat-a","region":"eu"}}`)
+	imp2 := bannerImp(`{"bidder":{"seat":"seat-a","region":"apac","partner":"acme"}}`)
+	imp2.ID = "imp-2"
+	imp3 := bannerImp(`{"bidder":{"seat":"seat-b","region":"eu"}}`)
+	imp3.ID = "imp-3"
+	req := &openrtb2.BidRequest{
+		ID:   "req-1",
+		Imp:  []openrtb2.Imp{imp1, imp2, imp3},
+		Site: &openrtb2.Site{ID: "271"},
+	}
+	reqData, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
+	assert.Empty(t, errs)
+	assert.Len(t, reqData, 2)
+	assert.Equal(t, "https://hb.adapex.io/pbs?seat=seat-a", reqData[0].Uri)
+	assert.Equal(t, []string{"imp-1", "imp-2"}, reqData[0].ImpIDs)
+	assert.Equal(t, "https://hb.adapex.io/pbs?seat=seat-b", reqData[1].Uri)
+	assert.Equal(t, []string{"imp-3"}, reqData[1].ImpIDs)
+}
+
 func TestValidNonStandardRegionPassesThrough(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		ID:   "req-1",
