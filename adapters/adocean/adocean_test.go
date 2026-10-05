@@ -156,6 +156,95 @@ func TestBuildQueryEmitterParamsCannotOverrideAdapterParams(t *testing.T) {
 	}
 }
 
+func TestBuildQueryEmitterParamsFormatting(t *testing.T) {
+	params, err := parseImpExt(&openrtb2.Imp{Ext: json.RawMessage(`{
+		"bidder": {
+			"masterId": "master-id",
+			"slaveId": "adoceanmyaozpniqismex",
+			"emitterRequestParams": {
+				"text": "some value",
+				"empty": "",
+				"integer": 1234567,
+				"fraction": 123.456,
+				"small": 0.0000001,
+				"large": 100000000000000000000,
+				"negative": -1234567,
+				"zero": 0,
+				"enabled": true,
+				"disabled": false
+			}
+		}
+	}`)})
+	if err != nil {
+		t.Fatalf("parseImpExt returned unexpected error: %v", err)
+	}
+
+	query, err := buildQuery(&openrtb2.BidRequest{}, &openrtb2.Imp{}, params)
+	if err != nil {
+		t.Fatalf("buildQuery returned unexpected error: %v", err)
+	}
+
+	expected := map[string]string{
+		"text":     "some value",
+		"empty":    "",
+		"integer":  "1234567",
+		"fraction": "123.456",
+		"small":    "0.0000001",
+		"large":    "100000000000000000000",
+		"negative": "-1234567",
+		"zero":     "0",
+		"enabled":  "true",
+		"disabled": "false",
+	}
+	for key, value := range expected {
+		if got := query.Get(key); got != value {
+			t.Errorf("buildQuery returned %s=%q, expected %q", key, got, value)
+		}
+		if len(query[key]) != 1 {
+			t.Errorf("buildQuery returned %d values for %s, expected 1", len(query[key]), key)
+		}
+	}
+}
+
+func TestBuildQueryEmitterParamsCannotInjectReservedParams(t *testing.T) {
+	reservedKeys := []string{"gdpr", "gdpr_consent", "aouserid", "aosize", "spots", "dur", "maxdur", "mindur"}
+	params := &openrtb_ext.ExtImpAdOcean{
+		MasterID:             "master-id",
+		SlaveID:              "adoceanmyaozpniqismex",
+		EmitterRequestParams: map[string]any{},
+	}
+	for _, key := range reservedKeys {
+		params.EmitterRequestParams[key] = "override"
+	}
+
+	testCases := []struct {
+		name string
+		imp  openrtb2.Imp
+	}{
+		{name: "banner without sizes", imp: openrtb2.Imp{Banner: &openrtb2.Banner{}}},
+		{name: "video without durations", imp: openrtb2.Imp{Video: &openrtb2.Video{}}},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			query, err := buildQuery(&openrtb2.BidRequest{}, &testCase.imp, params)
+			if err != nil {
+				t.Fatalf("buildQuery returned unexpected error: %v", err)
+			}
+			for _, key := range reservedKeys {
+				if key == "spots" && testCase.imp.Video != nil {
+					if got := query.Get(key); got != "1" {
+						t.Errorf("buildQuery returned spots=%q, expected 1", got)
+					}
+					continue
+				}
+				if values, found := query[key]; found {
+					t.Errorf("buildQuery included reserved parameter %s=%v", key, values)
+				}
+			}
+		})
+	}
+}
+
 func TestResolveEndpointTemplate(t *testing.T) {
 	endpointTemplate := template.Must(template.New("endpoint").Parse("https://{{.Host}}.adocean.pl"))
 	bidder := adapter{endpointTemplate: endpointTemplate}

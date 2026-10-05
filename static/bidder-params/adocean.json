@@ -21,7 +21,10 @@
         },
         "emitterRequestParams": {
             "type": "object",
-            "description": "Extra targeting parameters"
+            "description": "Extra targeting parameters",
+            "additionalProperties": {
+                "type": ["string", "number", "boolean"]
+            }
         }
     },
     "required": ["emitterPrefix", "masterId", "slaveId"]

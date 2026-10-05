@@ -70,19 +70,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var errs []error
 
 	for index := range request.Imp {
-		imp := &request.Imp[index]
-		if err := validateImp(imp); err != nil {
+		imp := request.Imp[index]
+		if err := validateImp(&imp); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		params, err := parseImpExt(imp)
+		params, err := parseImpExt(&imp)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		requestData, err := a.makeRequest(request, imp, params)
+		requestData, err := a.makeRequest(request, &imp, params)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -101,9 +101,12 @@ func validateImp(imp *openrtb2.Imp) error {
 		}
 	}
 	if imp.Video != nil && !isInstreamVideo(imp.Video) {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only instream video", imp.ID),
+		if imp.Banner == nil {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("ignoring imp id=%s: AdOcean supports only instream video", imp.ID),
+			}
 		}
+		imp.Video = nil
 	}
 	return nil
 }
@@ -188,7 +191,18 @@ func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb
 
 	query := url.Values{}
 	for key, value := range params.EmitterRequestParams {
-		query.Set(key, fmt.Sprint(value))
+		switch key {
+		case "pbsrv_v", "id", "slaves", "gdpr", "gdpr_consent", "aouserid", "spots", "dur", "maxdur", "mindur", "aosize":
+			continue
+		}
+		switch typedValue := value.(type) {
+		case string:
+			query.Set(key, typedValue)
+		case float64:
+			query.Set(key, strconv.FormatFloat(typedValue, 'f', -1, 64))
+		case bool:
+			query.Set(key, strconv.FormatBool(typedValue))
+		}
 	}
 
 	query.Set("pbsrv_v", adapterVersion)
@@ -204,6 +218,8 @@ func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb
 		}
 		if request.User.BuyerUID != "" {
 			query.Set("aouserid", request.User.BuyerUID)
+		} else if request.User.ID != "" {
+			query.Set("aouserid", request.User.ID)
 		}
 	}
 
@@ -217,7 +233,8 @@ func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb
 		if imp.Video.MinDuration > 0 {
 			query.Set("mindur", strconv.FormatInt(imp.Video.MinDuration, 10))
 		}
-	} else if imp.Banner != nil {
+	}
+	if imp.Banner != nil {
 		if sizes := getBannerSizes(imp.Banner); len(sizes) > 0 {
 			query.Set("aosize", strings.Join(sizes, ","))
 		}
@@ -274,18 +291,11 @@ func (a *adapter) MakeBids(
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: "unexpected status code: 400",
-		}}
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected status code: %d", response.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var adUnits []responseAdUnit
