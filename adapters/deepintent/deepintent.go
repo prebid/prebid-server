@@ -96,7 +96,7 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			bidType, err := getMediaTypeForBid(&sb.Bid[i])
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -119,7 +119,7 @@ func (d *DeepintentAdapter) preprocess(request openrtb2.BidRequest) (*adapters.R
 
 	for _, imp := range request.Imp {
 
-		if err := buildImpBanner(&imp); err != nil {
+		if err := validateImp(&imp); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -148,14 +148,21 @@ func (d *DeepintentAdapter) preprocess(request openrtb2.BidRequest) (*adapters.R
 	}, errs
 }
 
-func buildImpBanner(imp *openrtb2.Imp) error {
-
-	if imp.Banner == nil {
+func validateImp(imp *openrtb2.Imp) error {
+	if imp.Banner == nil && imp.Video == nil {
 		return &errortypes.BadInput{
-			Message: "We need a Banner Object in the request",
+			Message: fmt.Sprintf("DeepIntent only supports Banner and Video media types. Ignoring ImpID=%s", imp.ID),
 		}
 	}
 
+	if imp.Banner != nil {
+		return buildImpBanner(imp)
+	}
+
+	return nil
+}
+
+func buildImpBanner(imp *openrtb2.Imp) error {
 	if imp.Banner.W == nil && imp.Banner.H == nil {
 		bannerCopy := *imp.Banner
 		banner := &bannerCopy
@@ -174,16 +181,15 @@ func buildImpBanner(imp *openrtb2.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impID {
-			return mediaType, nil
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType %d for bid %s", bid.MType, bid.ImpID),
 		}
-	}
-
-	// This shouldnt happen. Lets handle it just incase by returning an error.
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression %s ", impID),
 	}
 }
