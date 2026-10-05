@@ -97,7 +97,29 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 }
 
 func (fetcher *HttpFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return nil, nil
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	httpReq, err := fetcher.buildResponseRequest(ids)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	httpResp, err := ctxhttp.Do(ctx, fetcher.client, httpReq)
+	if err != nil {
+		return nil, []error{err}
+	}
+	defer httpResp.Body.Close()
+
+	data, errs = unpackResponseData(httpResp, "Response")
+	for _, id := range ids {
+		if _, found := data[id]; !found {
+			errs = append(errs, stored_requests.NotFoundError{ID: id, DataType: "Response"})
+		}
+	}
+
+	return
 }
 
 // FetchAccounts retrieves account configurations
@@ -265,6 +287,18 @@ func (fetcher *HttpFetcher) buildRequest(requestIDs []string, impIDs []string) (
 	return http.NewRequest("GET", u.String(), nil)
 }
 
+func (fetcher *HttpFetcher) buildResponseRequest(ids []string) (*http.Request, error) {
+	u := *fetcher.EndpointURL
+
+	q := u.Query()
+
+	AddQueryParam(&q, "response-id", ids, fetcher.UseRfcCompliantBuilder)
+
+	u.RawQuery = q.Encode()
+
+	return http.NewRequest("GET", u.String(), nil)
+}
+
 func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -305,6 +339,27 @@ func convertNullsToErrs(m map[string]json.RawMessage, dataType string, errs []er
 	return errs
 }
 
+func unpackResponseData(resp *http.Response, dataType string) (data map[string]json.RawMessage, errs []error) {
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Error fetching Stored %ss via HTTP. Response code was %d", dataType, resp.StatusCode)}
+	}
+
+	var responseObj responseDataContract
+	if err := jsonutil.UnmarshalValid(respBytes, &responseObj); err != nil {
+		return nil, []error{err}
+	}
+
+	data = responseObj.Responses
+	errList := convertNullsToErrs(data, dataType, nil)
+
+	return data, errList
+}
+
 // responseContract is used to unmarshal  for the endpoint
 type responseContract struct {
 	Requests map[string]json.RawMessage `json:"requests"`
@@ -313,4 +368,8 @@ type responseContract struct {
 
 type accountsResponseContract struct {
 	Accounts map[string]json.RawMessage `json:"accounts"`
+}
+
+type responseDataContract struct {
+	Responses map[string]json.RawMessage `json:"responses"`
 }
