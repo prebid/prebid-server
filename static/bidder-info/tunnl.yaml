@@ -1,0 +1,29 @@
+# The sid is issued by Tunnl, one per publisher, and every ad unit carries the
+# same one: if ad units differ, the first imp's sid is used for the request. Hosts
+# serving another region should override adapters.tunnl.endpoint in their own
+# deployment config with the matching line, rather than editing this file.
+#
+#   US    "https://us1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"
+#   EU    "https://eu1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"
+#   APAC  "https://ap1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"
+endpoint: "https://us1.rapidtag.net/api/v1/bid?sid={{.SourceId}}"
+endpointCompression: gzip
+gvlVendorID: 540
+maintainer:
+  email: prebid@tunnl.com
+geoscope:
+  - global
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+openrtb:
+  version: 2.6
+  multiformat-supported: true
