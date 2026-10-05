@@ -1,0 +1,104 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-native-1",
+    "site": {
+      "id": "site-luxury-fashion",
+      "page": "https://publisher.example/articles/handbags"
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "geo": { "country": "US" }
+    },
+    "imp": [
+      {
+        "id": "test-imp-native",
+        "tagid": "native-slot-1",
+        "native": {
+          "ver": "1.2",
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":250}},{\"id\":3,\"data\":{\"type\":1,\"len\":40}},{\"id\":4,\"data\":{\"type\":6}}]}"
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "slot-pdp-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.realry.com/bid/openrtb",
+        "body": {
+          "id": "test-request-native-1",
+          "site": {
+            "id": "site-luxury-fashion",
+            "page": "https://publisher.example/articles/handbags"
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "geo": { "country": "US" }
+          },
+          "imp": [
+            {
+              "id": "test-imp-native",
+              "tagid": "native-slot-1",
+              "native": {
+                "ver": "1.2",
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":250}},{\"id\":3,\"data\":{\"type\":1,\"len\":40}},{\"id\":4,\"data\":{\"type\":6}}]}"
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "slot-pdp-1"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-native"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-native-1",
+          "cur": "USD",
+          "bidid": "bid-abc",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-abc",
+                  "impid": "test-imp-native",
+                  "price": 0.85,
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Leather Crossbody Bag\"}},{\"id\":2,\"img\":{\"type\":3,\"url\":\"https://cdn.example.com/bag.jpg\"}},{\"id\":3,\"data\":{\"type\":1,\"value\":\"Acme Boutique\"}},{\"id\":4,\"data\":{\"type\":6,\"value\":\"USD 0.85\"}}],\"link\":{\"url\":\"https://bid.realry.com/click?bid_id=bid-abc\"}}",
+                  "nurl": "https://bid.realry.com/imp?bid_id=bid-abc",
+                  "cid": "camp-1",
+                  "crid": "prod-42"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-abc",
+            "impid": "test-imp-native",
+            "price": 0.85,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Leather Crossbody Bag\"}},{\"id\":2,\"img\":{\"type\":3,\"url\":\"https://cdn.example.com/bag.jpg\"}},{\"id\":3,\"data\":{\"type\":1,\"value\":\"Acme Boutique\"}},{\"id\":4,\"data\":{\"type\":6,\"value\":\"USD 0.85\"}}],\"link\":{\"url\":\"https://bid.realry.com/click?bid_id=bid-abc\"}}",
+            "nurl": "https://bid.realry.com/imp?bid_id=bid-abc",
+            "cid": "camp-1",
+            "crid": "prod-42"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
