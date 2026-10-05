@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,19 @@ const (
 	IntegrationParameter = "int"
 	ImpressionCloseTag   = "</Impression>"
 	ImpressionOpenTag    = "<Impression>"
+	emptyImpressionTag   = ImpressionOpenTag + ImpressionCloseTag
+	trackingImpressionCD = "<![CDATA["
+	trackingImpressionCE = "]]>"
+)
+
+// Tag matchers ported from PBS-Java VastModifier (prebid-server-java#3059).
+// VAST tags may differ in case, carry attributes, and include extra whitespace.
+var (
+	wrapperOpenTagPattern     = regexp.MustCompile(`(?i)<\s*wrapper(?:>|\s.*?>)`)
+	wrapperCloseTagPattern    = regexp.MustCompile(`(?i)<\s*/\s*wrapper(?:>|\s.*?>)`)
+	inlineOpenTagPattern      = regexp.MustCompile(`(?i)<\s*inline(?:>|\s.*?>)`)
+	inlineCloseTagPattern     = regexp.MustCompile(`(?i)<\s*/\s*inline(?:>|\s.*?>)`)
+	impressionCloseTagPattern = regexp.MustCompile(`(?i)<\s*/\s*impression(?:>|\s.*?>)`)
 )
 
 type vtrackEndpoint struct {
@@ -296,24 +310,65 @@ func getIntegrationType(httpRequest *http.Request) (string, error) {
 	return integrationType, nil
 }
 
-// ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified
+// ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified.
+// Matching follows PBS-Java: InLine first, then Wrapper; insert after the last Impression close tag,
+// or before the parent close tag when no Impression exists (#1967). Neither parent: unchanged.
 func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, timestamp int64, integrationType string) (string, bool) {
-	ci := strings.Index(vast, ImpressionCloseTag)
+	trackingURL := func() string {
+		return GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp, integrationType)
+	}
+	if result, found, changed := appendTrackingURL(vast, trackingURL, inlineOpenTagPattern, inlineCloseTagPattern); found {
+		return result, changed
+	}
+	if result, found, changed := appendTrackingURL(vast, trackingURL, wrapperOpenTagPattern, wrapperCloseTagPattern); found {
+		return result, changed
+	}
+	return vast, false
+}
 
-	// no impression tag - pass it as it is
-	if ci == -1 {
-		return vast, false
+func appendTrackingURL(vast string, trackingURL func() string, openTag, closeTag *regexp.Regexp) (string, bool, bool) {
+	openLoc := openTag.FindStringIndex(vast)
+	if openLoc == nil {
+		return vast, false, false
+	}
+	from := openLoc[1]
+	searchEnd := len(vast)
+	closeRel := closeTag.FindStringIndex(vast[from:])
+	if closeRel != nil {
+		searchEnd = from + closeRel[0]
 	}
 
-	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp, integrationType)
-	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
-	oi := strings.Index(vast, ImpressionOpenTag)
-
-	if ci-oi == len(ImpressionOpenTag) {
-		return strings.Replace(vast, ImpressionOpenTag, ImpressionOpenTag+impressionUrl, 1), true
+	// PBS-Go nurl wrappers emit a canonical empty <Impression></Impression>. Fill that
+	// in place so makeVAST results stay a single Impression (exchange event fixtures).
+	if i := strings.Index(vast[from:searchEnd], emptyImpressionTag); i >= 0 {
+		at := from + i + len(ImpressionOpenTag)
+		return vast[:at] + trackingImpressionCD + trackingURL() + trackingImpressionCE + vast[at:], true, true
 	}
 
-	return strings.Replace(vast, ImpressionCloseTag, ImpressionCloseTag+ImpressionOpenTag+impressionUrl+ImpressionCloseTag, 1), true
+	if end, ok := lastMatchEnd(impressionCloseTagPattern, vast[:searchEnd], from); ok {
+		return insertTrackingImpression(vast, trackingURL(), end), true, true
+	}
+
+	if closeRel == nil {
+		return vast, true, false
+	}
+	return insertTrackingImpression(vast, trackingURL(), from+closeRel[0]), true, true
+}
+
+func lastMatchEnd(re *regexp.Regexp, s string, start int) (int, bool) {
+	if start > len(s) {
+		return 0, false
+	}
+	locs := re.FindAllStringIndex(s[start:], -1)
+	if len(locs) == 0 {
+		return 0, false
+	}
+	return start + locs[len(locs)-1][1], true
+}
+
+func insertTrackingImpression(vast, trackingURL string, index int) string {
+	tag := ImpressionOpenTag + trackingImpressionCD + trackingURL + trackingImpressionCE + ImpressionCloseTag
+	return vast[:index] + tag + vast[index:]
 }
 
 // ModifyVastXmlJSON modifies BidCacheRequest element Vast XML data

@@ -801,6 +801,119 @@ func getVTrackRequestData(wi bool, wic bool) (db []byte, e error) {
 	return data.Bytes(), e
 }
 
+func TestModifyVastXmlString(t *testing.T) {
+	const (
+		external    = "http://external-url"
+		bidID       = "bidId"
+		bidder      = "bidder"
+		accountID   = "accountId"
+		ts          = int64(1000)
+		integration = "integrationType"
+	)
+	tracking := GetVastUrlTracking(external, bidID, bidder, accountID, ts, integration)
+	tag := ImpressionOpenTag + "<![CDATA[" + tracking + "]]>" + ImpressionCloseTag
+
+	tests := []struct {
+		name string
+		vast string
+		want string
+		ok   bool
+	}{
+		{
+			name: "append after existing wrapper impression",
+			vast: `<Wrapper><Impression>http:/test.com</Impression></Wrapper>`,
+			want: `<Wrapper><Impression>http:/test.com</Impression>` + tag + `</Wrapper>`,
+			ok:   true,
+		},
+		{
+			name: "append after last of multiple impressions",
+			vast: `<InLine><Impression>http:/test.com</Impression><Impression>http:/test2.com</Impression><Creatives></Creatives></InLine>`,
+			want: `<InLine><Impression>http:/test.com</Impression><Impression>http:/test2.com</Impression>` + tag + `<Creatives></Creatives></InLine>`,
+			ok:   true,
+		},
+		{
+			name: "case and whitespace on wrapper and impression",
+			vast: `<  wraPPer garbage><Impression>http:/test.com</Impression><  / wraPPer garbage>`,
+			want: `<  wraPPer garbage><Impression>http:/test.com</Impression>` + tag + `<  / wraPPer garbage>`,
+			ok:   true,
+		},
+		{
+			name: "case and whitespace on impression close",
+			vast: `<Wrapper><  impreSSion garbage >http:/test.com<  /ImPression  garbage ></Wrapper>`,
+			want: `<Wrapper><  impreSSion garbage >http:/test.com<  /ImPression  garbage >` + tag + `</Wrapper>`,
+			ok:   true,
+		},
+		{
+			name: "wrapper attributes",
+			vast: `<Wrapper followAdditionalWrappers="0"><Impression>http:/test.com</Impression></Wrapper>`,
+			want: `<Wrapper followAdditionalWrappers="0"><Impression>http:/test.com</Impression>` + tag + `</Wrapper>`,
+			ok:   true,
+		},
+		{
+			name: "insert before inline close when no impression",
+			vast: `<InLine></InLine>`,
+			want: `<InLine>` + tag + `</InLine>`,
+			ok:   true,
+		},
+		{
+			name: "insert before wrapper close when no impression",
+			vast: `<wrapper></wrapper>`,
+			want: `<wrapper>` + tag + `</wrapper>`,
+			ok:   true,
+		},
+		{
+			name: "insert before wrapper close in full vast with no impression",
+			vast: vastXmlWithoutImpression,
+			want: `<VAST version="3.0"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Creatives></Creatives>` + tag + `</Wrapper></Ad></VAST>`,
+			ok:   true,
+		},
+		{
+			name: "fill canonical empty impression from nurl wrapper",
+			vast: `<VAST version="3.0"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[nurl]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>`,
+			want: `<VAST version="3.0"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[nurl]]></VASTAdTagURI><Impression><![CDATA[` + tracking + `]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>`,
+			ok:   true,
+		},
+		{
+			name: "lowercase inline",
+			vast: `<Inline><Impression>http:/test.com</Impression></Inline>`,
+			want: `<Inline><Impression>http:/test.com</Impression>` + tag + `</Inline>`,
+			ok:   true,
+		},
+		{
+			name: "inline without close tag is unchanged",
+			vast: `<InLine></SomeTag>`,
+			want: `<InLine></SomeTag>`,
+			ok:   false,
+		},
+		{
+			name: "wrapper without close tag is unchanged",
+			vast: `<wrapper><someTag>`,
+			want: `<wrapper><someTag>`,
+			ok:   false,
+		},
+		{
+			name: "no inline or wrapper is unchanged",
+			vast: `<Impression>http:/test.com</Impression>`,
+			want: `<Impression>http:/test.com</Impression>`,
+			ok:   false,
+		},
+		{
+			name: "prefer inline over wrapper",
+			vast: `<InLine><Impression>inline</Impression></InLine><Wrapper><Impression>wrap</Impression></Wrapper>`,
+			want: `<InLine><Impression>inline</Impression>` + tag + `</InLine><Wrapper><Impression>wrap</Impression></Wrapper>`,
+			ok:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := ModifyVastXmlString(external, tt.vast, bidID, bidder, accountID, ts, integration)
+			assert.Equal(t, tt.ok, ok, tt.name)
+			assert.Equal(t, tt.want, got, tt.name)
+		})
+	}
+}
+
 func TestGetIntegrationType(t *testing.T) {
 	testCases := []struct {
 		description             string
