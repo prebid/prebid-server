@@ -125,6 +125,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderExco,
 	BidderEzoic,
 	BidderFeedAd,
+	BidderFerio,
 	BidderFlatads,
 	BidderFlipp,
 	BidderFreewheelSSP,
@@ -170,6 +171,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMadSense,
 	BidderMadvertise,
 	BidderMarsmedia,
+	BidderMatterfullRTB,
 	BidderMediafuse,
 	BidderMediaGo,
 	BidderMedianet,
@@ -510,6 +512,7 @@ const (
 	BidderEVolution         BidderName = "e_volution"
 	BidderEzoic             BidderName = "ezoic"
 	BidderFeedAd            BidderName = "feedad"
+	BidderFerio             BidderName = "ferio"
 	BidderFlatads           BidderName = "flatads"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
@@ -555,6 +558,7 @@ const (
 	BidderMadSense          BidderName = "madsense"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
+	BidderMatterfullRTB     BidderName = "matterfullrtb"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
