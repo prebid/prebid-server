@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
+
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
@@ -19,15 +20,19 @@ type adapter struct {
 	endpoint *template.Template
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
+var exchangeSubdomainsRegions = map[string]string{
+	"us-east": "lb-east",
+	"eu":      "n2",
+	"apac":    "lb-apac",
+}
+var sspSubdomainsRegions = map[string]string{
+	"us-east": "us-east-ssp",
+	"eu":      "eu-ssp",
+	"apac":    "apac-ssp",
+}
 
-	bidder := &adapter{
-		endpoint: template,
-	}
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{}
 	return bidder, nil
 }
 
@@ -55,6 +60,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 }
 
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
+
 	impExt, err := getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
 		return nil, []error{err}
@@ -99,8 +105,42 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtIntenze, error) {
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtIntenze) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
+	if params.AccountID == nil && params.PlacementID == nil {
+		return "", &errortypes.BadInput{
+			Message: "either accountId or placementId expected",
+		}
+	}
+
+	var route = ""
+	var subdomain, queryKey, queryValue string
+	var regionMap map[string]string
+
+	if params.AccountID != nil {
+		subdomain = "lb-east"
+		queryKey = "pass"
+		queryValue = *params.AccountID
+		regionMap = exchangeSubdomainsRegions
+	} else {
+		subdomain = "us-east-ssp"
+		queryKey = "placementId"
+		route = "pbs-serve"
+		queryValue = *params.PlacementID
+		regionMap = sspSubdomainsRegions
+	}
+
+	if params.Region != nil {
+		var exists bool
+		subdomain, exists = regionMap[*params.Region]
+		if !exists {
+			return "", &errortypes.BadInput{
+				Message: fmt.Sprintf("invalid region: %s. Expected us-east, eu or apac", *params.Region),
+			}
+		}
+	}
+
+	endpoint := fmt.Sprintf("https://%s.intenze.co/%s?%s=%s", subdomain, route, queryKey, url.QueryEscape(queryValue))
+
+	return endpoint, nil
 }
 
 func checkResponseStatusCodes(response *adapters.ResponseData) error {

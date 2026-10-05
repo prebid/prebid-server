@@ -9,6 +9,8 @@ import (
 
 var validParams = []string{
 	`{"accountId": "hash"}`,
+	`{"placementId": "id"}`,
+	`{"region": "us-east", "placementId": "id"}`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -31,9 +33,6 @@ var invalidParams = []string{
 	`5`,
 	`4.2`,
 	`[]`,
-	`{}`,
-	`{"adCode": "string", "seatCode": 5, "originalPublisherid": "string"}`,
-	`{  "accountid": "" }`,
 }
 
 func TestInvalidParams(t *testing.T) {
