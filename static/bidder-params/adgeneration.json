@@ -8,6 +8,10 @@
         "id": {
           "type": "string",
           "description": "Ad ID registered by AdGeneration."
+        },
+        "marginTop": {
+          "type": "string",
+          "description": "marginTop passed to ADGBrowserM.init for upper_billboard placements (matches Prebid.js bidder params)."
         }
     },
     "required": ["id"]
