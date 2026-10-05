@@ -1,0 +1,136 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "ver": "1.2",
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":250}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":25}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}"
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": "fake-app-id",
+            "publisherId": "test-publisher-id"
+          }
+        }
+      }
+    ],
+    "app": {
+      "publisher": {
+        "id": "test-publisher-id"
+      }
+    },
+    "device": {
+      "os": "android"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://insticator-app.example.com/v1/pbs?publisherId=test-publisher-id",
+        "body": {
+          "ext": {
+            "insticator": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "ver": "1.2",
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":300,\"hmin\":250}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":25}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}]}"
+              },
+              "ext": {
+                "insticator": {
+                  "adUnitId": "fake-app-id",
+                  "publisherId": "test-publisher-id"
+                }
+              }
+            }
+          ],
+          "app": {
+            "publisher": {
+              "id": "test-publisher-id"
+            }
+          },
+          "device": {
+            "os": "android"
+          }
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "insticator",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e802",
+                  "impid": "test-imp-id",
+                  "price": 0.75,
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Native Ad\"}},{\"id\":2,\"img\":{\"type\":3,\"url\":\"https://cdn.example.com/main.jpg\",\"w\":600,\"h\":500}},{\"id\":3,\"data\":{\"value\":\"BrandCo\"}}],\"link\":{\"url\":\"https://example.com/click\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://tracker.example.com/imp\"}]}",
+                  "adomain": [
+                    "insticator.com"
+                  ],
+                  "cat": [
+                    "IAB1-1"
+                  ],
+                  "mtype": 4,
+                  "crid": "crid_12",
+                  "ext": {
+                    "insticator": {
+                      "mediaType": "native"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e802",
+            "impid": "test-imp-id",
+            "price": 0.75,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Test Native Ad\"}},{\"id\":2,\"img\":{\"type\":3,\"url\":\"https://cdn.example.com/main.jpg\",\"w\":600,\"h\":500}},{\"id\":3,\"data\":{\"value\":\"BrandCo\"}}],\"link\":{\"url\":\"https://example.com/click\"},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://tracker.example.com/imp\"}]}",
+            "adomain": [
+              "insticator.com"
+            ],
+            "cat": [
+              "IAB1-1"
+            ],
+            "mtype": 4,
+            "crid": "crid_12",
+            "ext": {
+              "insticator": {
+                "mediaType": "native"
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
