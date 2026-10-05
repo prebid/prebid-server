@@ -1,3 +1,11 @@
+# BWX has regional endpoint domains:
+# - rtb.boldwin.live      — US East DC
+# - rtb-eu.boldwin.live   — EU DC
+# - rtb-west.boldwin.live — US West DC
+# - rtb-apac.boldwin.live — APAC DC
+#
+# Please deploy this config in each PBS datacenter
+# with the appropriate regional endpoint.
 endpoint: "http://rtb.boldwin.live?pid={{.SourceId}}&host={{.Host}}&pbs=1"
 maintainer:
   email: "prebid@bold-win.com"
