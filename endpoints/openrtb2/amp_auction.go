@@ -209,7 +209,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		for _, er := range errL {
 			errCode := errortypes.ReadCode(er)
 			if errCode == errortypes.BlockedAppErrorCode || errCode == errortypes.AccountDisabledErrorCode {
-				httpStatus = http.StatusServiceUnavailable
+				httpStatus = http.StatusForbidden
 				metricsStatus = metrics.RequestStatusBlockedApp
 				break
 			}
@@ -651,9 +651,13 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		return []error{err}
 	}
 
-	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
+	policyWriter, policyWriterErr, policyWriterValid := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
+	var errors []error
 	if policyWriterErr != nil {
-		return []error{policyWriterErr}
+		errors = append(errors, policyWriterErr)
+		if !policyWriterValid {
+			return errors
+		}
 	}
 	if err := policyWriter.Write(req); err != nil {
 		return []error{err}
@@ -663,7 +667,6 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
-	var errors []error
 	if warn := setTargeting(req, ampParams.Targeting); warn != nil {
 		errors = append(errors, warn)
 	}

@@ -53,24 +53,28 @@ const (
 
 // ReadPolicy returns a privacy writer in accordance to the query values consent, consent_type and gdpr_applies.
 // Returned policy writer could either be GDPR, CCPA or NilPolicy. The second return value is a warning.
-func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
+// The third return value indicates if the writer should be applied when a warning is returned.
+func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error, bool) {
 	if len(ampParams.Consent) == 0 {
-		return privacy.NilPolicyWriter{}, nil
+		return privacy.NilPolicyWriter{}, nil, true
 	}
 
 	var rv privacy.PolicyWriter = privacy.NilPolicyWriter{}
 	var warning error
 	var warningMsg string
+	writerValid := true
 
 	// If consent_type was set to CCPA or GDPR TCF2, we return a valid writer even if the consent string is invalid
 	switch ampParams.ConsentType {
 	case ConsentTCF1:
 		warningMsg = "TCF1 consent is deprecated and no longer supported."
+		writerValid = false
 	case ConsentTCF2:
 		if pbsConfigGDPREnabled {
 			rv = buildGdprTCF2ConsentWriter(ampParams)
 			// Log warning if GDPR consent string is invalid
 			warningMsg = validateTCf2ConsentString(ampParams.Consent)
+			writerValid = len(warningMsg) == 0
 		}
 	case ConsentUSPrivacy:
 		rv = ccpa.ConsentWriter{Consent: ampParams.Consent}
@@ -82,6 +86,7 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 		} else {
 			// Log warning if CCPA string is invalid
 			warningMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
+			writerValid = false
 		}
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
@@ -93,6 +98,7 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 			rv = buildGdprTCF2ConsentWriter(ampParams)
 		} else {
 			warningMsg = fmt.Sprintf("Consent string '%s' is not recognized as one of the supported formats CCPA or TCF2.", ampParams.Consent)
+			writerValid = false
 		}
 	}
 
@@ -102,7 +108,7 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 			WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 		}
 	}
-	return rv, warning
+	return rv, warning, writerValid
 }
 
 // buildGdprTCF2ConsentWriter returns a gdpr.ConsentWriter that will set regs.ext.gdpr to the value
