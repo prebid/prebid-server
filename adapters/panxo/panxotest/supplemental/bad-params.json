@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-bad",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": "not-an-object"
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext.bidder for impression index 0: .*",
+      "comparison": "regex"
+    }
+  ]
+}
