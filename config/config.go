@@ -177,6 +177,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
 	errs = cfg.AccountDefaults.PriceFloors.validate(errs)
+	errs = cfg.AccountDefaults.StoredRequest.validate(errs)
 	if cfg.AccountDefaults.Disabled {
 		logger.Warnf(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
@@ -1238,6 +1239,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("account_defaults.privacy.privacysandbox.topicsdomain", "")
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.enabled", false)
 	v.SetDefault("account_defaults.privacy.privacysandbox.cookiedeprecation.ttl_sec", 604800)
+	v.SetDefault("account_defaults.stored_request.array_merge", "replace")
 
 	v.SetDefault("account_defaults.events_enabled", false)
 	v.BindEnv("account_defaults.privacy.dsa.default")
