@@ -1,0 +1,15 @@
+endpoint: "https://api.hypelab.com/v1/rtb_requests"
+maintainer:
+  email: "sdk@hypelab.com"
+openrtb:
+  version: 2.6
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video
+userSync:
+  redirect:
+    url: "https://api.hypelab.com/v1/i?redirect_url={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}"
+    userMacro: "$UID"
