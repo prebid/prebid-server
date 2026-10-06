@@ -108,6 +108,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/exco"
 	"github.com/prebid/prebid-server/v4/adapters/ezoic"
 	"github.com/prebid/prebid-server/v4/adapters/feedad"
+	"github.com/prebid/prebid-server/v4/adapters/ferio"
 	"github.com/prebid/prebid-server/v4/adapters/flatads"
 	"github.com/prebid/prebid-server/v4/adapters/flipp"
 	"github.com/prebid/prebid-server/v4/adapters/freewheelssp"
@@ -153,6 +154,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/madsense"
 	"github.com/prebid/prebid-server/v4/adapters/madvertise"
 	"github.com/prebid/prebid-server/v4/adapters/marsmedia"
+	"github.com/prebid/prebid-server/v4/adapters/matterfullrtb"
 	"github.com/prebid/prebid-server/v4/adapters/mediago"
 	"github.com/prebid/prebid-server/v4/adapters/medianet"
 	"github.com/prebid/prebid-server/v4/adapters/mediasquare"
@@ -388,6 +390,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderEzoic:             ezoic.Builder,
 		openrtb_ext.BidderFeedAd:            feedad.Builder,
+		openrtb_ext.BidderFerio:             ferio.Builder,
 		openrtb_ext.BidderFlatads:           flatads.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
@@ -434,6 +437,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMadSense:          madsense.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
+		openrtb_ext.BidderMatterfullRTB:     matterfullrtb.Builder,
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
 		openrtb_ext.BidderMediaGo:           mediago.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
