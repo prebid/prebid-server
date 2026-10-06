@@ -1,0 +1,157 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "ads.example.com",
+            "token": "tok123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example/article",
+      "domain": "publisher.example",
+      "publisher": {
+        "id": "pbs-account",
+        "name": "Publisher"
+      }
+    },
+    "device": {
+      "ua": "test-ua",
+      "ip": "203.0.113.42"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.example.com/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example/article",
+            "domain": "publisher.example",
+            "publisher": {
+              "id": "tok123",
+              "name": "Publisher"
+            }
+          },
+          "device": {
+            "ua": "test-ua",
+            "ip": "203.0.113.42"
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "goadserver",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "imp-1",
+                  "price": 1.25,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-b1",
+                  "adomain": [
+                    "advertiser.example"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "banner",
+                      "targeting": {
+                        "hb_pb": "1.25",
+                        "hb_bidder": "goadserver"
+                      }
+                    },
+                    "dsa": {
+                      "behalf": "Advertiser",
+                      "paid": "Advertiser",
+                      "adrender": 0,
+                      "transparency": [
+                        {
+                          "domain": "ads.example.com",
+                          "dsaparams": [
+                            1,
+                            2
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "imp-1",
+            "price": 1.25,
+            "adm": "<div>ad</div>",
+            "crid": "cr-b1",
+            "adomain": [
+              "advertiser.example"
+            ],
+            "ext": {
+              "dsa": {
+                "behalf": "Advertiser",
+                "paid": "Advertiser",
+                "adrender": 0,
+                "transparency": [
+                  {
+                    "domain": "ads.example.com",
+                    "dsaparams": [
+                      1,
+                      2
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

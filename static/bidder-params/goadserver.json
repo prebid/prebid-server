@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "GoAdserver Adapter Params",
+  "description": "A schema which validates params accepted by the GoAdserver adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Public domain of the publisher's GoAdserver deployment. Requests are sent to https://{host}/openrtb2/auction",
+      "pattern": "^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,63}$"
+    },
+    "token": {
+      "type": "string",
+      "description": "SSP campaign authentication token from the publisher's GoAdserver panel",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "floor": {
+      "type": "number",
+      "description": "Bid floor in USD CPM, applied when the impression has no bidfloor of its own",
+      "minimum": 0
+    },
+    "subid": {
+      "type": ["string", "integer"],
+      "description": "Sub-identifier for stats attribution (page section, A/B group, etc.)"
+    }
+  },
+  "required": ["host", "token"]
+}
