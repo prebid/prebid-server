@@ -1,2 +1,0 @@
-endpoint: "http://ads-pbs.nasrev.bid/openrtb/{{.PublisherID}}?host={{.Host}}"
-aliasOf: "limelightDigital"
