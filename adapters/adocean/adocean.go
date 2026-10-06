@@ -27,6 +27,20 @@ const (
 	slaveIDLength  = 10
 )
 
+var reservedEmitterParams = map[string]struct{}{
+	"pbsrv_v":      {},
+	"id":           {},
+	"slaves":       {},
+	"gdpr":         {},
+	"gdpr_consent": {},
+	"aouserid":     {},
+	"spots":        {},
+	"dur":          {},
+	"maxdur":       {},
+	"mindur":       {},
+	"aosize":       {},
+}
+
 type responseAdUnit struct {
 	ID       string   `json:"id"`
 	CrID     string   `json:"crid"`
@@ -191,8 +205,7 @@ func buildQuery(request *openrtb2.BidRequest, imp *openrtb2.Imp, params *openrtb
 
 	query := url.Values{}
 	for key, value := range params.EmitterRequestParams {
-		switch key {
-		case "pbsrv_v", "id", "slaves", "gdpr", "gdpr_consent", "aouserid", "spots", "dur", "maxdur", "mindur", "aosize":
+		if _, reserved := reservedEmitterParams[key]; reserved {
 			continue
 		}
 		switch typedValue := value.(type) {
