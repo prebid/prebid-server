@@ -208,6 +208,33 @@ func TestMultiMetricsEngine(t *testing.T) {
 	}
 }
 
+func TestV2MultiMetricsEngineForwardsFetcherMetrics(t *testing.T) {
+	first := &metrics.MetricsEngineMock{}
+	second := &metrics.MetricsEngineMock{}
+	engines := MultiMetricsEngine{first, second}
+	for _, engine := range []*metrics.MetricsEngineMock{first, second} {
+		engine.Mock.On("RecordFetcherResult", "account", metrics.FetcherResultHit).Once()
+		engine.Mock.On(
+			"RecordFetcherBackendFetch",
+			"account",
+			metrics.FetcherOperationGet,
+			metrics.FetcherBackendOK,
+			time.Millisecond,
+		).Once()
+	}
+
+	engines.RecordFetcherResult("account", metrics.FetcherResultHit)
+	engines.RecordFetcherBackendFetch(
+		"account",
+		metrics.FetcherOperationGet,
+		metrics.FetcherBackendOK,
+		time.Millisecond,
+	)
+
+	first.AssertExpectations(t)
+	second.AssertExpectations(t)
+}
+
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {
 	if expected != actual {
 		t.Errorf("Error in metric %s: got %d, expected %d.", name, actual, expected)
