@@ -1,4 +1,4 @@
-endpoint: "https://{{.Host}}/openrtb2/auction"
+endpoint: "https://pbs.goadserver.com/openrtb2/auction"
 maintainer:
   email: "support@goadserver.com"
 capabilities:

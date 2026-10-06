@@ -5,41 +5,32 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
-	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
-// GoAdserver is a self-hosted, multi-tenant ad server. Every deployment runs
-// under its own domain, so the endpoint host and the publisher token are
-// per-impression params. Impressions are grouped by (host, token) and each
-// group is sent to https://{host}/openrtb2/auction with the token in
-// site.publisher.id, where the deployment resolves the publisher account.
+// GoAdserver is a self-hosted, multi-tenant ad server. All requests go to one
+// fixed GoAdserver gateway, which routes each to the publisher's deployment by
+// the publisher token. Impressions are grouped by token and each group is sent
+// with its token in site.publisher.id.
 type adapter struct {
-	endpoint *template.Template
+	endpoint string
 }
 
 type impGroup struct {
-	host  string
 	token string
 	imps  []openrtb2.Imp
 }
 
 // Builder builds a new instance of the GoAdserver adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-	return &adapter{endpoint: endpoint}, nil
+	return &adapter{endpoint: config.Endpoint}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -59,11 +50,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 		applyParams(&imp, params)
 
-		key := params.Host + "\x00" + params.Token
-		group, ok := byKey[key]
+		group, ok := byKey[params.Token]
 		if !ok {
-			group = &impGroup{host: params.Host, token: params.Token}
-			byKey[key] = group
+			group = &impGroup{token: params.Token}
+			byKey[params.Token] = group
 			groups = append(groups, group)
 		}
 		group.imps = append(group.imps, imp)
@@ -92,12 +82,7 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGoadserver, error) {
 		return nil, &errortypes.BadInput{Message: fmt.Sprintf("imp %s: invalid ext.bidder: %v", imp.ID, err)}
 	}
 
-	params.Host = strings.ToLower(strings.TrimSpace(params.Host))
-	// A bare hostname only: no scheme, port, path or userinfo, so the
-	// param cannot redirect the request anywhere but https://{host}/.
-	if params.Host == "" || !urlutil.IsSafeHost(params.Host) || strings.Contains(params.Host, ":") {
-		return nil, &errortypes.BadInput{Message: fmt.Sprintf("imp %s: invalid host", imp.ID)}
-	}
+	params.Token = strings.TrimSpace(params.Token)
 	if params.Token == "" {
 		return nil, &errortypes.BadInput{Message: fmt.Sprintf("imp %s: missing token", imp.ID)}
 	}
@@ -133,11 +118,6 @@ func subIDString(raw json.RawMessage) string {
 }
 
 func (a *adapter) buildRequest(request *openrtb2.BidRequest, group *impGroup) (*adapters.RequestData, error) {
-	uri, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: group.host})
-	if err != nil {
-		return nil, err
-	}
-
 	requestCopy := *request
 	requestCopy.Imp = group.imps
 
@@ -162,7 +142,7 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest, group *impGroup) (*
 
 	return &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     uri,
+		Uri:     a.endpoint,
 		Body:    body,
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),

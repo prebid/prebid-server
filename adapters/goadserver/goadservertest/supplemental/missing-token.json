@@ -14,7 +14,6 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com",
             "token": ""
           }
         }
@@ -31,7 +30,6 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com",
             "token": "tok123"
           }
         }
@@ -53,7 +51,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.example.com/openrtb2/auction",
+        "uri": "https://pbs.goadserver.com/openrtb2/auction",
         "body": {
           "id": "req-1",
           "imp": [

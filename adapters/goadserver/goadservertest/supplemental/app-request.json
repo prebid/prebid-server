@@ -14,7 +14,6 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com",
             "token": "tok123"
           }
         }
