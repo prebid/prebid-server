@@ -29,6 +29,21 @@ type adapter struct {
 	endpoint *template.Template
 }
 
+// peak226Bid extends openrtb2.Bid with the non-standard adm_native field.
+type peak226Bid struct {
+	openrtb2.Bid
+	AdmNative json.RawMessage `json:"adm_native,omitempty"`
+}
+
+type peak226SeatBid struct {
+	Bid []peak226Bid `json:"bid"`
+}
+
+type peak226Response struct {
+	Cur     string           `json:"cur"`
+	SeatBid []peak226SeatBid `json:"seatbid"`
+}
+
 // Builder builds a new instance of the Peak226 adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -238,25 +253,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	var bidResp openrtb2.BidResponse
+	var bidResp peak226Response
 	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %s", err.Error()),
 		}}
 	}
-
-	// peak226 native responses sometimes carry markup in a non-standard adm_native field (an
-	// already-parsed ORTB native object) instead of adm (a JSON string per OpenRTB), with adm
-	// left empty. openrtb2.Bid has no field for it, so recover it with a best-effort parallel
-	// decode keyed by position; if this fails, adm is simply left as the server sent it.
-	var rawResp struct {
-		SeatBid []struct {
-			Bid []struct {
-				AdmNative json.RawMessage `json:"adm_native,omitempty"`
-			} `json:"bid,omitempty"`
-		} `json:"seatbid,omitempty"`
-	}
-	_ = jsonutil.Unmarshal(response.Body, &rawResp)
 
 	totalBids := 0
 	for _, seatBid := range bidResp.SeatBid {
@@ -268,14 +270,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		bidderResponse.Currency = bidResp.Cur
 	}
 
-	if len(bidResp.SeatBid) == 0 {
-		return bidderResponse, nil
-	}
-
 	var errs []error
-	for si, seatBid := range bidResp.SeatBid {
-		for i := range seatBid.Bid {
-			bid := seatBid.Bid[i]
+	for _, seatBid := range bidResp.SeatBid {
+		for _, peakBid := range seatBid.Bid {
+			bid := peakBid.Bid
 
 			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
@@ -283,11 +281,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				continue
 			}
 
-			var admNative json.RawMessage
-			if si < len(rawResp.SeatBid) && i < len(rawResp.SeatBid[si].Bid) {
-				admNative = rawResp.SeatBid[si].Bid[i].AdmNative
+			// peak226 native responses sometimes carry markup in a non-standard adm_native
+			// field (an already-parsed ORTB native object) instead of adm (a JSON string per
+			// OpenRTB), with adm left empty.
+			if bid.AdM == "" && len(peakBid.AdmNative) > 0 {
+				bid.AdM = string(peakBid.AdmNative)
 			}
-			resolveMacros(&bid, admNative)
+			resolveMacros(&bid)
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
@@ -304,19 +304,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 // adapter to expand it, so leaving it unresolved would render the literal macro text in the
 // creative and report the wrong price on the win and billing notices.
 //
-// For native bids, adm is left empty and the markup instead arrives via admNative (the raw
-// adm_native field recovered by the caller); it is adopted as adm here once the macro is
-// resolved. A plain substring replace is enough since admNative is opaque JSON text and the
-// macro only ever appears inside a string value (observed so far in a nested tracker URL),
-// never in JSON structural syntax.
-func resolveMacros(bid *openrtb2.Bid, admNative json.RawMessage) {
+// A plain substring replace is enough for native adm (recovered from adm_native) since it is
+// opaque JSON text and the macro only ever appears inside a string value (observed so far in
+// a nested tracker URL), never in JSON structural syntax.
+func resolveMacros(bid *openrtb2.Bid) {
 	if bid == nil {
 		return
 	}
 	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
-	if bid.AdM == "" && len(admNative) > 0 {
-		bid.AdM = string(admNative)
-	}
 	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
 	bid.BURL = strings.Replace(bid.BURL, "${AUCTION_PRICE}", price, -1)

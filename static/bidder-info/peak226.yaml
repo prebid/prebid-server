@@ -4,10 +4,9 @@ geoscope:
 maintainer:
   email: "support@edge226.com"
 gvlVendorID: 1202
-modifyingVastXmlAllowed: false
+modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
-  gpp-supported: true
   multiformat-supported: true
 capabilities:
   app:
