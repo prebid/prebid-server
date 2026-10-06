@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "GoAdserver Adapter Params",
+  "description": "A schema which validates params accepted by the GoAdserver adapter",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Publisher token from the GoAdserver panel. The GoAdserver gateway routes the request to the publisher's deployment by this token",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "floor": {
+      "type": "number",
+      "description": "Bid floor in USD CPM, applied when the impression has no bidfloor of its own",
+      "minimum": 0
+    },
+    "subid": {
+      "type": ["string", "integer"],
+      "description": "Sub-identifier for stats attribution (page section, A/B group, etc.)"
+    }
+  },
+  "required": ["token"]
+}

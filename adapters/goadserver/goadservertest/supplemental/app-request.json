@@ -1,0 +1,40 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "203.0.113.42"
+    },
+    "app": {
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pbs-account"
+      }
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "goadserver supports site requests only",
+      "comparison": "literal"
+    }
+  ]
+}

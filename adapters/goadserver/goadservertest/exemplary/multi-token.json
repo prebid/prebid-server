@@ -1,0 +1,287 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-a1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123"
+          }
+        }
+      },
+      {
+        "id": "imp-b",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "token": "tokB"
+          }
+        }
+      },
+      {
+        "id": "imp-a2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example/article",
+      "domain": "publisher.example",
+      "publisher": {
+        "id": "pbs-account",
+        "name": "Publisher"
+      }
+    },
+    "device": {
+      "ua": "test-ua",
+      "ip": "203.0.113.42"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.goadserver.com/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "imp": [
+            {
+              "id": "imp-a1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            },
+            {
+              "id": "imp-a2",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example/article",
+            "domain": "publisher.example",
+            "publisher": {
+              "id": "tok123",
+              "name": "Publisher"
+            }
+          },
+          "device": {
+            "ua": "test-ua",
+            "ip": "203.0.113.42"
+          }
+        },
+        "impIDs": [
+          "imp-a1",
+          "imp-a2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "goadserver",
+              "bid": [
+                {
+                  "id": "ba1",
+                  "impid": "imp-a1",
+                  "price": 1.25,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-ba1",
+                  "adomain": [
+                    "advertiser.example"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "banner",
+                      "targeting": {
+                        "hb_pb": "1.25",
+                        "hb_bidder": "goadserver"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "ba2",
+                  "impid": "imp-a2",
+                  "price": 1.25,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-ba2",
+                  "adomain": [
+                    "advertiser.example"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "video",
+                      "targeting": {
+                        "hb_pb": "1.25",
+                        "hb_bidder": "goadserver"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.goadserver.com/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "imp": [
+            {
+              "id": "imp-b",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example/article",
+            "domain": "publisher.example",
+            "publisher": {
+              "id": "tokB",
+              "name": "Publisher"
+            }
+          },
+          "device": {
+            "ua": "test-ua",
+            "ip": "203.0.113.42"
+          }
+        },
+        "impIDs": [
+          "imp-b"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "goadserver",
+              "bid": [
+                {
+                  "id": "bb",
+                  "impid": "imp-b",
+                  "price": 1.25,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-bb",
+                  "adomain": [
+                    "advertiser.example"
+                  ],
+                  "ext": {
+                    "prebid": {
+                      "type": "banner",
+                      "targeting": {
+                        "hb_pb": "1.25",
+                        "hb_bidder": "goadserver"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "ba1",
+            "impid": "imp-a1",
+            "price": 1.25,
+            "adm": "<div>ad</div>",
+            "crid": "cr-ba1",
+            "adomain": [
+              "advertiser.example"
+            ]
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "ba2",
+            "impid": "imp-a2",
+            "price": 1.25,
+            "adm": "<div>ad</div>",
+            "crid": "cr-ba2",
+            "adomain": [
+              "advertiser.example"
+            ]
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bb",
+            "impid": "imp-b",
+            "price": 1.25,
+            "adm": "<div>ad</div>",
+            "crid": "cr-bb",
+            "adomain": [
+              "advertiser.example"
+            ]
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
