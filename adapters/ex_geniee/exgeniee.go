@@ -160,7 +160,8 @@ func validate(request *openrtb2.BidRequest) error {
 }
 
 // normalizeCurrency uppercases the codes in cur and refuses a request Geniee
-// SSP would not answer: it needs JPY or USD among them.
+// SSP would not answer: it needs JPY or USD among them. The request is refused
+// on purpose rather than forced to USD.
 func normalizeCurrency(cur []string) ([]string, error) {
 	if len(cur) == 0 {
 		return nil, nil
@@ -297,7 +298,8 @@ func prepareFormats(imp *openrtb2.Imp) (warnings []error, err error) {
 }
 
 // prepareBanner derives banner.w and banner.h from format[0] when either is
-// missing, and then refuses a banner still without one.
+// missing, and then refuses a banner still without one. Both are taken from
+// format[0] on purpose, even when one of them was given.
 func prepareBanner(imp *openrtb2.Imp) error {
 	if (imp.Banner.W == nil || imp.Banner.H == nil) && len(imp.Banner.Format) > 0 {
 		// imp is a copy, but Banner is a pointer into the caller's request, so
