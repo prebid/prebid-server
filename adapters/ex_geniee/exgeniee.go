@@ -32,7 +32,7 @@ type adapter struct {
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpointTemplate, err := template.New("endpointTemplate").Parse(cfg.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+		return nil, fmt.Errorf("unable to parse endpoint url template: %w", err)
 	}
 	return &adapter{endpointTemplate: endpointTemplate}, nil
 }

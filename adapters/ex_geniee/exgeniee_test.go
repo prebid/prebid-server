@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const testEndpointTemplate = "https://aladdin.genieesspv.jp/yie/ld/exchange?id={{.PartnerId}}"
@@ -15,9 +16,7 @@ var testBidderName = openrtb_ext.BidderExGeniee
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(testBidderName, config.Adapter{Endpoint: testEndpointTemplate}, config.Server{})
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
+	require.NoError(t, buildErr, "Builder returned unexpected error")
 
 	adapterstest.RunJSONBidderTest(t, "ex_genieetest", bidder)
 }
