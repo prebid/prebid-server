@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "id": "request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "said": "123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ssp.clickio.example/openrtb2/auction",
+        "body": {
+          "id": "request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "said": "123"
+                },
+                "params": {
+                  "said": "123"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
