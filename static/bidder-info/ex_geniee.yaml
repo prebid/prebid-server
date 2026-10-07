@@ -1,4 +1,5 @@
 endpoint: "https://aladdin.genieesspv.jp/yie/ld/exchange?id={{.PartnerId}}"
+endpointCompression: gzip
 maintainer:
   email: "aladdin-back@geniee.co.jp"
 # No gvlVendorID: Geniee SSP does not accept traffic to which GDPR applies, so
