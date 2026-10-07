@@ -1,0 +1,28 @@
+endpoint: "https://aladdin.genieesspv.jp/yie/ld/exchange?id={{.PartnerId}}"
+maintainer:
+  email: "aladdin-back@geniee.co.jp"
+geoscope:
+  - global
+openrtb:
+  version: 2.6
+  # Geniee SSP takes an imp that carries both banner and video as it is and
+  # answers with the mtype it bid on, so prebid-server must not narrow such an
+  # imp down to one format before calling the adapter.
+  multiformat-supported: true
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://cs.gssprt.jp/yie/ld/user_sync?prebid_server=1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&rurl={{.RedirectURL}}"
+    userMacro: "{gid}"
+  # When GDPR applies, prebid-server does not send the sync at all.
+  skipwhen:
+    gdpr: true
