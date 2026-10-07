@@ -1,6 +1,9 @@
 endpoint: "https://aladdin.genieesspv.jp/yie/ld/exchange?id={{.PartnerId}}"
 maintainer:
   email: "aladdin-back@geniee.co.jp"
+# No gvlVendorID: Geniee SSP does not accept traffic to which GDPR applies, so
+# prebid-server withholding this bidder from such traffic is the intended
+# behaviour.
 geoscope:
   - global
 openrtb:
