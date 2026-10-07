@@ -184,7 +184,7 @@ func normalizeCurrency(cur []string) ([]string, error) {
 // convertBidFloor moves the floor to JPY or USD. Geniee SSP honours the floor
 // only in those two currencies.
 func convertBidFloor(imp *openrtb2.Imp, requestInfo *adapters.ExtraRequestInfo) error {
-	if imp.BidFloor < 0 || imp.BidFloorCur == "" {
+	if imp.BidFloor <= 0 || imp.BidFloorCur == "" {
 		return nil
 	}
 
