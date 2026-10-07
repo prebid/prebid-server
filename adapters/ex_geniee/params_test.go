@@ -39,6 +39,8 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"partnerId": 1, "placementId": "slot-1"}`,
+	// placementId is not restricted by the schema: Geniee SSP validates the
+	// value itself, so a value outside its documented format still passes here.
 	`{"partnerId": 12345, "placementId": "top banner&id=9"}`,
 	`{"partnerId": 4321}`,
 	`{"partnerId": 4321, "placementId": ""}`,
