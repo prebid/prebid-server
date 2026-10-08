@@ -14,7 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com",
+            "networkId": "n3057",
             "placementKey": "a4f21c9e7b"
           }
         }
@@ -27,7 +27,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.example.com/hb/bid",
+        "uri": "https://n3057.eashb.com/hb/bid",
         "body": {
           "id": "test-request-id",
           "imp": [

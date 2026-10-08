@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testEndpoint = "https://{{.Host}}/hb/bid"
+const testEndpoint = "https://{{.Host}}.eashb.com/hb/bid"
 
 // End-to-end MakeRequests/MakeBids behaviour is exercised by the JSON fixtures
 // under epom_astest/exemplary and epom_astest/supplemental. The Go tests below
@@ -62,21 +62,27 @@ func TestMakeRequestsErrorsAreBadInput(t *testing.T) {
 		{
 			name:    "imp.ext.bidder is not an object",
 			impExt:  json.RawMessage(`{"bidder":"not-an-object"}`),
-			message: "imp test-imp-id: cannot resolve host or placementKey",
+			message: "imp test-imp-id: cannot resolve networkId or placementKey",
 		},
 		{
-			name:    "host would rewrite the outbound url",
-			impExt:  json.RawMessage(`{"bidder":{"host":"ads.example.com/collect","placementKey":"a4f21c9e7b"}}`),
-			message: "imp test-imp-id: invalid host",
+			name:    "networkId would steer the request off eashb.com",
+			impExt:  json.RawMessage(`{"bidder":{"networkId":"n3057.evil.com","placementKey":"a4f21c9e7b"}}`),
+			message: "imp test-imp-id: invalid networkId",
 		},
 		{
-			name:    "host is absent",
+			name:    "networkId is absent",
 			impExt:  json.RawMessage(`{"bidder":{"placementKey":"a4f21c9e7b"}}`),
-			message: "imp test-imp-id: invalid host",
+			message: "imp test-imp-id: invalid networkId",
+		},
+		{
+			// host alone is a browser-side setting; this adapter cannot use it.
+			name:    "only host is given",
+			impExt:  json.RawMessage(`{"bidder":{"host":"ads.example.com","placementKey":"a4f21c9e7b"}}`),
+			message: "imp test-imp-id: invalid networkId",
 		},
 		{
 			name:    "placementKey is absent",
-			impExt:  json.RawMessage(`{"bidder":{"host":"ads.example.com"}}`),
+			impExt:  json.RawMessage(`{"bidder":{"networkId":"n3057"}}`),
 			message: "imp test-imp-id: missing placementKey",
 		},
 	}
@@ -94,7 +100,7 @@ func TestMakeRequestsErrorsAreBadInput(t *testing.T) {
 }
 
 func TestMakeBidsErrorTypes(t *testing.T) {
-	request := givenRequest(givenImp("test-imp-id", json.RawMessage(`{"bidder":{"host":"ads.example.com","placementKey":"a4f21c9e7b"}}`)))
+	request := givenRequest(givenImp("test-imp-id", json.RawMessage(`{"bidder":{"networkId":"n3057","placementKey":"a4f21c9e7b"}}`)))
 
 	testCases := []struct {
 		name     string
@@ -150,7 +156,7 @@ func TestMakeBidsErrorTypes(t *testing.T) {
 // rewrites tagid, the floor and imp.ext, and the exchange reuses the same
 // request object for every bidder in the auction.
 func TestCallerRequestNotMutated(t *testing.T) {
-	impExt := json.RawMessage(`{"bidder":{"host":"ads.example.com","placementKey":"a4f21c9e7b","channel":"sports-uk","customParams":{"section":"sport"},"bidFloor":2.5,"bidFloorCur":"EUR"}}`)
+	impExt := json.RawMessage(`{"bidder":{"networkId":"n3057","placementKey":"a4f21c9e7b","channel":"sports-uk","customParams":{"section":"sport"},"bidFloor":2.5,"bidFloorCur":"EUR"}}`)
 	request := givenRequest(givenImp("test-imp-id", impExt))
 
 	requests, errs := newAdapter(t).MakeRequests(request, &adapters.ExtraRequestInfo{})

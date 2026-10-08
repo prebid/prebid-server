@@ -24,7 +24,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp test-imp-id: cannot resolve host or placementKey:.*",
+      "value": "imp test-imp-id: cannot resolve networkId or placementKey:.*",
       "comparison": "regex"
     }
   ]

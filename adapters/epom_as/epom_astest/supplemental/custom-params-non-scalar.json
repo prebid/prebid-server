@@ -14,7 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com",
+            "networkId": "n3057",
             "placementKey": "a4f21c9e7b",
             "customParams": {
               "targeting": {

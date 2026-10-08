@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "banner": { "format": [{ "w": 300, "h": 250 }] },
-        "ext": { "bidder": { "host": "ads.example.com" } }
+        "ext": { "bidder": { "networkId": "n3057" } }
       }
     ]
   },

@@ -2,8 +2,13 @@ package openrtb_ext
 
 // ExtImpEpomAs defines the contract for bidrequest.imp[i].ext.prebid.bidder.epom_as
 type ExtImpEpomAs struct {
-	// Host is the serving host of the publisher's Epom Ad Server deployment.
-	Host string `json:"host"`
+	// NetworkID names the Epom network ("n" and the network number); the request goes to
+	// https://{NetworkID}.eashb.com/hb/bid.
+	NetworkID string `json:"networkId"`
+	// Host is the network's own serving domain. Prebid.js sends browser bids there so the
+	// network's identity cookie comes along; a server request carries no browser cookie, so this
+	// adapter accepts it for parameter parity and does not use it.
+	Host string `json:"host,omitempty"`
 	// PlacementKey identifies the placement within that deployment.
 	PlacementKey string `json:"placementKey"`
 	// Channel is a traffic-slice label used for targeting and reporting.

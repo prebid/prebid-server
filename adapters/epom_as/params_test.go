@@ -35,42 +35,45 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	// host — the pattern is byte-identical to util/urlutil.IsSafeHost, which the
-	// adapter gates on, so everything it accepts must validate here too.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads.example.com:8080","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads.example.com:65535","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads-eu.example.co.uk","placementKey":"a4f21c9e7b"}`,
+	// networkId — "n" and digits; it becomes a hostname label. host is optional.
+	`{"networkId":"n1","placementKey":"a4f21c9e7b"}`,
+
+	// host — optional and unused by this adapter, but validated as the Prebid.js adapter
+	// validates it, so the same params pass on both sides.
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads.example.com:8080","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads.example.com:65535","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads-eu.example.co.uk","placementKey":"a4f21c9e7b"}`,
 	// A single-label host is a real deployment shape (an internal name, or
 	// localhost in a staging rig), not a malformed one.
-	`{"host":"localhost","placementKey":"a4f21c9e7b"}`,
-	`{"host":"api-us","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"localhost","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"api-us","placementKey":"a4f21c9e7b"}`,
 
 	// placementKey — minLength 1, so a single character is the boundary.
-	`{"host":"ads.example.com","placementKey":"a"}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a"}`,
 
 	// channel — free-form, and deliberately uncapped: the ad server applies its
 	// own ingest limits rather than the adapter rejecting the impression.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","channel":"sports-uk"}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","channel":""}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","channel":"` + strings.Repeat("c", 300) + `"}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","channel":"sports-uk"}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","channel":""}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","channel":"` + strings.Repeat("c", 300) + `"}`,
 
 	// customParams — an object of scalars, in every scalar flavour.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"section":"sport","tier":2,"premium":true}}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"ratio":1.75,"empty":""}}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{}}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"section":"sport","tier":2,"premium":true}}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"ratio":1.75,"empty":""}}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{}}`,
 
 	// bidFloor — minimum 0, so 0 is the boundary and means "no floor".
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":0}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":0.01}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":1.75,"bidFloorCur":"EUR"}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":0}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":0.01}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":1.75,"bidFloorCur":"EUR"}`,
 
 	// bidFloorCur — a plain string; the schema declares no pattern, so it must
 	// not reject a currency it merely does not recognise.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloorCur":"USD"}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloorCur":"USD"}`,
 
 	// Everything at once.
-	`{"host":"ads.example.com:8443","placementKey":"a4f21c9e7b","channel":"sports-uk","customParams":{"section":"sport"},"bidFloor":2.5,"bidFloorCur":"GBP"}`,
+	`{"networkId":"n3057","host":"ads.example.com:8443","placementKey":"a4f21c9e7b","channel":"sports-uk","customParams":{"section":"sport"},"bidFloor":2.5,"bidFloorCur":"GBP"}`,
 }
 
 var invalidParams = []string{
@@ -84,44 +87,54 @@ var invalidParams = []string{
 
 	// Required params.
 	`{}`,
-	`{"host":"ads.example.com"}`,
+	`{"networkId":"n3057"}`,
 	`{"placementKey":"a4f21c9e7b"}`,
+	// host does not stand in for networkId on the server side.
+	`{"host":"ads.example.com","placementKey":"a4f21c9e7b"}`,
+
+	// networkId — wrong type, wrong shape, and anything that could leave eashb.com.
+	`{"networkId":3057,"placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"3057","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"N3057","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057.evil.com","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n30a57","placementKey":"a4f21c9e7b"}`,
 
 	// host — wrong type, and the empty string, which the pattern rejects
 	// because it demands at least one label character.
-	`{"host":42,"placementKey":"a4f21c9e7b"}`,
-	`{"host":"","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":42,"placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"","placementKey":"a4f21c9e7b"}`,
 	// A host must not be able to rewrite the outbound URL.
-	`{"host":"https://ads.example.com","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads.example.com/collect","placementKey":"a4f21c9e7b"}`,
-	`{"host":"user@ads.example.com","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads.example.com?x=1","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads.example.com#frag","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads.example.com:80a","placementKey":"a4f21c9e7b"}`,
-	`{"host":"ads example.com","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"https://ads.example.com","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads.example.com/collect","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"user@ads.example.com","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads.example.com?x=1","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads.example.com#frag","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads.example.com:80a","placementKey":"a4f21c9e7b"}`,
+	`{"networkId":"n3057","host":"ads example.com","placementKey":"a4f21c9e7b"}`,
 
 	// placementKey — wrong type, and the empty string just under minLength 1.
-	`{"host":"ads.example.com","placementKey":42}`,
-	`{"host":"ads.example.com","placementKey":""}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":42}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":""}`,
 
 	// channel — wrong type.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","channel":42}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","channel":["sports-uk"]}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","channel":42}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","channel":["sports-uk"]}`,
 
 	// customParams — must be an object of scalars. A nested object or array
 	// would be stringified into targeting as a Go rendering of a map, so the
 	// schema rejects the impression instead.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":"not-an-object"}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":[]}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"nested":{"a":1}}}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"list":[1,2]}}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"nothing":null}}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":"not-an-object"}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":[]}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"nested":{"a":1}}}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"list":[1,2]}}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","customParams":{"nothing":null}}`,
 
 	// bidFloor — wrong type, and one step under the minimum of 0.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":-1}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":-0.01}`,
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":"1.75"}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":-1}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":-0.01}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloor":"1.75"}`,
 
 	// bidFloorCur — wrong type.
-	`{"host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloorCur":978}`,
+	`{"networkId":"n3057","host":"ads.example.com","placementKey":"a4f21c9e7b","bidFloorCur":978}`,
 }

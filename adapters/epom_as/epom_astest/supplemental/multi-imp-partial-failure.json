@@ -14,13 +14,13 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com",
+            "networkId": "n3057",
             "placementKey": "a4f21c9e7b"
           }
         }
       },
       {
-        "id": "imp-bad-host",
+        "id": "imp-bad-network",
         "banner": {
           "format": [
             {
@@ -31,7 +31,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com/collect",
+            "networkId": "n3057.evil.com",
             "placementKey": "a4f21c9e7b"
           }
         }
@@ -48,7 +48,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "ads.example.com",
+            "networkId": "n3057",
             "placementKey": "6d0e83b415"
           }
         }
@@ -61,7 +61,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://ads.example.com/hb/bid",
+        "uri": "https://n3057.eashb.com/hb/bid",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -127,7 +127,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp imp-bad-host: invalid host",
+      "value": "imp imp-bad-network: invalid networkId",
       "comparison": "literal"
     }
   ],

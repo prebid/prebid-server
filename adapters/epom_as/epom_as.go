@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"text/template"
 
@@ -14,15 +15,16 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
-	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
+
+var networkIDPattern = regexp.MustCompile(`^n[0-9]+$`)
 
 // adapter talks to the Epom Ad Server, the sell side of the Epom platform.
 // It is a different product from the `epom` adapter, which is the Epom DSP:
 // the DSP buys impressions, this one sells a publisher's own inventory.
 //
-// Epom is white-label, so every network serves from its own domain and the
-// host arrives per impression in imp.ext.bidder.host rather than from config.
+// Epom is white-label: every network answers at its own subdomain of Epom's
+// header-bidding domain, named per impression by imp.ext.bidder.networkId.
 type adapter struct {
 	endpointTemplate *template.Template
 }
@@ -35,8 +37,8 @@ func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server confi
 	return &adapter{endpointTemplate: endpointTemplate}, nil
 }
 
-// MakeRequests emits one request per host, carrying every impression addressed
-// to that host.
+// MakeRequests emits one request per network, carrying every impression
+// addressed to that network.
 //
 // Keeping a host's impressions together is a requirement, not an optimisation:
 // the ad server decides a page as a unit, so its roadblock and
@@ -45,10 +47,10 @@ func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server confi
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	// Preserve the order hosts were first seen so the emitted requests are
+	// Preserve the order networks were first seen so the emitted requests are
 	// deterministic — Go map iteration is not.
-	hostOrder := make([]string, 0, len(request.Imp))
-	impsByHost := make(map[string][]openrtb2.Imp, len(request.Imp))
+	networkOrder := make([]string, 0, len(request.Imp))
+	impsByNetwork := make(map[string][]openrtb2.Imp, len(request.Imp))
 
 	for _, imp := range request.Imp {
 		impExt, err := parseImpExt(&imp)
@@ -69,13 +71,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		if _, seen := impsByHost[impExt.Host]; !seen {
-			hostOrder = append(hostOrder, impExt.Host)
+		if _, seen := impsByNetwork[impExt.NetworkID]; !seen {
+			networkOrder = append(networkOrder, impExt.NetworkID)
 		}
-		impsByHost[impExt.Host] = append(impsByHost[impExt.Host], imp)
+		impsByNetwork[impExt.NetworkID] = append(impsByNetwork[impExt.NetworkID], imp)
 	}
 
-	if len(impsByHost) == 0 {
+	if len(impsByNetwork) == 0 {
 		return nil, errs
 	}
 
@@ -91,20 +93,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
 	}
 
-	requests := make([]*adapters.RequestData, 0, len(impsByHost))
-	for _, host := range hostOrder {
-		imps := impsByHost[host]
+	requests := make([]*adapters.RequestData, 0, len(impsByNetwork))
+	for _, networkID := range networkOrder {
+		imps := impsByNetwork[networkID]
 
-		url, err := macros.ResolveMacros(a.endpointTemplate, macros.EndpointTemplateParams{Host: host})
+		url, err := macros.ResolveMacros(a.endpointTemplate, macros.EndpointTemplateParams{Host: networkID})
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		hostRequest := *request
-		hostRequest.Imp = imps
+		networkRequest := *request
+		networkRequest.Imp = imps
 
-		body, err := jsonutil.Marshal(hostRequest)
+		body, err := jsonutil.Marshal(networkRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -219,7 +221,7 @@ func enrichImpExt(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpEpomAs) error {
 	}
 
 	// Everything this bidder needs from imp.ext.bidder has been moved to where the ad
-	// server reads it: placementKey to imp.tagid, host into the endpoint, channel and
+	// server reads it: placementKey to imp.tagid, networkId into the endpoint, channel and
 	// custom params to their own namespaces. Leaving it would send the same values
 	// twice, in two different shapes.
 	delete(ext, "bidder")
@@ -300,16 +302,16 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpEpomAs, error) {
 	var impExt openrtb_ext.ExtImpEpomAs
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: cannot resolve host or placementKey: %s", imp.ID, err.Error()),
+			Message: fmt.Sprintf("imp %s: cannot resolve networkId or placementKey: %s", imp.ID, err.Error()),
 		}
 	}
 
-	// The host is the only publisher-controlled part of the outbound URL, so it
-	// must be a bare hostname; anything carrying a path, query or userinfo could
-	// redirect the bid request to an unintended destination.
-	if !urlutil.IsSafeHost(impExt.Host) {
+	// The network id is the only publisher-controlled part of the outbound URL and becomes a
+	// hostname label, so it must be "n" and digits; anything else could steer the request off
+	// eashb.com.
+	if !networkIDPattern.MatchString(impExt.NetworkID) {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: invalid host", imp.ID),
+			Message: fmt.Sprintf("imp %s: invalid networkId", imp.ID),
 		}
 	}
 	if impExt.PlacementKey == "" {

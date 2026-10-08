@@ -1,7 +1,6 @@
-# Epom is white-label: every publisher network serves from its own domain, so the
-# host arrives per impression in imp.ext.bidder.host and is templated into the
-# endpoint rather than configured here.
-endpoint: "https://{{.Host}}/hb/bid"
+# Epom is white-label: every network answers at its own subdomain of Epom's header-bidding
+# domain, named by imp.ext.bidder.networkId ("n" and the network number).
+endpoint: "https://{{.Host}}.eashb.com/hb/bid"
 maintainer:
   email: "support@epom.com"
 gvlVendorID: 849
