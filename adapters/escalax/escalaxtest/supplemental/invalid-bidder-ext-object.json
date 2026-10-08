@@ -1,10 +1,4 @@
 {
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "Error parsing bidderExt - expect { or n, but found \"",
-      "comparison": "literal"
-    }
-  ],
   "mockBidRequest": {
     "id": "test-request-id",
     "imp": [
@@ -29,5 +23,11 @@
       "page": "test.com"
     }
   },
-  "httpCalls": []
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing bidderExt - expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
 }

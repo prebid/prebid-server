@@ -6,17 +6,40 @@
     "properties": {
         "accountId": {
             "type": "string",
-            "description": "Account id",
+            "description": "Account id (exchange integration)",
             "minLength": 1
         },
         "sourceId": {
             "type": "string",
-            "description": "Source id",
+            "description": "Source id (exchange integration)",
             "minLength": 1
+        },
+        "supplyPlacementId": {
+            "type": "string",
+            "description": "Supply placement id (SSP integration)",
+            "minLength": 1
+        },
+        "region": {
+            "type": "string",
+            "description": "Optional region override, shared by both integrations. Defaults to us.",
+            "enum": [
+                "us",
+                "eu",
+                "apac"
+            ]
         }
     },
-    "required": [
-        "accountId",
-        "sourceId"
+    "oneOf": [
+        {
+            "required": [
+                "accountId",
+                "sourceId"
+            ]
+        },
+        {
+            "required": [
+                "supplyPlacementId"
+            ]
+        }
     ]
 }

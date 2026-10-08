@@ -26,8 +26,8 @@
         },
         "ext": {
           "bidder": {
-            "accountId": "accountId",
-            "sourceId": "sourceId"
+            "supplyPlacementId": "sp3",
+            "region": "apac"
           }
         }
       }
@@ -36,7 +36,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://bidder-us.escalax.io/?partner=sourceId&token=accountId&type=pbs",
+        "uri": "https://s-as.escalax.io/pbsb?placementId=sp3",
         "body": {
           "id": "some-request-id",
           "imp": [
@@ -70,15 +70,50 @@
         ]
       },
       "mockResponse": {
-        "status": 306
+        "status": 200,
+        "body": {
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e163",
+                  "impid": "some-impression-id",
+                  "price": 2.3,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "adomain": [
+                    "escalax.io"
+                  ],
+                  "crid": "ssp-22",
+                  "mtype": 2
+                }
+              ],
+              "seat": "escalax"
+            }
+          ],
+          "cur": "USD"
+        }
       }
     }
   ],
-  "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Unexpected status code: 306. Run with request.debug = 1 for more info",
-      "comparison": "literal"
+      "bids": [
+        {
+          "bid": {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e163",
+            "impid": "some-impression-id",
+            "price": 2.3,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "adomain": [
+              "escalax.io"
+            ],
+            "crid": "ssp-22",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }

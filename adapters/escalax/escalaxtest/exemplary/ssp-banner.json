@@ -11,30 +11,23 @@
     "user": {
       "buyeruid": "awesome-user"
     },
-    "app": {
+    "site": {
+      "page": "test.com",
       "publisher": {
         "id": "123456789"
-      },
-      "cat": [
-        "IAB22-1"
-      ],
-      "bundle": "com.app.awesome",
-      "name": "Awesome App",
-      "domain": "awesomeapp.com",
-      "id": "123456789"
+      }
     },
     "imp": [
       {
         "id": "some-impression-id",
         "tagid": "ogTAGID",
-        "native": {
-          "ver": "1.1",
-          "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+        "banner": {
+          "w": 320,
+          "h": 50
         },
         "ext": {
           "bidder": {
-            "accountId": "accountId",
-            "sourceId": "sourceId"
+            "supplyPlacementId": "sp1"
           }
         }
       }
@@ -60,7 +53,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://bidder-us.escalax.io/?partner=sourceId&token=accountId&type=pbs",
+        "uri": "https://s-us.escalax.io/pbsb?placementId=sp1",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -72,21 +65,15 @@
           "imp": [
             {
               "id": "some-impression-id",
-              "native": {
-                "ver": "1.1",
-                "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
-              },
-              "tagid": "ogTAGID"
+              "tagid": "ogTAGID",
+              "banner": {
+                "w": 320,
+                "h": 50
+              }
             }
           ],
-          "app": {
-            "id": "123456789",
-            "name": "Awesome App",
-            "bundle": "com.app.awesome",
-            "domain": "awesomeapp.com",
-            "cat": [
-              "IAB22-1"
-            ],
+          "site": {
+            "page": "test.com",
             "publisher": {
               "id": "123456789"
             }
@@ -110,16 +97,18 @@
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
                   "impid": "some-impression-id",
-                  "price": 3.5,
-                  "adm": "awesome-markup",
+                  "price": 1.8,
+                  "adm": "ssp-markup",
                   "adomain": [
-                    "awesome.com"
+                    "escalax.io"
                   ],
-                  "crid": "20",
-                  "mtype": 4
+                  "crid": "ssp-20",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
                 }
               ],
-              "type": "native",
+              "type": "banner",
               "seat": "escalax"
             }
           ],
@@ -135,15 +124,17 @@
           "bid": {
             "id": "a3ae1b4e2fc24a4fb45540082e98e161",
             "impid": "some-impression-id",
-            "price": 3.5,
-            "adm": "awesome-markup",
-            "crid": "20",
+            "price": 1.8,
+            "adm": "ssp-markup",
             "adomain": [
-              "awesome.com"
+              "escalax.io"
             ],
-            "mtype": 4
+            "crid": "ssp-20",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
           },
-          "type": "native"
+          "type": "banner"
         }
       ]
     }
