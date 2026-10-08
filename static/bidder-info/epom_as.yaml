@@ -1,0 +1,31 @@
+# Epom is white-label: every network answers at its own subdomain of Epom's header-bidding
+# domain, named by imp.ext.bidder.networkId ("n" and the network number).
+endpoint: "https://{{.Host}}.eashb.com/hb/bid"
+maintainer:
+  email: "support@epom.com"
+gvlVendorID: 849
+geoscope:
+  - global
+openrtb:
+  version: 2.6
+# Prebid Server may rewrite our VAST when it caches it, which is how its own
+# impression events get injected. That is a second counter beside the ad server's
+# own beacon, and the two will not agree exactly.
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  # epom_as supports user syncing, but the sync endpoint lives on the publisher's own
+  # Epom deployment, so it requires configuration by the host. Contact this bidder
+  # directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - iframe
