@@ -1,4 +1,4 @@
-// Package exgeniee sends bid requests to the Geniee SSP exchange endpoint.
+// Package exgeniee sends bid requests to the Geniee Exchange endpoint.
 package exgeniee
 
 import (
@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-// The only currencies Geniee SSP handles.
+// The only currencies Geniee Exchange handles.
 const (
 	currencyJPY = "JPY"
 	currencyUSD = "USD"
@@ -50,7 +50,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var requests []*adapters.RequestData
 	var errs []error
 
-	// Geniee SSP accepts exactly one imp per request, so split them up.
+	// Geniee Exchange accepts exactly one imp per request, so split them up.
 	for _, imp := range request.Imp {
 		params, err := takeParams(&imp)
 		if err != nil {
@@ -64,7 +64,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		// Geniee SSP reads the ad slot name off imp.tagid, and placementId names
+		// Geniee Exchange reads the ad slot name off imp.tagid, and placementId names
 		// that slot.
 		if params.PlacementID != "" {
 			imp.TagID = params.PlacementID
@@ -123,7 +123,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	// Geniee SSP answers in one of the request currencies (JPY or USD).
+	// Geniee Exchange answers in one of the request currencies (JPY or USD).
 	if bidResp.Cur != "" {
 		bidderResponse.Currency = bidResp.Cur
 	}
@@ -147,7 +147,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidderResponse, errs
 }
 
-// validate refuses a request Geniee SSP cannot place: it identifies the
+// validate refuses a request Geniee Exchange cannot place: it identifies the
 // inventory by site.page for the web and by app.bundle for an app.
 func validate(request *openrtb2.BidRequest) error {
 	if request.Site != nil && request.Site.Page == "" {
@@ -160,7 +160,7 @@ func validate(request *openrtb2.BidRequest) error {
 }
 
 // normalizeCurrency uppercases the codes in cur and refuses a request Geniee
-// SSP would not answer: it needs JPY or USD among them. The request is refused
+// Exchange would not answer: it needs JPY or USD among them. The request is refused
 // on purpose rather than forced to USD.
 func normalizeCurrency(cur []string) ([]string, error) {
 	if len(cur) == 0 {
@@ -182,7 +182,7 @@ func normalizeCurrency(cur []string) ([]string, error) {
 	return upper, nil
 }
 
-// convertBidFloor moves the floor to JPY or USD. Geniee SSP honours the floor
+// convertBidFloor moves the floor to JPY or USD. Geniee Exchange honours the floor
 // only in those two currencies.
 func convertBidFloor(imp *openrtb2.Imp, requestInfo *adapters.ExtraRequestInfo) error {
 	if imp.BidFloor <= 0 || imp.BidFloorCur == "" {
@@ -191,14 +191,14 @@ func convertBidFloor(imp *openrtb2.Imp, requestInfo *adapters.ExtraRequestInfo) 
 
 	cur := strings.ToUpper(imp.BidFloorCur)
 	if cur == currencyJPY || cur == currencyUSD {
-		// Geniee SSP expects the code uppercase.
+		// Geniee Exchange expects the code uppercase.
 		imp.BidFloorCur = cur
 		return nil
 	}
 
 	converted, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, currencyUSD)
 	if err != nil {
-		// Forward the request anyway, but say so: Geniee SSP honours the floor
+		// Forward the request anyway, but say so: Geniee Exchange honours the floor
 		// only in JPY or USD, so this one will not apply.
 		return &errortypes.Warning{
 			Message: fmt.Sprintf("imp %q: bidfloor left in %s, conversion to %s failed: %v",
@@ -250,7 +250,7 @@ func takeParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpExGeniee, error) {
 	return &params, nil
 }
 
-// prepareFormats shapes each format of the imp the way Geniee SSP expects it and
+// prepareFormats shapes each format of the imp the way Geniee Exchange expects it and
 // refuses an imp it cannot place. A format that fails its check is dropped from
 // the imp with a Warning as long as the other format passes.
 func prepareFormats(imp *openrtb2.Imp) (warnings []error, err error) {
@@ -319,7 +319,7 @@ func prepareBanner(imp *openrtb2.Imp) error {
 }
 
 // prepareVideo refuses a video without mimes, the one required field of the
-// video object at Geniee SSP.
+// video object at Geniee Exchange.
 func prepareVideo(imp *openrtb2.Imp) error {
 	if len(imp.Video.MIMEs) == 0 {
 		return &errortypes.BadInput{

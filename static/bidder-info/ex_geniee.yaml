@@ -2,14 +2,14 @@ endpoint: "https://aladdin.genieesspv.jp/yie/ld/exchange?id={{.PartnerId}}"
 endpointCompression: gzip
 maintainer:
   email: "aladdin-back@geniee.co.jp"
-# No gvlVendorID: Geniee SSP does not accept traffic to which GDPR applies, so
+# No gvlVendorID: Geniee Exchange does not accept traffic to which GDPR applies, so
 # prebid-server withholding this bidder from such traffic is the intended
 # behaviour.
 geoscope:
   - global
 openrtb:
   version: 2.6
-  # Geniee SSP takes an imp that carries both banner and video as it is and
+  # Geniee Exchange takes an imp that carries both banner and video as it is and
   # answers with the mtype it bid on, so prebid-server must not narrow such an
   # imp down to one format before calling the adapter.
   multiformat-supported: true
