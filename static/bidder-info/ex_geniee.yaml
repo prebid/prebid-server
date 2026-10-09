@@ -2,11 +2,12 @@ endpoint: "https://aladdin.genieesspv.jp/yie/ld/exchange?id={{.PartnerId}}"
 endpointCompression: gzip
 maintainer:
   email: "aladdin-back@geniee.co.jp"
-# No gvlVendorID: Geniee Exchange does not accept traffic to which GDPR applies, so
-# prebid-server withholding this bidder from such traffic is the intended
-# behaviour.
+# Geniee Exchange does not accept traffic to which GDPR or UK GDPR applies, so
+# there is no gvlVendorID and the EEA and the UK are excluded from the geoscope.
+# This bidder does not operate globally. Please consider setting "disabled: true" in European datacenters.
 geoscope:
-  - global
+  - "!EEA"
+  - "!GBR"
 openrtb:
   version: 2.6
   # Geniee Exchange takes an imp that carries both banner and video as it is and
