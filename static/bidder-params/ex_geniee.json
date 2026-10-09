@@ -11,6 +11,7 @@
     },
     "placementId": {
       "type": "string",
+      "minLength": 1,
       "description": "Ad slot name chosen by the supply partner, unique within that partner. Alphanumerics, hyphen and underscore, at most 40 characters. Matched case-insensitively, so Sidebar and sidebar name the same slot. Only needed when the partner wants its reports split per slot"
     }
   },

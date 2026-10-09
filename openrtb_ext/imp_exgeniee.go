@@ -5,6 +5,6 @@ type ExtImpExGeniee struct {
 	// PartnerID identifies the supply partner integration.
 	PartnerID int `json:"partnerId"`
 	// PlacementID names the ad slot. Geniee Exchange validates the value itself, so
-	// the adapter and its JSON schema do not restrict it.
+	// the JSON schema only refuses an empty string.
 	PlacementID string `json:"placementId"`
 }
