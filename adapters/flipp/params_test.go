@@ -76,6 +76,25 @@ var validParams = []string{
 			"startCompact": false
 		}
 	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"creativeType": "NativeX",
+		"siteId": 1243066,
+		"zoneIds": [285431],
+		"options": {
+			"mobileSwipe": true
+		}
+	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"creativeType": "NativeX",
+		"siteId": 1243066,
+		"zoneIds": [285431],
+		"options": {
+			"startCompact": true,
+			"mobileSwipe": false
+		}
+	}`,
 }
 
 var invalidParams = []string{
@@ -122,6 +141,14 @@ var invalidParams = []string{
 		"siteId": 1243066,
 		"options": {
 			"startCompact": "true"
+		}
+	}`,
+	`{
+		"publisherNameIdentifier": "wishabi-test-publisher",
+		"creativeType": "NativeX",
+		"siteId": 1243066,
+		"options": {
+			"mobileSwipe": "true"
 		}
 	}`,
 }
