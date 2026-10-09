@@ -132,11 +132,26 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var errs []error
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	var requestedImpIDs map[string]struct{}
+	if requestData != nil && len(requestData.ImpIDs) > 0 {
+		requestedImpIDs = make(map[string]struct{}, len(requestData.ImpIDs))
+		for _, impID := range requestData.ImpIDs {
+			requestedImpIDs[impID] = struct{}{}
+		}
+	}
 	if response.Cur != "" {
 		bidResponse.Currency = response.Cur
 	}
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
+			if requestedImpIDs != nil {
+				if _, exists := requestedImpIDs[seatBid.Bid[i].ImpID]; !exists {
+					errs = append(errs, &errortypes.BadServerResponse{
+						Message: fmt.Sprintf("bid for impression %s not included in the outgoing request", seatBid.Bid[i].ImpID),
+					})
+					continue
+				}
+			}
 			bidType, typeErr := getMediaTypeForBid(request.Imp, seatBid.Bid[i])
 			if typeErr != nil {
 				errs = append(errs, typeErr)

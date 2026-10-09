@@ -2,6 +2,7 @@ package floxis
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"text/template"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -117,6 +119,45 @@ func TestAliasEndpointWithoutHostMacroRoutesOncePerSeat(t *testing.T) {
 	assert.Equal(t, []string{"imp-1", "imp-2"}, reqData[0].ImpIDs)
 	assert.Equal(t, "https://hb.adapex.io/pbs?seat=seat-b", reqData[1].Uri)
 	assert.Equal(t, []string{"imp-3"}, reqData[1].ImpIDs)
+}
+
+func TestMakeBidsRejectsImpressionsFromAnotherRequest(t *testing.T) {
+	for _, mtype := range []openrtb2.MarkupType{0, openrtb2.MarkupBanner} {
+		t.Run(fmt.Sprintf("mtype-%d", mtype), func(t *testing.T) {
+			imp1 := bannerImp(`{"bidder":{"seat":"seat-a"}}`)
+			imp2 := bannerImp(`{"bidder":{"seat":"seat-b"}}`)
+			imp2.ID = "imp-2"
+			request := &openrtb2.BidRequest{ID: "request", Imp: []openrtb2.Imp{imp1, imp2}}
+			bidder, err := Builder(openrtb_ext.BidderName("adapex"), config.Adapter{Endpoint: "https://hb.adapex.io/pbs"}, config.Server{})
+			require.NoError(t, err)
+			requests, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+			require.Empty(t, errs)
+			require.Len(t, requests, 2)
+
+			body, err := json.Marshal(openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{
+				{ID: "valid", ImpID: "imp-1", Price: 1, MType: mtype},
+				{ID: "wrong-seat", ImpID: "imp-2", Price: 2, MType: mtype},
+				{ID: "unknown", ImpID: "unknown", Price: 3, MType: mtype},
+			}}}})
+			require.NoError(t, err)
+			response, errs := bidder.MakeBids(request, requests[0], &adapters.ResponseData{StatusCode: 200, Body: body})
+			require.Len(t, errs, 2)
+			require.Len(t, response.Bids, 1)
+			assert.Equal(t, "valid", response.Bids[0].Bid.ID)
+			assert.Contains(t, errs[0].Error(), "not included in the outgoing request")
+		})
+	}
+}
+
+func TestMakeBidsWithoutImpIDsSupportsStoredResponses(t *testing.T) {
+	request := &openrtb2.BidRequest{Imp: []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"seat-a"}}`)}}
+	response, errs := newAdapter().MakeBids(request, &adapters.RequestData{}, &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       []byte(`{"seatbid":[{"bid":[{"id":"stored","impid":"stored-imp","price":1,"mtype":1}]}]}`),
+	})
+	require.Empty(t, errs)
+	require.Len(t, response.Bids, 1)
+	assert.Equal(t, "stored", response.Bids[0].Bid.ID)
 }
 
 func TestValidNonStandardRegionPassesThrough(t *testing.T) {
