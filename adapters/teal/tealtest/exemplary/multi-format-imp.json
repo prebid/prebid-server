@@ -1,0 +1,131 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-multi-format",
+    "imp": [
+      {
+        "id": "test-imp-multi-format",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "account": "test-account",
+            "placement": "test-placement-multi"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "demo-site",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-multi-format",
+          "imp": [
+            {
+              "id": "test-imp-multi-format",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "account": "test-account",
+                  "placement": "test-placement-multi"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "test-placement-multi"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "demo-site",
+            "publisher": {
+              "id": "test-account"
+            }
+          },
+          "ext": {
+            "bids": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": ["test-imp-multi-format"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-multi-format",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-multi-format",
+                  "impid": "test-imp-multi-format",
+                  "price": 1.75,
+                  "adm": "<div>Teal Multi-Format Ad</div>",
+                  "w": 300,
+                  "h": 250,
+                  "crid": "creative-multi"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-multi-format",
+            "impid": "test-imp-multi-format",
+            "price": 1.75,
+            "adm": "<div>Teal Multi-Format Ad</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "creative-multi"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

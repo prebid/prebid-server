@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "cur": ["USD"],
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "bidfloor": 1.0,
+        "bidfloorcur": "EUR",
+        "ext": {
+          "bidder": { "inventoryCode": "aa" }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": { "EUR": { "USD": 1.1 } },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://tlx.3lift.net/s2s/auction?sra=1&supplier_id=20",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "bidfloor": 1.1,
+              "bidfloorcur": "USD",
+              "tagid": "aa",
+              "ext": { "bidder": { "inventoryCode": "aa" } }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": { "EUR": { "USD": 1.1 } },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [{
+            "seat": "958",
+            "bid": [{
+              "id": "b1", "impid": "test-imp-id", "price": 1.5,
+              "adm": "some-ad", "crid": "cr1", "w": 300, "h": 250,
+              "ext": { "triplelift_pb": { "format": 2 } }
+            }]
+          }],
+          "bidid": "auction-id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "b1", "impid": "test-imp-id", "price": 1.5,
+        "adm": "some-ad", "crid": "cr1", "w": 300, "h": 250,
+        "ext": { "triplelift_pb": { "format": 2 } }
+      },
+      "type": "banner"
+    }]
+  }]
+}

@@ -1,0 +1,79 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext.bidder for imp imp-2:.*",
+      "comparison": "regex"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": {
+          "bidder": {
+            "placementId": 625
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": { "format": [{ "w": 728, "h": 90 }] },
+        "ext": { "bidder": "not-an-object" }
+      }
+    ],
+    "site": { "id": "271", "domain": "display.eskimi-creatives.com" }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ittr.eskimi.com/prebidjs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "secure": 1,
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": {
+                "bidder": {
+                  "placementId": 625
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "271",
+            "domain": "display.eskimi-creatives.com",
+            "ext": { "placementId": 625 }
+          }
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "eskimi",
+              "bid": [
+                { "id": "1", "impid": "imp-1", "price": 1.5, "crid": "c1", "w": 300, "h": 250, "mtype": 1 }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        { "bid": { "id": "1", "impid": "imp-1", "price": 1.5, "crid": "c1", "w": 300, "h": 250, "mtype": 1 }, "type": "banner" }
+      ]
+    }
+  ]
+}

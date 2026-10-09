@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Teal Adapter Params",
+  "description": "A schema which validates params accepted by the Teal adapter",
+  "type": "object",
+  "properties": {
+    "account": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Account ID"
+    },
+    "placement": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Placement ID or name (optional)"
+    }
+  },
+  "required": [
+    "account"
+  ]
+}

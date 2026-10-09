@@ -26,11 +26,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("x-openrtb-version", "2.6")
 
 	if request.Device != nil && request.Device.UA != "" {
 		headers.Set("User-Agent", request.Device.UA)
 	}
+
+	// Regs depends only on request-level data, so promote once and reuse the
+	// result for every per-impression copy.
+	promotedRegs, regsWarnings := promoteRegsExtTo26(request.Regs)
+	errors = append(errors, regsWarnings...)
 
 	for idx, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -57,6 +62,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		// each split request is only associated to a single impression
 		reqCopy := *request
 		reqCopy.Imp = []openrtb2.Imp{imp}
+		reqCopy.Regs = promotedRegs
 
 		if request.Site != nil {
 			siteCopy := *request.Site
@@ -172,37 +178,73 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 		}
 	}
 
-	if request.Regs != nil && request.Regs.GPP != "" {
-		requestRegs := *request.Regs
-		if requestRegs.Ext == nil {
-			requestRegs.Ext = json.RawMessage("{}")
-		}
-		var regsExt map[string]json.RawMessage
-		err := jsonutil.Unmarshal(requestRegs.Ext, &regsExt)
-		if err != nil {
-			return err
-		}
-		regsExt["gpp"], err = json.Marshal(&requestRegs.GPP)
-		if err != nil {
-			return fmt.Errorf("failed to marshal requestRegs.GPP: %v", err)
-		}
-		if requestRegs.GPPSID != nil {
-			regsExt["gpp_sid"], err = json.Marshal(&requestRegs.GPPSID)
-			if err != nil {
-				return err
-			}
-		}
+	return nil
+}
 
-		requestRegs.Ext, err = json.Marshal(&regsExt)
-		if err != nil {
-			return err
-		}
-		requestRegs.GPP = ""
-		requestRegs.GPPSID = nil
-		request.Regs = &requestRegs
+// promoteRegsExtTo26 moves regs.ext.{gpp, gpp_sid} to their top-level fields
+// when the publisher sent them in ext and the top-level field is empty.
+// When the top-level field is already set, the ext duplicate is removed so
+// only the authoritative top-level value ships. A regs.ext that is not a JSON
+// object is passed through untouched with a non-fatal warning.
+func promoteRegsExtTo26(regs *openrtb2.Regs) (*openrtb2.Regs, []error) {
+	if regs == nil || len(regs.Ext) == 0 {
+		return regs, nil
 	}
 
-	return nil
+	var regsExt map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(regs.Ext, &regsExt); err != nil {
+		return regs, []error{&errortypes.Warning{
+			Message: "regs.ext is not a JSON object; skipped OpenRTB 2.6 regs promotion",
+		}}
+	}
+
+	regsCopy := *regs
+	modified := false
+
+	if raw, ok := regsExt["gpp"]; ok {
+		if regsCopy.GPP == "" {
+			var v string
+			if err := jsonutil.Unmarshal(raw, &v); err == nil {
+				regsCopy.GPP = v
+				delete(regsExt, "gpp")
+				modified = true
+			}
+		} else {
+			delete(regsExt, "gpp")
+			modified = true
+		}
+	}
+
+	if raw, ok := regsExt["gpp_sid"]; ok {
+		if len(regsCopy.GPPSID) == 0 {
+			var v []int8
+			if err := jsonutil.Unmarshal(raw, &v); err == nil {
+				regsCopy.GPPSID = v
+				delete(regsExt, "gpp_sid")
+				modified = true
+			}
+		} else {
+			delete(regsExt, "gpp_sid")
+			modified = true
+		}
+	}
+
+	if !modified {
+		return regs, nil
+	}
+
+	if len(regsExt) == 0 {
+		regsCopy.Ext = nil
+	} else {
+		// stdlib json.Marshal is used because it writes a nil RawMessage as null.
+		newExt, err := json.Marshal(regsExt)
+		if err != nil {
+			return regs, nil
+		}
+		regsCopy.Ext = newExt
+	}
+
+	return &regsCopy, nil
 }
 
 func validateBanner(banner *openrtb2.Banner) error {

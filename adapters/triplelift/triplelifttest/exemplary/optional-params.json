@@ -48,6 +48,7 @@
               },
               "tagid": "foo",
               "bidfloor": 20,
+              "bidfloorcur": "USD",
               "ext": {
                 "bidder": {
                   "inventoryCode": "foo",
