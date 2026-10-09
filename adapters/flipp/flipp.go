@@ -267,8 +267,11 @@ func buildBid(decision *InlineModel, impId string, flippExtParams openrtb_ext.Im
 				if v, ok := customDataMap["maxWidth"].(float64); ok && v != 0 {
 					bid.W = int64(v)
 				}
-				if v, ok := customDataMap["maxHeight"].(float64); ok && v != 0 {
-					bid.H = int64(v)
+				// maxHeight aliases standardHeight only
+				if !flippExtParams.Options.StartCompact {
+					if v, ok := customDataMap["maxHeight"].(float64); ok && v != 0 {
+						bid.H = int64(v)
+					}
 				}
 			}
 		}
