@@ -4,7 +4,7 @@ maintainer:
 geoscope:
   - global
 gvlVendorID: 1601
-modifyingVastXmlAllowed: false
+modifyingVastXmlAllowed: true
 openrtb:
   version: 2.6
   gpp-supported: true
