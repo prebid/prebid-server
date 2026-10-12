@@ -145,6 +145,30 @@ func TestGetBidType(t *testing.T) {
 		assert.Equal(t, openrtb_ext.BidTypeVideo, bidType)
 	})
 
+	t.Run("invalid explicit prebid type falls back to bid media type", func(t *testing.T) {
+		bid := &openrtb2.Bid{
+			ImpID: "imp1",
+			MType: openrtb2.MarkupVideo,
+			Ext:   json.RawMessage(`{"prebid":{"type":"banana"}}`),
+		}
+
+		bidType, err := getBidType(bid, map[string]openrtb2.Imp{})
+		require.NoError(t, err)
+		assert.Equal(t, openrtb_ext.BidTypeVideo, bidType)
+	})
+
+	t.Run("invalid explicit prebid type falls back to impression type", func(t *testing.T) {
+		bid := &openrtb2.Bid{
+			ImpID: "imp1",
+			Ext:   json.RawMessage(`{"prebid":{"type":"banana"}}`),
+		}
+		imp := openrtb2.Imp{ID: "imp1", Banner: &openrtb2.Banner{}}
+
+		bidType, err := getBidType(bid, map[string]openrtb2.Imp{imp.ID: imp})
+		require.NoError(t, err)
+		assert.Equal(t, openrtb_ext.BidTypeBanner, bidType)
+	})
+
 	t.Run("falls back to impression type when bid.ext.prebid.type is absent", func(t *testing.T) {
 		testCases := []struct {
 			name string

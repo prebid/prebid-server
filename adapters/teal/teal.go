@@ -335,8 +335,19 @@ func getBidType(bid *openrtb2.Bid, impsByID map[string]openrtb2.Imp) (openrtb_ex
 	if len(bid.Ext) > 0 {
 		var bidExt openrtb_ext.ExtBid
 		if err := jsonutil.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt.Prebid != nil && bidExt.Prebid.Type != "" {
-			return bidExt.Prebid.Type, nil
+			if bidType, err := openrtb_ext.ParseBidType(string(bidExt.Prebid.Type)); err == nil {
+				return bidType, nil
+			}
 		}
+	}
+
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	}
 
 	// 2. Fall back to inferring from the impression
