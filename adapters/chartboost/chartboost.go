@@ -1,7 +1,6 @@
 package chartboost
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type adapter struct {
@@ -19,7 +19,7 @@ type adapter struct {
 // MakeRequests forwards the bid request to the Chartboost endpoint verbatim.
 // Request shaping is deliberately left to Chartboost.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	body, err := json.Marshal(request)
+	body, err := jsonutil.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -50,7 +50,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.Reque
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(respData.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(respData.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
