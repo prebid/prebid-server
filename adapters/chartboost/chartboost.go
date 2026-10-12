@@ -3,6 +3,7 @@ package chartboost
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -12,16 +13,37 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
+// Chartboost bids exclusively in USD and interprets imp.bidfloor as a USD amount.
+const bidderCurrency = "USD"
+
 type adapter struct {
 	endpoint string
 }
 
-// MakeRequests forwards the bid request to the Chartboost endpoint verbatim.
-// Request shaping is deliberately left to Chartboost.
+// MakeRequests forwards the bid request to the Chartboost endpoint verbatim, except that
+// non-USD bid floors are converted to USD. Request shaping is otherwise left to Chartboost.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	body, err := jsonutil.Marshal(request)
+	var errs []error
+
+	imps := make([]openrtb2.Imp, 0, len(request.Imp))
+	for _, imp := range request.Imp {
+		if err := convertBidFloorToUSD(&imp, reqInfo); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		imps = append(imps, imp)
+	}
+	if len(imps) == 0 {
+		return nil, errs
+	}
+
+	// Shallow copy so the imp slice can be replaced without touching the shared request.
+	requestCopy := *request
+	requestCopy.Imp = imps
+
+	body, err := jsonutil.Marshal(&requestCopy)
 	if err != nil {
-		return nil, []error{err}
+		return nil, append(errs, err)
 	}
 
 	headers := http.Header{}
@@ -34,8 +56,27 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		Uri:     a.endpoint,
 		Body:    body,
 		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
-	}}, nil
+		ImpIDs:  openrtb_ext.GetImpIDs(imps),
+	}}, errs
+}
+
+// convertBidFloorToUSD rewrites a non-USD bid floor into USD using the conversion rates
+// known to Prebid Server. The imp is a shallow copy, so modifying its scalar fields is safe.
+func convertBidFloorToUSD(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, bidderCurrency) {
+		return nil
+	}
+
+	converted, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, bidderCurrency)
+	if err != nil {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Unable to convert bid floor of imp %s from %s to %s: %s", imp.ID, imp.BidFloorCur, bidderCurrency, err),
+		}
+	}
+
+	imp.BidFloor = converted
+	imp.BidFloorCur = bidderCurrency
+	return nil
 }
 
 // MakeBids does no bid shaping beyond what prebid-server core requires, which is a
