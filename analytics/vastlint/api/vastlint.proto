@@ -1,0 +1,31 @@
+syntax = "proto3";
+package openadtech.vastlint.v1;
+option go_package = "github.com/prebid/prebid-server/v4/analytics/vastlint/api";
+// Unary monitoring subset of the public VASTlint v1 wire contract.
+// Omitted fields retain their original field numbers and are decoded as unknown.
+service VastlintService {
+  rpc Validate(ValidateRequest) returns (ValidateResponse);
+}
+message ValidateRequest {
+  string document = 1;
+  reserved 2;
+}
+message ValidateResponse {
+  Verdict verdict = 1;
+}
+message Verdict {
+  bool valid = 1;
+  reserved 2, 3, 4;
+  Summary summary = 5;
+  Provenance provenance = 6;
+}
+message Summary {
+  uint32 errors = 1;
+  uint32 warnings = 2;
+  uint32 infos = 3;
+}
+message Provenance {
+  string catalog_version = 1;
+  string catalog_digest = 2;
+  string engine_version = 3;
+}

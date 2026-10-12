@@ -91,3 +91,9 @@ type NotificationEvent struct {
 	Request *EventRequest   `json:"request"`
 	Account *config.Account `json:"account"`
 }
+
+// CreativeDataConsumer requests permission checks for identifiers that may be
+// embedded in raw creative markup and cannot be removed by request scrubbing.
+type CreativeDataConsumer interface {
+	RequiresCreativeDataPermissions() bool
+}

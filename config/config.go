@@ -479,9 +479,25 @@ type LMT struct {
 }
 
 type Analytics struct {
-	File     FileLogs      `mapstructure:"file"`
-	Agma     AgmaAnalytics `mapstructure:"agma"`
-	Pubstack Pubstack      `mapstructure:"pubstack"`
+	Vastlint VastlintAnalytics `mapstructure:"vastlint"`
+	File     FileLogs          `mapstructure:"file"`
+	Agma     AgmaAnalytics     `mapstructure:"agma"`
+	Pubstack Pubstack          `mapstructure:"pubstack"`
+}
+
+// VastlintAnalytics is host-controlled, opt-in final-response monitoring.
+type VastlintAnalytics struct {
+	Enabled            bool     `mapstructure:"enabled"`
+	Endpoint           string   `mapstructure:"endpoint"`
+	AllowInsecure      bool     `mapstructure:"allow_insecure"`
+	Accounts           []string `mapstructure:"accounts"`
+	SamplePercent      int      `mapstructure:"sample_percent"`
+	MaxDocumentBytes   int      `mapstructure:"max_document_bytes"`
+	QueueSize          int      `mapstructure:"queue_size"`
+	TimeoutMS          int      `mapstructure:"timeout_ms"`
+	MaxAgeMS           int      `mapstructure:"max_age_ms"`
+	MaxEventsPerSecond int      `mapstructure:"max_events_per_second"`
+	MaxBytesPerSecond  int      `mapstructure:"max_bytes_per_second"`
 }
 
 type CurrencyConverter struct {
@@ -1158,6 +1174,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
+	v.SetDefault("analytics.vastlint.enabled", false)
 	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
 	v.SetDefault("analytics.pubstack.scopeid", "change-me")
 	v.SetDefault("analytics.pubstack.enabled", false)
