@@ -1,0 +1,72 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+            "location_name": "default-banner"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://chartboost.example.com/prebid",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+                  "location_name": "default-banner"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "not-json"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "comparison": "literal"
+    }
+  ]
+}

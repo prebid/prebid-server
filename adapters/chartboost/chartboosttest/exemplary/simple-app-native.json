@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": "{\"ver\":\"1.2\"}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+            "location_name": "default-banner"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://chartboost.example.com/prebid",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "request": "{\"ver\":\"1.2\"}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+                  "location_name": "default-banner"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "chartboost",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "test-imp-id",
+                  "price": 0.75,
+                  "adm": "{\"native\":{}}",
+                  "crid": "test-crid",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "test-imp-id",
+            "price": 0.75,
+            "adm": "{\"native\":{}}",
+            "crid": "test-crid",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
