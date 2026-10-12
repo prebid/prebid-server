@@ -15,7 +15,7 @@ identifiers embedded in creative URLs. Hosts must authorize this data path and
 operate the endpoint accordingly.
 
 Maintainer: Aleks Sekowski, https://github.com/aleksUIX.
-Shared maintenance email: pending confirmation before submission.
+Shared maintenance email: dev@vastlint.org.
 
 ## Configure the validator and authorized accounts.
 
