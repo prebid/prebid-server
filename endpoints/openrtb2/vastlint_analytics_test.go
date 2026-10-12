@@ -10,11 +10,15 @@ import (
 	"time"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/analytics"
 	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
 	"github.com/prebid/prebid-server/v4/analytics/vastlint/api"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/exchange"
 	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/metrics"
 	metricsConfig "github.com/prebid/prebid-server/v4/metrics/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/ortb"
@@ -82,5 +86,81 @@ func TestVastlintAnalyticsPreservesEndpointResponse(t *testing.T) {
 			}
 		}
 		runner.Shutdown()
+	}
+}
+
+type replacementExitpointHook struct{ body any }
+
+func (h replacementExitpointHook) HandleExitpointHook(context.Context, hookstage.ModuleInvocationContext, hookstage.ExitpointPayload) (hookstage.HookResult[hookstage.ExitpointPayload], error) {
+	var changes hookstage.ChangeSet[hookstage.ExitpointPayload]
+	changes.AddMutation(func(payload hookstage.ExitpointPayload) (hookstage.ExitpointPayload, error) {
+		payload.Response = h.body
+		return payload, nil
+	}, hookstage.MutationUpdate, "exitpoint", "response")
+	return hookstage.HookResult[hookstage.ExitpointPayload]{ChangeSet: changes}, nil
+}
+
+type replacementExitpointPlan struct {
+	hooks.EmptyPlanBuilder
+	body any
+}
+
+func (p replacementExitpointPlan) PlanForExitpointStage(string, *config.Account) hooks.Plan[hookstage.Exitpoint] {
+	return hooks.Plan[hookstage.Exitpoint]{{Timeout: time.Second, Hooks: []hooks.HookWrapper[hookstage.Exitpoint]{{Module: "test.replace", Code: "replace", Hook: replacementExitpointHook{body: p.body}}}}}
+}
+
+func TestFinalAuctionResponseReflectsExitpointBody(t *testing.T) {
+	returned := openrtb2.BidResponse{ID: "returned", SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{{ID: "returned-bid", MType: 2, AdM: "<VAST>returned</VAST>"}}}}}
+	for _, c := range []struct {
+		name string
+		body any
+		want *openrtb2.BidResponse
+	}{
+		{"pointer", &returned, &returned},
+		{"value", returned, &returned},
+		{"nil_pointer", (*openrtb2.BidResponse)(nil), nil},
+		{"custom_json", json.RawMessage(`{"id":"custom","adm":"not a typed bid response"}`), nil},
+		{"no_creatives", &openrtb2.BidResponse{ID: "empty"}, &openrtb2.BidResponse{ID: "empty"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			before := &openrtb2.BidResponse{ID: "before", Ext: json.RawMessage(`{}`), SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{{AdM: "<VAST>removed</VAST>"}}}}}
+			account := &config.Account{ID: "host-account"}
+			executor := hookexecution.NewHookExecutor(replacementExitpointPlan{body: c.body}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			executor.SetAccount(account)
+			recorder := httptest.NewRecorder()
+			_, event := sendAuctionResponse(recorder, executor, before, &openrtb2.BidRequest{ID: "request"}, account, metrics.Labels{}, analytics.AuctionObject{Response: before})
+			require.Same(t, before, event.Response, "existing analytics consumers retain their response")
+			require.Equal(t, c.want, event.FinalResponse)
+			encoded, err := json.Marshal(c.body)
+			require.NoError(t, err)
+			require.JSONEq(t, string(encoded), recorder.Body.String())
+		})
+	}
+}
+
+func TestVastlintAnalyticsSkipsRemovedCreative(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	server := grpc.NewServer()
+	received := make(chan string, 1)
+	api.RegisterVastlintServiceServer(server, slowVastlintServer{received: received})
+	go server.Serve(listener)
+	defer server.Stop()
+	const request = `{"id":"request-1","site":{"page":"https://example.com","publisher":{"id":"host-account"}},"imp":[{"id":"imp-1","video":{"mimes":["video/mp4"],"protocols":[2],"minduration":1,"maxduration":30},"ext":{"appnexus":{"placementId":1}}}],"tmax":500}`
+	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	require.NoError(t, cfg.MarshalAccountDefaults())
+	runner := analyticsBuild.New(&config.Analytics{Vastlint: config.VastlintAnalytics{Enabled: true, Endpoint: listener.Addr().String(), AllowInsecure: true, Accounts: []string{"host-account"}, SamplePercent: 100, TimeoutMS: 1000, MaxAgeMS: 2000}})
+	defer runner.Shutdown()
+	endpoint, err := NewEndpoint(fakeUUIDGenerator{}, vastlintResponseExchange{markup: "<VAST>removed</VAST>"}, ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
+		empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, cfg, &metricsConfig.NilMetricsEngine{}, runner, map[string]string{}, nil, openrtb_ext.BuildBidderMap(), empty_fetcher.EmptyFetcher{}, replacementExitpointPlan{body: &openrtb2.BidResponse{ID: "returned-without-creatives"}}, nil)
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewBufferString(request)), nil)
+	require.Equal(t, 200, recorder.Code)
+	require.JSONEq(t, `{"id":"returned-without-creatives"}`, recorder.Body.String())
+	select {
+	case <-received:
+		t.Fatal("exported markup removed by exitpoint")
+	case <-time.After(1500 * time.Millisecond):
 	}
 }

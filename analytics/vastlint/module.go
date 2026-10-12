@@ -172,7 +172,7 @@ func (m *Module) Stats() map[string]uint64 {
 }
 
 func (m *Module) LogAuctionObject(event *analytics.AuctionObject) {
-	if !m.cfg.Enabled || m.stopped.Load() || event == nil || event.Status != 200 || event.Account == nil || event.Response == nil {
+	if !m.cfg.Enabled || m.stopped.Load() || event == nil || event.Status != 200 || event.Account == nil || event.FinalResponse == nil {
 		return
 	}
 	if _, authorized := m.accounts[event.Account.ID]; !authorized {
@@ -184,18 +184,18 @@ func (m *Module) LogAuctionObject(event *analytics.AuctionObject) {
 	}
 	m.counters[sampled].Add(1)
 	bids := 0
-	for seatIndex := range event.Response.SeatBid {
+	for seatIndex := range event.FinalResponse.SeatBid {
 		if seatIndex >= maxScan {
 			m.counters[scanLimited].Add(1)
 			return
 		}
-		for bidIndex := range event.Response.SeatBid[seatIndex].Bid {
+		for bidIndex := range event.FinalResponse.SeatBid[seatIndex].Bid {
 			if bids >= maxScan {
 				m.counters[scanLimited].Add(1)
 				return
 			}
 			bids++
-			bid := &event.Response.SeatBid[seatIndex].Bid[bidIndex]
+			bid := &event.FinalResponse.SeatBid[seatIndex].Bid[bidIndex]
 			if !m.video(bid) {
 				continue
 			}
@@ -334,13 +334,13 @@ func (m *Module) process(job document) {
 	defer cancel()
 	m.counters[submitted].Add(1)
 	ctx = metadata.AppendToOutgoingContext(ctx, "x-vastlint-caller", "prebid-server")
-	response, err := m.client.Validate(ctx, &api.ValidateRequest{Document: job.xml})
+	response, err := m.client.Validate(ctx, &api.ValidateRequest{Document: job.xml, SummaryOnly: true})
 	if err != nil || ctx.Err() != nil {
 		m.counters[failed].Add(1)
 		return
 	}
 	verdict := response.GetVerdict()
-	if verdict == nil || verdict.Summary == nil || verdict.Provenance == nil || verdict.Provenance.EngineVersion == "" || len(verdict.Provenance.EngineVersion) > 128 || !validDigest(verdict.Provenance.CatalogDigest) {
+	if !response.GetSummaryOnly() || verdict == nil || verdict.Summary == nil || verdict.Provenance == nil || verdict.Provenance.EngineVersion == "" || len(verdict.Provenance.EngineVersion) > 128 || !validDigest(verdict.Provenance.CatalogDigest) {
 		m.counters[failed].Add(1)
 		return
 	}

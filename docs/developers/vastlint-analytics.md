@@ -8,5 +8,6 @@ worker, after the callback returns.
 Configuration, monitoring counters, resource limits, privacy permissions, and
 verification commands are documented in the
 [adapter README](../../analytics/vastlint/README.md).
-The coverage includes returned inline `adm` at `/openrtb2/auction`. Creatives
+The coverage includes returned inline `adm` at `/openrtb2/auction`, after
+exitpoint hooks. Other replacement body types are skipped. Creatives
 removed by caching and content behind URLs are outside that coverage.

@@ -43,6 +43,12 @@ use `allow_insecure: true`. The Rust gRPC server needs a host TLS terminator for
 the TLS configuration above. No public endpoint is selected by default. Only
 the host can change endpoints or resource limits.
 
+Every setting also supports the standard `PBS_ANALYTICS_VASTLINT_*` environment
+variables. For example, set `PBS_ANALYTICS_VASTLINT_ENDPOINT=localhost:50051` and
+`PBS_ANALYTICS_VASTLINT_ACCOUNTS="account-one account-two"`. Account IDs in the
+environment value are separated by spaces. Environment values override file
+settings, including resource limits.
+
 Zero resource settings inherit the defaults shown above. Accepted limits are
 1 to 100 percent sampling, 1 to 131072 bytes per document, 1 to 128 outstanding
 documents, up to 8 MiB of outstanding copied XML, 1 to 5000 ms RPC timeout,
@@ -65,7 +71,10 @@ The document length is checked before examining its contents. Empty and URL-only
 markup are counted and skipped. Other supplied video markup is submitted
 verbatim, including malformed XML. No XML parsing runs in PBS.
 
-The scope is the final response available to the analytics adapter. PBS-generated
+The collector uses the typed OpenRTB response returned after exitpoint hooks.
+An exitpoint replacement with a different body type is skipped. Replaced or
+removed markup from the earlier auction response is never used as a fallback.
+Existing analytics consumers keep their original response field. PBS-generated
 wrappers can be observed. Markup removed by caching, including `returnCreative:
 false`, is unavailable and counted as missing when the typed video bid remains.
 The adapter does not fetch VAST URLs, NURLs, cache entries, or downstream wrappers.
@@ -84,8 +93,13 @@ are counted without altering auction results.
 With the default configuration, outstanding owned XML is bounded by 2 MiB per
 adapter instance. This is not a total RSS limit. Metadata, channel storage,
 gRPC buffers, runtime allocations, and multiple PBS instances add memory.
-The response decoder is capped at 64 KiB. Only the unary Validate wire contract
-is included. No native library or new Go dependency version is added.
+The response decoder is capped at 64 KiB. The client requests `summary_only`
+and requires the server's acknowledgement. Compact replies contain validity,
+summary counts, and provenance. Detailed findings remain in server monitoring
+and are omitted from the wire reply. Omitting fields only from the Go schema
+would not reduce reply size. A server without compact-reply support is counted
+as failed. Only the unary Validate wire contract is included. No native library
+or new Go dependency version is added.
 
 There are no application retries, disk spooling, or per-document goroutines.
 gRPC manages its connection goroutines and may transparently retry calls known
@@ -107,8 +121,9 @@ counters distinguish authorized auctions, sampled auctions, scan truncation,
 non-video bids, missing/URL/oversized markup, oversized extensions, capacity and
 rate drops, expiration, submission attempts, checked responses, documents with
 findings, failures, and shutdown drops. Enqueued documents are not reported as
-checked. A checked response requires a verdict, summary, engine identity, and
-catalog digest. The API also exposes `Module.Stats()` for host diagnostics.
+checked. A checked response requires compact-mode acknowledgement, a verdict,
+summary, engine identity, and catalog digest. The API also exposes
+`Module.Stats()` for host diagnostics.
 
 No XML, document identifiers, finding messages, or validator error strings are
 included in these logs. Raw XML is transmitted to the configured validator.
@@ -116,7 +131,9 @@ Verdicts completed after the response are not appended to auction analytics
 objects or hook tags.
 
 Use a validator release containing strict XML parsing, parser resource ceilings,
-and hard CPU-worker permits held until actual work finishes after cancellation.
+hard CPU-worker permits held until actual work finishes after cancellation,
+and acknowledged compact replies. The compatible source includes the
+[validator changes](https://github.com/aleksUIX/vastlint/commit/46f86bfbc8a7ef6eb0904226d128c6659d9a70aa).
 The local compatibility run uses an explicitly recorded source build. It does
 not establish that older published images contain those fixes. A fixed release
 and verified image digest are required before a host trial.
@@ -132,14 +149,16 @@ Against a fixed local Rust validator, run:
 
 ```sh
 VASTLINT_TEST_ENDPOINT=127.0.0.1:50051 go test -tags vastlint_integration \
-  -run TestRustValidatorWireContract -v ./analytics/vastlint
+  -run TestRust -v ./analytics/vastlint
 ```
 
 The collector tests cover unchanged markup, copied ownership, scan and byte
 bounds, rate and capacity limits, cancellation, expiration, malformed responses,
-panic containment, outage handling, and concurrent shutdown. Analytics dispatch
-tests cover each required activity and preserve existing adapters' request
-scrubbing behavior.
+panic containment, outage handling, and concurrent shutdown. Real Rust tests
+also cover finding-heavy replies and the maximum admitted document size. Endpoint tests cover typed and custom exitpoint replacements.
+Configuration tests load and override all settings through environment variables.
+Analytics dispatch tests cover each required activity and preserve existing
+adapters' request scrubbing behavior.
 
 Generate the minimal client with `protoc`, `protoc-gen-go v1.34.1`, and
 `protoc-gen-go-grpc v1.4.0` from this directory:

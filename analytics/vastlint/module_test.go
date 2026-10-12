@@ -25,7 +25,7 @@ func (f fakeValidator) Validate(ctx context.Context, request *api.ValidateReques
 	return f(ctx, request)
 }
 func goodResponse() *api.ValidateResponse {
-	return &api.ValidateResponse{Verdict: &api.Verdict{Valid: true, Summary: &api.Summary{}, Provenance: &api.Provenance{EngineVersion: "test", CatalogDigest: "sha256:" + strings.Repeat("a", 64)}}}
+	return &api.ValidateResponse{SummaryOnly: true, Verdict: &api.Verdict{Valid: true, Summary: &api.Summary{}, Provenance: &api.Provenance{EngineVersion: "test", CatalogDigest: "sha256:" + strings.Repeat("a", 64)}}}
 }
 func enabledConfig() config.VastlintAnalytics {
 	return config.VastlintAnalytics{Enabled: true, Endpoint: "localhost:50051", AllowInsecure: true, Accounts: []string{"host-account"}, SamplePercent: 100}
@@ -43,7 +43,8 @@ func testModule(t *testing.T) *Module {
 	return m
 }
 func eventWith(bids ...openrtb2.Bid) *analytics.AuctionObject {
-	return &analytics.AuctionObject{Status: 200, Account: &config.Account{ID: "host-account"}, Response: &openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{{Bid: bids}}}}
+	response := &openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{{Bid: bids}}}
+	return &analytics.AuctionObject{Status: 200, Account: &config.Account{ID: "host-account"}, Response: response, FinalResponse: response}
 }
 func video(xml string) openrtb2.Bid { return openrtb2.Bid{MType: 2, AdM: xml} }
 
@@ -101,7 +102,7 @@ func TestEligibilityBoundsAndOwnership(t *testing.T) {
 	bad.Account.ID = "other"
 	m.LogAuctionObject(bad)
 	bad = eventWith(video("<VAST/>"))
-	bad.Response = nil
+	bad.FinalResponse = nil
 	m.LogAuctionObject(bad)
 	require.Zero(t, m.Stats()["auctions"])
 	m.sample = func() int { return 99 }
@@ -218,6 +219,11 @@ func TestRPCFailureExpiryAndPanic(t *testing.T) {
 			return nil, errors.New("contains secret XML")
 		}, 0, "failed"},
 		{"nil", func(context.Context, *api.ValidateRequest) (*api.ValidateResponse, error) { return nil, nil }, 0, "failed"},
+		{"summary_only_unsupported", func(context.Context, *api.ValidateRequest) (*api.ValidateResponse, error) {
+			r := goodResponse()
+			r.SummaryOnly = false
+			return r, nil
+		}, 0, "failed"},
 		{"no_verdict", func(context.Context, *api.ValidateRequest) (*api.ValidateResponse, error) {
 			return &api.ValidateResponse{}, nil
 		}, 0, "failed"},
@@ -339,4 +345,26 @@ func TestDigestFormat(t *testing.T) {
 	for _, value := range []string{"", strings.Repeat("a", 64), "sha256:" + strings.Repeat("A", 64), "sha256:" + strings.Repeat("g", 64), "other:" + strings.Repeat("a", 65)} {
 		require.False(t, validDigest(value))
 	}
+}
+
+func TestOnlyFinalResponseMarkupIsCollected(t *testing.T) {
+	m := testModule(t)
+	event := eventWith(video("<VAST>removed</VAST>"))
+	event.FinalResponse = nil
+	m.LogAuctionObject(event)
+	require.Empty(t, m.jobs)
+	require.Zero(t, m.Stats()["auctions"])
+
+	returned := "<VAST>returned</VAST>"
+	event.FinalResponse = &openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{video(returned)}}}}
+	m.client = fakeValidator(func(_ context.Context, r *api.ValidateRequest) (*api.ValidateResponse, error) {
+		require.True(t, r.SummaryOnly, "the server must produce a compact reply")
+		require.Equal(t, returned, r.Document)
+		return goodResponse(), nil
+	})
+	m.LogAuctionObject(event)
+	require.Len(t, m.jobs, 1)
+	m.process(<-m.jobs)
+	require.EqualValues(t, 1, m.Stats()["checked"])
+	require.Equal(t, "<VAST>removed</VAST>", event.Response.SeatBid[0].Bid[0].AdM)
 }
