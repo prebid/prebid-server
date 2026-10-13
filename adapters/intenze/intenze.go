@@ -60,7 +60,6 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 }
 
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-
 	impExt, err := getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
 		return nil, []error{err}
@@ -108,6 +107,12 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtIntenze) (string, erro
 	if params.AccountID == nil && params.PlacementID == nil {
 		return "", &errortypes.BadInput{
 			Message: "either accountId or placementId expected",
+		}
+	}
+
+	if params.AccountID != nil && params.PlacementID != nil {
+		return "", &errortypes.BadInput{
+			Message: "accountId and placementId cannot be used together",
 		}
 	}
 

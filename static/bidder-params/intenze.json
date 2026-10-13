@@ -7,7 +7,12 @@
         "region": {
             "type": "string",
             "description": "Target region traffic. By default us-east.",
-            "minLength": 1
+            "minLength": 1,
+            "enum": [
+                "us-east",
+                "eu",
+                "apac"
+            ]
         },
         "accountId": {
             "type": "string",
@@ -19,5 +24,23 @@
             "description": "Use this for Placement ID of SSP",
             "minLength": 1
         }
+    },
+    "oneOf": [
+        {
+            "required": [
+                "accountId"
+            ]
+        },
+        {
+            "required": [
+                "placementId"
+            ]
+        }
+    ],
+    "not": {
+        "required": [
+            "accountId",
+            "placementId"
+        ]
     }
 }
