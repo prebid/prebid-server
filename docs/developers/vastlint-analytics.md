@@ -3,7 +3,9 @@
 The optional `vastlint` analytics adapter exports bounded, copied inline video
 markup to a host-controlled external validator. Collection uses the existing
 analytics dispatch and activity controls. Validation runs in one background
-worker, after the callback returns.
+worker. The callback performs bounded collection work and never waits for the
+validator. Host-owned rule settings and Prometheus findings support aggregate
+quality monitoring alongside PBS collection-health metrics.
 
 Configuration, monitoring counters, resource limits, privacy permissions, and
 verification commands are documented in the

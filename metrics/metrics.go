@@ -463,6 +463,7 @@ func SyncerSetUidStatuses() []SyncerSetUidStatus {
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
 type MetricsEngine interface {
+	RecordVastlintEvent(event VastlintEvent, count uint64)
 	RecordConnectionAccept(success bool)
 	RecordTMaxTimeout()
 	RecordConnectionClose(success bool)

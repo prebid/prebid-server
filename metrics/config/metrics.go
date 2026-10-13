@@ -593,3 +593,10 @@ func (me *NilMetricsEngine) RecordAdapterConnectionDialError(adapterName openrtb
 
 func (me *NilMetricsEngine) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
 }
+
+func (me *MultiMetricsEngine) RecordVastlintEvent(event metrics.VastlintEvent, count uint64) {
+	for _, engine := range *me {
+		engine.RecordVastlintEvent(event, count)
+	}
+}
+func (*NilMetricsEngine) RecordVastlintEvent(metrics.VastlintEvent, uint64) {}

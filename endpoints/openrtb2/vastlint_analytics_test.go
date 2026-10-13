@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"math"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -53,7 +56,7 @@ func TestVastlintAnalyticsPreservesEndpointResponse(t *testing.T) {
 	go server.Serve(listener)
 	defer server.Stop()
 	const markup = `  <VAST version="2.0"><Ad>malformed`
-	const request = `{"id":"request-1","site":{"page":"https://example.com","publisher":{"id":"host-account"}},"imp":[{"id":"imp-1","video":{"mimes":["video/mp4"],"protocols":[2],"minduration":1,"maxduration":30},"ext":{"appnexus":{"placementId":1}}}],"tmax":500}`
+	const request = `{"id":"request-1","regs":{"gdpr":0},"site":{"page":"https://example.com","publisher":{"id":"host-account"}},"imp":[{"id":"imp-1","video":{"mimes":["video/mp4"],"protocols":[2],"minduration":1,"maxduration":30},"ext":{"appnexus":{"placementId":1}}}],"tmax":500}`
 	var original []byte
 	for _, enabled := range []bool{false, true} {
 		cfg := &config.Configuration{MaxRequestSize: maxSize}
@@ -146,7 +149,7 @@ func TestVastlintAnalyticsSkipsRemovedCreative(t *testing.T) {
 	api.RegisterVastlintServiceServer(server, slowVastlintServer{received: received})
 	go server.Serve(listener)
 	defer server.Stop()
-	const request = `{"id":"request-1","site":{"page":"https://example.com","publisher":{"id":"host-account"}},"imp":[{"id":"imp-1","video":{"mimes":["video/mp4"],"protocols":[2],"minduration":1,"maxduration":30},"ext":{"appnexus":{"placementId":1}}}],"tmax":500}`
+	const request = `{"id":"request-1","regs":{"gdpr":0},"site":{"page":"https://example.com","publisher":{"id":"host-account"}},"imp":[{"id":"imp-1","video":{"mimes":["video/mp4"],"protocols":[2],"minduration":1,"maxduration":30},"ext":{"appnexus":{"placementId":1}}}],"tmax":500}`
 	cfg := &config.Configuration{MaxRequestSize: maxSize}
 	require.NoError(t, cfg.MarshalAccountDefaults())
 	runner := analyticsBuild.New(&config.Analytics{Vastlint: config.VastlintAnalytics{Enabled: true, Endpoint: listener.Addr().String(), AllowInsecure: true, Accounts: []string{"host-account"}, SamplePercent: 100, TimeoutMS: 1000, MaxAgeMS: 2000}})
@@ -162,5 +165,28 @@ func TestVastlintAnalyticsSkipsRemovedCreative(t *testing.T) {
 	case <-received:
 		t.Fatal("exported markup removed by exitpoint")
 	case <-time.After(1500 * time.Millisecond):
+	}
+}
+
+// Encode reports both marshal errors and writer errors. Neither response is
+// eligible, even if net/http has already committed a successful status.
+type failedVastlintWriter struct{ *httptest.ResponseRecorder }
+
+func (w failedVastlintWriter) Write(body []byte) (int, error) {
+	return 0, errors.New("writer unavailable")
+}
+func TestFinalResponseExcludesEncodingAndWriteFailures(t *testing.T) {
+	for _, encodingFailure := range []bool{false, true} {
+		response := &openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{{MType: 2, AdM: "<VAST/>"}}}}}
+		var writer http.ResponseWriter = failedVastlintWriter{httptest.NewRecorder()}
+		if encodingFailure {
+			response.SeatBid[0].Bid[0].Price = math.NaN()
+			writer = httptest.NewRecorder()
+		}
+		executor := hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{})
+		_, event := sendAuctionResponse(writer, executor, response, &openrtb2.BidRequest{}, &config.Account{}, metrics.Labels{}, analytics.AuctionObject{Response: response})
+		require.NotEmpty(t, event.Errors)
+		require.Nil(t, event.FinalResponse)
+		require.Same(t, response, event.Response)
 	}
 }

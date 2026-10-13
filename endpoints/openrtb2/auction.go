@@ -400,6 +400,7 @@ func sendAuctionResponse(
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(finalResponse); err != nil {
+		ao.FinalResponse = nil
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}

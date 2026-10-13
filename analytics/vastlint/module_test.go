@@ -15,8 +15,12 @@ import (
 	"github.com/prebid/prebid-server/v4/analytics"
 	"github.com/prebid/prebid-server/v4/analytics/vastlint/api"
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"math/rand/v2"
 )
 
 type fakeValidator func(context.Context, *api.ValidateRequest) (*api.ValidateResponse, error)
@@ -25,7 +29,7 @@ func (f fakeValidator) Validate(ctx context.Context, request *api.ValidateReques
 	return f(ctx, request)
 }
 func goodResponse() *api.ValidateResponse {
-	return &api.ValidateResponse{SummaryOnly: true, Verdict: &api.Verdict{Valid: true, Summary: &api.Summary{}, Provenance: &api.Provenance{EngineVersion: "test", CatalogDigest: "sha256:" + strings.Repeat("a", 64)}}}
+	return &api.ValidateResponse{SummaryOnly: true, InputStatus: "supported", RuleProfile: "default", RulePolicyDigest: "sha256:" + strings.Repeat("b", 64), Verdict: &api.Verdict{Valid: true, Summary: &api.Summary{}, Provenance: &api.Provenance{EngineVersion: "test", CatalogDigest: "sha256:" + strings.Repeat("a", 64)}}}
 }
 func enabledConfig() config.VastlintAnalytics {
 	return config.VastlintAnalytics{Enabled: true, Endpoint: "localhost:50051", AllowInsecure: true, Accounts: []string{"host-account"}, SamplePercent: 100}
@@ -36,7 +40,7 @@ func testModule(t *testing.T) *Module {
 	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
 	m := &Module{cfg: cfg, accounts: map[string]struct{}{"host-account": {}}, ctx: ctx, cancel: cancel, done: make(chan struct{}),
-		jobs: make(chan document, cfg.QueueSize), slots: make(chan struct{}, cfg.QueueSize), now: time.Now, sample: func() int { return 0 },
+		choose: rand.IntN, jobs: make(chan document, cfg.QueueSize), slots: make(chan struct{}, cfg.QueueSize), now: time.Now, sample: func() int { return 0 },
 		refill: time.Now(), eventTokens: float64(cfg.MaxEventsPerSecond), byteTokens: float64(cfg.MaxBytesPerSecond)}
 	m.client = fakeValidator(func(context.Context, *api.ValidateRequest) (*api.ValidateResponse, error) { return goodResponse(), nil })
 	t.Cleanup(cancel)
@@ -44,7 +48,7 @@ func testModule(t *testing.T) *Module {
 }
 func eventWith(bids ...openrtb2.Bid) *analytics.AuctionObject {
 	response := &openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{{Bid: bids}}}
-	return &analytics.AuctionObject{Status: 200, Account: &config.Account{ID: "host-account"}, Response: response, FinalResponse: response}
+	return &analytics.AuctionObject{RequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: &openrtb2.Regs{GDPR: ptrutil.ToPtr(int8(0))}}}, Status: 200, Account: &config.Account{ID: "host-account"}, Response: response, FinalResponse: response}
 }
 func video(xml string) openrtb2.Bid { return openrtb2.Bid{MType: 2, AdM: xml} }
 
@@ -172,7 +176,7 @@ func TestAdmissionIncludesCopyQueueAndInflight(t *testing.T) {
 	require.Len(t, m.slots, 1)
 	m.process(<-m.jobs)
 	require.Empty(t, m.slots)
-	require.EqualValues(t, 1, m.Stats()["shutdown_dropped"])
+	require.EqualValues(t, 2, m.Stats()["shutdown_dropped"])
 }
 
 func TestRateLimitsPrecedeAllocation(t *testing.T) {
@@ -367,4 +371,61 @@ func TestOnlyFinalResponseMarkupIsCollected(t *testing.T) {
 	m.process(<-m.jobs)
 	require.EqualValues(t, 1, m.Stats()["checked"])
 	require.Equal(t, "<VAST>removed</VAST>", event.Response.SeatBid[0].Bid[0].AdM)
+}
+
+func TestReservoirSamplingIncludesEveryBoundedCandidate(t *testing.T) {
+	m := testModule(t)
+	random := rand.New(rand.NewPCG(11, 29))
+	m.choose = random.IntN
+	instant := m.refill
+	m.now = func() time.Time { return instant }
+	m.eventTokens = 1e9
+	m.byteTokens = 1e12
+	event := eventWith(video("<VAST>first</VAST>"), video("<VAST>second</VAST>"), video("<VAST>third</VAST>"))
+	counts := map[string]int{}
+	for i := 0; i < 6000; i++ {
+		m.LogAuctionObject(event)
+		require.Len(t, m.jobs, 1)
+		job := <-m.jobs
+		<-m.slots
+		counts[job.xml]++
+	}
+	require.Len(t, counts, 3)
+	for _, n := range counts {
+		require.InDelta(t, 2000, n, 150)
+	}
+	require.EqualValues(t, 18000, m.Stats()["candidates"])
+	// A truncation still submits the selected candidate within the scanned set.
+	event = eventWith(make([]openrtb2.Bid, maxScan+1)...)
+	event.FinalResponse.SeatBid[0].Bid[0] = video("<VAST>bounded</VAST>")
+	event.FinalResponse.SeatBid[0].Bid[maxScan] = video("<VAST>outside</VAST>")
+	m.LogAuctionObject(event)
+	require.Equal(t, "<VAST>bounded</VAST>", (<-m.jobs).xml)
+	require.EqualValues(t, 1, m.Stats()["scan_limited"])
+}
+
+func TestMetricNamesMatchBoundedEngineEvents(t *testing.T) {
+	require.Len(t, metrics.VastlintEvents(), len(counterNames))
+	for _, name := range counterNames {
+		require.True(t, metrics.VastlintEvent(name).Valid(), name)
+	}
+}
+
+func TestMonitoringContractRequiresPolicyAndCoverage(t *testing.T) {
+	for _, mutate := range []func(*api.ValidateResponse){
+		func(r *api.ValidateResponse) { r.RuleProfile = "" },
+		func(r *api.ValidateResponse) { r.RuleProfile = "unbounded/profile" },
+		func(r *api.ValidateResponse) { r.RulePolicyDigest = "unknown" },
+		func(r *api.ValidateResponse) { r.InputStatus = "" },
+		func(r *api.ValidateResponse) { r.InputStatus = "new-unrecognized-status" },
+	} {
+		m := testModule(t)
+		response := goodResponse()
+		mutate(response)
+		m.client = fakeValidator(func(context.Context, *api.ValidateRequest) (*api.ValidateResponse, error) { return response, nil })
+		m.capture("<VAST/>")
+		m.process(<-m.jobs)
+		require.EqualValues(t, 1, m.Stats()["incompatible_response"])
+		require.Zero(t, m.Stats()["checked"])
+	}
 }

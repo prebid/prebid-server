@@ -4,6 +4,8 @@ package vastlint
 
 import (
 	"context"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -12,6 +14,10 @@ import (
 	"github.com/prebid/prebid-server/v4/analytics/vastlint/api"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -72,7 +78,7 @@ func TestRustSummaryRepliesFitReceiveCap(t *testing.T) {
 	module, err := NewModule(cfg)
 	require.NoError(t, err)
 	defer module.Shutdown()
-	const prefix = `<VAST version="2.0"><Ad id="1"><InLine><AdSystem>Publisher</AdSystem><AdTitle>Ad</AdTitle><Impression>https://example.com/imp</Impression><Creatives><Creative><Linear><Duration>00:00:30</Duration><MediaFiles>`
+	const prefix = `<VAST version="2.0"><Ad id="1"><InLine><AdSystem>Publisher</AdSystem><AdTitle>Ad</AdTitle><Impression id="imp1"><![CDATA[https://example.com/imp]]></Impression><Creatives><Creative><Linear><Duration>00:00:30</Duration><MediaFiles>`
 	const suffix = `</MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>`
 	const media = `<MediaFile/>`
 	small := prefix + strings.Repeat(media, 200) + suffix
@@ -106,4 +112,97 @@ func TestRustSummaryRepliesFitReceiveCap(t *testing.T) {
 		t.Logf("document_bytes=%d summary_reply_bytes=%d errors=%d", len(xml), proto.Size(response), response.Verdict.Summary.Errors)
 	}
 	require.EqualValues(t, 2, module.Stats()["with_findings"])
+}
+
+func TestRustPolicyAndCoverage(t *testing.T) {
+	cfg := enabledConfig()
+	cfg.Endpoint = os.Getenv("VASTLINT_TEST_ENDPOINT")
+	require.NotEmpty(t, cfg.Endpoint)
+	m, err := NewModule(cfg)
+	require.NoError(t, err)
+	defer m.Shutdown()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	health, err := grpc_health_v1.NewHealthClient(m.conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+	require.NoError(t, err)
+	require.Equal(t, grpc_health_v1.HealthCheckResponse_SERVING, health.Status)
+	for xml, want := range map[string]string{`<VAST version="1.0"><Ad><MediaFile/></Ad></VAST>`: "unsupported", `<VAST version="9.9"/>`: "unsupported", `<Other/>`: "unsupported", `<VAST version="2.0">`: "malformed", `<VAST version="2.0"/>`: "supported"} {
+		reply, err := m.client.Validate(ctx, &api.ValidateRequest{Document: xml, SummaryOnly: true})
+		require.NoError(t, err)
+		require.Equal(t, want, reply.InputStatus)
+		require.True(t, validDigest(reply.RulePolicyDigest))
+		require.True(t, validProfile(reply.RuleProfile))
+	}
+	canceled, stop := context.WithCancel(context.Background())
+	stop()
+	_, err = m.client.Validate(canceled, &api.ValidateRequest{Document: `<VAST version="2.0"/>`, SummaryOnly: true})
+	require.Equal(t, codes.Canceled, status.Code(err))
+	_, err = m.client.Validate(ctx, &api.ValidateRequest{Document: `<VAST version="2.0"/>`, SummaryOnly: true}, grpc.MaxCallRecvMsgSize(8))
+	require.Equal(t, codes.ResourceExhausted, status.Code(err))
+	reply, err := m.client.Validate(ctx, &api.ValidateRequest{Document: `<VAST version="2.0"/>`, SummaryOnly: true})
+	require.NoError(t, err)
+	require.True(t, reply.SummaryOnly)
+}
+
+func TestRustHostRuleLevels(t *testing.T) {
+	level := os.Getenv("VASTLINT_TEST_RULE_LEVEL")
+	if level == "" {
+		t.Skip("the compatibility runner supplies each host rule profile")
+	}
+	cfg := enabledConfig()
+	cfg.Endpoint = os.Getenv("VASTLINT_TEST_ENDPOINT")
+	m, err := NewModule(cfg)
+	require.NoError(t, err)
+	defer m.Shutdown()
+	const control = `<VAST version="2.0"><Ad id="1"><InLine><AdSystem>Test</AdSystem><AdTitle>Test</AdTitle><Impression id="imp1"><![CDATA[https://example.com/imp]]></Impression><Creatives><Creative><Linear><Duration>00:00:30</Duration><MediaFiles><MediaFile delivery="progressive" type="video/mp4" width="640" height="360">https://example.com/ad.mp4</MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>`
+	defect := strings.Replace(control, `<Impression id="imp1"><![CDATA[https://example.com/imp]]></Impression>`, "", 1)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	ctx = metadata.AppendToOutgoingContext(ctx, "x-vastlint-caller", "prebid-policy-probe")
+	before, err := m.client.Validate(ctx, &api.ValidateRequest{Document: control, SummaryOnly: true})
+	require.NoError(t, err)
+	after, err := m.client.Validate(ctx, &api.ValidateRequest{Document: defect, SummaryOnly: true})
+	require.NoError(t, err)
+	require.Equal(t, before.RulePolicyDigest, after.RulePolicyDigest)
+	expected := proto.Clone(before.Verdict.Summary).(*api.Summary)
+	switch level {
+	case "error", "default":
+		expected.Errors++
+	case "warning":
+		expected.Warnings++
+	case "info":
+		expected.Infos++
+	case "off":
+	default:
+		t.Fatalf("unknown test level %q", level)
+	}
+	require.Equal(t, expected.Errors, after.Verdict.Summary.Errors)
+	require.Equal(t, expected.Warnings, after.Verdict.Summary.Warnings)
+	require.Equal(t, expected.Infos, after.Verdict.Summary.Infos)
+	fixed, err := m.client.Validate(ctx, &api.ValidateRequest{Document: control, SummaryOnly: true})
+	require.NoError(t, err)
+	require.True(t, proto.Equal(before.Verdict.Summary, fixed.Verdict.Summary), "repairing the creative restores its original findings")
+	url := os.Getenv("VASTLINT_TEST_METRICS_URL")
+	require.NotEmpty(t, url)
+	client := http.Client{Timeout: 2 * time.Second}
+	response, err := client.Get(url)
+	require.NoError(t, err)
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+	severity := level
+	if severity == "default" {
+		severity = "error"
+	}
+	matched := false
+	for _, line := range strings.Split(string(body), "\n") {
+		if strings.HasPrefix(line, "vastlint_grpc_rule_documents_total{") && strings.Contains(line, `caller="prebid-policy-probe"`) && strings.Contains(line, `rule_id="VAST-2.0-inline-impression"`) {
+			matched = true
+			require.Contains(t, line, `severity="`+severity+`"`)
+			require.True(t, strings.HasSuffix(line, " 1"))
+		}
+	}
+	require.Equal(t, level != "off", matched)
+	require.Contains(t, string(body), "vastlint_grpc_policy_info{")
+	t.Logf("rule=%s profile=%s policy=%s", level, after.RuleProfile, after.RulePolicyDigest)
 }

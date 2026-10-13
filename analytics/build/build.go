@@ -12,13 +12,14 @@ import (
 	"github.com/prebid/prebid-server/v4/analytics/vastlint"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/ortb"
 	"github.com/prebid/prebid-server/v4/privacy"
 )
 
 // Modules that need to be logged to need to be initialized here
-func New(analytics *config.Analytics) analytics.Runner {
+func New(analytics *config.Analytics, engines ...metrics.MetricsEngine) analytics.Runner {
 	modules := make(enabledAnalytics, 0)
 	if len(analytics.File.Filename) > 0 {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
@@ -58,7 +59,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 	}
 
 	if analytics.Vastlint.Enabled {
-		module, err := vastlint.NewModule(analytics.Vastlint)
+		module, err := vastlint.NewModule(analytics.Vastlint, engines...)
 		if err != nil {
 			logger.Errorf("Could not initialize Vastlint analytics: %v", err)
 		} else {
@@ -82,6 +83,8 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			if cloneReq != nil {
 				ao.RequestWrapper = cloneReq
 			}
+		} else if reporter, ok := module.(interface{ LogCreativeDataDenied() }); ok {
+			reporter.LogCreativeDataDenied()
 		}
 	}
 }
@@ -180,8 +183,11 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 		return nil
 	}
 	reqExt, _ := rw.GetRequestExt()
+	if !reqExt.HasAnalytics() {
+		return nil
+	}
 	reqExtPrebid := reqExt.GetPrebid()
-	if reqExtPrebid == nil {
+	if reqExtPrebid == nil || len(reqExtPrebid.Analytics) == 0 {
 		return nil
 	}
 
@@ -190,10 +196,6 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest)}
 	} else {
 		cloneReq = nil
-	}
-
-	if len(reqExtPrebid.Analytics) == 0 {
-		return cloneReq
 	}
 
 	// Remove the entire analytics object if the adapter module is not present

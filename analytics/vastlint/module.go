@@ -19,16 +19,19 @@ import (
 	"github.com/prebid/prebid-server/v4/analytics/vastlint/api"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 const maxScan = 64
 const maxExtensionBytes = 4096
 
-var counterNames = [...]string{"auctions", "sampled", "scan_limited", "non_video", "missing_markup", "url_markup", "oversized_markup", "oversized_extension", "capacity_dropped", "rate_dropped", "expired", "submitted", "checked", "with_findings", "failed", "shutdown_dropped"}
+var counterNames = [...]string{"auctions", "sampled", "scan_limited", "non_video", "missing_markup", "url_markup", "oversized_markup", "oversized_extension", "capacity_dropped", "rate_dropped", "expired", "submitted", "checked", "with_findings", "failed", "shutdown_dropped", "account_excluded", "response_excluded", "privacy_suppressed", "activity_denied", "sample_excluded", "candidates", "no_candidate", "timeout", "transport_failed", "incompatible_response", "worker_panicked", "with_errors", "with_warnings", "with_infos", "unsupported"}
 
 const (
 	auctions = iota
@@ -47,6 +50,21 @@ const (
 	withFindings
 	failed
 	shutdownDropped
+	accountExcluded
+	responseExcluded
+	privacySuppressed
+	activityDenied
+	sampleExcluded
+	candidates
+	noCandidate
+	timedOut
+	transportFailed
+	incompatibleResponse
+	workerPanicked
+	withErrors
+	withWarnings
+	withInfos
+	unsupported
 )
 
 type validator interface {
@@ -77,6 +95,9 @@ type Module struct {
 	counters                [len(counterNames)]atomic.Uint64
 	now                     func() time.Time
 	sample                  func() int
+	choose                  func(int) int
+	engines                 []metrics.MetricsEngine
+	pending                 [len(counterNames)]atomic.Uint64
 }
 
 func normalize(cfg config.VastlintAnalytics) (config.VastlintAnalytics, error) {
@@ -127,14 +148,14 @@ func normalize(cfg config.VastlintAnalytics) (config.VastlintAnalytics, error) {
 }
 
 // NewModule is disabled unless the host enables it and names authorized accounts.
-func NewModule(cfg config.VastlintAnalytics) (*Module, error) {
+func NewModule(cfg config.VastlintAnalytics, engines ...metrics.MetricsEngine) (*Module, error) {
 	cfg, err := normalize(cfg)
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	m := &Module{cfg: cfg, accounts: make(map[string]struct{}), jobs: make(chan document, cfg.QueueSize), slots: make(chan struct{}, cfg.QueueSize),
-		ctx: ctx, cancel: cancel, done: make(chan struct{}), now: time.Now, sample: func() int { return rand.IntN(100) },
+		engines: engines, choose: rand.IntN, ctx: ctx, cancel: cancel, done: make(chan struct{}), now: time.Now, sample: func() int { return rand.IntN(100) },
 		eventTokens: float64(cfg.MaxEventsPerSecond), byteTokens: float64(cfg.MaxBytesPerSecond), refill: time.Now()}
 	for _, account := range cfg.Accounts {
 		m.accounts[account] = struct{}{}
@@ -172,27 +193,44 @@ func (m *Module) Stats() map[string]uint64 {
 }
 
 func (m *Module) LogAuctionObject(event *analytics.AuctionObject) {
-	if !m.cfg.Enabled || m.stopped.Load() || event == nil || event.Status != 200 || event.Account == nil || event.FinalResponse == nil {
+	if !m.cfg.Enabled || m.stopped.Load() || event == nil {
+		return
+	}
+	if event.Status != 200 || event.FinalResponse == nil {
+		m.count(responseExcluded)
+		return
+	}
+	if event.Account == nil {
+		m.count(accountExcluded)
 		return
 	}
 	if _, authorized := m.accounts[event.Account.ID]; !authorized {
+		m.count(accountExcluded)
 		return
 	}
-	m.counters[auctions].Add(1)
+	m.count(auctions)
 	if m.sample() >= m.cfg.SamplePercent {
+		m.count(sampleExcluded)
 		return
 	}
-	m.counters[sampled].Add(1)
+	m.count(sampled)
+	if !creativePrivacyAllowed(event.RequestWrapper) {
+		m.count(privacySuppressed)
+		return
+	}
+	var selected string
+	eligible := 0
 	bids := 0
+scan:
 	for seatIndex := range event.FinalResponse.SeatBid {
 		if seatIndex >= maxScan {
-			m.counters[scanLimited].Add(1)
-			return
+			m.count(scanLimited)
+			break scan
 		}
 		for bidIndex := range event.FinalResponse.SeatBid[seatIndex].Bid {
 			if bids >= maxScan {
-				m.counters[scanLimited].Add(1)
-				return
+				m.count(scanLimited)
+				break scan
 			}
 			bids++
 			bid := &event.FinalResponse.SeatBid[seatIndex].Bid[bidIndex]
@@ -200,21 +238,29 @@ func (m *Module) LogAuctionObject(event *analytics.AuctionObject) {
 				continue
 			}
 			if len(bid.AdM) > m.cfg.MaxDocumentBytes {
-				m.counters[oversizedMarkup].Add(1)
+				m.count(oversizedMarkup)
 				continue
 			}
 			trimmed := strings.TrimSpace(bid.AdM)
 			if trimmed == "" {
-				m.counters[missingMarkup].Add(1)
+				m.count(missingMarkup)
 				continue
 			}
 			if strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://") {
-				m.counters[urlMarkup].Add(1)
+				m.count(urlMarkup)
 				continue
 			}
-			m.capture(bid.AdM)
-			return
+			eligible++
+			m.count(candidates)
+			if eligible == 1 || m.choose(eligible) == 0 {
+				selected = bid.AdM
+			}
 		}
+	}
+	if selected != "" {
+		m.capture(selected)
+	} else {
+		m.count(noCandidate)
 	}
 }
 
@@ -223,11 +269,11 @@ func (m *Module) video(bid *openrtb2.Bid) bool {
 		return true
 	}
 	if bid.MType != 0 {
-		m.counters[nonVideo].Add(1)
+		m.count(nonVideo)
 		return false
 	}
 	if len(bid.Ext) > maxExtensionBytes {
-		m.counters[oversizedExtension].Add(1)
+		m.count(oversizedExtension)
 		return false
 	}
 	var ext struct {
@@ -236,7 +282,7 @@ func (m *Module) video(bid *openrtb2.Bid) bool {
 		} `json:"prebid"`
 	}
 	if json.Unmarshal(bid.Ext, &ext) != nil || ext.Prebid.Type != "video" {
-		m.counters[nonVideo].Add(1)
+		m.count(nonVideo)
 		return false
 	}
 	return true
@@ -246,7 +292,7 @@ func (m *Module) capture(xml string) {
 	select {
 	case m.slots <- struct{}{}:
 	default:
-		m.counters[capacityDropped].Add(1)
+		m.count(capacityDropped)
 		return
 	}
 	created := m.now()
@@ -254,7 +300,7 @@ func (m *Module) capture(xml string) {
 	if m.stopped.Load() {
 		m.mu.Unlock()
 		<-m.slots
-		m.counters[shutdownDropped].Add(1)
+		m.count(shutdownDropped)
 		return
 	}
 	elapsed := created.Sub(m.refill).Seconds()
@@ -266,7 +312,7 @@ func (m *Module) capture(xml string) {
 	if m.eventTokens < 1 || m.byteTokens < float64(len(xml)) {
 		m.mu.Unlock()
 		<-m.slots
-		m.counters[rateDropped].Add(1)
+		m.count(rateDropped)
 		return
 	}
 	m.eventTokens--
@@ -279,20 +325,20 @@ func (m *Module) capture(xml string) {
 	defer m.mu.Unlock()
 	if m.stopped.Load() {
 		<-m.slots
-		m.counters[shutdownDropped].Add(1)
+		m.count(shutdownDropped)
 		return
 	}
 	select {
 	case m.jobs <- owned:
 	default:
 		<-m.slots
-		m.counters[capacityDropped].Add(1)
+		m.count(capacityDropped)
 	}
 }
 
 func (m *Module) run() {
 	defer close(m.done)
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -301,7 +347,7 @@ func (m *Module) run() {
 				select {
 				case <-m.jobs:
 					<-m.slots
-					m.counters[shutdownDropped].Add(1)
+					m.count(shutdownDropped)
 				default:
 					return
 				}
@@ -309,7 +355,7 @@ func (m *Module) run() {
 		case job := <-m.jobs:
 			m.process(job)
 		case <-ticker.C:
-			m.logCounters()
+			m.flushMetrics()
 		}
 	}
 }
@@ -318,35 +364,57 @@ func (m *Module) process(job document) {
 	defer func() {
 		<-m.slots
 		if recover() != nil {
-			m.counters[failed].Add(1)
+			m.count(workerPanicked)
+			m.count(failed)
 		}
 	}()
 	if m.ctx.Err() != nil {
-		m.counters[shutdownDropped].Add(1)
+		m.count(shutdownDropped)
 		return
 	}
 	remaining := time.Duration(m.cfg.MaxAgeMS)*time.Millisecond - m.now().Sub(job.created)
 	if remaining <= 0 {
-		m.counters[expired].Add(1)
+		m.count(expired)
 		return
 	}
 	ctx, cancel := context.WithTimeout(m.ctx, min(time.Duration(m.cfg.TimeoutMS)*time.Millisecond, remaining))
 	defer cancel()
-	m.counters[submitted].Add(1)
+	m.count(submitted)
 	ctx = metadata.AppendToOutgoingContext(ctx, "x-vastlint-caller", "prebid-server")
 	response, err := m.client.Validate(ctx, &api.ValidateRequest{Document: job.xml, SummaryOnly: true})
 	if err != nil || ctx.Err() != nil {
-		m.counters[failed].Add(1)
+		if m.ctx.Err() != nil {
+			m.count(shutdownDropped)
+		} else if errors.Is(ctx.Err(), context.DeadlineExceeded) || status.Code(err) == codes.DeadlineExceeded {
+			m.count(timedOut)
+		} else {
+			m.count(transportFailed)
+		}
+		m.count(failed)
 		return
 	}
 	verdict := response.GetVerdict()
-	if !response.GetSummaryOnly() || verdict == nil || verdict.Summary == nil || verdict.Provenance == nil || verdict.Provenance.EngineVersion == "" || len(verdict.Provenance.EngineVersion) > 128 || !validDigest(verdict.Provenance.CatalogDigest) {
-		m.counters[failed].Add(1)
+	if !response.GetSummaryOnly() || !validInputStatus(response.GetInputStatus()) || !validProfile(response.GetRuleProfile()) || !validDigest(response.GetRulePolicyDigest()) || verdict == nil || verdict.Summary == nil || verdict.Provenance == nil || verdict.Provenance.EngineVersion == "" || len(verdict.Provenance.EngineVersion) > 128 || !validDigest(verdict.Provenance.CatalogDigest) {
+		m.count(incompatibleResponse)
+		m.count(failed)
 		return
 	}
-	m.counters[checked].Add(1)
+	m.count(checked)
+	if response.InputStatus == "unsupported" {
+		m.count(unsupported)
+		return
+	}
+	if verdict.Summary.Errors > 0 {
+		m.count(withErrors)
+	}
+	if verdict.Summary.Warnings > 0 {
+		m.count(withWarnings)
+	}
+	if verdict.Summary.Infos > 0 {
+		m.count(withInfos)
+	}
 	if verdict.Summary.Errors != 0 || verdict.Summary.Warnings != 0 || verdict.Summary.Infos != 0 {
-		m.counters[withFindings].Add(1)
+		m.count(withFindings)
 	}
 }
 
@@ -365,6 +433,7 @@ func (m *Module) Shutdown() {
 		case <-m.done:
 		case <-time.After(time.Duration(m.cfg.TimeoutMS+100) * time.Millisecond):
 		}
+		m.flushMetrics()
 		m.logCounters()
 	})
 }
@@ -382,6 +451,36 @@ func validDigest(digest string) bool {
 	}
 	for i := 7; i < len(digest); i++ {
 		if !(digest[i] >= '0' && digest[i] <= '9' || digest[i] >= 'a' && digest[i] <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+func (m *Module) count(event int) { m.counters[event].Add(1); m.pending[event].Add(1) }
+func (m *Module) flushMetrics() {
+	for i, name := range counterNames {
+		count := m.pending[i].Swap(0)
+		for _, engine := range m.engines {
+			if engine != nil {
+				engine.RecordVastlintEvent(metrics.VastlintEvent(name), count)
+			}
+		}
+	}
+}
+
+// LogCreativeDataDenied counts a dispatch denial without inspecting the creative.
+func (m *Module) LogCreativeDataDenied() { m.count(activityDenied) }
+
+func validInputStatus(value string) bool {
+	return value == "supported" || value == "unsupported" || value == "malformed"
+}
+func validProfile(value string) bool {
+	if len(value) == 0 || len(value) > 64 {
+		return false
+	}
+	for _, c := range value {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_' || c == '-' || c == '.') {
 			return false
 		}
 	}

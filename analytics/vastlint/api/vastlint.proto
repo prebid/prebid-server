@@ -16,6 +16,10 @@ message ValidateResponse {
   Verdict verdict = 1;
   // True only when the server honored summary_only.
   bool summary_only = 2;
+  // Input coverage independent of configurable findings.
+  string input_status = 3;
+  string rule_profile = 4;
+  string rule_policy_digest = 5;
 }
 message Verdict {
   bool valid = 1;

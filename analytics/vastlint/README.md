@@ -1,23 +1,23 @@
-# VASTlint monitors sampled inline VAST in final auction responses.
+# Hosts can monitor sampled VAST quality without waiting for validation.
 
-The `vastlint` analytics adapter copies one bounded video `adm` from a sampled
-`/openrtb2/auction` response and sends it to a host-controlled VASTlint gRPC
-service in the background. It does not wait for validation in the analytics
-callback. It does not modify bids or markup. Collection and copying still use
-PBS CPU and memory.
+The optional `vastlint` analytics adapter copies at most one inline video `adm`
+from a sampled `/openrtb2/auction` response. A bounded worker sends it to a
+host-controlled VASTlint validator. Hosts aggregate collection health through
+PBS metrics and effective rule findings through the validator's Prometheus
+endpoint. Auctions never wait for validation, metrics delivery, application
+retries, or validator availability. Bids, prices, markup, and auction outcomes
+are unchanged.
 
-The adapter is disabled by default. A host must configure the validator and an
-explicit account allowlist. Raw creative export requires `reportAnalytics`,
-`transmitUfpd`, `transmitPreciseGeo`, `transmitUniqueRequestIds`, and `transmitTid`
-permission for the `analytics` component named `vastlint`. Denial of any of
-these activities prevents dispatch. Request scrubbing alone cannot remove
-identifiers embedded in creative URLs. Hosts must authorize this data path and
-operate the endpoint accordingly.
+Collection still consumes synchronous CPU: activity checks, account lookup,
+sampling, bounded privacy checks and candidate scanning, admission, and one
+bounded string copy. Deferred analytics runs before the HTTP handler returns.
+PBS request-duration metrics alone do not measure this complete cost. Use
+client-side latency measurements when evaluating a deployment.
 
 Maintainer: Aleks Sekowski, https://github.com/aleksUIX.
 Shared maintenance email: dev@vastlint.org.
 
-## Configure the validator and authorized accounts.
+## Enable monitoring for authorized accounts.
 
 ```json
 {
@@ -34,145 +34,199 @@ Shared maintenance email: dev@vastlint.org.
       "max_events_per_second": 100,
       "max_bytes_per_second": 1048576
     }
+  },
+  "metrics": {
+    "prometheus": {"port": 9091, "namespace": "prebid", "subsystem": "server"}
   }
 }
 ```
 
-TLS uses system roots and the configured hostname. A trusted local validator can
-use `allow_insecure: true`. The Rust gRPC server needs a host TLS terminator for
-the TLS configuration above. No public endpoint is selected by default. Only
-the host can change endpoints or resource limits.
+Disabled by default. Only host configuration chooses the endpoint, accounts,
+limits, and sample rate. Standard `PBS_ANALYTICS_VASTLINT_*` environment variables
+override file settings. `PBS_ANALYTICS_VASTLINT_ACCOUNTS="account-one account-two"`
+uses space-separated IDs. No public VASTlint endpoint is selected and no samples
+are contributed to VASTLint for product improvement.
 
-Every setting also supports the standard `PBS_ANALYTICS_VASTLINT_*` environment
-variables. For example, set `PBS_ANALYTICS_VASTLINT_ENDPOINT=localhost:50051` and
-`PBS_ANALYTICS_VASTLINT_ACCOUNTS="account-one account-two"`. Account IDs in the
-environment value are separated by spaces. Environment values override file
-settings, including resource limits.
+TLS uses system roots, hostname verification, and TLS 1.2 or later. Place the
+Rust service behind a host TLS terminator for remote connections. Use
+`allow_insecure: true` only for a trusted loopback or equivalently isolated link.
+Do not expose its unauthenticated gRPC or metrics ports to the public internet.
 
-Zero resource settings inherit the defaults shown above. Accepted limits are
-1 to 100 percent sampling, 1 to 131072 bytes per document, 1 to 128 outstanding
-documents, up to 8 MiB of outstanding copied XML, 1 to 5000 ms RPC timeout,
-1 to 10000 ms document age, 1 to 10000 events per second, and up to 16 MiB per
-second of XML admission. Byte rate must admit at least one maximum-size
-document. At most 256 account IDs of 1 to 128 bytes are accepted.
+## Raw creative collection has a deliberately narrow privacy policy.
 
-Token buckets bound document and byte admission. Each starts with one second of
-capacity and refills at the configured rate, so short bursts are possible.
-Sampling is per authorized successful auction, independent of the egress limits.
-One document is selected at most. Selection favors earlier seats and bids and
-must not be treated as an unbiased sample of all returned creatives.
+All of `reportAnalytics`, `transmitUfpd`, `transmitPreciseGeo`,
+`transmitUniqueRequestIds`, and `transmitTid` must permit the `analytics`
+component named `vastlint`. Every activity denial prevents dispatch.
 
-## The scope is returned inline markup.
+The initial request policy additionally requires explicit `regs.gdpr=0`, or
+its legacy `regs.ext.gdpr=0` equivalent without contradictory flags. It suppresses
+COPPA, nonzero DNT/LMT, any supplied GPP, GPP sections, US Privacy, GPC, consent,
+or additional-consent signal. Missing GDPR applicability, invalid JSON, and
+privacy extensions above 4 KiB also suppress collection. This does not interpret
+consent strings or support GDPR-applicable traffic, even with a consent string.
+A request with a large user extension is conservatively excluded.
 
-Video is identified by OpenRTB `mtype=2`, or `ext.prebid.type=video` when `mtype`
-is absent. The callback scans at most 64 seats and 64 bids total. Empty seats
-and non-video bids consume scan capacity. Extension decoding is capped at 4 KiB.
-The document length is checked before examining its contents. Empty and URL-only
-markup are counted and skipped. Other supplied video markup is submitted
-verbatim, including malformed XML. No XML parsing runs in PBS.
+An account allowlist and activity permission are not complete consent enforcement.
+The host must authorize the affected accounts and this raw-creative data path.
+Request scrubbing cannot remove identifiers embedded in creative URLs. XML goes
+only to the configured validator, where validation is ephemeral. The integration
+does not fetch URLs, fire tracking beacons, persist XML, or log markup. Collection
+suppressions are counted, so coverage gaps remain visible.
 
-The collector uses the typed OpenRTB response returned after exitpoint hooks.
-An exitpoint replacement with a different body type is skipped. Replaced or
-removed markup from the earlier auction response is never used as a fallback.
-Existing analytics consumers keep their original response field. PBS-generated
-wrappers can be observed. Markup removed by caching, including `returnCreative:
-false`, is unavailable and counted as missing when the typed video bid remains.
-The adapter does not fetch VAST URLs, NURLs, cache entries, or downstream wrappers.
-AMP, the video endpoint, and other analytics event types are not monitored in
-this version. Findings do not prove an original bidder defect or playback failure.
+## Sampling covers returned inline markup within fixed scan limits.
 
-## Resource limits include work that is still running.
+Only successfully encoded and written typed final responses are eligible.
+Collection follows exitpoint replacement, including pointer and value responses.
+Custom replacement body types are excluded. The earlier response is never a
+fallback. Legacy analytics consumers retain their existing `Response` field.
 
-One worker sends documents sequentially. The outstanding slot cap includes
-copying, queued, and in-flight documents. Capacity and rate admission happen
-before cloning XML. The worker retains capacity until the actual RPC returns.
-A full queue drops monitoring work. Stale documents are discarded. RPC deadlines
-also respect the remaining document age. Service failures and malformed replies
-are counted without altering auction results.
+Video is `mtype=2`, or `ext.prebid.type=video` when `mtype` is absent. A sampled
+auction scans at most 64 seats and 64 bids total, including empty seats and
+non-video bids. Bid-extension decoding is limited to 4 KiB. Reservoir sampling
+chooses uniformly among eligible candidates inside this bounded set. Truncation,
+privacy exclusions, auction-level sampling, and resource drops mean this is not
+an unbiased sample of every creative or impression in production.
 
-With the default configuration, outstanding owned XML is bounded by 2 MiB per
-adapter instance. This is not a total RSS limit. Metadata, channel storage,
-gRPC buffers, runtime allocations, and multiple PBS instances add memory.
-The response decoder is capped at 64 KiB. The client requests `summary_only`
-and requires the server's acknowledgement. Compact replies contain validity,
-summary counts, and provenance. Detailed findings remain in server monitoring
-and are omitted from the wire reply. Omitting fields only from the Go schema
-would not reduce reply size. A server without compact-reply support is counted
-as failed. Only the unary Validate wire contract is included. No native library
-or new Go dependency version is added.
+Examples of coverage:
 
-There are no application retries, disk spooling, or per-document goroutines.
-gRPC manages its connection goroutines and may transparently retry calls known
-not to have been processed. Shutdown stops admission, cancels validation, closes
-the connection, and discards queued work. It waits up to the configured RPC
-timeout plus 100 ms. Unexpected worker-call panics are contained and counted.
+* Returned inline VAST, including malformed XML: eligible within limits.
+* PBS-generated VAST wrapper: eligible, but its downstream content is not fetched.
+* Cached-away `adm`, including `returnCreative:false`: counted as `missing_markup`
+  when a typed video bid remains. Missing markup alone cannot prove caching.
+* URL-only `adm`: `url_markup`. NURLs and cache entries are not fetched.
+* Oversized `adm`: `oversized_markup`, checked before inspecting content.
+* Banner, native, or audio bid: `non_video`.
+* Custom exitpoint body or failed encoding/write: `response_excluded`.
 
-## Monitor findings on the validator and collection counters on PBS.
+AMP, `/openrtb2/video`, pre-cache markup, and downstream wrapper chains are
+outside this version's scope. Findings do not prove playback failure or an
+original bidder defect.
 
-The validator exposes findings and verdicts on its existing Prometheus endpoint,
-labelled with `caller="prebid-server"`. Scrape
-`vastlint_grpc_findings_total` and `vastlint_grpc_verdicts_total` there. The service
-also exposes `vastlint_grpc_active_workers` when built with the safety fixes.
-Use separate validator instances or host monitoring configuration when multiple
-PBS clusters need separate attribution.
+## Work remains bounded under failure and overload.
 
-PBS logs cumulative collection counters once per minute and on shutdown. The
-counters distinguish authorized auctions, sampled auctions, scan truncation,
-non-video bids, missing/URL/oversized markup, oversized extensions, capacity and
-rate drops, expiration, submission attempts, checked responses, documents with
-findings, failures, and shutdown drops. Enqueued documents are not reported as
-checked. A checked response requires compact-mode acknowledgement, a verdict,
-summary, engine identity, and catalog digest. The API also exposes
-`Module.Stats()` for host diagnostics.
+One worker processes documents sequentially. The outstanding cap includes
+copying, queueing, and in-flight RPCs. Capacity and event/byte admission precede
+XML allocation. Default owned XML is at most 2 MiB per adapter instance. This is
+not a total RSS limit: transport buffers and runtime allocations add memory.
 
-No XML, document identifiers, finding messages, or validator error strings are
-included in these logs. Raw XML is transmitted to the configured validator.
-Verdicts completed after the response are not appended to auction analytics
-objects or hook tags.
+Full capacity or rate exhaustion drops monitoring. Queued documents expire.
+RPC deadlines also respect remaining document age. There is no disk spool,
+application retry, or per-document goroutine. The gRPC library owns connection
+maintenance and may transparently retry calls known not to have been processed.
+The HTTP handler never waits for any of that work.
 
-Use a validator release containing strict XML parsing, parser resource ceilings,
-hard CPU-worker permits held until actual work finishes after cancellation,
-and acknowledged compact replies. The compatible source includes the
-[validator changes](https://github.com/aleksUIX/vastlint/commit/46f86bfbc8a7ef6eb0904226d128c6659d9a70aa).
-The local compatibility run uses an explicitly recorded source build. It does
-not establish that older published images contain those fixes. A fixed release
-and verified image digest are required before a host trial.
+Replies are capped at 64 KiB. The collector requires compact acknowledgement,
+input classification, a bounded profile identifier, policy/catalog digests,
+engine identity, verdict, and summary. Old or incompatible services produce an
+`incompatible_response` count. Worker-call panics are contained and counted.
+Shutdown stops admission, cancels RPCs, closes the connection, discards queued
+work, and waits at most the configured timeout plus 100 ms.
 
-## Reproduce verification and code generation.
+## Rule policy lives on the validator.
 
-```sh
-go test -race -cover ./analytics/vastlint ./analytics/build ./config
-go test -bench BenchmarkFinalResponseCapture -benchmem ./analytics/vastlint
+Set `VASTLINT_RULES_FILE` to a host-owned JSON file:
+
+```json
+{
+  "profile": "publisher-video",
+  "rules": {
+    "VAST-2.0-inline-impression": "error",
+    "VAST-2.0-url-cdata": "info",
+    "VAST-2.0-mediafile-https": "off"
+  }
+}
 ```
 
-Against a fixed local Rust validator, run:
+Accepted levels: `off`, `info`, `warning`, `error`. Omitted rules use catalog
+defaults. Remove an override and restart to restore its default. Configuration
+is immutable during a process lifetime. Invalid IDs, levels, profile names, or
+unknown top-level settings fail startup. Parser resource ceilings always apply;
+the parser-error rule must remain an error. Configured host policy rejects
+per-request rule/version overrides. PBS sends neither.
+
+`vastlint_grpc_policy_info` exposes profile, policy digest, engine version, and
+catalog digest. Severity labels reflect effective overrides. Policy changes
+require a restart; compare this identity before interpreting a change in traffic.
+Use scrape labels for environment and cluster attribution. No creative ID,
+request ID, account ID, or URL is a metric label.
+
+## Collection health and creative quality have different denominators.
+
+PBS exports `prebid_server_vastlint_collection_total{event="..."}` with the
+example namespace/subsystem above. The worker flushes atomic counter deltas on a one-second ticker between RPCs
+and on shutdown through PBS's existing metrics engine. A running RPC can delay
+flushing up to its deadline. Abrupt process
+termination can lose the final unflushed interval. Influx uses the existing
+`vastlint.<event>` counters. `Stats()` remains available for local diagnostics.
+
+Auction counters are mutually staged: `activity_denied` counts denied auction
+dispatches; `response_excluded` counts other unsuccessful or untyped responses;
+`account_excluded` counts missing/unlisted accounts; `auctions` counts the remaining
+authorized successful responses before sampling. `sample_excluded + sampled`
+partitions `auctions`. `privacy_suppressed` is a subset of `sampled`.
+
+Bid counters apply only to privacy-eligible sampled auctions: `non_video`,
+`missing_markup`, `url_markup`, `oversized_markup`, and `oversized_extension`
+count excluded scanned bids. `candidates` counts eligible scanned bids.
+`scan_limited` and `no_candidate` count auctions, not bids; they can overlap.
+Each auction with a candidate attempts to admit exactly one document.
+
+Document counters: `capacity_dropped`, `rate_dropped`, `expired`, and
+`shutdown_dropped` describe collection loss. `submitted` counts attempted RPCs;
+`checked` counts compatible replies. `failed` aggregates `timeout`,
+`transport_failed`, `incompatible_response`, and `worker_panicked`, plus canceled
+in-flight calls at shutdown. `shutdown_dropped` includes canceled in-flight work,
+so it overlaps `failed` in that case. Do not sum overlapping counters into a rate.
+
+`unsupported` is a subset of `checked`. `with_errors`, `with_warnings`, and
+`with_infos` count checked, non-unsupported documents with at least one finding
+at each severity; these overlap. `with_findings` is their union, not an error or
+playback-failure rate. A denominator for PBS error findings is
+`checked - unsupported`. Pending work and time-window boundaries can temporarily
+separate submission and completion totals.
+
+On the validator, `vastlint_grpc_documents_total{caller="prebid-server",outcome}`
+partitions completed validations into `malformed`, `unsupported`, `error`,
+`warning`, `info`, or `clean`, in that precedence order. Supported documents use
+the highest effective severity. Exclude `unsupported` from quality denominators.
+`vastlint_grpc_rule_documents_total` counts each affected document once per rule
+and severity. `vastlint_grpc_findings_total` counts individual occurrences.
+Unsupported inputs do not contribute to these rule-quality counters.
+
+Use the [validator deployment examples](https://github.com/aleksUIX/vastlint/tree/grpc-v0.15.0-rc.1/deploy/prebid)
+for the pinned release candidate, Prometheus scraping, alerts, a Grafana dashboard,
+health probes, resource limits, and rollback.
+Metrics describe the received sample, not population prevalence. Collector
+coverage and losses must remain visible alongside quality charts.
+
+## Reproduce verification and keep the wire contract synchronized.
 
 ```sh
-VASTLINT_TEST_ENDPOINT=127.0.0.1:50051 go test -tags vastlint_integration \
-  -run TestRust -v ./analytics/vastlint
+go test -race ./analytics/vastlint ./analytics/build ./metrics/...
+go test ./endpoints/openrtb2 ./openrtb_ext ./router
+go test -run '^$' -bench BenchmarkVastlintFullDispatch -benchmem ./analytics/build
+VASTLINT_TEST_ENDPOINT=127.0.0.1:50051 go test -tags vastlint_integration -run TestRust ./analytics/vastlint
 ```
 
-The collector tests cover unchanged markup, copied ownership, scan and byte
-bounds, rate and capacity limits, cancellation, expiration, malformed responses,
-panic containment, outage handling, and concurrent shutdown. Real Rust tests
-also cover finding-heavy replies and the maximum admitted document size. Endpoint tests cover typed and custom exitpoint replacements.
-Configuration tests load and override all settings through environment variables.
-Analytics dispatch tests cover each required activity and preserve existing
-adapters' request scrubbing behavior.
+The VASTLint repository's `scripts/prebid-compatibility.py` runs the actual Go
+client against five host profiles, verifies public protobuf field compatibility,
+checks metrics, and covers malformed/unsupported inputs, compact and oversized
+replies, cancellation, and recovery. It accepts a local binary or digest-pinned
+image. The tagged `vastlint_operational` endpoint harness measures the complete
+HTTP path in fresh processes; it is a synthetic load experiment, not a production
+capacity claim.
 
-Generate the minimal client with `protoc`, `protoc-gen-go v1.34.1`, and
-`protoc-gen-go-grpc v1.4.0` from this directory:
+Generate the small client using `protoc-gen-go v1.34.1` and
+`protoc-gen-go-grpc v1.4.0`:
 
 ```sh
 protoc -I api --go_out=api --go_opt=paths=source_relative \
   --go-grpc_out=api --go-grpc_opt=paths=source_relative api/vastlint.proto
 ```
 
-The subset preserves the public service path and field numbers. Compatibility
-must be tested against the actual Rust server, because local Go fakes do not
-prove interoperability. It intentionally omits Fix, ListRules, streaming, and
-finding-message fields.
-
-This proposal uses gRPC dependencies already present in PBS. Maintainer review
-should confirm that this host-controlled communication path is acceptable under
-the Prebid module communication rules.
+The public service path and field numbers are preserved. Fix, ListRules, streaming,
+and detailed finding fields are intentionally absent from this monitoring client.
+The gRPC dependencies already exist in PBS; no dependency version is added.
+Maintainer agreement is still needed on gRPC communication, typed `FinalResponse`,
+and the optional creative-data permission interface. The PR remains draft while
+those design questions are open.

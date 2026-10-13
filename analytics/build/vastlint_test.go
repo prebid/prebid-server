@@ -1,6 +1,8 @@
 package build
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/v4/analytics"
@@ -65,4 +67,14 @@ func TestVastlintBuildOptIn(t *testing.T) {
 	require.Contains(t, valid, "vastlint")
 	require.IsType(t, &vastlint.Module{}, valid["vastlint"])
 	valid.Shutdown()
+}
+
+func TestNoAnalyticsSettingsAvoidRequestCopy(t *testing.T) {
+	request := getDefaultBidRequest()
+	request.Ext = json.RawMessage(`{"prebid":{"targeting":{}}}`)
+	request.User.Ext = json.RawMessage(`{"padding":"` + strings.Repeat("x", 65536) + `"}`)
+	wrapper := &openrtb_ext.RequestWrapper{BidRequest: request}
+	require.Nil(t, updateReqWrapperForAnalytics(wrapper, "vastlint", false))
+	allocations := testing.AllocsPerRun(100, func() { require.Nil(t, updateReqWrapperForAnalytics(wrapper, "vastlint", false)) })
+	require.Zero(t, allocations)
 }

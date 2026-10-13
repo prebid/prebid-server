@@ -27,7 +27,7 @@ type AuctionObject struct {
 	Status   int
 	Errors   []error
 	Response *openrtb2.BidResponse
-	// FinalResponse is the typed body returned after exitpoint hooks. A body
+	// FinalResponse is the typed body successfully written after exitpoint hooks. A body
 	// with another type leaves this nil. Response retains its existing meaning.
 	FinalResponse        *openrtb2.BidResponse `json:"-"`
 	Account              *config.Account

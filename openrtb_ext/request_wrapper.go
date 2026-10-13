@@ -854,6 +854,11 @@ func (re *RequestExt) SetExt(ext map[string]json.RawMessage) {
 	re.extDirty = true
 }
 
+// HasAnalytics reports whether adapter settings require filtering without copying Prebid.
+func (re *RequestExt) HasAnalytics() bool {
+	return re != nil && re.prebid != nil && len(re.prebid.Analytics) != 0
+}
+
 func (re *RequestExt) GetPrebid() *ExtRequestPrebid {
 	if re == nil || re.prebid == nil {
 		return nil
