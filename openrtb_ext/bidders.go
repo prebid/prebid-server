@@ -59,6 +59,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderApacdex,
 	BidderAppnexus,
 	BidderAppush,
+	BidderAps,
 	BidderAso,
 	BidderAudienceNetwork,
 	BidderAutomatad,
@@ -120,9 +121,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderEPlanning,
 	BidderEpom,
 	BidderEscalax,
+	BidderEskimi,
 	BidderEVolution,
 	BidderExco,
+	BidderEzoic,
 	BidderFeedAd,
+	BidderFerio,
 	BidderFlatads,
 	BidderFlipp,
 	BidderFreewheelSSP,
@@ -168,6 +172,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMadSense,
 	BidderMadvertise,
 	BidderMarsmedia,
+	BidderMatterfullRTB,
 	BidderMediafuse,
 	BidderMediaGo,
 	BidderMedianet,
@@ -201,7 +206,9 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOwnAdx,
 	BidderPangle,
 	BidderPGAMSsp,
+	BidderPixfuture,
 	BidderPlaydigo,
+	BidderProxistore,
 	BidderPubmatic,
 	BidderPubrise,
 	BidderPubnative,
@@ -241,6 +248,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderSovrnXsp,
 	BidderSparteo,
 	BidderGopl,
+	BidderStackAdapt,
 	BidderStartIO,
 	BidderStroeerCore,
 	BidderSynapseHX,
@@ -439,6 +447,7 @@ const (
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAppush            BidderName = "appush"
+	BidderAps               BidderName = "aps"
 	BidderAso               BidderName = "aso"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
@@ -500,9 +509,12 @@ const (
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
 	BidderEscalax           BidderName = "escalax"
+	BidderEskimi            BidderName = "eskimi"
 	BidderExco              BidderName = "exco"
 	BidderEVolution         BidderName = "e_volution"
+	BidderEzoic             BidderName = "ezoic"
 	BidderFeedAd            BidderName = "feedad"
+	BidderFerio             BidderName = "ferio"
 	BidderFlatads           BidderName = "flatads"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
@@ -548,6 +560,7 @@ const (
 	BidderMadSense          BidderName = "madsense"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
+	BidderMatterfullRTB     BidderName = "matterfullrtb"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
@@ -581,7 +594,9 @@ const (
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
 	BidderPGAMSsp           BidderName = "pgamssp"
+	BidderPixfuture         BidderName = "pixfuture"
 	BidderPlaydigo          BidderName = "playdigo"
+	BidderProxistore        BidderName = "proxistore"
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubrise           BidderName = "pubrise"
 	BidderPubnative         BidderName = "pubnative"
@@ -620,7 +635,12 @@ const (
 	BidderSovrn             BidderName = "sovrn"
 	BidderSovrnXsp          BidderName = "sovrnXsp"
 	BidderSparteo           BidderName = "sparteo"
+<<<<<<< HEAD
 	BidderGopl              BidderName = "gopl"
+=======
+	BidderSspBC             BidderName = "sspBC"
+	BidderStackAdapt        BidderName = "stackadapt"
+>>>>>>> 5b7b49a51121fbe970bd85f631cb684fe3c08191
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSynapseHX         BidderName = "synapseHX"
