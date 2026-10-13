@@ -635,12 +635,8 @@ const (
 	BidderSovrn             BidderName = "sovrn"
 	BidderSovrnXsp          BidderName = "sovrnXsp"
 	BidderSparteo           BidderName = "sparteo"
-<<<<<<< HEAD
 	BidderGopl              BidderName = "gopl"
-=======
-	BidderSspBC             BidderName = "sspBC"
 	BidderStackAdapt        BidderName = "stackadapt"
->>>>>>> 5b7b49a51121fbe970bd85f631cb684fe3c08191
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSynapseHX         BidderName = "synapseHX"

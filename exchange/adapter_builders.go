@@ -230,11 +230,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/sovrn"
 	"github.com/prebid/prebid-server/v4/adapters/sovrnXsp"
 	"github.com/prebid/prebid-server/v4/adapters/sparteo"
-<<<<<<< HEAD
-=======
-	"github.com/prebid/prebid-server/v4/adapters/sspBC"
 	"github.com/prebid/prebid-server/v4/adapters/stackadapt"
->>>>>>> 5b7b49a51121fbe970bd85f631cb684fe3c08191
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
