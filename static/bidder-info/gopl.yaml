@@ -15,3 +15,4 @@ userSync:
   redirect:
     url: "https://ssp.wp.pl/v1/sync/prebid-server/pixel?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
+    
