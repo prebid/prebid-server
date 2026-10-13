@@ -90,11 +90,6 @@
               "banner": {
                 "w": 320,
                 "h": 50
-              },
-              "ext": {
-                "bidder": {
-                  "accountId": "accountId"
-                }
               }
             }
           ],

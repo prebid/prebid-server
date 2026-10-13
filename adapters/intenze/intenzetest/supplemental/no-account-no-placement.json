@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "either accountId or placementId expected",
+      "value": "imp some-impression-id: either accountId or placementId expected",
       "comparison": "literal"
     }
   ],

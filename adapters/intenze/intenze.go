@@ -1,7 +1,6 @@
 package intenze
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -59,31 +58,58 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-	impExt, err := getImpressionExt(&openRTBRequest.Imp[0])
-	if err != nil {
-		return nil, []error{err}
+func impError(impID string, err error) error {
+	return &errortypes.BadInput{
+		Message: fmt.Sprintf("imp %s: %s", impID, err.Error()),
+	}
+}
+
+func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+	impsByURL := make(map[string][]openrtb2.Imp)
+	var urlOrder []string
+
+	for _, imp := range openRTBRequest.Imp {
+		impExt, err := getImpressionExt(&imp)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
+		}
+
+		endpoint, err := a.buildEndpointURL(impExt)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
+		}
+
+		imp.Ext = nil
+		if _, seen := impsByURL[endpoint]; !seen {
+			urlOrder = append(urlOrder, endpoint)
+		}
+		impsByURL[endpoint] = append(impsByURL[endpoint], imp)
 	}
 
-	openRTBRequest.Imp[0].Ext = nil
+	requests := make([]*adapters.RequestData, 0, len(urlOrder))
+	for _, endpoint := range urlOrder {
+		reqCopy := *openRTBRequest
+		reqCopy.Imp = impsByURL[endpoint]
 
-	url, err := a.buildEndpointURL(impExt)
-	if err != nil {
-		return nil, []error{err}
+		reqJSON, err := jsonutil.Marshal(reqCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		requests = append(requests, &adapters.RequestData{
+			Method:  http.MethodPost,
+			Uri:     endpoint,
+			Body:    reqJSON,
+			Headers: getHeaders(&reqCopy),
+			ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
+		})
 	}
 
-	reqJSON, err := json.Marshal(openRTBRequest)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Body:    reqJSON,
-		Uri:     url,
-		Headers: getHeaders(openRTBRequest),
-		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
-	}}, nil
+	return requests, errs
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtIntenze, error) {
