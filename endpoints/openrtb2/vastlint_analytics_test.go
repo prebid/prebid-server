@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/ortb"
 	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -188,5 +190,50 @@ func TestFinalResponseExcludesEncodingAndWriteFailures(t *testing.T) {
 		require.NotEmpty(t, event.Errors)
 		require.Nil(t, event.FinalResponse)
 		require.Same(t, response, event.Response)
+	}
+}
+
+func TestVastlintPrivacyThroughAuctionEndpoint(t *testing.T) {
+	for _, tc := range []struct {
+		name, regs, user, header string
+		suppressed               bool
+	}{
+		{"native_allowed", `{"gdpr":0}`, `{}`, "", false},
+		{"legacy_allowed", `{"ext":{"gdpr":0}}`, `{}`, "", false},
+		{"matching_gdpr", `{"gdpr":0,"ext":{"gdpr":0}}`, `{}`, "", false},
+		{"conflicting_gdpr", `{"gdpr":0,"ext":{"gdpr":1}}`, `{}`, "", true},
+		{"additional_consent_string", `{"gdpr":0}`, `{"ext":{"ConsentedProvidersSettings":{"consented_providers":"1~1.2"}}}`, "", true},
+		{"additional_consent_list", `{"gdpr":0}`, `{"ext":{"consented_providers_settings":{"consented_providers":[1,2]}}}`, "", true},
+		{"header_gpc", `{"gdpr":0}`, `{}`, "Sec-GPC", true},
+		{"header_dnt", `{"gdpr":0}`, `{}`, "DNT", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &config.Configuration{MaxRequestSize: maxSize}
+			require.NoError(t, cfg.MarshalAccountDefaults())
+			meter := metrics.NewMetrics(gometrics.NewRegistry(), nil, config.DisabledMetrics{}, nil, nil)
+			runner := analyticsBuild.New(&config.Analytics{Vastlint: config.VastlintAnalytics{
+				Enabled: true, Endpoint: "127.0.0.1:1", AllowInsecure: true, Accounts: []string{"host-account"}, SamplePercent: 100,
+			}}, meter)
+			defer runner.Shutdown()
+			endpoint, err := NewEndpoint(fakeUUIDGenerator{}, vastlintResponseExchange{markup: "<VAST/>"}, ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
+				empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, cfg, meter, runner, map[string]string{}, nil, openrtb_ext.BuildBidderMap(), empty_fetcher.EmptyFetcher{}, hooks.EmptyPlanBuilder{}, nil)
+			require.NoError(t, err)
+			body := fmt.Sprintf(`{"id":"request-1","regs":%s,"user":%s,"site":{"page":"https://example.com","publisher":{"id":"host-account"}},"imp":[{"id":"imp-1","video":{"mimes":["video/mp4"],"protocols":[2],"minduration":1,"maxduration":30},"ext":{"appnexus":{"placementId":1}}}],"tmax":500}`, tc.regs, tc.user)
+			request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewBufferString(body))
+			if tc.header != "" {
+				request.Header.Set(tc.header, "1")
+			}
+			response := httptest.NewRecorder()
+			endpoint(response, request, nil)
+			require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+			runner.Shutdown()
+			if tc.suppressed {
+				require.EqualValues(t, 1, meter.VastlintCounters["privacy_suppressed"].Count())
+				require.Zero(t, meter.VastlintCounters["candidates"].Count())
+			} else {
+				require.Zero(t, meter.VastlintCounters["privacy_suppressed"].Count())
+				require.EqualValues(t, 1, meter.VastlintCounters["candidates"].Count())
+			}
+		})
 	}
 }

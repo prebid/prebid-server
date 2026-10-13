@@ -107,6 +107,9 @@ func moveGDPRFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
 	regsExt, _ := r.GetRegExt()
 	gdpr25 := regsExt.GetGDPR()
+	if gdpr25 != nil && r.Regs.GDPR != nil && *gdpr25 != *r.Regs.GDPR {
+		r.GDPRSignalConflict = true
+	}
 	regsExt.SetGDPR(nil)
 
 	// move to 2.6 location

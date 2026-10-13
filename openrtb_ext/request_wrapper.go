@@ -35,6 +35,9 @@ import (
 // NOTE: The RequestWrapper methods (particularly the ones calling (un)Marshal are not thread safe)
 type RequestWrapper struct {
 	*openrtb2.BidRequest
+	// GDPRSignalConflict preserves contradictory 2.5/2.6 applicability for
+	// raw-creative consumers after normalization removes the legacy field.
+	GDPRSignalConflict  bool `json:"-"`
 	impWrappers         []*ImpWrapper
 	impWrappersAccessed bool
 	userExt             *UserExt

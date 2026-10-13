@@ -78,3 +78,19 @@ func TestNoAnalyticsSettingsAvoidRequestCopy(t *testing.T) {
 	allocations := testing.AllocsPerRun(100, func() { require.Nil(t, updateReqWrapperForAnalytics(wrapper, "vastlint", false)) })
 	require.Zero(t, allocations)
 }
+
+func TestAnalyticsCopiesPreserveGDPRConflict(t *testing.T) {
+	wrapper := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest(), GDPRSignalConflict: true}
+	ac := privacy.NewActivityControl(&config.AccountPrivacy{AllowActivities: &config.AllowActivities{
+		TransmitUserFPD: config.Activity{Default: ptrutil.ToPtr(false)},
+	}})
+	allowed, scrubbed := evaluateActivities(wrapper, ac, "legacy")
+	require.True(t, allowed)
+	require.NotNil(t, scrubbed)
+	require.True(t, scrubbed.GDPRSignalConflict)
+
+	wrapper.Ext = json.RawMessage(`{"prebid":{"analytics":{"legacy":{}}}}`)
+	restored := updateReqWrapperForAnalytics(wrapper, "legacy", false)
+	require.NotNil(t, restored)
+	require.True(t, restored.GDPRSignalConflict)
+}

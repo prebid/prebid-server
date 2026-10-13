@@ -59,9 +59,11 @@ All of `reportAnalytics`, `transmitUfpd`, `transmitPreciseGeo`,
 component named `vastlint`. Every activity denial prevents dispatch.
 
 The initial request policy additionally requires explicit `regs.gdpr=0`, or
-its legacy `regs.ext.gdpr=0` equivalent without contradictory flags. It suppresses
+its legacy `regs.ext.gdpr=0` equivalent without contradictory flags. A non-serialized
+conflict flag survives OpenRTB normalization and analytics request copies. It suppresses
 COPPA, nonzero DNT/LMT, any supplied GPP, GPP sections, US Privacy, GPC, consent,
-or additional-consent signal. Missing GDPR applicability, invalid JSON, and
+or either additional-consent representation (`ConsentedProvidersSettings` and
+`consented_providers_settings`). Missing GDPR applicability, invalid JSON, and
 privacy extensions above 4 KiB also suppress collection. This does not interpret
 consent strings or support GDPR-applicable traffic, even with a consent string.
 A request with a large user extension is conservatively excluded.

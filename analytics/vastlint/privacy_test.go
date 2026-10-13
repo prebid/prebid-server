@@ -50,3 +50,40 @@ func TestCreativePrivacySuppressions(t *testing.T) {
 	}
 	require.False(t, creativePrivacyAllowed(nil))
 }
+
+func TestPrivacyGateSurvivesNormalization(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		regs string
+		user string
+	}{
+		{"conflicting_gdpr", `{"gdpr":1}`, ""},
+		{"additional_consent_list", "", `{"consented_providers_settings":{"consented_providers":[1]}}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := testModule(t)
+			event := eventWith(video("<VAST/>"))
+			event.RequestWrapper.Regs.Ext = json.RawMessage(tc.regs)
+			if tc.user != "" {
+				event.RequestWrapper.User = &openrtb2.User{Ext: json.RawMessage(tc.user)}
+			}
+			require.NoError(t, openrtb_ext.ConvertUpTo26(event.RequestWrapper))
+			require.NoError(t, event.RequestWrapper.RebuildRequest())
+			m.LogAuctionObject(event)
+			require.Empty(t, m.jobs, "normalization must not make restricted markup eligible")
+			require.EqualValues(t, 1, m.Stats()["privacy_suppressed"])
+		})
+	}
+}
+
+func TestPrivacyGateReadsPendingHeaderGPC(t *testing.T) {
+	m := testModule(t)
+	event := eventWith(video("<VAST/>"))
+	ext, err := event.RequestWrapper.GetRegExt()
+	require.NoError(t, err)
+	ext.SetGPC(ptrutil.ToPtr("1"))
+	require.Empty(t, event.RequestWrapper.Regs.Ext, "the header signal has not been serialized")
+	m.LogAuctionObject(event)
+	require.Empty(t, m.jobs)
+	require.EqualValues(t, 1, m.Stats()["privacy_suppressed"])
+}

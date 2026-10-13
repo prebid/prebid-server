@@ -163,7 +163,8 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 	}
 
 	cloneReq := &openrtb_ext.RequestWrapper{
-		BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest),
+		BidRequest:         ortb.CloneBidRequestPartial(rw.BidRequest),
+		GDPRSignalConflict: rw.GDPRSignalConflict,
 	}
 
 	if blockUserFPD {
@@ -193,7 +194,7 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 
 	var cloneReq *openrtb_ext.RequestWrapper
 	if !isCloned {
-		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest)}
+		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest), GDPRSignalConflict: rw.GDPRSignalConflict}
 	} else {
 		cloneReq = nil
 	}
