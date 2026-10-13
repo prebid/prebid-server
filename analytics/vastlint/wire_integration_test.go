@@ -206,3 +206,49 @@ func TestRustHostRuleLevels(t *testing.T) {
 	require.Contains(t, string(body), "vastlint_grpc_policy_info{")
 	t.Logf("rule=%s profile=%s policy=%s", level, after.RuleProfile, after.RulePolicyDigest)
 }
+
+func TestRustInFlightCancellation(t *testing.T) {
+	cfg := enabledConfig()
+	cfg.Endpoint = os.Getenv("VASTLINT_TEST_ENDPOINT")
+	metricsURL := os.Getenv("VASTLINT_TEST_METRICS_URL")
+	require.NotEmpty(t, cfg.Endpoint)
+	require.NotEmpty(t, metricsURL)
+	cfg.MaxDocumentBytes = 128 * 1024
+	m, err := NewModule(cfg)
+	require.NoError(t, err)
+	defer m.Shutdown()
+	client := &http.Client{Timeout: time.Second}
+	workers := func(want string) bool {
+		response, err := client.Get(metricsURL)
+		if err != nil {
+			return false
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(response.Body, 2*1024*1024))
+		return err == nil && strings.Contains(string(body), "\nvastlint_grpc_active_workers "+want+"\n")
+	}
+	require.Eventually(t, func() bool { return workers("0") }, 3*time.Second, time.Millisecond)
+	// Enough findings keep the CPU worker observable without raising input limits.
+	xml := `<VAST version="2.0"><Ad><InLine><Creatives><Creative><Linear><MediaFiles>` + strings.Repeat(`<MediaFile/>`, 8000) + `</MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		_, err := m.client.Validate(ctx, &api.ValidateRequest{Document: xml, SummaryOnly: true})
+		result <- err
+	}()
+	require.Eventually(t, func() bool { return workers("1") }, 3*time.Second, time.Millisecond, "observe actual Rust CPU work before canceling")
+	cancel()
+	select {
+	case err := <-result:
+		require.Equal(t, codes.Canceled, status.Code(err))
+	case <-time.After(time.Second):
+		t.Fatal("canceled RPC did not return")
+	}
+	require.Eventually(t, func() bool { return workers("0") }, 5*time.Second, time.Millisecond, "canceled work must eventually release its CPU permit")
+	ctx, stop := context.WithTimeout(context.Background(), time.Second)
+	defer stop()
+	reply, err := m.client.Validate(ctx, &api.ValidateRequest{Document: `<VAST version="2.0"/>`, SummaryOnly: true})
+	require.NoError(t, err)
+	require.True(t, reply.SummaryOnly)
+}

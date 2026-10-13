@@ -205,7 +205,8 @@ coverage and losses must remain visible alongside quality charts.
 go test -race ./analytics/vastlint ./analytics/build ./metrics/...
 go test ./endpoints/openrtb2 ./openrtb_ext ./router
 go test -run '^$' -bench BenchmarkVastlintFullDispatch -benchmem ./analytics/build
-VASTLINT_TEST_ENDPOINT=127.0.0.1:50051 go test -tags vastlint_integration -run TestRust ./analytics/vastlint
+VASTLINT_TEST_ENDPOINT=127.0.0.1:50051 VASTLINT_TEST_METRICS_URL=http://127.0.0.1:9090/metrics \
+  go test -tags vastlint_integration -run TestRust ./analytics/vastlint
 ```
 
 The VASTLint repository's `scripts/prebid-compatibility.py` runs the actual Go
