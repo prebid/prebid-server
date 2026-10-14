@@ -83,5 +83,11 @@
             "value": "could not define media type for bid: test-imp-id",
             "comparison": "literal"
         }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": []
+        }
     ]
 }

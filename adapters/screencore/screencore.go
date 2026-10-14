@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
@@ -32,6 +33,12 @@ func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server confi
 	return &adapter{}, nil
 }
 
+func impError(impID string, err error) error {
+	return &errortypes.BadInput{
+		Message: fmt.Sprintf("imp %s: %s", impID, err.Error()),
+	}
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
@@ -39,22 +46,28 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, impError(imp.ID, err))
 			continue
 		}
 
 		var screencoreExt openrtb_ext.ImpExtScreencore
 		if err := jsonutil.Unmarshal(bidderExt.Bidder, &screencoreExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, impError(imp.ID, err))
 			continue
 		}
 
 		if screencoreExt.SspPlacementID == "" {
-			errs = append(errs, fmt.Errorf("imp %s: sspPlacementId is required", imp.ID))
+			errs = append(errs, impError(imp.ID, fmt.Errorf("sspPlacementId is required")))
 			continue
 		}
 
-		adapterReq, err := a.makeRequest(request, imp, screencoreExt)
+		endpoint, err := buildSspEndpoint(screencoreExt)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
+		}
+
+		adapterReq, err := a.makeRequest(request, imp, screencoreExt, endpoint)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -66,12 +79,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return adapterRequests, errs
 }
 
-func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, ext openrtb_ext.ImpExtScreencore) (*adapters.RequestData, error) {
-	endpoint, err := buildSspEndpoint(ext)
-	if err != nil {
-		return nil, fmt.Errorf("imp %s: %w", imp.ID, err)
-	}
-
+func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, ext openrtb_ext.ImpExtScreencore, endpoint string) (*adapters.RequestData, error) {
 	impExt := reqBodyExt{
 		ScreencoreBidderExt: reqBodyExtBidder{
 			SspPlacementID: ext.SspPlacementID,
@@ -145,7 +153,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	var response openrtb2.BidResponse
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("bad server response: %s", err.Error()),
+		}}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
@@ -153,12 +163,14 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		bidResponse.Currency = response.Cur
 	}
 
+	var errs []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bid := seatBid.Bid[i]
 			bidType, err := getBidType(bid)
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, err)
+				continue
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
@@ -168,7 +180,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -180,6 +192,8 @@ func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("could not define media type for bid: %s", bid.ImpID)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("could not define media type for bid: %s", bid.ImpID),
+		}
 	}
 }

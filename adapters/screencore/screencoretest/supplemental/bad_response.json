@@ -82,7 +82,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "expect { or n, but found \"",
+            "value": "bad server response: expect { or n, but found \"",
             "comparison": "literal"
         }
     ]
