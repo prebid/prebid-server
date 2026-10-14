@@ -22,7 +22,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "either accountId and sourceId, or supplyPlacementId is required",
+      "value": "imp some-impression-id: either accountId and sourceId, or supplyPlacementId is required",
       "comparison": "literal"
     }
   ]

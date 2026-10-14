@@ -26,7 +26,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error parsing bidderExt - expect { or n, but found \"",
+      "value": "imp some-impression-id: Error parsing bidderExt - expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

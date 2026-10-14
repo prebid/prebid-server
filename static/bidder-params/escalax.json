@@ -34,12 +34,31 @@
             "required": [
                 "accountId",
                 "sourceId"
-            ]
+            ],
+            "not": {
+                "required": [
+                    "supplyPlacementId"
+                ]
+            }
         },
         {
             "required": [
                 "supplyPlacementId"
-            ]
+            ],
+            "not": {
+                "anyOf": [
+                    {
+                        "required": [
+                            "accountId"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "sourceId"
+                        ]
+                    }
+                ]
+            }
         }
     ]
 }

@@ -23,7 +23,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "unsupported region \"mars\", expected one of us/eu/apac",
+      "value": "imp some-impression-id: unsupported region \"mars\", expected one of us/eu/apac",
       "comparison": "literal"
     }
   ]

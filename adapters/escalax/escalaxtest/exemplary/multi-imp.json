@@ -1,0 +1,169 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.com"
+    },
+    "imp": [
+      {
+        "id": "imp-exchange",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "acc1",
+            "sourceId": "src1"
+          }
+        }
+      },
+      {
+        "id": "imp-ssp",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "supplyPlacementId": "sp1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://bidder-us.escalax.io/?partner=src1&token=acc1&type=pbs",
+        "body": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.com"
+          },
+          "imp": [
+            {
+              "id": "imp-exchange",
+              "banner": {
+                "w": 320,
+                "h": 50
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-exchange"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "exchange-bid",
+                  "impid": "imp-exchange",
+                  "price": 3.5,
+                  "adm": "exchange-markup",
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ],
+              "seat": "escalax"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://s-us.escalax.io/pbsb?placementId=sp1",
+        "body": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.com"
+          },
+          "imp": [
+            {
+              "id": "imp-ssp",
+              "banner": {
+                "w": 300,
+                "h": 250
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-ssp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "ssp-bid",
+                  "impid": "imp-ssp",
+                  "price": 2.1,
+                  "adm": "ssp-markup",
+                  "crid": "30",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ],
+              "seat": "escalax"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "exchange-bid",
+            "impid": "imp-exchange",
+            "price": 3.5,
+            "adm": "exchange-markup",
+            "crid": "20",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "ssp-bid",
+            "impid": "imp-ssp",
+            "price": 2.1,
+            "adm": "ssp-markup",
+            "crid": "30",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

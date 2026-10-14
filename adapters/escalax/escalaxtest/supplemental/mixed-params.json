@@ -24,7 +24,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "provide either accountId and sourceId, or supplyPlacementId, not both",
+      "value": "imp some-impression-id: provide either accountId and sourceId, or supplyPlacementId, not both",
       "comparison": "literal"
     }
   ]

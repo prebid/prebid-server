@@ -24,7 +24,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Error parsing escalaxExt - expect { or n, but found \"",
+      "value": "imp some-impression-id: Error parsing escalaxExt - expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

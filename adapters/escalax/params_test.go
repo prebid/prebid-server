@@ -64,4 +64,12 @@ var invalidParams = []string{
 
 	`{"accountId": "acc1", "sourceId": "src1", "region": "asia"}`,
 	`{"supplyPlacementId": "sp1", "region": "au"}`,
+
+	`{"accountId": "acc1", "supplyPlacementId": "sp1"}`,
+	`{"sourceId": "src1", "supplyPlacementId": "sp1"}`,
+
+	`null`,
+	`true`,
+	`5`,
+	`[]`,
 }
