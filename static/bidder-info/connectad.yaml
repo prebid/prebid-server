@@ -1,23 +1,32 @@
 # Please uncomment the appropriate endpoint URL for your datacenter
 # Europe
-endpoint: "http://bidder.connectad.io/API?src=pbs"
+endpoint: "https://bidder.connectad.io/API?src=pbs"
 # North/South America
-# endpoint: "http://bidder-us.connectad.io/API?src=pbs"
+# endpoint: "https://bidder-us.connectad.io/API?src=pbs"
 # APAC
-# endpoint: "http://bidder-apac.connectad.io/API?src=pbs"
+# endpoint: "https://bidder-apac.connectad.io/API?src=pbs"
 geoscope:
   - global
 maintainer:
   email: "support@connectad.io"
 endpointCompression: gzip
 gvlVendorID: 138
+openrtb:
+  version: 2.6
+  gpp-supported: true
 capabilities:
   app:
     mediaTypes:
       - banner
+      - video
+      - native
+      - audio
   site:
     mediaTypes:
       - banner
+      - video
+      - native
+      - audio
 userSync:
   redirect:
     url: "https://sync.connectad.io/ImageSyncer?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&cb={{.RedirectURL}}"
