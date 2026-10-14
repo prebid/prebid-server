@@ -43,6 +43,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/apacdex"
 	"github.com/prebid/prebid-server/v4/adapters/appnexus"
 	"github.com/prebid/prebid-server/v4/adapters/appush"
+	"github.com/prebid/prebid-server/v4/adapters/aps"
 	"github.com/prebid/prebid-server/v4/adapters/aso"
 	"github.com/prebid/prebid-server/v4/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/v4/adapters/automatad"
@@ -154,6 +155,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/madsense"
 	"github.com/prebid/prebid-server/v4/adapters/madvertise"
 	"github.com/prebid/prebid-server/v4/adapters/marsmedia"
+	"github.com/prebid/prebid-server/v4/adapters/matterfullrtb"
 	"github.com/prebid/prebid-server/v4/adapters/mediago"
 	"github.com/prebid/prebid-server/v4/adapters/medianet"
 	"github.com/prebid/prebid-server/v4/adapters/mediasquare"
@@ -185,6 +187,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/outbrain"
 	"github.com/prebid/prebid-server/v4/adapters/ownadx"
 	"github.com/prebid/prebid-server/v4/adapters/pangle"
+	"github.com/prebid/prebid-server/v4/adapters/peak226"
 	"github.com/prebid/prebid-server/v4/adapters/pgamssp"
 	"github.com/prebid/prebid-server/v4/adapters/pixfuture"
 	"github.com/prebid/prebid-server/v4/adapters/playdigo"
@@ -322,6 +325,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAppush:            appush.Builder,
+		openrtb_ext.BidderAps:               aps.Builder,
 		openrtb_ext.BidderAso:               aso.Builder,
 		openrtb_ext.BidderAudienceNetwork:   audienceNetwork.Builder,
 		openrtb_ext.BidderAutomatad:         automatad.Builder,
@@ -435,6 +439,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMadSense:          madsense.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
+		openrtb_ext.BidderMatterfullRTB:     matterfullrtb.Builder,
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
 		openrtb_ext.BidderMediaGo:           mediago.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
@@ -467,6 +472,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOutbrain:          outbrain.Builder,
 		openrtb_ext.BidderOwnAdx:            ownadx.Builder,
 		openrtb_ext.BidderPangle:            pangle.Builder,
+		openrtb_ext.BidderPeak226:           peak226.Builder,
 		openrtb_ext.BidderPGAMSsp:           pgamssp.Builder,
 		openrtb_ext.BidderPixfuture:         pixfuture.Builder,
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,

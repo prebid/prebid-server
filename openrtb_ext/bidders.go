@@ -59,6 +59,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderApacdex,
 	BidderAppnexus,
 	BidderAppush,
+	BidderAps,
 	BidderAso,
 	BidderAudienceNetwork,
 	BidderAutomatad,
@@ -171,6 +172,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMadSense,
 	BidderMadvertise,
 	BidderMarsmedia,
+	BidderMatterfullRTB,
 	BidderMediafuse,
 	BidderMediaGo,
 	BidderMedianet,
@@ -203,6 +205,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOutbrain,
 	BidderOwnAdx,
 	BidderPangle,
+	BidderPeak226,
 	BidderPGAMSsp,
 	BidderPixfuture,
 	BidderPlaydigo,
@@ -445,6 +448,7 @@ const (
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAppush            BidderName = "appush"
+	BidderAps               BidderName = "aps"
 	BidderAso               BidderName = "aso"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
@@ -557,6 +561,7 @@ const (
 	BidderMadSense          BidderName = "madsense"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
+	BidderMatterfullRTB     BidderName = "matterfullrtb"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
@@ -589,6 +594,7 @@ const (
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
+	BidderPeak226           BidderName = "peak226"
 	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPixfuture         BidderName = "pixfuture"
 	BidderPlaydigo          BidderName = "playdigo"
