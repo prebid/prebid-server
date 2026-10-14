@@ -106,6 +106,13 @@ func createCacheRuleSet(cfg *config.RuleSet) (cacheRuleSet[openrtb_ext.RequestWr
 			analyticsKey: modelGroup.AnalyticsKey,
 			tree:         *tree,
 		}
+		// Propagate the ruleset name, analytics key and model version onto the tree so they are
+		// available in the ResultFunctionMeta at execution time (e.g. for surfacing them in exclusion
+		// warnings). The ruleset name is used for display; the analytics key stays exactly as
+		// configured (it identifies the model group for analytics).
+		cmg.tree.RulesetName = cfg.Name
+		cmg.tree.AnalyticsKey = modelGroup.AnalyticsKey
+		cmg.tree.ModelVersion = modelGroup.Version
 		crs.modelGroups = append(crs.modelGroups, cmg)
 	}
 
