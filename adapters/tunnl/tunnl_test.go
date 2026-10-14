@@ -64,15 +64,13 @@ func TestMakeRequestsPlacesSidInEndpoint(t *testing.T) {
 	assert.Equal(t, testURI, requests[0].Uri)
 }
 
-// A missing or unusable sid is a publisher misconfiguration, so the imp is
-// rejected as bad input rather than sent without identification.
-func TestMakeRequestsRejectsMissingSid(t *testing.T) {
+// The schema guarantees a non-empty string sid, so the only failure left is an
+// imp ext that cannot be decoded, which is rejected as bad input.
+func TestMakeRequestsRejectsMalformedExt(t *testing.T) {
 	testCases := []struct {
 		name string
 		ext  []byte
 	}{
-		{name: "no sid field", ext: []byte(`{"bidder":{}}`)},
-		{name: "empty sid", ext: []byte(`{"bidder":{"sid":""}}`)},
 		{name: "sid of the wrong type", ext: []byte(`{"bidder":{"sid":123}}`)},
 		{name: "malformed imp ext", ext: []byte(`{"bidder":`)},
 	}
@@ -136,23 +134,6 @@ func TestMakeRequestsUsesFirstImpSid(t *testing.T) {
 	assert.Len(t, requests, 1)
 	assert.Equal(t, "https://us1.rapidtag.net/api/v1/bid?sid=tunnl_x_g", requests[0].Uri)
 	assert.Equal(t, []string{"imp-1", "imp-2"}, requests[0].ImpIDs)
-}
-
-// One bad imp must not prevent the remaining imps from being dispatched.
-func TestMakeRequestsPartialFailure(t *testing.T) {
-	bidder := buildTestBidder(t)
-
-	requests, errs := bidder.MakeRequests(&openrtb2.BidRequest{
-		ID: "req-1",
-		Imp: []openrtb2.Imp{
-			{ID: "good", Banner: &openrtb2.Banner{}, Ext: []byte(testImpExt)},
-			{ID: "bad", Banner: &openrtb2.Banner{}, Ext: []byte(`{"bidder":{}}`)},
-		},
-	}, &adapters.ExtraRequestInfo{})
-
-	assert.Len(t, requests, 1)
-	assert.Len(t, errs, 1)
-	assert.Equal(t, []string{"good"}, requests[0].ImpIDs)
 }
 
 // The JSON fixtures compare error messages only, so the error TYPE contract is

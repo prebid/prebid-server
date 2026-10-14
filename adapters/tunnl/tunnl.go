@@ -29,56 +29,30 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var sid string
-
-	// A publisher has one sid, so every impression carries the same one and the
-	// whole request goes out in a single call under the first sid seen. Each
-	// impression is still validated, so a missing or malformed sid is reported
-	// against the impression it came from rather than silently passed on.
-	imps := make([]openrtb2.Imp, 0, len(request.Imp))
-	for _, imp := range request.Imp {
-		if err := validateImpMediaType(imp); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		impSid, err := parseSid(imp)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		if sid == "" {
-			sid = impSid
-		}
-		imps = append(imps, imp)
-	}
-
-	if len(imps) == 0 {
-		return nil, errs
-	}
-
-	requestData, err := a.makeRequest(request, imps, sid, makeHeaders(request))
+	// A publisher has one sid, so the whole request goes out in a single call
+	// under the sid of the first impression.
+	sid, err := parseSid(request.Imp[0])
 	if err != nil {
-		return nil, append(errs, err)
+		return nil, []error{err}
 	}
 
-	return []*adapters.RequestData{requestData}, errs
-}
-
-// validateImpMediaType drops an impression Tunnl cannot serve. Audio is not a
-// declared capability, so forwarding an audio imp would invite a bid that
-// MakeBids then has to reject: catching it here keeps the request honest and
-// gives the publisher a clear reason.
-func validateImpMediaType(imp openrtb2.Imp) error {
-	if imp.Banner != nil || imp.Video != nil || imp.Native != nil {
-		return nil
+	endpoint, err := a.buildEndpointURL(sid)
+	if err != nil {
+		return nil, []error{err}
 	}
 
-	return &errortypes.BadInput{
-		Message: fmt.Sprintf("imp %s: unsupported media type, Tunnl supports banner, video and native", imp.ID),
+	body, err := jsonutil.Marshal(request)
+	if err != nil {
+		return nil, []error{err}
 	}
+
+	return []*adapters.RequestData{{
+		Method:  http.MethodPost,
+		Uri:     endpoint,
+		Body:    body,
+		Headers: makeHeaders(request),
+		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
+	}}, nil
 }
 
 // parseSid reads the sid out of imp.ext.bidder. The JSON schema already
@@ -99,38 +73,7 @@ func parseSid(imp openrtb2.Imp) (string, error) {
 		}
 	}
 
-	if impExt.SID == "" {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: missing required parameter sid", imp.ID),
-		}
-	}
-
 	return impExt.SID, nil
-}
-
-func (a *adapter) makeRequest(request *openrtb2.BidRequest, imps []openrtb2.Imp, sid string, headers http.Header) (*adapters.RequestData, error) {
-	endpoint, err := a.buildEndpointURL(sid)
-	if err != nil {
-		return nil, err
-	}
-
-	// A shallow copy is enough: only Imp is replaced, and imp elements are
-	// already shallow copies owned by this adapter. Nothing else is mutated.
-	reqCopy := *request
-	reqCopy.Imp = imps
-
-	body, err := jsonutil.Marshal(&reqCopy)
-	if err != nil {
-		return nil, err
-	}
-
-	return &adapters.RequestData{
-		Method:  http.MethodPost,
-		Uri:     endpoint,
-		Body:    body,
-		Headers: headers,
-		ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
-	}, nil
 }
 
 // buildEndpointURL resolves the sid into the host configured endpoint.
