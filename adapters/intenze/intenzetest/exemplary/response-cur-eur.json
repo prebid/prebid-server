@@ -1,0 +1,91 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placementId"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-east-ssp.intenze.co/pbs-serve?placementId=placementId",
+        "body": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com"
+          }
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "some-impression-id",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "crid",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ],
+              "seat": "intenze"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "some-impression-id",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -15,9 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-type adapter struct {
-	endpoint *template.Template
-}
+type adapter struct{}
 
 var exchangeSubdomainsRegions = map[string]string{
 	"us-east": "lb-east",
@@ -184,7 +181,7 @@ func checkResponseStatusCodes(response *adapters.ResponseData) error {
 	return adapters.CheckResponseStatusCodeForErrors(response)
 }
 
-func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
+func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
@@ -194,9 +191,8 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 		return nil, []error{httpStatusError}
 	}
 
-	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}
@@ -208,25 +204,28 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-	var bidsArray []*adapters.TypedBid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(requestToBidder.ImpIDs))
+	if len(bidResp.Cur) != 0 {
+		bidResponse.Currency = bidResp.Cur
+	}
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
-		for idx, bid := range sb.Bid {
-			bidType, err := getMediaTypeForImp(bid)
+		for idx := range sb.Bid {
+			bidType, err := getMediaTypeForImp(sb.Bid[idx])
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, err)
+				continue
 			}
 
-			bidsArray = append(bidsArray, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[idx],
 				BidType: bidType,
 			})
 		}
 	}
 
-	bidResponse.Bids = bidsArray
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -238,6 +237,8 @@ func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("unsupported MType %d", bid.MType)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported MType %d", bid.MType),
+		}
 	}
 }
