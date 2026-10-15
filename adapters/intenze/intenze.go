@@ -1,6 +1,7 @@
 package intenze
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -63,8 +64,7 @@ func impError(impID string, err error) error {
 
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	impsByURL := make(map[string][]openrtb2.Imp)
-	var urlOrder []string
+	requests := make([]*adapters.RequestData, 0, len(openRTBRequest.Imp))
 
 	for _, imp := range openRTBRequest.Imp {
 		impExt, err := getImpressionExt(&imp)
@@ -79,17 +79,15 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		imp.Ext = nil
-		if _, seen := impsByURL[endpoint]; !seen {
-			urlOrder = append(urlOrder, endpoint)
+		cleanExt, err := stripBidderParams(imp.Ext)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
 		}
-		impsByURL[endpoint] = append(impsByURL[endpoint], imp)
-	}
+		imp.Ext = cleanExt
 
-	requests := make([]*adapters.RequestData, 0, len(urlOrder))
-	for _, endpoint := range urlOrder {
 		reqCopy := *openRTBRequest
-		reqCopy.Imp = impsByURL[endpoint]
+		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		reqJSON, err := jsonutil.Marshal(reqCopy)
 		if err != nil {
@@ -107,6 +105,24 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requests, errs
+}
+
+func stripBidderParams(ext json.RawMessage) (json.RawMessage, error) {
+	if len(ext) == 0 {
+		return nil, nil
+	}
+
+	var fields map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(ext, &fields); err != nil {
+		return nil, err
+	}
+
+	delete(fields, "bidder")
+	if len(fields) == 0 {
+		return nil, nil
+	}
+
+	return jsonutil.Marshal(fields)
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtIntenze, error) {
