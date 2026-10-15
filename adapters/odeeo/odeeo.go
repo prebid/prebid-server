@@ -45,17 +45,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		if params.SP == "" || params.TK == "" {
-			// An absent or empty bidder object unmarshals cleanly, and params are not re-checked after
-			// auction hooks run - without this the request would go out with empty auth headers.
-			errs = append(
-				errs, &errortypes.BadInput{
-					Message: fmt.Sprintf("imp %q: sp and tk are required", imp.ID),
-				},
-			)
-			continue
-		}
-
 		if len(processedImps) > 0 && (params.SP != sp || params.TK != tk) {
 			// The pair is already fixed for this request, so an imp naming a different partner cannot be sent.
 			errs = append(
