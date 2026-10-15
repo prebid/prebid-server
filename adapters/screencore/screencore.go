@@ -1,6 +1,7 @@
 package screencore
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,10 +15,6 @@ import (
 )
 
 type adapter struct{}
-
-type reqBodyExt struct {
-	ScreencoreBidderExt reqBodyExtBidder `json:"bidder"`
-}
 
 type reqBodyExtBidder struct {
 	SspPlacementID string `json:"sspPlacementId,omitempty"`
@@ -80,14 +77,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, ext openrtb_ext.ImpExtScreencore, endpoint string) (*adapters.RequestData, error) {
-	impExt := reqBodyExt{
-		ScreencoreBidderExt: reqBodyExtBidder{
-			SspPlacementID: ext.SspPlacementID,
-		},
-	}
-	impExtJSON, err := jsonutil.Marshal(impExt)
+	impExtJSON, err := buildImpExt(imp.Ext, ext.SspPlacementID)
 	if err != nil {
-		return nil, err
+		return nil, impError(imp.ID, err)
 	}
 
 	reqCopy := *request
@@ -111,6 +103,23 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, ex
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
 	}, nil
+}
+
+func buildImpExt(ext json.RawMessage, sspPlacementID string) (json.RawMessage, error) {
+	fields := map[string]json.RawMessage{}
+	if len(ext) > 0 {
+		if err := jsonutil.Unmarshal(ext, &fields); err != nil {
+			return nil, err
+		}
+	}
+
+	bidder, err := jsonutil.Marshal(reqBodyExtBidder{SspPlacementID: sspPlacementID})
+	if err != nil {
+		return nil, err
+	}
+	fields["bidder"] = bidder
+
+	return jsonutil.Marshal(fields)
 }
 
 func buildSspEndpoint(ext openrtb_ext.ImpExtScreencore) (string, error) {

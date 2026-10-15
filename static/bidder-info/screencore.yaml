@@ -1,6 +1,7 @@
 endpoint: "https://ssp-us.screencore.io/pbs-bid"
 maintainer:
   email: "connect@screencore.io"
+gvlVendorID: 1473
 capabilities:
   app:
     mediaTypes:
