@@ -2,15 +2,6 @@ aliasOf: "vidazoo"
 endpoint: "https://exchange.adnimation.com/openrtb/"
 maintainer:
   email: "prebid@adnimation.com"
-capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
-  site:
-    mediaTypes:
-      - banner
-      - video
 userSync:
   iframe:
     url: https://sync.adnimation.com/api/user/html/697a076271875e8907df35a6?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
