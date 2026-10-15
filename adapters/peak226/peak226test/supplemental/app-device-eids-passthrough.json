@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.example.app"
+    },
+    "device": {
+      "ifa": "AEBE52E7-03EE-455A-B3C4-E57283966239",
+      "os": "iOS"
+    },
+    "user": {
+      "eids": [
+        {
+          "source": "uidapi.com",
+          "uids": [{"id": "UID2-TOKEN", "atype": 3}]
+        }
+      ]
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-test",
+            "placementId": "plc-test"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us.a.viddea.com/edge_direct",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-test"
+            }
+          },
+          "device": {
+            "ifa": "AEBE52E7-03EE-455A-B3C4-E57283966239",
+            "os": "iOS"
+          },
+          "user": {
+            "eids": [
+              {
+                "source": "uidapi.com",
+                "uids": [{"id": "UID2-TOKEN", "atype": 3}]
+              }
+            ]
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "plc-test",
+              "banner": {
+                "format": [{"w": 320, "h": 50}]
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "peak226",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 0.85,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-1",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 0.85,
+            "adm": "<div>ad</div>",
+            "crid": "cr-1",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
