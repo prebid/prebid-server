@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Publink Adapter Params",
+  "description": "A schema which validates params accepted by the Publink adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tag ID from the Publink portal (New Tag > Prebid)",
+      "pattern": "\\S"
+    },
+    "bidFloor": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Floor CPM for this placement"
+    },
+    "currency": {
+      "type": "string",
+      "description": "Floor currency, defaults to USD",
+      "enum": [
+        "USD"
+      ]
+    }
+  }
+}
