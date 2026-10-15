@@ -62,7 +62,13 @@ func TestGetMediaType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, getMediaType(&tt.bid, tt.imp))
+			exists, mediaType := getMediaType(&tt.bid, []openrtb2.Imp{*tt.imp})
+			assert.True(t, exists)
+			assert.Equal(t, tt.expected, mediaType)
 		})
 	}
+
+	exists, mediaType := getMediaType(&openrtb2.Bid{ImpID: "missing"}, []openrtb2.Imp{*bannerVideo})
+	assert.False(t, exists)
+	assert.Equal(t, openrtb_ext.BidType(""), mediaType)
 }

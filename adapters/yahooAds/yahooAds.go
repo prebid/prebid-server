@@ -120,14 +120,13 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bid := &sb.Bid[i]
-			imp := findImp(bid.ImpID, internalRequest.Imp)
-			if imp == nil {
+			exists, mediaTypeId := getMediaType(bid, internalRequest.Imp)
+			if !exists {
 				return nil, []error{&errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}}
 			}
 
-			mediaTypeId := getMediaType(bid, imp)
 			if openrtb_ext.BidTypeBanner != mediaTypeId &&
 				openrtb_ext.BidTypeVideo != mediaTypeId {
 				//only banner and video are mediaTypeId, anything else is ignored
@@ -144,46 +143,37 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, nil
 }
 
-// vastMarkup matches a VAST root tag such as <VAST version="4.0">, <vast> or <VAST/>,
-// but not <VASTAdTagURI>.
+// vastMarkup matches a VAST root element in any case, but not <VASTAdTagURI>.
 var vastMarkup = regexp.MustCompile(`(?i)<\s*VAST[\s/>]`)
 
-func isVAST(adm string) bool {
-	return adm != "" && vastMarkup.MatchString(adm)
-}
-
-// getMediaType resolves the bid type from bid.mtype when present. Without it, a VAST
-// root tag in adm marks a banner+video impression's bid as video, and a single-format
-// impression decides by itself.
-func getMediaType(bid *openrtb2.Bid, imp *openrtb2.Imp) openrtb_ext.BidType {
-	switch bid.MType {
-	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo
-	case 0:
-		// mtype absent: decide from the markup and the impression below
-	default:
-		// audio, native or unknown mtype: this adapter only handles banner and video
-		return ""
-	}
-
-	switch {
-	case imp.Video != nil && (imp.Banner == nil || isVAST(bid.AdM)):
-		return openrtb_ext.BidTypeVideo
-	case imp.Banner != nil:
-		return openrtb_ext.BidTypeBanner
-	}
-	return ""
-}
-
-func findImp(impID string, imps []openrtb2.Imp) *openrtb2.Imp {
+// getMediaType reports whether the bid's impression exists and resolves the bid type:
+// bid.mtype first, then VAST markup for a banner+video impression, then the
+// impression's single format. An empty type means the bid is not banner or video.
+func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 	for i := range imps {
-		if imps[i].ID == impID {
-			return &imps[i]
+		if imps[i].ID != bid.ImpID {
+			continue
 		}
+		switch bid.MType {
+		case openrtb2.MarkupBanner:
+			return true, openrtb_ext.BidTypeBanner
+		case openrtb2.MarkupVideo:
+			return true, openrtb_ext.BidTypeVideo
+		case 0:
+			// no mtype: decide from the markup and the impression below
+		default:
+			return true, "" // audio, native or unknown: not supported
+		}
+		imp := &imps[i]
+		switch {
+		case imp.Video != nil && (imp.Banner == nil || vastMarkup.MatchString(bid.AdM)):
+			return true, openrtb_ext.BidTypeVideo
+		case imp.Banner != nil:
+			return true, openrtb_ext.BidTypeBanner
+		}
+		return true, ""
 	}
-	return nil
+	return false, ""
 }
 
 func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpYahooAds) error {
