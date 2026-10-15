@@ -187,6 +187,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/outbrain"
 	"github.com/prebid/prebid-server/v4/adapters/ownadx"
 	"github.com/prebid/prebid-server/v4/adapters/pangle"
+	"github.com/prebid/prebid-server/v4/adapters/peak226"
 	"github.com/prebid/prebid-server/v4/adapters/pgamssp"
 	"github.com/prebid/prebid-server/v4/adapters/pixfuture"
 	"github.com/prebid/prebid-server/v4/adapters/playdigo"
@@ -255,6 +256,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/undertone"
 	"github.com/prebid/prebid-server/v4/adapters/unicorn"
 	"github.com/prebid/prebid-server/v4/adapters/unruly"
+	"github.com/prebid/prebid-server/v4/adapters/viant"
 	"github.com/prebid/prebid-server/v4/adapters/vidazoo"
 	"github.com/prebid/prebid-server/v4/adapters/videobyte"
 	"github.com/prebid/prebid-server/v4/adapters/videoheroes"
@@ -471,6 +473,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOutbrain:          outbrain.Builder,
 		openrtb_ext.BidderOwnAdx:            ownadx.Builder,
 		openrtb_ext.BidderPangle:            pangle.Builder,
+		openrtb_ext.BidderPeak226:           peak226.Builder,
 		openrtb_ext.BidderPGAMSsp:           pgamssp.Builder,
 		openrtb_ext.BidderPixfuture:         pixfuture.Builder,
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,
@@ -539,6 +542,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderUndertone:         undertone.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
 		openrtb_ext.BidderUnruly:            unruly.Builder,
+		openrtb_ext.BidderViant:             viant.Builder,
 		openrtb_ext.BidderVidazoo:           vidazoo.Builder,
 		openrtb_ext.BidderVideoByte:         videobyte.Builder,
 		openrtb_ext.BidderVideoHeroes:       videoheroes.Builder,

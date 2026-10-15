@@ -104,24 +104,36 @@
                   "impid": "test-imp-multi-format",
                   "price": 1.75,
                   "adm": "<div>Teal Banner Ad</div>",
-                  "mtype": 1,
-                  "crid": "creative-banner"
+                  "crid": "creative-banner",
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 },
                 {
                   "id": "bid-video",
                   "impid": "test-imp-multi-format",
                   "price": 2.10,
                   "adm": "<VAST>Teal Video Ad</VAST>",
-                  "mtype": 2,
-                  "crid": "creative-video"
+                  "crid": "creative-video",
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
                 },
                 {
                   "id": "bid-native",
                   "impid": "test-imp-multi-format",
                   "price": 0.90,
                   "adm": "{\"native\":{\"assets\":[]}}",
-                  "mtype": 4,
-                  "crid": "creative-native"
+                  "crid": "creative-native",
+                  "ext": {
+                    "prebid": {
+                      "type": "native"
+                    }
+                  }
                 }
               ]
             }
@@ -140,8 +152,12 @@
             "impid": "test-imp-multi-format",
             "price": 1.75,
             "adm": "<div>Teal Banner Ad</div>",
-            "mtype": 1,
-            "crid": "creative-banner"
+            "crid": "creative-banner",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           },
           "type": "banner"
         },
@@ -151,8 +167,12 @@
             "impid": "test-imp-multi-format",
             "price": 2.10,
             "adm": "<VAST>Teal Video Ad</VAST>",
-            "mtype": 2,
-            "crid": "creative-video"
+            "crid": "creative-video",
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
           },
           "type": "video"
         },
@@ -162,8 +182,12 @@
             "impid": "test-imp-multi-format",
             "price": 0.90,
             "adm": "{\"native\":{\"assets\":[]}}",
-            "mtype": 4,
-            "crid": "creative-native"
+            "crid": "creative-native",
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
           },
           "type": "native"
         }
