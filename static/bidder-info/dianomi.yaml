@@ -1,4 +1,5 @@
 endpoint: "https://dianomi-bidder-proxy.dianomi.com/traffic_proxy"
+endpointCompression: gzip
 disabled: true
 maintainer:
   email: 'prebid-maintainer@dianomi.com'
