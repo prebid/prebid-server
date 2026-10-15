@@ -19,5 +19,6 @@
   },
   "required": [
     "said"
-  ]
+  ],
+  "additionalProperties": false
 }

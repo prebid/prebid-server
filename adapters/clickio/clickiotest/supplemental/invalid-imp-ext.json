@@ -12,18 +12,13 @@
             }
           ]
         },
-        "ext": {
-          "bidder": {
-            "said": "123"
-          },
-          "params": "not-an-object"
-        }
+        "ext": "not-an-object"
       }
     ]
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "failed to parse imp.ext.params for imp imp-1:",
+      "value": "failed to parse imp.ext for imp imp-1:",
       "comparison": "regex"
     }
   ]

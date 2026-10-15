@@ -49,4 +49,5 @@ var invalidParams = []string{
 	`{"said": "auction-1", "template": 123}`,
 	`{"said": true}`,
 	`{"said": null}`,
+	`{"said": "auction-1", "refresh": 1}`,
 }

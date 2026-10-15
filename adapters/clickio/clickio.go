@@ -62,88 +62,20 @@ func updateImpExtWithParams(imp *openrtb2.Imp) error {
 		return fmt.Errorf("failed to parse imp.ext for imp %s: %w", imp.ID, err)
 	}
 
-	params := map[string]json.RawMessage{}
-	if rawParams, exists := impExt["params"]; exists && len(rawParams) > 0 {
-		if err := jsonutil.Unmarshal(rawParams, &params); err != nil {
-			return fmt.Errorf("failed to parse imp.ext.params for imp %s: %w", imp.ID, err)
-		}
-	}
-
-	if said, ok := extractParamFromPrebid(impExt, "said"); ok {
-		params["said"] = said
-	}
-	if psid, ok := extractParamFromPrebid(impExt, "psid"); ok {
-		params["psid"] = psid
-	}
-	if template, ok := extractParamFromPrebid(impExt, "template"); ok {
-		params["template"] = template
-	}
-	if len(params) == 0 {
+	bidderParams, exists := impExt["bidder"]
+	if !exists || len(bidderParams) == 0 {
 		return nil
 	}
 
-	rawParams, err := jsonutil.Marshal(params)
-	if err != nil {
-		return fmt.Errorf("failed to marshal imp.ext.params for imp %s: %w", imp.ID, err)
-	}
-	impExt["params"] = rawParams
+	impExt["params"] = bidderParams
 
 	rawExt, err := jsonutil.Marshal(impExt)
 	if err != nil {
 		return fmt.Errorf("failed to marshal imp.ext for imp %s: %w", imp.ID, err)
 	}
+
 	imp.Ext = rawExt
 	return nil
-}
-
-func extractParamFromPrebid(impExt map[string]json.RawMessage, key string) (json.RawMessage, bool) {
-	// Preferred PBS adapter shape: imp.ext.bidder contains this adapter params.
-	if rawBidder, ok := impExt["bidder"]; ok {
-		if value, ok := extractParamFromBidderExt(rawBidder, key); ok {
-			return value, true
-		}
-	}
-
-	rawPrebid, ok := impExt["prebid"]
-	if !ok || len(rawPrebid) == 0 {
-		return nil, false
-	}
-
-	var prebid map[string]json.RawMessage
-	if err := jsonutil.Unmarshal(rawPrebid, &prebid); err != nil {
-		return nil, false
-	}
-
-	rawBidder, ok := prebid["bidder"]
-	if !ok || len(rawBidder) == 0 {
-		return nil, false
-	}
-
-	var bidderMap map[string]json.RawMessage
-	if err := jsonutil.Unmarshal(rawBidder, &bidderMap); err != nil {
-		return nil, false
-	}
-
-	if value, ok := extractParamFromBidderExt(bidderMap["clickio"], key); ok {
-		return value, true
-	}
-
-	return nil, false
-}
-
-func extractParamFromBidderExt(raw json.RawMessage, key string) (json.RawMessage, bool) {
-	if len(raw) == 0 {
-		return nil, false
-	}
-	var bidderExt map[string]json.RawMessage
-	if err := jsonutil.Unmarshal(raw, &bidderExt); err != nil {
-		return nil, false
-	}
-	value, ok := bidderExt[key]
-	if !ok || len(value) == 0 {
-		return nil, false
-	}
-	return value, true
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {

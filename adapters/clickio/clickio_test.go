@@ -48,22 +48,3 @@ func TestMakeRequestsDoesNotMutateInputRequest(t *testing.T) {
 		t.Fatalf("input request was mutated: %s", string(req.Imp[0].Ext))
 	}
 }
-
-func TestUpdateImpExtWithParamsDoesNotUseOtherBidderFromPrebid(t *testing.T) {
-	imp := &openrtb2.Imp{
-		ID:  "imp-1",
-		Ext: json.RawMessage(`{"prebid":{"bidder":{"other":{"said":"auction-1"}}}}`),
-	}
-
-	if err := updateImpExtWithParams(imp); err != nil {
-		t.Fatalf("updateImpExtWithParams returned unexpected error: %v", err)
-	}
-
-	var ext map[string]json.RawMessage
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-		t.Fatalf("failed to unmarshal imp ext: %v", err)
-	}
-	if _, ok := ext["params"]; ok {
-		t.Fatalf("unexpected params copied from non-clickio bidder: %s", string(imp.Ext))
-	}
-}
