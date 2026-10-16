@@ -1,0 +1,40 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "user": {
+      "buyeruid": "userId",
+      "yob": 1990
+    },
+    "device": {
+      "ua": "user-agent",
+      "ip": "1.2.3.4"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 1920,
+          "h": 1080,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": "not_json"
+        }
+      }
+    ],
+    "site": {
+      "domain": "site.com",
+      "page": "http://site.com/page",
+      "ref": "http://site.com/ref"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Ignoring imp id=test-imp-id, error while decoding impExt, err: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ]
+}
