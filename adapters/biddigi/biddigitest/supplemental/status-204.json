@@ -1,0 +1,60 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "domain": "news.example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatKey": "bds_testseatkey"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://biddigi-auction-service.biddigi25.workers.dev/inbound/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "site": {
+            "domain": "news.example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

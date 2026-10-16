@@ -1,0 +1,87 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "domain": "news.example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatKey": "bds_testseatkey"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://biddigi-auction-service.biddigi25.workers.dev/inbound/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "site": {
+            "domain": "news.example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "biddigi",
+              "bid": [
+                {
+                  "id": "bid-audio",
+                  "impid": "imp-1",
+                  "price": 10.0,
+                  "mtype": 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported mtype 3 for bid bid-audio",
+      "comparison": "literal"
+    }
+  ]
+}

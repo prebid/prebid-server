@@ -1,0 +1,119 @@
+{
+  "mockBidRequest": {
+    "id": "req-app",
+    "tmax": 400,
+    "app": {
+      "bundle": "com.example.app",
+      "name": "Example App",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.app"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 13)",
+      "ip": "203.0.113.9",
+      "devicetype": 4,
+      "os": "Android",
+      "ifa": "38400000-8cf0-11bd-b23e-10b96e40000d"
+    },
+    "imp": [
+      {
+        "id": "imp-app",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatKey": "bds_testseatkey"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://biddigi-auction-service.biddigi25.workers.dev/inbound/openrtb2/auction",
+        "body": {
+          "id": "req-app",
+          "tmax": 400,
+          "app": {
+            "bundle": "com.example.app",
+            "name": "Example App",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.app"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 13)",
+            "ip": "203.0.113.9",
+            "devicetype": 4,
+            "os": "Android",
+            "ifa": "38400000-8cf0-11bd-b23e-10b96e40000d"
+          },
+          "imp": [
+            {
+              "id": "imp-app",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-app"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-app",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "biddigi",
+              "bid": [
+                {
+                  "id": "bid-app",
+                  "impid": "imp-app",
+                  "price": 0.32,
+                  "adm": "<div>app-creative</div>",
+                  "crid": "cr-app",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-app",
+            "impid": "imp-app",
+            "price": 0.32,
+            "adm": "<div>app-creative</div>",
+            "crid": "cr-app",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
