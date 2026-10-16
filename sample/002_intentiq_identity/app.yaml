@@ -1,0 +1,78 @@
+port: 8000 # main auction server port
+admin_port: 6060 # admin server listening port
+
+external_url: localhost # host url of all 2 servers above
+status_response: "ok" # default response string for /status endpoint
+
+gdpr:
+  default_value: "0" # disable gdpr, explicitly specifying a default value is a requirement in prebid server config
+
+metrics:
+  prometheus:
+    # The identity module registers its collectors into the server's registry, so its
+    # iiq_identity_* series are exported here alongside the core ones. With this port at 0 there
+    # is no registry to publish to and the module records nothing.
+    port: 9090
+
+# Serve the bid from a stored response so the example needs no live bidder account. See
+# request.json, which references it via ext.prebid.storedbidresponse.
+stored_responses:
+  filesystem:
+    enabled: true
+    directorypath: ./stored_responses/data/by_id
+
+hooks:
+  enabled: true
+  modules:
+    intentiq:
+      identity:
+        enabled: true
+        # Region-specific: US be-api-s2s, EU be-api-s2s-gdpr, APAC be-api-s2s-apac.
+        api_endpoint: "https://be-api-s2s.intentiq.com/profiles_engine/ProfilesEngineServlet"
+        # REQUIRED. Ask your IntentIQ account manager for a partner token. Until this is a real
+        # token the resolution call fails, the hook fails open, and user.eids is left untouched.
+        partner_id: "REPLACE_WITH_YOUR_PARTNER_TOKEN"
+        timeout: 1000
+        metrics_enabled: true
+        # Emits the per-request flow trace into ext.trace.iiq-identity for requests that also send
+        # ext.prebid.debug or ext.prebid.trace. request.json sends "test": 1 and ext.prebid.debug.
+        trace_enabled: true
+        # Uncomment to report winning bids to IntentIQ from the auction_response hook.
+        # reports_endpoint: "https://reports-s2s.intentiq.com/profiles_engine/ProfilesEngineServlet"
+        cache:
+          # Two-layer alias cache: an in-process L1 backed by the shared L2 named below. The named
+          # backend must be reachable during Builder or the module fails startup by design, so the
+          # compose stack waits for the valkey service to pass its healthcheck first.
+          enabled: true
+          provider: valkey         # redis | valkey | aerospike
+          max_size: 33554432       # in-process (L1) byte budget (~32 MiB)
+          # The TTLs are left at their defaults; see the module README to tune them.
+        valkey:
+          host: valkey             # the compose service name, resolved on the compose network
+          port: 6379
+          # password: ""
+        # To use another backend, point cache.provider at it and fill in its block.
+        # redis:
+        #   host: localhost
+        #   port: 6379
+        # aerospike:
+        #   host: localhost
+        #   port: 3000
+        #   namespace: prebid
+        #   set: identity
+  host_execution_plan:
+    endpoints:
+      /openrtb2/auction:
+        stages:
+          processed_auction_request:
+            groups:
+              - timeout: 1000
+                hook_sequence:
+                  - module_code: intentiq.identity
+                    hook_impl_code: HandleProcessedAuctionHook
+          auction_response:
+            groups:
+              - timeout: 100
+                hook_sequence:
+                  - module_code: intentiq.identity
+                    hook_impl_code: HandleAuctionResponseHook
