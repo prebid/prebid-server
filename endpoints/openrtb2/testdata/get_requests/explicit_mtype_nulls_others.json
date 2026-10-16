@@ -1,0 +1,31 @@
+{
+  "description": "Explicit mtype=vid deletes banner/audio from stored request via RFC 7396 null",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "h": 360,
+      "mimes": [
+        "video/mp4"
+      ],
+      "w": 640
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=vid\u0026w=640\u0026h=360",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "banner": {
+          "h": 250,
+          "w": 300
+        },
+        "id": "imp1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        }
+      }
+    ],
+    "site": {}
+  }
+}

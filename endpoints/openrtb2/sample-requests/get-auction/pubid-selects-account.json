@@ -1,0 +1,20 @@
+{
+  "description": "GET pubid param is used for account lookup even though no publisher.id is in the stored request",
+  "httpMethod": "GET",
+  "query": "srid=stored-site-no-pub&pubid=disabled_acct",
+  "generatedRequestId": "test-get-uuid-pubid-acct",
+  "mockStoredRequests": {
+    "stored-site-no-pub": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "expectedReturnCode": 403,
+  "expectedErrorMessage": "Invalid request: Prebid-server has disabled Account ID: disabled_acct, please reach out to the prebid server host.\n"
+}

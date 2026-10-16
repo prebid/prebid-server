@@ -1,0 +1,23 @@
+{
+  "description": "pubid and content route to dooh when stored request declares dooh; page and app params are ignored for dooh context",
+  "query": "srid=testdooh&pubid=pub-dooh&cgenre=outdoors&page=https://ignored.example.com&bundle=com.ignored",
+  "stored_bid_request": {
+    "dooh": {"id": "dooh-1", "venuetype": ["801"]},
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "dooh": {
+      "id": "dooh-1",
+      "venuetype": ["801"],
+      "publisher": {"id": "pub-dooh"},
+      "content": {"genre": "outdoors"}
+    },
+    "imp": [{"id": "imp1"}],
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testdooh"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

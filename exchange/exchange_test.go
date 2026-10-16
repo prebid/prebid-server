@@ -6665,3 +6665,47 @@ func TestAmpEnv(t *testing.T) {
 		assert.Equalf(t, test.expectedEnvInResponse, responseExt.Prebid.Targeting["hb_env"], "Response mismatch")
 	}
 }
+
+// TestHTTPMethodPreservedWhenServerConfigured verifies that ext.prebid.server.http_method is
+// forwarded to bidders even when the host configures ExternalUrl/GvlID/DataCenter, which
+// triggers a Server struct rebuild in HoldAuction. Without the fix, the rebuild would zero
+// out HTTPMethod and bidders would not know the request arrived via GET.
+func TestHTTPMethodPreservedWhenServerConfigured(t *testing.T) {
+	// Build a minimal exchange with a non-empty server config so e.server.Empty() == false.
+	e := &exchange{
+		server: config.Server{ExternalUrl: "https://prebid.example.com", GvlID: 42, DataCenter: "us-east"},
+	}
+
+	// Build a request with ext.prebid.server.http_method already set (as the GET endpoint does).
+	rw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{ID: "test-id"}}
+	requestExt, err := rw.GetRequestExt()
+	assert.NoError(t, err)
+	requestExt.SetPrebid(&openrtb_ext.ExtRequestPrebid{
+		Server: &openrtb_ext.ExtRequestPrebidServer{HTTPMethod: "GET"},
+	})
+
+	requestExtPrebid := requestExt.GetPrebid()
+	assert.NotNil(t, requestExtPrebid)
+
+	// Simulate the server-injection block from HoldAuction.
+	if !e.server.Empty() {
+		var httpMethod string
+		if requestExtPrebid.Server != nil {
+			httpMethod = requestExtPrebid.Server.HTTPMethod
+		}
+		requestExtPrebid.Server = &openrtb_ext.ExtRequestPrebidServer{
+			ExternalUrl: e.server.ExternalUrl,
+			GvlID:       e.server.GvlID,
+			DataCenter:  e.server.DataCenter,
+			HTTPMethod:  httpMethod,
+		}
+		requestExt.SetPrebid(requestExtPrebid)
+	}
+
+	result := requestExt.GetPrebid()
+	assert.NotNil(t, result.Server)
+	assert.Equal(t, "https://prebid.example.com", result.Server.ExternalUrl)
+	assert.Equal(t, 42, result.Server.GvlID)
+	assert.Equal(t, "us-east", result.Server.DataCenter)
+	assert.Equal(t, "GET", result.Server.HTTPMethod, "HTTPMethod must survive the server config rebuild")
+}

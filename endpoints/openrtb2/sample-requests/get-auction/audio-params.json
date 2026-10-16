@@ -1,0 +1,92 @@
+{
+  "description": "GET audio: explicit mtype=3 with all audio params written to correct OpenRTB destinations; stored banner is removed",
+  "httpMethod": "GET",
+  "query": "srid=stored-audio&mtype=3&mindur=5&maxdur=60&api=1,2&battr=1,3&delivery=1&minbr=64&maxbr=320&maxex=10&maxseq=5&mincpms=0.5&poddur=120&podid=pod-beta&podseq=2&proto=2,3&seq=2&slotinpod=1&startdelay=0&mimes=audio%2Fmp3,audio%2Fmp4&stitched=1&feed=1&nvol=0&page=https://example.com",
+  "generatedRequestId": "test-get-uuid-audio-params",
+  "mockStoredRequests": {
+    "stored-audio": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ],
+    "bidderInfoOverrides": {
+      "appnexus": {
+        "capabilities": {
+          "site": {"mediaTypes": ["audio"]}
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-audio-params",
+    "seatbid": [
+      {
+        "bid": [{"id": "appnexus-bid", "impid": "imp1", "price": 1.50}],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  },
+  "expectedValidatedBidRequest": {
+    "id": "test-get-uuid-audio-params",
+    "imp": [
+      {
+        "id": "imp1",
+        "audio": {
+          "mimes": ["audio/mp3", "audio/mp4"],
+          "minduration": 5,
+          "maxduration": 60,
+          "startdelay": 0,
+          "maxseq": 5,
+          "poddur": 120,
+          "protocols": [2, 3],
+          "podid": "pod-beta",
+          "podseq": 2,
+          "sequence": 2,
+          "slotinpod": 1,
+          "mincpmpersec": 0.5,
+          "battr": [1, 3],
+          "maxextended": 10,
+          "minbitrate": 64,
+          "maxbitrate": 320,
+          "delivery": [1],
+          "api": [1, 2],
+          "stitched": 1,
+          "feed": 1,
+          "nvol": 0
+        },
+        "secure": 1,
+        "ext": {
+          "prebid": {
+            "bidder": {"appnexus": {"placementId": 12345}}
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com",
+      "publisher": {"domain": "example.com"},
+      "ext": {"amp": 0}
+    },
+    "device": {"ip": "192.0.2.1"},
+    "at": 1,
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored-audio"},
+        "server": {"externalurl": "", "gvlid": 0, "datacenter": "", "http_method": "GET"}
+      }
+    }
+  }
+}

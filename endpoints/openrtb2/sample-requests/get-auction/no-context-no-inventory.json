@@ -1,0 +1,19 @@
+{
+  "description": "GET with no stored context and no directional inventory params produces an explicit channel error instead of falling through to site validation",
+  "httpMethod": "GET",
+  "query": "srid=stored-no-context&dtype=4",
+  "generatedRequestId": "test-get-uuid-no-ctx",
+  "mockStoredRequests": {
+    "stored-no-context": {
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: GET request cannot determine channel: stored request has no site/app/dooh and params contain no directional signal; add page (site) or bundle/name (app)\n"
+}

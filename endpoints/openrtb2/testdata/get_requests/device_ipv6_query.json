@@ -1,0 +1,33 @@
+{
+  "description": "Device IPv6 supplied through the query",
+  "expected_bid_request": {
+    "device": {
+      "ipv6": "2001:db8::1"
+    },
+    "ext": {
+      "prebid": {
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testipv6"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  },
+  "query": "srid=testipv6\u0026ipv6=2001%3Adb8%3A%3A1",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

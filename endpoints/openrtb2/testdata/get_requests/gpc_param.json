@@ -1,0 +1,35 @@
+{
+  "description": "gpc goes into regs.ext.gpc",
+  "expected_bid_request": {
+    "ext": {
+      "prebid": {
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testgpc"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "regs": {
+      "ext": {
+        "gpc": 1
+      }
+    },
+    "site": {}
+  },
+  "query": "srid=testgpc\u0026gpc=1",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}
