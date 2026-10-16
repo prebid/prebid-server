@@ -22,18 +22,12 @@
     "device": {
       "ua": "test-ua",
       "ip": "203.0.113.42"
-    },
-    "app": {
-      "bundle": "com.example.app",
-      "publisher": {
-        "id": "pbs-account"
-      }
     }
   },
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "goadserver supports site requests only",
+      "value": "goadserver needs a site or an app object",
       "comparison": "literal"
     }
   ]

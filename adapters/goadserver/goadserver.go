@@ -18,7 +18,7 @@ import (
 // GoAdserver is a self-hosted, multi-tenant ad server. All requests go to one
 // fixed GoAdserver gateway, which routes each to the publisher's deployment by
 // the publisher token. Impressions are grouped by token and each group is sent
-// with its token in site.publisher.id.
+// with its token in site.publisher.id, or app.publisher.id for in-app requests.
 type adapter struct {
 	endpoint string
 }
@@ -34,8 +34,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if request.Site == nil {
-		return nil, []error{&errortypes.BadInput{Message: "goadserver supports site requests only"}}
+	if request.Site == nil && request.App == nil {
+		return nil, []error{&errortypes.BadInput{Message: "goadserver needs a site or an app object"}}
 	}
 
 	var errs []error
@@ -121,14 +121,15 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest, group *impGroup) (*
 	requestCopy := *request
 	requestCopy.Imp = group.imps
 
-	site := *request.Site
-	var publisher openrtb2.Publisher
-	if site.Publisher != nil {
-		publisher = *site.Publisher
+	if request.Site != nil {
+		site := *request.Site
+		site.Publisher = withToken(site.Publisher, group.token)
+		requestCopy.Site = &site
+	} else {
+		app := *request.App
+		app.Publisher = withToken(app.Publisher, group.token)
+		requestCopy.App = &app
 	}
-	publisher.ID = group.token
-	site.Publisher = &publisher
-	requestCopy.Site = &site
 
 	body, err := jsonutil.Marshal(requestCopy)
 	if err != nil {
@@ -147,6 +148,16 @@ func (a *adapter) buildRequest(request *openrtb2.BidRequest, group *impGroup) (*
 		Headers: headers,
 		ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
 	}, nil
+}
+
+// withToken returns a copy of the publisher with the token as its id.
+func withToken(publisher *openrtb2.Publisher, token string) *openrtb2.Publisher {
+	var out openrtb2.Publisher
+	if publisher != nil {
+		out = *publisher
+	}
+	out.ID = token
+	return &out
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
