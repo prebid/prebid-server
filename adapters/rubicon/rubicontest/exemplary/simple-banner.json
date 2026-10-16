@@ -13,44 +13,7 @@
       "pagecat": [
         "val1",
         "val2"
-      ],
-      "content": {
-        "data": [
-          {
-            "ext": {
-              "segtax": 1
-            },
-            "segment": [
-              {
-                "id": "segmentId1"
-              },
-              {
-                "id": "segmentId2"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": "1"
-            },
-            "segment": [
-              {
-                "id": "shouldNotBeCopied"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": 2
-            },
-            "segment": [
-              {
-                "id": "segmentId3"
-              }
-            ]
-          }
-        ]
-      }
+      ]
     },
     "user": {
       "yob": 2000,
@@ -60,61 +23,7 @@
         "lon": -122.346200
       },
       "gender": "f",
-      "consent": "consent",
-      "data": [
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "someValue"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "4"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": [
-              4
-            ]
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied3"
-            }
-          ]
-        }
-      ]
+      "consent": "consent"
     },
     "imp": [
       {
@@ -180,53 +89,9 @@
               "val1",
               "val2"
             ],
-            "content": {
-              "data": [
-                {
-                  "ext": {
-                    "segtax": 1
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId1"
-                    },
-                    {
-                      "id": "segmentId2"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": "1"
-                  },
-                  "segment": [
-                    {
-                      "id": "shouldNotBeCopied"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": 2
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId3"
-                    }
-                  ]
-                }
-              ]
-            },
             "ext": {
               "rp": {
-                "site_id": 113932,
-                "target": {
-                  "iab": [
-                    "segmentId1",
-                    "segmentId2",
-                    "segmentId3"
-                  ]
-                }
+                "site_id": 113932
               }
             },
             "publisher": {
@@ -238,68 +103,10 @@
             }
           },
           "user": {
-            "data": [
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "someValue"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "4"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": [
-                    4
-                  ]
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied3"
-                  }
-                ]
-              }
-            ],
             "ext": {
               "consent": "consent",
               "rp": {
                 "target": {
-                  "iab": [
-                    "idToCopy",
-                    "idToCopy2"
-                  ]
                 }
               }
             }
