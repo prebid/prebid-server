@@ -1,0 +1,82 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "at": 1,
+    "cur": [
+      "JPY"
+    ],
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 2
+            }
+          }
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "partnerId": 4321,
+            "placementId": "slot-1"
+          }
+        },
+        "bidfloor": 1.5,
+        "bidfloorcur": "EUR"
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://aladdin.genieesspv.jp/yie/ld/exchange?id=4321",
+        "body": {
+          "id": "test-request-id-test-imp-id",
+          "at": 1,
+          "cur": [
+            "JPY"
+          ],
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "slot-1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "bidfloor": 1.5,
+              "bidfloorcur": "EUR"
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "^imp \"test-imp-id\": bidfloor left in EUR",
+      "comparison": "regex"
+    }
+  ]
+}
