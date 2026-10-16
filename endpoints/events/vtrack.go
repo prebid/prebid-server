@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
+	"regexp"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -27,6 +27,14 @@ const (
 	IntegrationParameter = "int"
 	ImpressionCloseTag   = "</Impression>"
 	ImpressionOpenTag    = "<Impression>"
+)
+
+// impressionOpenTagRegex and impressionCloseTagRegex match real-world <Impression> tags, which vary
+// in case and may carry whitespace or attributes (e.g. "<  impression id=\"1\" >"), unlike the exact
+// literal ImpressionOpenTag/ImpressionCloseTag strings above, which are only ever used to emit new tags.
+var (
+	impressionOpenTagRegex  = regexp.MustCompile(`(?i)<\s*impression(?:>|\s.*?>)`)
+	impressionCloseTagRegex = regexp.MustCompile(`(?i)<\s*/\s*impression(?:>|\s.*?>)`)
 )
 
 type vtrackEndpoint struct {
@@ -298,22 +306,22 @@ func getIntegrationType(httpRequest *http.Request) (string, error) {
 
 // ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified
 func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, timestamp int64, integrationType string) (string, bool) {
-	ci := strings.Index(vast, ImpressionCloseTag)
+	closeTagLoc := impressionCloseTagRegex.FindStringIndex(vast)
 
 	// no impression tag - pass it as it is
-	if ci == -1 {
+	if closeTagLoc == nil {
 		return vast, false
 	}
 
 	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp, integrationType)
 	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
-	oi := strings.Index(vast, ImpressionOpenTag)
+	openTagLoc := impressionOpenTagRegex.FindStringIndex(vast)
 
-	if ci-oi == len(ImpressionOpenTag) {
-		return strings.Replace(vast, ImpressionOpenTag, ImpressionOpenTag+impressionUrl, 1), true
+	if openTagLoc != nil && closeTagLoc[0] == openTagLoc[1] {
+		return vast[:openTagLoc[1]] + impressionUrl + vast[openTagLoc[1]:], true
 	}
 
-	return strings.Replace(vast, ImpressionCloseTag, ImpressionCloseTag+ImpressionOpenTag+impressionUrl+ImpressionCloseTag, 1), true
+	return vast[:closeTagLoc[1]] + ImpressionOpenTag + impressionUrl + ImpressionCloseTag + vast[closeTagLoc[1]:], true
 }
 
 // ModifyVastXmlJSON modifies BidCacheRequest element Vast XML data
