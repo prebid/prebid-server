@@ -54,6 +54,7 @@ type Account struct {
 	Privacy                 AccountPrivacy                              `mapstructure:"privacy" json:"privacy"`
 	PreferredMediaType      openrtb_ext.PreferredMediaType              `mapstructure:"preferredmediatype" json:"preferredmediatype"`
 	TargetingPrefix         string                                      `mapstructure:"targeting_prefix" json:"targeting_prefix"`
+	StoredRequest           AccountStoredRequest                        `mapstructure:"stored_request" json:"stored_request"`
 }
 
 // AccountCookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -397,3 +398,37 @@ func (ip *IPv4) Validate(errs []error) []error {
 	}
 	return errs
 }
+
+// AccountStoredRequest represents account-specific stored request configuration
+type AccountStoredRequest struct {
+	ArrayMerge ArrayMergeMode `mapstructure:"array_merge" json:"array_merge"`
+}
+
+// validate rejects unknown array_merge values so a typo (e.g. "concatt") surfaces as a
+// config error instead of silently falling back to replace mode. An empty value is allowed
+// and behaves as the default (replace).
+//
+// This runs on account_defaults at startup (wired into Configuration.validate, mirroring
+// AccountPriceFloors). Per-account stored configs fetched at request time are not validated
+// here — an unknown value on those simply falls back to replace, consistent with the rest of
+// the account-config subsystem.
+func (a *AccountStoredRequest) validate(errs []error) []error {
+	switch a.ArrayMerge {
+	case "", ArrayMergeReplace, ArrayMergeConcat:
+	default:
+		errs = append(errs, fmt.Errorf(`account_defaults.stored_request.array_merge: unknown value %q (valid values: %q, %q)`, a.ArrayMerge, ArrayMergeReplace, ArrayMergeConcat))
+	}
+	return errs
+}
+
+// ArrayMergeMode defines how array fields are merged during stored request processing.
+// "replace" (default): Arrays are replaced, RFC 7386 behavior
+// "concat": Arrays are concatenated
+// Note: concat currently applies only to the block-list fields bcat and badv (see
+// arrayConcatFields in endpoints/openrtb2/auction.go); all other arrays keep replace semantics.
+type ArrayMergeMode string
+
+const (
+	ArrayMergeReplace ArrayMergeMode = "replace"
+	ArrayMergeConcat  ArrayMergeMode = "concat"
+)
