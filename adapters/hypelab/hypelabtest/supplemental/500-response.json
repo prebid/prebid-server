@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "property_slug": "test-property",
+            "placement_slug": "test-placement"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example/article"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://api.hypelab.com/v1/rtb_requests",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
+          "X-Openrtb-Version": ["2.6"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "test-placement",
+              "displaymanager": "HypeLab Prebid Server",
+              "displaymanagerver": "unknown",
+              "banner": {
+                "format": [{ "w": 300, "h": 250 }]
+              },
+              "ext": {
+                "bidder": {
+                  "property_slug": "test-property",
+                  "placement_slug": "test-placement"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example/article"
+          },
+          "ext": {
+            "source": "prebid-server",
+            "provider_version": "prebid-server@unknown"
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 500
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info"
+    }
+  ]
+}
