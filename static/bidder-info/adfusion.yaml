@@ -1,0 +1,19 @@
+endpoint: "https://spicyrtb.com/auction/prebid-server"
+endpointCompression: gzip
+geoscope:
+  - POL
+maintainer:
+  email: prebid@adfusion.pl
+gvlVendorID: 844
+modifyingVastXmlAllowed: false
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
