@@ -496,6 +496,7 @@ type MetricsEngine interface {
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
+	RecordAccountGotBids(pubId string)
 	RecordGvlListRequest()
 	RecordLiveGVLFetch(success bool)
 	RecordAdsCertReq(success bool)
