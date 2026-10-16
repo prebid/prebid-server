@@ -20,10 +20,12 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - video
       - native
   site:
     mediaTypes:
       - banner
+      - video
       - native
 userSync:
   # rtbhouse supports user syncing, but requires configuration by the host. contact this
