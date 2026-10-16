@@ -1,0 +1,133 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-banner-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "homepage-top"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "site-1",
+      "domain": "example.gr",
+      "page": "https://example.gr/news",
+      "publisher": {
+        "id": "publisher-from-request"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+      "ip": "203.0.113.7",
+      "language": "el"
+    },
+    "user": {
+      "id": "ocm-user-1"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-banner-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "homepage-top"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "site-1",
+            "domain": "example.gr",
+            "page": "https://example.gr/news",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+            "ip": "203.0.113.7",
+            "language": "el"
+          },
+          "user": {
+            "id": "ocm-user-1"
+          }
+        },
+        "impIDs": [
+          "imp-banner-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-banner-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-banner-1",
+                  "impid": "imp-banner-1",
+                  "price": 1.85,
+                  "adm": "<div id=\"ocm-creative\">banner</div>",
+                  "crid": "creative-9001",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner-1",
+            "impid": "imp-banner-1",
+            "price": 1.85,
+            "adm": "<div id=\"ocm-creative\">banner</div>",
+            "crid": "creative-9001",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

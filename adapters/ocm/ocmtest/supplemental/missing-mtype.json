@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-missing-mtype-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "homepage-top"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-missing-mtype-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "homepage-top"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-banner-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-missing-mtype-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-no-mtype",
+                  "impid": "imp-banner-1",
+                  "price": 1.0,
+                  "adm": "<div id=\"ocm-creative\">banner</div>",
+                  "crid": "creative-9001"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unable to determine media type for bid \"bid-no-mtype\": no mtype and no ext.prebid.type",
+      "comparison": "literal"
+    }
+  ]
+}

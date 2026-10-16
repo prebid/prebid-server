@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-missing-placement-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {"format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"publisherId": "ocm-pub-1"}}
+      }
+    ],
+    "site": {"domain": "example.gr", "page": "https://example.gr/"}
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp[0]: placementId is required and must not be blank",
+      "comparison": "literal"
+    }
+  ]
+}

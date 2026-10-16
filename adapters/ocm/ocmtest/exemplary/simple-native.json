@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-native-req",
+    "imp": [
+      {
+        "id": "imp-native-1",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "feed-native"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/feed",
+      "publisher": {
+        "id": "publisher-from-request"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-native-req",
+          "imp": [
+            {
+              "id": "imp-native-1",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "feed-native"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/feed",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-native-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-native-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-native-1",
+                  "impid": "imp-native-1",
+                  "price": 2.15,
+                  "adm": "{\"native\":{\"link\":{\"url\":\"https://example.gr/landing\"},\"assets\":[]}}",
+                  "crid": "creative-native-7",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-native-1",
+            "impid": "imp-native-1",
+            "price": 2.15,
+            "adm": "{\"native\":{\"link\":{\"url\":\"https://example.gr/landing\"},\"assets\":[]}}",
+            "crid": "creative-native-7",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
