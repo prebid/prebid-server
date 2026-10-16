@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "invalid-floor-imp",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "test-placement-1",
+            "publisherId": "test-publisher-1",
+            "floor": 1.5,
+            "floorCurrency": "EUR"
+          }
+        }
+      },
+      {
+        "id": "valid-floor-imp",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "test-placement-2",
+            "publisherId": "test-publisher-1",
+            "floor": 2.0
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com"
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 1.3
+            }
+          }
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.bidelerate.com/openrtb2/auction",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "valid-floor-imp",
+              "banner": {
+                "format": [
+                  {"w": 300, "h": 250}
+                ]
+              },
+              "bidfloor": 2.0,
+              "bidfloorcur": "USD",
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "placementId": "test-placement-2",
+                  "publisherId": "test-publisher-1",
+                  "floor": 2.0
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com"
+          },
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "GBP": {
+                    "USD": 1.3
+                  }
+                }
+              }
+            }
+          }
+        },
+        "impIDs": ["valid-floor-imp"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'EUR' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}
