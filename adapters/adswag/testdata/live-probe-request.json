@@ -1,0 +1,23 @@
+{
+  "id": "adswag-pbs-smoke-1",
+  "imp": [
+    {
+      "id": "imp-1",
+      "banner": {"format": [{"w": 300, "h": 250}], "w": 300, "h": 250},
+      "ext": {"data": {"adunitcode": "pbs-smoke-div"}}
+    }
+  ],
+  "site": {
+    "domain": "example.nl",
+    "page": "https://example.nl/",
+    "publisher": {"id": "pub-3b4912c7-b428-40b0-bbfb-30dbe888ceb8"}
+  },
+  "device": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+    "devicetype": 2,
+    "geo": {"country": "NLD"}
+  },
+  "regs": {"gdpr": 0, "ext": {"gdpr": 0}},
+  "cur": ["EUR"],
+  "tmax": 1000
+}
