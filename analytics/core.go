@@ -24,9 +24,12 @@ type Module interface {
 
 // Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
-	Status               int
-	Errors               []error
-	Response             *openrtb2.BidResponse
+	Status   int
+	Errors   []error
+	Response *openrtb2.BidResponse
+	// FinalResponse is the typed body successfully written after exitpoint hooks. A body
+	// with another type leaves this nil. Response retains its existing meaning.
+	FinalResponse        *openrtb2.BidResponse `json:"-"`
 	Account              *config.Account
 	StartTime            time.Time
 	HookExecutionOutcome []hookexecution.StageOutcome
@@ -90,4 +93,10 @@ type UsersyncInfo struct {
 type NotificationEvent struct {
 	Request *EventRequest   `json:"request"`
 	Account *config.Account `json:"account"`
+}
+
+// CreativeDataConsumer requests permission checks for identifiers that may be
+// embedded in raw creative markup and cannot be removed by request scrubbing.
+type CreativeDataConsumer interface {
+	RequiresCreativeDataPermissions() bool
 }

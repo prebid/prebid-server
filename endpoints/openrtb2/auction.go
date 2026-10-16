@@ -387,11 +387,20 @@ func sendAuctionResponse(
 
 	// Exitpoint will modify the response and set response headers according to hook implementation.
 	finalResponse := hookExecutor.ExecuteExitpointStage(response, w)
+	switch body := finalResponse.(type) {
+	case *openrtb2.BidResponse:
+		ao.FinalResponse = body
+	case openrtb2.BidResponse:
+		ao.FinalResponse = &body
+	default:
+		ao.FinalResponse = nil
+	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(finalResponse); err != nil {
+		ao.FinalResponse = nil
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}

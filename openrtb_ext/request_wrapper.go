@@ -35,6 +35,9 @@ import (
 // NOTE: The RequestWrapper methods (particularly the ones calling (un)Marshal are not thread safe)
 type RequestWrapper struct {
 	*openrtb2.BidRequest
+	// GDPRSignalConflict preserves contradictory 2.5/2.6 applicability for
+	// raw-creative consumers after normalization removes the legacy field.
+	GDPRSignalConflict  bool `json:"-"`
 	impWrappers         []*ImpWrapper
 	impWrappersAccessed bool
 	userExt             *UserExt
@@ -852,6 +855,11 @@ func (re *RequestExt) GetExt() map[string]json.RawMessage {
 func (re *RequestExt) SetExt(ext map[string]json.RawMessage) {
 	re.ext = ext
 	re.extDirty = true
+}
+
+// HasAnalytics reports whether adapter settings require filtering without copying Prebid.
+func (re *RequestExt) HasAnalytics() bool {
+	return re != nil && re.prebid != nil && len(re.prebid.Analytics) != 0
 }
 
 func (re *RequestExt) GetPrebid() *ExtRequestPrebid {

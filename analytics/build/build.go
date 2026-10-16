@@ -9,15 +9,17 @@ import (
 	"github.com/prebid/prebid-server/v4/analytics/clients"
 	"github.com/prebid/prebid-server/v4/analytics/filesystem"
 	"github.com/prebid/prebid-server/v4/analytics/pubstack"
+	"github.com/prebid/prebid-server/v4/analytics/vastlint"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/ortb"
 	"github.com/prebid/prebid-server/v4/privacy"
 )
 
 // Modules that need to be logged to need to be initialized here
-func New(analytics *config.Analytics) analytics.Runner {
+func New(analytics *config.Analytics, engines ...metrics.MetricsEngine) analytics.Runner {
 	modules := make(enabledAnalytics, 0)
 	if len(analytics.File.Filename) > 0 {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
@@ -56,6 +58,14 @@ func New(analytics *config.Analytics) analytics.Runner {
 		}
 	}
 
+	if analytics.Vastlint.Enabled {
+		module, err := vastlint.NewModule(analytics.Vastlint, engines...)
+		if err != nil {
+			logger.Errorf("Could not initialize Vastlint analytics: %v", err)
+		} else {
+			modules["vastlint"] = module
+		}
+	}
 	return modules
 }
 
@@ -64,7 +74,7 @@ type enabledAnalytics map[string]analytics.Module
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
+		if isAllowed, cloneBidderReq := evaluateModuleActivities(ao.RequestWrapper, ac, name, module); isAllowed {
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
@@ -73,13 +83,15 @@ func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac priv
 			if cloneReq != nil {
 				ao.RequestWrapper = cloneReq
 			}
+		} else if reporter, ok := module.(interface{ LogCreativeDataDenied() }); ok {
+			reporter.LogCreativeDataDenied()
 		}
 	}
 }
 
 func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
+		if isAllowed, cloneBidderReq := evaluateModuleActivities(vo.RequestWrapper, ac, name, module); isAllowed {
 			if cloneBidderReq != nil {
 				vo.RequestWrapper = cloneBidderReq
 			}
@@ -107,7 +119,7 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 
 func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
+		if isAllowed, cloneBidderReq := evaluateModuleActivities(ao.RequestWrapper, ac, name, module); isAllowed {
 			if cloneBidderReq != nil {
 				ao.RequestWrapper = cloneBidderReq
 			}
@@ -151,7 +163,8 @@ func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityContr
 	}
 
 	cloneReq := &openrtb_ext.RequestWrapper{
-		BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest),
+		BidRequest:         ortb.CloneBidRequestPartial(rw.BidRequest),
+		GDPRSignalConflict: rw.GDPRSignalConflict,
 	}
 
 	if blockUserFPD {
@@ -171,20 +184,19 @@ func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName st
 		return nil
 	}
 	reqExt, _ := rw.GetRequestExt()
+	if !reqExt.HasAnalytics() {
+		return nil
+	}
 	reqExtPrebid := reqExt.GetPrebid()
-	if reqExtPrebid == nil {
+	if reqExtPrebid == nil || len(reqExtPrebid.Analytics) == 0 {
 		return nil
 	}
 
 	var cloneReq *openrtb_ext.RequestWrapper
 	if !isCloned {
-		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest)}
+		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest), GDPRSignalConflict: rw.GDPRSignalConflict}
 	} else {
 		cloneReq = nil
-	}
-
-	if len(reqExtPrebid.Analytics) == 0 {
-		return cloneReq
 	}
 
 	// Remove the entire analytics object if the adapter module is not present
@@ -209,4 +221,16 @@ func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, ada
 		newMap[adapterName] = val
 	}
 	return newMap
+}
+
+func evaluateModuleActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, name string, module analytics.Module) (bool, *openrtb_ext.RequestWrapper) {
+	if consumer, ok := module.(analytics.CreativeDataConsumer); ok && consumer.RequiresCreativeDataPermissions() {
+		component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
+		for _, activity := range []privacy.Activity{privacy.ActivityTransmitUserFPD, privacy.ActivityTransmitPreciseGeo, privacy.ActivityTransmitUniqueRequestIDs, privacy.ActivityTransmitTIDs} {
+			if !ac.Allow(activity, component, privacy.ActivityRequest{}) {
+				return false, nil
+			}
+		}
+	}
+	return evaluateActivities(rw, ac, name)
 }

@@ -18,6 +18,8 @@ type Metrics struct {
 	Registerer prometheus.Registerer
 	Gatherer   *prometheus.Registry
 
+	vastlintEvents *prometheus.CounterVec
+
 	// General Metrics
 	tmaxTimeout                  prometheus.Counter
 	connectionsClosed            prometheus.Counter
@@ -176,9 +178,14 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	overheadTimeBuckets := []float64{0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}
 	requestSizeBuckets := []float64{100, 500, 750, 1000, 2000, 4000, 7000, 10000, 15000, 20000, 50000, 75000}
 
+	vastlintEvents := metrics.VastlintEvents()
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
 	metrics.metricsDisabled = disabledMetrics
+	metrics.vastlintEvents = newCounter(cfg, reg, "vastlint_collection_total", "VASTlint collection events. Each event has its own documented unit and denominator.", []string{"event"})
+	for _, event := range vastlintEvents {
+		metrics.vastlintEvents.WithLabelValues(string(event))
+	}
 
 	metrics.connectionsClosed = newCounterWithoutLabels(cfg, reg,
 		"connections_closed",
@@ -1169,4 +1176,10 @@ func (m *Metrics) RecordAdapterConnectionDialTime(adapterName openrtb_ext.Bidder
 	m.adapterConnectionDialTime.With(prometheus.Labels{
 		adapterLabel: strings.ToLower(string(adapterName)),
 	}).Observe(dialStartTime.Seconds())
+}
+
+func (m *Metrics) RecordVastlintEvent(event metrics.VastlintEvent, count uint64) {
+	if event.Valid() {
+		m.vastlintEvents.WithLabelValues(string(event)).Add(float64(count))
+	}
 }

@@ -2,6 +2,7 @@ package openrtb_ext
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -446,5 +447,20 @@ func TestMoveRewardedFromPrebidExtTo26(t *testing.T) {
 		moveRewardedFromPrebidExtTo26(w)
 		assert.NoError(t, w.RebuildImp(), test.description)
 		assert.Equal(t, test.expectedImp, *w.Imp, test.description)
+	}
+}
+
+func TestGDPRConflictSurvivesRepeatedNormalization(t *testing.T) {
+	for _, legacy := range []int8{0, 1} {
+		request := &RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: &openrtb2.Regs{
+			GDPR: openrtb2.Int8Ptr(0), Ext: json.RawMessage(fmt.Sprintf(`{"gdpr":%d}`, legacy)),
+		}}}
+		for i := 0; i < 2; i++ {
+			assert.NoError(t, ConvertUpTo26(request))
+			assert.NoError(t, request.RebuildRequest())
+			assert.Equal(t, legacy != 0, request.GDPRSignalConflict)
+			assert.Equal(t, int8(0), *request.Regs.GDPR, "normalization behavior is unchanged")
+			assert.Empty(t, request.Regs.Ext)
+		}
 	}
 }

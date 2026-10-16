@@ -246,3 +246,7 @@ func (me *MetricsEngineMock) RecordAdapterConnectionDialError(adapterName openrt
 func (me *MetricsEngineMock) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
 	me.Called(adapterName, dialStartTime)
 }
+
+func (me *MetricsEngineMock) RecordVastlintEvent(event VastlintEvent, count uint64) {
+	me.Called(event, count)
+}

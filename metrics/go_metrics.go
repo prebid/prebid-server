@@ -13,6 +13,7 @@ import (
 )
 
 type Metrics struct {
+	VastlintCounters               map[VastlintEvent]metrics.Counter
 	MetricsRegistry                metrics.Registry
 	ConnectionCounter              metrics.Counter
 	TMaxTimeoutCounter             metrics.Counter
@@ -158,9 +159,14 @@ type ModuleMetrics struct {
 func NewBlankMetrics(registry metrics.Registry, exchanges []string, disabledMetrics config.DisabledMetrics, moduleStageNames map[string][]string) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	blankTimer := &metrics.NilTimer{}
+	vastlintCounters := make(map[VastlintEvent]metrics.Counter)
+	for _, event := range VastlintEvents() {
+		vastlintCounters[event] = &metrics.NilCounter{}
+	}
 
 	newMetrics := &Metrics{
 		MetricsRegistry:                registry,
+		VastlintCounters:               vastlintCounters,
 		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
 		RequestSizeByEndpoint:          make(map[EndpointType]metrics.Histogram),
 		ConnectionCounter:              metrics.NilCounter{},
@@ -297,6 +303,9 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 		lowerCaseExchanges = append(lowerCaseExchanges, strings.ToLower(string(exchange)))
 	}
 	newMetrics := NewBlankMetrics(registry, lowerCaseExchanges, disableAccountMetrics, moduleStageNames)
+	for _, event := range VastlintEvents() {
+		newMetrics.VastlintCounters[event] = metrics.GetOrRegisterCounter("vastlint."+string(event), registry)
+	}
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.TMaxTimeoutCounter = metrics.GetOrRegisterCounter("tmax_timeout", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
@@ -1230,4 +1239,10 @@ func (me *Metrics) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
 	}
 
 	am.ThrottledMeter.Mark(1)
+}
+
+func (me *Metrics) RecordVastlintEvent(event VastlintEvent, count uint64) {
+	if counter := me.VastlintCounters[event]; counter != nil {
+		counter.Inc(int64(count))
+	}
 }
