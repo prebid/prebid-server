@@ -54,7 +54,7 @@ func (mc *moduleContexts) put(moduleName string, mCtx *hookstage.ModuleContext) 
 	defer mc.Unlock()
 
 	existingCtx, ok := mc.ctxs[moduleName]
-	if !ok {
+	if !ok || existingCtx == nil {
 		mc.ctxs[moduleName] = mCtx
 		return
 	}
