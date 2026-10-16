@@ -173,6 +173,51 @@ func TestScrubEids(t *testing.T) {
 	}
 }
 
+func TestScrubUserFPD(t *testing.T) {
+	testCases := []struct {
+		name           string
+		deviceIn       *openrtb2.Device
+		userIn         *openrtb2.User
+		expectedDevice *openrtb2.Device
+		expectedUser   *openrtb2.User
+	}{
+		{
+			name:           "all",
+			deviceIn:       &openrtb2.Device{DIDMD5: "MD5", IFA: "IFA"},
+			userIn:         &openrtb2.User{ID: "ID", BuyerUID: "bID", Yob: 2000, Gender: "M", Keywords: "keywords", EIDs: []openrtb2.EID{{Source: "source"}}, Ext: json.RawMessage(`{"data":"123","test":1}`)},
+			expectedDevice: &openrtb2.Device{DIDMD5: "", IFA: ""},
+			expectedUser:   &openrtb2.User{ID: "", BuyerUID: "", Yob: 0, Gender: "", Keywords: "", EIDs: nil, Ext: json.RawMessage(`{"test":1}`)},
+		},
+		{
+			// Regression test: reqWrapper.User must not be assumed non-nil. A request with no
+			// user object at all (e.g. app traffic, or a first visit with no established user
+			// state) combined with the transmitUserFPD activity being disallowed for a bidder,
+			// module, or analytics adapter must not panic with a nil pointer dereference.
+			name:           "nil_user",
+			deviceIn:       &openrtb2.Device{DIDMD5: "MD5"},
+			userIn:         nil,
+			expectedDevice: &openrtb2.Device{DIDMD5: ""},
+			expectedUser:   nil,
+		},
+		{
+			name:           "nil_device_and_user",
+			deviceIn:       nil,
+			userIn:         nil,
+			expectedDevice: nil,
+			expectedUser:   nil,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			brw := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Device: test.deviceIn, User: test.userIn}}
+			assert.NotPanics(t, func() { ScrubUserFPD(brw) })
+			brw.RebuildRequest()
+			assert.Equal(t, test.expectedDevice, brw.Device)
+			assert.Equal(t, test.expectedUser, brw.User)
+		})
+	}
+}
+
 func TestScrubTID(t *testing.T) {
 	testCases := []struct {
 		name           string

@@ -132,7 +132,9 @@ func ScrubUserFPD(reqWrapper *openrtb_ext.RequestWrapper) {
 	scrubDeviceIDs(reqWrapper)
 	scrubUserIDs(reqWrapper)
 	scrubUserExt(reqWrapper, "data")
-	reqWrapper.User.EIDs = nil
+	if reqWrapper.User != nil {
+		reqWrapper.User.EIDs = nil
+	}
 }
 
 func ScrubGdprID(reqWrapper *openrtb_ext.RequestWrapper) {
