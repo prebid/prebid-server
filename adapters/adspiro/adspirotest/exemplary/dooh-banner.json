@@ -1,0 +1,156 @@
+{
+  "mockBidRequest": {
+    "id": "request-dooh-banner",
+    "dooh": {
+      "id": "dooh-1",
+      "name": "Airport Screen",
+      "venuetype": [
+        "airport"
+      ],
+      "publisher": {
+        "id": "dooh-publisher"
+      }
+    },
+    "device": {
+      "ip": "203.0.113.30"
+    },
+    "imp": [
+      {
+        "id": "imp-dooh",
+        "banner": {
+          "format": [
+            {
+              "w": 1920,
+              "h": 1080
+            }
+          ]
+        },
+        "qty": {
+          "multiplier": 12.5,
+          "sourcetype": 1
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "test"
+          }
+        }
+      }
+    ],
+    "tmax": 1000
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adspiro.example/pbs?pid=test",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "body": {
+          "id": "request-dooh-banner",
+          "dooh": {
+            "id": "dooh-1",
+            "name": "Airport Screen",
+            "venuetype": [
+              "airport"
+            ],
+            "publisher": {
+              "id": "dooh-publisher"
+            }
+          },
+          "device": {
+            "ip": "203.0.113.30"
+          },
+          "imp": [
+            {
+              "id": "imp-dooh",
+              "banner": {
+                "format": [
+                  {
+                    "w": 1920,
+                    "h": 1080
+                  }
+                ]
+              },
+              "qty": {
+                "multiplier": 12.5,
+                "sourcetype": 1
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "test"
+                }
+              }
+            }
+          ],
+          "tmax": 1000,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-dooh"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-dooh-banner",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adspiro",
+              "bid": [
+                {
+                  "id": "bid-dooh",
+                  "impid": "imp-dooh",
+                  "price": 0.5,
+                  "adm": "<a href=\"https://adspiro.io\"><img src=\"https://adspiro.io/prebid/300x250.png\"></a>",
+                  "adomain": [
+                    "adspiro.io"
+                  ],
+                  "crid": "adspiro-test-banner",
+                  "w": 1920,
+                  "h": 1080,
+                  "exp": 300,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-dooh",
+            "impid": "imp-dooh",
+            "price": 0.5,
+            "adm": "<a href=\"https://adspiro.io\"><img src=\"https://adspiro.io/prebid/300x250.png\"></a>",
+            "adomain": [
+              "adspiro.io"
+            ],
+            "crid": "adspiro-test-banner",
+            "w": 1920,
+            "h": 1080,
+            "exp": 300,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

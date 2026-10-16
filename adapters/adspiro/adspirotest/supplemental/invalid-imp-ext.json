@@ -1,0 +1,141 @@
+{
+  "mockBidRequest": {
+    "id": "request-invalid-imp-ext",
+    "site": {
+      "id": "site-1",
+      "domain": "publisher.example",
+      "page": "https://publisher.example/article",
+      "publisher": {
+        "id": "site-publisher"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-0",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": "invalid"
+      },
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adspiro.example/pbs?pid=pub-1",
+        "body": {
+          "id": "request-invalid-imp-ext",
+          "site": {
+            "id": "site-1",
+            "domain": "publisher.example",
+            "page": "https://publisher.example/article",
+            "publisher": {
+              "id": "site-publisher"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "pub-1"
+                }
+              }
+            }
+          ],
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-invalid-imp-ext",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adspiro",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 0.5,
+                  "adm": "<a href=\"https://adspiro.io\"><img src=\"https://adspiro.io/prebid/300x250.png\"></a>",
+                  "adomain": [
+                    "adspiro.io"
+                  ],
+                  "crid": "creative-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 0.5,
+            "adm": "<a href=\"https://adspiro.io\"><img src=\"https://adspiro.io/prebid/300x250.png\"></a>",
+            "adomain": [
+              "adspiro.io"
+            ],
+            "crid": "creative-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-0: invalid imp.ext: ",
+      "comparison": "startswith"
+    }
+  ]
+}
