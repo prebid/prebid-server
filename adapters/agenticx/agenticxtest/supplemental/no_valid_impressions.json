@@ -1,0 +1,12 @@
+{
+  "mockBidRequest": {
+    "id": "no-valid-imps",
+    "imp": []
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "no valid impressions",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+package agenticx
+
+import (
+	"fmt"
+	"net/http"
+	"net/url"
+
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+// Used for user sync attribution when a publisher doesn't supply their own sspId/siteId.
+const (
+	defaultSspID  = "630141"
+	defaultSiteID = "49964415"
+)
+
+type adapter struct {
+	endpoint string
+}
+
+func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
+	return &adapter{endpoint: cfg.Endpoint}, nil
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+	validImps := make([]openrtb2.Imp, 0, len(request.Imp))
+	var setTestMode bool
+	var sspID, siteID string
+
+	for _, imp := range request.Imp {
+		impExt, err := parseImpExt(imp.Ext)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("impID %s: %w", imp.ID, err))
+			continue
+		}
+
+		if imp.Banner == nil && imp.Video == nil && imp.Audio == nil {
+			errs = append(errs, fmt.Errorf("impID %s: no banner, video, or audio object specified", imp.ID))
+			continue
+		}
+
+		if imp.BidFloor == 0 && impExt.BidFloor > 0 {
+			imp.BidFloor = impExt.BidFloor
+		}
+
+		if impExt.TestMode == 1 {
+			setTestMode = true
+		}
+
+		// First imp to supply sspId/siteId wins; the whole batch shares one outgoing request.
+		if sspID == "" && impExt.SspID != "" {
+			sspID = impExt.SspID
+		}
+		if siteID == "" && impExt.SspSiteID != "" {
+			siteID = impExt.SspSiteID
+		}
+
+		validImps = append(validImps, imp)
+	}
+
+	if sspID == "" {
+		sspID = defaultSspID
+	}
+	if siteID == "" {
+		siteID = defaultSiteID
+	}
+
+	if len(validImps) == 0 {
+		return nil, append(errs, fmt.Errorf("no valid impressions"))
+	}
+
+	// Copy to avoid mutating the shared *request seen by other bidders in this auction.
+	reqCopy := *request
+	reqCopy.Imp = validImps
+	// Intentional: any imp requesting test mode marks the whole outgoing request as test.
+	if setTestMode {
+		reqCopy.Test = 1
+	}
+
+	reqJSON, err := jsonutil.Marshal(reqCopy)
+	if err != nil {
+		return nil, append(errs, err)
+	}
+
+	headers := http.Header{}
+	headers.Set("Content-Type", "application/json;charset=utf-8")
+	headers.Set("Accept", "application/json")
+
+	endpoint, err := url.Parse(a.endpoint)
+	if err != nil {
+		return nil, append(errs, err)
+	}
+	q := endpoint.Query()
+	q.Set("ssp_id", sspID)
+	q.Set("site_id", siteID)
+	endpoint.RawQuery = q.Encode()
+
+	return []*adapters.RequestData{
+		{
+			Method:  "POST",
+			Uri:     endpoint.String(),
+			Body:    reqJSON,
+			Headers: headers,
+			ImpIDs:  openrtb_ext.GetImpIDs(validImps),
+		},
+	}, errs
+}
+
+func parseImpExt(ext jsonutil.RawMessage) (openrtb_ext.ImpExtAgenticx, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := jsonutil.Unmarshal(ext, &bidderExt); err != nil {
+		return openrtb_ext.ImpExtAgenticx{}, err
+	}
+	var agenticxExt openrtb_ext.ImpExtAgenticx
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &agenticxExt); err != nil {
+		return openrtb_ext.ImpExtAgenticx{}, err
+	}
+	return agenticxExt, nil
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, reqData *adapters.RequestData, respData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if adapters.IsResponseStatusCodeNoContent(respData) {
+		return nil, nil
+	}
+	if err := adapters.CheckResponseStatusCodeForErrors(respData); err != nil {
+		return nil, []error{err}
+	}
+
+	var bidResp openrtb2.BidResponse
+	if err := jsonutil.Unmarshal(respData.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	br := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid))
+	if bidResp.Cur != "" {
+		br.Currency = bidResp.Cur
+	}
+
+	var errs []error
+	for _, seatBid := range bidResp.SeatBid {
+		for i, bid := range seatBid.Bid {
+			bidType, err := getBidType(bid.MType)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			br.Bids = append(br.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
+			})
+		}
+	}
+	return br, errs
+}
+
+func getBidType(mtype openrtb2.MarkupType) (openrtb_ext.BidType, error) {
+	switch mtype {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unknown bid type mtype=%d", mtype),
+		}
+	}
+}
