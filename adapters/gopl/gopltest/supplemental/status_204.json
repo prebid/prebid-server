@@ -11,12 +11,14 @@
                     }
                 },
                 "secure": 1,
-                "video": {
-                    "mimes": ["video/mp4"],
-                    "protocols": [2, 5],
-                    "w": 320,
-                    "h": 480
-                  },
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
                 "tagid": "ad-test1"
             }
         ],
@@ -40,19 +42,21 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "uri": "http://ssp.wp.test/bidder/?bdver=7.0",
                 "body": {
                     "bidRequest": {
                         "id": "test-request",
                         "imp": [
                             {
                                 "id": "slot",
-                                "video": {
-                                    "mimes": ["video/mp4"],
-                                    "protocols": [2, 5],
-                                    "w": 320,
-                                    "h": 480
-                                  },
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 250
+                                        }
+                                    ]
+                                },
                                 "tagid": "ad-test1",
                                 "secure": 1,
                                 "ext": {
@@ -87,47 +91,10 @@
                 "impIDs":["slot"]
             },
             "mockResponse": {
-                "status": 200,
-                "body": {
-                    "cur": "USD",
-                    "id": "test-request",
-                    "seatbid": [
-                        {
-                            "seat": "sspbc-test",
-                            "bid": [
-                                {
-                                    "adm": "test-video-ad",
-                                    "id": "response-005",
-                                    "impid": "slot",
-                                    "price": 20,
-                                    "mtype": 2,
-                                    "w": 320,
-                                    "h": 480
-                                }
-                            ]
-                        }
-                    ]
-                }
+                "status": 204,
+                "body": {}
             }
         }
     ],
-    "expectedBidResponses": [
-        {
-            "currency": "USD",
-            "bids": [
-                {
-                    "bid": {
-                        "adm": "test-video-ad",
-                        "id": "response-005",
-                        "impid": "slot",
-                        "price": 20,
-                        "mtype": 2,
-                        "w": 320,
-                        "h": 480
-                    },
-                    "type": "video"
-                }
-            ]
-        }
-    ]
+    "expectedBidResponses": []
 }
