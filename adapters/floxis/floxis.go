@@ -27,7 +27,7 @@ const (
 )
 
 // Schema keys are case-sensitive, JSON unmarshalling is not: "REGION" bypasses the schema pattern.
-var hostLabel = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
+var hostLabel = regexp.MustCompile(`^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
 
 func resolveBidHost(region, partner string) string {
 	region = strings.ToLower(region)
