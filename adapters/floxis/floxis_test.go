@@ -146,16 +146,49 @@ func TestGetMediaTypeForBidByMType(t *testing.T) {
 		{openrtb2.MarkupNative, openrtb_ext.BidTypeNative},
 	}
 	for _, c := range cases {
-		bt, err := getMediaTypeForBid(nil, openrtb2.Bid{ImpID: "x", MType: c.mtype})
+		bt, err := getMediaTypeForBid([]openrtb2.Imp{{ID: "x"}}, openrtb2.Bid{ImpID: "x", MType: c.mtype})
 		assert.NoError(t, err)
 		assert.Equal(t, c.want, bt)
 	}
 }
 
 func TestGetMediaTypeForBidUnsupportedMType(t *testing.T) {
-	_, err := getMediaTypeForBid(nil, openrtb2.Bid{ImpID: "x", MType: openrtb2.MarkupType(99)})
+	_, err := getMediaTypeForBid([]openrtb2.Imp{{ID: "x"}}, openrtb2.Bid{ImpID: "x", MType: openrtb2.MarkupType(99)})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported bid.mtype")
+}
+
+func TestGetMediaTypeForBidUnknownImpWithMType(t *testing.T) {
+	_, err := getMediaTypeForBid([]openrtb2.Imp{{ID: "x", Banner: &openrtb2.Banner{}}}, openrtb2.Bid{ImpID: "missing", MType: openrtb2.MarkupBanner})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to find impression missing for bid")
+}
+
+func TestMakeBidsRejectsBidForOtherOutboundRequest(t *testing.T) {
+	request := &openrtb2.BidRequest{
+		ID: "req-1",
+		Imp: []openrtb2.Imp{
+			{ID: "imp-1", Banner: &openrtb2.Banner{}, Ext: json.RawMessage(`{"bidder":{"seat":"seat-1"}}`)},
+			{ID: "imp-2", Video: &openrtb2.Video{}, Ext: json.RawMessage(`{"bidder":{"seat":"seat-2"}}`)},
+		},
+	}
+	adapter := newAdapter()
+	requests, errs := adapter.MakeRequests(request, &adapters.ExtraRequestInfo{})
+	assert.Empty(t, errs)
+	if !assert.Len(t, requests, 2) {
+		return
+	}
+	response := &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       []byte(`{"seatbid":[{"bid":[{"id":"valid","impid":"imp-1","price":1,"mtype":1},{"id":"cross-seat","impid":"imp-2","price":1,"mtype":2}]}]}`),
+	}
+	bids, errs := adapter.MakeBids(request, requests[0], response)
+	if assert.Len(t, errs, 1) {
+		assert.Contains(t, errs[0].Error(), "unable to find impression imp-2 for bid")
+	}
+	if assert.NotNil(t, bids) && assert.Len(t, bids.Bids, 1) {
+		assert.Equal(t, "valid", bids.Bids[0].Bid.ID)
+	}
 }
 
 func TestGetMediaTypeForBidSingleFormatFallback(t *testing.T) {

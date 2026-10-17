@@ -132,15 +132,21 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
+	var outboundRequest struct {
+		Imp []openrtb2.Imp `json:"imp"`
+	}
+	if err := jsonutil.Unmarshal(requestData.Body, &outboundRequest); err != nil {
+		return nil, []error{err}
+	}
 
 	var errs []error
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(outboundRequest.Imp))
 	if response.Cur != "" {
 		bidResponse.Currency = response.Cur
 	}
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, typeErr := getMediaTypeForBid(request.Imp, seatBid.Bid[i])
+			bidType, typeErr := getMediaTypeForBid(outboundRequest.Imp, seatBid.Bid[i])
 			if typeErr != nil {
 				errs = append(errs, typeErr)
 				continue
@@ -176,25 +182,25 @@ func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpFloxis, error) {
 }
 
 func getMediaTypeForBid(imps []openrtb2.Imp, bid openrtb2.Bid) (openrtb_ext.BidType, error) {
-	if bid.MType != 0 {
-		switch bid.MType {
-		case openrtb2.MarkupBanner:
-			return openrtb_ext.BidTypeBanner, nil
-		case openrtb2.MarkupVideo:
-			return openrtb_ext.BidTypeVideo, nil
-		case openrtb2.MarkupAudio:
-			return openrtb_ext.BidTypeAudio, nil
-		case openrtb2.MarkupNative:
-			return openrtb_ext.BidTypeNative, nil
-		default:
-			return "", &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("unsupported bid.mtype %d for impression %s", bid.MType, bid.ImpID),
-			}
-		}
-	}
 	for _, imp := range imps {
 		if imp.ID != bid.ImpID {
 			continue
+		}
+		if bid.MType != 0 {
+			switch bid.MType {
+			case openrtb2.MarkupBanner:
+				return openrtb_ext.BidTypeBanner, nil
+			case openrtb2.MarkupVideo:
+				return openrtb_ext.BidTypeVideo, nil
+			case openrtb2.MarkupAudio:
+				return openrtb_ext.BidTypeAudio, nil
+			case openrtb2.MarkupNative:
+				return openrtb_ext.BidTypeNative, nil
+			default:
+				return "", &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("unsupported bid.mtype %d for impression %s", bid.MType, bid.ImpID),
+				}
+			}
 		}
 		formats, resolved := countFormats(imp)
 		switch {
