@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -988,3 +989,136 @@ func TestGetDisplayManagerAndVer(t *testing.T) {
 		})
 	}
 }
+
+func TestAssignBannerSize(t *testing.T) {
+	tests := []struct {
+		name          string
+		banner        *openrtb2.Banner
+		instl         int8
+		wantBanner    *openrtb2.Banner
+		expectedError error
+	}{
+		{
+			name: "Both W and H provided",
+			banner: &openrtb2.Banner{
+				W: ptrutil.ToPtr(int64(300)),
+				H: ptrutil.ToPtr(int64(250)),
+			},
+			wantBanner: &openrtb2.Banner{
+				W: ptrutil.ToPtr(int64(300)),
+				H: ptrutil.ToPtr(int64(250)),
+			},
+			expectedError: nil,
+		},
+		{
+			name: "W and H missing, but Format provided",
+			banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					{W: 728, H: 90},
+				},
+			},
+			wantBanner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					{W: 728, H: 90},
+				},
+				W: ptrutil.ToPtr(int64(728)),
+				H: ptrutil.ToPtr(int64(90)),
+			},
+			expectedError: nil,
+		},
+		{
+			name: "W and H missing and Format empty, non-interstitial (Issue #5002)",
+			banner: &openrtb2.Banner{
+				TopFrame: 1,
+			},
+			instl:         0,
+			wantBanner:    nil,
+			expectedError: &errortypes.BadInput{Message: "No sizes provided for Banner"},
+		},
+		{
+			name: "W and H missing and Format empty, interstitial (instl=1) — valid per OpenRTB 2.6",
+			banner: &openrtb2.Banner{
+				TopFrame: 1,
+			},
+			instl: 1,
+			wantBanner: &openrtb2.Banner{
+				TopFrame: 1,
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualBanner, err := assignBannerSize(tt.banner, tt.instl)
+			if tt.expectedError != nil {
+				assert.Equal(t, tt.expectedError, err)
+				assert.Nil(t, actualBanner)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantBanner, actualBanner)
+			}
+		})
+	}
+}
+
+func TestMakeRequests_BannerWithNoSizesDoesNotPanic(t *testing.T) {
+	bidder, err := Builder(openrtb_ext.BidderPubmatic, config.Adapter{
+		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	require.NoError(t, err)
+
+	// Reproduction payload from Issue #5002: instl: 1 without sizes in banner or format.
+	// Per OpenRTB 2.6 spec, banner sizes are optional for interstitial impressions (instl=1),
+	// so this must not panic and must not return an error.
+	req := &openrtb2.BidRequest{
+		ID: "test-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID:    "imp-test",
+				Instl: 1,
+				Banner: &openrtb2.Banner{
+					TopFrame: 1,
+				},
+				Ext: json.RawMessage(`{"bidder":{"pubmatic":{"publisherId":"1","adSlot":"2"}}}`),
+			},
+		},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{ID: "pubId"},
+			Page:      "https://www.fake.com/page/",
+		},
+	}
+
+	httpReqs, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
+	assert.NotNil(t, httpReqs)
+	assert.Empty(t, errs)
+}
+
+func TestMakeRequests_NonInterstitialBannerWithNoSizesReturnsError(t *testing.T) {
+	bidder, err := Builder(openrtb_ext.BidderPubmatic, config.Adapter{
+		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	require.NoError(t, err)
+
+	// Non-interstitial banner with no explicit W/H and no format entries must return BadInput.
+	req := &openrtb2.BidRequest{
+		ID: "test-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "imp-test",
+				Banner: &openrtb2.Banner{
+					TopFrame: 1,
+				},
+				Ext: json.RawMessage(`{"bidder":{"pubmatic":{"publisherId":"1","adSlot":"2"}}}`),
+			},
+		},
+		Site: &openrtb2.Site{
+			Publisher: &openrtb2.Publisher{ID: "pubId"},
+			Page:      "https://www.fake.com/page/",
+		},
+	}
+
+	httpReqs, errs := bidder.MakeRequests(req, &adapters.ExtraRequestInfo{})
+	assert.Nil(t, httpReqs)
+	require.Len(t, errs, 1)
+	assert.Equal(t, &errortypes.BadInput{Message: "No sizes provided for Banner"}, errs[0])
+}
+
