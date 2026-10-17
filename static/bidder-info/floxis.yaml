@@ -1,0 +1,26 @@
+endpoint: "https://{{.Host}}.floxis.tech/pbs"
+endpointCompression: gzip
+maintainer:
+  email: prebid@floxis.tech
+gvlVendorID: 1609
+modifyingVastXmlAllowed: false
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+userSync:
+  redirect:
+    url: "https://px-us-e.floxis.tech/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&us_privacy={{.USPrivacy}}&dest={{.RedirectURL}}"
+    userMacro: "${USER_ID}"

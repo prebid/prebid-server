@@ -1,0 +1,98 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": "{\"ver\":\"1.2\"}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "seat": "pub-seat-apac",
+            "region": "apac"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.apac"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
+        "uri": "https://apac.floxis.tech/pbs?seat=pub-seat-apac",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "request": "{\"ver\":\"1.2\"}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "seat": "pub-seat-apac",
+                  "region": "apac"
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "app-1",
+            "bundle": "com.example.apac"
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "floxis",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 2.0,
+                  "adm": "{\"native\":{}}",
+                  "crid": "creative-1",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 2.0,
+            "adm": "{\"native\":{}}",
+            "crid": "creative-1",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
