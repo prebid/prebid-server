@@ -42,7 +42,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://bidder_us.escalax.io/?partner=sourceId&token=accountId&type=pbs",
+        "uri": "http://bidder-us.escalax.io/?partner=sourceId&token=accountId&type=pbs",
         "body": {
           "id": "some-request-id",
           "imp": [

@@ -4,106 +4,221 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"text/template"
+	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-type adapter struct {
-	endpoint *template.Template
+type adapter struct{}
+
+const defaultRegion = "us"
+
+var exchangeRegionSubdomains = map[string]string{
+	"us":   "bidder-us",
+	"eu":   "bidder_eu",
+	"apac": "bidder_apac",
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	bidder := &adapter{
-		endpoint: template,
-	}
-	return bidder, nil
+var sspRegionSubdomains = map[string]string{
+	"us":   "s-us",
+	"eu":   "s-eu",
+	"apac": "s-as",
 }
 
-func getHeaders(request *openrtb2.BidRequest) http.Header {
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("X-Openrtb-Version", "2.5")
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
+	return &adapter{}, nil
+}
 
-	if request.Device != nil {
-		if len(request.Device.UA) > 0 {
-			headers.Add("User-Agent", request.Device.UA)
+func impError(impID string, err error) error {
+	return &errortypes.BadInput{
+		Message: fmt.Sprintf("imp %s: %s", impID, err.Error()),
+	}
+}
+
+func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+	requests := make([]*adapters.RequestData, 0, len(openRTBRequest.Imp))
+
+	for _, imp := range openRTBRequest.Imp {
+		ext, err := parseImpExt(&imp)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
 		}
 
-		if len(request.Device.IPv6) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		endpoint, err := resolveEndpoint(ext)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
 		}
 
-		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
+		impExt, err := stripBidderParams(imp.Ext)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
 		}
+		imp.Ext = impExt
+
+		reqCopy := *openRTBRequest
+		reqCopy.Imp = []openrtb2.Imp{imp}
+
+		reqJSON, err := jsonutil.Marshal(reqCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		requests = append(requests, &adapters.RequestData{
+			Method:  http.MethodPost,
+			Body:    reqJSON,
+			Uri:     endpoint,
+			Headers: buildHeaders(&reqCopy),
+			ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
+		})
 	}
 
-	return headers
+	return requests, errs
 }
 
-func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-	escalaxExt, err := getImpressionExt(&openRTBRequest.Imp[0])
-	if err != nil {
-		return nil, []error{err}
+func stripBidderParams(ext json.RawMessage) (json.RawMessage, error) {
+	if len(ext) == 0 {
+		return nil, nil
 	}
 
-	openRTBRequest.Imp[0].Ext = nil
-
-	url, err := a.buildEndpointURL(escalaxExt)
-	if err != nil {
-		return nil, []error{err}
+	var fields map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(ext, &fields); err != nil {
+		return nil, err
 	}
 
-	reqJSON, err := json.Marshal(openRTBRequest)
-	if err != nil {
-		return nil, []error{err}
+	delete(fields, "bidder")
+	if len(fields) == 0 {
+		return nil, nil
 	}
 
-	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Body:    reqJSON,
-		Uri:     url,
-		Headers: getHeaders(openRTBRequest),
-		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
-	}}, nil
+	return jsonutil.Marshal(fields)
 }
 
-func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtEscalax, error) {
+func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtEscalax, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Error parsing escalaxExt - " + err.Error(),
-		}
+		return nil, &errortypes.BadInput{Message: "Error parsing escalaxExt - " + err.Error()}
 	}
+
 	var escalaxExt openrtb_ext.ExtEscalax
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &escalaxExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: "Error parsing bidderExt - " + err.Error(),
-		}
+		return nil, &errortypes.BadInput{Message: "Error parsing bidderExt - " + err.Error()}
 	}
 
 	return &escalaxExt, nil
 }
 
-func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtEscalax) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: params.SourceID}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
+func resolveEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
+	hasExchangeParams := ext.AccountID != nil || ext.SourceID != nil
+	isExchange := ext.AccountID != nil && ext.SourceID != nil
+	isSsp := ext.SupplyPlacementID != nil
+
+	switch {
+	case hasExchangeParams && isSsp:
+		return "", &errortypes.BadInput{
+			Message: "provide either accountId and sourceId, or supplyPlacementId, not both",
+		}
+	case isExchange:
+		return buildExchangeEndpoint(ext)
+	case isSsp:
+		return buildSspEndpoint(ext)
+	case hasExchangeParams:
+		return "", &errortypes.BadInput{
+			Message: "accountId and sourceId must be provided together",
+		}
+	default:
+		return "", &errortypes.BadInput{
+			Message: "either accountId and sourceId, or supplyPlacementId is required",
+		}
+	}
 }
 
-func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
+func buildExchangeEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
+	subdomain, err := resolveSubdomain(exchangeRegionSubdomains, ext.Region)
+	if err != nil {
+		return "", err
+	}
+
+	endpointURL := &url.URL{
+		Scheme: "http",
+		Host:   subdomain + ".escalax.io",
+		Path:   "/",
+	}
+	query := endpointURL.Query()
+	query.Set("partner", *ext.SourceID)
+	query.Set("token", *ext.AccountID)
+	query.Set("type", "pbs")
+	endpointURL.RawQuery = query.Encode()
+
+	return endpointURL.String(), nil
+}
+
+func buildSspEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
+	subdomain, err := resolveSubdomain(sspRegionSubdomains, ext.Region)
+	if err != nil {
+		return "", err
+	}
+
+	endpointURL := &url.URL{
+		Scheme: "https",
+		Host:   subdomain + ".escalax.io",
+		Path:   "/pbsb",
+	}
+	query := endpointURL.Query()
+	query.Set("placementId", *ext.SupplyPlacementID)
+	endpointURL.RawQuery = query.Encode()
+
+	return endpointURL.String(), nil
+}
+
+func resolveSubdomain(regionMap map[string]string, region *string) (string, error) {
+	key := defaultRegion
+	if region != nil {
+		key = *region
+	}
+
+	subdomain, ok := regionMap[key]
+	if !ok {
+		return "", &errortypes.BadInput{
+			Message: fmt.Sprintf("unsupported region %q, expected one of us/eu/apac", key),
+		}
+	}
+	return subdomain, nil
+}
+
+func buildHeaders(request *openrtb2.BidRequest) http.Header {
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("X-Openrtb-Version", "2.5")
+
+	if request.Device == nil {
+		return headers
+	}
+
+	if len(request.Device.UA) > 0 {
+		headers.Add("User-Agent", request.Device.UA)
+	}
+	if len(request.Device.IPv6) > 0 {
+		headers.Add("X-Forwarded-For", request.Device.IPv6)
+	}
+	if len(request.Device.IP) > 0 {
+		headers.Add("X-Forwarded-For", request.Device.IP)
+	}
+
+	return headers
+}
+
+func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
@@ -112,39 +227,37 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 		return nil, []error{err}
 	}
 
-	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Bad Server Response",
-		}}
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &bidResp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{Message: "Bad Server Response"}}
 	}
 
 	if len(bidResp.SeatBid) == 0 {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Empty SeatBid array",
-		}}
+		return nil, []error{&errortypes.BadServerResponse{Message: "Empty SeatBid array"}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-	var bidsArray []*adapters.TypedBid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(requestToBidder.ImpIDs))
+	if len(bidResp.Cur) != 0 {
+		bidResponse.Currency = bidResp.Cur
+	}
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
-		for idx, bid := range sb.Bid {
-			bidType, err := determineImpressionMediaType(bid)
+		for idx := range sb.Bid {
+			bidType, err := determineImpressionMediaType(sb.Bid[idx])
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, err)
+				continue
 			}
 
-			bidsArray = append(bidsArray, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[idx],
 				BidType: bidType,
 			})
 		}
 	}
 
-	bidResponse.Bids = bidsArray
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func determineImpressionMediaType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -156,7 +269,7 @@ func determineImpressionMediaType(bid openrtb2.Bid) (openrtb_ext.BidType, error)
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", &errortypes.BadInput{
+		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unsupported MType %d", bid.MType),
 		}
 	}
