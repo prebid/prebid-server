@@ -160,7 +160,8 @@ var errUnknownImp = errors.New("unknown impression")
 // BadServerResponse when the bid carries an mtype this adapter does not support.
 func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for i := range imps {
-		if imps[i].ID != bid.ImpID {
+		imp := &imps[i]
+		if imp.ID != bid.ImpID {
 			continue
 		}
 		switch bid.MType {
@@ -175,7 +176,6 @@ func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, 
 				Message: fmt.Sprintf("Unsupported mtype %d for bid '%s'", bid.MType, bid.ID),
 			}
 		}
-		imp := &imps[i]
 		switch {
 		case imp.Video != nil && (imp.Banner == nil || vastMarkup.MatchString(bid.AdM)):
 			return openrtb_ext.BidTypeVideo, nil
