@@ -116,6 +116,16 @@
                 "crid": "crid_10",
                 "h": 250,
                 "w": 300
+              },
+              {
+                "id": "bid-3",
+                "impid": "test-imp-1",
+                "mtype": 3,
+                "price": 0.1,
+                "adm": "<VAST version=\"4.0\"></VAST>",
+                "crid": "crid_12",
+                "h": 250,
+                "w": 300
               }]
             }
           ],
@@ -198,6 +208,13 @@
           "cur": "USD"
         }
       }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unsupported mtype 3 for bid 'bid-3'",
+      "comparison": "literal"
     }
   ],
 

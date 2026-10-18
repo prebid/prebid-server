@@ -2,6 +2,7 @@ package yahooAds
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -20,7 +21,7 @@ type adapter struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors []error
+	var errs []error
 
 	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
 	headers := http.Header{}
@@ -36,7 +37,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	// Regs depends only on request-level data, so promote once and reuse the
 	// result for every per-impression copy.
 	promotedRegs, regsWarnings := promoteRegsExtTo26(request.Regs)
-	errors = append(errors, regsWarnings...)
+	errs = append(errs, regsWarnings...)
 
 	for idx, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -45,7 +46,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: ext.bidder not provided", idx),
 			}
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -55,7 +56,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
 			}
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -74,13 +75,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		if err := changeRequestForBidService(&reqCopy, &yahooAdsExt); err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		reqJSON, err := json.Marshal(&reqCopy)
 		if err != nil {
-			errors = append(errors, err)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -93,7 +94,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		})
 	}
 
-	return reqs, errors
+	return reqs, errs
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -117,63 +118,73 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bid := &sb.Bid[i]
-			exists, mediaTypeId := getMediaType(bid, internalRequest.Imp)
-			if !exists {
+			mediaType, err := getMediaType(bid, internalRequest.Imp)
+			switch {
+			case errors.Is(err, errUnknownImp):
 				return nil, []error{&errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}}
-			}
-
-			if openrtb_ext.BidTypeBanner != mediaTypeId &&
-				openrtb_ext.BidTypeVideo != mediaTypeId {
-				//only banner and video are mediaTypeId, anything else is ignored
+			case err != nil:
+				// unsupported mtype: drop this bid, keep the others, report why
+				errs = append(errs, err)
+				continue
+			case mediaType == "":
+				// impression offers neither banner nor video: ignored, as before
 				continue
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     bid,
-				BidType: mediaTypeId,
+				BidType: mediaType,
 			})
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 // vastMarkup matches a VAST root element in any case, but not <VASTAdTagURI>.
 var vastMarkup = regexp.MustCompile(`(?i)<\s*VAST[\s/>]`)
 
-// getMediaType reports whether the bid's impression exists and resolves the bid type:
-// bid.mtype first, then VAST markup for a banner+video impression, then the
-// impression's single format. An empty type means the bid is not banner or video.
-func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
+// errUnknownImp is returned by getMediaType when the bid's impression is not in the request.
+var errUnknownImp = errors.New("unknown impression")
+
+// getMediaType resolves the bid type: bid.mtype first, then VAST markup for a
+// banner+video impression, then the impression's single format. It returns an
+// empty type and no error when the impression exists but offers neither banner
+// nor video, errUnknownImp when the impression is missing, and a
+// BadServerResponse when the bid carries an mtype this adapter does not support.
+func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for i := range imps {
 		if imps[i].ID != bid.ImpID {
 			continue
 		}
 		switch bid.MType {
 		case openrtb2.MarkupBanner:
-			return true, openrtb_ext.BidTypeBanner
+			return openrtb_ext.BidTypeBanner, nil
 		case openrtb2.MarkupVideo:
-			return true, openrtb_ext.BidTypeVideo
+			return openrtb_ext.BidTypeVideo, nil
 		case 0:
 			// no mtype: decide from the markup and the impression below
 		default:
-			return true, "" // audio, native or unknown: not supported
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Unsupported mtype %d for bid '%s'", bid.MType, bid.ID),
+			}
 		}
 		imp := &imps[i]
 		switch {
 		case imp.Video != nil && (imp.Banner == nil || vastMarkup.MatchString(bid.AdM)):
-			return true, openrtb_ext.BidTypeVideo
+			return openrtb_ext.BidTypeVideo, nil
 		case imp.Banner != nil:
-			return true, openrtb_ext.BidTypeBanner
+			return openrtb_ext.BidTypeBanner, nil
 		}
-		return true, ""
+		return "", nil
 	}
-	return false, ""
+	return "", errUnknownImp
 }
 
 func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpYahooAds) error {
