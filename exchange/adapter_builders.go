@@ -175,6 +175,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/nextmillennium"
 	"github.com/prebid/prebid-server/v4/adapters/nexx360"
 	"github.com/prebid/prebid-server/v4/adapters/nobid"
+	"github.com/prebid/prebid-server/v4/adapters/odeeo"
 	"github.com/prebid/prebid-server/v4/adapters/ogury"
 	"github.com/prebid/prebid-server/v4/adapters/oms"
 	"github.com/prebid/prebid-server/v4/adapters/onetag"
@@ -252,6 +253,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/v4/adapters/trustedstack"
 	"github.com/prebid/prebid-server/v4/adapters/trustx"
+	"github.com/prebid/prebid-server/v4/adapters/tunnl"
 	"github.com/prebid/prebid-server/v4/adapters/ucfunnel"
 	"github.com/prebid/prebid-server/v4/adapters/undertone"
 	"github.com/prebid/prebid-server/v4/adapters/unicorn"
@@ -461,6 +463,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
 		openrtb_ext.BidderNexx360:           nexx360.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
+		openrtb_ext.BidderOdeeo:             odeeo.Builder,
 		openrtb_ext.BidderOgury:             ogury.Builder,
 		openrtb_ext.BidderOms:               oms.Builder,
 		openrtb_ext.BidderOneTag:            onetag.Builder,
@@ -538,6 +541,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderTripleliftNative:  triplelift_native.Builder,
 		openrtb_ext.BidderTrustedstack:      trustedstack.Builder,
 		openrtb_ext.BidderTrustX:            trustx.Builder,
+		openrtb_ext.BidderTunnl:             tunnl.Builder,
 		openrtb_ext.BidderUcfunnel:          ucfunnel.Builder,
 		openrtb_ext.BidderUndertone:         undertone.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
