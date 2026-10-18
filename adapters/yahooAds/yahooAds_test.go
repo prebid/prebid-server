@@ -78,4 +78,17 @@ func TestGetMediaType(t *testing.T) {
 	exists, mediaType := getMediaType(&openrtb2.Bid{ImpID: "missing"}, []openrtb2.Imp{*bannerVideo})
 	assert.False(t, exists)
 	assert.Equal(t, openrtb_ext.BidType(""), mediaType)
+
+	// The same VAST markup resolves per impression when the request carries several.
+	imps := []openrtb2.Imp{
+		{ID: "banner-only", Banner: &openrtb2.Banner{}},
+		{ID: "banner-video", Banner: &openrtb2.Banner{}, Video: &openrtb2.Video{}},
+	}
+	vast := `<VAST version="4.0"></VAST>`
+	exists, mediaType = getMediaType(&openrtb2.Bid{ImpID: "banner-only", AdM: vast}, imps)
+	assert.True(t, exists)
+	assert.Equal(t, openrtb_ext.BidTypeBanner, mediaType)
+	exists, mediaType = getMediaType(&openrtb2.Bid{ImpID: "banner-video", AdM: vast}, imps)
+	assert.True(t, exists)
+	assert.Equal(t, openrtb_ext.BidTypeVideo, mediaType)
 }

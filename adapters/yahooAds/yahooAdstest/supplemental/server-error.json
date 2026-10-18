@@ -13,6 +13,30 @@
             "pos": "pos2"
           }
         }
+      },
+      {
+        "id": "test-imp-id-204",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "dcn": "dcn1",
+            "pos": "pos3"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-bad-body",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "dcn": "dcn1",
+            "pos": "pos4"
+          }
+        }
       }
     ],
     "device": {
@@ -62,6 +86,80 @@
         "body": {
         }
       }
+    },
+    {
+      "expectedRequest": {
+        "uri": "",
+        "body": {
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id-204",
+              "tagid": "pos3",
+              "banner": {
+                "format": [{"w": 728, "h": 90}],
+                "w": 728,
+                "h": 90
+              },
+              "ext": {
+                "bidder": {
+                  "dcn": "dcn1",
+                  "pos": "pos3"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "dcn1"
+          }
+        },
+        "impIDs":["test-imp-id-204"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "",
+        "body": {
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id-bad-body",
+              "tagid": "pos4",
+              "banner": {
+                "format": [{"w": 728, "h": 90}],
+                "w": 728,
+                "h": 90
+              },
+              "ext": {
+                "bidder": {
+                  "dcn": "dcn1",
+                  "pos": "pos4"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "dcn1"
+          }
+        },
+        "impIDs":["test-imp-id-bad-body"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "invalid response"
+      }
     }
   ],
 
@@ -69,6 +167,12 @@
     {
       "value": "Unexpected status code: 500.",
       "comparison": "literal"
+    },
+    {
+      "value": "Bad server response: ",
+      "comparison": "startswith"
     }
-  ]
+  ],
+
+  "expectedBidResponses": []
 }

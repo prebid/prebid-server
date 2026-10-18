@@ -7,6 +7,7 @@
         "banner": {
           "format": [{"w": 300, "h": 250}]
         },
+        "video": {"mimes": ["video/mp4"], "w": 300, "h": 250},
         "ext": {
           "bidder": {
             "dcn": "dcn1",
@@ -19,6 +20,7 @@
         "banner": {
           "format": [{"w": 728, "h": 90}]
         },
+        "video": {"mimes": ["video/mp4"], "w": 728, "h": 90},
         "ext": {
           "bidder": {
             "dcn": "dcn1",
@@ -76,6 +78,7 @@
                 "w": 300,
                 "h": 250
               },
+              "video": {"mimes": ["video/mp4"], "w": 300, "h": 250},
               "ext": {
                 "bidder": {
                   "dcn": "dcn1",
@@ -107,6 +110,7 @@
               "bid": [{
                 "id": "bid-1",
                 "impid": "test-imp-1",
+                "mtype": 2,
                 "price": 0.500000,
                 "adm": "some-test-ad",
                 "crid": "crid_10",
@@ -151,6 +155,7 @@
                 "w": 728,
                 "h": 90
               },
+              "video": {"mimes": ["video/mp4"], "w": 728, "h": 90},
               "ext": {
                 "bidder": {
                   "dcn": "dcn1",
@@ -183,7 +188,7 @@
                 "id": "bid-2",
                 "impid": "test-imp-2",
                 "price": 0.750000,
-                "adm": "some-test-ad-2",
+                "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
                 "crid": "crid_11",
                 "h": 90,
                 "w": 728
@@ -204,13 +209,14 @@
           "bid": {
             "id": "bid-1",
             "impid": "test-imp-1",
+            "mtype": 2,
             "price": 0.5,
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 300,
             "h": 250
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     },
@@ -222,12 +228,12 @@
             "id": "bid-2",
             "impid": "test-imp-2",
             "price": 0.75,
-            "adm": "some-test-ad-2",
+            "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
             "crid": "crid_11",
             "w": 728,
             "h": 90
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }

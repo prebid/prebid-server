@@ -7,6 +7,15 @@
         "banner": {
           "format": [{"w": 728, "h": 90}]
         }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": "not-an-object"
+        }
       }
     ]
   },
@@ -15,6 +24,10 @@
     {
       "value": "imp #0: ext.bidder not provided",
       "comparison": "literal"
+    },
+    {
+      "value": "imp #1: ",
+      "comparison": "startswith"
     }
   ]
 }
