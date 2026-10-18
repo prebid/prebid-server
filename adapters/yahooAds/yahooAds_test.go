@@ -58,6 +58,13 @@ func TestGetMediaType(t *testing.T) {
 		{"mtype audio is dropped", openrtb2.Bid{MType: openrtb2.MarkupAudio, AdM: `<VAST version="4.0"></VAST>`}, bannerVideo, ""},
 		{"mtype native is dropped", openrtb2.Bid{MType: openrtb2.MarkupNative}, bannerVideo, ""},
 		{"unknown mtype is dropped", openrtb2.Bid{MType: 9}, videoOnly, ""},
+		{"negative mtype is dropped", openrtb2.Bid{MType: -1, AdM: "<div>ad</div>"}, bannerOnly, ""},
+		{"no mtype, VAST adm with leading whitespace and mixed case", openrtb2.Bid{AdM: "  \n<Vast version=\"4.2\"></Vast>"}, bannerVideo, openrtb_ext.BidTypeVideo},
+		{"no mtype, self-closing VAST root", openrtb2.Bid{AdM: "<VAST/>"}, bannerVideo, openrtb_ext.BidTypeVideo},
+		{"no mtype, space before VAST tag name", openrtb2.Bid{AdM: "< VAST version=\"3.0\"></VAST>"}, bannerVideo, openrtb_ext.BidTypeVideo},
+		{"no mtype, VAST as text not as root tag", openrtb2.Bid{AdM: "<div>VAST</div>"}, bannerVideo, openrtb_ext.BidTypeBanner},
+		{"no mtype, VASTX prefix is not a VAST root", openrtb2.Bid{AdM: "<VASTX></VASTX>"}, bannerVideo, openrtb_ext.BidTypeBanner},
+		{"no mtype, empty adm on video only imp", openrtb2.Bid{}, videoOnly, openrtb_ext.BidTypeVideo},
 	}
 
 	for _, tt := range tests {

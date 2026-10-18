@@ -1,0 +1,145 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-multiformat",
+        "banner": {"format": [{"w": 300, "h": 250}]},
+        "video": {"mimes": ["video/mp4"], "w": 300, "h": 250},
+        "ext": {"bidder": {"dcn": "dcn1", "pos": "pos2"}}
+      },
+      {
+        "id": "imp-banner-only",
+        "banner": {"format": [{"w": 728, "h": 90}]},
+        "ext": {"bidder": {"dcn": "dcn1", "pos": "pos3"}}
+      }
+    ],
+    "device": {"ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36", "ip": "127.0.0.1"},
+    "site": {"id": "test-site-id"}
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {"Accept": ["application/json"], "Content-Type": ["application/json;charset=utf-8"], "User-Agent": ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"], "X-Openrtb-Version": ["2.6"]},
+        "uri": "",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-multiformat",
+              "tagid": "pos2",
+              "banner": {"format": [{"w": 300, "h": 250}], "w": 300, "h": 250},
+              "video": {"mimes": ["video/mp4"], "w": 300, "h": 250},
+              "ext": {"bidder": {"dcn": "dcn1", "pos": "pos2"}}
+            }
+          ],
+          "device": {"ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36", "ip": "127.0.0.1"},
+          "site": {"id": "dcn1"}
+        },
+        "impIDs": ["imp-multiformat"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "yahooAds",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-multiformat",
+                  "price": 0.5,
+                  "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
+                  "crid": "crid_10",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "headers": {"Accept": ["application/json"], "Content-Type": ["application/json;charset=utf-8"], "User-Agent": ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"], "X-Openrtb-Version": ["2.6"]},
+        "uri": "",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-banner-only",
+              "tagid": "pos3",
+              "banner": {"format": [{"w": 728, "h": 90}], "w": 728, "h": 90},
+              "ext": {"bidder": {"dcn": "dcn1", "pos": "pos3"}}
+            }
+          ],
+          "device": {"ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36", "ip": "127.0.0.1"},
+          "site": {"id": "dcn1"}
+        },
+        "impIDs": ["imp-banner-only"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "yahooAds",
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-banner-only",
+                  "price": 0.4,
+                  "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
+                  "crid": "crid_11",
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-multiformat",
+            "price": 0.5,
+            "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
+            "crid": "crid_10",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-banner-only",
+            "price": 0.4,
+            "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
+            "crid": "crid_11",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
