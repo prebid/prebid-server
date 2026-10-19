@@ -1,0 +1,14 @@
+endpoint: "https://bidder.yaleo.com/prebid"
+geoscope:
+  - CHE
+  - EEA
+maintainer:
+  email: prebid@yaleo.com
+gvlVendorID: 783
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

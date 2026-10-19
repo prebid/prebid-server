@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-empty-app",
+    "app": {},
+    "imp": [
+      {
+        "id": "imp-empty-app",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "a6614689-81fb-424d-a4f1-17ea9a50b635"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "\"app\" must include bundle, domain, or id.",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "mockBidRequest": {
+    "id": "test-nobid-request",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-nobid",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "325ecf59-4270-4edc-b970-b202693f8177"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-nobid-request",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-nobid",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "325ecf59-4270-4edc-b970-b202693f8177"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-nobid"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-nobid-request",
+          "seatbid": [],
+          "ext": {
+            "yaleo": {
+              "nobid": [
+                {
+                  "impid": "imp-nobid",
+                  "placementId": "325ecf59-4270-4edc-b970-b202693f8177",
+                  "reason": "xandr_no_bid",
+                  "message": "Xandr returned no bid for the ad units on placement \"325ecf59-4270-4edc-b970-b202693f8177\"."
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ]
+}

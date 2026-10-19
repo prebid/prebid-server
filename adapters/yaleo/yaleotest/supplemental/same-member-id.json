@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "test-same-member",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-a",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "040b2062-1d84-478b-8c97-91a605c2408f",
+            "memberId": 3927
+          }
+        }
+      },
+      {
+        "id": "imp-b",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "98932e16-fdf6-4ca4-9f46-fd7b84ac58f1",
+            "memberId": 3927
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-same-member",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-a",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "040b2062-1d84-478b-8c97-91a605c2408f",
+                  "memberId": 3927
+                }
+              }
+            },
+            {
+              "id": "imp-b",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "98932e16-fdf6-4ca4-9f46-fd7b84ac58f1",
+                  "memberId": 3927
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-a",
+          "imp-b"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

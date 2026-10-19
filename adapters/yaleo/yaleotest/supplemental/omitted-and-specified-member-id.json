@@ -1,0 +1,117 @@
+{
+  "mockBidRequest": {
+    "id": "test-omitted-and-specified",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-default-member",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "7022c3c7-abc6-4d45-8ca0-c5f2cbfda79c"
+          }
+        }
+      },
+      {
+        "id": "imp-member-5000",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "db8a302e-8e63-4482-8e28-0b5c4ebd3710",
+            "memberId": 5000
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-omitted-and-specified",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-default-member",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "7022c3c7-abc6-4d45-8ca0-c5f2cbfda79c"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-default-member"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-omitted-and-specified",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-member-5000",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "db8a302e-8e63-4482-8e28-0b5c4ebd3710",
+                  "memberId": 5000
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-member-5000"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
