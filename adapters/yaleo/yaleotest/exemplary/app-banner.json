@@ -1,0 +1,119 @@
+{
+  "mockBidRequest": {
+    "id": "test-app-request",
+    "app": {
+      "bundle": "ch.example.news",
+      "id": "123456"
+    },
+    "device": {
+      "ua": "ExampleApp/1.0",
+      "ipv6": "2001:db8::1"
+    },
+    "imp": [
+      {
+        "id": "app-imp",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-app"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "headers": {
+          "Content-Type": [
+            "text/plain"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "test-app-request",
+          "app": {
+            "bundle": "ch.example.news",
+            "id": "123456"
+          },
+          "device": {
+            "ua": "ExampleApp/1.0",
+            "ipv6": "2001:db8::1"
+          },
+          "imp": [
+            {
+              "id": "app-imp",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-app"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "app-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-app-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "app-bid",
+                  "impid": "app-imp",
+                  "price": 1.2,
+                  "adm": "<div>app-ad</div>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "app-bid",
+            "impid": "app-imp",
+            "price": 1.2,
+            "adm": "<div>app-ad</div>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
