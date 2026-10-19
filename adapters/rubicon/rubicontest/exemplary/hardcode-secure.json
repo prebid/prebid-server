@@ -385,8 +385,7 @@
             "ext": {
               "prebid": {
                 "meta": {
-                  "networkId": 123,
-                  "seat": "rubicon"
+                  "networkId": 123
                 },
                 "type": "video"
               }
