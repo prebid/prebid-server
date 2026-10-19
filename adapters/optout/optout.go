@@ -469,6 +469,8 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 			ttl = defaultTTL
 		}
 
+		// The Opt Out endpoint has no separate bid ID, so the impression ID is reused.
+		// This is unique because the endpoint returns at most one bid per slot
 		bid := &openrtb2.Bid{
 			ID:    b.RequestID,
 			ImpID: b.RequestID,
