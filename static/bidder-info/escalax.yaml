@@ -1,4 +1,4 @@
-endpoint: "http://bidder_us.escalax.io/?partner={{.SourceId}}&token={{.AccountID}}&type=pbs"
+endpoint: "https://{{.Host}}.escalax.io"
 maintainer:
   email: "connect@escalax.io"
 geoscope:
