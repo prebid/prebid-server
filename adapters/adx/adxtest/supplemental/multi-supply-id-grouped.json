@@ -1,0 +1,157 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-groups",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "ext": { "bidder": { "supply_id": "keyA" } }
+      },
+      {
+        "id": "imp-2",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": { "supply_id": "keyB" } }
+      },
+      {
+        "id": "imp-3",
+        "banner": { "w": 728, "h": 90 },
+        "ext": { "bidder": { "supply_id": "keyA" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://adx.example.com/ortb/keyA",
+        "body": {
+          "id": "test-req-groups",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "w": 320, "h": 50 },
+              "ext": { "bidder": { "supply_id": "keyA" } }
+            },
+            {
+              "id": "imp-3",
+              "banner": { "w": 728, "h": 90 },
+              "ext": { "bidder": { "supply_id": "keyA" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-1", "imp-3"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-groups",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adx-platform",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.1,
+                  "adm": "<div>ad-1</div>",
+                  "crid": "cr-1",
+                  "w": 320,
+                  "h": 50
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://adx.example.com/ortb/keyB",
+        "body": {
+          "id": "test-req-groups",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "imp": [
+            {
+              "id": "imp-2",
+              "banner": { "w": 300, "h": 250 },
+              "ext": { "bidder": { "supply_id": "keyB" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-groups",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adx-platform",
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 2.2,
+                  "adm": "<div>ad-2</div>",
+                  "crid": "cr-2",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.1,
+            "adm": "<div>ad-1</div>",
+            "crid": "cr-1",
+            "w": 320,
+            "h": 50
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-2",
+            "price": 2.2,
+            "adm": "<div>ad-2</div>",
+            "crid": "cr-2",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

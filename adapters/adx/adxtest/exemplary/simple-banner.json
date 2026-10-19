@@ -1,0 +1,98 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-1",
+    "at": 1,
+    "tmax": 300,
+    "cur": ["USD"],
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "device": {
+      "geo": { "country": "USA" }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://adx.example.com/ortb/testkey",
+        "body": {
+          "id": "test-req-1",
+          "at": 1,
+          "tmax": 300,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "device": {
+            "geo": { "country": "USA" }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "w": 320, "h": 50 },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adx-platform",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr-1",
+                  "w": 320,
+                  "h": 50,
+                  "nurl": "http://adx.example.com/e/win?x=1",
+                  "burl": "http://adx.example.com/e/bill?x=1"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "crid": "cr-1",
+            "w": 320,
+            "h": 50,
+            "nurl": "http://adx.example.com/e/win?x=1",
+            "burl": "http://adx.example.com/e/bill?x=1"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

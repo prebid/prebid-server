@@ -1,0 +1,44 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-special",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "ext": { "bidder": { "supply_id": "a b?c#d" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://adx.example.com/ortb/a%20b%3Fc%23d",
+        "body": {
+          "id": "test-req-special",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "w": 320, "h": 50 },
+              "ext": { "bidder": { "supply_id": "a b?c#d" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": null
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

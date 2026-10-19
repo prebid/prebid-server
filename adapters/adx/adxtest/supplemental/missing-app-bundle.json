@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-no-bundle",
+    "at": 1,
+    "app": {
+      "name": "Example Game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "adx: request.app.bundle is required",
+      "comparison": "literal"
+    }
+  ]
+}

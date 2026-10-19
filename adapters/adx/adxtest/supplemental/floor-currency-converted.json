@@ -1,0 +1,64 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-floor-eur",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "bidfloor": 2,
+        "bidfloorcur": "EUR",
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": { "EUR": { "USD": 1.25 } },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://adx.example.com/ortb/testkey",
+        "body": {
+          "id": "test-req-floor-eur",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "w": 320, "h": 50 },
+              "bidfloor": 2.5,
+              "bidfloorcur": "USD",
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": { "EUR": { "USD": 1.25 } },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": null
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

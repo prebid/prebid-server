@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-native",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "native": {
+          "request": "{}",
+          "ver": "1.2"
+        },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "adx: imp imp-1 has no banner or video object; only banner, interstitial and video imps are supported",
+      "comparison": "literal"
+    },
+    {
+      "value": "adx: no valid impressions in request",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-video",
+    "at": 1,
+    "cur": ["USD"],
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "device": {
+      "geo": { "country": "USA" }
+    },
+    "imp": [
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "minduration": 5,
+          "maxduration": 30,
+          "w": 640,
+          "h": 360
+        },
+        "bidfloor": 1.5,
+        "bidfloorcur": "USD",
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://adx.example.com/ortb/testkey",
+        "body": {
+          "id": "test-req-video",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "device": {
+            "geo": { "country": "USA" }
+          },
+          "imp": [
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "minduration": 5,
+                "maxduration": 30,
+                "w": 640,
+                "h": 360
+              },
+              "bidfloor": 1.5,
+              "bidfloorcur": "USD",
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-video",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adx-platform",
+              "bid": [
+                {
+                  "id": "bid-video",
+                  "impid": "imp-video",
+                  "price": 2.1,
+                  "adm": "<VAST version=\"4.0\"><Ad id=\"1\"><InLine></InLine></Ad></VAST>",
+                  "crid": "cr-video",
+                  "mtype": 2,
+                  "w": 640,
+                  "h": 360
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-video",
+            "impid": "imp-video",
+            "price": 2.1,
+            "adm": "<VAST version=\"4.0\"><Ad id=\"1\"><InLine></InLine></Ad></VAST>",
+            "crid": "cr-video",
+            "mtype": 2,
+            "w": 640,
+            "h": 360
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-type-errors",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://adx.example.com/ortb/testkey",
+        "body": {
+          "id": "test-req-type-errors",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": { "w": 320, "h": 50 },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-type-errors",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adx-platform",
+              "bid": [
+                {
+                  "id": "bid-native",
+                  "impid": "imp-1",
+                  "price": 5,
+                  "adm": "{}",
+                  "crid": "cr-n",
+                  "mtype": 4
+                },
+                {
+                  "id": "bid-ghost",
+                  "impid": "imp-x",
+                  "price": 6,
+                  "adm": "<div>g</div>",
+                  "crid": "cr-g"
+                },
+                {
+                  "id": "bid-ok",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<div>ok</div>",
+                  "crid": "cr-ok",
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "adx: unsupported mtype 4 in bid bid-native (impid \"imp-1\"); only banner and video are served",
+      "comparison": "literal"
+    },
+    {
+      "value": "adx: cannot determine media type of bid bid-ghost: mtype is not set and impid \"imp-x\" has no banner or video imp in the request",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-ok",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<div>ok</div>",
+            "crid": "cr-ok",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

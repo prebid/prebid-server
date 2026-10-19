@@ -1,0 +1,17 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-no-imps",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": []
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "adx: request has no impressions",
+      "comparison": "literal"
+    }
+  ]
+}
