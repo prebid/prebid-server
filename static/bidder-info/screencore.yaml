@@ -1,4 +1,4 @@
-endpoint: "https://ssp-us.screencore.io/pbs-bid"
+endpoint: "https://{{.Host}}.screencore.io"
 maintainer:
   email: "connect@screencore.io"
 gvlVendorID: 1473
