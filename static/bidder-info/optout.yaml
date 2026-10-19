@@ -1,0 +1,14 @@
+endpoint: "https://prebid.optinadserving.com/prebid/display"
+maintainer:
+  email: info@optoutadvertising.com
+gvlVendorID: 227
+openrtb:
+  version: 2.6
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
