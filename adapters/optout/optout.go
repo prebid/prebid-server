@@ -386,6 +386,9 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("optout: unexpected HTTP status %d", response.StatusCode)}}
+	}
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("optout: unexpected HTTP status %d", response.StatusCode)}}
 	}

@@ -351,6 +351,20 @@ func TestMakeBidsResponseFailures(t *testing.T) {
 	}
 }
 
+func TestMakeBidsStatusErrorTypes(t *testing.T) {
+	req, outgoing := makeOutgoing(t)
+	if _, errs := (&adapter{}).MakeBids(req, outgoing, response(400, "")); len(errs) != 1 {
+		t.Fatalf("400: errs=%v", errs)
+	} else if _, ok := errs[0].(*errortypes.BadInput); !ok {
+		t.Fatalf("400: expected BadInput, got %T", errs[0])
+	}
+	if _, errs := (&adapter{}).MakeBids(req, outgoing, response(500, "")); len(errs) != 1 {
+		t.Fatalf("500: errs=%v", errs)
+	} else if _, ok := errs[0].(*errortypes.BadServerResponse); !ok {
+		t.Fatalf("500: expected BadServerResponse, got %T", errs[0])
+	}
+}
+
 func TestMakeBidsRejectsInvalidBidsAndPreservesValidBids(t *testing.T) {
 	req, outgoing := makeOutgoing(t)
 	invalid := []struct{ name, body string }{
