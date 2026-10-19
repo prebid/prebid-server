@@ -1,0 +1,117 @@
+{
+  "mockBidRequest": {
+    "id": "test-omitted-and-specified",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-default-member",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-default"
+          }
+        }
+      },
+      {
+        "id": "imp-member-5000",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-5000",
+            "memberId": 5000
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-omitted-and-specified",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-default-member",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-default"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-default-member"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-omitted-and-specified",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-member-5000",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-5000",
+                  "memberId": 5000
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-member-5000"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

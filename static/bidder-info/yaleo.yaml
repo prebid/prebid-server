@@ -1,0 +1,16 @@
+endpoint: "https://bidder.yaleo.com/prebid"
+geoscope:
+  - CHE
+  - EEA
+maintainer:
+  email: service@audienzz.com
+gvlVendorID: 783
+openrtb:
+  version: "2.6"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

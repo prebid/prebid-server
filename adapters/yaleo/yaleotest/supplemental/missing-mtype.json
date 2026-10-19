@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "test-missing-mtype",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-missing-mtype",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-missing-mtype"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-missing-mtype",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-missing-mtype",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-missing-mtype"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-missing-mtype"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-missing-mtype",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-no-mtype",
+                  "impid": "imp-missing-mtype",
+                  "price": 0.05,
+                  "adm": "<div>ad</div>",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported mtype 0 for imp imp-missing-mtype",
+      "comparison": "literal"
+    }
+  ]
+}
