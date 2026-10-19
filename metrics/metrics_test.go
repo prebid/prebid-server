@@ -6,6 +6,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestV2FetcherMetricEnumerationsReturnAllValues(t *testing.T) {
+	assert.ElementsMatch(t, []FetcherResult{
+		FetcherResultHit,
+		FetcherResultMiss,
+		FetcherResultNegative,
+	}, FetcherResults())
+	assert.ElementsMatch(t, []FetcherBackendResult{
+		FetcherBackendOK,
+		FetcherBackendNotFound,
+		FetcherBackendError,
+	}, FetcherBackendResults())
+}
+
 func TestGetEndpointFromRequestType(t *testing.T) {
 	testCases := []struct {
 		name          string
