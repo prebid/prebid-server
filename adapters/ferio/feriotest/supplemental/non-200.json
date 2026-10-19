@@ -1,0 +1,75 @@
+{
+  "mockBidRequest": {
+    "id": "auction-non-200",
+    "site": {},
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-1",
+            "adUnitId": "plc-1",
+            "tenantId": "tenant-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ferio.bid/bidder",
+        "body": {
+          "id": "auction-non-200",
+          "site": {
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "plc-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "pub-1",
+                  "adUnitId": "plc-1",
+                  "tenantId": "tenant-1"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 500
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -59,6 +59,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderApacdex,
 	BidderAppnexus,
 	BidderAppush,
+	BidderAps,
 	BidderAso,
 	BidderAudienceNetwork,
 	BidderAutomatad,
@@ -125,6 +126,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderExco,
 	BidderEzoic,
 	BidderFeedAd,
+	BidderFerio,
 	BidderFlatads,
 	BidderFlipp,
 	BidderFreewheelSSP,
@@ -170,6 +172,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderMadSense,
 	BidderMadvertise,
 	BidderMarsmedia,
+	BidderMatterfullRTB,
 	BidderMediafuse,
 	BidderMediaGo,
 	BidderMedianet,
@@ -190,6 +193,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderNextMillennium,
 	BidderNexx360,
 	BidderNoBid,
+	BidderOdeeo,
 	BidderOgury,
 	BidderOms,
 	BidderOneTag,
@@ -202,6 +206,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOutbrain,
 	BidderOwnAdx,
 	BidderPangle,
+	BidderPeak226,
 	BidderPGAMSsp,
 	BidderPixfuture,
 	BidderPlaydigo,
@@ -266,10 +271,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTripleliftNative,
 	BidderTrustedstack,
 	BidderTrustX,
+	BidderTunnl,
 	BidderUcfunnel,
 	BidderUndertone,
 	BidderUnicorn,
 	BidderUnruly,
+	BidderViant,
 	BidderVidazoo,
 	BidderVideoByte,
 	BidderVideoHeroes,
@@ -444,6 +451,7 @@ const (
 	BidderApacdex           BidderName = "apacdex"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAppush            BidderName = "appush"
+	BidderAps               BidderName = "aps"
 	BidderAso               BidderName = "aso"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
@@ -510,6 +518,7 @@ const (
 	BidderEVolution         BidderName = "e_volution"
 	BidderEzoic             BidderName = "ezoic"
 	BidderFeedAd            BidderName = "feedad"
+	BidderFerio             BidderName = "ferio"
 	BidderFlatads           BidderName = "flatads"
 	BidderFlipp             BidderName = "flipp"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
@@ -555,6 +564,7 @@ const (
 	BidderMadSense          BidderName = "madsense"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
+	BidderMatterfullRTB     BidderName = "matterfullrtb"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMediaGo           BidderName = "mediago"
 	BidderMedianet          BidderName = "medianet"
@@ -575,6 +585,7 @@ const (
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNexx360           BidderName = "nexx360"
 	BidderNoBid             BidderName = "nobid"
+	BidderOdeeo             BidderName = "odeeo"
 	BidderOgury             BidderName = "ogury"
 	BidderOms               BidderName = "oms"
 	BidderOneTag            BidderName = "onetag"
@@ -587,6 +598,7 @@ const (
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
+	BidderPeak226           BidderName = "peak226"
 	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPixfuture         BidderName = "pixfuture"
 	BidderPlaydigo          BidderName = "playdigo"
@@ -651,10 +663,12 @@ const (
 	BidderTripleliftNative  BidderName = "triplelift_native"
 	BidderTrustedstack      BidderName = "trustedstack"
 	BidderTrustX            BidderName = "trustx"
+	BidderTunnl             BidderName = "tunnl"
 	BidderUcfunnel          BidderName = "ucfunnel"
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
+	BidderViant             BidderName = "viant"
 	BidderVidazoo           BidderName = "vidazoo"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"
