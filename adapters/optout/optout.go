@@ -22,6 +22,7 @@ const (
 	defaultCurrency        = "EUR"
 	defaultTTL             = 300
 	optoutVendorID  uint16 = 227
+	matcherName            = "PREBID"
 )
 
 type adapter struct{ endpoint string }
@@ -43,6 +44,11 @@ type currencySettings struct {
 	GranularityMultiplier int    `json:"granularityMultiplier"`
 }
 
+type viewer struct {
+	Id      string `json:"id,omitempty"`
+	Matcher string `json:"matcher,omitempty"`
+}
+
 type optoutRequest struct {
 	Publisher  string            `json:"publisher"`
 	Slots      []optoutSlot      `json:"slots"`
@@ -52,6 +58,7 @@ type optoutRequest struct {
 	Consent    string            `json:"gdpr_consent"`
 	GDPR       int               `json:"gdpr"`
 	OS         string            `json:"os,omitempty"`
+	Viewer     viewer            `json:"viewer,omitempty"`
 	Customs    map[string]string `json:"customs,omitempty"`
 	ORTB2      string            `json:"ortb2,omitempty"`
 }
@@ -316,6 +323,12 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 	}
 	if forwardable.Device != nil {
 		data.OS = forwardable.Device.OS
+	}
+	if forwardPersonalData && forwardable.User != nil && forwardable.User.BuyerUID != "" {
+		data.Viewer = viewer{
+			Id:      forwardable.User.BuyerUID,
+			Matcher: matcherName,
+		}
 	}
 	if includeOrtb2 {
 		ortbJSON, err := jsonutil.Marshal(forwardable)
