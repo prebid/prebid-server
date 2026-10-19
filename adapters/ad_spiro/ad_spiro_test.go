@@ -1,4 +1,4 @@
-package adspiro
+package ad_spiro
 
 import (
 	"encoding/json"
@@ -16,18 +16,18 @@ import (
 const testEndpoint = "https://adspiro.example/pbs?pid={{.PublisherID}}"
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdspiro, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdSpiro, config.Adapter{
 		Endpoint: testEndpoint,
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "adspirotest", bidder)
+	adapterstest.RunJSONBidderTest(t, "ad_spirotest", bidder)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAdspiro, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderAdSpiro, config.Adapter{
 		Endpoint: "{{Malformed}}",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
@@ -35,7 +35,7 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 }
 
 func TestMakeRequestsEndpointResolveError(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdspiro, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdSpiro, config.Adapter{
 		Endpoint: "https://adspiro.example/pbs?pid={{.Unknown}}",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	require.NoError(t, buildErr)

@@ -1,4 +1,4 @@
-package adspiro
+package ad_spiro
 
 import (
 	"fmt"
@@ -78,7 +78,7 @@ func getPublisherID(imp *openrtb2.Imp) (string, error) {
 		}
 	}
 
-	var impExt openrtb_ext.ExtImpAdspiro
+	var impExt openrtb_ext.ExtImpAdSpiro
 	if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: invalid imp.ext.bidder: %v", imp.ID, err),

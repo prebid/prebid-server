@@ -1,4 +1,4 @@
-package adspiro
+package ad_spiro
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	require.NoError(t, err, "Failed to fetch the json schema")
 
 	for _, p := range validParams {
-		assert.NoError(t, validator.Validate(openrtb_ext.BidderAdspiro, json.RawMessage(p)), "Schema rejected valid params: %s", p)
+		assert.NoError(t, validator.Validate(openrtb_ext.BidderAdSpiro, json.RawMessage(p)), "Schema rejected valid params: %s", p)
 	}
 }
 
@@ -23,7 +23,7 @@ func TestInvalidParams(t *testing.T) {
 	require.NoError(t, err, "Failed to fetch the json schema")
 
 	for _, p := range invalidParams {
-		assert.Error(t, validator.Validate(openrtb_ext.BidderAdspiro, json.RawMessage(p)), "Schema allowed invalid params: %s", p)
+		assert.Error(t, validator.Validate(openrtb_ext.BidderAdSpiro, json.RawMessage(p)), "Schema allowed invalid params: %s", p)
 	}
 }
 
