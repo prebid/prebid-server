@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Epom Ad Server Adapter Params",
+  "description": "A schema which validates params accepted by the Epom Ad Server adapter",
+  "type": "object",
+  "properties": {
+    "networkId": {
+      "type": "string",
+      "description": "The Epom network, as \"n\" followed by the network number. The request goes to https://{networkId}.eashb.com/hb/bid.",
+      "pattern": "^n[0-9]+$"
+    },
+    "host": {
+      "type": "string",
+      "description": "The network's own serving domain, as a bare hostname with an optional port. Used by the Prebid.js adapter, which sends browser bids there so the network's identity cookie comes along; accepted here for parameter parity and not used.",
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
+    },
+    "placementKey": {
+      "type": "string",
+      "description": "Placement identifier, from the placement's invocation-code tab in the Epom UI",
+      "minLength": 1
+    },
+    "channel": {
+      "type": "string",
+      "description": "Epom channel: publisher traffic-slice label used for channel targeting, reporting and tracking-URL propagation. Sent as imp.ext.epom_as.channel. An empty value is ignored."
+    },
+    "customParams": {
+      "type": "object",
+      "description": "Epom custom parameters for custom targeting and creative macros. Merged into imp.ext.data, where keys already on the impression win.",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean"
+        ]
+      }
+    },
+    "bidFloor": {
+      "type": "number",
+      "description": "CPM floor for this impression, applied only when no floor has already been resolved on imp.bidfloor. 0 means no floor.",
+      "minimum": 0
+    },
+    "bidFloorCur": {
+      "type": "string",
+      "description": "Currency of bidFloor as an ISO-4217 code. Defaults to USD."
+    }
+  },
+  "required": [
+    "networkId",
+    "placementKey"
+  ]
+}
