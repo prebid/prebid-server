@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 const (
@@ -78,14 +79,14 @@ func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (ada
 
 func decodeParams(imp openrtb2.Imp) (openrtb_ext.ImpExtOptout, error) {
 	var ext adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return openrtb_ext.ImpExtOptout{}, fmt.Errorf("invalid impression extension: %w", err)
 	}
 	var p openrtb_ext.ImpExtOptout
 	if len(ext.Bidder) == 0 {
 		return p, fmt.Errorf("missing bidder parameters")
 	}
-	if err := json.Unmarshal(ext.Bidder, &p); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &p); err != nil {
 		return p, fmt.Errorf("invalid bidder parameters: %w", err)
 	}
 	if p.Publisher == "" || p.AdSlot == "" {
@@ -110,7 +111,7 @@ func normalizeCustoms(customs map[string]interface{}) map[string]string {
 			}
 			result[k] = strings.Join(vals, ",")
 		case map[string]interface{}:
-			if b, err := json.Marshal(value); err == nil {
+			if b, err := jsonutil.Marshal(value); err == nil {
 				result[k] = string(b)
 			}
 		case string:
@@ -128,14 +129,18 @@ func mergeCustoms(dst map[string]string, data map[string]interface{}) {
 	}
 }
 
-func extractData(ext json.RawMessage) map[string]interface{} {
+func mergeExtData(dst map[string]string, ext json.RawMessage, source string) error {
+	if len(ext) == 0 {
+		return nil
+	}
 	var wrapped struct {
 		Data map[string]interface{} `json:"data"`
 	}
-	if len(ext) != 0 {
-		_ = json.Unmarshal(ext, &wrapped)
+	if err := jsonutil.Unmarshal(ext, &wrapped); err != nil {
+		return &errortypes.BadInput{Message: fmt.Sprintf("optout: invalid %s.ext: %v", source, err)}
 	}
-	return wrapped.Data
+	mergeCustoms(dst, wrapped.Data)
+	return nil
 }
 
 func readConsent(req *openrtb2.BidRequest) string {
@@ -153,7 +158,7 @@ func readConsent(req *openrtb2.BidRequest) string {
 		Consent string `json:"consent"`
 	}
 
-	if err := json.Unmarshal(req.User.Ext, &ext); err != nil {
+	if err := jsonutil.Unmarshal(req.User.Ext, &ext); err != nil {
 		return ""
 	}
 
@@ -187,12 +192,12 @@ func mayForwardPersonalData(req *openrtb2.BidRequest, tcString string) bool {
 // When the privacy check fails, replace the complete user object with a
 // marker-only object and redact any IP addresses in device.
 func makeForwardableORTB2(req *openrtb2.BidRequest, allowPersonalData bool) (*openrtb2.BidRequest, error) {
-	raw, err := json.Marshal(req)
+	raw, err := jsonutil.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 	var copied openrtb2.BidRequest
-	if err := json.Unmarshal(raw, &copied); err != nil {
+	if err := jsonutil.Unmarshal(raw, &copied); err != nil {
 		return nil, err
 	}
 	if !allowPersonalData {
@@ -284,13 +289,19 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 	// are already attached independently to each slot above.
 	requestCustoms := make(map[string]string)
 	if req.Site != nil {
-		mergeCustoms(requestCustoms, extractData(req.Site.Ext))
+		if err := mergeExtData(requestCustoms, req.Site.Ext, "site"); err != nil {
+			errors = append(errors, err)
+		}
 	}
 	if req.App != nil {
-		mergeCustoms(requestCustoms, extractData(req.App.Ext))
+		if err := mergeExtData(requestCustoms, req.App.Ext, "app"); err != nil {
+			errors = append(errors, err)
+		}
 	}
 	if forwardPersonalData && req.User != nil {
-		mergeCustoms(requestCustoms, extractData(req.User.Ext))
+		if err := mergeExtData(requestCustoms, req.User.Ext, "user"); err != nil {
+			errors = append(errors, err)
+		}
 	}
 
 	data := optoutRequest{
@@ -307,7 +318,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 		data.OS = forwardable.Device.OS
 	}
 	if includeOrtb2 {
-		ortbJSON, err := json.Marshal(forwardable)
+		ortbJSON, err := jsonutil.Marshal(forwardable)
 		if err != nil {
 			errors = append(errors, err)
 		} else {
@@ -315,7 +326,7 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 		}
 	}
 
-	body, err := json.Marshal(data)
+	body, err := jsonutil.Marshal(data)
 	if err != nil {
 		return nil, append(errors, err)
 	}
@@ -385,7 +396,7 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 	var sent struct {
 		Slots []optoutSlot `json:"slots"`
 	}
-	if err := json.Unmarshal(outgoing.Body, &sent); err != nil {
+	if err := jsonutil.Unmarshal(outgoing.Body, &sent); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("optout: invalid outgoing request: %v", err)}}
 	}
 	if len(sent.Slots) == 0 {
@@ -399,11 +410,11 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 
 	// The DSP can return either a JSON array or an object containing "bids".
 	var bids []optoutBid
-	if err := json.Unmarshal(response.Body, &bids); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bids); err != nil {
 		var wrapped struct {
 			Bids []optoutBid `json:"bids"`
 		}
-		if err2 := json.Unmarshal(response.Body, &wrapped); err2 != nil {
+		if err2 := jsonutil.Unmarshal(response.Body, &wrapped); err2 != nil {
 			return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("optout: invalid response JSON: %v", err2)}}
 		}
 		if wrapped.Bids == nil {
@@ -441,7 +452,7 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 		var bidExt json.RawMessage
 		if len(b.OptOutExt) > 0 && string(b.OptOutExt) != "null" {
 			var ext map[string]json.RawMessage
-			if err := json.Unmarshal(b.OptOutExt, &ext); err != nil || ext == nil {
+			if err := jsonutil.Unmarshal(b.OptOutExt, &ext); err != nil || ext == nil {
 				errors = append(errors, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("optout: invalid bid extension for impression %q", b.RequestID),
 				})

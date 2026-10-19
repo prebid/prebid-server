@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/adapters/adapterstest"
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
 )
 
 const endpoint = "https://bid.example.test/bid"
@@ -132,6 +133,22 @@ func TestConsentReading(t *testing.T) {
 	}
 	if got := readConsent(nil); got != "" {
 		t.Fatalf("nil request returned %q", got)
+	}
+}
+
+func TestMakeRequestsReportsMalformedExtensions(t *testing.T) {
+	req := parseRequest(t, `{"id":"a","imp":[{"id":"imp-1","banner":{"w":300,"h":250},"ext":{"bidder":{"publisher":"152","adSlot":"top"}}}],"regs":{"gdpr":0},"site":{"ext":{"data":"not an object"}},"app":{"ext":{"data":{"shared":"app"}}},"user":{"ext":"not an object"}}`)
+	requests, errs := (&adapter{endpoint: endpoint}).MakeRequests(req, nil)
+	if len(requests) != 1 || len(errs) != 2 {
+		t.Fatalf("requests=%d errs=%v", len(requests), errs)
+	}
+	for _, err := range errs {
+		if _, ok := err.(*errortypes.BadInput); !ok {
+			t.Errorf("expected BadInput warning, got %T: %v", err, err)
+		}
+	}
+	if out := decodeOutgoing(t, requests[0]); out.Customs["shared"] != "app" {
+		t.Fatalf("valid app data dropped: %v", out.Customs)
 	}
 }
 
