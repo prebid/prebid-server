@@ -1,0 +1,94 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "https://good.site/url"
+        },
+        "imp": [{
+            "id": "test-imp-id",
+            "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480
+            },
+            "ext": {
+                "bidder": {}
+            }
+        }]
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid_server",
+            "body": {
+                "id": "test-request-id",
+                "cur": ["USD"],
+                "site": {
+                    "page": "https://good.site/url"
+                },
+                "imp": [{
+                    "id": "test-imp-id",
+                    "video": {
+                        "mimes": ["video/mp4"],
+                        "w": 640,
+                        "h": 480
+                    },
+                    "ext": {
+                        "bidder": {}
+                    },
+                    "tagid": "test-imp-id"
+                }]
+            },
+            "impIDs":["test-imp-id"]
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [{
+                    "seat": "rtbhouse",
+                    "bid": [{
+                        "id": "randomid",
+                        "impid": "test-imp-id",
+                        "price": 1.500000,
+                        "adid": "12345678",
+                        "adm": "<VAST version=\"4.0\"><Ad><InLine><Impression><![CDATA[https://endpoint.url/win-notify?a=xyz&price=${AUCTION_PRICE}]]></Impression></InLine></Ad></VAST>",
+                        "nurl": "https://endpoint.url/win?price=${AUCTION_PRICE}",
+                        "cid": "987",
+                        "crid": "12345678",
+                        "dur": 30,
+                        "h": 480,
+                        "w": 640,
+                        "mtype": 2
+                    }]
+                }],
+                "cur": "USD"
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "randomid",
+                "impid": "test-imp-id",
+                "price": 1.5,
+                "adm": "<VAST version=\"4.0\"><Ad><InLine><Impression><![CDATA[https://endpoint.url/win-notify?a=xyz&price=1.5]]></Impression></InLine></Ad></VAST>",
+                "nurl": "https://endpoint.url/win?price=1.5",
+                "adid": "12345678",
+                "cid": "987",
+                "crid": "12345678",
+                "dur": 30,
+                "w": 640,
+                "h": 480,
+                "mtype": 2
+            },
+            "type": "video",
+            "video": {
+                "duration": 30,
+                "primary_category": ""
+            }
+        }]
+    }]
+}
