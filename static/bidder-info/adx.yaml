@@ -1,0 +1,19 @@
+# The supply key is supplied per-request via the imp.ext.bidder.supply_id param and
+# resolved into the {{.SupplyId}} path segment, so a single PBS host can serve many keys.
+endpoint: "https://adx.optima.tech/ortb/{{.SupplyId}}"
+geoscope:
+  - USA
+maintainer:
+  email: "tech@optima.tech"
+# AdX speaks OpenRTB 2.6, so PBS forwards the request without down-converting it.
+# The 2.6 signals (regs.us_privacy, user.eids, ...) reach the exchange in their 2.6
+# locations. The adapter additionally mirrors regs.us_privacy into
+# regs.ext.us_privacy so the CCPA opt-out is honoured by exchange builds that only
+# read the 2.5 location.
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
