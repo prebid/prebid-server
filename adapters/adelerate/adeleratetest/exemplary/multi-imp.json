@@ -1,0 +1,153 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-1",
+            "publisherId": "publisher-1"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {"w": 728, "h": 90}
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-2",
+            "publisherId": "publisher-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/page"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.bidelerate.com/openrtb2/auction",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id-1",
+              "banner": {
+                "format": [
+                  {"w": 300, "h": 250}
+                ]
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-1",
+                  "publisherId": "publisher-1"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id-2",
+              "banner": {
+                "format": [
+                  {"w": 728, "h": 90}
+                ]
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-2",
+                  "publisherId": "publisher-1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/page"
+          }
+        },
+        "impIDs": ["test-imp-id-1", "test-imp-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "test-imp-id-1",
+                  "price": 1.5,
+                  "adm": "<div>ad 1</div>",
+                  "crid": "creative-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-2",
+                  "impid": "test-imp-id-2",
+                  "price": 2.0,
+                  "adm": "<div>ad 2</div>",
+                  "crid": "creative-2",
+                  "w": 728,
+                  "h": 90,
+                  "mtype": 1
+                }
+              ],
+              "seat": "adelerate"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "test-imp-id-1",
+            "price": 1.5,
+            "adm": "<div>ad 1</div>",
+            "crid": "creative-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "test-imp-id-2",
+            "price": 2.0,
+            "adm": "<div>ad 2</div>",
+            "crid": "creative-2",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
