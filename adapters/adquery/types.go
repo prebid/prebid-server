@@ -1,6 +1,9 @@
 package adquery
 
-import "github.com/prebid/prebid-server/v4/openrtb_ext"
+import (
+	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+)
 
 type BidderRequest struct {
 	V                   string `json:"v"`
@@ -19,6 +22,8 @@ type BidderRequest struct {
 	BidRequestsCount    int    `json:"bidRequestsCount"`
 	BidderRequestsCount int    `json:"bidderRequestsCount"`
 	Sizes               string `json:"sizes"`
+	// Eids forwards the user's EIDs with their original source. It is never used as BidQid.
+	Eids []openrtb2.EID `json:"eids,omitempty"`
 }
 
 type ResponseAdQuery struct {
