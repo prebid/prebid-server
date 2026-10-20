@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "device": {
+      "ip": "123.123.123.123",
+      "ua": "test-user-agent"
+    },
+    "app": {
+      "bundle": "com.example.app"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": "{\"ver\":\"1.2\"}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "uid": "12345",
+            "pubId": "54321",
+            "pubEpid": "abcde"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.nexverse.ai?pub_epid=abcde&pub_id=54321&uid=12345",
+        "body": {
+          "id": "test-request-id",
+          "device": {
+            "ip": "123.123.123.123",
+            "ua": "test-user-agent"
+          },
+          "app": {
+            "bundle": "com.example.app"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "request": "{\"ver\":\"1.2\"}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "uid": "12345",
+                  "pubId": "54321",
+                  "pubEpid": "abcde"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "nexverse",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 0.75,
+                  "adm": "{\"native\":{\"ver\":\"1.2\"}}",
+                  "crid": "creative-3",
+                  "mtype": 4,
+                  "ext": {
+                    "mediaType": "native"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 0.75,
+            "adm": "{\"native\":{\"ver\":\"1.2\"}}",
+            "crid": "creative-3",
+            "mtype": 4,
+            "ext": {
+              "mediaType": "native"
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
