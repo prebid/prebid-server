@@ -1,0 +1,152 @@
+{
+  "mockBidRequest": {
+    "id": "80ce30c53c16e6ede735f123ef6e32361bfc7b22",
+    "cur": [
+      "CHF"
+    ],
+    "imp": [
+      {
+        "id": "103",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            5
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 15,
+            "domainId": 42
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://www.foobar.com/1234.html"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:108.0) Gecko/20100101 Firefox/108.0"
+    },
+    "user": {
+      "id": "55816b39711f9b5acf3b90e313ed29e51665623f",
+      "geo": {
+        "country": "ch",
+        "region": "basel-stadt",
+        "city": "basel"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://cwi.re/prebid/adapter-endpoint",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "80ce30c53c16e6ede735f123ef6e32361bfc7b22",
+          "cur": [
+            "CHF"
+          ],
+          "imp": [
+            {
+              "id": "103",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  5
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 15,
+                  "domainId": 42
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://www.foobar.com/1234.html"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:108.0) Gecko/20100101 Firefox/108.0"
+          },
+          "user": {
+            "id": "55816b39711f9b5acf3b90e313ed29e51665623f",
+            "geo": {
+              "country": "ch",
+              "region": "basel-stadt",
+              "city": "basel"
+            }
+          }
+        },
+        "impIDs": [
+          "103"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "80ce30c53c16e6ede735f123ef6e32361bfc7b22",
+          "cur": "CHF",
+          "seatbid": [
+            {
+              "seat": "cwire",
+              "group": 0,
+              "bid": [
+                {
+                  "id": "334",
+                  "impid": "103",
+                  "price": 8.00,
+                  "crid": "9999",
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "w": 640,
+                  "h": 480,
+                  "nurl": "https://embed.cwi.re/delivery/prebid-server/win/334",
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "CHF",
+      "bids": [
+        {
+          "bid": {
+            "id": "334",
+            "impid": "103",
+            "price": 8.00,
+            "crid": "9999",
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "w": 640,
+            "h": 480,
+            "nurl": "https://embed.cwi.re/delivery/prebid-server/win/334",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
