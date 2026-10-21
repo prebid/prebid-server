@@ -5,22 +5,17 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
 
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-type adapter struct {
-	endpoint *template.Template
-}
+type adapter struct{}
 
 var exchangeSubdomainsRegions = map[string]string{
 	"us-east": "lb-east",
@@ -33,13 +28,9 @@ var sspSubdomainsRegions = map[string]string{
 	"apac":    "apac-ssp",
 }
 
-func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
-	endpointTemplate, err := template.New("endpointTemplate").Parse(cfg.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	return &adapter{endpoint: endpointTemplate}, nil
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	bidder := &adapter{}
+	return bidder, nil
 }
 
 func getHeaders(request *openrtb2.BidRequest) http.Header {
@@ -164,19 +155,19 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtIntenze) (string, erro
 		}
 	}
 
-	var subdomain, path, queryKey, queryValue string
+	var route = ""
+	var subdomain, queryKey, queryValue string
 	var regionMap map[string]string
 
 	if params.AccountID != nil {
 		subdomain = "lb-east"
-		path = "/"
 		queryKey = "pass"
 		queryValue = *params.AccountID
 		regionMap = exchangeSubdomainsRegions
 	} else {
 		subdomain = "us-east-ssp"
-		path = "/pbs-serve"
 		queryKey = "placementId"
+		route = "pbs-serve"
 		queryValue = *params.PlacementID
 		regionMap = sspSubdomainsRegions
 	}
@@ -191,22 +182,9 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtIntenze) (string, erro
 		}
 	}
 
-	base, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: subdomain})
-	if err != nil {
-		return "", fmt.Errorf("unable to resolve endpoint macros: %v", err)
-	}
+	endpoint := fmt.Sprintf("https://%s.intenze.co/%s?%s=%s", subdomain, route, queryKey, url.QueryEscape(queryValue))
 
-	endpointURL, err := url.Parse(base)
-	if err != nil {
-		return "", fmt.Errorf("invalid endpoint %q: %v", base, err)
-	}
-
-	endpointURL.Path = strings.TrimSuffix(endpointURL.Path, "/") + path
-	query := endpointURL.Query()
-	query.Set(queryKey, queryValue)
-	endpointURL.RawQuery = query.Encode()
-
-	return endpointURL.String(), nil
+	return endpoint, nil
 }
 
 func checkResponseStatusCodes(response *adapters.ResponseData) error {
