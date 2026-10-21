@@ -46,7 +46,6 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdvangelists,
 	BidderAdverxo,
 	BidderAdView,
-	BidderAdx,
 	BidderAdxcg,
 	BidderAdyoulike,
 	BidderAfront,
@@ -202,6 +201,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOpenx,
 	BidderOperaads,
 	BidderOptidigital,
+	BidderOptima,
 	BidderOraki,
 	BidderOrbidder,
 	BidderOutbrain,
@@ -439,7 +439,6 @@ const (
 	BidderAdvangelists      BidderName = "advangelists"
 	BidderAdverxo           BidderName = "adverxo"
 	BidderAdView            BidderName = "adview"
-	BidderAdx               BidderName = "adx"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
 	BidderAfront            BidderName = "afront"
@@ -595,6 +594,7 @@ const (
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
 	BidderOptidigital       BidderName = "optidigital"
+	BidderOptima            BidderName = "optima"
 	BidderOraki             BidderName = "oraki"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
