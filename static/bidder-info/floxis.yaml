@@ -1,3 +1,5 @@
+# We have the following regional endpoint domains: us-e.floxis.tech, eu.floxis.tech and apac.floxis.tech
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
 endpoint: "https://us-e.floxis.tech/pbs"
 endpointCompression: gzip
 maintainer:
