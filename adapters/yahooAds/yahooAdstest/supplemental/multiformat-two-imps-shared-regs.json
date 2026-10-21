@@ -112,7 +112,7 @@
                 "impid": "test-imp-1",
                 "mtype": 2,
                 "price": 0.500000,
-                "adm": "some-test-ad",
+                "adm": "<VAST version=\"4.0\"><Ad><InLine></InLine></Ad></VAST>",
                 "crid": "crid_10",
                 "h": 250,
                 "w": 300
@@ -124,6 +124,16 @@
                 "price": 0.1,
                 "adm": "<VAST version=\"4.0\"></VAST>",
                 "crid": "crid_12",
+                "h": 250,
+                "w": 300
+              },
+              {
+                "id": "bid-5",
+                "impid": "test-imp-1",
+                "mtype": 1,
+                "price": 0.300000,
+                "adm": "<div>some-test-ad</div>",
+                "crid": "crid_14",
                 "h": 250,
                 "w": 300
               }]
@@ -237,12 +247,25 @@
             "impid": "test-imp-1",
             "mtype": 2,
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "<VAST version=\"4.0\"><Ad><InLine></InLine></Ad></VAST>",
             "crid": "crid_10",
             "w": 300,
             "h": 250
           },
           "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-5",
+            "impid": "test-imp-1",
+            "mtype": 1,
+            "price": 0.3,
+            "adm": "<div>some-test-ad</div>",
+            "crid": "crid_14",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
         }
       ]
     },

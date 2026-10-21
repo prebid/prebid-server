@@ -48,8 +48,9 @@ func TestGetMediaType(t *testing.T) {
 		expected openrtb_ext.BidType
 		wantErr  string
 	}{
-		{"mtype video wins over imp", openrtb2.Bid{MType: openrtb2.MarkupVideo, AdM: "<div>ad</div>"}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
-		{"mtype banner wins over adm", openrtb2.Bid{MType: openrtb2.MarkupBanner, AdM: `<VAST version="4.0"></VAST>`}, bannerVideo, openrtb_ext.BidTypeBanner, ""},
+		{"mtype video with VAST adm", openrtb2.Bid{MType: openrtb2.MarkupVideo, AdM: `<VAST version="4.0"><Ad></Ad></VAST>`}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
+		{"mtype banner with html adm", openrtb2.Bid{MType: openrtb2.MarkupBanner, AdM: "<div>ad</div>"}, bannerVideo, openrtb_ext.BidTypeBanner, ""},
+		{"mtype video with nurl only, no adm", openrtb2.Bid{MType: openrtb2.MarkupVideo, NURL: "https://example.com/win"}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
 		{"no mtype, VAST adm on multiformat imp", openrtb2.Bid{AdM: `<VAST version="4.0"><Ad></Ad></VAST>`}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
 		{"no mtype, html adm on multiformat imp", openrtb2.Bid{AdM: "<div>ad</div>"}, bannerVideo, openrtb_ext.BidTypeBanner, ""},
 		{"no mtype, empty adm on multiformat imp", openrtb2.Bid{}, bannerVideo, openrtb_ext.BidTypeBanner, ""},
