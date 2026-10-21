@@ -5,12 +5,12 @@
       {
         "id": "imp-1",
         "banner": { "format": [{ "w": 300, "h": 250 }] },
-        "ext": { "bidder": { "seat": "seat-eu", "region": "eu" } }
+        "ext": { "bidder": { "seat": "seat-eu" } }
       },
       {
         "id": "imp-2",
         "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
-        "ext": { "bidder": { "seat": "seat-other", "region": "apac" } }
+        "ext": { "bidder": { "seat": "seat-other" } }
       }
     ],
     "site": { "id": "271", "domain": "example.com" }
@@ -18,14 +18,14 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://eu.floxis.tech/pbs?seat=seat-eu",
+        "uri": "https://us-e.floxis.tech/pbs?seat=seat-eu",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "imp-1",
               "banner": { "format": [{ "w": 300, "h": 250 }] },
-              "ext": { "bidder": { "seat": "seat-eu", "region": "eu" } }
+              "ext": { "bidder": { "seat": "seat-eu" } }
             }
           ],
           "site": { "id": "271", "domain": "example.com" }
@@ -50,14 +50,14 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://apac.floxis.tech/pbs?seat=seat-other",
+        "uri": "https://us-e.floxis.tech/pbs?seat=seat-other",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "imp-2",
               "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
-              "ext": { "bidder": { "seat": "seat-other", "region": "apac" } }
+              "ext": { "bidder": { "seat": "seat-other" } }
             }
           ],
           "site": { "id": "271", "domain": "example.com" }

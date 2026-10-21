@@ -1,4 +1,4 @@
-endpoint: "https://{{.Host}}.floxis.tech/pbs"
+endpoint: "https://us-e.floxis.tech/pbs"
 endpointCompression: gzip
 maintainer:
   email: prebid@floxis.tech

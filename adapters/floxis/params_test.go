@@ -35,12 +35,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"seat":"abc"}`,
-	`{"seat":"abc","region":"us-e"}`,
-	`{"seat":"abc","region":"eu"}`,
-	`{"seat":"abc","region":"apac"}`,
-	`{"seat":"abc","region":"mars"}`,
-	`{"seat":"x","partner":"acme"}`,
-	`{"seat":"x","region":"eu","partner":"acme"}`,
+	`{"seat":"a b&c"}`,
 	`{"seat":"abc","bidFloor":0.5,"bidFloorCur":"USD"}`,
 }
 
@@ -51,8 +46,4 @@ var invalidParams = []string{
 	`{"region":"us-e"}`,
 	`{"seat":""}`,
 	`{"seat":123}`,
-	`{"seat":"abc","region":"a.b"}`,
-	`{"seat":"abc","region":123}`,
-	`{"seat":"x","partner":"a.b/c"}`,
-	`{"seat":"x","partner":123}`,
 }

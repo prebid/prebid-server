@@ -3,7 +3,6 @@ package floxis
 import (
 	"encoding/json"
 	"testing"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -13,9 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testEndpoint = "https://us-e.floxis.tech/pbs"
+
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderFloxis, config.Adapter{
-		Endpoint: "https://{{.Host}}.floxis.tech/pbs"},
+		Endpoint: testEndpoint},
 		config.Server{ExternalUrl: "http://hosturl.com", DataCenter: "2"})
 
 	if buildErr != nil {
@@ -26,7 +27,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func newAdapter() *adapter {
-	return &adapter{endpoint: template.Must(template.New("endpointTemplate").Parse("https://{{.Host}}.floxis.tech/pbs"))}
+	return &adapter{endpoint: testEndpoint}
 }
 
 func bannerImp(ext string) openrtb2.Imp {
@@ -37,69 +38,27 @@ func bannerImp(ext string) openrtb2.Imp {
 	}
 }
 
-func TestResolveBidHost(t *testing.T) {
-	cases := []struct {
-		region  string
-		partner string
-		want    string
-	}{
-		{"us-e", "floxis", "us-e"},
-		{"eu", "floxis", "eu"},
-		{"apac", "floxis", "apac"},
-		{"", "", "us-e"},
-		{"", "floxis", "us-e"},
-		{"eu", "", "eu"},
-		{"mars", "floxis", "mars"},
-		{"us-e", "acme", "acme-us-e"},
-		{"eu", "acme", "acme-eu"},
-	}
-	for _, c := range cases {
-		assert.Equal(t, c.want, resolveBidHost(c.region, c.partner), "region %q partner %q", c.region, c.partner)
-	}
-}
-
 func TestSeatIsURLEscaped(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		ID:   "req-1",
-		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"a b&c","region":"eu"}}`)},
+		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"a b&c"}}`)},
 		Site: &openrtb2.Site{ID: "271"},
 	}
 	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
 	assert.Empty(t, errs)
 	assert.Len(t, reqData, 1)
-	assert.Equal(t, "https://eu.floxis.tech/pbs?seat=a+b%26c", reqData[0].Uri)
+	assert.Equal(t, "https://us-e.floxis.tech/pbs?seat=a+b%26c", reqData[0].Uri)
 }
 
-func TestPartnerPrefixesHost(t *testing.T) {
+func TestHostIsFixedRegardlessOfImpParams(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		ID:   "req-1",
-		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","region":"us-e","partner":"acme"}}`)},
+		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","region":"eu","partner":"acme"}}`)},
 		Site: &openrtb2.Site{ID: "271"},
 	}
 	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
 	assert.Empty(t, errs)
-	assert.Equal(t, "https://acme-us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
-}
-
-func TestValidNonStandardRegionPassesThrough(t *testing.T) {
-	req := &openrtb2.BidRequest{
-		ID:   "req-1",
-		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc","region":"mars"}}`)},
-		Site: &openrtb2.Site{ID: "271"},
-	}
-	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
-	assert.Empty(t, errs)
-	assert.Equal(t, "https://mars.floxis.tech/pbs?seat=abc", reqData[0].Uri)
-}
-
-func TestMissingRegionDefaultsToUSE(t *testing.T) {
-	req := &openrtb2.BidRequest{
-		ID:   "req-1",
-		Imp:  []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc"}}`)},
-		Site: &openrtb2.Site{ID: "271"},
-	}
-	reqData, errs := newAdapter().MakeRequests(req, &adapters.ExtraRequestInfo{})
-	assert.Empty(t, errs)
+	assert.Len(t, reqData, 1)
 	assert.Equal(t, "https://us-e.floxis.tech/pbs?seat=abc", reqData[0].Uri)
 }
 
@@ -118,7 +77,7 @@ func TestCallerRequestNotMutated(t *testing.T) {
 	imp := openrtb2.Imp{
 		ID:     "imp-1",
 		Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
-		Ext:    json.RawMessage(`{"bidder":{"seat":"abc","region":"eu"}}`),
+		Ext:    json.RawMessage(`{"bidder":{"seat":"abc"}}`),
 	}
 	req := &openrtb2.BidRequest{
 		ID:   "req-1",

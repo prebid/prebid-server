@@ -9,8 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "seat": "pub-seat-1",
-            "region": "us-e"
+            "seat": "pub-seat-1"
           }
         }
       }
@@ -39,8 +38,7 @@
               },
               "ext": {
                 "bidder": {
-                  "seat": "pub-seat-1",
-                  "region": "us-e"
+                  "seat": "pub-seat-1"
                 }
               }
             }

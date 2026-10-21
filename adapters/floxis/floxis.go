@@ -4,65 +4,28 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
-	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type adapter struct {
-	endpoint *template.Template
-}
-
-const (
-	defaultRegion  = "us-e"
-	defaultPartner = "floxis"
-)
-
-// Schema keys are case-sensitive, JSON unmarshalling is not: "REGION" bypasses the schema pattern.
-var hostLabel = regexp.MustCompile(`^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
-
-func resolveBidHost(region, partner string) string {
-	region = strings.ToLower(region)
-	partner = strings.ToLower(partner)
-	if region == "" {
-		region = defaultRegion
-	}
-	if partner == "" {
-		partner = defaultPartner
-	}
-	if partner == defaultPartner {
-		return region
-	}
-	return partner + "-" + region
+	endpoint string
 }
 
 // Builder builds a new instance of the Floxis adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	tmpl, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-	return &adapter{endpoint: tmpl}, nil
-}
-
-type impGroup struct {
-	seat string
-	host string
-	imps []openrtb2.Imp
+	return &adapter{endpoint: config.Endpoint}, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var order []string
-	groups := make(map[string]*impGroup)
+	var seats []string
+	groups := make(map[string][]openrtb2.Imp)
 
 	for _, imp := range request.Imp {
 		impExt, err := parseImpExt(imp)
@@ -70,18 +33,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
-		host := resolveBidHost(impExt.Region, impExt.Partner)
-		key := impExt.Seat + "|" + host
-		group, exists := groups[key]
-		if !exists {
-			group = &impGroup{seat: impExt.Seat, host: host}
-			groups[key] = group
-			order = append(order, key)
+		if _, exists := groups[impExt.Seat]; !exists {
+			seats = append(seats, impExt.Seat)
 		}
-		group.imps = append(group.imps, imp)
+		groups[impExt.Seat] = append(groups[impExt.Seat], imp)
 	}
 
-	if len(order) == 0 {
+	if len(seats) == 0 {
 		return nil, errs
 	}
 
@@ -89,18 +47,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	requests := make([]*adapters.RequestData, 0, len(order))
-	for _, key := range order {
-		group := groups[key]
-
-		endpoint, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: group.host})
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
+	requests := make([]*adapters.RequestData, 0, len(seats))
+	for _, seat := range seats {
+		imps := groups[seat]
 
 		requestCopy := *request
-		requestCopy.Imp = group.imps
+		requestCopy.Imp = imps
 
 		body, err := jsonutil.Marshal(requestCopy)
 		if err != nil {
@@ -110,10 +62,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		requests = append(requests, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     fmt.Sprintf("%s?seat=%s", endpoint, url.QueryEscape(group.seat)),
+			Uri:     fmt.Sprintf("%s?seat=%s", a.endpoint, url.QueryEscape(seat)),
 			Body:    body,
 			Headers: headers,
-			ImpIDs:  openrtb_ext.GetImpIDs(group.imps),
+			ImpIDs:  openrtb_ext.GetImpIDs(imps),
 		})
 	}
 
@@ -171,12 +123,6 @@ func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpFloxis, error) {
 	}
 	if floxisExt.Seat == "" {
 		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("missing seat for imp %s", imp.ID)}
-	}
-	if floxisExt.Region != "" && !hostLabel.MatchString(floxisExt.Region) {
-		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid region %q for imp %s", floxisExt.Region, imp.ID)}
-	}
-	if floxisExt.Partner != "" && !hostLabel.MatchString(floxisExt.Partner) {
-		return openrtb_ext.ExtImpFloxis{}, &errortypes.BadInput{Message: fmt.Sprintf("invalid partner %q for imp %s", floxisExt.Partner, imp.ID)}
 	}
 	return floxisExt, nil
 }

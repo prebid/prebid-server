@@ -4,21 +4,22 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "native": {
-          "request": "{\"ver\":\"1.2\"}",
-          "ver": "1.2"
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 480,
+          "protocols": [2, 3, 5, 6]
         },
         "ext": {
           "bidder": {
-            "seat": "pub-seat-apac",
-            "region": "apac"
+            "seat": "pub-seat-eu"
           }
         }
       }
     ],
-    "app": {
-      "id": "app-1",
-      "bundle": "com.example.apac"
+    "site": {
+      "id": "271",
+      "domain": "example.eu"
     }
   },
   "httpCalls": [
@@ -28,27 +29,28 @@
           "Content-Type": ["application/json;charset=utf-8"],
           "Accept": ["application/json"]
         },
-        "uri": "https://apac.floxis.tech/pbs?seat=pub-seat-apac",
+        "uri": "https://us-e.floxis.tech/pbs?seat=pub-seat-eu",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "test-imp-id",
-              "native": {
-                "request": "{\"ver\":\"1.2\"}",
-                "ver": "1.2"
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480,
+                "protocols": [2, 3, 5, 6]
               },
               "ext": {
                 "bidder": {
-                  "seat": "pub-seat-apac",
-                  "region": "apac"
+                  "seat": "pub-seat-eu"
                 }
               }
             }
           ],
-          "app": {
-            "id": "app-1",
-            "bundle": "com.example.apac"
+          "site": {
+            "id": "271",
+            "domain": "example.eu"
           }
         },
         "impIDs": ["test-imp-id"]
@@ -57,7 +59,7 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
-          "cur": "USD",
+          "cur": "EUR",
           "seatbid": [
             {
               "seat": "floxis",
@@ -65,10 +67,10 @@
                 {
                   "id": "1",
                   "impid": "test-imp-id",
-                  "price": 2.0,
-                  "adm": "{\"native\":{}}",
+                  "price": 3.5,
+                  "adm": "<VAST></VAST>",
                   "crid": "creative-1",
-                  "mtype": 4
+                  "mtype": 2
                 }
               ]
             }
@@ -79,18 +81,18 @@
   ],
   "expectedBidResponses": [
     {
-      "currency": "USD",
+      "currency": "EUR",
       "bids": [
         {
           "bid": {
             "id": "1",
             "impid": "test-imp-id",
-            "price": 2.0,
-            "adm": "{\"native\":{}}",
+            "price": 3.5,
+            "adm": "<VAST></VAST>",
             "crid": "creative-1",
-            "mtype": 4
+            "mtype": 2
           },
-          "type": "native"
+          "type": "video"
         }
       ]
     }

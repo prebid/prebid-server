@@ -16,7 +16,7 @@
       {
         "id": "imp-good",
         "banner": { "format": [{ "w": 300, "h": 250 }] },
-        "ext": { "bidder": { "seat": "seat-eu", "region": "eu" } }
+        "ext": { "bidder": { "seat": "seat-eu" } }
       }
     ],
     "site": { "id": "271", "domain": "example.com" }
@@ -24,14 +24,14 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://eu.floxis.tech/pbs?seat=seat-eu",
+        "uri": "https://us-e.floxis.tech/pbs?seat=seat-eu",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "imp-good",
               "banner": { "format": [{ "w": 300, "h": 250 }] },
-              "ext": { "bidder": { "seat": "seat-eu", "region": "eu" } }
+              "ext": { "bidder": { "seat": "seat-eu" } }
             }
           ],
           "site": { "id": "271", "domain": "example.com" }
