@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -168,6 +169,23 @@ func TestFetchAccountsBadJSON(t *testing.T) {
 	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"req-1"})
 	assert.Len(t, errs, 1, "Fetching account with broken json should have returned an error")
 	assert.Nil(t, accData, "Fetching account with broken json should return nil account map")
+}
+
+func TestFetchAccountsHTTP404ReturnsNotFoundErrors(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+	fetcher := NewFetcher(server.Client(), server.URL, true)
+
+	accData, errs := fetcher.FetchAccounts(context.Background(), []string{"acc-1", "acc-2"})
+
+	assert.Nil(t, accData, "HTTP 404 should not return account data")
+	assert.Equal(t, []error{
+		stored_requests.NotFoundError{ID: "acc-1", DataType: "Account"},
+		stored_requests.NotFoundError{ID: "acc-2", DataType: "Account"},
+	}, errs)
 }
 
 func TestFetchAccountsNoIDsProvidedRfcCompliant(t *testing.T) {
