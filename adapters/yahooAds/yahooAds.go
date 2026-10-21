@@ -129,11 +129,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}}
 			case err != nil:
-				// unsupported mtype: drop this bid, keep the others, report why
 				errs = append(errs, err)
 				continue
 			case mediaType == "":
-				// impression offers neither banner nor video: ignored, as before
 				continue
 			}
 
@@ -147,17 +145,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, errs
 }
 
-// vastMarkup matches a <VAST element in any case, but not <VASTAdTagURI>.
 var vastMarkup = regexp.MustCompile(`(?i)<\s*VAST[\s/>]`)
 
-// errUnknownImp is returned by getMediaType when the bid's impression is not in the request.
 var errUnknownImp = errors.New("unknown impression")
 
-// getMediaType resolves the bid type: bid.mtype first, then VAST markup for a
-// banner+video impression, then the impression's single format. It returns an
-// empty type and no error when the impression exists but offers neither banner
-// nor video, errUnknownImp when the impression is missing, and a
-// BadServerResponse when the bid carries an mtype this adapter does not support.
 func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for i := range imps {
 		imp := &imps[i]
@@ -170,7 +161,6 @@ func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, 
 		case openrtb2.MarkupVideo:
 			return openrtb_ext.BidTypeVideo, nil
 		case 0:
-			// no mtype: decide from the markup and the impression below
 		default:
 			return "", &errortypes.BadServerResponse{
 				Message: fmt.Sprintf("Unsupported mtype %d for bid '%s'", bid.MType, bid.ID),
