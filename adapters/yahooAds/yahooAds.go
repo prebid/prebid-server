@@ -145,7 +145,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, errs
 }
 
-var vastMarkup = regexp.MustCompile(`(?i)<\s*VAST[\s/>]`)
+var vastMarkup = regexp.MustCompile(`<VAST[ \t\r\n/>]`)
 
 var errUnknownImp = errors.New("unknown impression")
 

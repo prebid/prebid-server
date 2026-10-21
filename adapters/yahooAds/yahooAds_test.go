@@ -61,9 +61,9 @@ func TestGetMediaType(t *testing.T) {
 		{"mtype native is dropped", openrtb2.Bid{ID: "b", MType: openrtb2.MarkupNative}, bannerVideo, "", "Unsupported mtype 4 for bid 'b'"},
 		{"mtype native on banner-only imp is dropped", openrtb2.Bid{ID: "b", MType: openrtb2.MarkupNative}, bannerOnly, "", "Unsupported mtype 4 for bid 'b'"},
 		{"mtype video on banner-only imp is used as is", openrtb2.Bid{MType: openrtb2.MarkupVideo, AdM: `<VAST version="4.0"></VAST>`}, bannerOnly, openrtb_ext.BidTypeVideo, ""},
-		{"no mtype, VAST adm with leading whitespace and mixed case", openrtb2.Bid{AdM: "  \n<Vast version=\"4.2\"></Vast>"}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
-		{"no mtype, self-closing VAST root", openrtb2.Bid{AdM: "<VAST/>"}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
-		{"no mtype, space before VAST tag name", openrtb2.Bid{AdM: "< VAST version=\"3.0\"></VAST>"}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
+		{"no mtype, VAST after xml declaration", openrtb2.Bid{AdM: `<?xml version="1.0" ?><VAST version="2.0"><Ad></Ad></VAST>`}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
+		{"no mtype, VAST attributes on next line", openrtb2.Bid{AdM: "<VAST\n  version=\"4.0\"><Ad></Ad></VAST>"}, bannerVideo, openrtb_ext.BidTypeVideo, ""},
+		{"no mtype, lowercase vast is not a VAST root", openrtb2.Bid{AdM: `<vast version="4.0"></vast>`}, bannerVideo, openrtb_ext.BidTypeBanner, ""},
 		{"no mtype, VAST as text not as root tag", openrtb2.Bid{AdM: "<div>VAST</div>"}, bannerVideo, openrtb_ext.BidTypeBanner, ""},
 	}
 
