@@ -61,17 +61,19 @@
                         {
                             "ad": "",
                             "beacon": "",
-                            "beaconurl": "https://tg.socdm.com/native/beacon/unwrappedID.gif",
+                            "beaconurl": "https://tg.socdm.com/native/beacon/wrappedID.gif",
                             "cpm": 33.3,
-                            "creativeid": "Dummy_native_unwrapped.jp",
+                            "creativeid": "Dummy_native_wrapped.jp",
                             "ttl": 10,
                             "landing_url": "https://supership.jp/",
                             "scheduleid": "512602",
                             "native": {
-                                "assets": [
-                                    { "id": 1, "required": 1, "title": { "text": "Unwrapped Native" } }
-                                ],
-                                "link": { "url": "https://supership.jp/" }
+                                "native": {
+                                    "assets": [
+                                        { "id": 1, "required": 1, "title": { "text": "Wrapped Native" } }
+                                    ],
+                                    "link": { "url": "https://supership.jp/" }
+                                }
                             }
                         }
                     ]
@@ -85,11 +87,11 @@
             "bids": [
                 {
                     "bid": {
-                        "id": "58278",
+                        "id": "some-request-id-some-impression-id",
                         "impid": "some-impression-id",
                         "price": 33.3,
-                        "adm": "{\"native\":{\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Unwrapped Native\"}}],\"imptrackers\":[\"https://tg.socdm.com/native/beacon/unwrappedID.gif\"],\"link\":{\"url\":\"https://supership.jp/\"}}}",
-                        "crid": "Dummy_native_unwrapped.jp"
+                        "adm": "{\"native\":{\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Wrapped Native\"}}],\"imptrackers\":[\"https://tg.socdm.com/native/beacon/wrappedID.gif\"],\"link\":{\"url\":\"https://supership.jp/\"}}}",
+                        "crid": "Dummy_native_wrapped.jp"
                     },
                     "type": "native"
                 }

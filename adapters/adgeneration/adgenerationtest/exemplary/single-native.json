@@ -97,16 +97,14 @@
                             "landing_url": "https://supership.jp/",
                             "scheduleid": "512601",
                             "native": {
-                                "native": {
-                                    "ver": "1.2",
-                                    "assets": [
-                                        { "id": 1, "required": 1, "title": { "text": "Sample Native Ad" } },
-                                        { "id": 2, "required": 1, "img": { "type": 3, "url": "https://i.socdm.com/img/main.png", "w": 1200, "h": 627 } },
-                                        { "id": 3, "data": { "type": 2, "value": "Supership Inc." } }
-                                    ],
-                                    "link": { "url": "https://supership.jp/" },
-                                    "imptrackers": [ "https://tg.socdm.com/native/imp/nativeID" ]
-                                }
+                                "ver": "1.2",
+                                "assets": [
+                                    { "id": 1, "required": 1, "title": { "text": "Sample Native Ad" } },
+                                    { "id": 2, "required": 1, "img": { "type": 3, "url": "https://i.socdm.com/img/main.png", "w": 1200, "h": 627 } },
+                                    { "id": 3, "data": { "type": 2, "value": "Supership Inc." } }
+                                ],
+                                "link": { "url": "https://supership.jp/" },
+                                "imptrackers": [ "https://tg.socdm.com/native/imp/nativeID" ]
                             }
                         }
                     ]
@@ -120,7 +118,7 @@
             "bids": [
                 {
                     "bid": {
-                        "id": "58278",
+                        "id": "some-request-id-some-impression-id",
                         "impid": "some-impression-id",
                         "price": 55.5,
                         "adm": "{\"native\":{\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Sample Native Ad\"}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"url\":\"https://i.socdm.com/img/main.png\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"type\":2,\"value\":\"Supership Inc.\"}}],\"imptrackers\":[\"https://tg.socdm.com/native/imp/nativeID\",\"https://tg.socdm.com/native/beacon/nativeBeaconID.gif\"],\"link\":{\"url\":\"https://supership.jp/\"},\"ver\":\"1.2\"}}",

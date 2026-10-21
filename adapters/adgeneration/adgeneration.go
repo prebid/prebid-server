@@ -1,13 +1,16 @@
 package adgeneration
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -22,6 +25,11 @@ import (
 // (modules/adgenerationBidAdapter.js), this adapter targets the /adgen/prebid
 // endpoint (POST with a JSON body). Only id / posall / sdktype are sent as URL
 // query parameters; everything else travels in the ortb body.
+
+var (
+	newlineRegex     = regexp.MustCompile(`\r?\n`)
+	closingBodyRegex = regexp.MustCompile(`<\/\s?body>`)
+)
 
 type adapter struct {
 	endpoint        string
@@ -61,20 +69,20 @@ type adgLocationOption struct {
 }
 
 type adgResult struct {
-	Ad         string          `json:"ad"`
-	Beacon     string          `json:"beacon"`
-	Beaconurl  string          `json:"beaconurl"`
-	Cpm        float64         `json:"cpm"`
-	Creativeid string          `json:"creativeid"`
-	Dealid     string          `json:"dealid"`
-	H          uint64          `json:"h"`
-	W          uint64          `json:"w"`
-	Ttl        uint64          `json:"ttl"`
-	Vastxml    string          `json:"vastxml,omitempty"`
-	LandingUrl string          `json:"landing_url"`
-	Scheduleid string          `json:"scheduleid"`
-	Adomain    []string        `json:"adomain,omitempty"`
-	Native     json.RawMessage `json:"native,omitempty"`
+	Ad         string              `json:"ad"`
+	Beacon     string              `json:"beacon"`
+	Beaconurl  string              `json:"beaconurl"`
+	Cpm        float64             `json:"cpm"`
+	Creativeid string              `json:"creativeid"`
+	Dealid     string              `json:"dealid"`
+	H          uint64              `json:"h"`
+	W          uint64              `json:"w"`
+	Ttl        uint64              `json:"ttl"`
+	Vastxml    string              `json:"vastxml,omitempty"`
+	LandingUrl string              `json:"landing_url"`
+	Scheduleid string              `json:"scheduleid"`
+	Adomain    []string            `json:"adomain,omitempty"`
+	Native     jsonutil.RawMessage `json:"native,omitempty"`
 }
 
 func (adg *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -82,24 +90,12 @@ func (adg *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 		return nil, []error{&errortypes.BadInput{Message: "No impression in the bid request"}}
 	}
 
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	if request.Device != nil {
-		if len(request.Device.UA) > 0 {
-			headers.Add("User-Agent", request.Device.UA)
-		}
-		if len(request.Device.IP) > 0 {
-			headers.Add("X-Forwarded-For", request.Device.IP)
-		}
-	}
-
 	bidRequestArray := make([]*adapters.RequestData, 0, len(request.Imp))
 	var errs []error
 
 	// Prebid.js issues one request per imp; Prebid Server does the same.
 	for index := range request.Imp {
-		req, err := adg.buildRequest(request, index, headers)
+		req, err := adg.buildRequest(request, index)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -110,7 +106,7 @@ func (adg *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters
 	return bidRequestArray, errs
 }
 
-func (adg *adapter) buildRequest(request *openrtb2.BidRequest, index int, headers http.Header) (*adapters.RequestData, error) {
+func (adg *adapter) buildRequest(request *openrtb2.BidRequest, index int) (*adapters.RequestData, error) {
 	imp := request.Imp[index]
 	adgExt, err := unmarshalExtImpAdgeneration(&imp)
 	if err != nil {
@@ -131,9 +127,24 @@ func (adg *adapter) buildRequest(request *openrtb2.BidRequest, index int, header
 		Method:  http.MethodPost,
 		Uri:     uri,
 		Body:    body,
-		Headers: headers,
+		Headers: buildHeaders(request),
 		ImpIDs:  []string{imp.ID},
 	}, nil
+}
+
+func buildHeaders(request *openrtb2.BidRequest) http.Header {
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	if request.Device != nil {
+		if len(request.Device.UA) > 0 {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+		if len(request.Device.IP) > 0 {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+	}
+	return headers
 }
 
 func (adg *adapter) buildUri(id string, request *openrtb2.BidRequest) (string, error) {
@@ -143,6 +154,7 @@ func (adg *adapter) buildUri(id string, request *openrtb2.BidRequest) (string, e
 	}
 	v := url.Values{}
 	v.Set("id", id)
+	// posall=SSPLOC mirrors the query parameter sent by the Prebid.js adapter.
 	v.Set("posall", "SSPLOC")
 	v.Set("sdktype", detectSdkType(request))
 	uriObj.RawQuery = v.Encode()
@@ -204,9 +216,13 @@ func requestChannelName(request *openrtb2.BidRequest) string {
 func (adg *adapter) buildBody(request *openrtb2.BidRequest, imp openrtb2.Imp) ([]byte, error) {
 	// ortb carries a BidRequest reduced to a single imp (same as Prebid.js). The
 	// other fields of the original request (site/app/device/user/source/regs/ext,
-	// etc.) are preserved as-is so that FPD/UserID/schain/SUA and the like reach
-	// the backend naturally.
+	// etc.) are preserved as-is. The bidder info does not declare OpenRTB 2.6, so
+	// PBS down-converts schain/eids/GDPR/USP to their 2.5 ext locations while SUA
+	// and GPP stay in place. This matches the shape Prebid.js sends after its own
+	// FPD normalization (source.ext.schain, user.ext.eids, device.sua, regs.gpp).
 	ortbReq := *request
+	// imp.ext is forwarded unchanged (bidder params under imp.ext.bidder). The
+	// backend reads the placement ID from the "id" query parameter.
 	ortbReq.Imp = []openrtb2.Imp{imp}
 
 	pbver := version.Ver
@@ -221,13 +237,12 @@ func (adg *adapter) buildBody(request *openrtb2.BidRequest, imp openrtb2.Imp) ([
 		Adapterver: adg.version,
 		Ortb:       ortbReq,
 	}
-	// imark: set to 1 for non-native (assumed banner) requests. This flag
-	// originates from Prebid.js; its exact meaning on the backend is unverified.
+	// imark: mirrors Prebid.js, which sets it to 1 for non-native requests.
 	if imp.Native == nil {
 		body.Imark = 1
 	}
 
-	return json.Marshal(body)
+	return jsonutil.Marshal(body)
 }
 
 func unmarshalExtImpAdgeneration(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAdgeneration, error) {
@@ -259,18 +274,11 @@ func (adg *adapter) getCurrency(request *openrtb2.BidRequest) string {
 }
 
 func (adg *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 
 	var bidResp adgServerResponse
@@ -316,7 +324,9 @@ func (adg *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 	}
 
 	bid := openrtb2.Bid{
-		ID:     bidResp.Locationid,
+		// locationid is the same for every bid of a placement, so derive a
+		// deterministic ID that is unique per imp within the auction instead.
+		ID:     internalRequest.ID + "-" + matchedImp.ID,
 		ImpID:  matchedImp.ID,
 		AdM:    adm,
 		Price:  adResult.Cpm,
@@ -330,6 +340,7 @@ func (adg *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	// The backend has no currency field and prices in the currency sent in the request body.
 	bidResponse.Currency = adg.getCurrency(internalRequest)
 	bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 		Bid:     &bid,
@@ -358,6 +369,13 @@ func buildAdMarkup(adResult *adgResult, locationParams *adgLocationParams, imp *
 		}
 		return openrtb_ext.BidTypeNative, string(admBytes), nil
 	}
+	// The response is not usable as native. Falling back to banner is only
+	// valid when the imp actually requested a banner.
+	if imp.Banner == nil {
+		return "", "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("no usable native assets in the response for imp %s and the imp has no banner", imp.ID),
+		}
+	}
 
 	// Banner / Video-in-Banner
 	ad := adResult.Ad
@@ -382,14 +400,14 @@ func buildAdMarkup(adResult *adgResult, locationParams *adgLocationParams, imp *
 // least one entry in assets[]. This matches Prebid.js isNative()
 // (adResult.native.assets.length > 0) and accepts both the {"native":{...}} and
 // top-level {assets:...} shapes.
-func hasNativeAssets(raw json.RawMessage) bool {
-	var top map[string]json.RawMessage
+func hasNativeAssets(raw jsonutil.RawMessage) bool {
+	var top map[string]jsonutil.RawMessage
 	if err := jsonutil.Unmarshal(raw, &top); err != nil {
 		return false
 	}
-	var assets json.RawMessage
+	var assets jsonutil.RawMessage
 	if inner, ok := top["native"]; ok {
-		var nat map[string]json.RawMessage
+		var nat map[string]jsonutil.RawMessage
 		if err := jsonutil.Unmarshal(inner, &nat); err != nil {
 			return false
 		}
@@ -400,7 +418,7 @@ func hasNativeAssets(raw json.RawMessage) bool {
 	if len(assets) == 0 {
 		return false
 	}
-	var arr []json.RawMessage
+	var arr []jsonutil.RawMessage
 	if err := jsonutil.Unmarshal(assets, &arr); err != nil {
 		return false
 	}
@@ -411,12 +429,12 @@ func hasNativeAssets(raw json.RawMessage) bool {
 // appends beaconUrl to native.imptrackers. It absorbs both the case where the
 // backend already returns {"native":{...}} and the case where it returns the
 // assets at the top level.
-func wrapNativeAdm(raw json.RawMessage, beaconUrl string) ([]byte, error) {
-	var top map[string]json.RawMessage
+func wrapNativeAdm(raw jsonutil.RawMessage, beaconUrl string) ([]byte, error) {
+	var top map[string]jsonutil.RawMessage
 	if err := jsonutil.Unmarshal(raw, &top); err != nil {
 		return nil, err
 	}
-	var native map[string]json.RawMessage
+	var native map[string]jsonutil.RawMessage
 	if inner, ok := top["native"]; ok {
 		if err := jsonutil.Unmarshal(inner, &native); err != nil {
 			return nil, err
@@ -441,7 +459,7 @@ func wrapNativeAdm(raw json.RawMessage, beaconUrl string) ([]byte, error) {
 		}
 		if !duplicate {
 			trackers = append(trackers, beaconUrl)
-			encoded, err := json.Marshal(trackers)
+			encoded, err := jsonutil.Marshal(trackers)
 			if err != nil {
 				return nil, err
 			}
@@ -449,11 +467,18 @@ func wrapNativeAdm(raw json.RawMessage, beaconUrl string) ([]byte, error) {
 		}
 	}
 
-	nativeBytes, err := json.Marshal(native)
+	nativeBytes, err := jsonutil.Marshal(native)
 	if err != nil {
 		return nil, err
 	}
-	return []byte(`{"native":` + string(nativeBytes) + `}`), nil
+	// Compact the result so that the adm does not depend on the whitespace of the
+	// backend response (RawMessage values are copied as-is by jsonutil.Marshal
+	// unless the process registered jsonutil.RawMessageExtension).
+	var adm bytes.Buffer
+	if err := json.Compact(&adm, []byte(`{"native":`+string(nativeBytes)+`}`)); err != nil {
+		return nil, err
+	}
+	return adm.Bytes(), nil
 }
 
 func isUpperBillboard(p *adgLocationParams) bool {
@@ -483,11 +508,12 @@ func encodeVastForJS(s string) string {
 }
 
 func wrapWithAPV(impID, vastxml string) string {
-	rep := regexp.MustCompile(`\r?\n`)
-	replaced := rep.ReplaceAllString(vastxml, "")
-	return "<body><div id=\"apvad-" + impID + "\"></div>" +
+	replaced := newlineRegex.ReplaceAllString(vastxml, "")
+	// imp.id comes from the request, so escape it for the HTML attribute and the
+	// JS string literal respectively.
+	return "<body><div id=\"apvad-" + html.EscapeString(impID) + "\"></div>" +
 		"<script type=\"text/javascript\" id=\"apv\" src=\"https://cdn.apvdr.com/js/VideoAd.min.js\"></script>" +
-		"<script type=\"text/javascript\"> (function(){ new APV.VideoAd({s:\"" + impID + "\"}).load(decodeURIComponent('" + encodeVastForJS(replaced) + "')); })(); </script>" +
+		"<script type=\"text/javascript\"> (function(){ new APV.VideoAd({s:\"" + template.JSEscapeString(impID) + "\"}).load(decodeURIComponent('" + encodeVastForJS(replaced) + "')); })(); </script>" +
 		"</body>"
 }
 
@@ -499,8 +525,11 @@ func wrapWithADGBrowserM(vastxml, marginTop string) string {
 	if marginTop == "" {
 		marginTop = "0"
 	}
-	rep := regexp.MustCompile(`\r?\n`)
-	replaced := rep.ReplaceAllString(vastxml, "")
+	// marginTop is a publisher-supplied string, so escape it before placing it
+	// inside a JS single-quoted literal (e.g. ' becomes \' and < becomes \u003C).
+	// Plain values such as "10" or "10px" are left unchanged.
+	marginTop = template.JSEscapeString(marginTop)
+	replaced := newlineRegex.ReplaceAllString(vastxml, "")
 	return "<body>" +
 		"<script type=\"text/javascript\" src=\"https://i.socdm.com/sdk/js/adg-browser-m.js\"></script>" +
 		"<script type=\"text/javascript\">window.ADGBrowserM.init({vastXml: decodeURIComponent('" + encodeVastForJS(replaced) + "'), marginTop: '" + marginTop + "'});</script>" +
@@ -519,9 +548,14 @@ func extractMarginTop(imp *openrtb2.Imp) string {
 	return adgExt.MarginTop
 }
 
+// appendChildToBody inserts data before the first closing body tag, like the
+// non-global String.replace in Prebid.js. data is inserted literally.
 func appendChildToBody(ad string, data string) string {
-	rep := regexp.MustCompile(`<\/\s?body>`)
-	return rep.ReplaceAllString(ad, data+"</body>")
+	loc := closingBodyRegex.FindStringIndex(ad)
+	if loc == nil {
+		return ad
+	}
+	return ad[:loc[0]] + data + "</body>" + ad[loc[1]:]
 }
 
 func removeWrapper(ad string) string {

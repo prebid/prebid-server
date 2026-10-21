@@ -119,7 +119,7 @@
             "bids": [
                 {
                     "bid": {
-                        "id": "58278",
+                        "id": "some-request-id-some-impression-id",
                         "impid": "some-impression-id",
                         "price": 46.6,
                         "adm": "<div id=\"medibasspContainer\">sample-banner</div>\n  <img src=\"https://tg.socdm.com/bc/v3?b=beaconID&t=.gif\" width=\"1\" height=\"1\" style=\"display:none;border:none;padding:0;margin:0;width:1px;height:1px\"/>",

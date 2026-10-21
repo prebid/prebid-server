@@ -351,6 +351,47 @@ func TestBuildAdMarkupVastADGBrowserMUsesBidderMarginTop(t *testing.T) {
 	assert.Contains(t, adm, "marginTop: '42'")
 }
 
+// A hostile marginTop must not be able to break out of the JS string literal or the script element.
+func TestBuildAdMarkupADGBrowserMEscapesMarginTop(t *testing.T) {
+	adResult := &adgResult{
+		Vastxml: "<VAST></VAST>",
+	}
+	locationParams := &adgLocationParams{Option: &adgLocationOption{AdType: "upper_billboard"}}
+	imp := &openrtb2.Imp{
+		ID:     "imp-ub",
+		Banner: &openrtb2.Banner{},
+		Ext:    json.RawMessage(`{"bidder":{"id":"58278","marginTop":"10');alert(1);//</script><script>alert(2)"}}`),
+	}
+	_, adm, err := buildAdMarkup(adResult, locationParams, imp)
+	assert.NoError(t, err)
+	// Only the two closing tags of the wrapper itself remain.
+	assert.Equal(t, 2, strings.Count(adm, "</script>"))
+	assert.NotContains(t, adm, "10');")
+	assert.Contains(t, adm, `marginTop: '10\');alert(1);//\u003C/script\u003E\u003Cscript\u003Ealert(2)'`)
+}
+
+// A hostile imp ID must not be able to break out of the div attribute, the JS string literal or the script element.
+func TestBuildAdMarkupVastAPVEscapesImpID(t *testing.T) {
+	adResult := &adgResult{
+		Vastxml: "<VAST></VAST>",
+	}
+	imp := &openrtb2.Imp{ID: `x"');alert(1);//</script><script>alert(2)`, Banner: &openrtb2.Banner{}}
+	_, adm, err := buildAdMarkup(adResult, nil, imp)
+	assert.NoError(t, err)
+	// Only the two closing tags of the wrapper itself remain.
+	assert.Equal(t, 2, strings.Count(adm, "</script>"))
+	assert.Contains(t, adm, `<div id="apvad-x&#34;&#39;);alert(1);//&lt;/script&gt;&lt;script&gt;alert(2)"></div>`)
+	assert.Contains(t, adm, `new APV.VideoAd({s:"x\"\');alert(1);//\u003C/script\u003E\u003Cscript\u003Ealert(2)"})`)
+}
+
+// The beacon is inserted literally (no regexp template expansion) and only before the first closing body tag, like Prebid.js.
+func TestAppendChildToBody(t *testing.T) {
+	ad := "<body><div>first</div></body><body><div>second</div></body>"
+	got := appendChildToBody(ad, `<img src="https://b.example/?a=$abc&b=${1}">`)
+	assert.Equal(t, `<body><div>first</div><img src="https://b.example/?a=$abc&b=${1}"></body><body><div>second</div></body>`, got)
+	assert.Equal(t, "no body tag", appendChildToBody("no body tag", "<img>"))
+}
+
 func TestBuildAdMarkupNative(t *testing.T) {
 	rawNative := json.RawMessage(`{"assets":[{"id":1,"title":{"text":"hello"}}],"link":{"url":"https://l.example/"}}`)
 	adResult := &adgResult{Native: rawNative}
@@ -385,8 +426,9 @@ func TestBuildAdMarkupNativeBeaconUrlDeduplicated(t *testing.T) {
 	assert.Equal(t, 1, strings.Count(adm, "https://tg.example/bc"))
 }
 
-// Prebid.js isNative() compatible: when assets is empty/missing, treat it as banner rather than native.
-func TestBuildAdMarkupFallsBackToBannerWhenNativeAssetsMissing(t *testing.T) {
+// Prebid.js isNative() compatible: when assets is empty/missing, the response is not treated as native.
+// It falls back to banner only when the imp also requested a banner; a native-only imp gets an error.
+func TestBuildAdMarkupNativeAssetsMissing(t *testing.T) {
 	cases := []struct {
 		name string
 		raw  string
@@ -396,16 +438,27 @@ func TestBuildAdMarkupFallsBackToBannerWhenNativeAssetsMissing(t *testing.T) {
 		{"wrapped empty assets", `{"native":{"assets":[]}}`},
 	}
 	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+		t.Run(c.name+" with banner falls back to banner", func(t *testing.T) {
+			adResult := &adgResult{
+				Native: json.RawMessage(c.raw),
+				Ad:     "<body>fallback banner</body>",
+			}
+			imp := &openrtb2.Imp{ID: "imp-multi", Banner: &openrtb2.Banner{}, Native: &openrtb2.Native{Request: `{}`}}
+			bidType, adm, err := buildAdMarkup(adResult, nil, imp)
+			assert.NoError(t, err)
+			assert.Equal(t, openrtb_ext.BidTypeBanner, bidType)
+			assert.Equal(t, "fallback banner", adm)
+		})
+		t.Run(c.name+" without banner returns an error", func(t *testing.T) {
 			adResult := &adgResult{
 				Native: json.RawMessage(c.raw),
 				Ad:     "<body>fallback banner</body>",
 			}
 			imp := &openrtb2.Imp{ID: "imp-native", Native: &openrtb2.Native{Request: `{}`}}
 			bidType, adm, err := buildAdMarkup(adResult, nil, imp)
-			assert.NoError(t, err)
-			assert.Equal(t, openrtb_ext.BidTypeBanner, bidType)
-			assert.Equal(t, "fallback banner", adm)
+			assert.IsType(t, &errortypes.BadServerResponse{}, err)
+			assert.Empty(t, bidType)
+			assert.Empty(t, adm)
 		})
 	}
 }
@@ -456,7 +509,7 @@ func TestMakeBidsReadsResultsAndAdomain(t *testing.T) {
 
 	bid := bidderResp.Bids[0]
 	assert.Equal(t, openrtb_ext.BidTypeBanner, bid.BidType)
-	assert.Equal(t, "58278", bid.Bid.ID)
+	assert.Equal(t, "test-imp-1", bid.Bid.ID)
 	assert.Equal(t, "imp-1", bid.Bid.ImpID)
 	assert.Equal(t, "testAd", bid.Bid.AdM)
 	assert.Equal(t, 30.0, bid.Bid.Price)
