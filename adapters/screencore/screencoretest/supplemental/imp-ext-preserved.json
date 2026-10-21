@@ -1,0 +1,68 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "gpid": "/1234/home#div-1",
+          "tid": "transaction-id-1",
+          "data": {
+            "pbadslot": "/1234/home#div-1"
+          },
+          "bidder": {
+            "sspPlacementId": "test",
+            "region": "us"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ssp-us.screencore.io/pbs-bid?pId=test",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "gpid": "/1234/home#div-1",
+                "tid": "transaction-id-1",
+                "data": {
+                  "pbadslot": "/1234/home#div-1"
+                },
+                "bidder": {
+                  "sspPlacementId": "test"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com"
+          }
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
