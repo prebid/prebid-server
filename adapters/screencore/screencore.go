@@ -5,41 +5,29 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-type adapter struct {
-	endpoint *template.Template
-}
+type adapter struct{}
 
 type reqBodyExtBidder struct {
 	SspPlacementID string `json:"sspPlacementId,omitempty"`
 }
 
-const sspPath = "/pbs-bid"
-
-var regionHosts = map[string]string{
-	"us":   "ssp-us",
-	"eu":   "ssp-eu",
-	"asia": "ssp-asia",
+var regionEndpoints = map[string]string{
+	"us":   "https://ssp-us.screencore.io/pbs-bid",
+	"eu":   "https://ssp-eu.screencore.io/pbs-bid",
+	"asia": "https://ssp-asia.screencore.io/pbs-bid",
 }
 
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
-	endpointTemplate, err := template.New("endpointTemplate").Parse(cfg.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	return &adapter{endpoint: endpointTemplate}, nil
+	return &adapter{}, nil
 }
 
 func impError(impID string, err error) error {
@@ -70,7 +58,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		endpoint, err := a.buildSspEndpoint(screencoreExt)
+		endpoint, err := buildSspEndpoint(screencoreExt)
 		if err != nil {
 			errs = append(errs, impError(imp.ID, err))
 			continue
@@ -134,23 +122,17 @@ func buildImpExt(ext json.RawMessage, sspPlacementID string) (json.RawMessage, e
 	return jsonutil.Marshal(fields)
 }
 
-func (a *adapter) buildSspEndpoint(ext openrtb_ext.ImpExtScreencore) (string, error) {
-	host, err := resolveRegionHost(ext.Region)
+func buildSspEndpoint(ext openrtb_ext.ImpExtScreencore) (string, error) {
+	base, err := resolveRegionEndpoint(ext.Region)
 	if err != nil {
 		return "", err
 	}
 
-	base, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: host})
-	if err != nil {
-		return "", fmt.Errorf("unable to resolve endpoint macros: %v", err)
-	}
-
 	endpointURL, err := url.Parse(base)
 	if err != nil {
-		return "", fmt.Errorf("invalid ssp endpoint %q: %v", base, err)
+		return "", fmt.Errorf("invalid ssp endpoint %q: %w", base, err)
 	}
 
-	endpointURL.Path = strings.TrimSuffix(endpointURL.Path, "/") + sspPath
 	query := endpointURL.Query()
 	query.Set("pId", ext.SspPlacementID)
 	endpointURL.RawQuery = query.Encode()
@@ -158,15 +140,15 @@ func (a *adapter) buildSspEndpoint(ext openrtb_ext.ImpExtScreencore) (string, er
 	return endpointURL.String(), nil
 }
 
-func resolveRegionHost(region string) (string, error) {
+func resolveRegionEndpoint(region string) (string, error) {
 	if region == "" {
 		return "", fmt.Errorf("region is required when sspPlacementId is provided")
 	}
-	host, ok := regionHosts[region]
+	endpoint, ok := regionEndpoints[region]
 	if !ok {
 		return "", fmt.Errorf("unsupported region %q, expected one of us/eu/asia", region)
 	}
-	return host, nil
+	return endpoint, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
