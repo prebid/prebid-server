@@ -1,0 +1,515 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>optima: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/optima/optima.go (97.5%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package optima
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strings"
+        "text/template"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/macros"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint *template.Template
+}
+
+// Builder builds a new instance of the Optima adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        endpoint, err := template.New("endpointTemplate").Parse(cfg.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+        <span class="cov8" title="1">return &amp;adapter{endpoint: endpoint}, nil</span>
+}
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        // Optima only serves in-app traffic. Any request carrying a site object is
+        // rejected by the exchange with a 400, so drop it here as bad input
+        // rather than sending it and burning a round trip.
+        if request.Site != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "optima: site traffic is not supported, request dropped",
+                }}
+        }</span>
+        <span class="cov8" title="1">if request.App == nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "optima: request.app is required",
+                }}
+        }</span>
+        // The exchange identifies in-app inventory by bundle and answers 400
+        // missing_app_bundle without it, so fail here instead of burning a round trip.
+        <span class="cov8" title="1">if request.App.Bundle == "" </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "optima: request.app.bundle is required",
+                }}
+        }</span>
+        <span class="cov8" title="1">if len(request.Imp) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: "optima: request has no impressions",
+                }}
+        }</span>
+        // Optima clears first price (at 0/1) or second price (at 2) and answers 400
+        // unsupported_auction_type for anything else, so a fixed-price or
+        // exchange-specific auction type cannot be served. Reject it here rather than
+        // silently reselling the impression under different clearing rules.
+        <span class="cov8" title="1">if request.AT != 0 &amp;&amp; request.AT != 1 &amp;&amp; request.AT != 2 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("optima: auction type %d is not supported; only first price (1) and second price (2) are served", request.AT),
+                }}
+        }</span>
+
+        // Work on a shallow copy so we never mutate the request Prebid Server
+        // shares with other bidders.
+        <span class="cov8" title="1">reqCopy := *request
+
+        // Optima is USD-only: it rejects the whole request with 400
+        // unsupported_request_currency when request.cur lacks USD. Every imp floor is
+        // converted to USD below and the exchange bids in USD, so advertise USD only.
+        // Prebid Server converts the USD bids back using the original request.cur.
+        reqCopy.Cur = []string{"USD"}
+
+        var errs []error
+
+        // The request is OpenRTB 2.6 (optima.yaml declares version 2.6, so PBS does not
+        // down-convert). Current Optima builds read CCPA opt-out from regs.us_privacy, but
+        // earlier ones read only the 2.5 location regs.ext.us_privacy and would drop the
+        // opt-out silently, so mirror the 2.6 value into it as well.
+        if regs, err := mirrorUSPrivacy(request.Regs); err != nil </span><span class="cov8" title="1">{
+                errs = append(errs, err)
+        }</span> else<span class="cov8" title="1"> {
+                reqCopy.Regs = regs
+        }</span>
+
+        // supply_id is an imp-level param and selects the exchange endpoint (and with
+        // it the supply source's margin, floors and billing), so imps carrying
+        // different keys must not share a request. Group them by key, keeping the
+        // order in which each key first appears so the output is deterministic.
+        <span class="cov8" title="1">groups := make(map[string]*impGroup)
+        var order []string
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                mapped, err := mapImp(imp, reqInfo)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">id, err := supplyID(mapped)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">group, ok := groups[id]
+                if !ok </span><span class="cov8" title="1">{
+                        uri, err := a.endpointFor(id)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">group = &amp;impGroup{uri: uri}
+                        groups[id] = group
+                        order = append(order, id)</span>
+                }
+                <span class="cov8" title="1">group.imps = append(group.imps, mapped)</span>
+        }
+        <span class="cov8" title="1">if len(order) == 0 </span><span class="cov8" title="1">{
+                errs = append(errs, &amp;errortypes.BadInput{
+                        Message: "optima: no valid impressions in request",
+                })
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">requests := make([]*adapters.RequestData, 0, len(order))
+        for _, id := range order </span><span class="cov8" title="1">{
+                group := groups[id]
+                groupReq := reqCopy
+                groupReq.Imp = group.imps
+                reqJSON, err := jsonutil.Marshal(groupReq)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">requests = append(requests, &amp;adapters.RequestData{
+                        Method:  "POST",
+                        Uri:     group.uri,
+                        Body:    reqJSON,
+                        Headers: requestHeaders(),
+                        ImpIDs:  openrtb_ext.GetImpIDs(group.imps),
+                })</span>
+        }
+        <span class="cov8" title="1">return requests, errs</span>
+}
+
+// impGroup is the set of imps that share one supply key and so one request.
+type impGroup struct {
+        uri  string
+        imps []openrtb2.Imp
+}
+
+// endpointFor resolves the exchange endpoint for a supply key. The key comes
+// from publisher-controlled imp params, so it is escaped as a single path
+// segment: otherwise "/", ".." or "?" in it would rewrite the request path or
+// query and could steer the request to other routes on the exchange host.
+func (a *adapter) endpointFor(supplyID string) (string, error) <span class="cov8" title="1">{
+        return macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{
+                SupplyId: url.PathEscape(supplyID),
+        })
+}</span>
+
+// requestHeaders returns a fresh header set per request so no map is shared
+// between the requests built from one bid request.
+func requestHeaders() http.Header <span class="cov8" title="1">{
+        headers := http.Header{}
+        headers.Add("Content-Type", "application/json")
+        headers.Add("Accept", "application/json")
+        headers.Add("x-openrtb-version", "2.6")
+        return headers
+}</span>
+
+// supplyID pulls the Optima supply key out of imp.ext.bidder.
+func supplyID(imp openrtb2.Imp) (string, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("optima: imp %s has invalid ext: %v", imp.ID, err),
+                }
+        }</span>
+        <span class="cov8" title="1">var optimaExt openrtb_ext.ExtImpOptima
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;optimaExt); err != nil </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("optima: imp %s has invalid ext.bidder: %v", imp.ID, err),
+                }
+        }</span>
+        <span class="cov8" title="1">if optimaExt.SupplyId == "" </span><span class="cov8" title="1">{
+                return "", &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("optima: imp %s is missing required param supply_id", imp.ID),
+                }
+        }</span>
+        <span class="cov8" title="1">return optimaExt.SupplyId, nil</span>
+}
+
+// mirrorUSPrivacy copies a top-level regs.us_privacy (OpenRTB 2.6) into
+// regs.ext.us_privacy (OpenRTB 2.5), the only CCPA location that earlier Optima
+// builds read. An existing regs.ext.us_privacy is never overwritten. Returns the
+// original regs unchanged when there is nothing to mirror.
+func mirrorUSPrivacy(regs *openrtb2.Regs) (*openrtb2.Regs, error) <span class="cov8" title="1">{
+        if regs == nil || regs.USPrivacy == "" </span><span class="cov8" title="1">{
+                return regs, nil
+        }</span>
+
+        <span class="cov8" title="1">ext := map[string]json.RawMessage{}
+        if len(regs.Ext) &gt; 0 </span><span class="cov8" title="1">{
+                if err := jsonutil.Unmarshal(regs.Ext, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                        return nil, &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("optima: invalid regs.ext: %v", err),
+                        }
+                }</span>
+        }
+        <span class="cov8" title="1">if _, ok := ext["us_privacy"]; ok </span><span class="cov8" title="1">{
+                return regs, nil
+        }</span>
+
+        <span class="cov8" title="1">usPrivacy, err := jsonutil.Marshal(regs.USPrivacy)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">ext["us_privacy"] = usPrivacy
+        newExt, err := jsonutil.Marshal(ext)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">regsCopy := *regs
+        regsCopy.Ext = newExt
+        return &amp;regsCopy, nil</span>
+}
+
+// mapImp validates and normalizes a single imp for the Optima contract: Optima serves
+// banner, interstitial and video (incl. rewarded), so an imp needs a banner or a
+// video object (native/audio imps would otherwise cause a 400 unsupported_imp).
+// An imp carrying both is passed on as is: Optima treats it as video and the banner
+// is a companion. For a multi-size banner slot that only specifies
+// imp.banner.format, the first format is flattened into w/h since Optima reads the
+// top-level dimensions. The floor is converted to USD, the only currency Optima
+// accepts.
+func mapImp(imp openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) (openrtb2.Imp, error) <span class="cov8" title="1">{
+        if imp.Banner == nil &amp;&amp; imp.Video == nil </span><span class="cov8" title="1">{
+                return openrtb2.Imp{}, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("optima: imp %s has no banner or video object; only banner, interstitial and video imps are supported", imp.ID),
+                }
+        }</span>
+        // Optima requires video.mimes and fails the whole request with 400
+        // missing_video_mimes without it. Prebid Server rejects such an imp before the
+        // adapter runs, so this only guards paths that bypass that validation; dropping
+        // the one imp keeps the rest of the request sellable.
+        <span class="cov8" title="1">if imp.Video != nil &amp;&amp; len(imp.Video.MIMEs) == 0 </span><span class="cov8" title="1">{
+                return openrtb2.Imp{}, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("optima: imp %s has a video object without mimes", imp.ID),
+                }
+        }</span>
+
+        // imp is a copy of the request's imp, so the floor fields can be set directly.
+        <span class="cov8" title="1">if err := floorToUSD(&amp;imp, reqInfo); err != nil </span><span class="cov8" title="1">{
+                return openrtb2.Imp{}, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("optima: imp %s: cannot convert bid floor to USD: %v", imp.ID, err),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if imp.Banner != nil </span><span class="cov8" title="1">{
+                imp.Banner = flattenBannerFormat(imp.Banner)
+        }</span>
+        <span class="cov8" title="1">return imp, nil</span>
+}
+
+// floorToUSD rewrites imp.bidfloor/bidfloorcur into USD. Optima fails the whole
+// request with 400 unsupported_floor_currency if any imp names another currency,
+// and it compares the code case-sensitively, so "usd" is normalized as well. A
+// currency code without an amount has nothing to convert and is just set to USD.
+func floorToUSD(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error <span class="cov8" title="1">{
+        if imp.BidFloorCur == "" || imp.BidFloorCur == "USD" </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if imp.BidFloor &gt; 0 &amp;&amp; !strings.EqualFold(imp.BidFloorCur, "USD") </span><span class="cov8" title="1">{
+                converted, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">imp.BidFloor = converted</span>
+        }
+        <span class="cov8" title="1">imp.BidFloorCur = "USD"
+        return nil</span>
+}
+
+// flattenBannerFormat fills banner.w/h from banner.format when the banner has no
+// complete top-level size, since Optima reads only w/h. Entries with a zero
+// dimension are unusable and skipped. When w or h is already set, the first entry
+// consistent with it is preferred so an explicit dimension is kept; otherwise the
+// first complete entry is used. Either way w and h always come from one entry, so
+// the result is a size the publisher actually offered. Returns the original
+// banner unchanged when it already has a size or no usable entry exists.
+func flattenBannerFormat(banner *openrtb2.Banner) *openrtb2.Banner <span class="cov8" title="1">{
+        if isSet(banner.W) &amp;&amp; isSet(banner.H) </span><span class="cov8" title="1">{
+                return banner
+        }</span>
+
+        <span class="cov8" title="1">var chosen *openrtb2.Format
+        for i := range banner.Format </span><span class="cov8" title="1">{
+                f := &amp;banner.Format[i]
+                if f.W &lt;= 0 || f.H &lt;= 0 </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">if agrees(banner.W, f.W) &amp;&amp; agrees(banner.H, f.H) </span><span class="cov8" title="1">{
+                        chosen = f
+                        break</span>
+                }
+                <span class="cov8" title="1">if chosen == nil </span><span class="cov8" title="1">{
+                        chosen = f // fallback if no entry agrees with the explicit dimension
+                }</span>
+        }
+        <span class="cov8" title="1">if chosen == nil </span><span class="cov8" title="1">{
+                return banner
+        }</span>
+
+        <span class="cov8" title="1">bannerCopy := *banner
+        w, h := chosen.W, chosen.H
+        bannerCopy.W = &amp;w
+        bannerCopy.H = &amp;h
+        return &amp;bannerCopy</span>
+}
+
+// isSet reports whether a banner dimension carries a usable (positive) value.
+func isSet(dim *int64) bool <span class="cov8" title="1">{
+        return dim != nil &amp;&amp; *dim &gt; 0
+}</span>
+
+// agrees reports whether a format dimension is compatible with the banner's
+// top-level dimension: always when that one is unset, else only when equal.
+func agrees(dim *int64, formatDim int64) bool <span class="cov8" title="1">{
+        return !isSet(dim) || *dim == formatDim
+}</span>
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(response) </span><span class="cov8" title="1">{
+                // 204 = no-bid (filter, timeout, no DSP, shed). Not an adapter error.
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(response.Body, &amp;bidResp); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidCount := 0
+        for _, sb := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                bidCount += len(sb.Bid)
+        }</span>
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponseWithBidsCapacity(bidCount)
+        // Keep the "USD" default set by NewBidderResponseWithBidsCapacity when the
+        // response omits cur, rather than blanking Currency (a required field).
+        if bidResp.Cur != "" </span><span class="cov8" title="1">{
+                bidderResponse.Currency = bidResp.Cur
+        }</span>
+
+        <span class="cov8" title="1">var errs []error
+        for _, seatBid := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := &amp;seatBid.Bid[i]
+                        bidType, err := getBidType(bid, request.Imp)
+                        if err != nil </span><span class="cov8" title="1">{
+                                // A bid of unknown type cannot be rendered correctly; skip it
+                                // rather than guess, and keep the other bids.
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     bid,
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+        <span class="cov8" title="1">return bidderResponse, errs</span>
+}
+
+// getBidType returns the media type of a bid. Optima passes through the mtype its
+// DSP set (1 banner, 2 video) and leaves it unset when the DSP omitted it, so
+// mtype is trusted when present and otherwise inferred from the imp the bid
+// answers. The imp check puts video first because Optima sells an imp that has both
+// banner and video as video.
+func getBidType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        case 0:<span class="cov8" title="1">
+                for _, imp := range imps </span><span class="cov8" title="1">{
+                        if imp.ID != bid.ImpID </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">switch </span>{
+                        case imp.Video != nil:<span class="cov8" title="1">
+                                return openrtb_ext.BidTypeVideo, nil</span>
+                        case imp.Banner != nil:<span class="cov8" title="1">
+                                return openrtb_ext.BidTypeBanner, nil</span>
+                        }
+                }
+                <span class="cov8" title="1">return "", &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("optima: cannot determine media type of bid %s: mtype is not set and impid %q has no banner or video imp in the request", bid.ID, bid.ImpID),
+                }</span>
+        }
+        <span class="cov8" title="1">return "", &amp;errortypes.BadServerResponse{
+                Message: fmt.Sprintf("optima: unsupported mtype %d in bid %s (impid %q); only banner and video are served", bid.MType, bid.ID, bid.ImpID),
+        }</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
