@@ -202,6 +202,15 @@
                 "crid": "crid_11",
                 "h": 90,
                 "w": 728
+              },
+              {
+                "id": "bid-4",
+                "impid": "test-imp-2",
+                "price": 0.250000,
+                "adm": "<div>some-test-ad-2</div>",
+                "crid": "crid_13",
+                "h": 90,
+                "w": 728
               }]
             }
           ],
@@ -251,6 +260,18 @@
             "h": 90
           },
           "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-4",
+            "impid": "test-imp-2",
+            "price": 0.25,
+            "adm": "<div>some-test-ad-2</div>",
+            "crid": "crid_13",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
         }
       ]
     }
