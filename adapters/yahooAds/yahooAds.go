@@ -147,7 +147,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, errs
 }
 
-// vastMarkup matches a VAST root element in any case, but not <VASTAdTagURI>.
+// vastMarkup matches a <VAST element in any case, but not <VASTAdTagURI>.
 var vastMarkup = regexp.MustCompile(`(?i)<\s*VAST[\s/>]`)
 
 // errUnknownImp is returned by getMediaType when the bid's impression is not in the request.
