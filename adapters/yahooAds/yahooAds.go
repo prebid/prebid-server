@@ -160,7 +160,7 @@ func getMediaType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, 
 			return openrtb_ext.BidTypeBanner, nil
 		case openrtb2.MarkupVideo:
 			return openrtb_ext.BidTypeVideo, nil
-		case 0:
+		case 0: // no mtype: fall back to imp formats / adm
 		default:
 			return "", &errortypes.BadServerResponse{
 				Message: fmt.Sprintf("Unsupported mtype %d for bid '%s'", bid.MType, bid.ID),
