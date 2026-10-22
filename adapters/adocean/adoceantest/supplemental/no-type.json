@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "some-request",
+    "test": 1,
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "1.0.0.0"
+    },
+    "imp": [
+      {
+        "id": "unknown-imp",
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaolifgmvmpfj"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=unknown-imp: AdOcean supports only banner and instream video",
+      "comparison": "literal"
+    }
+  ]
+}
