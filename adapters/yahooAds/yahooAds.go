@@ -145,6 +145,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, errs
 }
 
+// vastMarkup is a heuristic to find video bids without mtype on banner+video imps.
 var vastMarkup = regexp.MustCompile(`<VAST[ \t\r\n/>]`)
 
 var errUnknownImp = errors.New("unknown impression")
