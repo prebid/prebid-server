@@ -169,8 +169,8 @@
       "comparison": "literal"
     },
     {
-      "value": "Bad server response: ",
-      "comparison": "startswith"
+      "value": "Bad server response: expect { or n, but found \".",
+      "comparison": "literal"
     }
   ],
 

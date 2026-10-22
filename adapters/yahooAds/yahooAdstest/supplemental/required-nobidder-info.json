@@ -26,8 +26,8 @@
       "comparison": "literal"
     },
     {
-      "value": "imp #1: ",
-      "comparison": "startswith"
+      "value": "imp #1: expect { or n, but found \"",
+      "comparison": "literal"
     }
   ]
 }
