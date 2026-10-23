@@ -42,7 +42,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "uri": "http://ssp.wp.test/bidder/?bdver=7.0",
                 "body": {
                     "bidRequest": {
                         "id": "test-request",
@@ -91,10 +91,48 @@
                 "impIDs":["slot"]
             },
             "mockResponse": {
-                "status": 204,
-                "body": {}
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "adm": "",
+                                    "adomain": [
+                                        "gopl-test"
+                                    ],
+                                    "crid": "1234",
+                                    "ext": {
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
+                                        "pubid": "431",
+                                        "siteid": "237503",
+                                        "slotid": "005",
+                                        "tagid": "ad-test1"
+                                    },
+                                    "w": 300,
+                                    "h": 250,
+                                    "id": "response-005",
+                                    "impid": "slot",
+                                    "price": 20,
+                                    "mtype": 0
+                                }
+                            ],
+                            "seat": "gopl-test"
+                        }
+                    ],
+                    "sn": "gopl-test"
+                }
             }
         }
     ],
-    "expectedBidResponses": []
+    "expectedMakeBidsErrors": [
+        {
+            "value": "unsupported MType: 0.",
+            "comparison": "literal"
+        }
+    ]
 }

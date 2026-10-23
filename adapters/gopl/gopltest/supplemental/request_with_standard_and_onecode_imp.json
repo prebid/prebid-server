@@ -56,7 +56,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "uri": "http://ssp.wp.test/bidder/?bdver=7.0",
                 "body": {
                     "bidRequest": {
                         "id": "test-request",
@@ -129,7 +129,7 @@
                                 {
                                     "adm": "<!--preformatted-->test_ad_1",
                                     "adomain": [
-                                        "sspbc-test"
+                                        "gopl-test"
                                     ],
                                     "crid": "1234",
                                     "ext": {
@@ -149,14 +149,14 @@
                                     "mtype": 1
                                 }
                             ],
-                            "seat": "sspbc-test"
+                            "seat": "gopl-test"
                         },
                         {
                             "bid": [
                                 {
                                     "adm": "<!--preformatted-->test_ad_2",
                                     "adomain": [
-                                        "sspbc-test"
+                                        "gopl-test"
                                     ],
                                     "crid": "5678",
                                     "ext": {
@@ -176,10 +176,10 @@
                                     "mtype": 1
                                 }
                             ],
-                            "seat": "sspbc-test"
+                            "seat": "gopl-test"
                         }
                     ],
-                    "sn": "sspbc-test"
+                    "sn": "gopl-test"
                 }
             }
         }
@@ -195,7 +195,7 @@
                         "price": 20,
                         "adm": "<!--preformatted-->test_ad_1",
                         "adomain": [
-                            "sspbc-test"
+                            "gopl-test"
                         ],
                         "crid": "1234",
                         "w": 300,
@@ -220,7 +220,7 @@
                         "price": 10,
                         "adm": "<!--preformatted-->test_ad_2",
                         "adomain": [
-                            "sspbc-test"
+                            "gopl-test"
                         ],
                         "crid": "5678",
                         "w": 300,

@@ -11,14 +11,14 @@
                     }
                 },
                 "secure": 1,
-                "native": {
-                    "request": "{json string}",
-                    "ver": "1.2"
-                  },
+                "banner": {
+                    "format": []
+                },
                 "tagid": "ad-test1"
             }
         ],
         "site": {
+            "id": "237503",
             "domain": "test.page",
             "page": "https://test.page/",
             "ref": "https://test.referer/"
@@ -38,17 +38,14 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "uri": "http://ssp.wp.test/bidder/?bdver=7.0",
                 "body": {
                     "bidRequest": {
                         "id": "test-request",
                         "imp": [
                             {
                                 "id": "slot",
-                                "native": {
-                                    "request": "{json string}",
-                                    "ver": "1.2"
-                                  },
+                                "banner": {},
                                 "tagid": "ad-test1",
                                 "secure": 1,
                                 "ext": {
@@ -60,6 +57,7 @@
                             }
                         ],
                         "site": {
+                            "id": "237503",
                             "domain": "test.page",
                             "page": "https://test.page/",
                             "ref": "https://test.referer/"
@@ -78,7 +76,7 @@
                     },
                     "requestInfo": {
                         "PbsEntryPoint": ""
-                    }
+                    }   
                 },
                 "impIDs":["slot"]
             },
@@ -89,16 +87,34 @@
                     "id": "test-request",
                     "seatbid": [
                         {
-                            "seat": "sspbc-test",
-                            "bid": [{
-                                "adm": "test-native-ad",
-                                "id": "response-005",
-                                "impid": "slot",
-                                "price": 20,
-                                "mtype": 4
-                              }]
+                            "bid": [
+                                {
+                                    "adm": "<!--preformatted-->test_ad",
+                                    "adomain": [
+                                        "gopl-test"
+                                    ],
+                                    "crid": "1234",
+                                    "ext": {
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
+                                        "pubid": "431",
+                                        "siteid": "237503",
+                                        "slotid": "005",
+                                        "tagid": "ad-test1"
+                                    },
+                                    "w": 300,
+                                    "h": 250,
+                                    "id": "response-005",
+                                    "impid": "slot",
+                                    "price": 20,
+                                    "mtype": 1
+                                }
+                            ],
+                            "seat": "gopl-test"
                         }
-                    ]
+                    ],
+                    "sn": "gopl-test"
                 }
             }
         }
@@ -109,13 +125,28 @@
             "bids": [
                 {
                     "bid": {
-                        "adm": "test-native-ad",
                         "id": "response-005",
                         "impid": "slot",
                         "price": 20,
-                        "mtype": 4
+                        "adm": "<!--preformatted-->test_ad",
+                        "adomain": [
+                            "gopl-test"
+                        ],
+                        "crid": "1234",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "external": "1",
+                            "platform": "prebidserver",
+                            "pricepl": 0.123,
+                            "pubid": "431",
+                            "siteid": "237503",
+                            "slotid": "005",
+                            "tagid": "ad-test1"
+                        },
+                        "mtype": 1
                     },
-                    "type": "native"
+                    "type": "banner"
                 }
             ]
         }
