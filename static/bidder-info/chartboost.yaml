@@ -1,6 +1,6 @@
 endpoint: "https://da.chartboost.com/auction/bidding/prebid"
 maintainer:
-  email: support@chartboost.com
+  email: in-app-bidding@chartboost.com
 geoscope:
   - global
 gvlVendorID: 1601
