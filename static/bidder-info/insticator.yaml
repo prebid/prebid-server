@@ -11,10 +11,14 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - audio
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - audio
+      - native
 userSync:
   iframe:
     url: "https://usync.ingage.tech?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"

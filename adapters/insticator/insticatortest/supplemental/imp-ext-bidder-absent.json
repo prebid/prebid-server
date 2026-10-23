@@ -1,0 +1,32 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "gpid": "/1111/homepage"
+        }
+      }
+    ],
+    "site": {
+      "publisher": {
+        "id": "test-publisher-id"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expect { or n, but found \u0000",
+      "comparison": "literal"
+    }
+  ]
+}
