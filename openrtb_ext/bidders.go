@@ -210,7 +210,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderPixfuture,
 	BidderPlaydigo,
 	BidderProxistore,
-	BidderPublink,
+	BidderPublinkio,
 	BidderPubmatic,
 	BidderPubrise,
 	BidderPubnative,
@@ -601,7 +601,7 @@ const (
 	BidderPixfuture         BidderName = "pixfuture"
 	BidderPlaydigo          BidderName = "playdigo"
 	BidderProxistore        BidderName = "proxistore"
-	BidderPublink           BidderName = "publink"
+	BidderPublinkio         BidderName = "publinkio"
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubrise           BidderName = "pubrise"
 	BidderPubnative         BidderName = "pubnative"

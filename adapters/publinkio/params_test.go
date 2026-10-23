@@ -1,4 +1,4 @@
-package publink
+package publinkio
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
-// The bidder-params schema (static/bidder-params/publink.json) must accept the
+// The bidder-params schema (static/bidder-params/publinkio.json) must accept the
 // shapes publishers actually write and allow standard imp.tagid without a placement override.
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
@@ -20,7 +20,7 @@ func TestValidParams(t *testing.T) {
 		`{"placementId": "a1b2c3d4"}`,
 		`{"placementId": "111c7fb088", "bidFloor": 2.5, "currency": "USD"}`,
 	} {
-		if err := validator.Validate(openrtb_ext.BidderPublink, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderPublinkio, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -40,7 +40,7 @@ func TestInvalidParams(t *testing.T) {
 		`{"placementId": "tag", "currency": "EUR"}`,
 		`{"placementId": "tag", "bidFloor": -1}`,
 	} {
-		if err := validator.Validate(openrtb_ext.BidderPublink, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderPublinkio, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}

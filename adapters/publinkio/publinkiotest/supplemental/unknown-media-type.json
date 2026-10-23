@@ -10,7 +10,7 @@
     },
     "mockResponse": {
       "status": 200,
-      "body": { "id": "r", "cur": "USD", "seatbid": [{ "seat": "publink", "bid": [{ "id": "b", "impid": "no-such-imp", "price": 1.0, "adm": "x" }] }] }
+      "body": { "id": "r", "cur": "USD", "seatbid": [{ "seat": "publinkio", "bid": [{ "id": "b", "impid": "no-such-imp", "price": 1.0, "adm": "x" }] }] }
     }
   }],
   "expectedBidResponses": [{ "currency": "USD", "bids": [] }],

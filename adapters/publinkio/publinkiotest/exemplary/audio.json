@@ -36,7 +36,7 @@
         "id": "s2s_audio_1",
         "cur": "USD",
         "seatbid": [{
-          "seat": "publink",
+          "seat": "publinkio",
           "bid": [{
             "id": "b_audio",
             "impid": "audio-1",

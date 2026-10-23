@@ -13,9 +13,14 @@
           ]
         },
         "ext": {
-          "bidder": {}
+          "bidder": {
+            "placementId": "111c7fb088",
+            "bidFloor": 1.5,
+            "currency": "USD"
+          }
         },
-        "tagid": "standard-tag"
+        "bidfloor": 4,
+        "bidfloorcur": "USD"
       }
     ],
     "site": {
@@ -31,7 +36,9 @@
           "imp": [
             {
               "id": "banner-1",
-              "tagid": "standard-tag",
+              "tagid": "111c7fb088",
+              "bidfloor": 4,
+              "bidfloorcur": "USD",
               "banner": {
                 "format": [
                   {
@@ -41,7 +48,11 @@
                 ]
               },
               "ext": {
-                "bidder": {}
+                "bidder": {
+                  "placementId": "111c7fb088",
+                  "bidFloor": 1.5,
+                  "currency": "USD"
+                }
               }
             }
           ],
@@ -57,9 +68,10 @@
         "status": 200,
         "body": {
           "id": "s2s_banner",
+          "cur": "USD",
           "seatbid": [
             {
-              "seat": "publink",
+              "seat": "publinkio",
               "bid": [
                 {
                   "id": "bb",

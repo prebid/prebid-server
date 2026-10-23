@@ -1,4 +1,4 @@
-package publink
+package publinkio
 
 import (
 	"testing"
@@ -9,10 +9,10 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderPublink, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderPublinkio, config.Adapter{
 		Endpoint: "https://ortb.publink.io/api/ortb/prebid"}, config.Server{})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
-	adapterstest.RunJSONBidderTest(t, "publinktest", bidder)
+	adapterstest.RunJSONBidderTest(t, "publinkiotest", bidder)
 }

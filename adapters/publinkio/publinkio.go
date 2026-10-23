@@ -1,4 +1,4 @@
-// Package publink is the Prebid Server (Go) bidder adapter for Publink.
+// Package publinkio is the Prebid Server (Go) bidder adapter for Publink.
 //
 // Server-to-server counterpart of the Prebid.js adapter: the host's Prebid
 // Server hands this adapter the bidder params under imp.ext.bidder, the
@@ -7,7 +7,7 @@
 // concurrency per tag, so batching would queue placements behind each other).
 // The endpoint already resolves imp.ext.bidder.placementId itself, so a host
 // that forwards the raw request also works; tagid is set for clarity.
-package publink
+package publinkio
 
 import (
 	"encoding/json"
@@ -28,14 +28,14 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Publink adapter for the given bidder
-// with the given config. The endpoint comes from static/bidder-info/publink.yaml.
+// with the given config. The endpoint comes from static/bidder-info/publinkio.yaml.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{endpoint: config.Endpoint}, nil
 }
 
-// ExtImpPublink contains optional placementId, bidFloor and currency params.
+// ExtImpPublinkio contains optional placementId, bidFloor and currency params.
 // Without placementId, the adapter uses the standard imp.tagid.
-type ExtImpPublink struct {
+type ExtImpPublinkio struct {
 	PlacementID string  `json:"placementId"`
 	BidFloor    float64 `json:"bidFloor,omitempty"`
 	Currency    string  `json:"currency,omitempty"`
@@ -53,7 +53,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("imp[%d].ext: %v", i, err)})
 			continue
 		}
-		var params ExtImpPublink
+		var params ExtImpPublinkio
 		if err := json.Unmarshal(bidderExt.Bidder, &params); err != nil {
 			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("imp[%d].ext.bidder: %v", i, err)})
 			continue
