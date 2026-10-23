@@ -1,0 +1,7 @@
+{
+  "expectedMakeRequestsErrors": [
+    { "value": "imp[0].ext:", "comparison": "startswith" }
+  ],
+  "mockBidRequest": { "id": "r", "imp": [{ "id": "i", "banner": { "format": [{ "w": 300, "h": 250 }] }, "ext": "not-an-object" }] },
+  "httpCalls": []
+}

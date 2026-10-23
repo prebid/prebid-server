@@ -194,6 +194,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/pixfuture"
 	"github.com/prebid/prebid-server/v4/adapters/playdigo"
 	"github.com/prebid/prebid-server/v4/adapters/proxistore"
+	"github.com/prebid/prebid-server/v4/adapters/publinkio"
 	"github.com/prebid/prebid-server/v4/adapters/pubmatic"
 	"github.com/prebid/prebid-server/v4/adapters/pubnative"
 	"github.com/prebid/prebid-server/v4/adapters/pubrise"
@@ -483,6 +484,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPixfuture:         pixfuture.Builder,
 		openrtb_ext.BidderPlaydigo:          playdigo.Builder,
 		openrtb_ext.BidderProxistore:        proxistore.Builder,
+		openrtb_ext.BidderPublinkio:         publinkio.Builder,
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPubrise:           pubrise.Builder,
