@@ -202,6 +202,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOpenx,
 	BidderOperaads,
 	BidderOptidigital,
+	BidderOptima,
 	BidderOraki,
 	BidderOrbidder,
 	BidderOutbrain,
@@ -595,6 +596,7 @@ const (
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
 	BidderOptidigital       BidderName = "optidigital"
+	BidderOptima            BidderName = "optima"
 	BidderOraki             BidderName = "oraki"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"

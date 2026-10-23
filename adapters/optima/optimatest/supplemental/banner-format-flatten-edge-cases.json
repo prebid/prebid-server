@@ -1,0 +1,154 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-format-edge",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-skip-incomplete",
+        "banner": { "format": [{ "w": 320 }, { "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      },
+      {
+        "id": "imp-skip-empty",
+        "banner": { "format": [{}, { "w": 728, "h": 90 }] },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      },
+      {
+        "id": "imp-keep-w",
+        "banner": {
+          "w": 300,
+          "format": [
+            { "w": 320, "h": 50 },
+            { "w": 300, "h": 250 }
+          ]
+        },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      },
+      {
+        "id": "imp-keep-h",
+        "banner": {
+          "h": 250,
+          "format": [
+            { "w": 320, "h": 50 },
+            { "w": 300, "h": 250 }
+          ]
+        },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      },
+      {
+        "id": "imp-inconsistent-dim",
+        "banner": { "w": 728, "format": [{ "w": 320, "h": 50 }] },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      },
+      {
+        "id": "imp-no-usable-format",
+        "banner": { "format": [{ "w": 320 }] },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      },
+      {
+        "id": "imp-explicit-size",
+        "banner": { "w": 970, "h": 250, "format": [{ "w": 320, "h": 50 }] },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://optima.example.com/ortb/testkey",
+        "body": {
+          "id": "test-req-format-edge",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "imp": [
+            {
+              "id": "imp-skip-incomplete",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [{ "w": 320 }, { "w": 300, "h": 250 }]
+              },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            },
+            {
+              "id": "imp-skip-empty",
+              "banner": {
+                "w": 728,
+                "h": 90,
+                "format": [{}, { "w": 728, "h": 90 }]
+              },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            },
+            {
+              "id": "imp-keep-w",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [
+                  { "w": 320, "h": 50 },
+                  { "w": 300, "h": 250 }
+                ]
+              },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            },
+            {
+              "id": "imp-keep-h",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [
+                  { "w": 320, "h": 50 },
+                  { "w": 300, "h": 250 }
+                ]
+              },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            },
+            {
+              "id": "imp-inconsistent-dim",
+              "banner": {
+                "w": 320,
+                "h": 50,
+                "format": [{ "w": 320, "h": 50 }]
+              },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            },
+            {
+              "id": "imp-no-usable-format",
+              "banner": { "format": [{ "w": 320 }] },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            },
+            {
+              "id": "imp-explicit-size",
+              "banner": {
+                "w": 970,
+                "h": 250,
+                "format": [{ "w": 320, "h": 50 }]
+              },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-skip-incomplete",
+          "imp-skip-empty",
+          "imp-keep-w",
+          "imp-keep-h",
+          "imp-inconsistent-dim",
+          "imp-no-usable-format",
+          "imp-explicit-size"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": null
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
