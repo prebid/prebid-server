@@ -1,0 +1,33 @@
+{
+  "description": "Consent through the consent_string alias",
+  "expected_bid_request": {
+    "ext": {
+      "prebid": {
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testconsent"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {},
+    "user": {
+      "consent": "BOEFEAyOEFEAyAHABDENAI4AAAB9vABAASA"
+    }
+  },
+  "query": "srid=testconsent\u0026consent_string=BOEFEAyOEFEAyAHABDENAI4AAAB9vABAASA",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

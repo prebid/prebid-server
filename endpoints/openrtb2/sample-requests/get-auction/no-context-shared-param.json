@@ -1,0 +1,19 @@
+{
+  "description": "GET shared params (pubid) without a stored context and without directional params (page or bundle) produce the channel-determination error",
+  "httpMethod": "GET",
+  "query": "srid=stored-no-context&dtype=4&pubid=pub-1",
+  "generatedRequestId": "test-get-uuid-no-ctx-pubid",
+  "mockStoredRequests": {
+    "stored-no-context": {
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: GET request cannot determine channel: stored request has no site/app/dooh and params contain no directional signal; add page (site) or bundle/name (app)\n"
+}

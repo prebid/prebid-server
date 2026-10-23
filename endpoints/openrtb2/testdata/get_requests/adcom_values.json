@@ -1,0 +1,20 @@
+{
+  "description": "Valid AdCOM values outside known enumerations pass through",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "linearity": 5,
+      "placement": 99,
+      "plcmt": 10
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=2\u0026placement=99\u0026linearity=5\u0026plcmt=10",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}
