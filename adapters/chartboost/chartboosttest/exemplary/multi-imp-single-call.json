@@ -1,0 +1,159 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+            "location_name": "default-banner"
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+            "location_name": "rewarded-video"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://chartboost.example.com/prebid",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+                  "location_name": "default-banner"
+                }
+              }
+            },
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+                  "location_name": "rewarded-video"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-banner",
+          "imp-video"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "chartboost",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-banner",
+                  "price": 1.5,
+                  "adm": "some-test-ad",
+                  "crid": "crid-1",
+                  "mtype": 1
+                }
+              ]
+            },
+            {
+              "seat": "chartboost-video",
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-video",
+                  "price": 4,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "crid-2",
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-banner",
+            "price": 1.5,
+            "adm": "some-test-ad",
+            "crid": "crid-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-video",
+            "price": 4,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "crid-2",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
