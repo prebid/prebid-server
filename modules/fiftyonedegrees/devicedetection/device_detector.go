@@ -68,6 +68,8 @@ func buildEngineOptions(moduleConfig *config, configHash *dd.ConfigHash) []onpre
 			"HardwareModel",
 			"HardwareFamily",
 			"HardwareModelVariants",
+			"HardwareNamePrefix",
+			"HardwareNameVersion",
 			"ScreenInchesHeight",
 			"IsCrawler",
 		}),

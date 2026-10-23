@@ -19,7 +19,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.2",
+        "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.3",
         "body": {
           "id": "req_id",
           "imp": [

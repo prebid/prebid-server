@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type SmartyAdsAdapter struct {
@@ -125,6 +126,9 @@ func (a *SmartyAdsAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.Ext
 }
 
 func (a *SmartyAdsAdapter) buildEndpointURL(params *openrtb_ext.ExtSmartyAds) (string, error) {
+	if !urlutil.IsSafeHost(params.Host) {
+		return "", &errortypes.BadInput{Message: "Invalid Host"}
+	}
 	endpointParams := macros.EndpointTemplateParams{Host: params.Host, SourceId: params.SourceID, AccountID: params.AccountID}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }

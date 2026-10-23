@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type adapter struct {
@@ -86,6 +87,9 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTradPlus, error) {
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtImpTradPlus) (string, error) {
+	if params.ZoneID != "" && !urlutil.IsSafeHost(params.ZoneID) {
+		return "", &errortypes.BadInput{Message: "Invalid ZoneID"}
+	}
 	endpointParams := macros.EndpointTemplateParams{
 		AccountID: params.AccountID,
 		ZoneID:    params.ZoneID,

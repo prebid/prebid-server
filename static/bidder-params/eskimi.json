@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Eskimi Adapter Params",
+  "description": "A schema which validates params accepted by the Eskimi adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "placementId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The Eskimi placement ID"
+    },
+    "bidFloor": {
+      "type": "number",
+      "minimum": 0,
+      "description": "The minimum bid floor (USD unless bidFloorCur is set)"
+    },
+    "bidFloorCur": {
+      "type": "string",
+      "description": "The currency of the bid floor"
+    },
+    "bcat": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Blocked IAB advertiser categories"
+    },
+    "badv": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Blocked advertiser domains"
+    },
+    "bapp": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Blocked app bundles"
+    },
+    "battr": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1, "maximum": 17 },
+      "description": "Blocked creative attributes (OpenRTB List 5.3)"
+    }
+  },
+  "required": ["placementId"]
+}

@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "1",
+            "host": "evil.com/path?redirect=http://attacker.com#"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "1",
+      "bundle": "com.test.app"
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid Host",
+      "comparison": "literal"
+    }
+  ]
+}

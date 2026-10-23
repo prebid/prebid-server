@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type adapter struct {
@@ -184,6 +185,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 const UndefinedMediaType = openrtb_ext.BidType("")
 
 func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string, error) {
+	if !urlutil.IsSafeHost(params.Host) {
+		return "", &errortypes.BadInput{Message: "Failed to create final URL with provided host"}
+	}
 	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
 	uriString, errMacros := macros.ResolveMacros(a.endpoint, endpointParams)
 	if errMacros != nil {

@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "account": "evil.com/path?redirect=http://attacker.com#",
+            "location": "loc1",
+            "format": "for1"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid account",
+      "comparison": "literal"
+    }
+  ]
+}

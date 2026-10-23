@@ -1,0 +1,71 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 320, "h": 50 }] },
+        "ext": { "bidder": { "placementId": 625 } }
+      }
+    ],
+    "app": {
+      "id": "app-1",
+      "bundle": "com.eskimi.example",
+      "ext": {
+        "installed": 1,
+        "data": { "category": "games" }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ittr.eskimi.com/prebidjs",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "secure": 1,
+              "banner": { "format": [{ "w": 320, "h": 50 }] },
+              "ext": { "bidder": { "placementId": 625 } }
+            }
+          ],
+          "app": {
+            "id": "app-1",
+            "bundle": "com.eskimi.example",
+            "ext": {
+              "installed": 1,
+              "data": { "category": "games" },
+              "placementId": 625
+            }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "eskimi",
+              "bid": [
+                { "id": "1", "impid": "test-imp-id", "price": 1.0, "crid": "c1", "w": 320, "h": 50, "mtype": 1 }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        { "bid": { "id": "1", "impid": "test-imp-id", "price": 1.0, "crid": "c1", "w": 320, "h": 50, "mtype": 1 }, "type": "banner" }
+      ]
+    }
+  ]
+}

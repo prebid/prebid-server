@@ -45,21 +45,21 @@ func SampleBid(width *int64, height *int64, impId string, index int) openrtb2.Bi
 // VerifyStringValue Helper function to assert string equals.
 func VerifyStringValue(value string, expected string, t *testing.T) {
 	if value != expected {
-		t.Fatalf(fmt.Sprintf("%s expected, got %s", expected, value))
+		t.Fatalf("%s expected, got %s", expected, value)
 	}
 }
 
 // VerifyIntValue Helper function to assert Int equals.
 func VerifyIntValue(value int, expected int, t *testing.T) {
 	if value != expected {
-		t.Fatalf(fmt.Sprintf("%d expected, got %d", expected, value))
+		t.Fatalf("%d expected, got %d", expected, value)
 	}
 }
 
 // VerifyBoolValue Helper function to assert bool equals.
 func VerifyBoolValue(value bool, expected bool, t *testing.T) {
 	if value != expected {
-		t.Fatalf(fmt.Sprintf("%v expected, got %v", expected, value))
+		t.Fatalf("%v expected, got %v", expected, value)
 	}
 }
 

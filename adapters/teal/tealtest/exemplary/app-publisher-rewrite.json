@@ -1,0 +1,133 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-banner",
+    "imp": [
+      {
+        "id": "test-imp-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "account": "test-account",
+            "placement": "test-placement300x250"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "demo-app",
+      "name": "Demo App",
+      "bundle": "com.example.demoapp",
+      "publisher": {
+        "id": "demo-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36",
+      "ip": "192.0.2.10",
+      "language": "en",
+      "ifa": "demo-ifa"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.example.com/bid",
+        "body": {
+          "id": "test-request-banner",
+          "imp": [
+            {
+              "id": "test-imp-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "account": "test-account",
+                  "placement": "test-placement300x250"
+                },
+                "prebid": {
+                  "storedrequest": {
+                    "id": "test-placement300x250"
+                  }
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "demo-app",
+            "name": "Demo App",
+            "bundle": "com.example.demoapp",
+            "publisher": {
+              "id": "test-account"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36",
+            "ip": "192.0.2.10",
+            "language": "en",
+            "ifa": "demo-ifa"
+          },
+          "ext": {
+            "bids": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": ["test-imp-banner"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-banner",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "app-bid-1",
+                  "impid": "test-imp-banner",
+                  "price": 3.10,
+                  "adm": "<div>app-banner</div>",
+                  "w": 300,
+                  "h": 250,
+                  "crid": "app-creative-9"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "app-bid-1",
+            "impid": "test-imp-banner",
+            "price": 3.10,
+            "adm": "<div>app-banner</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "app-creative-9"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

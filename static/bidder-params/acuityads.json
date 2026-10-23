@@ -7,7 +7,8 @@
     "host": {
       "type": "string",
       "description": "Network host to send request",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
     },
     "accountid": {
       "type": "string",
@@ -15,5 +16,8 @@
       "minLength": 1
     }
   },
-  "required": ["host", "accountid"]
+  "required": [
+    "host",
+    "accountid"
+  ]
 }

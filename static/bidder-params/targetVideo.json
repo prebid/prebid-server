@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "TargetVideo Adapter Params",
+  "description": "A schema which validates params accepted by the TargetVideo adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": ["integer", "string"],
+      "pattern": "^\\d+$",
+      "description": "An ID which identifies this placement of the impression"
+    }
+  },
+  "required": ["placementId"]
+}

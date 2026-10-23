@@ -6,7 +6,8 @@
   "properties": {
     "host": {
       "type": "string",
-      "description": "Network host to send request"
+      "description": "Network host to send request",
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
     },
     "sourceid": {
       "type": "string",
@@ -17,5 +18,9 @@
       "description": "Account id"
     }
   },
-  "required": ["host", "sourceid", "accountid"]
+  "required": [
+    "host",
+    "sourceid",
+    "accountid"
+  ]
 }

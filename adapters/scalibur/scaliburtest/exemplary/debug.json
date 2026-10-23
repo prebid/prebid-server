@@ -1,0 +1,59 @@
+{
+  "mockBidRequest": {
+    "id": "test-debug-request",
+    "test": 1,
+    "imp": [{
+      "id": "test-imp-id",
+      "banner": { "format": [{"w": 300, "h": 250}] },
+      "ext": { "bidder": { "placementId": "test-placement" } }
+    }]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://srv.scalibur.io/adserver/ortb?type=prebid-server",
+      "impIDs": ["test-imp-id"],
+      "body": {
+        "id": "test-debug-request",
+        "test": 1,
+        "imp": [{
+          "id": "test-imp-id",
+          "banner": { "format": [{"w": 300, "h": 250}] },
+          "bidfloorcur": "USD",
+          "ext": {
+            "placementId": "test-placement",
+            "bidfloorcur": "USD"
+          }
+        }],
+        "ext": { "isDebug": 1 }
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-debug-request",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "<html>...</html>",
+            "crid": "test-creative-id"
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "test-bid-id",
+        "impid": "test-imp-id",
+        "price": 0.5,
+        "adm": "<html>...</html>",
+        "crid": "test-creative-id"
+      },
+      "type": "banner"
+    }]
+  }]
+}
