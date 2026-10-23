@@ -128,8 +128,6 @@ func getMediaType(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupAudio:
-		return openrtb_ext.BidTypeAudio, nil
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unsupported MType %d for bid %s", bid.MType, bid.ID),
