@@ -1,0 +1,71 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.example.trails"
+    },
+    "device": {
+      "ua": "test-ua",
+      "ip": "203.0.113.42"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.goadserver.com/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              }
+            }
+          ],
+          "app": {
+            "bundle": "com.example.trails",
+            "publisher": {
+              "id": "tok123"
+            }
+          },
+          "device": {
+            "ua": "test-ua",
+            "ip": "203.0.113.42"
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": ""
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
