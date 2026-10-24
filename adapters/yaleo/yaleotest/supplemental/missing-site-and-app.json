@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-missing-supply",
+    "imp": [
+      {
+        "id": "imp-no-supply",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-no-supply"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Either \"site.page\" or an \"app\" with bundle, domain, or id is required.",
+      "comparison": "literal"
+    }
+  ]
+}

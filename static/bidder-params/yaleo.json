@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Yaleo Adapter Params",
+  "description": "A schema which validates params accepted by the Yaleo adapter",
+  "type": "object",
+
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Yaleo placement identifier"
+    },
+    "memberId": {
+      "type": "integer",
+      "description": "Member identifier. Defaults to Audienzz member ID 3927 when omitted."
+    },
+    "maxCpm": {
+      "type": "number",
+      "description": "Maximum CPM. Bids priced above this value are rejected by the Yaleo bidder."
+    }
+  },
+
+  "required": ["placementId"]
+}
