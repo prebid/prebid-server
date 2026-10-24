@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Floxis Adapter Params",
+  "description": "A schema which validates params accepted by the Floxis adapter",
+  "type": "object",
+  "properties": {
+    "seat": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The Floxis seat ID this publisher buys through"
+    }
+  },
+  "required": ["seat"]
+}
