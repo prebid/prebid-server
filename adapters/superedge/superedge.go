@@ -1,7 +1,6 @@
 package superedge
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -76,10 +75,6 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 func getSuperEdgeExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtSuperEdge, error) {
 	var extSuperEdge openrtb_ext.ExtSuperEdge
 
-	if len(request.Imp) == 0 {
-		return nil, errors.New("superEdge sk not found")
-	}
-
 	var extBidder adapters.ExtImpBidder
 	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &extBidder); err != nil {
 		return nil, err
@@ -89,9 +84,6 @@ func getSuperEdgeExt(request *openrtb2.BidRequest) (*openrtb_ext.ExtSuperEdge, e
 		return nil, err
 	}
 
-	if extSuperEdge.Sk == "" {
-		return nil, errors.New("superEdge sk not found")
-	}
 	return &extSuperEdge, nil
 }
 

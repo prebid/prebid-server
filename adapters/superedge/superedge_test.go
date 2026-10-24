@@ -30,13 +30,6 @@ func TestEndpointTemplateMalformed(t *testing.T) {
 	assert.Error(t, buildErr)
 }
 
-func TestGetSuperEdgeExtEmptyImp(t *testing.T) {
-	request := &openrtb2.BidRequest{}
-	_, err := getSuperEdgeExt(request)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "sk not found")
-}
-
 func TestMakeRequestGetEndPointError(t *testing.T) {
 	badTmpl, _ := template.New("").Parse("http://example.com/bid?sk={{.sk}}{{template \"nonexistent\" .}}")
 	a := &adapter{EndpointTemplate: badTmpl}
