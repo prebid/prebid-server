@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Odeeo Adapter Params",
+  "description": "A schema which validates params accepted by the Odeeo adapter",
+  "type": "object",
+  "properties": {
+    "sp": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Odeeo Supply Partner ID"
+    },
+    "tk": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Odeeo-issued verification token"
+    }
+  },
+  "required": ["sp", "tk"]
+}

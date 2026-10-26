@@ -1,0 +1,24 @@
+endpoint: "https://pbs.srv.stackadapt.com/br?publisher_id={{.PublisherID}}&supply_id={{.SupplyId}}"
+endpointCompression: gzip
+maintainer:
+  email: pjs@stackadapt.com
+gvlVendorID: 238
+openrtb:
+  gpp-supported: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
+userSync:
+  redirect:
+    url: "https://sync.srv.stackadapt.com/sync?nid=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"

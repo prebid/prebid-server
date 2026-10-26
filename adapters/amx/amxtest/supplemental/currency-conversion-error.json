@@ -1,0 +1,138 @@
+{
+  "mockBidRequest": {
+    "id": "currency-error-request-id",
+    "cur": [
+      "EUR"
+    ],
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "bidfloor": 100,
+        "bidfloorcur": "JPY",
+        "ext": {
+          "bidder": {
+            "tagId": "cHJlYmlkLm9yZw"
+          }
+        }
+      },
+      {
+        "id": "2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "bidfloor": 1,
+        "bidfloorcur": "GBP",
+        "ext": {
+          "bidder": {
+            "tagId": "cHJlYmlkLm9yZw"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "publisher": {
+        "id": "unused_publisher_id"
+      }
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 2
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'JPY' => 'USD'",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.3",
+        "body": {
+          "id": "currency-error-request-id",
+          "cur": [
+            "USD"
+          ],
+          "imp": [
+            {
+              "id": "2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "bidfloor": 2,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "tagId": "cHJlYmlkLm9yZw"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "publisher": {
+              "id": "cHJlYmlkLm9yZw"
+            }
+          },
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "GBP": {
+                    "USD": 2
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs": [
+          "2"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "headers": {
+          "X-Nbr": ["3b"]
+        },
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}

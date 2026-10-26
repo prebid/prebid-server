@@ -114,7 +114,8 @@
                   "w": 300,
                   "h": 250,
                   "exp": 60,
-                  "lurl": "https://lurl.domain.com/"
+                  "lurl": "https://lurl.domain.com/",
+                  "burl": "https://burl.domain.com/?wp=${AUCTION_PRICE}"
                 }
               ],
               "seat": "1111"
@@ -145,7 +146,8 @@
             "w": 300,
             "h": 250,
             "exp": 60,
-            "lurl": "https://lurl.domain.com/"
+            "lurl": "https://lurl.domain.com/",
+            "burl": "https://burl.domain.com/?wp=2.1"
           },
           "type": "banner"
         }
