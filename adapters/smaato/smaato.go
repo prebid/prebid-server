@@ -20,15 +20,6 @@ import (
 
 const clientVersion = "prebid_server_1.3"
 
-type adMarkupType string
-
-const (
-	smtAdTypeImg       adMarkupType = "Img"
-	smtAdTypeRichmedia adMarkupType = "Richmedia"
-	smtAdTypeVideo     adMarkupType = "Video"
-	smtAdTypeNative    adMarkupType = "Native"
-)
-
 // adapter describes a Smaato prebid server adapter.
 type adapter struct {
 	clock    timeutil.Time
@@ -130,7 +121,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 				continue
 			}
 
-			bidType, err := getBidType(bid, response, externalRequest)
+			bidType, err := getBidType(bid)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -266,7 +257,7 @@ func (adapter *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Req
 	}, nil
 }
 
-func getBidType(bid openrtb2.Bid, response *adapters.ResponseData, externalRequest *adapters.RequestData) (openrtb_ext.BidType, error) {
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -274,37 +265,10 @@ func getBidType(bid openrtb2.Bid, response *adapters.ResponseData, externalReque
 		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
-	}
-
-	if admType := adMarkupType(response.Headers.Get("X-Smt-Adtype")); admType != "" {
-		return convertAdMarkupTypeToMediaType(admType)
-	}
-
-	return getBidTypeFromRequest(bid.ImpID, externalRequest)
-}
-
-func getBidTypeFromRequest(impID string, externalRequest *adapters.RequestData) (openrtb_ext.BidType, error) {
-	var request openrtb2.BidRequest
-	if err := jsonutil.Unmarshal(externalRequest.Body, &request); err != nil {
-		return "", err
-	}
-
-	for _, imp := range request.Imp {
-		if imp.ID != impID {
-			continue
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType %d for impression %s.", bid.MType, bid.ImpID),
 		}
-		switch {
-		case imp.Banner != nil:
-			return openrtb_ext.BidTypeBanner, nil
-		case imp.Video != nil:
-			return openrtb_ext.BidTypeVideo, nil
-		case imp.Native != nil:
-			return openrtb_ext.BidTypeNative, nil
-		}
-	}
-
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Unable to determine media type for impression %s.", impID),
 	}
 }
 
@@ -330,21 +294,6 @@ func renderAdMarkup(bidType openrtb_ext.BidType, bidExt *bidExt, bid openrtb2.Bi
 		return extractAdmNative(bid.AdM)
 	default:
 		return bid.AdM, nil
-	}
-}
-
-func convertAdMarkupTypeToMediaType(adMarkupType adMarkupType) (openrtb_ext.BidType, error) {
-	switch adMarkupType {
-	case smtAdTypeImg, smtAdTypeRichmedia:
-		return openrtb_ext.BidTypeBanner, nil
-	case smtAdTypeVideo:
-		return openrtb_ext.BidTypeVideo, nil
-	case smtAdTypeNative:
-		return openrtb_ext.BidTypeNative, nil
-	default:
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unknown markup type %s.", adMarkupType),
-		}
 	}
 }
 

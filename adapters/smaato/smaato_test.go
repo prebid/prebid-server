@@ -63,6 +63,7 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 			Bid: []openrtb2.Bid{{
 				ID:    "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
 				ImpID: "1_1",
+				MType: openrtb2.MarkupVideo,
 				Price: 0.01,
 				AdM:   "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
 				Cat:   []string{"IAB1"},
@@ -75,12 +76,10 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 		}},
 	}
 	body, _ := json.Marshal(mockedBidResponse)
-	headers := http.Header{}
-	headers.Add("X-Smt-Adtype", "Video")
 	mockedRes := &adapters.ResponseData{
 		StatusCode: 200,
 		Body:       body,
-		Headers:    headers,
+		Headers:    http.Header{},
 	}
 
 	expectedBidCount := 1
