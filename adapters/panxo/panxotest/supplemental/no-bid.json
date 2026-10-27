@@ -23,7 +23,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://panxo-sys.com/openrtb/2.5/bid?key=abc123def456&source=prebid-server",
+        "uri": "https://panxo-sys.com/openrtb/2.6/bid?key=abc123def456&source=prebid-server",
         "impIDs": ["test-imp-id"],
         "body": {
           "id": "test-request-nobid",
@@ -34,11 +34,6 @@
                 "format": [
                   {"w": 728, "h": 90}
                 ]
-              },
-              "ext": {
-                "bidder": {
-                  "propertyKey": "abc123def456"
-                }
               }
             }
           ],

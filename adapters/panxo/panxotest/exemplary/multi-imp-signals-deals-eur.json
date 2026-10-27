@@ -1,0 +1,410 @@
+{
+  "mockBidRequest": {
+    "id": "request-multi-signals",
+    "imp": [
+      {
+        "id": "imp-300x250",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "pos": 1
+        },
+        "bidfloor": 2.25,
+        "bidfloorcur": "EUR",
+        "pmp": {
+          "private_auction": 1,
+          "deals": [
+            {
+              "id": "deal-audience-1",
+              "bidfloor": 3.5,
+              "bidfloorcur": "EUR",
+              "at": 1
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "property-eu-1"
+          },
+          "gpid": "/publisher/atf-mpu",
+          "tid": "imp-transaction-1",
+          "data": {
+            "adserver": {
+              "name": "gam",
+              "adslot": "/publisher/atf-mpu"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-728x90",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ],
+          "pos": 3
+        },
+        "bidfloor": 1.1,
+        "bidfloorcur": "EUR",
+        "ext": {
+          "bidder": {
+            "propertyKey": "property-eu-1"
+          },
+          "gpid": "/publisher/btf-leaderboard",
+          "tid": "imp-transaction-2"
+        }
+      }
+    ],
+    "site": {
+      "domain": "publisher.example",
+      "page": "https://publisher.example/article",
+      "publisher": {
+        "id": "publisher-1",
+        "domain": "publisher.example"
+      },
+      "content": {
+        "language": "es",
+        "context": 5
+      },
+      "ext": {
+        "data": {
+          "documentLang": "es-ES",
+          "panxo": {
+            "mode": "coarse",
+            "topics": [
+              "software"
+            ],
+            "ai": true,
+            "uid": "IDENTITY-discarded"
+          }
+        }
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "language": "es",
+      "dnt": 1,
+      "sua": {
+        "source": 1,
+        "platform": {
+          "brand": "macOS"
+        },
+        "mobile": 0
+      },
+      "ext": {
+        "panxo": {
+          "v1": "session-token",
+          "uid": "panxo-psid"
+        },
+        "vpw": 1466,
+        "vph": 862
+      }
+    },
+    "user": {
+      "buyeruid": "panxo-psid",
+      "consent": "tc-string",
+      "data": [
+        {
+          "name": "panxo.ai",
+          "segment": [
+            {
+              "id": "42",
+              "name": "high-intent"
+            }
+          ],
+          "ext": {
+            "segtax": 1001
+          }
+        }
+      ],
+      "ext": {
+        "consent": "tc-string",
+        "eids": [
+          {
+            "source": "id5-sync.com",
+            "uids": [
+              {
+                "id": "id5-value",
+                "atype": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "regs": {
+      "gdpr": 1,
+      "gpp": "DBABMA~valid",
+      "gpp_sid": [
+        7
+      ],
+      "ext": {
+        "gdpr": 1,
+        "gpp": "DBABMA~valid",
+        "gpp_sid": [
+          7
+        ]
+      }
+    },
+    "source": {
+      "tid": "auction-transaction",
+      "ext": {
+        "schain": {
+          "ver": "1.0",
+          "complete": 1,
+          "nodes": [
+            {
+              "asi": "publisher.example",
+              "sid": "seller-1",
+              "hp": 1
+            }
+          ]
+        }
+      }
+    },
+    "at": 1,
+    "cur": [
+      "EUR"
+    ],
+    "tmax": 1000,
+    "bcat": [
+      "IAB7-28"
+    ],
+    "wlang": [
+      "es",
+      "en"
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 2
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.6/bid?key=property-eu-1&source=prebid-server",
+        "impIDs": [
+          "imp-300x250",
+          "imp-728x90"
+        ],
+        "body": {
+          "id": "request-multi-signals",
+          "imp": [
+            {
+              "id": "imp-300x250",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "pos": 1
+              },
+              "bidfloor": 4.5,
+              "bidfloorcur": "USD",
+              "pmp": {
+                "private_auction": 1,
+                "deals": [
+                  {
+                    "id": "deal-audience-1",
+                    "bidfloor": 7.0,
+                    "bidfloorcur": "USD",
+                    "at": 1
+                  }
+                ]
+              }
+            },
+            {
+              "id": "imp-728x90",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ],
+                "pos": 3
+              },
+              "bidfloor": 2.2,
+              "bidfloorcur": "USD"
+            }
+          ],
+          "site": {
+            "domain": "publisher.example",
+            "publisher": {
+              "id": "publisher-1",
+              "domain": "publisher.example"
+            },
+            "content": {
+              "language": "es",
+              "context": 5
+            },
+            "ext": {
+              "data": {
+                "documentLang": "es-ES",
+                "panxo": {
+                  "ai": true
+                }
+              }
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "language": "es",
+            "dnt": 1,
+            "sua": {
+              "source": 1,
+              "platform": {
+                "brand": "macOS"
+              },
+              "mobile": 0
+            }
+          },
+          "user": {
+            "consent": "tc-string",
+            "ext": {
+              "consent": "tc-string"
+            }
+          },
+          "regs": {
+            "gdpr": 1,
+            "gpp": "DBABMA~valid",
+            "gpp_sid": [
+              7
+            ],
+            "ext": {
+              "gdpr": 1,
+              "gpp": "DBABMA~valid",
+              "gpp_sid": [
+                7
+              ]
+            }
+          },
+          "source": {
+            "tid": "auction-transaction",
+            "ext": {
+              "schain": {
+                "ver": "1.0",
+                "complete": 1,
+                "nodes": [
+                  {
+                    "asi": "publisher.example",
+                    "sid": "seller-1",
+                    "hp": 1
+                  }
+                ]
+              }
+            }
+          },
+          "at": 1,
+          "cur": [
+            "USD"
+          ],
+          "tmax": 1000,
+          "bcat": [
+            "IAB7-28"
+          ],
+          "wlang": [
+            "es",
+            "en"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-multi-signals",
+          "seatbid": [
+            {
+              "seat": "panxo",
+              "bid": [
+                {
+                  "id": "bid-mpu",
+                  "impid": "imp-300x250",
+                  "price": 16.83,
+                  "mtype": 1,
+                  "adm": "<div>MPU creative</div>",
+                  "crid": "creative-mpu",
+                  "dealid": "deal-audience-1",
+                  "w": 300,
+                  "h": 250,
+                  "adomain": [
+                    "advertiser.example"
+                  ]
+                },
+                {
+                  "id": "bid-leaderboard",
+                  "impid": "imp-728x90",
+                  "price": 4.2,
+                  "adm": "<div>Leaderboard creative</div>",
+                  "crid": "creative-leaderboard",
+                  "w": 728,
+                  "h": 90,
+                  "adomain": [
+                    "advertiser.example"
+                  ]
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-mpu",
+            "impid": "imp-300x250",
+            "price": 16.83,
+            "mtype": 1,
+            "adm": "<div>MPU creative</div>",
+            "crid": "creative-mpu",
+            "dealid": "deal-audience-1",
+            "w": 300,
+            "h": 250,
+            "adomain": [
+              "advertiser.example"
+            ]
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-leaderboard",
+            "impid": "imp-728x90",
+            "price": 4.2,
+            "adm": "<div>Leaderboard creative</div>",
+            "crid": "creative-leaderboard",
+            "w": 728,
+            "h": 90,
+            "adomain": [
+              "advertiser.example"
+            ]
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

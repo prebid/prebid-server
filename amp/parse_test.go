@@ -230,6 +230,7 @@ func TestPrivacyReader(t *testing.T) {
 	type expectedResults struct {
 		policyWriter privacy.PolicyWriter
 		warning      error
+		writerValid  bool
 	}
 	type testCase struct {
 		desc     string
@@ -246,7 +247,7 @@ func TestPrivacyReader(t *testing.T) {
 			tests: []testCase{
 				{
 					desc:     "Params comes with an empty consent string, expect nil policy writer. No warning returned",
-					expected: expectedResults{policyWriter: privacy.NilPolicyWriter{}, warning: nil},
+					expected: expectedResults{policyWriter: privacy.NilPolicyWriter{}, warning: nil, writerValid: true},
 				},
 			},
 		},
@@ -261,6 +262,7 @@ func TestPrivacyReader(t *testing.T) {
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
 						warning:      &errortypes.Warning{Message: "TCF1 consent is deprecated and no longer supported.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						writerValid:  false,
 					},
 				},
 			},
@@ -276,6 +278,7 @@ func TestPrivacyReader(t *testing.T) {
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
 						warning:      &errortypes.Warning{Message: "Consent string 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as one of the supported formats CCPA or TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						writerValid:  false,
 					},
 				},
 				{
@@ -286,6 +289,7 @@ func TestPrivacyReader(t *testing.T) {
 					expected: expectedResults{
 						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
 						warning:      nil,
+						writerValid:  true,
 					},
 				},
 				{
@@ -302,6 +306,7 @@ func TestPrivacyReader(t *testing.T) {
 							Message:     "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string",
 							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 						},
+						writerValid: true,
 					},
 				},
 				{
@@ -314,7 +319,8 @@ func TestPrivacyReader(t *testing.T) {
 							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
 							GDPR:    &int8One,
 						},
-						warning: nil,
+						warning:     nil,
+						writerValid: true,
 					},
 				},
 			},
@@ -336,6 +342,7 @@ func TestPrivacyReader(t *testing.T) {
 							Message:     "Consent string 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as one of the supported formats CCPA or TCF2.",
 							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 						},
+						writerValid: false,
 					},
 				},
 				{
@@ -349,6 +356,7 @@ func TestPrivacyReader(t *testing.T) {
 					expected: expectedResults{
 						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
 						warning:      nil,
+						writerValid:  true,
 					},
 				},
 				{
@@ -366,6 +374,7 @@ func TestPrivacyReader(t *testing.T) {
 							Message:     "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string",
 							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 						},
+						writerValid: true,
 					},
 				},
 				{
@@ -381,7 +390,8 @@ func TestPrivacyReader(t *testing.T) {
 							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
 							GDPR:    &int8One,
 						},
-						warning: nil,
+						warning:     nil,
+						writerValid: true,
 					},
 				},
 			},
@@ -407,6 +417,7 @@ func TestPrivacyReader(t *testing.T) {
 							Message:     "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.",
 							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 						},
+						writerValid: false,
 					},
 				},
 				{
@@ -427,6 +438,7 @@ func TestPrivacyReader(t *testing.T) {
 							Message:     "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.",
 							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 						},
+						writerValid: false,
 					},
 				},
 				{
@@ -443,7 +455,8 @@ func TestPrivacyReader(t *testing.T) {
 							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
 							GDPR:    &int8Zero,
 						},
-						warning: nil,
+						warning:     nil,
+						writerValid: true,
 					},
 				},
 				{
@@ -460,7 +473,8 @@ func TestPrivacyReader(t *testing.T) {
 							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
 							GDPR:    &int8One,
 						},
-						warning: nil,
+						warning:     nil,
+						writerValid: true,
 					},
 				},
 				{
@@ -476,7 +490,8 @@ func TestPrivacyReader(t *testing.T) {
 							Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
 							GDPR:    &int8One,
 						},
-						warning: nil,
+						warning:     nil,
+						writerValid: true,
 					},
 				},
 			},
@@ -498,6 +513,7 @@ func TestPrivacyReader(t *testing.T) {
 							Message:     "Consent string 'XXXX' is not a valid CCPA consent string.",
 							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 						},
+						writerValid: false,
 					},
 				},
 				{
@@ -515,6 +531,7 @@ func TestPrivacyReader(t *testing.T) {
 							Message:     "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string",
 							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 						},
+						writerValid: true,
 					},
 				},
 				{
@@ -528,6 +545,7 @@ func TestPrivacyReader(t *testing.T) {
 					expected: expectedResults{
 						policyWriter: ccpa.ConsentWriter{Consent: "1YYY"},
 						warning:      nil,
+						writerValid:  true,
 					},
 				},
 			},
@@ -535,10 +553,11 @@ func TestPrivacyReader(t *testing.T) {
 	}
 	for _, group := range testGroups {
 		for _, tc := range group.tests {
-			actualPolicyWriter, actualErr := ReadPolicy(tc.in.ampParams, true)
+			actualPolicyWriter, actualErr, actualWriterValid := ReadPolicy(tc.in.ampParams, true)
 
 			assert.Equal(t, tc.expected.policyWriter, actualPolicyWriter, tc.desc)
 			assert.Equal(t, tc.expected.warning, actualErr, tc.desc)
+			assert.Equal(t, tc.expected.writerValid, actualWriterValid, tc.desc)
 		}
 	}
 }

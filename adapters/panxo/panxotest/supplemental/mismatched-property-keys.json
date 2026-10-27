@@ -6,7 +6,10 @@
         "id": "test-imp-id-1",
         "banner": {
           "format": [
-            {"w": 300, "h": 250}
+            {
+              "w": 300,
+              "h": 250
+            }
           ]
         },
         "ext": {
@@ -19,7 +22,10 @@
         "id": "test-imp-id-2",
         "banner": {
           "format": [
-            {"w": 728, "h": 90}
+            {
+              "w": 728,
+              "h": 90
+            }
           ]
         },
         "ext": {
@@ -33,10 +39,69 @@
       "domain": "example.com"
     }
   },
-  "expectedMakeRequestsErrors": [
+  "httpCalls": [
     {
-      "value": "all impressions must share the same propertyKey, imp[1] has different value",
-      "comparison": "literal"
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.6/bid?key=abc123def456&source=prebid-server",
+        "impIDs": [
+          "test-imp-id-1"
+        ],
+        "body": {
+          "id": "test-request-mismatch",
+          "imp": [
+            {
+              "id": "test-imp-id-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.6/bid?key=different999key&source=prebid-server",
+        "impIDs": [
+          "test-imp-id-2"
+        ],
+        "body": {
+          "id": "test-request-mismatch",
+          "imp": [
+            {
+              "id": "test-imp-id-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
     }
-  ]
+  ],
+  "expectedBidResponses": []
 }

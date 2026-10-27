@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+      "id": "test-imp-id",
+      "banner": {
+        "format": [{
+          "w": 320,
+          "h": 50
+        }]
+      },
+      "ext": {
+        "bidder": {
+          "publisherId": "app-pub-1",
+          "supplyId": "ssp-1",
+          "placementId": "app-pl-1"
+        }
+      }
+    }],
+    "app": {
+      "bundle": "com.example.app",
+      "name": "Example App"
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://localhost/br?publisher_id=app-pub-1&supply_id=ssp-1",
+      "body": {
+        "id": "test-request-id",
+        "imp": [{
+          "id": "test-imp-id",
+          "banner": {
+            "format": [{
+              "w": 320,
+              "h": 50
+            }]
+          },
+          "tagid": "app-pl-1",
+          "ext": {
+            "bidder": {
+              "publisherId": "app-pub-1",
+              "supplyId": "ssp-1",
+              "placementId": "app-pl-1"
+            }
+          }
+        }],
+        "app": {
+          "bundle": "com.example.app",
+          "name": "Example App",
+          "publisher": {
+            "id": "app-pub-1"
+          }
+        }
+      },
+      "impIDs": ["test-imp-id"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "test-request-id",
+        "cur": "USD",
+        "seatbid": [{
+          "bid": [{
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 2.50,
+            "adm": "<div>mobile-ad</div>",
+            "crid": "creative-mob-1",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "test-bid-id",
+        "impid": "test-imp-id",
+        "price": 2.5,
+        "adm": "<div>mobile-ad</div>",
+        "crid": "creative-mob-1",
+        "w": 320,
+        "h": 50,
+        "mtype": 1
+      },
+      "type": "banner"
+    }]
+  }]
+}

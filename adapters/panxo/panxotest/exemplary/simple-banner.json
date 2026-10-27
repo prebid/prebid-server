@@ -6,7 +6,10 @@
         "id": "test-imp-id",
         "banner": {
           "format": [
-            {"w": 300, "h": 250}
+            {
+              "w": 300,
+              "h": 250
+            }
           ]
         },
         "ext": {
@@ -37,8 +40,10 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://panxo-sys.com/openrtb/2.5/bid?key=abc123def456&source=prebid-server",
-        "impIDs": ["test-imp-id"],
+        "uri": "https://panxo-sys.com/openrtb/2.6/bid?key=abc123def456&source=prebid-server",
+        "impIDs": [
+          "test-imp-id"
+        ],
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -46,33 +51,21 @@
               "id": "test-imp-id",
               "banner": {
                 "format": [
-                  {"w": 300, "h": 250}
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
                 ]
-              },
-              "ext": {
-                "bidder": {
-                  "propertyKey": "abc123def456"
-                }
               }
             }
           ],
           "site": {
-            "domain": "example.com",
-            "page": "https://example.com/article"
+            "domain": "example.com"
           },
           "device": {
-            "ua": "Mozilla/5.0",
-            "ip": "1.2.3.4",
-            "ext": {
-              "panxo": {
-                "v1": "session-token-abc",
-                "uid": "550e8400-e29b-41d4-a716-446655440000"
-              }
-            }
+            "ua": "Mozilla/5.0"
           },
-          "user": {
-            "buyeruid": "550e8400-e29b-41d4-a716-446655440000"
-          }
+          "user": {}
         }
       },
       "mockResponse": {
@@ -85,12 +78,15 @@
                 {
                   "id": "bid-1",
                   "impid": "test-imp-id",
-                  "price": 5.00,
+                  "price": 5.0,
+                  "mtype": 1,
                   "adm": "<div>ad markup</div>",
                   "crid": "creative-123",
                   "w": 300,
                   "h": 250,
-                  "adomain": ["advertiser.com"]
+                  "adomain": [
+                    "advertiser.com"
+                  ]
                 }
               ],
               "seat": "panxo"
@@ -109,12 +105,15 @@
           "bid": {
             "id": "bid-1",
             "impid": "test-imp-id",
-            "price": 5.00,
+            "price": 5.0,
+            "mtype": 1,
             "adm": "<div>ad markup</div>",
             "crid": "creative-123",
             "w": 300,
             "h": 250,
-            "adomain": ["advertiser.com"]
+            "adomain": [
+              "advertiser.com"
+            ]
           },
           "type": "banner"
         }

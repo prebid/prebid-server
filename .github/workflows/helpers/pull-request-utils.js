@@ -231,7 +231,7 @@ class semgrepHelper {
     this.repo = input.context.repo.repo
     this.github = input.github
 
-    this.pullRequestNumber = input.context.payload.pull_request.number
+    this.pullRequestNumber = input.prNumber || input.context.payload.pull_request.number
     this.pullRequestEvent = input.event
 
     this.pullRequestDiff = input.diff.pullRequest.diff

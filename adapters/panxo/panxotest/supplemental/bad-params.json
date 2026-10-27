@@ -10,7 +10,9 @@
           ]
         },
         "ext": {
-          "bidder": "not-an-object"
+          "bidder": {
+            "propertyKey": ""
+          }
         }
       }
     ],
@@ -20,8 +22,8 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "invalid imp.ext.bidder for impression index 0: .*",
-      "comparison": "regex"
+      "value": "propertyKey is required",
+      "comparison": "literal"
     }
   ]
 }

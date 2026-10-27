@@ -1,0 +1,61 @@
+{
+  "mockBidRequest": {
+    "id": "request-unsupported-mtype",
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {"format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"propertyKey": "property-1"}}
+      }
+    ],
+    "site": {"domain": "publisher.example"}
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.6/bid?key=property-1&source=prebid-server",
+        "impIDs": ["imp-banner"],
+        "body": {
+          "id": "request-unsupported-mtype",
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {"format": [{"w": 300, "h": 250}]}
+            }
+          ],
+          "site": {"domain": "publisher.example"}
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-unsupported-mtype",
+          "seatbid": [
+            {
+              "seat": "panxo",
+              "bid": [
+                {
+                  "id": "video-bid",
+                  "impid": "imp-banner",
+                  "price": 2.5,
+                  "mtype": 2,
+                  "adm": "<VAST></VAST>",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [{"currency": "USD", "bids": []}],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid video-bid returned video for an impression that did not request it",
+      "comparison": "literal"
+    }
+  ]
+}
