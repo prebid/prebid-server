@@ -149,6 +149,16 @@ func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []stri
 			fmt.Errorf(`Error fetching accounts %v via http: error reading response: %v`, accountIDs, err),
 		}
 	}
+	if httpResp.StatusCode == http.StatusNotFound {
+		errs := make([]error, 0, len(accountIDs))
+		for _, accountID := range accountIDs {
+			errs = append(errs, stored_requests.NotFoundError{
+				ID:       accountID,
+				DataType: "Account",
+			})
+		}
+		return nil, errs
+	}
 	if httpResp.StatusCode != http.StatusOK {
 		return nil, []error{
 			fmt.Errorf(`Error fetching accounts %v via http: unexpected response status %d`, accountIDs, httpResp.StatusCode),
