@@ -1,0 +1,20 @@
+endpoint: "https://prebid.redmob.io"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: prebid@redmob.io
+gvlVendorID: 1461
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  redirect:
+    url: "https://prebid.redmob.io/user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&dest={{.RedirectURL}}"
+    userMacro: "${USER_ID}"

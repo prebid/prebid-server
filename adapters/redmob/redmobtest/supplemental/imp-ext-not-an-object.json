@@ -1,0 +1,65 @@
+{
+  "mockBidRequest": {
+    "id": "req-60e8b2f5",
+    "imp": [
+      {
+        "displaymanager": "prebid-mobile",
+        "displaymanagerver": "2.2.3",
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ],
+          "api": [
+            3,
+            5
+          ]
+        },
+        "secure": 1,
+        "ext": "not-an-object"
+      }
+    ],
+    "app": {
+      "id": "app-2002",
+      "name": "Example Game",
+      "bundle": "com.example.game",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+      "ver": "4.12.0",
+      "cat": [
+        "IAB9-30"
+      ],
+      "publisher": {
+        "id": "pub-7102"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+      "ip": "198.51.100.77",
+      "geo": {
+        "country": "NGA",
+        "type": 2
+      },
+      "devicetype": 4,
+      "os": "Android",
+      "osv": "14",
+      "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+      "lmt": 0,
+      "connectiontype": 6,
+      "language": "en"
+    },
+    "source": {
+      "tid": "c0ffee00-0000-4000-8000-req-60e8b2f5"
+    },
+    "tmax": 800
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "^invalid imp.ext for imp 1: ",
+      "comparison": "regex"
+    }
+  ]
+}
