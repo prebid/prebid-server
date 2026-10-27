@@ -32,12 +32,25 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtAdfusion, error) {
 	return &adfusionExt, nil
 }
 
-func appendAccountIdToExt(request *openrtb2.BidRequest) error {
-	ext, err := getImpressionExt(&request.Imp[0])
-	if err != nil {
-		return err
+func getAccountId(request *openrtb2.BidRequest) (int, error) {
+	accountId := 0
+	for i := range request.Imp {
+		ext, err := getImpressionExt(&request.Imp[i])
+		if err != nil {
+			return 0, err
+		}
+		if i == 0 {
+			accountId = ext.AccountId
+		} else if ext.AccountId != accountId {
+			return 0, &errortypes.BadInput{
+				Message: "all impressions must have the same accountId",
+			}
+		}
 	}
+	return accountId, nil
+}
 
+func appendAccountIdToExt(request *openrtb2.BidRequest, accountId int) error {
 	var extMap map[string]any
 	if len(request.Ext) > 0 {
 		if err := jsonutil.Unmarshal(request.Ext, &extMap); err != nil {
@@ -52,7 +65,7 @@ func appendAccountIdToExt(request *openrtb2.BidRequest) error {
 	if !ok {
 		prebidExt = make(map[string]any)
 	}
-	prebidExt["accountid"] = ext.AccountId
+	prebidExt["accountid"] = accountId
 	extMap["prebid"] = prebidExt
 
 	updatedExt, err := jsonutil.Marshal(extMap)
@@ -71,8 +84,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	err := appendAccountIdToExt(request)
+	accountId, err := getAccountId(request)
 	if err != nil {
+		return nil, []error{err}
+	}
+
+	if err := appendAccountIdToExt(request, accountId); err != nil {
 		return nil, []error{err}
 	}
 
