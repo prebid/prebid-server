@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Redmob Adapter Params",
+  "description": "A schema which validates params accepted by the Redmob adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "supplyPartnerId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The Redmob supply partner ID, provided during onboarding"
+    }
+  },
+  "required": ["supplyPartnerId"]
+}

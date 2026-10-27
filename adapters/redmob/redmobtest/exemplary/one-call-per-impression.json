@@ -1,0 +1,387 @@
+{
+  "mockBidRequest": {
+    "id": "req-71b6e0aa",
+    "imp": [
+      {
+        "displaymanager": "prebid-mobile",
+        "displaymanagerver": "2.2.3",
+        "id": "banner",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ],
+          "api": [
+            3,
+            5
+          ]
+        },
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "supplyPartnerId": 2101
+          }
+        }
+      },
+      {
+        "displaymanager": "prebid-mobile",
+        "displaymanagerver": "2.2.3",
+        "id": "interstitial",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 360,
+          "h": 640,
+          "plcmt": 3,
+          "linearity": 1,
+          "playbackmethod": [
+            1
+          ]
+        },
+        "instl": 1,
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "supplyPartnerId": 2103
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-2002",
+      "name": "Example Game",
+      "bundle": "com.example.game",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+      "ver": "4.12.0",
+      "cat": [
+        "IAB9-30"
+      ],
+      "publisher": {
+        "id": "pub-7102"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+      "ip": "198.51.100.77",
+      "geo": {
+        "country": "NGA",
+        "type": 2
+      },
+      "devicetype": 4,
+      "os": "Android",
+      "osv": "14",
+      "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+      "lmt": 0,
+      "connectiontype": 6,
+      "language": "en"
+    },
+    "source": {
+      "tid": "c0ffee00-0000-4000-8000-req-71b6e0aa"
+    },
+    "tmax": 800
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.redmob.example/prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-71b6e0aa",
+          "imp": [
+            {
+              "displaymanager": "prebid-mobile",
+              "displaymanagerver": "2.2.3",
+              "id": "banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ],
+                "api": [
+                  3,
+                  5
+                ],
+                "w": 320,
+                "h": 50
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "supplyPartnerId": 2101
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "app-2002",
+            "name": "Example Game",
+            "bundle": "com.example.game",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+            "ver": "4.12.0",
+            "cat": [
+              "IAB9-30"
+            ],
+            "publisher": {
+              "id": "pub-7102"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+            "ip": "198.51.100.77",
+            "geo": {
+              "country": "NGA",
+              "type": 2
+            },
+            "devicetype": 4,
+            "os": "Android",
+            "osv": "14",
+            "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+            "lmt": 0,
+            "connectiontype": 6,
+            "language": "en"
+          },
+          "source": {
+            "tid": "c0ffee00-0000-4000-8000-req-71b6e0aa"
+          },
+          "tmax": 800,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "banner"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-71b6e0aa",
+          "seatbid": [
+            {
+              "seat": "41",
+              "bid": [
+                {
+                  "id": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+                  "impid": "banner",
+                  "price": 0.42,
+                  "burl": "https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=banner&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=${AUCTION_PRICE}",
+                  "lurl": "https://win-eu.redmob.io/lossnotice?bi=req-71b6e0aa&ii=banner&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&lr=${AUCTION_LOSS}",
+                  "adm": "<a href=\"https://click.example/c?cr=cr-55233\" target=\"_blank\"><img src=\"https://cdn.example/creatives/cr-55233.png\" width=\"320\" height=\"50\" alt=\"\"/></a><img src=\"https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=banner&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=${AUCTION_PRICE}&b=0\" style=\"position:absolute;left:-9999px\"/>",
+                  "adomain": [
+                    "brand.example.com"
+                  ],
+                  "cid": "cmp-2219",
+                  "crid": "cr-55233",
+                  "cat": [
+                    "IAB22"
+                  ],
+                  "w": 320,
+                  "h": 50,
+                  "exp": 3600
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://test.redmob.example/prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-71b6e0aa",
+          "imp": [
+            {
+              "displaymanager": "prebid-mobile",
+              "displaymanagerver": "2.2.3",
+              "id": "interstitial",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 360,
+                "h": 640,
+                "plcmt": 3,
+                "linearity": 1,
+                "playbackmethod": [
+                  1
+                ]
+              },
+              "instl": 1,
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "supplyPartnerId": 2103
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "app-2002",
+            "name": "Example Game",
+            "bundle": "com.example.game",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+            "ver": "4.12.0",
+            "cat": [
+              "IAB9-30"
+            ],
+            "publisher": {
+              "id": "pub-7102"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+            "ip": "198.51.100.77",
+            "geo": {
+              "country": "NGA",
+              "type": 2
+            },
+            "devicetype": 4,
+            "os": "Android",
+            "osv": "14",
+            "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+            "lmt": 0,
+            "connectiontype": 6,
+            "language": "en"
+          },
+          "source": {
+            "tid": "c0ffee00-0000-4000-8000-req-71b6e0aa"
+          },
+          "tmax": 800,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "interstitial"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-71b6e0aa",
+          "seatbid": [
+            {
+              "seat": "57",
+              "bid": [
+                {
+                  "id": "f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f",
+                  "impid": "interstitial",
+                  "price": 1.95,
+                  "burl": "https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=interstitial&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=${AUCTION_PRICE}",
+                  "lurl": "https://win-eu.redmob.io/lossnotice?bi=req-71b6e0aa&ii=interstitial&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&lr=${AUCTION_LOSS}",
+                  "adm": "<VAST version=\"3.0\"><Ad id=\"cr-90502\"><InLine><AdSystem>Redmob</AdSystem><AdTitle>Example 15s</AdTitle><Impression><![CDATA[https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=interstitial&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=${AUCTION_PRICE}&b=0]]></Impression><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"360\" height=\"640\"><![CDATA[https://cdn.example/creatives/cr-90502.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adomain": [
+                    "travel.example.com"
+                  ],
+                  "cid": "cmp-3307",
+                  "crid": "cr-90502",
+                  "cat": [
+                    "IAB20"
+                  ],
+                  "w": 360,
+                  "h": 640,
+                  "exp": 3600
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+            "impid": "banner",
+            "price": 0.42,
+            "burl": "https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=banner&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=0.42",
+            "lurl": "https://win-eu.redmob.io/lossnotice?bi=req-71b6e0aa&ii=banner&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&lr=${AUCTION_LOSS}",
+            "adm": "<a href=\"https://click.example/c?cr=cr-55233\" target=\"_blank\"><img src=\"https://cdn.example/creatives/cr-55233.png\" width=\"320\" height=\"50\" alt=\"\"/></a><img src=\"https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=banner&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=0.42&b=0\" style=\"position:absolute;left:-9999px\"/>",
+            "adomain": [
+              "brand.example.com"
+            ],
+            "cid": "cmp-2219",
+            "crid": "cr-55233",
+            "cat": [
+              "IAB22"
+            ],
+            "w": 320,
+            "h": 50,
+            "exp": 3600
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "f0e1d2c3-b4a5-4968-8776-5a4b3c2d1e0f",
+            "impid": "interstitial",
+            "price": 1.95,
+            "burl": "https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=interstitial&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=1.95",
+            "lurl": "https://win-eu.redmob.io/lossnotice?bi=req-71b6e0aa&ii=interstitial&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&lr=${AUCTION_LOSS}",
+            "adm": "<VAST version=\"3.0\"><Ad id=\"cr-90502\"><InLine><AdSystem>Redmob</AdSystem><AdTitle>Example 15s</AdTitle><Impression><![CDATA[https://win-eu.redmob.io/winnotice/58?bi=req-71b6e0aa&ii=interstitial&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=1.95&b=0]]></Impression><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"360\" height=\"640\"><![CDATA[https://cdn.example/creatives/cr-90502.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adomain": [
+              "travel.example.com"
+            ],
+            "cid": "cmp-3307",
+            "crid": "cr-90502",
+            "cat": [
+              "IAB20"
+            ],
+            "w": 360,
+            "h": 640,
+            "exp": 3600
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
