@@ -1,0 +1,348 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>biddigi: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/biddigi/biddigi.go (88.2%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package biddigi
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "sort"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the BidDigi adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        return &amp;adapter{endpoint: cfg.Endpoint}, nil
+}</span>
+
+// MakeRequests forwards the OpenRTB request to BidDigi's authenticated server-to-server endpoint.
+//
+// Two things about this adapter are not the usual thin-passthrough shape, and both come from how
+// BidDigi's endpoint authenticates and resolves supply:
+//
+//  1. THE SEAT KEY TRAVELS AS A HEADER, NEVER IN THE BODY. BidDigi issues one credential per
+//     integration ("seat") and authenticates with `Authorization: Bearer &lt;seatKey&gt;`. The key is
+//     therefore stripped out of imp.ext before the request is marshalled -- forwarding a
+//     credential inside the bid request would put it in every debug dump, stored auction record
+//     and log line that ever handles the request.
+//
+//  2. IMPS ARE GROUPED BY SEAT KEY. One HTTP request carries exactly one Authorization header, so
+//     imps authenticating as different seats cannot share a call. Grouping rather than erroring
+//     keeps a mixed request working: each group becomes its own call, which is what a host running
+//     several BidDigi integrations behind one PBS instance actually needs. Groups are emitted in a
+//     deterministic (sorted) order so the request sequence is stable for tests and for debugging.
+//
+// Publisher resolution is deliberately NOT a parameter. BidDigi maps the authenticated seat plus
+// site.domain / app.bundle to one of its publishers server-side, so there is no internal publisher
+// id for a host to know, mistype, or spoof.
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var errs []error
+
+        // Preserve first-seen order of keys, then sort, so output ordering never depends on Go's
+        // randomised map iteration.
+        impsByKey := make(map[string][]openrtb2.Imp)
+
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                params, err := parseImpExt(imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">cleaned, err := stripBidderExt(imp, params.PlacementID)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">impsByKey[params.SeatKey] = append(impsByKey[params.SeatKey], cleaned)</span>
+        }
+
+        <span class="cov8" title="1">if len(impsByKey) == 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">keys := make([]string, 0, len(impsByKey))
+        for k := range impsByKey </span><span class="cov8" title="1">{
+                keys = append(keys, k)
+        }</span>
+        <span class="cov8" title="1">sort.Strings(keys)
+
+        requestData := make([]*adapters.RequestData, 0, len(keys))
+        for _, key := range keys </span><span class="cov8" title="1">{
+                imps := impsByKey[key]
+
+                // Copy the request per group rather than mutating the caller's: PBS hands every adapter
+                // the same *BidRequest, and writing Imp on it would corrupt the request other bidders see.
+                outgoing := *request
+                outgoing.Imp = imps
+
+                body, err := jsonutil.Marshal(&amp;outgoing)
+                if err != nil </span><span class="cov0" title="0">{
+                        errs = append(errs, fmt.Errorf("unable to marshal openrtb request: %w", err))
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">headers := http.Header{}
+                headers.Add("Content-Type", "application/json;charset=utf-8")
+                headers.Add("Accept", "application/json")
+                headers.Add("Authorization", "Bearer "+key)
+                headers.Add("X-Openrtb-Version", "2.6")
+
+                requestData = append(requestData, &amp;adapters.RequestData{
+                        Method:  http.MethodPost,
+                        Uri:     a.endpoint,
+                        Body:    body,
+                        Headers: headers,
+                        ImpIDs:  openrtb_ext.GetImpIDs(imps),
+                })</span>
+        }
+
+        <span class="cov8" title="1">return requestData, errs</span>
+}
+
+// parseImpExt pulls and validates this adapter's params off a single imp.
+//
+// seatKey is required here as well as in static/bidder-params/biddigi.json. The schema is the
+// real gate, but a missing key would otherwise surface as an unauthenticated call and a 401 from
+// BidDigi, which is a much worse error message than naming the imp.
+func parseImpExt(imp openrtb2.Imp) (*openrtb_ext.ExtImpBiddigi, error) <span class="cov8" title="1">{
+        var bidderExt adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;bidderExt); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp %s: failed to parse imp.ext: %s", imp.ID, err.Error()),
+                }
+        }</span>
+
+        <span class="cov8" title="1">var params openrtb_ext.ExtImpBiddigi
+        if err := jsonutil.Unmarshal(bidderExt.Bidder, &amp;params); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp %s: failed to parse biddigi params: %s", imp.ID, err.Error()),
+                }
+        }</span>
+
+        <span class="cov8" title="1">if params.SeatKey == "" </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp %s: missing required biddigi param \"seatKey\"", imp.ID),
+                }
+        }</span>
+
+        <span class="cov8" title="1">return &amp;params, nil</span>
+}
+
+// stripBidderExt removes the params object (which holds the credential) from imp.ext and, when a
+// placementId was supplied, republishes just that field under imp.ext.biddigi.
+//
+// Everything else in imp.ext is preserved rather than discarded -- ext.prebid, ext.gpid and
+// ext.data belong to PBS and to other modules, and an adapter that flattens them breaks features
+// it has nothing to do with. When nothing is left, imp.ext is dropped entirely rather than sent
+// as an empty object.
+//
+// The values are held as json.RawMessage, NOT decoded into interface{}. Decoding a JSON number
+// into interface{} yields a float64, and re-marshalling that float64 does not reproduce the bytes
+// that arrived: an integer above 2^53 is silently rounded (9007199254740993 comes back out as
+// ...992, and a uint64 deal id loses its last three digits entirely), while 1.10 becomes 1.1 and
+// 1e2 becomes 100. This function's whole job is to remove one key and pass the rest through
+// untouched, so every key except "bidder" is carried as the exact bytes the caller sent and is
+// never parsed at all.
+func stripBidderExt(imp openrtb2.Imp, placementID string) (openrtb2.Imp, error) <span class="cov8" title="1">{
+        var ext map[string]json.RawMessage
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;ext); err != nil </span><span class="cov0" title="0">{
+                return imp, &amp;errortypes.BadInput{
+                        Message: fmt.Sprintf("imp %s: failed to parse imp.ext: %s", imp.ID, err.Error()),
+                }
+        }</span>
+
+        <span class="cov8" title="1">delete(ext, "bidder")
+
+        if placementID != "" </span><span class="cov8" title="1">{
+                encoded, err := jsonutil.Marshal(map[string]string{"placementId": placementID})
+                if err != nil </span><span class="cov0" title="0">{
+                        return imp, fmt.Errorf("imp %s: unable to marshal imp.ext.biddigi: %w", imp.ID, err)
+                }</span>
+                <span class="cov8" title="1">ext["biddigi"] = encoded</span>
+        }
+
+        <span class="cov8" title="1">if len(ext) == 0 </span><span class="cov8" title="1">{
+                imp.Ext = nil
+                return imp, nil
+        }</span>
+
+        <span class="cov8" title="1">encoded, err := jsonutil.Marshal(ext)
+        if err != nil </span><span class="cov0" title="0">{
+                return imp, fmt.Errorf("imp %s: unable to marshal imp.ext: %w", imp.ID, err)
+        }</span>
+        <span class="cov8" title="1">imp.Ext = encoded
+        return imp, nil</span>
+}
+
+// MakeBids unpacks BidDigi's OpenRTB BidResponse.
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var bidResp openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;bidResp); err != nil </span><span class="cov0" title="0">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">bidderResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
+
+        // BidDigi answers in USD and says so on every response, so this normally agrees with the
+        // "USD" default. It is read rather than assumed anyway: the exchange retains an INR fallback
+        // for the case where no FX rate is available for an auction, and silently treating one of
+        // those prices as USD would overstate the bid by roughly ninety times. Reading the field the
+        // server actually sent costs nothing and removes the entire class of error.
+        if bidResp.Cur != "" </span><span class="cov8" title="1">{
+                bidderResponse.Currency = bidResp.Cur
+        }</span>
+
+        <span class="cov8" title="1">var errs []error
+        for _, seatBid := range bidResp.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bidType, err := getMediaTypeForBid(seatBid.Bid[i])
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">bidderResponse.Bids = append(bidderResponse.Bids, &amp;adapters.TypedBid{
+                                Bid:     &amp;seatBid.Bid[i],
+                                BidType: bidType,
+                        })</span>
+                }
+        }
+        <span class="cov8" title="1">return bidderResponse, errs</span>
+}
+
+// getMediaTypeForBid reads the media type off bid.mtype only.
+//
+// BidDigi always sets mtype (its auction core assigns it when it picks the winner), so there is no
+// need to fall back to matching the bid against the request's imps -- and inferring a type from
+// the imp would be worse than erroring, because a multi-format imp makes the inference a guess.
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch bid.MType </span>{
+        case openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        case openrtb2.MarkupNative:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeNative, nil</span>
+        default:<span class="cov8" title="1">
+                return "", &amp;errortypes.BadServerResponse{
+                        Message: fmt.Sprintf("unsupported mtype %d for bid %s", bid.MType, bid.ID),
+                }</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
