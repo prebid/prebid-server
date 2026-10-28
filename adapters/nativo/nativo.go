@@ -75,7 +75,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 		seatBid := bidResp.SeatBid[seatBidIndex]
 		for bidIndex := range seatBid.Bid {
 			bid := seatBid.Bid[bidIndex]
-			bidType, err := getMediaTypeForMType(bid.MType)
+			bidType, err := getMediaTypeForMType(bid)
 			if err != nil {
 				bidType, err = getMediaTypeForImp(bid.ImpID, request.Imp)
 			}
@@ -118,8 +118,8 @@ func getRendererMeta(ext *openrtb_ext.ExtRequest) *openrtb_ext.ExtBidPrebidMeta 
 }
 
 // Get media type from the bid's mtype, which the Nativo exchange sets on every bid
-func getMediaTypeForMType(mType openrtb2.MarkupType) (openrtb_ext.BidType, error) {
-	switch mType {
+func getMediaTypeForMType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
@@ -129,7 +129,7 @@ func getMediaTypeForMType(mType openrtb2.MarkupType) (openrtb_ext.BidType, error
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	}
-	return "", fmt.Errorf("Unrecognized mtype in response from nativo: %d", mType)
+	return "", fmt.Errorf("Unrecognized mtype in response from nativo: %d", bid.MType)
 }
 
 // Get media type from bid response
