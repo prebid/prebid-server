@@ -106,6 +106,7 @@
                 },
                 "uri": "https://prebid/bidder",
                 "body": {
+                    "cur": ["USD"],
                     "id": "447a0a1d-389d-4730-a418-3777e95de7bd",
                     "imp": [
                         {

@@ -1,6 +1,7 @@
 {
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "cur": ["EUR"],
     "site": {
       "publisher": {
         "id": "1100042525"
@@ -9,7 +10,26 @@
     },
     "imp": [
       {
-        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "id": "eur-imp",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "bidfloor": 1.0,
+        "bidfloorcur": "EUR",
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
+          }
+        }
+      },
+      {
+        "id": "jpy-imp",
         "banner": {
           "format": [
             {
@@ -23,7 +43,7 @@
         "ext": {
           "bidder": {
             "publisherId": "1100042525",
-            "adspaceId": "130563103"
+            "adspaceId": "130563104"
           }
         }
       }
@@ -40,9 +60,53 @@
       }
     }
   },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
+        "uri": "https://prebid/bidder",
+        "body": {
+          "cur": ["USD"],
+          "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+          "imp": [
+            {
+              "id": "eur-imp",
+              "tagid": "130563103",
+              "bidfloor": 1.2,
+              "bidfloorcur": "USD",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "1100042525"
+            },
+            "page": "http://localhost:3000/server.html"
+          },
+          "ext": {
+            "client": "prebid_server_1.3"
+          }
+        },
+        "impIDs": ["eur-imp"]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Currency conversion rate not found: 'JPY' => 'USD'",
+      "value": "Unable to convert bid floor currency for imp jpy-imp: Currency conversion rate not found: 'JPY' => 'USD'",
       "comparison": "literal"
     }
   ]

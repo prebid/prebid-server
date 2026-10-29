@@ -111,6 +111,7 @@
         },
         "uri": "https://prebid/bidder",
         "body": {
+          "cur": ["USD"],
           "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
           "imp": [
             {
@@ -208,6 +209,7 @@
         },
         "uri": "https://prebid/bidder",
         "body": {
+          "cur": ["USD"],
           "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
           "imp": [
             {
