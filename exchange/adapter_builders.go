@@ -270,6 +270,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/vox"
 	"github.com/prebid/prebid-server/v4/adapters/vrtcal"
 	"github.com/prebid/prebid-server/v4/adapters/vungle"
+	"github.com/prebid/prebid-server/v4/adapters/waardex"
 	"github.com/prebid/prebid-server/v4/adapters/xeworks"
 	"github.com/prebid/prebid-server/v4/adapters/yahooAds"
 	"github.com/prebid/prebid-server/v4/adapters/yandex"
@@ -559,6 +560,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderVisx:              visx.Builder,
 		openrtb_ext.BidderVox:               vox.Builder,
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,
+		openrtb_ext.BidderWaardex:           waardex.Builder,
 		openrtb_ext.BidderXeworks:           xeworks.Builder,
 		openrtb_ext.BidderYahooAds:          yahooAds.Builder,
 		openrtb_ext.BidderYandex:            yandex.Builder,
