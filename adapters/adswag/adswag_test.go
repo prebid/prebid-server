@@ -2,7 +2,6 @@ package adswag
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -143,61 +142,27 @@ func TestResolveBidTypeUnresolvableImp(t *testing.T) {
 	assert.ErrorContains(t, err, "unable to resolve media type")
 }
 
-func TestBannerSize(t *testing.T) {
-	w, h := bannerSize(&openrtb2.Imp{})
+func TestSingleBannerSize(t *testing.T) {
+	w, h := singleBannerSize(&openrtb2.Imp{})
 	assert.Zero(t, w)
 	assert.Zero(t, h)
 
-	w, h = bannerSize(&openrtb2.Imp{Banner: &openrtb2.Banner{W: openrtb2.Int64Ptr(728), H: openrtb2.Int64Ptr(90)}})
+	w, h = singleBannerSize(&openrtb2.Imp{Banner: &openrtb2.Banner{W: openrtb2.Int64Ptr(728), H: openrtb2.Int64Ptr(90)}})
 	assert.EqualValues(t, 728, w)
 	assert.EqualValues(t, 90, h)
 
-	w, h = bannerSize(&openrtb2.Imp{Banner: &openrtb2.Banner{}})
+	w, h = singleBannerSize(&openrtb2.Imp{Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}})
+	assert.EqualValues(t, 300, w)
+	assert.EqualValues(t, 250, h)
+
+	// Several requested sizes: unknown which one won, so no backfill.
+	w, h = singleBannerSize(&openrtb2.Imp{Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 728, H: 90}}}})
 	assert.Zero(t, w)
 	assert.Zero(t, h)
-}
 
-// TestLiveCapturedResponse runs MakeBids against a real bid.adswag.ai
-// response captured 2026-08-11 (evergreen test publisher, banner 300x250,
-// EUR 2.50 display bid) to pin the production response shape: adm carries
-// the loader script tag (passed through untouched) and ext.adswag.serve_url
-// stays populated as the legacy fallback.
-func TestLiveCapturedResponse(t *testing.T) {
-	body, err := os.ReadFile("testdata/live-captured-response.json")
-	if err != nil {
-		t.Fatalf("failed to read captured response fixture: %v", err)
-	}
-
-	req := &openrtb2.BidRequest{
-		ID: "adswag-pbs-smoke-1",
-		Imp: []openrtb2.Imp{{
-			ID:     "imp-1",
-			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
-		}},
-	}
-
-	resp, errs := newAdapter().MakeBids(req, &adapters.RequestData{}, &adapters.ResponseData{
-		StatusCode: 200,
-		Body:       body,
-	})
-	assert.Empty(t, errs)
-	assert.Equal(t, "EUR", resp.Currency)
-	assert.Len(t, resp.Bids, 1)
-
-	bid := resp.Bids[0]
-	assert.Equal(t, openrtb_ext.BidTypeBanner, bid.BidType)
-	assert.Equal(t, 2.5, bid.Bid.Price)
-	assert.Equal(t, openrtb2.MarkupBanner, bid.Bid.MType)
-	assert.EqualValues(t, 300, bid.Bid.W)
-	assert.EqualValues(t, 250, bid.Bid.H)
-	// adm is the endpoint's loader script tag, passed through untouched —
-	// no iframe synthesis when markup is present.
-	assert.Contains(t, bid.Bid.AdM, `<script src="https://ads.adswag.ai/v1/adj?`)
-	assert.NotContains(t, bid.Bid.AdM, "<iframe")
-	// serve_url stays populated as the legacy fallback.
-	assert.Contains(t, string(bid.Bid.Ext), `"serve_url":"https://ads.adswag.ai/v1/ad?`)
-	assert.Contains(t, bid.Bid.BURL, "https://ads.adswag.ai/v1/win?")
-	assert.Equal(t, []string{"adswag.ai"}, bid.Bid.ADomain)
+	w, h = singleBannerSize(&openrtb2.Imp{Banner: &openrtb2.Banner{}})
+	assert.Zero(t, w)
+	assert.Zero(t, h)
 }
 
 func TestIframeMarkupEscapesURL(t *testing.T) {

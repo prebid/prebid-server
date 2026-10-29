@@ -243,14 +243,20 @@ func makeTypedBid(imps []openrtb2.Imp, bid *openrtb2.Bid) (*adapters.TypedBid, e
 		return nil, &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s references unknown imp %s", bid.ID, bid.ImpID)}
 	}
 
-	var ext bidExt
-	if len(bid.Ext) > 0 {
-		// Malformed bid.ext only forfeits the serve_url fallback.
-		_ = jsonutil.Unmarshal(bid.Ext, &ext)
-	}
-	serveURL := ext.Adswag.ServeURL
-	if bid.AdM == "" && serveURL == "" {
-		return nil, &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s has neither adm nor ext.adswag.serve_url", bid.ID)}
+	// bid.ext is only needed for the serve_url fallback, so it is parsed
+	// only when adm is empty; a parse error there is reported as such.
+	var serveURL string
+	if bid.AdM == "" {
+		var ext bidExt
+		if len(bid.Ext) > 0 {
+			if err := jsonutil.Unmarshal(bid.Ext, &ext); err != nil {
+				return nil, &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s has no adm and an unparsable ext: %s", bid.ID, err)}
+			}
+		}
+		serveURL = ext.Adswag.ServeURL
+		if serveURL == "" {
+			return nil, &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s has neither adm nor ext.adswag.serve_url", bid.ID)}
+		}
 	}
 
 	bidType, err := resolveBidType(imp, bid)
@@ -260,13 +266,15 @@ func makeTypedBid(imps []openrtb2.Imp, bid *openrtb2.Bid) (*adapters.TypedBid, e
 
 	switch bidType {
 	case openrtb_ext.BidTypeBanner:
-		w, h := bannerSize(imp)
-		if bid.AdM == "" {
-			bid.AdM = iframeMarkup(serveURL, w, h)
-		}
-		// The endpoint omits w/h; backfill from the requested primary size.
+		// The endpoint returns bid.w/h (the slot size that won) on display
+		// bids; those are kept. Backfill only when the imp requests a single
+		// size, so a multi-size imp never gets the wrong hb_size.
+		w, h := singleBannerSize(imp)
 		if bid.W == 0 && bid.H == 0 && w > 0 && h > 0 {
 			bid.W, bid.H = w, h
+		}
+		if bid.AdM == "" {
+			bid.AdM = iframeMarkup(serveURL, bid.W, bid.H)
 		}
 		bid.MType = openrtb2.MarkupBanner
 	case openrtb_ext.BidTypeVideo:
@@ -328,15 +336,21 @@ func findImp(imps []openrtb2.Imp, impID string) *openrtb2.Imp {
 	return nil
 }
 
-func bannerSize(imp *openrtb2.Imp) (int64, int64) {
+// singleBannerSize returns the imp's banner size when exactly one size is
+// requested, and 0,0 when there are several (or none): with several sizes
+// the adapter cannot know which one the creative is.
+func singleBannerSize(imp *openrtb2.Imp) (int64, int64) {
 	if imp.Banner == nil {
 		return 0, 0
 	}
-	if len(imp.Banner.Format) > 0 {
+	switch len(imp.Banner.Format) {
+	case 0:
+		if imp.Banner.W != nil && imp.Banner.H != nil {
+			return *imp.Banner.W, *imp.Banner.H
+		}
+		return 0, 0
+	case 1:
 		return imp.Banner.Format[0].W, imp.Banner.Format[0].H
-	}
-	if imp.Banner.W != nil && imp.Banner.H != nil {
-		return *imp.Banner.W, *imp.Banner.H
 	}
 	return 0, 0
 }
