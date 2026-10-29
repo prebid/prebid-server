@@ -112,6 +112,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/ferio"
 	"github.com/prebid/prebid-server/v4/adapters/flatads"
 	"github.com/prebid/prebid-server/v4/adapters/flipp"
+	"github.com/prebid/prebid-server/v4/adapters/floxis"
 	"github.com/prebid/prebid-server/v4/adapters/freewheelssp"
 	"github.com/prebid/prebid-server/v4/adapters/frvradn"
 	"github.com/prebid/prebid-server/v4/adapters/fwssp"
@@ -235,6 +236,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/stackadapt"
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
+	"github.com/prebid/prebid-server/v4/adapters/superedge"
 	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
 	"github.com/prebid/prebid-server/v4/adapters/taboola"
 	"github.com/prebid/prebid-server/v4/adapters/tadvertising_blis"
@@ -398,6 +400,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderFerio:             ferio.Builder,
 		openrtb_ext.BidderFlatads:           flatads.Builder,
 		openrtb_ext.BidderFlipp:             flipp.Builder,
+		openrtb_ext.BidderFloxis:            floxis.Builder,
 		openrtb_ext.BidderFreewheelSSP:      freewheelssp.Builder,
 		openrtb_ext.BidderFWSSP:             fwssp.Builder,
 		openrtb_ext.BidderFRVRAdNetwork:     frvradn.Builder,
@@ -523,6 +526,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderStackAdapt:        stackadapt.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
+		openrtb_ext.BidderSuperEdge:         superedge.Builder,
 		openrtb_ext.BidderSynapseHX:         synapseHX.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTAdvertisingBlis:  tadvertising_blis.Builder,
