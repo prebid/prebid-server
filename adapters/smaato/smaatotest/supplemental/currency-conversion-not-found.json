@@ -94,7 +94,7 @@
             "page": "http://localhost:3000/server.html"
           },
           "ext": {
-            "client": "prebid_server_1.3"
+            "client": "prebid_server_1.4"
           }
         },
         "impIDs": ["eur-imp"]

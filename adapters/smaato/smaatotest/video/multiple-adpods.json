@@ -235,7 +235,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_1.3"
+                        "client": "prebid_server_1.4"
                     }
                 },
                 "impIDs":["1_1","1_2"]
@@ -392,7 +392,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_1.3"
+                        "client": "prebid_server_1.4"
                     }
                 },
                 "impIDs":["2_1","2_2"]

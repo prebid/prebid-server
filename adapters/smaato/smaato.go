@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
-const clientVersion = "prebid_server_1.3"
+const clientVersion = "prebid_server_1.4"
 
 type adMarkupType string
 
