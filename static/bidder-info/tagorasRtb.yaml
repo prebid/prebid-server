@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.rtb-tagoras.io/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"
