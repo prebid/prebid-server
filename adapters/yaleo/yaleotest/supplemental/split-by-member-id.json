@@ -1,0 +1,192 @@
+{
+  "mockBidRequest": {
+    "id": "test-split-request",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-member-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-1",
+            "memberId": 1
+          }
+        }
+      },
+      {
+        "id": "imp-member-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-2",
+            "memberId": 2
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-split-request",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-member-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-1",
+                  "memberId": 1
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-member-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-split-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-member-1",
+                  "price": 0.11,
+                  "adm": "<div>ad-1</div>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-split-request",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-member-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-2",
+                  "memberId": 2
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-member-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-split-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-member-2",
+                  "price": 0.22,
+                  "adm": "<div>ad-2</div>",
+                  "w": 300,
+                  "h": 600,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-member-1",
+            "price": 0.11,
+            "adm": "<div>ad-1</div>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-member-2",
+            "price": 0.22,
+            "adm": "<div>ad-2</div>",
+            "w": 300,
+            "h": 600,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "mockBidRequest": {
+    "id": "test-gpid-request",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "gpid-imp",
+        "tagid": "fallback-tag",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "gpid": "/1234/ad-unit",
+          "tid": "transaction-1",
+          "data": {
+            "pbadslot": "/1234/ad-unit"
+          },
+          "bidder": {
+            "placementId": "placement-gpid"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-gpid-request",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "gpid-imp",
+              "tagid": "fallback-tag",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "gpid": "/1234/ad-unit",
+                "tid": "transaction-1",
+                "data": {
+                  "pbadslot": "/1234/ad-unit"
+                },
+                "bidder": {
+                  "placementId": "placement-gpid"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "gpid-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "test-500-request",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-500",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-500"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-500-request",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-500",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-500"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-500"
+        ]
+      },
+      "mockResponse": {
+        "status": 500
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500",
+      "comparison": "regex"
+    }
+  ]
+}
