@@ -25,6 +25,44 @@ func createMetricsForTesting() *Metrics {
 	}, config.DisabledMetrics{}, syncerKeys, modulesStages)
 }
 
+// TestGoMetricsPrefix covers https://github.com/prebid/prebid-server/issues/4742: the
+// standard Prometheus Go runtime collector (go_goroutines, go_gc_duration_seconds, etc.) was
+// always registered on the namespace/subsystem-prefixed Registerer, giving it names like
+// "prebid_server_go_goroutines" instead of the standard "go_goroutines" - breaking dashboards
+// and alerts that expect the standard names, and preventing horizontal comparison across
+// services (client_golang explicitly recommends against prefixing these).
+func TestGoMetricsPrefix(t *testing.T) {
+	gatheredMetricNames := func(disableGoMetricsPrefix bool) map[string]bool {
+		m := NewMetrics(config.PrometheusMetrics{
+			Port:                   8080,
+			Namespace:              "prebid",
+			Subsystem:              "server",
+			DisableGoMetricsPrefix: disableGoMetricsPrefix,
+		}, config.DisabledMetrics{}, []string{}, modulesStages)
+
+		metricFamilies, err := m.Gatherer.Gather()
+		assert.NoError(t, err, "gather metrics")
+
+		names := map[string]bool{}
+		for _, mf := range metricFamilies {
+			names[mf.GetName()] = true
+		}
+		return names
+	}
+
+	t.Run("default preserves existing prefixed behavior", func(t *testing.T) {
+		names := gatheredMetricNames(false)
+		assert.True(t, names["prebid_server_go_goroutines"], "expected the prefixed name to be present by default")
+		assert.False(t, names["go_goroutines"], "did not expect the unprefixed name by default")
+	})
+
+	t.Run("DisableGoMetricsPrefix registers standard unprefixed names", func(t *testing.T) {
+		names := gatheredMetricNames(true)
+		assert.True(t, names["go_goroutines"], "expected the standard unprefixed name when DisableGoMetricsPrefix is set")
+		assert.False(t, names["prebid_server_go_goroutines"], "did not expect the prefixed name when DisableGoMetricsPrefix is set")
+	})
+}
+
 func TestMetricCountGatekeeping(t *testing.T) {
 	m := createMetricsForTesting()
 
