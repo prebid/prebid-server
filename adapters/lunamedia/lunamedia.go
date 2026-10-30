@@ -168,7 +168,6 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 		siteCopy := *bidRequest.Site
 		bidRequest.Site = &siteCopy
 		bidRequest.Site.Publisher = nil
-		bidRequest.Site.Domain = ""
 	}
 	if bidRequest.App != nil {
 		// Need to copy App as Request is a shallow copy
