@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "domain": "news.example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {}
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-1: missing required biddigi param \"seatKey\"",
+      "comparison": "literal"
+    }
+  ]
+}
