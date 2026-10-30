@@ -1,10 +1,13 @@
-endpoint: "https://d.socdm.com/adsv/v1"
+# Uses the /adgen/prebid (POST) endpoint to stay in parity with Prebid.js v1.6.6.
+endpoint: "https://d.socdm.com/adgen/prebid"
 maintainer:
   email: "ssp-ope@supership.jp"
 capabilities:
   app:
     mediaTypes:
       - banner
+      - native
   site:
     mediaTypes:
       - banner
+      - native
