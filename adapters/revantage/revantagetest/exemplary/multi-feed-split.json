@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "multi-feed-request",
+    "imp": [
+      {
+        "id": "imp-a",
+        "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"feedId": "feed-one"}}
+      },
+      {
+        "id": "imp-b",
+        "banner": {"w": 728, "h": 90, "format": [{"w": 728, "h": 90}]},
+        "ext": {"bidder": {"feedId": "feed-two"}}
+      }
+    ],
+    "site": {"domain": "example.com"},
+    "tmax": 1000,
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.revantage.io/bid?feed=feed-one",
+        "body": {
+          "id": "multi-feed-request",
+          "imp": [
+            {
+              "id": "imp-a",
+              "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+              "ext": {"feedId": "feed-one", "bidder": {}}
+            }
+          ],
+          "site": {"domain": "example.com"},
+          "tmax": 1000,
+          "cur": ["USD"]
+        },
+        "impIDs": ["imp-a"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multi-feed-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "dsp-1",
+              "bid": [
+                {"id": "b1", "impid": "imp-a", "price": 1.0, "adm": "<div>1</div>", "crid": "c1", "w": 300, "h": 250, "mtype": 1}
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://bid.revantage.io/bid?feed=feed-two",
+        "body": {
+          "id": "multi-feed-request",
+          "imp": [
+            {
+              "id": "imp-b",
+              "banner": {"w": 728, "h": 90, "format": [{"w": 728, "h": 90}]},
+              "ext": {"feedId": "feed-two", "bidder": {}}
+            }
+          ],
+          "site": {"domain": "example.com"},
+          "tmax": 1000,
+          "cur": ["USD"]
+        },
+        "impIDs": ["imp-b"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multi-feed-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "dsp-2",
+              "bid": [
+                {"id": "b2", "impid": "imp-b", "price": 2.0, "adm": "<div>2</div>", "crid": "c2", "w": 728, "h": 90, "mtype": 1}
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {"id": "b1", "impid": "imp-a", "price": 1.0, "adm": "<div>1</div>", "crid": "c1", "w": 300, "h": 250, "mtype": 1},
+          "type": "banner",
+          "seat": "dsp-1"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {"id": "b2", "impid": "imp-b", "price": 2.0, "adm": "<div>2</div>", "crid": "c2", "w": 728, "h": 90, "mtype": 1},
+          "type": "banner",
+          "seat": "dsp-2"
+        }
+      ]
+    }
+  ]
+}
