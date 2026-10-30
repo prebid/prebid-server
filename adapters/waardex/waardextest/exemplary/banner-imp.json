@@ -1,0 +1,148 @@
+{
+  "mockBidRequest": {
+    "id": "auction-7731",
+    "imp": [
+      {
+        "id": "slot-top",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 200
+            },
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 101
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://news.example/article",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "buyeruid": "wx-user-58c1e9"
+    },
+    "cur": [
+      "GBP"
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "body": {
+          "id": "auction-7731-slot-top-banner",
+          "imp": [
+            {
+              "id": "slot-top",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 200
+                  },
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 200
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 101
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://news.example/article",
+            "publisher": {
+              "id": "1"
+            }
+          },
+          "user": {
+            "buyeruid": "wx-user-58c1e9"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "slot-top"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "b6f0c3d1-8e2a-4c57-a1d9-3e7b5f02c816",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "wx-resp-4f2c_0_0",
+                  "impid": "slot-top",
+                  "price": 0.5,
+                  "cid": "camp-750",
+                  "crid": "cr-310",
+                  "adid": "cr-310",
+                  "adm": "<div>creative</div>",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "mtype": 1,
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "h": 250,
+                  "w": 300
+                }
+              ]
+            }
+          ],
+          "bidid": "wx-resp-4f2c",
+          "cur": "GBP"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "GBP",
+      "bids": [
+        {
+          "bid": {
+            "id": "wx-resp-4f2c_0_0",
+            "impid": "slot-top",
+            "price": 0.5,
+            "adm": "<div>creative</div>",
+            "adid": "cr-310",
+            "adomain": [
+              "test.com"
+            ],
+            "cid": "camp-750",
+            "crid": "cr-310",
+            "w": 300,
+            "h": 250,
+            "cat": [
+              "IAB2"
+            ],
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
