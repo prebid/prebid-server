@@ -1,0 +1,970 @@
+{
+  "mockBidRequest": {
+    "id": "22e26bd9a702bc",
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "source59.com",
+            "uids": [
+              {
+                "id": "id-59"
+              }
+            ]
+          },
+          {
+            "source": "source58.com",
+            "uids": [
+              {
+                "id": "id-58"
+              }
+            ]
+          },
+          {
+            "source": "source57.com",
+            "uids": [
+              {
+                "id": "id-57"
+              }
+            ]
+          },
+          {
+            "source": "source56.com",
+            "uids": [
+              {
+                "id": "id-56"
+              }
+            ]
+          },
+          {
+            "source": "source55.com",
+            "uids": [
+              {
+                "id": "id-55"
+              }
+            ]
+          },
+          {
+            "source": "source54.com",
+            "uids": [
+              {
+                "id": "id-54"
+              }
+            ]
+          },
+          {
+            "source": "source53.com",
+            "uids": [
+              {
+                "id": "id-53"
+              }
+            ]
+          },
+          {
+            "source": "source52.com",
+            "uids": [
+              {
+                "id": "id-52"
+              }
+            ]
+          },
+          {
+            "source": "source51.com",
+            "uids": [
+              {
+                "id": "id-51"
+              }
+            ]
+          },
+          {
+            "source": "source50.com",
+            "uids": [
+              {
+                "id": "id-50"
+              }
+            ]
+          },
+          {
+            "source": "source49.com",
+            "uids": [
+              {
+                "id": "id-49"
+              }
+            ]
+          },
+          {
+            "source": "source48.com",
+            "uids": [
+              {
+                "id": "id-48"
+              }
+            ]
+          },
+          {
+            "source": "source47.com",
+            "uids": [
+              {
+                "id": "id-47"
+              }
+            ]
+          },
+          {
+            "source": "source46.com",
+            "uids": [
+              {
+                "id": "id-46"
+              }
+            ]
+          },
+          {
+            "source": "source45.com",
+            "uids": [
+              {
+                "id": "id-45"
+              }
+            ]
+          },
+          {
+            "source": "source44.com",
+            "uids": [
+              {
+                "id": "id-44"
+              }
+            ]
+          },
+          {
+            "source": "source43.com",
+            "uids": [
+              {
+                "id": "id-43"
+              }
+            ]
+          },
+          {
+            "source": "source42.com",
+            "uids": [
+              {
+                "id": "id-42"
+              }
+            ]
+          },
+          {
+            "source": "source41.com",
+            "uids": [
+              {
+                "id": "id-41"
+              }
+            ]
+          },
+          {
+            "source": "source40.com",
+            "uids": [
+              {
+                "id": "id-40"
+              }
+            ]
+          },
+          {
+            "source": "source39.com",
+            "uids": [
+              {
+                "id": "id-39"
+              }
+            ]
+          },
+          {
+            "source": "source38.com",
+            "uids": [
+              {
+                "id": "id-38"
+              }
+            ]
+          },
+          {
+            "source": "source37.com",
+            "uids": [
+              {
+                "id": "id-37"
+              }
+            ]
+          },
+          {
+            "source": "source36.com",
+            "uids": [
+              {
+                "id": "id-36"
+              }
+            ]
+          },
+          {
+            "source": "source35.com",
+            "uids": [
+              {
+                "id": "id-35"
+              }
+            ]
+          },
+          {
+            "source": "source34.com",
+            "uids": [
+              {
+                "id": "id-34"
+              }
+            ]
+          },
+          {
+            "source": "source33.com",
+            "uids": [
+              {
+                "id": "id-33"
+              }
+            ]
+          },
+          {
+            "source": "source32.com",
+            "uids": [
+              {
+                "id": "id-32"
+              }
+            ]
+          },
+          {
+            "source": "source31.com",
+            "uids": [
+              {
+                "id": "id-31"
+              }
+            ]
+          },
+          {
+            "source": "source30.com",
+            "uids": [
+              {
+                "id": "id-30"
+              }
+            ]
+          },
+          {
+            "source": "source29.com",
+            "uids": [
+              {
+                "id": "id-29"
+              }
+            ]
+          },
+          {
+            "source": "source28.com",
+            "uids": [
+              {
+                "id": "id-28"
+              }
+            ]
+          },
+          {
+            "source": "source27.com",
+            "uids": [
+              {
+                "id": "id-27"
+              }
+            ]
+          },
+          {
+            "source": "source26.com",
+            "uids": [
+              {
+                "id": "id-26"
+              }
+            ]
+          },
+          {
+            "source": "source25.com",
+            "uids": [
+              {
+                "id": "id-25"
+              }
+            ]
+          },
+          {
+            "source": "source24.com",
+            "uids": [
+              {
+                "id": "id-24"
+              }
+            ]
+          },
+          {
+            "source": "source23.com",
+            "uids": [
+              {
+                "id": "id-23"
+              }
+            ]
+          },
+          {
+            "source": "source22.com",
+            "uids": [
+              {
+                "id": "id-22"
+              }
+            ]
+          },
+          {
+            "source": "source21.com",
+            "uids": [
+              {
+                "id": "id-21"
+              }
+            ]
+          },
+          {
+            "source": "source20.com",
+            "uids": [
+              {
+                "id": "id-20"
+              }
+            ]
+          },
+          {
+            "source": "source19.com",
+            "uids": [
+              {
+                "id": "id-19"
+              }
+            ]
+          },
+          {
+            "source": "source18.com",
+            "uids": [
+              {
+                "id": "id-18"
+              }
+            ]
+          },
+          {
+            "source": "source17.com",
+            "uids": [
+              {
+                "id": "id-17"
+              }
+            ]
+          },
+          {
+            "source": "source16.com",
+            "uids": [
+              {
+                "id": "id-16"
+              }
+            ]
+          },
+          {
+            "source": "source15.com",
+            "uids": [
+              {
+                "id": "id-15"
+              }
+            ]
+          },
+          {
+            "source": "source14.com",
+            "uids": [
+              {
+                "id": "id-14"
+              }
+            ]
+          },
+          {
+            "source": "source13.com",
+            "uids": [
+              {
+                "id": "id-13"
+              }
+            ]
+          },
+          {
+            "source": "source12.com",
+            "uids": [
+              {
+                "id": "id-12"
+              }
+            ]
+          },
+          {
+            "source": "source11.com",
+            "uids": [
+              {
+                "id": "id-11"
+              }
+            ]
+          },
+          {
+            "source": "source10.com",
+            "uids": [
+              {
+                "id": "id-10"
+              }
+            ]
+          },
+          {
+            "source": "source09.com",
+            "uids": [
+              {
+                "id": "id-9"
+              }
+            ]
+          },
+          {
+            "source": "source08.com",
+            "uids": [
+              {
+                "id": "id-8"
+              }
+            ]
+          },
+          {
+            "source": "source07.com",
+            "uids": [
+              {
+                "id": "id-7"
+              }
+            ]
+          },
+          {
+            "source": "source06.com",
+            "uids": [
+              {
+                "id": "id-6"
+              }
+            ]
+          },
+          {
+            "source": "source05.com",
+            "uids": [
+              {
+                "id": "id-5"
+              }
+            ]
+          },
+          {
+            "source": "source04.com",
+            "uids": [
+              {
+                "id": "id-4"
+              }
+            ]
+          },
+          {
+            "source": "source03.com",
+            "uids": [
+              {
+                "id": "id-3"
+              }
+            ]
+          },
+          {
+            "source": "source02.com",
+            "uids": [
+              {
+                "id": "id-2"
+              }
+            ]
+          },
+          {
+            "source": "source01.com",
+            "uids": [
+              {
+                "id": "id-1"
+              }
+            ]
+          },
+          {
+            "source": "source00.com",
+            "uids": [
+              {
+                "id": "id-0"
+              }
+            ]
+          },
+          {
+            "source": "adquery.io",
+            "uids": [
+              {
+                "id": "qd_adquery-id-1234567"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "imp": [
+      {
+        "id": "1",
+        "tagid": "test-banner-imp-id",
+        "bidder": "adquery",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 100
+            },
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+            "type": "banner"
+          }
+        }
+      }
+    ],
+    "bidder": "adquery"
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidder2.adquery.io/prebid/bid",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "adUnitCode": "test-banner-imp-id",
+          "bidder": "adquery",
+          "bidderRequestId": "22e26bd9a702bc",
+          "bidderRequestsCount": 1,
+          "bidId": "22e26bd9a702bc1",
+          "bidIp": "",
+          "bidIpv6": "",
+          "bidPageUrl": "",
+          "bidQid": "",
+          "bidRequestsCount": 1,
+          "bidUa": "",
+          "placementCode": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+          "sizes": "320x100,300x250",
+          "type": "banner",
+          "v": "server",
+          "eids": [
+            {
+              "source": "adquery.io",
+              "uids": [
+                {
+                  "id": "qd_adquery-id-1234567"
+                }
+              ]
+            },
+            {
+              "source": "source00.com",
+              "uids": [
+                {
+                  "id": "id-0"
+                }
+              ]
+            },
+            {
+              "source": "source01.com",
+              "uids": [
+                {
+                  "id": "id-1"
+                }
+              ]
+            },
+            {
+              "source": "source02.com",
+              "uids": [
+                {
+                  "id": "id-2"
+                }
+              ]
+            },
+            {
+              "source": "source03.com",
+              "uids": [
+                {
+                  "id": "id-3"
+                }
+              ]
+            },
+            {
+              "source": "source04.com",
+              "uids": [
+                {
+                  "id": "id-4"
+                }
+              ]
+            },
+            {
+              "source": "source05.com",
+              "uids": [
+                {
+                  "id": "id-5"
+                }
+              ]
+            },
+            {
+              "source": "source06.com",
+              "uids": [
+                {
+                  "id": "id-6"
+                }
+              ]
+            },
+            {
+              "source": "source07.com",
+              "uids": [
+                {
+                  "id": "id-7"
+                }
+              ]
+            },
+            {
+              "source": "source08.com",
+              "uids": [
+                {
+                  "id": "id-8"
+                }
+              ]
+            },
+            {
+              "source": "source09.com",
+              "uids": [
+                {
+                  "id": "id-9"
+                }
+              ]
+            },
+            {
+              "source": "source10.com",
+              "uids": [
+                {
+                  "id": "id-10"
+                }
+              ]
+            },
+            {
+              "source": "source11.com",
+              "uids": [
+                {
+                  "id": "id-11"
+                }
+              ]
+            },
+            {
+              "source": "source12.com",
+              "uids": [
+                {
+                  "id": "id-12"
+                }
+              ]
+            },
+            {
+              "source": "source13.com",
+              "uids": [
+                {
+                  "id": "id-13"
+                }
+              ]
+            },
+            {
+              "source": "source14.com",
+              "uids": [
+                {
+                  "id": "id-14"
+                }
+              ]
+            },
+            {
+              "source": "source15.com",
+              "uids": [
+                {
+                  "id": "id-15"
+                }
+              ]
+            },
+            {
+              "source": "source16.com",
+              "uids": [
+                {
+                  "id": "id-16"
+                }
+              ]
+            },
+            {
+              "source": "source17.com",
+              "uids": [
+                {
+                  "id": "id-17"
+                }
+              ]
+            },
+            {
+              "source": "source18.com",
+              "uids": [
+                {
+                  "id": "id-18"
+                }
+              ]
+            },
+            {
+              "source": "source19.com",
+              "uids": [
+                {
+                  "id": "id-19"
+                }
+              ]
+            },
+            {
+              "source": "source20.com",
+              "uids": [
+                {
+                  "id": "id-20"
+                }
+              ]
+            },
+            {
+              "source": "source21.com",
+              "uids": [
+                {
+                  "id": "id-21"
+                }
+              ]
+            },
+            {
+              "source": "source22.com",
+              "uids": [
+                {
+                  "id": "id-22"
+                }
+              ]
+            },
+            {
+              "source": "source23.com",
+              "uids": [
+                {
+                  "id": "id-23"
+                }
+              ]
+            },
+            {
+              "source": "source24.com",
+              "uids": [
+                {
+                  "id": "id-24"
+                }
+              ]
+            },
+            {
+              "source": "source25.com",
+              "uids": [
+                {
+                  "id": "id-25"
+                }
+              ]
+            },
+            {
+              "source": "source26.com",
+              "uids": [
+                {
+                  "id": "id-26"
+                }
+              ]
+            },
+            {
+              "source": "source27.com",
+              "uids": [
+                {
+                  "id": "id-27"
+                }
+              ]
+            },
+            {
+              "source": "source28.com",
+              "uids": [
+                {
+                  "id": "id-28"
+                }
+              ]
+            },
+            {
+              "source": "source29.com",
+              "uids": [
+                {
+                  "id": "id-29"
+                }
+              ]
+            },
+            {
+              "source": "source30.com",
+              "uids": [
+                {
+                  "id": "id-30"
+                }
+              ]
+            },
+            {
+              "source": "source31.com",
+              "uids": [
+                {
+                  "id": "id-31"
+                }
+              ]
+            },
+            {
+              "source": "source32.com",
+              "uids": [
+                {
+                  "id": "id-32"
+                }
+              ]
+            },
+            {
+              "source": "source33.com",
+              "uids": [
+                {
+                  "id": "id-33"
+                }
+              ]
+            },
+            {
+              "source": "source34.com",
+              "uids": [
+                {
+                  "id": "id-34"
+                }
+              ]
+            },
+            {
+              "source": "source35.com",
+              "uids": [
+                {
+                  "id": "id-35"
+                }
+              ]
+            },
+            {
+              "source": "source36.com",
+              "uids": [
+                {
+                  "id": "id-36"
+                }
+              ]
+            },
+            {
+              "source": "source37.com",
+              "uids": [
+                {
+                  "id": "id-37"
+                }
+              ]
+            },
+            {
+              "source": "source38.com",
+              "uids": [
+                {
+                  "id": "id-38"
+                }
+              ]
+            },
+            {
+              "source": "source39.com",
+              "uids": [
+                {
+                  "id": "id-39"
+                }
+              ]
+            },
+            {
+              "source": "source40.com",
+              "uids": [
+                {
+                  "id": "id-40"
+                }
+              ]
+            },
+            {
+              "source": "source41.com",
+              "uids": [
+                {
+                  "id": "id-41"
+                }
+              ]
+            },
+            {
+              "source": "source42.com",
+              "uids": [
+                {
+                  "id": "id-42"
+                }
+              ]
+            },
+            {
+              "source": "source43.com",
+              "uids": [
+                {
+                  "id": "id-43"
+                }
+              ]
+            },
+            {
+              "source": "source44.com",
+              "uids": [
+                {
+                  "id": "id-44"
+                }
+              ]
+            },
+            {
+              "source": "source45.com",
+              "uids": [
+                {
+                  "id": "id-45"
+                }
+              ]
+            },
+            {
+              "source": "source46.com",
+              "uids": [
+                {
+                  "id": "id-46"
+                }
+              ]
+            },
+            {
+              "source": "source47.com",
+              "uids": [
+                {
+                  "id": "id-47"
+                }
+              ]
+            },
+            {
+              "source": "source48.com",
+              "uids": [
+                {
+                  "id": "id-48"
+                }
+              ]
+            }
+          ]
+        },
+        "impIDs": [
+          "1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "headers": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

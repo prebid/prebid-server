@@ -1,0 +1,879 @@
+{
+  "mockBidRequest": {
+    "id": "22e26bd9a702bc",
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "x.com",
+            "uids": [
+              {
+                "id": "a"
+              },
+              {
+                "id": "c"
+              }
+            ]
+          },
+          {
+            "source": "x.com",
+            "inserter": "i.com",
+            "uids": [
+              {
+                "id": "a"
+              }
+            ]
+          },
+          {
+            "source": "x.com",
+            "uids": [
+              {
+                "id": "a"
+              }
+            ]
+          },
+          {
+            "source": "a46.com",
+            "uids": [
+              {
+                "id": "id-46"
+              }
+            ]
+          },
+          {
+            "source": "a45.com",
+            "uids": [
+              {
+                "id": "id-45"
+              }
+            ]
+          },
+          {
+            "source": "a44.com",
+            "uids": [
+              {
+                "id": "id-44"
+              }
+            ]
+          },
+          {
+            "source": "a43.com",
+            "uids": [
+              {
+                "id": "id-43"
+              }
+            ]
+          },
+          {
+            "source": "a42.com",
+            "uids": [
+              {
+                "id": "id-42"
+              }
+            ]
+          },
+          {
+            "source": "a41.com",
+            "uids": [
+              {
+                "id": "id-41"
+              }
+            ]
+          },
+          {
+            "source": "a40.com",
+            "uids": [
+              {
+                "id": "id-40"
+              }
+            ]
+          },
+          {
+            "source": "a39.com",
+            "uids": [
+              {
+                "id": "id-39"
+              }
+            ]
+          },
+          {
+            "source": "a38.com",
+            "uids": [
+              {
+                "id": "id-38"
+              }
+            ]
+          },
+          {
+            "source": "a37.com",
+            "uids": [
+              {
+                "id": "id-37"
+              }
+            ]
+          },
+          {
+            "source": "a36.com",
+            "uids": [
+              {
+                "id": "id-36"
+              }
+            ]
+          },
+          {
+            "source": "a35.com",
+            "uids": [
+              {
+                "id": "id-35"
+              }
+            ]
+          },
+          {
+            "source": "a34.com",
+            "uids": [
+              {
+                "id": "id-34"
+              }
+            ]
+          },
+          {
+            "source": "a33.com",
+            "uids": [
+              {
+                "id": "id-33"
+              }
+            ]
+          },
+          {
+            "source": "a32.com",
+            "uids": [
+              {
+                "id": "id-32"
+              }
+            ]
+          },
+          {
+            "source": "a31.com",
+            "uids": [
+              {
+                "id": "id-31"
+              }
+            ]
+          },
+          {
+            "source": "a30.com",
+            "uids": [
+              {
+                "id": "id-30"
+              }
+            ]
+          },
+          {
+            "source": "a29.com",
+            "uids": [
+              {
+                "id": "id-29"
+              }
+            ]
+          },
+          {
+            "source": "a28.com",
+            "uids": [
+              {
+                "id": "id-28"
+              }
+            ]
+          },
+          {
+            "source": "a27.com",
+            "uids": [
+              {
+                "id": "id-27"
+              }
+            ]
+          },
+          {
+            "source": "a26.com",
+            "uids": [
+              {
+                "id": "id-26"
+              }
+            ]
+          },
+          {
+            "source": "a25.com",
+            "uids": [
+              {
+                "id": "id-25"
+              }
+            ]
+          },
+          {
+            "source": "a24.com",
+            "uids": [
+              {
+                "id": "id-24"
+              }
+            ]
+          },
+          {
+            "source": "a23.com",
+            "uids": [
+              {
+                "id": "id-23"
+              }
+            ]
+          },
+          {
+            "source": "a22.com",
+            "uids": [
+              {
+                "id": "id-22"
+              }
+            ]
+          },
+          {
+            "source": "a21.com",
+            "uids": [
+              {
+                "id": "id-21"
+              }
+            ]
+          },
+          {
+            "source": "a20.com",
+            "uids": [
+              {
+                "id": "id-20"
+              }
+            ]
+          },
+          {
+            "source": "a19.com",
+            "uids": [
+              {
+                "id": "id-19"
+              }
+            ]
+          },
+          {
+            "source": "a18.com",
+            "uids": [
+              {
+                "id": "id-18"
+              }
+            ]
+          },
+          {
+            "source": "a17.com",
+            "uids": [
+              {
+                "id": "id-17"
+              }
+            ]
+          },
+          {
+            "source": "a16.com",
+            "uids": [
+              {
+                "id": "id-16"
+              }
+            ]
+          },
+          {
+            "source": "a15.com",
+            "uids": [
+              {
+                "id": "id-15"
+              }
+            ]
+          },
+          {
+            "source": "a14.com",
+            "uids": [
+              {
+                "id": "id-14"
+              }
+            ]
+          },
+          {
+            "source": "a13.com",
+            "uids": [
+              {
+                "id": "id-13"
+              }
+            ]
+          },
+          {
+            "source": "a12.com",
+            "uids": [
+              {
+                "id": "id-12"
+              }
+            ]
+          },
+          {
+            "source": "a11.com",
+            "uids": [
+              {
+                "id": "id-11"
+              }
+            ]
+          },
+          {
+            "source": "a10.com",
+            "uids": [
+              {
+                "id": "id-10"
+              }
+            ]
+          },
+          {
+            "source": "a09.com",
+            "uids": [
+              {
+                "id": "id-9"
+              }
+            ]
+          },
+          {
+            "source": "a08.com",
+            "uids": [
+              {
+                "id": "id-8"
+              }
+            ]
+          },
+          {
+            "source": "a07.com",
+            "uids": [
+              {
+                "id": "id-7"
+              }
+            ]
+          },
+          {
+            "source": "a06.com",
+            "uids": [
+              {
+                "id": "id-6"
+              }
+            ]
+          },
+          {
+            "source": "a05.com",
+            "uids": [
+              {
+                "id": "id-5"
+              }
+            ]
+          },
+          {
+            "source": "a04.com",
+            "uids": [
+              {
+                "id": "id-4"
+              }
+            ]
+          },
+          {
+            "source": "a03.com",
+            "uids": [
+              {
+                "id": "id-3"
+              }
+            ]
+          },
+          {
+            "source": "a02.com",
+            "uids": [
+              {
+                "id": "id-2"
+              }
+            ]
+          },
+          {
+            "source": "a01.com",
+            "uids": [
+              {
+                "id": "id-1"
+              }
+            ]
+          },
+          {
+            "source": "a00.com",
+            "uids": [
+              {
+                "id": "id-0"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "imp": [
+      {
+        "id": "1",
+        "tagid": "test-banner-imp-id",
+        "bidder": "adquery",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 100
+            },
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+            "type": "banner"
+          }
+        }
+      }
+    ],
+    "bidder": "adquery"
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidder2.adquery.io/prebid/bid",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "adUnitCode": "test-banner-imp-id",
+          "bidder": "adquery",
+          "bidderRequestId": "22e26bd9a702bc",
+          "bidderRequestsCount": 1,
+          "bidId": "22e26bd9a702bc1",
+          "bidIp": "",
+          "bidIpv6": "",
+          "bidPageUrl": "",
+          "bidQid": "",
+          "bidRequestsCount": 1,
+          "bidUa": "",
+          "placementCode": "6d93f2a0e5f0fe2cc3a6e9e3ade964b43b07f897",
+          "sizes": "320x100,300x250",
+          "type": "banner",
+          "v": "server",
+          "eids": [
+            {
+              "source": "a00.com",
+              "uids": [
+                {
+                  "id": "id-0"
+                }
+              ]
+            },
+            {
+              "source": "a01.com",
+              "uids": [
+                {
+                  "id": "id-1"
+                }
+              ]
+            },
+            {
+              "source": "a02.com",
+              "uids": [
+                {
+                  "id": "id-2"
+                }
+              ]
+            },
+            {
+              "source": "a03.com",
+              "uids": [
+                {
+                  "id": "id-3"
+                }
+              ]
+            },
+            {
+              "source": "a04.com",
+              "uids": [
+                {
+                  "id": "id-4"
+                }
+              ]
+            },
+            {
+              "source": "a05.com",
+              "uids": [
+                {
+                  "id": "id-5"
+                }
+              ]
+            },
+            {
+              "source": "a06.com",
+              "uids": [
+                {
+                  "id": "id-6"
+                }
+              ]
+            },
+            {
+              "source": "a07.com",
+              "uids": [
+                {
+                  "id": "id-7"
+                }
+              ]
+            },
+            {
+              "source": "a08.com",
+              "uids": [
+                {
+                  "id": "id-8"
+                }
+              ]
+            },
+            {
+              "source": "a09.com",
+              "uids": [
+                {
+                  "id": "id-9"
+                }
+              ]
+            },
+            {
+              "source": "a10.com",
+              "uids": [
+                {
+                  "id": "id-10"
+                }
+              ]
+            },
+            {
+              "source": "a11.com",
+              "uids": [
+                {
+                  "id": "id-11"
+                }
+              ]
+            },
+            {
+              "source": "a12.com",
+              "uids": [
+                {
+                  "id": "id-12"
+                }
+              ]
+            },
+            {
+              "source": "a13.com",
+              "uids": [
+                {
+                  "id": "id-13"
+                }
+              ]
+            },
+            {
+              "source": "a14.com",
+              "uids": [
+                {
+                  "id": "id-14"
+                }
+              ]
+            },
+            {
+              "source": "a15.com",
+              "uids": [
+                {
+                  "id": "id-15"
+                }
+              ]
+            },
+            {
+              "source": "a16.com",
+              "uids": [
+                {
+                  "id": "id-16"
+                }
+              ]
+            },
+            {
+              "source": "a17.com",
+              "uids": [
+                {
+                  "id": "id-17"
+                }
+              ]
+            },
+            {
+              "source": "a18.com",
+              "uids": [
+                {
+                  "id": "id-18"
+                }
+              ]
+            },
+            {
+              "source": "a19.com",
+              "uids": [
+                {
+                  "id": "id-19"
+                }
+              ]
+            },
+            {
+              "source": "a20.com",
+              "uids": [
+                {
+                  "id": "id-20"
+                }
+              ]
+            },
+            {
+              "source": "a21.com",
+              "uids": [
+                {
+                  "id": "id-21"
+                }
+              ]
+            },
+            {
+              "source": "a22.com",
+              "uids": [
+                {
+                  "id": "id-22"
+                }
+              ]
+            },
+            {
+              "source": "a23.com",
+              "uids": [
+                {
+                  "id": "id-23"
+                }
+              ]
+            },
+            {
+              "source": "a24.com",
+              "uids": [
+                {
+                  "id": "id-24"
+                }
+              ]
+            },
+            {
+              "source": "a25.com",
+              "uids": [
+                {
+                  "id": "id-25"
+                }
+              ]
+            },
+            {
+              "source": "a26.com",
+              "uids": [
+                {
+                  "id": "id-26"
+                }
+              ]
+            },
+            {
+              "source": "a27.com",
+              "uids": [
+                {
+                  "id": "id-27"
+                }
+              ]
+            },
+            {
+              "source": "a28.com",
+              "uids": [
+                {
+                  "id": "id-28"
+                }
+              ]
+            },
+            {
+              "source": "a29.com",
+              "uids": [
+                {
+                  "id": "id-29"
+                }
+              ]
+            },
+            {
+              "source": "a30.com",
+              "uids": [
+                {
+                  "id": "id-30"
+                }
+              ]
+            },
+            {
+              "source": "a31.com",
+              "uids": [
+                {
+                  "id": "id-31"
+                }
+              ]
+            },
+            {
+              "source": "a32.com",
+              "uids": [
+                {
+                  "id": "id-32"
+                }
+              ]
+            },
+            {
+              "source": "a33.com",
+              "uids": [
+                {
+                  "id": "id-33"
+                }
+              ]
+            },
+            {
+              "source": "a34.com",
+              "uids": [
+                {
+                  "id": "id-34"
+                }
+              ]
+            },
+            {
+              "source": "a35.com",
+              "uids": [
+                {
+                  "id": "id-35"
+                }
+              ]
+            },
+            {
+              "source": "a36.com",
+              "uids": [
+                {
+                  "id": "id-36"
+                }
+              ]
+            },
+            {
+              "source": "a37.com",
+              "uids": [
+                {
+                  "id": "id-37"
+                }
+              ]
+            },
+            {
+              "source": "a38.com",
+              "uids": [
+                {
+                  "id": "id-38"
+                }
+              ]
+            },
+            {
+              "source": "a39.com",
+              "uids": [
+                {
+                  "id": "id-39"
+                }
+              ]
+            },
+            {
+              "source": "a40.com",
+              "uids": [
+                {
+                  "id": "id-40"
+                }
+              ]
+            },
+            {
+              "source": "a41.com",
+              "uids": [
+                {
+                  "id": "id-41"
+                }
+              ]
+            },
+            {
+              "source": "a42.com",
+              "uids": [
+                {
+                  "id": "id-42"
+                }
+              ]
+            },
+            {
+              "source": "a43.com",
+              "uids": [
+                {
+                  "id": "id-43"
+                }
+              ]
+            },
+            {
+              "source": "a44.com",
+              "uids": [
+                {
+                  "id": "id-44"
+                }
+              ]
+            },
+            {
+              "source": "a45.com",
+              "uids": [
+                {
+                  "id": "id-45"
+                }
+              ]
+            },
+            {
+              "source": "a46.com",
+              "uids": [
+                {
+                  "id": "id-46"
+                }
+              ]
+            },
+            {
+              "source": "x.com",
+              "uids": [
+                {
+                  "id": "a"
+                }
+              ]
+            },
+            {
+              "source": "x.com",
+              "inserter": "i.com",
+              "uids": [
+                {
+                  "id": "a"
+                }
+              ]
+            }
+          ]
+        },
+        "impIDs": [
+          "1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "headers": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
