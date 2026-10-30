@@ -184,6 +184,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/openx"
 	"github.com/prebid/prebid-server/v4/adapters/operaads"
 	"github.com/prebid/prebid-server/v4/adapters/optidigital"
+	"github.com/prebid/prebid-server/v4/adapters/optima"
 	"github.com/prebid/prebid-server/v4/adapters/oraki"
 	"github.com/prebid/prebid-server/v4/adapters/orbidder"
 	"github.com/prebid/prebid-server/v4/adapters/outbrain"
@@ -474,6 +475,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOpenx:             openx.Builder,
 		openrtb_ext.BidderOperaads:          operaads.Builder,
 		openrtb_ext.BidderOptidigital:       optidigital.Builder,
+		openrtb_ext.BidderOptima:            optima.Builder,
 		openrtb_ext.BidderOraki:             oraki.Builder,
 		openrtb_ext.BidderOrbidder:          orbidder.Builder,
 		openrtb_ext.BidderOutbrain:          outbrain.Builder,
