@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adspiro Adapter Params",
+  "description": "A schema which validates params accepted by the Adspiro adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "Adspiro publisher ID",
+      "minLength": 1
+    }
+  },
+  "required": ["publisherId"]
+}
