@@ -1750,27 +1750,29 @@ func TestGetExtCacheInstructions(t *testing.T) {
 		outCacheInstructions extCacheInstructions
 	}{
 		{
-			desc:             "Nil request ext, all cache flags false except for returnCreative that defaults to true",
+			desc:             "Nil request ext, all cache flags false except for returnBidsCreative/returnVastCreative that default to true",
 			requestExtPrebid: nil,
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      false,
-				cacheVAST:      false,
-				returnCreative: true,
+				cacheBids:          false,
+				cacheVAST:          false,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil request ext, nil Cache field, all cache flags false except for returnCreative that defaults to true",
+			desc: "Non-nil request ext, nil Cache field, all cache flags false except for returnBidsCreative/returnVastCreative that default to true",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: nil,
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      false,
-				cacheVAST:      false,
-				returnCreative: true,
+				cacheBids:          false,
+				cacheVAST:          false,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil Cache field, both ExtRequestPrebidCacheBids and ExtRequestPrebidCacheVAST nil returnCreative that defaults to true",
+			desc: "Non-nil Cache field, both ExtRequestPrebidCacheBids and ExtRequestPrebidCacheVAST nil, returnBidsCreative/returnVastCreative default to true",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    nil,
@@ -1778,13 +1780,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      false,
-				cacheVAST:      false,
-				returnCreative: true,
+				cacheBids:          false,
+				cacheVAST:          false,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST with unspecified ReturnCreative field, cacheVAST = true and returnCreative defaults to true",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST with unspecified ReturnCreative field, cacheVAST = true and returnVastCreative defaults to true; returnBidsCreative unaffected",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    nil,
@@ -1792,13 +1795,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      false,
-				cacheVAST:      true,
-				returnCreative: true, // default value
+				cacheBids:          false,
+				cacheVAST:          true,
+				returnBidsCreative: true, // default value
+				returnVastCreative: true, // default value
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST where ReturnCreative is set to false, cacheVAST = true and returnCreative = false",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST where ReturnCreative is set to false, cacheVAST = true and only returnVastCreative = false; returnBidsCreative stays at its true default",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    nil,
@@ -1806,13 +1810,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      false,
-				cacheVAST:      true,
-				returnCreative: false,
+				cacheBids:          false,
+				cacheVAST:          true,
+				returnBidsCreative: true,
+				returnVastCreative: false,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST where ReturnCreative is set to true, cacheVAST = true and returnCreative = true",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST where ReturnCreative is set to true, cacheVAST = true and returnVastCreative = true",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    nil,
@@ -1820,13 +1825,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      false,
-				cacheVAST:      true,
-				returnCreative: true,
+				cacheBids:          false,
+				cacheVAST:          true,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids with unspecified ReturnCreative field, cacheBids = true and returnCreative defaults to true",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids with unspecified ReturnCreative field, cacheBids = true and returnBidsCreative defaults to true",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
@@ -1834,13 +1840,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      false,
-				returnCreative: true, // default value
+				cacheBids:          true,
+				cacheVAST:          false,
+				returnBidsCreative: true, // default value
+				returnVastCreative: true, // default value
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids where ReturnCreative is set to false, cacheBids = true and returnCreative  = false",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids where ReturnCreative is set to false, cacheBids = true and only returnBidsCreative = false; returnVastCreative stays at its true default",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
@@ -1848,13 +1855,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      false,
-				returnCreative: false,
+				cacheBids:          true,
+				cacheVAST:          false,
+				returnBidsCreative: false,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids where ReturnCreative is set to true, cacheBids = true and returnCreative  = true",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids where ReturnCreative is set to true, cacheBids = true and returnBidsCreative = true",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
@@ -1862,9 +1870,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      false,
-				returnCreative: true,
+				cacheBids:          true,
+				cacheVAST:          false,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
@@ -1876,13 +1885,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      true,
-				returnCreative: true,
+				cacheBids:          true,
+				cacheVAST:          true,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids and ExtRequest.Cache.ExtRequestPrebidCacheVAST sets ReturnCreative to true, all extCacheInstructions fields set to true",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids and ExtRequest.Cache.ExtRequestPrebidCacheVAST both set ReturnCreative to true, all extCacheInstructions fields set to true",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
@@ -1890,13 +1900,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      true,
-				returnCreative: true,
+				cacheBids:          true,
+				cacheVAST:          true,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheBids and ExtRequest.Cache.ExtRequestPrebidCacheVAST sets ReturnCreative to false, returnCreative = false",
+			desc: "Only ExtRequestPrebidCacheVAST sets ReturnCreative to false; returnBidsCreative (unspecified) stays at its true default and is unaffected by the VAST-only setting",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{},
@@ -1904,13 +1915,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      true,
-				returnCreative: false,
+				cacheBids:          true,
+				cacheVAST:          true,
+				returnBidsCreative: true,
+				returnVastCreative: false,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids sets ReturnCreative to true, all extCacheInstructions fields set to true",
+			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids both set ReturnCreative to true, all extCacheInstructions fields set to true",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
@@ -1918,13 +1930,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      true,
-				returnCreative: true,
+				cacheBids:          true,
+				cacheVAST:          true,
+				returnBidsCreative: true,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids sets ReturnCreative to false, returnCreative = false",
+			desc: "Only ExtRequestPrebidCacheBids sets ReturnCreative to false; returnVastCreative (unspecified) stays at its true default and is unaffected by the Bids-only setting",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
@@ -1932,13 +1945,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      true,
-				returnCreative: false,
+				cacheBids:          true,
+				cacheVAST:          true,
+				returnBidsCreative: false,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids set different ReturnCreative values, returnCreative = true because one of them is true",
+			desc: "ExtRequestPrebidCacheVAST and ExtRequestPrebidCacheBids set different ReturnCreative values: each flag is applied independently, not OR-merged into a single value",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolFalse},
@@ -1946,13 +1960,14 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      true,
-				returnCreative: true,
+				cacheBids:          true,
+				cacheVAST:          true,
+				returnBidsCreative: false,
+				returnVastCreative: true,
 			},
 		},
 		{
-			desc: "Non-nil ExtRequest.Cache.ExtRequestPrebidCacheVAST and ExtRequest.Cache.ExtRequestPrebidCacheBids set different ReturnCreative values, returnCreative = true because one of them is true",
+			desc: "ExtRequestPrebidCacheVAST and ExtRequestPrebidCacheBids set different ReturnCreative values (reversed): each flag is applied independently, not OR-merged into a single value",
 			requestExtPrebid: &openrtb_ext.ExtRequestPrebid{
 				Cache: &openrtb_ext.ExtRequestPrebidCache{
 					Bids:    &openrtb_ext.ExtRequestPrebidCacheBids{ReturnCreative: boolTrue},
@@ -1960,9 +1975,10 @@ func TestGetExtCacheInstructions(t *testing.T) {
 				},
 			},
 			outCacheInstructions: extCacheInstructions{
-				cacheBids:      true,
-				cacheVAST:      true,
-				returnCreative: true,
+				cacheBids:          true,
+				cacheVAST:          true,
+				returnBidsCreative: true,
+				returnVastCreative: false,
 			},
 		},
 	}
@@ -1972,7 +1988,8 @@ func TestGetExtCacheInstructions(t *testing.T) {
 
 		assert.Equal(t, test.outCacheInstructions.cacheBids, cacheInstructions.cacheBids, "%s. Unexpected shouldCacheBids value. \n", test.desc)
 		assert.Equal(t, test.outCacheInstructions.cacheVAST, cacheInstructions.cacheVAST, "%s. Unexpected shouldCacheVAST value. \n", test.desc)
-		assert.Equal(t, test.outCacheInstructions.returnCreative, cacheInstructions.returnCreative, "%s. Unexpected returnCreative value. \n", test.desc)
+		assert.Equal(t, test.outCacheInstructions.returnBidsCreative, cacheInstructions.returnBidsCreative, "%s. Unexpected returnBidsCreative value. \n", test.desc)
+		assert.Equal(t, test.outCacheInstructions.returnVastCreative, cacheInstructions.returnVastCreative, "%s. Unexpected returnVastCreative value. \n", test.desc)
 	}
 }
 
