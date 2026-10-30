@@ -1,0 +1,107 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "1",
+      "bundle": "com.example",
+      "publisher": {
+        "id": "pub-id"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 320,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "assetKey": "OGY",
+            "adUnitId": "123"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://ogury.example.com",
+        "body": {
+          "app": {
+            "id": "1",
+            "bundle": "com.example",
+            "publisher": {
+              "id": "pub-id"
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-id",
+              "tagid": "imp-id",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 320,
+                "h": 480
+              },
+              "ext": {
+                "assetKey": "OGY",
+                "adUnitId": "123"
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "seat",
+              "bid": [{
+                "id": "some-UUID",
+                "impid": "imp-id",
+                "price": 0.5,
+                "adm": "<VAST version=\"3.0\"></VAST>",
+                "crid": "crid_10",
+                "h": 480,
+                "w": 320,
+                "mtype": 2
+              }]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "some-UUID",
+            "impid": "imp-id",
+            "price": 0.5,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "crid_10",
+            "h": 480,
+            "w": 320,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
