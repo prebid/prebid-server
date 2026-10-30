@@ -221,7 +221,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_1.3"
+                        "client": "prebid_server_1.4"
                     }
                 },
                 "impIDs":["1_1","1_2"]
@@ -247,6 +247,7 @@
                                     "crid": "CR69381",
                                     "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
                                     "impid": "1_1",
+                                    "mtype": 2,
                                     "iurl": "https://iurl",
                                     "nurl": "https://nurl",
                                     "price": 0.01,
@@ -289,6 +290,7 @@
                                     "crid": "CR69381",
                                     "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
                                     "impid": "1_2",
+                                    "mtype": 2,
                                     "iurl": "https://iurl",
                                     "nurl": "https://nurl",
                                     "price": 0.01,
@@ -344,6 +346,7 @@
                         "crid": "CR69381",
                         "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
                         "impid": "1_1",
+                        "mtype": 2,
                         "iurl": "https://iurl",
                         "nurl": "https://nurl",
                         "price": 0.01,
@@ -389,6 +392,7 @@
                         "crid": "CR69381",
                         "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
                         "impid": "1_2",
+                        "mtype": 2,
                         "iurl": "https://iurl",
                         "nurl": "https://nurl",
                         "price": 0.01,

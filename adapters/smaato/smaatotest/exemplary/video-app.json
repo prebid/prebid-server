@@ -165,7 +165,7 @@
                         "keywords": "keywords"
                     },
                     "ext": {
-                        "client": "prebid_server_1.3"
+                        "client": "prebid_server_1.4"
                     }
                 },
                 "impIDs":["postbid_iframe"]
@@ -191,6 +191,7 @@
                                     "crid": "CR69381",
                                     "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
                                     "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                                    "mtype": 2,
                                     "iurl": "https://iurl",
                                     "nurl": "https://nurl",
                                     "price": 0.01,
@@ -220,6 +221,7 @@
                         "crid": "CR69381",
                         "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
                         "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                        "mtype": 2,
                         "iurl": "https://iurl",
                         "nurl": "https://nurl",
                         "price": 0.01,
