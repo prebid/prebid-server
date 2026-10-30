@@ -1,7 +1,7 @@
 endpoint: "https://srv.aso1.net/pbs/bidder?zid={{.ZoneID}}"
 maintainer:
   email: "support@adsrv.org"
-
+endpointCompression: gzip
 capabilities:
   app:
     mediaTypes:
