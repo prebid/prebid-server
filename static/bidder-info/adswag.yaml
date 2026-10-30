@@ -1,0 +1,23 @@
+endpoint: "https://bid.adswag.ai/prebid/bid"
+maintainer:
+  email: prebid@adswag.ai
+gvlVendorID: 1417
+userSync:
+  redirect:
+    url: "https://ev.adswag.ai/sync/pixel?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+modifyingVastXmlAllowed: false
+openrtb:
+  version: 2.6
+  gpp-supported: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
