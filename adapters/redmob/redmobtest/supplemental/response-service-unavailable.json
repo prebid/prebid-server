@@ -1,0 +1,155 @@
+{
+  "mockBidRequest": {
+    "id": "req-6c2d9f81",
+    "imp": [
+      {
+        "displaymanager": "prebid-mobile",
+        "displaymanagerver": "2.2.3",
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ],
+          "api": [
+            3,
+            5
+          ]
+        },
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "supplyPartnerId": 2101
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-2002",
+      "name": "Example Game",
+      "bundle": "com.example.game",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+      "ver": "4.12.0",
+      "cat": [
+        "IAB9-30"
+      ],
+      "publisher": {
+        "id": "pub-7102"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+      "ip": "198.51.100.77",
+      "geo": {
+        "country": "NGA",
+        "type": 2
+      },
+      "devicetype": 4,
+      "os": "Android",
+      "osv": "14",
+      "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+      "lmt": 0,
+      "connectiontype": 6,
+      "language": "en"
+    },
+    "source": {
+      "tid": "c0ffee00-0000-4000-8000-req-6c2d9f81"
+    },
+    "tmax": 800
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.redmob.example/prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-6c2d9f81",
+          "imp": [
+            {
+              "displaymanager": "prebid-mobile",
+              "displaymanagerver": "2.2.3",
+              "id": "1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ],
+                "api": [
+                  3,
+                  5
+                ],
+                "w": 320,
+                "h": 50
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "supplyPartnerId": 2101
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "app-2002",
+            "name": "Example Game",
+            "bundle": "com.example.game",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+            "ver": "4.12.0",
+            "cat": [
+              "IAB9-30"
+            ],
+            "publisher": {
+              "id": "pub-7102"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+            "ip": "198.51.100.77",
+            "geo": {
+              "country": "NGA",
+              "type": 2
+            },
+            "devicetype": 4,
+            "os": "Android",
+            "osv": "14",
+            "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+            "lmt": 0,
+            "connectiontype": 6,
+            "language": "en"
+          },
+          "source": {
+            "tid": "c0ffee00-0000-4000-8000-req-6c2d9f81"
+          },
+          "tmax": 800,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ]
+      },
+      "mockResponse": {
+        "status": 503
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info.",
+      "comparison": "literal"
+    }
+  ]
+}
