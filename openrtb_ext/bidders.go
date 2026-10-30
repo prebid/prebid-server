@@ -140,6 +140,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGrid,
 	BidderGumGum,
 	BidderHuaweiAds,
+	BidderHypeLab,
 	BidderImds,
 	BidderImpactify,
 	BidderImprovedigital,
@@ -534,6 +535,7 @@ const (
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
+	BidderHypeLab           BidderName = "hypelab"
 	BidderImds              BidderName = "imds"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
