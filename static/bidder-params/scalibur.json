@@ -1,12 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Scalibur Adapter Params",
-  "description": "A valid BidderParams object for the Scalibur adapter",
+  "description": "A valid BidderParams object for the Scalibur adapter. Every impression must resolve a placement: either set placementId here, or set imp.tagid on the ad unit. An impression with neither is not served.",
   "type": "object",
   "properties": {
     "placementId": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Placement id, applied to imp.tagid. Optional: may instead be supplied per ad unit as imp.tagid. At least one source must resolve or the imp is not served."
     },
     "bidfloor": {
       "type": "number",
@@ -14,9 +15,23 @@
     },
     "bidfloorcur": {
       "type": "string"
+    },
+    "host": {
+      "type": "string",
+      "description": "Fixed routing pool for the Scalibur endpoint, selected from this closed set. The endpoint domain is fixed, so the only hostnames reachable are the ones listed here. Set by the Prebid Server host, not by publishers; omitted it defaults to srv, which is the standard endpoint. Impressions naming different pools are sent as separate requests, one per pool.",
+      "enum": [
+        "srv",
+        "pool1",
+        "pool2",
+        "pool3",
+        "pool4",
+        "pool5",
+        "pool6",
+        "pool7",
+        "pool8",
+        "pool9",
+        "pool10"
+      ]
     }
-  },
-  "required": [
-    "placementId"
-  ]
+  }
 }
