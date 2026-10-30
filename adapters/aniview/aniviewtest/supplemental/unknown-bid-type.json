@@ -1,0 +1,90 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "https://publisher.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "ext": {
+          "bidder": {
+            "AV_PUBLISHERID": "1234567890abcdef12345678",
+            "AV_CHANNELID": "abcdef1234567890abcdef12"
+          }
+        },
+        "banner": {
+          "w": 300,
+          "h": 250
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.aniview.com/sspRTB2",
+        "body": {
+          "id": "req-id",
+          "site": {
+            "page": "https://publisher.com/page"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "ext": {
+                "bidder": {
+                  "AV_PUBLISHERID": "1234567890abcdef12345678",
+                  "AV_CHANNELID": "abcdef1234567890abcdef12"
+                }
+              },
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "tagid": "abcdef1234567890abcdef12"
+            }
+          ],
+          "ext": {
+            "aniview": {
+              "pbs": 1
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "other-imp",
+                  "price": 1.0,
+                  "adm": "plain text creative"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Could not define bid type for imp: other-imp",
+      "comparison": "literal"
+    }
+  ]
+}
