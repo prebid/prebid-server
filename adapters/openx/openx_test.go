@@ -57,7 +57,11 @@ func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789","buyer_id":"123-456"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 789},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserName: "123-456", NetworkID: 456, BrandID: 789},
+		},
+		{
+			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"OpenX Advertiser"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserName: "OpenX Advertiser"},
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123","dsp_id":"456"}`)},
