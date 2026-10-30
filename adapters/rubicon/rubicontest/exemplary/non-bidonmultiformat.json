@@ -163,10 +163,7 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "type": "banner",
-                "meta": {
-                  "seat": "rubicon"
-                }
+                "type": "banner"
               }
             }
           },

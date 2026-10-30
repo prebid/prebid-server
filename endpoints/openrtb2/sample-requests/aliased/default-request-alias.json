@@ -41,7 +41,8 @@
               "origbidcur": "USD",
               "prebid": {
                 "meta": {
-                  "adaptercode": "appnexus"
+                  "adaptercode": "appnexus",
+                  "seat": "appnexus"
                 },
                 "type": "banner"
               }
