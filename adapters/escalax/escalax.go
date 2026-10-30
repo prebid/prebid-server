@@ -5,21 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
-	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-type adapter struct {
-	endpoint *template.Template
-}
+type adapter struct{}
 
 const defaultRegion = "us"
 
@@ -36,12 +31,7 @@ var sspRegionSubdomains = map[string]string{
 }
 
 func Builder(bidderName openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
-	endpointTemplate, err := template.New("endpointTemplate").Parse(cfg.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	return &adapter{endpoint: endpointTemplate}, nil
+	return &adapter{}, nil
 }
 
 func impError(impID string, err error) error {
@@ -61,7 +51,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		endpoint, err := a.resolveEndpoint(ext)
+		endpoint, err := resolveEndpoint(ext)
 		if err != nil {
 			errs = append(errs, impError(imp.ID, err))
 			continue
@@ -127,7 +117,7 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtEscalax, error) {
 	return &escalaxExt, nil
 }
 
-func (a *adapter) resolveEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
+func resolveEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 	hasExchangeParams := ext.AccountID != nil || ext.SourceID != nil
 	isExchange := ext.AccountID != nil && ext.SourceID != nil
 	isSsp := ext.SupplyPlacementID != nil
@@ -138,9 +128,9 @@ func (a *adapter) resolveEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 			Message: "provide either accountId and sourceId, or supplyPlacementId, not both",
 		}
 	case isExchange:
-		return a.buildExchangeEndpoint(ext)
+		return buildExchangeEndpoint(ext)
 	case isSsp:
-		return a.buildSspEndpoint(ext)
+		return buildSspEndpoint(ext)
 	case hasExchangeParams:
 		return "", &errortypes.BadInput{
 			Message: "accountId and sourceId must be provided together",
@@ -152,46 +142,39 @@ func (a *adapter) resolveEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 	}
 }
 
-func (a *adapter) buildExchangeEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
+func buildExchangeEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 	subdomain, err := resolveSubdomain(exchangeRegionSubdomains, ext.Region)
 	if err != nil {
 		return "", err
 	}
 
-	return a.buildURL(subdomain, "/", map[string]string{
-		"partner": *ext.SourceID,
-		"token":   *ext.AccountID,
-		"type":    "pbs",
-	})
+	endpointURL := &url.URL{
+		Scheme: "https",
+		Host:   subdomain + ".escalax.io",
+		Path:   "/",
+	}
+	query := endpointURL.Query()
+	query.Set("partner", *ext.SourceID)
+	query.Set("token", *ext.AccountID)
+	query.Set("type", "pbs")
+	endpointURL.RawQuery = query.Encode()
+
+	return endpointURL.String(), nil
 }
 
-func (a *adapter) buildSspEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
+func buildSspEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 	subdomain, err := resolveSubdomain(sspRegionSubdomains, ext.Region)
 	if err != nil {
 		return "", err
 	}
 
-	return a.buildURL(subdomain, "/pbsb", map[string]string{
-		"placementId": *ext.SupplyPlacementID,
-	})
-}
-
-func (a *adapter) buildURL(subdomain string, path string, params map[string]string) (string, error) {
-	base, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{Host: subdomain})
-	if err != nil {
-		return "", fmt.Errorf("unable to resolve endpoint macros: %v", err)
+	endpointURL := &url.URL{
+		Scheme: "https",
+		Host:   subdomain + ".escalax.io",
+		Path:   "/pbsb",
 	}
-
-	endpointURL, err := url.Parse(base)
-	if err != nil {
-		return "", fmt.Errorf("invalid endpoint %q: %v", base, err)
-	}
-
-	endpointURL.Path = strings.TrimSuffix(endpointURL.Path, "/") + path
 	query := endpointURL.Query()
-	for key, value := range params {
-		query.Set(key, value)
-	}
+	query.Set("placementId", *ext.SupplyPlacementID)
 	endpointURL.RawQuery = query.Encode()
 
 	return endpointURL.String(), nil
