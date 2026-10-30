@@ -42,6 +42,9 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"networkId":73}`,
 	`{"networkId":73,"siteId":1,"pageId":2,"formatId":3}`,
+	`{"networkId":73,"placementuuid":"0ac7b8e4-8f35-4d1b-9a3c-2b7c0f7d9e11"}`,
+	`{"networkId":73,"siteId":1,"pageId":2,"formatId":3,"placementuuid":"0ac7b8e4-8f35-4d1b-9a3c-2b7c0f7d9e11"}`,
+	`{"networkId":73,"placementuuid":"not-a-uuid"}`,
 }
 
 var invalidParams = []string{
@@ -58,4 +61,7 @@ var invalidParams = []string{
 	`{"networkId":73,"pageId":2,"formatId":3}`,
 	`{"networkId":73,"siteId":1,"formatId":3}`,
 	`{"networkId":73,"siteId":1,"pageId":2}`,
+	`{"networkId":73,"placementuuid":123}`,
+	`{"networkId":73,"placementuuid":null}`,
+	`{"networkId":73,"placementuuid":"0ac7b8e4-8f35-4d1b-9a3c-2b7c0f7d9e11","siteId":1}`,
 }
