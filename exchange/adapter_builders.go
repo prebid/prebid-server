@@ -106,6 +106,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/epom"
 	"github.com/prebid/prebid-server/v4/adapters/escalax"
 	"github.com/prebid/prebid-server/v4/adapters/eskimi"
+	exgeniee "github.com/prebid/prebid-server/v4/adapters/ex_geniee"
 	"github.com/prebid/prebid-server/v4/adapters/exco"
 	"github.com/prebid/prebid-server/v4/adapters/ezoic"
 	"github.com/prebid/prebid-server/v4/adapters/feedad"
@@ -394,6 +395,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderEscalax:           escalax.Builder,
 		openrtb_ext.BidderEskimi:            eskimi.Builder,
 		openrtb_ext.BidderExco:              exco.Builder,
+		openrtb_ext.BidderExGeniee:          exgeniee.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
 		openrtb_ext.BidderEzoic:             ezoic.Builder,
 		openrtb_ext.BidderFeedAd:            feedad.Builder,

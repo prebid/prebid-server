@@ -1,0 +1,33 @@
+endpoint: "https://aladdin.genieesspv.jp/yie/ld/exchange?id={{.PartnerId}}"
+endpointCompression: gzip
+maintainer:
+  email: "aladdin-back@geniee.co.jp"
+# Geniee Exchange does not accept traffic to which GDPR or UK GDPR applies, so
+# there is no gvlVendorID and the EEA and the UK are excluded from the geoscope.
+# This bidder does not operate globally. Please consider setting "disabled: true" in European datacenters.
+geoscope:
+  - "!EEA"
+  - "!GBR"
+openrtb:
+  version: 2.6
+  # Geniee Exchange takes an imp that carries both banner and video as it is and
+  # answers with the mtype it bid on, so prebid-server must not narrow such an
+  # imp down to one format before calling the adapter.
+  multiformat-supported: true
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://cs.gssprt.jp/yie/ld/user_sync?prebid_server=1&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&rurl={{.RedirectURL}}"
+    userMacro: "{gid}"
+  # When GDPR applies, prebid-server does not send the sync at all.
+  skipwhen:
+    gdpr: true
