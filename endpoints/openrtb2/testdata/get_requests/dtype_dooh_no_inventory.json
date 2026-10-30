@@ -1,0 +1,18 @@
+{
+  "description": "dtype=8 with no inventory params (no pubid/page/bundle) injects dooh:{} to prevent setSiteImplicitly from creating a site",
+  "query": "srid=testbare&dtype=8",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "device": {"devicetype": 8},
+    "dooh": {},
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testbare"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "description": "req.user.data.0.id overrides an element of user.data declared in the stored request",
+  "httpMethod": "GET",
+  "query": "srid=stored-user-data&req.user.data.0.id=seg-new",
+  "generatedRequestId": "test-get-uuid-user-data-index",
+  "mockStoredRequests": {
+    "stored-user-data": {
+      "site": {"page": "https://example.com"},
+      "user": {"data": [{"id": "seg-orig", "name": "provider"}]},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-user-data-index",
+    "seatbid": [
+      {
+        "bid": [{"id": "appnexus-bid", "impid": "imp1", "price": 1.50}],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  },
+  "expectedValidatedBidRequest": {
+    "id": "test-get-uuid-user-data-index",
+    "imp": [
+      {
+        "id": "imp1",
+        "banner": {"format": [{"w": 300, "h": 250}]},
+        "secure": 1,
+        "ext": {"prebid": {"bidder": {"appnexus": {"placementId": 12345}}}}
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com",
+      "publisher": {"domain": "example.com"},
+      "ext": {"amp": 0}
+    },
+    "user": {"data": [{"id": "seg-new", "name": "provider"}]},
+    "device": {"ip": "192.0.2.1"},
+    "at": 1,
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored-user-data"},
+        "server": {"externalurl": "", "gvlid": 0, "datacenter": "", "http_method": "GET"}
+      }
+    }
+  }
+}
