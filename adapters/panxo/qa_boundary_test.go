@@ -295,6 +295,53 @@ func TestQAStatusHandlingDoesNotParseErrorBody(t *testing.T) {
 	}
 }
 
+func TestQAStoredResponsesWithoutImpressions(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		mtype    openrtb2.MarkupType
+		wantType openrtb_ext.BidType
+	}{
+		{"banner", openrtb2.MarkupBanner, openrtb_ext.BidTypeBanner},
+		{"video", openrtb2.MarkupVideo, openrtb_ext.BidTypeVideo},
+		{"native", openrtb2.MarkupNative, openrtb_ext.BidTypeNative},
+		{"missing mtype", 0, ""},
+		{"unsupported audio", openrtb2.MarkupAudio, ""},
+		{"unknown mtype", 99, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body, err := json.Marshal(openrtb2.BidResponse{
+				ID: "stored-response", Cur: "USD",
+				SeatBid: []openrtb2.SeatBid{{Bid: []openrtb2.Bid{{
+					ID: "stored-bid", ImpID: "stored-imp", Price: 1.25,
+					MType: tc.mtype, AdM: "stored-markup",
+				}}}},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, errs := qaBidder(t).MakeBids(
+				&openrtb2.BidRequest{ID: "live-auction"},
+				&adapters.RequestData{Method: http.MethodPost},
+				&adapters.ResponseData{StatusCode: http.StatusOK, Body: body},
+			)
+			if tc.wantType == "" {
+				var badResponse *errortypes.BadServerResponse
+				if len(errs) != 1 || !errors.As(errs[0], &badResponse) || result == nil || len(result.Bids) != 0 {
+					t.Fatalf("expected invalid stored response rejection: %#v %v", result, errs)
+				}
+				return
+			}
+			if len(errs) != 0 || result == nil || len(result.Bids) != 1 {
+				t.Fatalf("expected one stored bid: %#v %v", result, errs)
+			}
+			bid := result.Bids[0]
+			if bid.BidType != tc.wantType || bid.Bid.ImpID != "stored-imp" {
+				t.Fatalf("expected %s with original stored impid, got %#v", tc.wantType, bid)
+			}
+		})
+	}
+}
+
 func TestQAStoredResponseExceptionDoesNotWeakenLiveValidation(t *testing.T) {
 	request := &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "live", Banner: &openrtb2.Banner{}}}}
 	for _, tc := range []struct {

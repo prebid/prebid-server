@@ -304,10 +304,10 @@ func (*adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.Req
 		bidResponse.Currency = bidResp.Cur
 	}
 
-	// Core represents a stored bidder response with an empty URI and no
-	// outbound impression IDs. Its impression was removed from the request,
-	// and core restores impid after MakeBids. Require explicit mtype for that
-	// path; retain impression membership checks for real HTTP responses.
+	// prepareStoredResponse in exchange/bidder.go creates RequestData with an
+	// empty URI and no ImpIDs. Its impression was removed from the request;
+	// core handles optional impid replacement after MakeBids. Require explicit
+	// mtype here and retain impression membership checks for HTTP responses.
 	storedResponse := requestData != nil && requestData.Uri == "" && len(requestData.ImpIDs) == 0
 
 	var errs []error
