@@ -1,0 +1,203 @@
+{
+  "mockBidRequest": {
+    "id": "request-app-ctv",
+    "imp": [
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 6,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 1920,
+          "h": 1080,
+          "plcmt": 1,
+          "api": [
+            2,
+            7
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "property-ctv"
+          },
+          "gpid": "/ctv/instream"
+        }
+      },
+      {
+        "id": "imp-native",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "propertyKey": "property-ctv"
+          },
+          "gpid": "/app/native"
+        }
+      }
+    ],
+    "app": {
+      "id": "ctv-app-1",
+      "bundle": "ai.panxo.ctv",
+      "publisher": {
+        "id": "publisher-1"
+      }
+    },
+    "device": {
+      "devicetype": 3,
+      "make": "Example TV",
+      "model": "CTV-1",
+      "ifa": "ifa-value"
+    },
+    "user": {
+      "buyeruid": "panxo-user",
+      "data": [
+        {
+          "name": "panxo.ai",
+          "segment": [
+            {
+              "id": "intent-7"
+            }
+          ]
+        }
+      ]
+    },
+    "cur": [
+      "EUR"
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://panxo-sys.com/openrtb/2.6/bid?key=property-ctv&source=prebid-server",
+        "impIDs": [
+          "imp-video",
+          "imp-native"
+        ],
+        "body": {
+          "id": "request-app-ctv",
+          "imp": [
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 6,
+                "maxduration": 30,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 1920,
+                "h": 1080,
+                "plcmt": 1,
+                "api": [
+                  2,
+                  7
+                ]
+              }
+            },
+            {
+              "id": "imp-native",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}}]}",
+                "ver": "1.2"
+              }
+            }
+          ],
+          "app": {
+            "id": "ctv-app-1",
+            "bundle": "ai.panxo.ctv",
+            "publisher": {
+              "id": "publisher-1"
+            }
+          },
+          "device": {
+            "devicetype": 3,
+            "make": "Example TV",
+            "model": "CTV-1"
+          },
+          "user": {},
+          "cur": [
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-app-ctv",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "panxo",
+              "bid": [
+                {
+                  "id": "bid-video",
+                  "impid": "imp-video",
+                  "price": 8.5,
+                  "mtype": 2,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "dur": 15,
+                  "adomain": [
+                    "advertiser.example"
+                  ]
+                },
+                {
+                  "id": "bid-native",
+                  "impid": "imp-native",
+                  "price": 3.25,
+                  "mtype": 4,
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Panxo native\"}}],\"link\":{\"url\":\"https://advertiser.example/\"}}"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-video",
+            "impid": "imp-video",
+            "price": 8.5,
+            "mtype": 2,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "dur": 15,
+            "adomain": [
+              "advertiser.example"
+            ]
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-native",
+            "impid": "imp-native",
+            "price": 3.25,
+            "mtype": 4,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Panxo native\"}}],\"link\":{\"url\":\"https://advertiser.example/\"}}"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
