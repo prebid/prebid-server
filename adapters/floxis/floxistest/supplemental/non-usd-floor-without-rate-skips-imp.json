@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "bidfloor": 1.0,
+        "bidfloorcur": "GBP",
+        "ext": { "bidder": { "seat": "pub-seat-1" } }
+      },
+      {
+        "id": "imp-2",
+        "banner": { "format": [{ "w": 728, "h": 90 }] },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "ext": { "bidder": { "seat": "pub-seat-1" } }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": { "EUR": { "USD": 1.2 } },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-e.floxis.tech/pbs?seat=pub-seat-1",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-2",
+              "banner": { "format": [{ "w": 728, "h": 90 }] },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "ext": { "bidder": { "seat": "pub-seat-1" } }
+            }
+          ],
+          "site": { "id": "271", "domain": "example.com" },
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": { "EUR": { "USD": 1.2 } },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs": ["imp-2"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'GBP' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}

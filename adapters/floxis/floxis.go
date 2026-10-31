@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -12,6 +14,8 @@ import (
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
+
+const bidderCurrency = "USD"
 
 type adapter struct {
 	endpoint string
@@ -30,6 +34,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for _, imp := range request.Imp {
 		impExt, err := parseImpExt(imp)
 		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if err := convertBidFloor(&imp, requestInfo); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -53,6 +61,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		requestCopy := *request
 		requestCopy.Imp = imps
+		if len(request.Cur) > 0 && !slices.Contains(request.Cur, bidderCurrency) {
+			requestCopy.Cur = []string{bidderCurrency}
+		}
 
 		body, err := jsonutil.Marshal(requestCopy)
 		if err != nil {
@@ -103,13 +114,30 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errs = append(errs, typeErr)
 				continue
 			}
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			typedBid := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: bidType,
-			})
+			}
+			if len(seatBid.Bid[i].ADomain) > 0 {
+				typedBid.BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdvertiserDomains: seatBid.Bid[i].ADomain}
+			}
+			bidResponse.Bids = append(bidResponse.Bids, typedBid)
 		}
 	}
 	return bidResponse, errs
+}
+
+func convertBidFloor(imp *openrtb2.Imp, requestInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, bidderCurrency) {
+		return nil
+	}
+	floor, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, bidderCurrency)
+	if err != nil {
+		return err
+	}
+	imp.BidFloor = floor
+	imp.BidFloorCur = bidderCurrency
+	return nil
 }
 
 func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpFloxis, error) {
