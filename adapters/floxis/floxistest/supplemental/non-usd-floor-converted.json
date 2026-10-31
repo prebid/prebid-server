@@ -1,0 +1,96 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "cur": ["EUR"],
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "bidfloor": 1.0,
+        "bidfloorcur": "EUR",
+        "ext": { "bidder": { "seat": "pub-seat-1" } }
+      }
+    ],
+    "site": { "id": "271", "domain": "example.com" },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": { "EUR": { "USD": 1.2 } },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-e.floxis.tech/pbs?seat=pub-seat-1",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "bidfloor": 1.2,
+              "bidfloorcur": "USD",
+              "ext": { "bidder": { "seat": "pub-seat-1" } }
+            }
+          ],
+          "site": { "id": "271", "domain": "example.com" },
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": { "EUR": { "USD": 1.2 } },
+                "usepbsrates": false
+              }
+            }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "floxis",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "adomain": ["advertiser.com"],
+                  "crid": "creative-1",
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "adomain": ["advertiser.com"],
+            "crid": "creative-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
